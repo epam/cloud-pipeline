@@ -1,0 +1,102 @@
+{
+  "cloud": {
+    "storages": [
+      {
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "files": [
+          {"key": "data/file1.txt", "creationDateShift": 5, "storageClass": "STANDARD"},
+          {"key": "data/file2.txt", "creationDateShift": 6, "storageClass": "STANDARD"},
+          {"key": "data/file3.txt", "creationDateShift": 7, "storageClass": "STANDARD"},
+          {"key": "data/file1.pdf", "creationDateShift": 20, "storageClass": "STANDARD"},
+          {"key": "data/file2.pdf", "creationDateShift": 21, "storageClass": "STANDARD"},
+          {"key": "data/file3.pdf", "creationDateShift": 20, "storageClass": "STANDARD"}
+        ]
+      }
+    ]
+  },
+  "platform": {
+    "storages": [
+      {
+        "id": 1,
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "rules": [
+          {
+            "id": 1,
+            "datastorageId": 1,
+            "pathGlob": "/data",
+            "objectGlob": "*.txt",
+            "transitionMethod": "LATEST_FILE",
+            "transitionCriterion": {
+              "type": "MATCHING_FILES",
+              "value": "*.pdf"
+            },
+            "transitions": [
+              {
+                "transitionAfterDays": 20,
+                "storageClass": "GLACIER"
+              }
+            ],
+             "prolongations": [
+              {
+                "days": 10,
+                "path": "/data"
+              }
+            ],
+            "notification": {
+              "notifyBeforeDays": 10,
+              "prolongDays": 10,
+             "recipients": [{"name": "ROLE_ADMIN", "principal": false}],
+              "enabled": true,
+              "subject": "Lifecycle rule is about to be applied!",
+              "body": "Lifecycle rule is about to be applied!"
+            }
+          }
+        ],
+        "executions": [
+            {
+              "ruleId": 1,
+              "path": "/data",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            }
+          ]
+      }
+    ]
+  },
+  "result": {
+    "cloud": {
+      "storages": [
+        {
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "storageProvider": "S3",
+          "files": [
+            {"key": "data/file1.txt"},
+            {"key": "data/file2.txt"},
+            {"key": "data/file3.txt"},
+            {"key": "data/file1.pdf"},
+            {"key": "data/file2.pdf"},
+            {"key": "data/file3.pdf"}
+          ]
+        }
+      ]
+    },
+    "platform": {
+      "storages": [
+        {
+          "id": 1,
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "executions": [
+            {
+              "ruleId": 1,
+              "path": "/data",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

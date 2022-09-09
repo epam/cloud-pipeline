@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {Icon, Alert} from 'antd';
 import {Analysis} from '../model/analysis';
 import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
 import {generateResourceUrl} from '../model/analysis/output-utilities';
@@ -42,6 +42,7 @@ function getDownloadUrl (output) {
 class AnalysisOutputWithDownload extends React.Component {
   state = {
     url: undefined,
+    downloadUrl: undefined,
     data: undefined,
     output: undefined,
     pending: false,
@@ -55,8 +56,10 @@ class AnalysisOutputWithDownload extends React.Component {
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (
       prevProps.url !== this.props.url ||
+      prevProps.downloadUrl !== this.props.downloadUrl ||
       prevProps.storageId !== this.props.storageId ||
-      prevProps.path !== this.props.path
+      prevProps.path !== this.props.path ||
+      prevProps.downloadPath !== this.props.downloadPath
     ) {
       this.updateUrl();
     }
@@ -65,13 +68,16 @@ class AnalysisOutputWithDownload extends React.Component {
   updateUrl = () => {
     const {
       url,
+      downloadUrl,
       storageId,
-      path
+      path,
+      downloadPath
     } = this.props;
     this.setState({
       pending: true,
       error: undefined,
       url: undefined,
+      downloadUrl: undefined,
       data: undefined
     }, async () => {
       const state = {
@@ -88,6 +94,17 @@ class AnalysisOutputWithDownload extends React.Component {
         if (state.data) {
           state.url = _url;
         }
+        const _downloadUrl = await generateResourceUrl({
+          url: downloadUrl,
+          storageId,
+          path: downloadPath,
+          checkExists: true
+        });
+        if (_downloadUrl) {
+          state.downloadUrl = _downloadUrl;
+        } else {
+          state.downloadUrl = _url;
+        }
       } catch (error) {
         state.error = error.message;
       } finally {
@@ -99,12 +116,12 @@ class AnalysisOutputWithDownload extends React.Component {
   handleDownload = async (e) => {
     e.preventDefault();
     const {
-      url
+      downloadUrl
     } = this.state;
-    if (!url) {
+    if (!downloadUrl) {
       return null;
     }
-    window.open(url, '_blank');
+    window.open(downloadUrl, '_blank');
   };
 
   renderHeader () {
@@ -176,6 +193,14 @@ class AnalysisOutputWithDownload extends React.Component {
             <Icon type="loading" />
           )
         }
+        {
+          !pending && (!url || !data) ? (
+            <Alert
+              message="Analysis results not found."
+              type="info"
+            />
+          ) : null
+        }
         <div
           className={styles.analysisOutputTableContainer}
         >
@@ -193,7 +218,9 @@ AnalysisOutputWithDownload.propTypes = {
   style: PropTypes.object,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   path: PropTypes.string,
+  downloadPath: PropTypes.string,
   url: PropTypes.string,
+  downloadUrl: PropTypes.string,
   onClose: PropTypes.func
 };
 
@@ -201,6 +228,7 @@ AnalysisOutputWithDownload.propTypes = {
 class AnalysisOutput extends React.Component {
   state = {
     url: undefined,
+    downloadUrl: undefined,
     output: undefined,
     pending: false,
     error: undefined
@@ -208,9 +236,9 @@ class AnalysisOutput extends React.Component {
 
   componentDidMount () {
     if (this.props.analysis) {
-      this.props.analysis.addEventListener(Analysis.Events.analysisDone, this.updateCSVFileUrl);
+      this.props.analysis.addEventListener(Analysis.Events.analysisDone, this.updateUrls);
     }
-    this.updateCSVFileUrl();
+    this.updateUrls();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -218,98 +246,58 @@ class AnalysisOutput extends React.Component {
       if (prevProps.analysis) {
         prevProps.analysis.removeEventListeners(
           Analysis.Events.analysisDone,
-          this.updateCSVFileUrl
+          this.updateUrls
         );
       }
-      this.props.analysis.addEventListener(Analysis.Events.analysisDone, this.updateCSVFileUrl);
+      this.props.analysis.addEventListener(Analysis.Events.analysisDone, this.updateUrls);
     }
   }
 
   componentWillUnmount () {
     if (this.props.analysis) {
-      this.props.analysis.removeEventListeners(Analysis.Events.analysisDone, this.updateCSVFileUrl);
+      this.props.analysis.removeEventListeners(Analysis.Events.analysisDone, this.updateUrls);
     }
   }
 
-  updateCSVFileUrl = () => {
-    const output = this.props.analysis ? this.props.analysis.analysisOutput : undefined;
+  updateUrls = () => {
+    const outputs = this.props.analysis
+      ? this.props.analysis.defineResultsOutputs
+      : [];
+    const output = outputs.find(o => o.table);
+    const xlsx = outputs.find(o => o.xlsx);
     if (output) {
       this.setState({
         pending: true,
         error: undefined,
-        url: undefined
+        url: undefined,
+        downloadUrl: undefined
       }, () => {
-        getDownloadUrl(output)
-          .then(url => this.setState({
+        Promise.all([
+          getDownloadUrl(output),
+          getDownloadUrl(xlsx)
+        ])
+          .then(([url, downloadUrl]) => this.setState({
             pending: false,
             error: undefined,
-            url
+            url,
+            downloadUrl
           }))
           .catch(e => this.setState({
             pending: false,
             error: e.message,
-            url: undefined
+            url: undefined,
+            downloadUrl: undefined
           }));
       });
     } else {
       this.setState({
         pending: true,
         error: undefined,
-        url: undefined
+        url: undefined,
+        downloadUrl: undefined
       });
     }
   };
-
-  handleDownload = async (e) => {
-    e.preventDefault();
-    const {
-      analysis
-    } = this.props;
-    if (!analysis || !analysis.analysisOutput) {
-      return null;
-    }
-    const downloadUrl = await getDownloadUrl(analysis.analysisOutput);
-    if (downloadUrl) {
-      window.open(downloadUrl, '_blank');
-    }
-  };
-
-  renderHeader () {
-    const {
-      analysis,
-      onClose
-    } = this.props;
-    if (!analysis || !analysis.analysisOutput) {
-      return null;
-    }
-    const {
-      pending
-    } = this.state;
-    return (
-      <div
-        className={styles.analysisOutputHeader}
-      >
-        <b>Analysis results</b>
-        {
-          pending && (<Icon type="loading" style={{marginLeft: 5}} />)
-        }
-        <a
-          style={{marginLeft: 5}}
-          onClick={this.handleDownload}
-        >
-          Download
-        </a>
-        <Icon
-          type="close"
-          style={{
-            marginLeft: 'auto',
-            cursor: 'pointer'
-          }}
-          onClick={onClose}
-        />
-      </div>
-    );
-  }
 
   render () {
     const {
@@ -318,15 +306,23 @@ class AnalysisOutput extends React.Component {
       style,
       onClose
     } = this.props;
-    if (!analysis || !analysis.analysisOutput) {
+    if (
+      !analysis ||
+      !analysis.defineResultsOutputs ||
+      analysis.defineResultsOutputs.length === 0
+    ) {
       return null;
     }
-    const {url} = this.state;
+    const {
+      url,
+      downloadUrl
+    } = this.state;
     return (
       <AnalysisOutputWithDownload
         className={className}
         style={style}
         url={url}
+        downloadUrl={downloadUrl}
         onClose={onClose}
       />
     );

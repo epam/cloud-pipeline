@@ -29,6 +29,6 @@ public enum GCPInstanceStatus {
     }
 
     public static Collection<GCPInstanceStatus> getStopStatuses() {
-        return Arrays.asList(STOPPING, STOPPED, TERMINATED);
+        return Arrays.asList(STOPPED, TERMINATED);
     }
 }

@@ -24,6 +24,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -38,6 +41,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
+import org.springframework.data.util.Pair;
 
 public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageType getStorageType();
@@ -127,4 +131,12 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     }
 
     PathDescription getDataSize(T dataStorage, String path, PathDescription pathDescription);
+
+    void verifyStorageLifecyclePolicyRule(StorageLifecycleRule rule);
+
+    void verifyStorageLifecycleRuleExecution(StorageLifecycleRuleExecution execution);
+
+    Pair<Boolean, String> isRestoreActionEligible(T dataStorage, String path);
+
+    String verifyOrDefaultRestoreMode(StorageRestoreActionRequest restoreMode);
 }

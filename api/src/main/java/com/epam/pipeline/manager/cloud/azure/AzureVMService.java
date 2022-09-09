@@ -59,10 +59,10 @@ public class AzureVMService {
 
     private static final String VM_FAILED_STATE = "ProvisioningState/failed";
     private static final String TAG_NAME = "Name";
-    private static final String VIRTUAL_MACHINE_PREFIX = "virtualMachine";
-    private static final String VIRTUAL_MACHINES_TYPE = "virtualMachines";
-    private static final String VIRTUAL_MACHINE_SCALE_SET_TYPE = "virtualMachineScaleSets";
-    private static final String NETWORK_INTERFACES = "networkInterfaces";
+    private static final String VIRTUAL_MACHINE_PREFIX = "virtualmachine";
+    private static final String VIRTUAL_MACHINES_TYPE = "virtualmachines";
+    private static final String VIRTUAL_MACHINE_SCALE_SET_TYPE = "virtualmachinescalesets";
+    private static final String NETWORK_INTERFACES = "networkinterfaces";
     private static final String RESOURCE_DELIMITER = "/";
     private static final String LOW_PRIORITY_INSTANCE_ID_TEMPLATE = "(az-[a-z0-9]{16})[0-9A-Z]{6}";
     private static final Pattern LOW_PRIORITY_VM_NAME_PATTERN = Pattern.compile(LOW_PRIORITY_INSTANCE_ID_TEMPLATE);
@@ -219,7 +219,7 @@ public class AzureVMService {
     }
 
     private String resourceType(final GenericResource resource) {
-        return last(resource.resourceType().split(RESOURCE_DELIMITER));
+        return last(resource.resourceType().split(RESOURCE_DELIMITER)).toLowerCase();
     }
 
     private String last(final String[] items) {
@@ -307,13 +307,13 @@ public class AzureVMService {
     }
 
     private AzureVirtualMachineStats getVmStatsByVmContainer(final Azure azure, final GenericResource vmc) {
-        if (vmc.resourceType().equals(VIRTUAL_MACHINE_SCALE_SET_TYPE)) {
+        if (resourceType(vmc).equals(VIRTUAL_MACHINE_SCALE_SET_TYPE)) {
             final VirtualMachineScaleSetVM scaleSetVM = azure.virtualMachineScaleSets().getById(vmc.id())
                     .virtualMachines().list().stream().findFirst()
                     .orElseThrow(() -> new AzureException(messageHelper.getMessage(
                             MessageConstants.ERROR_AZURE_SCALE_SET_DOESNT_CONTAIN_VMS, vmc.id())));
             return AzureVirtualMachineStats.fromScaleSetVirtualMachine(scaleSetVM);
-        } else if (vmc.resourceType().equals(VIRTUAL_MACHINES_TYPE)){
+        } else if (resourceType(vmc).equals(VIRTUAL_MACHINES_TYPE)){
             return AzureVirtualMachineStats.fromVirtualMachine(azure.virtualMachines().getById(vmc.id()));
         }
         throw new AzureException(messageHelper.getMessage(
@@ -326,7 +326,9 @@ public class AzureVMService {
             return Optional.empty();
         }
         final Optional<GenericResource> virtualMachineContainer = currentPage.items().stream()
-                .filter(r -> r.resourceType().startsWith(VIRTUAL_MACHINE_PREFIX)).findFirst();
+                .filter(r -> resourceType(r).startsWith(VIRTUAL_MACHINE_PREFIX) ||
+                        resourceType(r).equals(VIRTUAL_MACHINE_SCALE_SET_TYPE))
+                .findFirst();
         return virtualMachineContainer.isPresent() ? virtualMachineContainer : checkNextPage(currentPage, resources);
     }
 

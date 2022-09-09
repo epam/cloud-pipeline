@@ -29,7 +29,7 @@ except:
 from pipeline.api import PipelineAPI
 from pipeline.log.logger import LocalLogger
 from pipeline.utils.plat import is_windows
-from pipeline.utils.ssh import HostSSH, LogSSH, UserSSH
+from pipeline.utils.ssh import RemoteHostExecutor, UserExecutor, LoggingExecutor
 
 NXS = 'nxs'
 DCV = 'dcv'
@@ -210,9 +210,9 @@ def _resolve_executor(run_id, api, logger):
         host_root = _extract_parameter('CP_HOST_ROOT_DIR', default='c:\\host')
         node_private_key_path = _extract_parameter('CP_NODE_PRIVATE_KEY',
                                                    default=os.path.join(host_root, '.ssh', 'id_rsa'))
-        executor = HostSSH(host=node_ip, private_key_path=node_private_key_path)
-        executor = LogSSH(logger=logger, inner=executor)
-        return UserSSH(user='Administrator', inner=executor)
+        executor = RemoteHostExecutor(host=node_ip, private_key_path=node_private_key_path)
+        executor = LoggingExecutor(logger=logger, inner=executor)
+        return UserExecutor(user='Administrator', inner=executor)
 
 
 def _scramble_pass(user_pass):

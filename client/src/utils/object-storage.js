@@ -238,7 +238,8 @@ function findStorageByIdentifierFn (storageId) {
 function findStorageByPathFn (storagePath) {
   return function predicate (storage) {
     const storageMask = new RegExp(`^${storage.pathMask}(/|$)`, 'i');
-    return storageMask.test(storagePath);
+    const storagePathMask = new RegExp(`^${storage.path}(/|$)`, 'i');
+    return storageMask.test(storagePath) || storagePathMask.test(storagePath);
   };
 }
 

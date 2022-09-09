@@ -137,6 +137,12 @@ class HCSInfo {
     }
   }
 
+  destroy () {
+    this.sequences.forEach(aSequence => aSequence.destroy());
+    this.sequences = undefined;
+    this.objectStorage = undefined;
+  }
+
   /**
    * @typedef {Object} HCSFileInfo
    * @property {string|number} storageId

@@ -1,0 +1,73 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  grid-template-rows: auto;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sub-header {
+  grid-column-start: 1;
+  grid-column-end: 3;
+  text-align: center;
+  font-weight: bold;
+  text-transform: capitalize;
+  padding: 2px 0;
+}
+
+.spendings-container {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.spendings-container .statistics {
+  margin-left: 3px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.cell {
+  margin-bottom: 3px;
+  padding: 2px 3px;
+}
+
+.cell.left-column {
+  text-align: right;
+  padding-left: 15px;
+}
+
+.spinner {
+  height: 100%;
+}
+
+.markdown pre {
+  background-color: inherit;
+}

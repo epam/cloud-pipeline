@@ -84,8 +84,13 @@ function OutputProperty (props) {
     return null;
   }
   const isSpot = pipeline.getObjectIsSpot(object);
+  const isSpotWithParent = isSpot && pipeline.getObjectIsSpotWithParent(object);
   const hasSpots = pipeline.getObjectHasSpots(object);
-  const objectProperties = getObjectProperties({spot: isSpot, hasChild: hasSpots});
+  const objectProperties = getObjectProperties({
+    spot: isSpot,
+    spotWithParent: isSpotWithParent,
+    hasChild: hasSpots
+  });
   const changeObject = newObject => {
     if (newObject !== object) {
       const newObjectIsSpot = pipeline.getObjectIsSpot(newObject);

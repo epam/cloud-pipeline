@@ -38,7 +38,7 @@ class NodeProvider(ABC):
         pass
 
     @abstractmethod
-    def cordon_node(self, node: Node):
+    def drain_node(self, node: Node):
         pass
 
     @abstractmethod

@@ -139,6 +139,7 @@ class EndpointAPI {
    * @property {string|object} [body]
    * @property {string|object} [query]
    * @property {boolean} [isJSON=true]
+   * @property {boolean} [ignoreResponse]
    */
 
   /**
@@ -158,7 +159,8 @@ class EndpointAPI {
       body,
       httpMethod = body ? 'POST' : 'GET',
       query,
-      isJSON = true
+      isJSON = true,
+      ignoreResponse = false
     } = options || {};
     const url = rawURL || this.getMethodURL(uri, query);
     const errorName = this.name || uri || url;
@@ -180,6 +182,9 @@ class EndpointAPI {
         }
       }
     );
+    if (ignoreResponse) {
+      return undefined;
+    }
     if (!response.ok) {
       const infos = [
         response.statusText,

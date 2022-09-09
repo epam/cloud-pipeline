@@ -80,7 +80,10 @@ class HcsSequenceSelector extends React.Component {
     const append = multiple && event && event.nativeEvent && event.nativeEvent.shiftKey;
     if (typeof onChange === 'function') {
       if (append) {
-        const exists = this.sequenceTimePointIsSelected(sequenceId, timePoint);
+        const exists = this.sequenceTimePointIsSelected(sequenceId, timePoint.id);
+        if (exists && selection.length === 1) {
+          return;
+        }
         if (exists) {
           onChange(
             selection.filter(o => o.sequence !== sequenceId || o.timePoint !== timePoint.id)

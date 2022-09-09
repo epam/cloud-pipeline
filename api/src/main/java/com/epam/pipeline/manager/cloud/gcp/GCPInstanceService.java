@@ -259,6 +259,9 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
             if (GCPInstanceStatus.getStopStatuses().contains(instanceStatus)) {
                 return CloudInstanceState.STOPPED;
             }
+            if (GCPInstanceStatus.STOPPING.equals(instanceStatus)) {
+                return CloudInstanceState.STOPPING;
+            }
             return CloudInstanceState.TERMINATED;
         } catch (IOException e) {
             log.error(e.getMessage(), e);

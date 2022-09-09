@@ -166,6 +166,7 @@ public final class MessageConstants {
     public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
     public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
+    public static final String WARN_INSTANCE_STOPPING = "warn.instance.stopping";
     public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
@@ -288,6 +289,67 @@ public final class MessageConstants {
 
     public static final String ERROR_DATASTORAGE_NFS_PATH_NOT_FOUND = "error.datastorage.nfs.path.not.found";
     public static final String ERROR_DATASTORAGE_CANNOT_CREATE_FILE = "error.datastorage.cannot.set.file.permission";
+
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND =
+            "error.datastorage.lifecycle.rule.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_DEFINE_DAYS_TO_PROLONG =
+            "error.datastorage.lifecycle.rule.cant.define.days.to.prolong";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG =
+            "error.datastorage.lifecycle.rule.wrong.days.to.prolong";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE =
+            "error.datastorage.lifecycle.rule.was.prolong.before";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.rule.datastorage.id.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.root.path.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_IS_NOT_ABSOLUTE =
+            "error.datastorage.lifecycle.path.is.not.absolute";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.transitions.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS =
+            "error.datastorage.lifecycle.wrong.notify.before.days";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.transition.method.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ALREADY_EXISTS =
+            "error.datastorage.lifecycle.rule.already.exists";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE =
+            "error.datastorage.lifecycle.rule.assigned.to.another.datastorage";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ID_IS_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.rule.id.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB =
+            "error.datastorage.lifecycle.rule.path.doesnt.match.glob";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.path.not.provided";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_FOUND =
+            "error.datastorage.lifecycle.rule.execution.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_MATCH =
+            "error.datastorage.lifecycle.rule.execution.not.match";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_PARSE_NOTIFICATION =
+            "error.datastorage.lifecycle.rule.cant.parse.notification";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ENABLE_FLAG_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.provide.enable.flag";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.transition.criterion.value.is.not.provided";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_WRONG_CRITERION =
+            "error.datastorage.lifecycle.rule.one.by.one.has.default.criterion";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_NOTIFICATION_ENABLED =
+            "error.datastorage.lifecycle.rule.one.by.one.notification.enabled";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.restore.path.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE =
+            "error.datastorage.lifecycle.restore.cannot.be.done";
+    public static final String DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE =
+            "debug.datastorage.lifecycle.existing.restore";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED =
+            "error.datastorage.lifecycle.path.already.restored";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_CANNOT_FIND_RESTORE =
+            "error.datastorage.lifecycle.restore.action.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_IN_FINAL_STATUS =
+            "error.datastorage.lifecycle.restore.in.final.status";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_NOTIFICATION_CONFIGURED_INCORRECTLY =
+            "error.datastorage.lifecycle.restore.rule.cant.parse.notification";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOTIFICATION_RECIPIENTS_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.notification.recipients.not.provided";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

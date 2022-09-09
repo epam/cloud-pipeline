@@ -26,18 +26,38 @@ import ImageMathImages, {
 const {
   parameters: thresholdingParameters,
   values: thresholdingValues
-} = thresholding();
+} = thresholding({
+  strategy: 'Adaptive',
+  thresholdingMethod: 'Otsu',
+  otsuMethodType: 'Three classes',
+  otsuThreePixels: 'Foreground',
+  condition: 'configureThresholdCombine==true AND mainMethod!="Suppress features"',
+  prefix: 'main_'
+});
+
+const {
+  parameters: thresholdingParametersSuppress,
+  values: thresholdingValuesSuppress
+} = thresholding({
+  strategy: 'Global',
+  thresholdingMethod: 'Minimum Cross-Entropy',
+  thresholdSmoothingScale: 0,
+  condition: 'configureThresholdSuppress==true AND mainMethod=="Suppress features"',
+  prefix: 'suppress_'
+});
 
 const findCells = {
   name: 'FindCells',
   composed: true,
   parameters: [
-    'Nuclei objects|object|ALIAS nuclei|REQUIRED',
-    'Image|file|ALIAS input|IF multipleChannels==false OR mainMethod=="A"|REQUIRED',
+    'Nuclei objects|object|ALIAS nuclei|REQUIRED|DEFAULT_FROM FindNuclei',
+    'Image|file|ALIAS input|IF multipleChannels==false OR mainMethod!=="Combine channels"|REQUIRED',
     'Objects name|string|Cells|ALIAS name|REQUIRED',
-    'Method|[A,B]|A|ALIAS mainMethod',
-    'Use multiple channels|flag|false|ADVANCED|ALIAS multipleChannels|IF mainMethod!="A"',
-    // 'Erode nuclei?|flag|false|ALIAS erode|ADVANCED',
+    'Method|[Default,Suppress features,Combine channels]|Default|ALIAS mainMethod',
+    'Feature size|units|10|IF mainMethod=="Suppress features"|ALIAS featureSize',
+    'Configure threshold|flag|false|IF mainMethod=="Default" OR mainMethod=="A" OR mainMethod=="Combine channels" OR mainMethod=="B"|ALIAS configureThresholdCombine|ADVANCED',
+    'Configure threshold|flag|false|IF mainMethod=="Suppress features"|ALIAS configureThresholdSuppress|ADVANCED',
+    'Use multiple channels|flag|false|ADVANCED|ALIAS multipleChannels|IF mainMethod=="Combine channels"',
     'Erode shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|ALIAS erodeShape|IF erode==true',
     'Erode size|integer|1|ALIAS erodeSize|IF erode==erode',
     {
@@ -50,8 +70,8 @@ const findCells = {
         const method = cpModule.getParameterValue('mainMethod');
         switch (method) {
           case 'B':
+          case 'Combine channels':
             return `combined input ${cpModule.id}`;
-          case 'A':
           default:
             return cpModule.getParameterValue('input');
         }
@@ -102,18 +122,22 @@ const findCells = {
       ),
       visibilityHandler: (module) => module &&
         module.getBooleanParameterValue('multipleChannels') &&
-        module.getParameterValue('mainMethod') !== 'A'
+        (
+          module.getParameterValue('mainMethod') === 'Combine channels' ||
+          module.getParameterValue('mainMethod') === 'B'
+        )
     },
     ...thresholdingParameters,
+    ...thresholdingParametersSuppress,
 
     // Remove holes
-    'Holes size|units|10|ALIAS holesSize|ADVANCED'
+    'Holes size|units|10|ALIAS holesSize|ADVANCED|IF mainMethod=="Combine channels" OR mainMethod=="B"'
   ],
   output: 'name|object',
   sourceImageParameter: 'inputImage',
   subModules: (parentModule) => {
-    const main = parentModule.getParameterValue('mainMethod') === 'A';
-    if (main) {
+    const mainMethod = parentModule.getParameterValue('mainMethod') || 'Default';
+    if (['a', 'default'].includes(mainMethod.toLowerCase())) {
       return [
         {
           alias: 'secondary',
@@ -124,6 +148,31 @@ const findCells = {
             name: '{parent.name}|COMPUTED',
             'Select the method to identify the secondary objects': 'Watershed - Image',
             ...thresholdingValues
+          }
+        }
+      ];
+    }
+    if (['suppress features'].includes(mainMethod.toLowerCase())) {
+      return [
+        {
+          alias: 'suppress',
+          module: 'EnhanceOrSuppressFeatures',
+          values: {
+            input: '{parent.input}|COMPUTED',
+            output: '{this.id}_suppressed|COMPUTED',
+            operation: 'Suppress',
+            featureSize: '{parent.featureSize}|COMPUTED'
+          }
+        },
+        {
+          alias: 'secondary',
+          module: 'IdentifySecondaryObjects',
+          values: {
+            input: '{suppress.output}|COMPUTED',
+            inputObjects: '{parent.nuclei}|COMPUTED',
+            name: '{parent.name}|COMPUTED',
+            'Select the method to identify the secondary objects': 'Watershed - Image',
+            ...thresholdingValuesSuppress
           }
         }
       ];

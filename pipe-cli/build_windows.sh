@@ -78,6 +78,10 @@ _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
+version_file="${PIPE_CLI_SOURCES_DIR}/src/version.py"
+sed -i '/__component_version__/d' \$version_file
+echo "__component_version__='\${PIPE_COMMIT_HASH}'" >> \$version_file
+
 cat > /tmp/pipe-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/pipe-win-version-info.txt)" && \
 pip install --upgrade 'setuptools<=45.1.0' && \
 pip install -r /pipe-cli/requirements.txt && \
@@ -144,6 +148,10 @@ cd /pipe-cli/dist/win64 && \
 zip -r -q pipe.zip pipe
 EOL
 
+cd $PIPE_CLI_SOURCES_DIR
+PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
+cd -
+
 docker run -i --rm \
            -v $PIPE_CLI_SOURCES_DIR:/pipe-cli \
            -v $PIPE_CLI_WIN_DIST_DIR:/pipe-cli/dist/win64 \
@@ -152,6 +160,7 @@ docker run -i --rm \
            -e PIPE_CLI_MINOR_VERSION=$PIPE_CLI_MINOR_VERSION \
            -e PIPE_CLI_PATCH_VERSION=$PIPE_CLI_PATCH_VERSION \
            -e PIPE_CLI_BUILD_VERSION=$(cut -d. -f1 <<< "$PIPE_CLI_BUILD_VERSION") \
+           -e PIPE_COMMIT_HASH=$PIPE_COMMIT_HASH \
            $CP_PYINSTALL_WIN64_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 

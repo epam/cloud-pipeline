@@ -193,7 +193,10 @@ Deployment autoscaler parameter descriptions can be found in the following code 
     "kube_ip": "123.45.6.789",
     "kube_port": "6443",
     "kube_dns_ip": "10.96.0.10",
-    "aws_fs_url": "fs-12345678901234567.fsx.eu-central-1.amazonaws.com@tcp:/12345678"
+    "aws_fs_url": "fs-12345678901234567.fsx.eu-central-1.amazonaws.com@tcp:/12345678",
+    "http_proxy": "",
+    "https_proxy": "",
+    "no_proxy": ""
   },
   "timeout": {
     // Specifies node scaling ↑ polling timeout.
@@ -206,7 +209,13 @@ Deployment autoscaler parameter descriptions can be found in the following code 
     "scale_up_instance_timeout": 60,
     
     // Specifies instances scaling ↑ polling delay.
-    "scale_up_instance_delay": 10
+    "scale_up_instance_delay": 10,
+    
+    // Specifies node scaling ↓ polling timeout.
+    "scale_down_node_timeout": 120,
+    
+    // Specifies node scaling ↓ polling delay.
+    "scale_down_node_delay": 10
   },
   "misc": {
     "boto3_retry_count": 10

@@ -105,8 +105,8 @@ function extractModules (module) {
           {},
           {id: `${module.id}_sub_${index + 1}`, pipeline: module.pipeline}
         );
-        cpModule.parentModule = module;
         if (cpModule) {
+          cpModule.parentModule = module;
           pipelineModules[alias] = cpModule;
           Object.entries(values || {}).forEach(([parameter, value]) => {
             if (typeof value === 'string' && /\|COMPUTED$/.test(value)) {
@@ -122,6 +122,8 @@ function extractModules (module) {
             }
           });
           result.push(...extractModules(cpModule));
+        } else {
+          console.error(`Unknown module: ${name}`);
         }
       });
     }
@@ -256,7 +258,8 @@ function appendExtraOutputModules (modules, prefix = 'DAPI', append = true) {
   const result = [...modules];
   const metadata = {
     objectImages: {},
-    objectBackgrounds: {}
+    objectBackgrounds: {},
+    images: {}
   };
   /**
    * @param {AnalysisModule} objectModule
@@ -282,6 +285,7 @@ function appendExtraOutputModules (modules, prefix = 'DAPI', append = true) {
         }, {id: `${id}_saved`});
         if (saveImage) {
           metadata.objectImages[objectName] = fileName;
+          metadata.images[objectModule.id] = fileName;
           generated.push(outline);
           generated.push(saveImage);
         }
@@ -323,6 +327,7 @@ function appendExtraOutputModules (modules, prefix = 'DAPI', append = true) {
         format: 'png'
       }, {id: `${objectModule.id}_${aFile}_saved`});
       if (saveImage) {
+        metadata.images[objectModule.id] = aFile;
         generated.push(saveImage);
       }
     });
@@ -440,14 +445,15 @@ async function runPipeline (api, pipelineId, attempt = 0) {
   if (attempt > MAX_ATTEMPTS) {
     throw new Error(`Error launching analysis pipeline: max attempts exceeded`);
   }
-  await api.runPipeline(pipelineId);
-  const pipeline = await api.getPipeline(pipelineId);
-  const {state} = pipeline || {};
-  if (/^config/i.test(state)) {
-    await wait(ATTEMPT_INTERVAL_MS);
-    return runPipeline(api, pipelineId, attempt + 1);
-  }
-  return pipeline;
+  const runWithoutResponseFn = api.runPipeline.bind(api, pipelineId);
+  (runWithoutResponseFn)();
+  return api.getPipeline(pipelineId);
+  // const {state} = pipeline || {};
+  // if (/^config/i.test(state)) {
+  //   await wait(ATTEMPT_INTERVAL_MS);
+  //   return runPipeline(api, pipelineId, attempt + 1);
+  // }
+  // return pipeline;
 }
 
 /**
@@ -472,6 +478,21 @@ async function fetchStatusUntilDone (api, pipelineId) {
 }
 
 /**
+ * @typedef {Object} AnalysisOutputResult
+ * @property {string} name
+ * @property {string} id
+ * @property {string} [url]
+ * @property {function: Promise<string>} [fetchUrl]
+ * @property {boolean} analysisOutput
+ * @property {boolean} table
+ * @property {boolean} xlsx
+ * @property {AnalysisModule} [module]
+ * @property {string} [object]
+ * @property {boolean} [background]
+ * @property {string} [originalModuleId]
+ */
+
+/**
  * @param {{outputs: string[], name: string, settings: *}} module
  * @param {string} output
  * @param {number} index
@@ -486,12 +507,18 @@ function mapModuleOutput (module, output, index, metadata) {
   }
   let anObjectOutline;
   let background = false;
+  let originalModuleId;
   if (
     /^SaveImages$/i.test(module.name) &&
     module.settings &&
     module.settings['Select the image to save']
   ) {
     name = module.settings['Select the image to save'];
+    const originalModule = Object
+      .entries((metadata || {}).images || {})
+      .map(([moduleId, fileName]) => ({moduleId, fileName}))
+      .find(o => o.fileName === name);
+    originalModuleId = originalModule ? originalModule.moduleId : undefined;
     background = Object
       .entries((metadata || {}).objectBackgrounds || {})
       .map(([object, fileName]) => ({object, fileName}))
@@ -502,8 +529,9 @@ function mapModuleOutput (module, output, index, metadata) {
       .find(o => o.fileName === name);
   }
   const table = /\.csv$/i.test(output);
+  const xlsx = /\.xlsx?$/i.test(output);
   const analysisOutput = /^DefineResults$/i.test(module.name) &&
-    /(^|\/|\\)results\.csv$/i.test(output);
+    /(^|\/|\\)results\.(csv|xlsx|xls)$/i.test(output);
   return {
     name,
     file: output,
@@ -511,7 +539,9 @@ function mapModuleOutput (module, output, index, metadata) {
     object: anObjectOutline ? anObjectOutline.object : undefined,
     background: !!background,
     analysisOutput,
-    table
+    table,
+    xlsx,
+    originalModuleId
   };
 }
 
@@ -597,27 +627,38 @@ function modulesAreTheSame (moduleA, moduleB) {
  * @param {number} pipelineId
  * @param {AnalysisModule[]} [modules]
  * @param {AnalysisModuleCache[]} [cache]
+ * @param {{forceRemove: boolean?,modulesToRemove: number?}} [options={}]
  * @returns {Promise<{start: number, cache: AnalysisModuleCache[]}>}
  */
 async function updatePipeline (
   api,
   pipelineId,
   modules = [],
-  cache = []
+  cache = [],
+  options = {}
 ) {
+  const {
+    forceRemove,
+    modulesToRemove = 0
+  } = options;
+  let remoteModulesToRemoveCount = modulesToRemove;
+  let modulesToAdd = modules.slice();
+  let differenceIndex = 0;
   const modulesPayloads = modules.map(module => ({
     name: module.name,
     settings: module.getPayload()
   }));
-  let differenceIndex = Math.min(modulesPayloads.length, cache.length);
-  for (let i = 0; i < Math.min(modulesPayloads.length, cache.length); i++) {
-    if (!modulesAreTheSame(modulesPayloads[i], cache[i])) {
-      differenceIndex = i;
-      break;
+  if (!forceRemove) {
+    differenceIndex = Math.min(modulesPayloads.length, cache.length);
+    for (let i = 0; i < Math.min(modulesPayloads.length, cache.length); i++) {
+      if (!modulesAreTheSame(modulesPayloads[i], cache[i])) {
+        differenceIndex = i;
+        break;
+      }
     }
+    remoteModulesToRemoveCount = cache.length - differenceIndex;
+    modulesToAdd = modules.slice(differenceIndex);
   }
-  const remoteModulesToRemoveCount = cache.length - differenceIndex;
-  const modulesToAdd = modules.slice(differenceIndex);
   await removeModules(api, pipelineId, remoteModulesToRemoveCount, differenceIndex);
   await createRemoteModules(api, pipelineId, modulesToAdd, differenceIndex);
   return {start: differenceIndex, cache: modulesPayloads};
@@ -654,19 +695,6 @@ function findInitialModule (initialModules = [], executionModules, index) {
   }
   return find(executionModules[index]);
 }
-
-/**
- * @typedef {Object} AnalysisOutputResult
- * @property {string} name
- * @property {string} id
- * @property {string} [url]
- * @property {function: Promise<string>} [fetchUrl]
- * @property {boolean} analysisOutput
- * @property {boolean} table
- * @property {AnalysisModule} [module]
- * @property {string} [object]
- * @property {boolean} [background]
- */
 
 /**
  * @typedef {Object} RunAnalysisOptions
@@ -717,7 +745,8 @@ export default async function runAnalysisPipeline (
   // fetch pipeline info
   const pipeline = await api.getPipeline(pipelineId);
   const {
-    inputs = ['DAPI']
+    inputs = ['DAPI'],
+    modules: remoteModules = []
   } = pipeline;
   const {
     modules: allModules,
@@ -727,7 +756,16 @@ export default async function runAnalysisPipeline (
   if (analysis.length === 0) {
     return {results: [], cache};
   }
-  const {start, cache: newCache} = await updatePipeline(api, pipelineId, analysis, cache);
+  const {start, cache: newCache} = await updatePipeline(
+    api,
+    pipelineId,
+    analysis,
+    cache,
+    {
+      forceRemove: true,
+      modulesToRemove: remoteModules.length
+    }
+  );
   const ids = analysis.map((o, idx) => idx + 1).slice(start);
   const runCallback = (id, done) => {
     if (typeof callbackFn === 'function') {

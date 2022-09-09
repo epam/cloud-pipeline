@@ -19,7 +19,7 @@ import moment from 'moment-timezone';
 import {AnalysisModule} from '../modules/base';
 import {AnalysisTypes} from '../common/analysis-types';
 import {DefineResultsModuleName} from '../modules/implementation/define-results';
-import OutlineObjectsConfiguration from './outline-objects-configuration';
+import GraphicsOutputConfiguration from './graphics-output-configuration';
 import generateUUID from '../common/generate-uuid';
 
 const CLOUD_PIPELINE_CELL_PROFILER_PIPELINE_TYPE = 'CloudPipeline CellProfiler pipeline';
@@ -47,7 +47,7 @@ class AnalysisPipeline {
    * @type {AnalysisModule}
    */
   @observable defineResults;
-  @observable objectsOutlines = new OutlineObjectsConfiguration();
+  @observable graphicsOutput = new GraphicsOutputConfiguration();
 
   constructor (analysis) {
     this.analysis = analysis;
@@ -97,7 +97,7 @@ class AnalysisPipeline {
       .filter(cpModule => /^RelateObjects$/i.test(cpModule.name));
     const appendSpots = (parent, child) => {
       const image = this.getSourceImageForObjet(child);
-      if (parent && child && image) {
+      if (child && image) {
         spots.push({
           parent: parent,
           name: child,
@@ -115,7 +115,7 @@ class AnalysisPipeline {
     findSpotsModules.forEach(findSpotsModule => {
       const parent = findSpotsModule.getParameterValue('parentObject');
       const child = findSpotsModule.getParameterValue('output');
-      appendSpots(parent, child);
+      appendSpots(parent === 'None' ? undefined : parent, child);
     });
     return spots.filter((aSpot, index, array) => {
       return array.slice(0, index)
@@ -221,8 +221,22 @@ class AnalysisPipeline {
       configuration.filter(o => o.object).length === 0;
   }
 
+  @computed
+  get parametersWithErrors () {
+    return this.modules
+      .reduce((acc, current) => ([
+        ...acc,
+        ...(current.parameters || [])
+      ]), [])
+      .filter(param => param.isInvalid);
+  }
+
   getObjectIsSpot = (object) => {
     return this.spots.some(aSpot => aSpot.name === object);
+  }
+
+  getObjectIsSpotWithParent = (object) => {
+    return this.spots.some(aSpot => aSpot.name === object && !!aSpot.parent);
   }
 
   getObjectHasSpots = (object) => {
@@ -267,6 +281,7 @@ class AnalysisPipeline {
   add = async (analysisModuleConfiguration) => {
     const newModule = new AnalysisModule(this, analysisModuleConfiguration);
     this.modules.push(newModule);
+    newModule.setParameterDefaultValues();
     return newModule;
   };
 
@@ -296,7 +311,7 @@ class AnalysisPipeline {
         ? `Modified:${moment.utc(this.modifiedDate).format('YYYY-MM-DD HH:mm:ss')}`
         : false,
       this.channels.length > 0 ? `Channels:${JSON.stringify(this.channels)}` : false,
-      `Outlines:${this.objectsOutlines.exportConfigurations()}`
+      `Outlines:${this.graphicsOutput.exportConfigurations()}`
     ].filter(Boolean).join('\n');
     return [
       header,
@@ -347,7 +362,7 @@ class AnalysisPipeline {
           }
         } else if (/^outlines$/i.test(key)) {
           try {
-            pipeline.objectsOutlines = OutlineObjectsConfiguration.importConfigurations(value);
+            pipeline.graphicsOutput = GraphicsOutputConfiguration.importConfigurations(value);
           } catch (e) {
             console.warn(e.message);
           }

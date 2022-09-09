@@ -62,7 +62,11 @@ public enum NotificationType {
     BILLING_QUOTA_EXCEEDING(15, -1L, -1L, Collections.emptyList(), true,
             NotificationGroup.RESOURCE_CONSUMING),
     FULL_NODE_POOL(16, -1L, -1L, Collections.emptyList(), true,
-            NotificationGroup.NODE_POOL);
+            NotificationGroup.NODE_POOL),
+    DATASTORAGE_LIFECYCLE_ACTION(17, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.DATASTORAGE_LIFECYCLE),
+    DATASTORAGE_LIFECYCLE_RESTORE_ACTION(18, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.DATASTORAGE_LIFECYCLE);
 
     private static final Map<Long, NotificationType> BY_ID;
 

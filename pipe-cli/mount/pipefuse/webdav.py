@@ -101,7 +101,13 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
 
     def prop_value(self, elem, name, default=None):
         child = self.get_elem_value(elem, name)
-        return default if child is None or child.text is None else unquote(child.text).decode('utf8')
+        if child is None or child.text is None:
+            return default
+        else:
+            value = unquote(child.text)
+            if not isinstance(value, str):
+                value = value.decode('utf8')
+            return value
 
     def prop_exists(self, elem, name):
         return self.get_elem_value(elem, name) is not None

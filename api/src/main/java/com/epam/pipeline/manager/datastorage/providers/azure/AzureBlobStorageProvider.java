@@ -17,6 +17,9 @@
 package com.epam.pipeline.manager.datastorage.providers.azure;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -39,6 +42,7 @@ import com.microsoft.azure.storage.blob.ContainerSASPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -272,6 +276,26 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public PathDescription getDataSize(final AzureBlobStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getAzureStorageHelper(dataStorage).getDataSize(dataStorage, path, pathDescription);
+    }
+
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public Pair<Boolean, String> isRestoreActionEligible(final AzureBlobStorage dataStorage, final String path) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest actionRequest) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
     }
 
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {

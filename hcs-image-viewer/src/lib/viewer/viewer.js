@@ -39,7 +39,6 @@
  */
 
 import React, {
-  useCallback,
   useEffect,
   useRef,
   useState,
@@ -58,6 +57,15 @@ import getZoomLevel from '../state/utilities/get-zoom-level';
 
 const additiveColorMapExtension = new AdditiveColormapExtension();
 const lensExtension = new LensExtension();
+
+const deckProps = {
+  glOptions: {
+    preserveDrawingBuffer: true,
+  },
+};
+
+const colorMapExtensions = [additiveColorMapExtension];
+const defaultExtensions = [lensExtension];
 
 function HCSImageViewer(
   {
@@ -175,7 +183,7 @@ function HCSImageViewer(
             selections={selections}
             height={size.height}
             width={size.width}
-            extensions={colorMap ? [additiveColorMapExtension] : [lensExtension]}
+            extensions={colorMap ? colorMapExtensions : defaultExtensions}
             colormap={colorMap || 'viridis'}
             onViewportLoad={setImageViewportLoaded}
             viewStates={viewState}
@@ -184,11 +192,7 @@ function HCSImageViewer(
             lensSelection={useLens && lensEnabled ? lensChannel : undefined}
             lensEnabled={useLens && lensEnabled}
             onCellClick={onCellClick}
-            deckProps={{
-              glOptions: {
-                preserveDrawingBuffer: true,
-              },
-            }}
+            deckProps={deckProps}
           />
         )
       }

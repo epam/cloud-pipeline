@@ -19,6 +19,7 @@ package com.epam.pipeline.test.web;
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.acl.cluster.NatGatewayApiService;
+import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
@@ -49,6 +50,7 @@ import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
+import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
@@ -258,4 +260,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected CloudAccessApiService cloudAccessApiService;
+
+    @MockBean
+    protected DataStorageLifecycleApiService lifecycleApiService;
+
+    @MockBean
+    protected ApplicationInfoManager applicationInfoManager;
 }

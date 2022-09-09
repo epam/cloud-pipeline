@@ -224,6 +224,22 @@ export async function getBatchAnalysisSettings (refresh = false) {
   };
 }
 
+export async function getVideoSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    api: mainAPI,
+    video
+  } = settings || {};
+  const {
+    api = mainAPI,
+    ...rest
+  } = video || {};
+  return {
+    ...rest,
+    api
+  };
+}
+
 export async function findJobWithDockerImage (options = {}) {
   const configuration = await getAnalysisSettings();
   const {

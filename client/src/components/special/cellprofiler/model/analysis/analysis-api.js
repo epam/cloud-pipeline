@@ -58,7 +58,8 @@ class AnalysisApi extends EndpointAPI {
   runPipeline = (pipelineId) => this.apiCall({
     uri: 'hcs/run/pipelines',
     query: {pipelineId},
-    httpMethod: 'POST'
+    httpMethod: 'POST',
+    ignoreResponse: true
   });
 
   runPipelineModule = (pipelineId, moduleId) => this.apiCall({
@@ -67,11 +68,11 @@ class AnalysisApi extends EndpointAPI {
     httpMethod: 'POST'
   });
 
-  attachFiles = (pipelineId, ...files) => this.apiCall({
+  attachFiles = (pipelineId, filesPayload) => this.apiCall({
     uri: 'hcs/pipelines/files',
     query: {pipelineId},
     httpMethod: 'POST',
-    body: files
+    body: filesPayload
   });
 
   createModule = (pipelineId, cpModule) => this.apiCall({
@@ -108,6 +109,11 @@ class AnalysisApi extends EndpointAPI {
       statuses: modulesStatuses.map((status, idx) => ({cpModule: modules[idx], status}))
     };
   }
+
+  generateVideo = (options) => this.apiCall({
+    uri: 'hcs/clip',
+    query: options
+  })
 }
 
 export default AnalysisApi;

@@ -22,14 +22,22 @@ function readCustomConfiguration () {
   return undefined;
 }
 
-function getAppVersion() {
+function readCompilationAsset(assetName) {
   try {
-    const versionFile = path.join(__dirname, 'VERSION');
-    if (fs.existsSync(versionFile)) {
-      return fs.readFileSync(versionFile).toString();
+    const assetFile = path.join(__dirname, assetName);
+    if (fs.existsSync(assetFile)) {
+      return fs.readFileSync(assetFile).toString();
     }
   } catch (_) {}
   return undefined;
+}
+
+function getAppVersion() {
+  return readCompilationAsset('VERSION')
+}
+
+function getComponentVersion() {
+  return readCompilationAsset('COMPONENT_VERSION')
 }
 
 function readCertificates (root) {

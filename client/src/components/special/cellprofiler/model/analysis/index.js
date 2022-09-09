@@ -81,11 +81,19 @@ class Analysis {
   }
 
   /**
-   * @returns {AnalysisOutputResult}
+   * @returns {AnalysisOutputResult[]}
    */
   @computed
-  get analysisOutput () {
-    return this.analysisResults.find(o => o.analysisOutput);
+  get defineResultsOutputs () {
+    return this.analysisResults.filter(o => o.analysisOutput);
+  }
+
+  /**
+   * @returns {AnalysisOutputResult[]}
+   */
+  @computed
+  get analysisOutputImages () {
+    return this.analysisResults.filter(o => !o.table && !o.xlxs && !o.analysisOutput);
   }
 
   @computed
@@ -94,6 +102,14 @@ class Analysis {
       return [];
     }
     return [...this.pipeline.modules, this.pipeline.defineResults];
+  }
+
+  @computed
+  get isEmpty () {
+    if (!this.pipeline) {
+      return [];
+    }
+    return this.pipeline.modules.length === 0;
   }
 
   @computed
@@ -109,7 +125,7 @@ class Analysis {
   set hcsImageViewer (aViewer) {
     this._hcsImageViewer = aViewer;
     if (this.pipeline && this._hcsImageViewer) {
-      (this.pipeline.objectsOutlines.renderOutlines)(this._hcsImageViewer);
+      (this.pipeline.graphicsOutput.renderOutlines)(this._hcsImageViewer);
     }
   }
 
@@ -326,9 +342,11 @@ class Analysis {
 
   getInputsPayload = () => {
     if (!this.namesAndTypes) {
-      return [];
+      return {
+        files: []
+      };
     }
-    return this.namesAndTypes.sourceFiles.map(aFile => ({
+    const files = this.namesAndTypes.sourceFiles.map(aFile => ({
       x: aFile.x,
       y: aFile.y,
       z: aFile.z,
@@ -337,6 +355,13 @@ class Analysis {
       channel: aFile.c,
       channelName: aFile.channel
     }));
+    const zPlanes = this.namesAndTypes.mergeZPlanes
+      ? ([...new Set(files.map(aFile => aFile.z))].sort((a, b) => a - b))
+      : undefined;
+    return {
+      files,
+      zPlanes
+    };
   }
 
   @action
@@ -351,7 +376,7 @@ class Analysis {
       this.error = undefined;
       await this.analysisAPI.attachFiles(
         this.pipelineId,
-        ...this.getInputsPayload()
+        this.getInputsPayload()
       );
       this.sourceFileChanged = false;
       this.analysisCache = [];
@@ -471,7 +496,15 @@ class Analysis {
         }
       );
       this.analysisResults = results.filter(o => !o.object);
-      this.pipeline.objectsOutlines.update(results, this.hcsImageViewer);
+      const objectResults = results.filter(o => o.object);
+      const lastOverlay = objectResults.length > 0
+        ? undefined
+        : this.analysisOutputImages.slice().pop();
+      this.pipeline.graphicsOutput.update(
+        objectResults,
+        lastOverlay,
+        this.hcsImageViewer
+      );
       this.analysisCache = cache;
       this.showAnalysisResults = true;
       this.status = 'Analysis done';
@@ -518,8 +551,9 @@ class Analysis {
 
   /**
    * @param {HCSSourceFileOptions[]} hcsSourceFiles
+   * @param {boolean} [mergeZPlanes=false]
    */
-  changeFile (hcsSourceFiles) {
+  changeFile (hcsSourceFiles, mergeZPlanes = false) {
     const onChange = () => {
       this.pipelineId = undefined;
       this.analysisResults = [];
@@ -527,7 +561,7 @@ class Analysis {
         aModule.pending = false;
         aModule.done = false;
       });
-      this.pipeline.objectsOutlines.detachResults(this.hcsImageViewer);
+      this.pipeline.graphicsOutput.detachResults(this.hcsImageViewer);
       this.analysisCache = [];
       this.sourceFileChanged = true;
     };
@@ -538,6 +572,8 @@ class Analysis {
     } else {
       changed = this.namesAndTypes.changeFiles(hcsSourceFiles);
     }
+    changed = changed || (this.namesAndTypes.mergeZPlanes !== mergeZPlanes);
+    this.namesAndTypes.mergeZPlanes = mergeZPlanes;
     if (HCSSourceFile.check(...hcsSourceFiles) && changed) {
       onChange();
     }
@@ -562,6 +598,26 @@ class Analysis {
       this.analysisRequested = true;
     }
     return newModule;
+  };
+
+  /**
+   * @param {AnalysisModule} aModule
+   * @returns {boolean}
+   */
+  hasOutputImageForModule = (aModule) => {
+    return !!this.getOutputImageForModule(aModule);
+  };
+
+  /**
+   * @param {AnalysisModule} aModule
+   * @returns {AnalysisOutputResult}
+   */
+  getOutputImageForModule = (aModule) => {
+    if (!aModule) {
+      return undefined;
+    }
+    return this.analysisOutputImages
+      .find(o => o.originalModuleId === aModule.id);
   };
 }
 

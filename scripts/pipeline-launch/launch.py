@@ -185,7 +185,7 @@ try:
 
     from pipeline.api import PipelineAPI
     from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger
-    from pipeline.utils.ssh import HostSSH, LogSSH, UserSSH
+    from pipeline.utils.ssh import RemoteHostExecutor, LoggingExecutor, UserExecutor
     from pipeline.utils.path import add_to_path
 
     logging.getLogger('paramiko').setLevel(logging.WARNING)
@@ -214,9 +214,9 @@ try:
     node_ip = _extract_parameter(
         'NODE_IP',
         default_provider=lambda: api.load_run_efficiently(run_id).get('instance', {}).get('nodeIP', ''))
-    node_ssh = HostSSH(host=node_ip, private_key_path=node_private_key_path)
-    node_ssh = LogSSH(logger=logger, inner=node_ssh)
-    node_ssh = UserSSH(user=node_owner, inner=node_ssh)
+    node_ssh = RemoteHostExecutor(host=node_ip, private_key_path=node_private_key_path)
+    node_ssh = LoggingExecutor(logger=logger, inner=node_ssh)
+    node_ssh = UserExecutor(user=node_owner, inner=node_ssh)
 
     logger.info('Installing pipe common on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -m pip install -q {common_repo_dir}')
@@ -237,7 +237,7 @@ try:
     logger.info('Configuring owner account on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                      f'from pipeline.utils.account import create_user; '
-                     f'create_user(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"')
+                     f'create_user(\'{owner}\', \'{owner_password}\', groups=\'{owner_groups}\')\\"')
 
     logger.info('Persisting environment...')
     with open(persisted_env_path, 'w') as f:
@@ -273,7 +273,7 @@ try:
     if requires_storage_mount:
         task_name = 'MountDataStorages'
         task_logger = TaskLogger(task=task_name, inner=run_logger)
-        task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
+        task_ssh = LoggingExecutor(logger=task_logger, inner=node_ssh)
         task_logger.info('Mounting data storages...')
         # Invocation of WmiMethod is required in order to keep background processes running after ssh session is over
         task_ssh.execute(f'Invoke-WmiMethod -Path \'Win32_Process\' -Name Create -ArgumentList \''
@@ -290,7 +290,7 @@ try:
 
     if requires_cloud_data:
         task_logger = TaskLogger(task='InstallCloudData', inner=run_logger)
-        task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
+        task_ssh = LoggingExecutor(logger=task_logger, inner=node_ssh)
         task_logger.info('Installing Cloud-Data application...')
         task_logger.info('Downloading Cloud-Data App...')
         _download_file(cloud_data_distribution_url, os.path.join(run_dir, 'cloud-data.zip'))
@@ -323,7 +323,7 @@ try:
 
     if requires_drive_mount:
         task_logger = TaskLogger(task='NetworkStorageMapping', inner=run_logger)
-        task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
+        task_ssh = LoggingExecutor(logger=task_logger, inner=node_ssh)
         task_logger.info('Adding EDGE root certificate to trusted...')
         edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
         from urllib.parse import urlparse
@@ -361,11 +361,10 @@ try:
     sys.exit(exit_code)
 except BaseException as e:
     if _extract_boolean_parameter('CP_CAP_ZOMBIE'):
-        traceback.print_exc()
-        stacktrace = traceback.format_exc()
         try:
-            logger.error('Switching to zombie mode because the error occurred: {} {}'.format(e, stacktrace))
+            logger.error('Switching to zombie mode because the error occurred.', trace=True)
         except:
+            traceback.print_exc()
             print('Switching to zombie mode because the error occurred...')
         import time
 

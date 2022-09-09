@@ -21,8 +21,12 @@ import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.re
 import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFolderPathMatchingMasks;
 
 import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -57,11 +61,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +82,14 @@ import java.util.stream.Stream;
 @Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
+    /**
+     * See {@link StorageClass} from s3 model.
+     * */
+    private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList(
+            "GLACIER", "DEEP_ARCHIVE", "GLACIER_IR", "DELETION");
+
+    public static final String STANDARD_RESTORE_MODE = "STANDARD";
+    private static final List<String> SUPPORTED_RESTORE_MODES = Arrays.asList(STANDARD_RESTORE_MODE, "BULK");
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
@@ -143,7 +158,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public void applyStoragePolicy(S3bucketDataStorage dataStorage) {
+    public void applyStoragePolicy(final S3bucketDataStorage dataStorage) {
         final AwsRegion awsRegion = getAwsRegion(dataStorage);
         final StoragePolicy storagePolicy = buildPolicy(awsRegion, dataStorage.getStoragePolicy());
         getS3Helper(dataStorage).applyStoragePolicy(dataStorage.getRoot(), storagePolicy);
@@ -376,6 +391,44 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).getDataSize(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), pathDescription);
+    }
+
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        rule.getTransitions().forEach(t -> {
+            Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(t.getStorageClass()),
+                    "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+            Assert.isTrue(t.getTransitionAfterDays() != null || t.getTransitionDate() != null,
+                    "transitionAfterDays or transitionDate should be provided!");
+            Assert.isTrue(!(t.getTransitionAfterDays() != null && t.getTransitionDate() != null),
+                    "Only transitionAfterDays or transitionDate could be provided, but not both!");
+        });
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(execution.getStorageClass()),
+                "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+    }
+
+    @Override
+    public Pair<Boolean, String> isRestoreActionEligible(final S3bucketDataStorage dataStorage, final String path) {
+        final String storagePathPrefix = path.startsWith(dataStorage.getDelimiter())
+                ? path.substring(dataStorage.getDelimiter().length())
+                : path;
+        final boolean result = listDataStorageFiles(dataStorage, storagePathPrefix).findAny().isPresent();
+        final String reason = !result ? "Path not found!" : "";
+        return Pair.of(result, reason);
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest restoreActionRequest) {
+        if (StringUtils.isEmpty(restoreActionRequest.getRestoreMode())) {
+            return STANDARD_RESTORE_MODE;
+        }
+        Assert.isTrue(SUPPORTED_RESTORE_MODES.contains(restoreActionRequest.getRestoreMode()),
+                "Restore request mode should be one of: " + SUPPORTED_RESTORE_MODES);
+        return restoreActionRequest.getRestoreMode();
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {

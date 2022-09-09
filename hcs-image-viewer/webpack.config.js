@@ -27,7 +27,7 @@ module.exports = {
     filename: '[name].js',
     library: {
       name: 'HcsImageViewer',
-      type: 'window',
+      type: 'global',
     },
     clean: true,
   },

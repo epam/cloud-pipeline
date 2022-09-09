@@ -66,6 +66,16 @@ function getRegionSelectionFilter (region = {}, currentSelection = []) {
   const [minY, maxY] = [start, end]
     .map(aCell => aCell.y)
     .sort((a, b) => a - b);
+  if (
+    minX === maxX &&
+    minY === maxY &&
+    append &&
+    previouslySelected(start) &&
+    currentSelection.length > 1
+  ) {
+    // unselect single cell;
+    return aCell => (aCell.x !== start.x || aCell.y !== start.y) && previouslySelected(aCell);
+  }
   return aCell => (
     aCell.x >= minX && aCell.x <= maxX &&
     aCell.y >= minY && aCell.y <= maxY

@@ -89,12 +89,19 @@ export async function submitBatchAnalysis (specification) {
     pipeline
   } = specification;
   const spec = {
-    measurementUUID,
+    measurementUUID: (measurementUUID || '').split('/').pop(),
     inputs,
     modules,
     pipeline
   };
-  await specs.storage.writeFile(specFullPath, JSON.stringify(spec, undefined, ' '));
+  try {
+    await specs.storage.writeFile(specFullPath, JSON.stringify(spec, undefined, ' '));
+  } catch (e) {
+    const storageName = specs.storage.path ||
+      specs.storage.pathMask ||
+      (specs.storage.id ? `storage #${specs.storage.id}` : 'storage');
+    throw new Error(`Error writing analysis specification to ${storageName}: ${e.message}`);
+  }
   const resultsDirFullPath = results.storage.joinPaths(results.folder, uuid);
   const localSpecPath = specs.storage.getLocalPath(specFullPath);
   const localResultsPath = results.storage.getLocalPath(resultsDirFullPath);
@@ -177,7 +184,7 @@ export async function submitBatchAnalysis (specification) {
     tags
   });
   if (pipelineRunnerRequest.error) {
-    throw new Error(`Batch analysis: ${pipelineRunnerRequest.error}`);
+    throw new Error(`Error submitting batch analysis: ${pipelineRunnerRequest.error}`);
   }
   return pipelineRunnerRequest.value;
 }

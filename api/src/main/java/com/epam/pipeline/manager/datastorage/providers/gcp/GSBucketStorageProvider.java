@@ -17,6 +17,9 @@
 package com.epam.pipeline.manager.datastorage.providers.gcp;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -37,6 +40,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -228,6 +232,26 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public PathDescription getDataSize(final GSBucketStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getHelper(dataStorage).getDataSize(dataStorage, path, pathDescription);
+    }
+
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public Pair<Boolean, String> isRestoreActionEligible(final GSBucketStorage dataStorage, final String path) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest actionRequest) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
     }
 
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {

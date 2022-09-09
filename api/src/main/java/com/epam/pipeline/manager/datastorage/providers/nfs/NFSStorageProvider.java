@@ -18,6 +18,9 @@ package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -44,6 +47,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedOutputStream;
@@ -510,6 +514,26 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public PathDescription getDataSize(final NFSDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         throw new UnsupportedOperationException("Getting item size info is not implemented for NFS storages");
+    }
+
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public Pair<Boolean, String> isRestoreActionEligible(final NFSDataStorage dataStorage, final String path) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest actionRequest) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
     }
 
     private String encodeUrl(final String path) {

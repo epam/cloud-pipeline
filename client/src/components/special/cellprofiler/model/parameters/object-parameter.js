@@ -47,16 +47,30 @@ class ObjectParameter extends ModuleParameter {
 
   @computed
   get values () {
-    return getObjectsForModule(this.cpModule).map((object) => ({
-      value: object,
-      id: object,
-      key: object,
-      title: object
-    }));
+    return this.wrapValuesWithEmptyValue(
+      getObjectsForModule(this.cpModule)
+        .map((object) => ({
+          value: object,
+          id: object,
+          key: object,
+          title: object
+        })));
   }
 
   get defaultValue () {
+    let defaultValue;
+    if (typeof this._defaultValue === 'function') {
+      defaultValue = this._defaultValue(this.cpModule);
+    } else if (this._defaultValue !== undefined) {
+      defaultValue = this._defaultValue;
+    }
     const firstValue = this.values[0];
+    const predefinedValue = defaultValue
+      ? this.values.find(o => o.value === defaultValue)
+      : undefined;
+    if (predefinedValue) {
+      return predefinedValue.value;
+    }
     return firstValue ? firstValue.value : undefined;
   }
 }

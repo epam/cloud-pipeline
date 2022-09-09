@@ -123,8 +123,11 @@ export function setOverlayImages(state, action) {
 }
 
 export function setImageViewportLoaded(state) {
-  return {
-    ...state,
-    imagePending: false,
-  };
+  if (state.imagePending) {
+    return {
+      ...state,
+      imagePending: false,
+    };
+  }
+  return state;
 }

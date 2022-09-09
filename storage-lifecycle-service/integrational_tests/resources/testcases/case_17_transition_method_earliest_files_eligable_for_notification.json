@@ -1,0 +1,82 @@
+{
+  "cloud": {
+    "storages": [
+      {
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "files": [
+          {"key": "data/file1.txt", "creationDateShift": 6, "storageClass": "STANDARD"},
+          {"key": "data/file2.txt", "creationDateShift": 2, "storageClass": "STANDARD"},
+          {"key": "data/file3.txt", "creationDateShift": 1, "storageClass": "STANDARD"}
+        ]
+      }
+    ]
+  },
+  "platform": {
+    "storages": [
+      {
+        "id": 1,
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "rules": [
+          {
+            "id": 1,
+            "datastorageId": 1,
+            "pathGlob": "/data",
+            "objectGlob": "*.txt",
+            "transitionMethod": "EARLIEST_FILE",
+            "transitionCriterion": {
+              "type": "DEFAULT"
+            },
+            "transitions": [
+              {
+                "transitionAfterDays": 10,
+                "storageClass": "GLACIER"
+              }
+            ],
+            "notification": {
+              "notifyBeforeDays": 5,
+              "prolongDays": 10,
+              "recipients": [{"name": "ROLE_ADMIN", "principal": false}],
+              "enabled": true,
+              "subject": "Lifecycle rule is about to be applied!",
+              "body": "Lifecycle rule is about to be applied!"
+            }
+          }
+        ],
+        "executions": []
+      }
+    ]
+  },
+  "result": {
+    "cloud": {
+      "storages": [
+        {
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "storageProvider": "S3",
+          "files": [
+            {"key": "data/file1.txt"},
+            {"key": "data/file2.txt"},
+            {"key": "data/file3.txt"}
+          ]
+        }
+      ]
+    },
+    "platform": {
+      "storages": [
+        {
+          "id": 1,
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "executions": [
+            {
+              "ruleId": 1,
+              "path": "/data",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

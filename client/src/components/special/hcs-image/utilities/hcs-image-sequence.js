@@ -50,7 +50,12 @@ class HCSImageSequence {
       objectStorage,
       timeSeries = []
     } = options;
-    this.hcs = hcs;
+    const {
+      width: plateWidth = 10,
+      height: plateHeight = 10
+    } = hcs || {};
+    this.plateWidth = plateWidth;
+    this.plateHeight = plateHeight;
     this.storageId = Number.isNaN(Number(storageId))
       ? storageId
       : Number(storageId);
@@ -88,12 +93,21 @@ class HCSImageSequence {
     this.timeouts = [];
   }
 
+  destroy () {
+    this.wells.forEach(aWell => aWell.destroy());
+    this.wells = undefined;
+    this.objectStorage = undefined;
+  }
+
   fetch () {
     if (!this._fetch) {
       this._fetch = new Promise((resolve, reject) => {
         this.generateWellsMapURL()
           .then(() => this.objectStorage.getFileContent(this.wellsMapFileName, {json: true}))
-          .then(json => HCSImageWell.parseWellsInfo(json, this.hcs))
+          .then(json => HCSImageWell.parseWellsInfo(
+            json,
+            {width: this.plateWidth, height: this.plateHeight}
+          ))
           .then(resolve)
           .catch(e => reject(
             new Error(`Error fetching sequence ${this.id} info: ${e.message}`)
@@ -156,16 +170,15 @@ class HCSImageSequence {
             if (this.omeTiff && this.offsetsJson) {
               return fetchSourceInfo({url: this.omeTiff, offsetsUrl: this.offsetsJson});
             }
-            return Promise.resolve();
+            return Promise.resolve([]);
           })
           .then(array => {
-            this.metadata = array.map(item => item.metadata);
+            const metadataArray = array.map(item => item.metadata);
             this.wells.forEach(well => {
               const {images = []} = well;
               images.forEach(image => {
                 const {id} = image;
-                const metadata = this.metadata.find(o => o.ID === id);
-                image.metadata = metadata;
+                const metadata = metadataArray.find(o => o.ID === id);
                 if (metadata && metadata.Name) {
                   const {
                     field: fieldID,
@@ -188,9 +201,10 @@ class HCSImageSequence {
                 }
               });
             });
-            resolve(this.metadata);
+            resolve();
           })
           .catch(() => {
+            resolve();
           });
       });
     }

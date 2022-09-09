@@ -45,6 +45,13 @@ task copyLocalDtsStartupScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/"
 }
 
+task generateComponentsVersions(type: Exec) {
+    commandLine "bash", 
+                "$project.rootDir/scripts/pipeline-scripts/generate_components_versions.sh",
+                "$project.rootDir",
+                "$rootDir/api/src/main/resources/static/components_versions.json"
+}
+
 jar {
     archiveName "pipeline.jar"
     manifest {
@@ -184,7 +191,7 @@ dependencies {
     //AWS
     compile group: "com.amazonaws", name: "aws-java-sdk-ec2", version: "1.11.377"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-s3
-    compile group: "com.amazonaws", name: "aws-java-sdk-s3", version: "1.11.301"
+    compile group: "com.amazonaws", name: "aws-java-sdk-s3", version: "1.12.256"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-sts
     compile group: "com.amazonaws", name: "aws-java-sdk-sts", version: "1.11.211"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-iam
@@ -246,4 +253,4 @@ dependencies {
 
 // >>>>> processes profiles
 processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts,
-                                   copyLocalDtsStartupScripts])
+                                   copyLocalDtsStartupScripts, generateComponentsVersions])

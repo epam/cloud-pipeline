@@ -68,6 +68,6 @@ class LostTransientNodesRule(AutoscalingRule):
             if self._configuration.rules.on_lost_nodes == OnLostNodesStrategy.STOP:
                 logging.warning('Deleting lost transient nodes...')
                 for node in transient_lost_nodes:
-                    self._node_provider.cordon_node(node)
+                    self._node_provider.drain_node(node)
                     self._node_provider.delete_node(node)
                 raise AbortScalingError()

@@ -1,0 +1,95 @@
+{
+  "cloud": {
+    "storages": [
+      {
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "files": [
+          {"key": "data1/folder/subfolder/dataset12/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data1/folder/subfolder/dataset12/file2.pdf", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data1/folder/subfolder/dataset12/subdataset/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data2/folder/subfolder/dataset13/file1.pdf", "creationDateShift": 10, "storageClass": "STANDARD"}
+        ]
+      }
+    ]
+  },
+  "platform": {
+    "storages": [
+      {
+        "id": 1,
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "rules": [
+          {
+            "id": 1,
+            "datastorageId": 1,
+            "pathGlob": "/**",
+            "transitionMethod": "LATEST_FILE",
+            "transitionCriterion": {
+              "type": "DEFAULT"
+            },
+            "transitions": [
+              {
+                "transitionAfterDays": 20,
+                "storageClass": "GLACIER"
+              }
+            ],
+            "notification": {
+              "notifyBeforeDays": 10,
+              "prolongDays": 10,
+              "recipients": [{"name": "ROLE_ADMIN", "principal": false}],
+              "enabled": true,
+              "subject": "Lifecycle rule is about to be applied!",
+              "body": "Lifecycle rule is about to be applied!"
+            }
+          }
+        ],
+        "executions": []
+      }
+    ]
+  },
+  "result": {
+    "cloud": {
+      "storages": [
+        {
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "storageProvider": "S3",
+          "files": [
+            {"key": "data1/folder/subfolder/dataset12/file1.txt"},
+            {"key": "data1/folder/subfolder/dataset12/file2.pdf"},
+            {"key": "data1/folder/subfolder/dataset12/subdataset/file1.txt"},
+            {"key": "data2/folder/subfolder/dataset13/file1.pdf"}
+          ]
+        }
+      ]
+    },
+    "platform": {
+      "storages": [
+        {
+          "id": 1,
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "executions": [
+            {
+              "ruleId": 1,
+              "path": "/data1/folder/subfolder/dataset12",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            },
+            {
+              "ruleId": 1,
+              "path": "/data1/folder/subfolder/dataset12/subdataset",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            },
+            {
+              "ruleId": 1,
+              "path": "/data2/folder/subfolder/dataset13",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

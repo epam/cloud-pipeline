@@ -107,6 +107,8 @@ class ViewerState {
   @observable channelsLocked = false;
   @observable imageZPosition = 0;
   @observable fieldID;
+  @observable videoPayload;
+  listeners = [];
 
   constructor (viewer) {
     this.attachToViewer(viewer);
@@ -131,6 +133,20 @@ class ViewerState {
       );
     }
   }
+
+  addEventListener = (listener) => {
+    this.listeners.push(listener);
+  };
+
+  removeEventListener = (listener) => {
+    this.listeners = this.listeners.filter(aListener => aListener !== listener);
+  };
+
+  emitOnChange = () => {
+    this.listeners
+      .filter(aListener => typeof aListener === 'function')
+      .forEach(aListener => aListener(this));
+  };
 
   @action
   onViewerStateChange = (viewer, newState) => {
@@ -223,6 +239,7 @@ class ViewerState {
         this.channels.push(new ChannelState(updatedChannels[i]));
       }
     }
+    this.emitOnChange();
   };
 
   @action
@@ -240,6 +257,7 @@ class ViewerState {
         this.viewer.setChannelProperties(channelIndex, {channelsVisibility: visible});
       }
     }
+    this.emitOnChange();
   };
 
   @action
@@ -257,6 +275,7 @@ class ViewerState {
         this.viewer.setChannelProperties(channelIndex, {contrastLimits});
       }
     }
+    this.emitOnChange();
   };
 
   @action
@@ -274,6 +293,7 @@ class ViewerState {
         this.viewer.setChannelProperties(channelIndex, {colors: color});
       }
     }
+    this.emitOnChange();
   };
 
   @action

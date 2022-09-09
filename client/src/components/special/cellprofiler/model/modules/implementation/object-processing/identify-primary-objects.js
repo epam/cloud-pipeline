@@ -37,15 +37,15 @@ export default {
     'Assign pixels in the middle intensity class to the foreground or the background?|[Background,Foreground]|Background|IF (thresholdingMethod==Otsu AND otsuMethodType=="Three classes")|ADVANCED|ALIAS otsuThreePixels',
 
     // Thresholding > Robust Background
-    'Lower outlier fraction|float|ADVANCED|IF thresholdingMethod=="Robust Background"',
-    'Upper outlier fraction|float|ADVANCED|IF thresholdingMethod=="Robust Background"',
-    'Averaging method|[Mean,Median,Mode]|ADVANCED|IF thresholdingMethod=="Robust Background"',
-    'Variance method|[Standard deviation,Median absolute deviation]|ADVANCED|IF thresholdingMethod=="Robust Background"',
-    '# of deviations|integer|ADVANCED|IF thresholdingMethod=="Robust Background"',
+    'Lower outlier fraction|float|ADVANCED|IF thresholdingMethod=="Robust Background"|ALIAS lowerOutlierFraction',
+    'Upper outlier fraction|float|ADVANCED|IF thresholdingMethod=="Robust Background"|ALIAS upperOutlierFraction',
+    'Averaging method|[Mean,Median,Mode]|ADVANCED|IF thresholdingMethod=="Robust Background"|ALIAS robustAveragingMethod',
+    'Variance method|[Standard deviation,Median absolute deviation]|ADVANCED|IF thresholdingMethod=="Robust Background"|ALIAS varianceMethod',
+    '# of deviations|integer|ADVANCED|IF thresholdingMethod=="Robust Background"|ALIAS deviations',
 
     // Thresholding > Measurement
     {
-      title: 'Select the measurement to threshold with',
+      name: 'Select the measurement to threshold with',
       parameterName: 'Select the measurement to threshold with',
       isList: true,
       advanced: true,
@@ -74,9 +74,9 @@ export default {
     // Thresholding - common
     'Threshold smoothing scale|float|1.3488|ALIAS thresholdSmoothingScale|ADVANCED',
     'Threshold correction factor|float|1.0|IF thresholdingMethod!==Manual|ALIAS thresholdCorrectionFactor|ADVANCED',
-    'Lower and upper bounds on threshold|float[]|[0.0,1.0]|IF thresholdingMethod!==Manual|ADVANCED',
-    'Size of adaptive window|integer|50|IF strategy==Adaptive|ADVANCED|ALIAS adaptive',
-    'Log transform before thresholding?|flag|false|ADVANCED|IF thresholdingMethod==Otsu OR thresholdingMethod=="Minimum Cross-Entropy"',
+    'Lower and upper bounds on threshold|float[]|[0.0,1.0]|IF thresholdingMethod!==Manual|ADVANCED|ALIAS bounds',
+    'Size of adaptive window|units|25|IF strategy==Adaptive|ADVANCED|ALIAS adaptive',
+    'Log transform before thresholding?|flag|false|ADVANCED|IF thresholdingMethod==Otsu OR thresholdingMethod=="Minimum Cross-Entropy"|ALIAS logTransform',
 
     // ----
     'Method to distinguish clumped objects|[Intensity,Shape,None]|Intensity|ADVANCED|ALIAS clumpedObjectsMethod',

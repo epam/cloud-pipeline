@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
+import com.epam.pipeline.entity.metadata.MetadataFilterOperator;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -366,11 +367,15 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
         filters.forEach(filter -> {
             clause.append(AND);
+            final MetadataFilterOperator operator = filter.getOperator() != null ?
+                    filter.getOperator() :
+                    MetadataFilterOperator.DEFAULT;
             final String filterClause = filter.isPredefined()
-                    ? addFilterClause(filter, "%s::text ILIKE '%%%s%%'", getDBName(filter.getKey()))
+                    ? addFilterClause(filter, getTemplate(operator, true),
+                    getDBName(filter.getKey()), operator)
                     : (CollectionUtils.isEmpty(filter.getValues())
                         ? getEmptyFieldClause(filter.getKey())
-                        : addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey()));
+                        : addFilterClause(filter, getTemplate(operator, false), filter.getKey(), operator));
             clause.append(filterClause);
         });
     }
@@ -383,6 +388,12 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 ")";
     }
 
+    private String getTemplate(final MetadataFilterOperator operator, final boolean isPredefined) {
+        return (isPredefined ? "%s::text " : "e.data #>> '{%s,value}' ") +
+                "%s " +
+                (MetadataFilterOperator.DEFAULT.equals(operator) ? "'%%%s%%'" : "'%s'");
+    }
+
     private String getDBName(final String filterKey) {
         MetadataField field = MetadataEntityParameters.getFieldNames().get(filterKey.toUpperCase());
         if (field == null) {
@@ -391,13 +402,16 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         return field.getDbName();
     }
 
-    private String addFilterClause(MetadataFilter.FilterQuery filter, String template, String dbName) {
+    private String addFilterClause(final MetadataFilter.FilterQuery filter,
+                                   final String template,
+                                   final String dbName,
+                                   final MetadataFilterOperator operator) {
         if (CollectionUtils.isEmpty(filter.getValues())) {
             return StringUtils.EMPTY;
         }
         String clauses = filter.getValues()
                 .stream()
-                .map(value -> format(template, dbName, value))
+                .map(value -> format(template, dbName, operator.getValue(), value))
                 .collect(Collectors.joining(OR));
         return format("( %s )", clauses);
     }
