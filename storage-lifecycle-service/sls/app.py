@@ -37,12 +37,11 @@ def main():
     parser.add_argument("--max-execution-running-days", default=2)
 
     args = parser.parse_args()
-    logger = AppLogger()
-
-    run_application(args, logger)
+    run_application(args)
 
 
-def run_application(args, logger):
+def run_application(args):
+    logger = AppLogger(args.command, stdout=False)
     data_source = configure_cp_data_source(args.cp_api_url, args.cp_api_token, args.log_dir, logger, args.data_source)
 
     cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger)
