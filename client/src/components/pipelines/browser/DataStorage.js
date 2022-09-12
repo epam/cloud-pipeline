@@ -2537,6 +2537,7 @@ export default class DataStorage extends React.Component {
         <LifeCycleRestoreModal
           visible={this.state.restoreDialogVisible}
           items={this.restorableItems}
+          restoreInfo={this.lifeCycleRestoreInfo}
           onCancel={this.closeRestoreFilesDialog}
           onOk={this.restoreFiles}
           folderPath={this.props.path}

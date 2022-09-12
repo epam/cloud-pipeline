@@ -75,7 +75,10 @@ function RestoreStatusIcon ({restoreInfo, children}) {
 };
 
 RestoreStatusIcon.propTypes = {
-  restoreInfo: PropTypes.object
+  restoreInfo: PropTypes.shape({
+    folder: PropTypes.object,
+    files: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+  })
 };
 
 export {STATUS};

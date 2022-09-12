@@ -16,12 +16,18 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
+import {computed} from 'mobx';
+import {observer} from 'mobx-react';
 import {
   Modal,
   Input,
   Checkbox,
-  Select
+  Select,
+  Button
 } from 'antd';
+import {STATUS}
+  from '../../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesLoad';
 import UsersRolesSelect from '../../../../../../special/users-roles-select';
 import styles from './life-cycle-restore-modal.css';
 
@@ -30,12 +36,44 @@ const MODES = {
   BULK: 'BULK'
 };
 
+function mapPathToRestorePath ({path = '', type}) {
+  let restorePath;
+  if (type === 'Folder') {
+    restorePath = path
+      ? [!path.startsWith('/') && '/',
+        path,
+        !path.endsWith('/') && '/'
+      ].filter(Boolean).join('')
+      : '/';
+  } else {
+    restorePath = `${path.startsWith('/') ? '' : '/'}${path}`;
+  }
+  return restorePath;
+}
+
+@observer
 class LifeCycleRestoreModal extends React.Component {
   state={
     days: 30,
     recipients: [],
     restoreMode: MODES.STANDARD,
-    restoreVersions: false
+    restoreVersions: false,
+    force: false
+  }
+
+  @computed
+  get someItemsAlreadyRestored () {
+    const {items = [], restoreInfo} = this.props;
+    const {
+      folder: folderRestore,
+      files: filesRestore
+    } = restoreInfo || {};
+    if (folderRestore && folderRestore.status === STATUS.SUCCEEDED) {
+      return true;
+    }
+    return (filesRestore || [])
+      .filter(restore => items.find(item => mapPathToRestorePath(item) === restore.path))
+      .some(restore => restore.status === STATUS.SUCCEEDED);
   }
 
   onChangeValue = (field, eventType) => event => {
@@ -69,12 +107,14 @@ class LifeCycleRestoreModal extends React.Component {
       days,
       recipients,
       restoreVersions,
-      restoreMode
+      restoreMode,
+      force
     } = this.state;
     const payload = {
-      restoreMode,
-      restoreVersions,
       days,
+      restoreVersions,
+      restoreMode,
+      force,
       notification: {
         enabled: recipients.length > 0,
         ...(recipients.length > 0 && {recipients})
@@ -93,6 +133,30 @@ class LifeCycleRestoreModal extends React.Component {
       }];
     }
     onOk && onOk(payload);
+  };
+
+  renderForceRestoreControl = () => {
+    const {force} = this.state;
+    const {pending} = this.props;
+    return (
+      <div className={classNames(
+        styles.forceRestoreContainer,
+        'cp-divider',
+        'top'
+      )}>
+        <p style={{marginBottom: '10px', textAlign: 'center'}}>
+          Some items have already been restored.
+          Check <b>Force restore</b> to apply new restore to this items.
+        </p>
+        <Checkbox
+          onChange={this.onChangeValue('force', 'checkbox')}
+          value={force}
+          disabled={pending}
+        >
+          Force restore
+        </Checkbox>
+      </div>
+    );
   };
 
   render () {
@@ -116,19 +180,35 @@ class LifeCycleRestoreModal extends React.Component {
         width="400px"
         visible={visible}
         onCancel={onCancel}
-        onOk={this.onOk}
-        okText="Restore"
         title={`Restore ${mode === 'file'
           ? 'files in folder.'
           : 'folder.'}`
         }
+        footer={(
+          <div
+            className={styles.modalFooter}
+          >
+            <Button
+              onClick={onCancel}
+            >
+              CANCEL
+            </Button>
+            <Button
+              disabled={pending}
+              type="primary"
+              onClick={this.onOk}
+            >
+              RESTORE
+            </Button>
+          </div>
+        )}
       >
         <div className={styles.container}>
           <div className={styles.description}>
             <span>
               {mode === 'file'
-                ? `You are going to restore ${items.length} ${items.length > 1 ? 'files' : 'file'}`
-                : `You are going to restore folder /${folderPath}/`
+                ? `You are going to restore ${items.length} ${items.length > 1 ? 'files' : 'file'}.`
+                : `You are going to restore folder /${folderPath}/.`
               }
             </span>
             <span style={{textAlign: 'center'}}>
@@ -178,14 +258,20 @@ class LifeCycleRestoreModal extends React.Component {
             </Select>
           </div>
           {versioningEnabled ? (
-            <Checkbox
-              onChange={this.onChangeValue('restoreVersions', 'checkbox')}
-              value={restoreVersions}
-              disabled={pending}
-            >
-              Restore all versions
-            </Checkbox>
+            <div className={styles.inputContainer}>
+              <Checkbox
+                onChange={this.onChangeValue('restoreVersions', 'checkbox')}
+                value={restoreVersions}
+                disabled={pending}
+              >
+                Restore all versions
+              </Checkbox>
+            </div>
           ) : null}
+          {this.someItemsAlreadyRestored
+            ? this.renderForceRestoreControl()
+            : null
+          }
         </div>
       </Modal>
     );
@@ -197,6 +283,10 @@ LifeCycleRestoreModal.propTypes = {
   onOk: PropTypes.func,
   onCancel: PropTypes.func,
   items: PropTypes.array,
+  restoreInfo: PropTypes.shape({
+    folder: PropTypes.object,
+    files: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+  }),
   folderPath: PropTypes.string,
   pending: PropTypes.bool,
   mode: PropTypes.string,

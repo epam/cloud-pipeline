@@ -154,7 +154,10 @@ LifeCycleCounter.propTypes = {
   storage: PropTypes.object,
   path: PropTypes.string,
   onClickRestore: PropTypes.func,
-  restoreInfo: PropTypes.object,
+  restoreInfo: PropTypes.shape({
+    folder: PropTypes.object,
+    files: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+  }),
   restoreEnabled: PropTypes.bool
 };
 

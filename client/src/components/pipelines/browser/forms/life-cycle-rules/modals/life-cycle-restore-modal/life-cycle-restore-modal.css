@@ -26,6 +26,13 @@
   margin-bottom: 10px;
 }
 
+.force-restore-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+  padding-top: 10px;
+}
+
 .description {
   display: flex;
   flex-direction: column;
