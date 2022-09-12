@@ -14,28 +14,11 @@
  * limitations under the License.
  */
 
-import Remote from '../../basic/Remote';
+import RemotePost from '../../basic/RemotePost';
 
-const STATUS = {
-  'INITIATED': 'INITIATED',
-  'RUNNING': 'RUNNING',
-  'SUCCEEDED': 'SUCCEEDED'
-};
-
-class DataStorageLifeCycleRulesLoad extends Remote {
-  url;
-  path;
-
-  constructor (id, path = '') {
+export default class LifeCycleRestoreCreate extends RemotePost {
+  constructor (storageId) {
     super();
-    if (path) {
-      this.path = path.startsWith('/') ? path : `/${path}`;
-      this.url = `/datastorage/${id}/lifecycle/rule?path=${this.path}`;
-    } else {
-      this.url = `/datastorage/${id}/lifecycle/rule`;
-    }
-  };
+    this.url = `/datastorage/${storageId}/lifecycle/restore`;
+  }
 }
-
-export {STATUS};
-export default DataStorageLifeCycleRulesLoad;

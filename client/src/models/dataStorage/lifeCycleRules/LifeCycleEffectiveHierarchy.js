@@ -16,26 +16,22 @@
 
 import Remote from '../../basic/Remote';
 
-const STATUS = {
-  'INITIATED': 'INITIATED',
-  'RUNNING': 'RUNNING',
-  'SUCCEEDED': 'SUCCEEDED'
-};
-
-class DataStorageLifeCycleRulesLoad extends Remote {
+export default class LifeCycleEffectiveHierarchy extends Remote {
   url;
-  path;
 
-  constructor (id, path = '') {
+  constructor (
+    id,
+    path,
+    pathType,
+    recursive = false
+  ) {
     super();
-    if (path) {
-      this.path = path.startsWith('/') ? path : `/${path}`;
-      this.url = `/datastorage/${id}/lifecycle/rule?path=${this.path}`;
-    } else {
-      this.url = `/datastorage/${id}/lifecycle/rule`;
-    }
+    const parts = [
+      path !== undefined && `path=${encodeURIComponent(path)}`,
+      pathType !== undefined && `pathType=${pathType}`,
+      recursive !== undefined && `recursive=${recursive}`
+    ].filter(Boolean);
+    const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+    this.url = `/datastorage/${id}/lifecycle/restore/effectiveHierarchy${query}`;
   };
 }
-
-export {STATUS};
-export default DataStorageLifeCycleRulesLoad;
