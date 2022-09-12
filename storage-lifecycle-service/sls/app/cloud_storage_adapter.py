@@ -12,13 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
+from sls.cloud.cloud import CloudPipelineStorageContainer
 from sls.cloud.s3_cloud import S3StorageOperations
 from sls.util import path_utils
 
 
 def _verify_s3_sls_properties(sls_properties, logger):
-    if not sls_properties.properties:
+    if not sls_properties or not sls_properties.properties:
         logger(
             "There is no configured Storage Lifecycle Service properties!")
         return False
@@ -81,10 +81,10 @@ class PlatformToCloudOperationsAdapter:
                 validation_result = sls_properties_verifiers[region.provider](
                     region.storage_lifecycle_service_properties, logger)
             if not validation_result:
-                self.logger.log("Region: {} hasn't valid storage_lifecycle_service_properties, will filter this region!".format(region))
+                self.logger.log("Region: {} hasn't valid storage_lifecycle_service_properties, will filter this region!".format(region.id))
                 invalid_region_ids.append(region_id)
 
-        map(lambda rid: self.regions_by_id.pop(rid), invalid_region_ids)
+        [self.regions_by_id.pop(rid, None) for rid in invalid_region_ids]
 
         if overridden_cloud_operations:
             self.cloud_operations = overridden_cloud_operations
@@ -98,15 +98,16 @@ class PlatformToCloudOperationsAdapter:
 
     def prepare_bucket_if_needed(self, storage):
         region = self.fetch_region(storage.region_id)
-        storage_cloud_identifier, _ = self._parse_storage_path(storage)
-        self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(region, storage_cloud_identifier)
+        storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+        storage_container = CloudPipelineStorageContainer(storage_cloud_identifier, storage_path_prefix, storage)
+        self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(region, storage_container)
 
     def list_objects_by_prefix(self, storage, prefix):
         region = self.fetch_region(storage.region_id)
-        storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
         storage_is_versioned = storage.policy.versioning if storage.policy else False
-        files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(region, storage_cloud_identifier,
-                                                                                   storage_path_prefix + prefix,
+        storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+        storage_container = CloudPipelineStorageContainer(storage_cloud_identifier, storage_path_prefix + prefix, storage)
+        files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(region, storage_container,
                                                                                    list_versions=storage_is_versioned)
         for file in files:
             if storage_path_prefix and file.path.startswith(storage_path_prefix):
@@ -117,11 +118,12 @@ class PlatformToCloudOperationsAdapter:
         try:
             region = self.fetch_region(storage.region_id)
             storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+            storage_container = CloudPipelineStorageContainer(storage_cloud_identifier, storage_path_prefix, storage)
             for file in files:
                 if storage_path_prefix:
                     file.path = storage_path_prefix + file.path
             return self.cloud_operations[storage.storage_type].tag_files_to_transit(
-                region, storage_cloud_identifier, files, storage_class, transit_operation_id)
+                region, storage_container, files, storage_class, transit_operation_id)
         except Exception as e:
             self.logger.log("Something went wrong when try to tag files from {}. Cause: {}".format(storage.path, e))
             return False
@@ -130,14 +132,17 @@ class PlatformToCloudOperationsAdapter:
         try:
             region = self.fetch_region(storage.region_id)
             storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+            storage_container = CloudPipelineStorageContainer(storage_cloud_identifier,
+                                                              path_utils.join_paths(storage_path_prefix, action.path),
+                                                              storage)
             files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
-                region, storage_cloud_identifier, path_utils.join_paths(storage_path_prefix, action.path),
+                region, storage_container,
                 convert_paths=False, list_versions=action.restore_versions
             )
             self.logger.log("Storage: {}. Action: {}. Path: {}. Listed '{}' files to possible restore."
                             .format(storage.id, action.action_id, action.path, len(files)))
             return self.cloud_operations[storage.storage_type].run_files_restore(
-                region, storage_cloud_identifier, files, action.days, action.restore_mode, restore_operation_id
+                region, storage_container, files, action.days, action.restore_mode, restore_operation_id
             )
         except Exception as e:
             self.logger.log("Storage: {}. Path: {}. Problem with restoring files, cause: {}"
@@ -152,12 +157,14 @@ class PlatformToCloudOperationsAdapter:
         try:
             region = self.fetch_region(storage.region_id)
             storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+            storage_container = CloudPipelineStorageContainer(storage_cloud_identifier,
+                                                              storage_path_prefix + action.path, storage)
             files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
-                region, storage_cloud_identifier, storage_path_prefix + action.path,
+                region, storage_container,
                 convert_paths=False, list_versions=action.restore_versions
             )
             return self.cloud_operations[storage.storage_type].check_files_restore(
-                region,storage_cloud_identifier, files, action.updated, action.restore_mode
+                region, storage_container, files, action.updated, action.restore_mode
             )
         except Exception as e:
             self.logger.log("Problem with cheking restoring files, cause: {}".format(e))

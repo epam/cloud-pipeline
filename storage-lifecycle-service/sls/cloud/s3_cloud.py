@@ -20,6 +20,8 @@ import urllib
 from time import sleep
 
 import boto3
+import botocore
+from botocore.credentials import AssumeRoleCredentialFetcher, DeferredRefreshableCredentials
 from botocore.exceptions import ClientError
 
 from sls.cloud.cloud import StorageOperations
@@ -92,8 +94,9 @@ class S3StorageOperations(StorageOperations):
     def __init__(self, logger):
         self.logger = logger
 
-    def prepare_bucket_if_needed(self, region, bucket):
-        s3_client = self._build_s3_client(region, "s3")
+    def prepare_bucket_if_needed(self, region, storage_container):
+        bucket = storage_container.bucket
+        s3_client = self._build_s3_client(region, storage_container, "s3")
         try:
             existing_slc = s3_client.get_bucket_lifecycle_configuration(Bucket=bucket)
         except ClientError as e:
@@ -114,9 +117,10 @@ class S3StorageOperations(StorageOperations):
         else:
             self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(bucket))
 
-    def list_objects_by_prefix(self, region, bucket, prefix, list_versions=False, convert_paths=True):
+    def list_objects_by_prefix(self, region, storage_container, list_versions=False, convert_paths=True):
         return self._list_objects_by_prefix(
-            self._build_s3_client(region, "s3"), bucket, prefix, list_versions, convert_paths)
+            self._build_s3_client(region, storage_container, "s3"),
+            storage_container.bucket, storage_container.bucket_prefix, list_versions, convert_paths)
 
     def _list_objects_by_prefix(self, s3_client, bucket, prefix, list_versions=False, convert_paths=True):
         result = []
@@ -133,7 +137,7 @@ class S3StorageOperations(StorageOperations):
                         result.append(self._map_s3_obj_to_cloud_obj(version, convert_paths))
         return result
 
-    def tag_files_to_transit(self, region, bucket, files, storage_class, transit_id):
+    def tag_files_to_transit(self, region, storage_container, files, storage_class, transit_id):
         if not files:
             self.logger.log("No files to tag!")
             return None
@@ -147,10 +151,10 @@ class S3StorageOperations(StorageOperations):
                 ]
             }
         }
-        job_description = self._run_s3_batch_operation(region, bucket, files, tag_operation, transit_id)
+        job_description = self._run_s3_batch_operation(region, storage_container, files, tag_operation, transit_id)
         return self._is_s3_batch_operation_succeeded(job_description)
 
-    def run_files_restore(self, region, bucket, files, days, restore_tear, restore_operation_id):
+    def run_files_restore(self, region, storage_container, files, days, restore_tear, restore_operation_id):
         archived_files_to_restore = [f for f in files if f.storage_class != self.STANDARD]
         if not archived_files_to_restore:
             self.logger.log("No files to tag!")
@@ -168,14 +172,15 @@ class S3StorageOperations(StorageOperations):
             }
         }
         job_description = self._run_s3_batch_operation(
-            region, bucket, archived_files_to_restore, restore_operation, restore_operation_id)
+            region, storage_container, archived_files_to_restore, restore_operation, restore_operation_id)
         return {
             "status": self._is_s3_batch_operation_succeeded(job_description),
             "reason": job_description,
             "value": None
         }
 
-    def check_files_restore(self, region, bucket, files, restore_timestamp, restore_mode):
+    def check_files_restore(self, region, storage_container, files, restore_timestamp, restore_mode):
+        bucket = storage_container.bucket
         archived_files_to_check = [f for f in files if f.storage_class != self.STANDARD]
         is_restore_possibly_ready = self._check_if_restore_could_be_ready(
             next(iter(archived_files_to_check), None), restore_timestamp, restore_mode)
@@ -190,7 +195,7 @@ class S3StorageOperations(StorageOperations):
                 "reason": "Probably files is steel restoring because appropriate period of time is not passed."
             }
         else:
-            s3_client = self._build_s3_client(region, "s3")
+            s3_client = self._build_s3_client(region, storage_container, "s3")
             self.logger.log("Files may be ready, so will check each file. "
                             "Last update time: {}. restore mode: {}.".format(restore_timestamp, restore_mode))
             for file in archived_files_to_check:
@@ -232,12 +237,13 @@ class S3StorageOperations(StorageOperations):
                 "reason": "All files are ready!"
             }
 
-    def _run_s3_batch_operation(self, region, bucket, files, operation_obj, operation_id):
+    def _run_s3_batch_operation(self, region, storage_container, files, operation_obj, operation_id):
+        bucket = storage_container.bucket
         sls_properties = region.storage_lifecycle_service_properties.properties
         s3_batch_ops_report_bucket = sls_properties["batch_operation_job_report_bucket"]
 
-        s3_client = self._build_s3_client(region, "s3")
-        aws_s3control_client = self._build_s3_client(region, "s3control")
+        s3_client = self._build_s3_client(region, storage_container, "s3")
+        aws_s3control_client = self._build_s3_client(region, storage_container, "s3control")
 
         is_files_versioned = True if next(iter(files), None).version_id else False
         manifest_content = "\n".join(
@@ -323,13 +329,43 @@ class S3StorageOperations(StorageOperations):
         s3_client.delete_object(Bucket=report_bucket, Key=manifest_key)
 
     @staticmethod
-    def _build_s3_client(region, client_type):
-        if client_type == "s3control":
-            return boto3.client(client_type, region_name=region.region_id)
-        elif client_type == "s3":
-            return boto3.client(client_type)
-        else:
-            raise RuntimeError("Unsupported boto3 client type: {}".format(client_type))
+    def _build_s3_client(region, storage_container, client_type):
+
+        def get_boto3_session(assume_role_arn=None):
+            def _get_client_creator(_session):
+                def client_creator(service_name, **kwargs):
+                    return _session.client(service_name, **kwargs)
+
+                return client_creator
+
+            session = boto3.Session()
+            if not assume_role_arn:
+                return session
+
+            fetcher = AssumeRoleCredentialFetcher(
+                client_creator=_get_client_creator(session),
+                source_credentials=session.get_credentials(),
+                role_arn=assume_role_arn,
+            )
+            botocore_session = botocore.session.Session()
+            botocore_session._credentials = DeferredRefreshableCredentials(
+                method='assume-role',
+                refresh_using=fetcher.fetch_credentials
+            )
+            return boto3.Session(botocore_session=botocore_session)
+
+        boto_session = boto3.Session(region_name=region.region_id)
+        storage_cloud_attrs = storage_container.storage.cloud_specific_attributes
+        region_cloud_attrs = region.cloud_specific_attributes
+        if region_cloud_attrs:
+            if storage_cloud_attrs.is_use_assumed_credentials:
+                boto_session = get_boto3_session(storage_cloud_attrs.temp_credentials_role
+                                                 if storage_cloud_attrs.temp_credentials_role
+                                                 else region_cloud_attrs.temp_credentials_role)
+            elif region_cloud_attrs.iam_role:
+                boto_session = get_boto3_session(region_cloud_attrs.iam_role)
+
+        return boto_session.client(client_type, region_name=region.region_id)
 
     @staticmethod
     def _is_s3_batch_operation_succeeded(s3_batch_operation_job_description):

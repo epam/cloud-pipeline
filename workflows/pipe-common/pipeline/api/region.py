@@ -2,16 +2,17 @@ from .json_parser import JsonParser
 
 
 class CloudRegion:
-    def __init__(self, id, name, owner, region_id, provider, default, storage_lifecycle_service_prop=None):
+    def __init__(self, id, name, owner, region_id, provider, default,
+                 storage_lifecycle_service_prop=None,
+                 cloud_specific_attributes=None):
         self.id = int(id)
         self.name = str(name)
         self.owner = str(owner)
         self.region_id = str(region_id)
         self.default = default
         self.provider = str(provider)
-        self.storage_lifecycle_service_properties = StorageLifecycleServiceProperties(storage_lifecycle_service_prop) \
-            if storage_lifecycle_service_prop is not None \
-            else None
+        self.storage_lifecycle_service_properties = storage_lifecycle_service_prop
+        self.cloud_specific_attributes = cloud_specific_attributes
 
     @classmethod
     def from_json(cls, data):
@@ -21,8 +22,23 @@ class CloudRegion:
         region_id = JsonParser.get_required_field(data, 'regionId')
         provider = JsonParser.get_required_field(data, 'provider')
         default = JsonParser.get_required_field(data, 'default')
-        storage_lifecycle_service_properties = JsonParser.get_optional_field(data, "storageLifecycleServiceProperties")
-        return CloudRegion(id, name, owner, region_id, provider, default, storage_lifecycle_service_properties)
+
+        storage_lifecycle_service_prop = JsonParser.get_optional_field(data, "storageLifecycleServiceProperties")
+        storage_lifecycle_service_properties = StorageLifecycleServiceProperties(storage_lifecycle_service_prop) \
+            if storage_lifecycle_service_prop is not None \
+            else None
+
+        cloud_specific_attributes = cloud_specific_attributes_from_json(provider, data)
+        return CloudRegion(id, name, owner, region_id, provider, default,
+                           storage_lifecycle_service_prop=storage_lifecycle_service_properties,
+                           cloud_specific_attributes=cloud_specific_attributes)
+
+
+def cloud_specific_attributes_from_json(region_type, data):
+    if region_type == "AWS":
+        return AWSRegionAttributes.from_json(data)
+    else:
+        return None
 
 
 class StorageLifecycleServiceProperties:
@@ -32,3 +48,16 @@ class StorageLifecycleServiceProperties:
             self.properties = sls_properties_object["properties"]
         else:
             self.properties = {}
+
+
+class AWSRegionAttributes:
+
+    def __init__(self, iam_role, temp_credentials_role):
+        self.iam_role = iam_role
+        self.temp_credentials_role = temp_credentials_role
+
+    @classmethod
+    def from_json(cls, data):
+        iam_role = JsonParser.get_optional_field(data, 'iamRole')
+        temp_credentials_role = JsonParser.get_optional_field(data, 'tempCredentialsRole')
+        return AWSRegionAttributes(iam_role, temp_credentials_role)
