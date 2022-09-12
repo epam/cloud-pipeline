@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,13 @@ import javax.annotation.PostConstruct;
 
 @Service
 @RequiredArgsConstructor
-public class InactiveUsersMonitoringService extends AbstractSchedulingManager {
+public class BlockedUsersMonitoringService extends AbstractSchedulingManager {
 
-    private final InactiveUsersMonitoringServiceCore core;
+    private final BlockedUsersMonitoringServiceCore core;
 
     @PostConstruct
     public void init() {
-        scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_INACTIVE_USER_MONITOR_DELAY,
-                "InactiveUsersMonitor");
+        scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_DELAY,
+                "BlockedUsersMonitor");
     }
 }

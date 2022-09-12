@@ -505,22 +505,20 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyInactiveUsers(final List<PipelineUser> inactiveUsers, final List<PipelineUser> ldapBlockedUsers) {
-        if (CollectionUtils.isEmpty(inactiveUsers) && CollectionUtils.isEmpty(ldapBlockedUsers)) {
-            LOGGER.debug("No inactive users found");
+    public void notifyPipelineUsers(final List<PipelineUser> pipelineUsers, final NotificationType type) {
+        if (CollectionUtils.isEmpty(pipelineUsers)) {
+            LOGGER.debug("No users found for '{}' notification", type.name());
             return;
         }
-        final NotificationSettings notificationSettings =
-                notificationSettingsManager.load(NotificationType.INACTIVE_USERS);
+        final NotificationSettings notificationSettings = notificationSettingsManager.load(type);
         if (notificationSettings == null || !notificationSettings.isEnabled()) {
-            LOGGER.info("No template configured for users notifications or it was disabled!");
+            LOGGER.info("No template configured for '{}' users notifications or it was disabled!", type.name());
             return;
         }
 
         final List<Long> ccUserIds = getCCUsers(notificationSettings);
 
-        final List<Long> storageIdsToLoad = Stream.concat(ListUtils.emptyIfNull(inactiveUsers).stream(),
-                ListUtils.emptyIfNull(ldapBlockedUsers).stream())
+        final List<Long> storageIdsToLoad = ListUtils.emptyIfNull(pipelineUsers).stream()
                 .map(PipelineUser::getDefaultStorageId)
                 .filter(Objects::nonNull)
                 .distinct()
@@ -531,8 +529,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage notificationMessage = new NotificationMessage();
         notificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-        notificationMessage.setTemplateParameters(
-                buildUsersTemplateArguments(inactiveUsers, ldapBlockedUsers, userStorages));
+        notificationMessage.setTemplateParameters(buildUsersTemplateArguments(pipelineUsers, userStorages));
         notificationMessage.setCopyUserIds(ccUserIds);
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
     }
@@ -836,18 +833,11 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     }
 
     private Map<String, Object> buildUsersTemplateArguments(final List<PipelineUser> pipelineUsers,
-                                                            final List<PipelineUser> ldapUsers,
                                                             final Map<Long, String> userStorages) {
         final Map<String, Object> templateArguments = new HashMap<>();
 
         if (!CollectionUtils.isEmpty(pipelineUsers)) {
             templateArguments.put("pipelineUsers", pipelineUsers.stream()
-                    .map(user -> buildUserTemplateArguments(user, userStorages))
-                    .collect(Collectors.toList()));
-        }
-
-        if (!CollectionUtils.isEmpty(ldapUsers)) {
-            templateArguments.put("ldapUsers", ldapUsers.stream()
                     .map(user -> buildUserTemplateArguments(user, userStorages))
                     .collect(Collectors.toList()));
         }
