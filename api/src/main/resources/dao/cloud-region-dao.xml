@@ -54,7 +54,8 @@
                         application_name,
                         impersonated_account,
                         custom_instance_types,
-                        aws_iam_role)
+                        aws_iam_role,
+                        storage_lifecycle_service_properties)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -87,7 +88,8 @@
                         :APPLICATION_NAME,
                         :IMPERSONATED_ACCOUNT,
                         :CUSTOM_INSTANCE_TYPES,
-                        :AWS_IAM_ROLE)
+                        :AWS_IAM_ROLE,
+                        :STORAGE_LIFECYCLE_SERVICE_PROPERTIES)
                 ]]>
             </value>
         </constructor-arg>
@@ -128,6 +130,7 @@
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
+                        r.storage_lifecycle_service_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -176,6 +179,7 @@
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
+                        r.storage_lifecycle_service_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -224,6 +228,7 @@
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
+                        r.storage_lifecycle_service_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -272,6 +277,7 @@
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
+                        r.storage_lifecycle_service_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -320,6 +326,7 @@
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
+                        r.storage_lifecycle_service_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -367,7 +374,8 @@
                         application_name = :APPLICATION_NAME,
                         impersonated_account = :IMPERSONATED_ACCOUNT,
                         custom_instance_types = :CUSTOM_INSTANCE_TYPES,
-                        aws_iam_role = :AWS_IAM_ROLE
+                        aws_iam_role = :AWS_IAM_ROLE,
+                        storage_lifecycle_service_properties = :STORAGE_LIFECYCLE_SERVICE_PROPERTIES
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -420,6 +428,7 @@
                         r.mount_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
+                        r.storage_lifecycle_service_properties,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
