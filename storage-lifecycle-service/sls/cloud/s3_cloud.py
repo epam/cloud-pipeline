@@ -331,6 +331,18 @@ class S3StorageOperations(StorageOperations):
     @staticmethod
     def _build_s3_client(region, storage_container, client_type):
 
+        def _fetch_role_arn_for_storage():
+            role_arn = None
+            storage_cloud_attrs = storage_container.storage.cloud_specific_attributes
+            region_cloud_attrs = region.cloud_specific_attributes
+            if region_cloud_attrs:
+                if storage_cloud_attrs.is_use_assumed_credentials:
+                    role_arn = storage_cloud_attrs.temp_credentials_role \
+                        if storage_cloud_attrs.temp_credentials_role else region_cloud_attrs.temp_credentials_role
+                elif region_cloud_attrs.iam_role:
+                    role_arn = region_cloud_attrs.iam_role
+            return role_arn
+
         def get_boto3_session(assume_role_arn=None):
             def _get_client_creator(_session):
                 def client_creator(service_name, **kwargs):
@@ -349,23 +361,11 @@ class S3StorageOperations(StorageOperations):
             )
             botocore_session = botocore.session.Session()
             botocore_session._credentials = DeferredRefreshableCredentials(
-                method='assume-role',
-                refresh_using=fetcher.fetch_credentials
+                method='assume-role', refresh_using=fetcher.fetch_credentials
             )
             return boto3.Session(botocore_session=botocore_session)
 
-        boto_session = boto3.Session(region_name=region.region_id)
-        storage_cloud_attrs = storage_container.storage.cloud_specific_attributes
-        region_cloud_attrs = region.cloud_specific_attributes
-        if region_cloud_attrs:
-            if storage_cloud_attrs.is_use_assumed_credentials:
-                boto_session = get_boto3_session(storage_cloud_attrs.temp_credentials_role
-                                                 if storage_cloud_attrs.temp_credentials_role
-                                                 else region_cloud_attrs.temp_credentials_role)
-            elif region_cloud_attrs.iam_role:
-                boto_session = get_boto3_session(region_cloud_attrs.iam_role)
-
-        return boto_session.client(client_type, region_name=region.region_id)
+        return get_boto3_session(_fetch_role_arn_for_storage()).client(client_type, region_name=region.region_id)
 
     @staticmethod
     def _is_s3_batch_operation_succeeded(s3_batch_operation_job_description):
