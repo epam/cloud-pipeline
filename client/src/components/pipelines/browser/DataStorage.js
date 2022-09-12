@@ -107,6 +107,9 @@ import {
 import styles from './Browser.css';
 
 const PAGE_SIZE = 40;
+const STORAGE_CLASSES = {
+  standard: 'STANDARD'
+};
 
 @connect({
   dataStorages, folders, pipelinesLibrary
@@ -368,7 +371,7 @@ export default class DataStorage extends React.Component {
     const {selectedItems} = this.state;
     return (selectedItems || [])
       .filter(item => (
-        (item.labels && item.labels.StorageClass !== 'STANDARD') ||
+        (item.labels && item.labels.StorageClass !== STORAGE_CLASSES.standard) ||
         item.type === 'Folder'
       ));
   }
@@ -1374,7 +1377,7 @@ export default class DataStorage extends React.Component {
         const {folder: folderRestoreStatus} = this.lifeCycleRestoreInfo;
         if (
           item.labels &&
-          item.labels.StorageClass === 'STANDARD'
+          item.labels.StorageClass === STORAGE_CLASSES.standard
         ) {
           return null;
         }
@@ -1707,6 +1710,16 @@ export default class DataStorage extends React.Component {
       .filter(file => file.name === this.state.selectedFile.name);
 
     return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
+  };
+
+  @computed
+  get isFileSelectedArchived () {
+    if (!this.state.selectedFile) {
+      return false;
+    }
+    const selectedFile = this.tableData
+      .find(file => file.name === this.state.selectedFile.name) || {};
+    return selectedFile.labels && selectedFile.labels.StorageClass !== STORAGE_CLASSES.standard;
   };
 
   openConvertToVersionedStorageDialog = (callback) => {
@@ -2257,7 +2270,10 @@ export default class DataStorage extends React.Component {
               key={METADATA_PANEL_KEY}
               readOnly={!roleModel.isOwner(this.props.info.value)}
               downloadable={!this.props.info.value.sensitive}
-              showContent={!this.props.info.value.sensitive}
+              showContent={
+                !this.props.info.value.sensitive &&
+                !this.isFileSelectedArchived
+              }
               hideMetadataTags={this.props.info.value.type === 'NFS'}
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
