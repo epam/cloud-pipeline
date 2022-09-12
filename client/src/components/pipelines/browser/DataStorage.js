@@ -323,6 +323,15 @@ export default class DataStorage extends React.Component {
   }
 
   @computed
+  get lifeCycleRestoreEnabled () {
+    const {info, authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo.loaded && info.loaded) {
+      return roleModel.isOwner(info.value) || authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
+  @computed
   get showVersions () {
     if (this.props.info.pending) {
       return false;
@@ -1985,7 +1994,7 @@ export default class DataStorage extends React.Component {
               }
             </div>
             <div style={{paddingRight: 8}}>
-              {this.restorableItems.length > 0 ? (
+              {this.lifeCycleRestoreEnabled && this.restorableItems.length > 0 ? (
                 <Button
                   id="restore-button"
                   size="small"
@@ -2327,6 +2336,7 @@ export default class DataStorage extends React.Component {
                   path={this.props.path}
                   onClickRestore={() => this.openRestoreFilesDialog('folder')}
                   restoreInfo={this.lifeCycleRestoreInfo}
+                  restoreEnabled={this.lifeCycleRestoreEnabled}
                 />,
                 <StorageSize storage={this.props.info.value} />
               ]}

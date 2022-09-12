@@ -122,6 +122,7 @@ class LifeCycleCounter extends React.Component {
 
   render () {
     const {rulesAmount} = this.state;
+    const {restoreEnabled} = this.props;
     if (!this.isS3Storage) {
       return null;
     }
@@ -139,7 +140,10 @@ class LifeCycleCounter extends React.Component {
           </span>
         </div>
         <div>
-          {this.renderRestoreActions()}
+          {restoreEnabled
+            ? this.renderRestoreActions()
+            : null
+          }
         </div>
       </div>
     );
@@ -150,7 +154,8 @@ LifeCycleCounter.propTypes = {
   storage: PropTypes.object,
   path: PropTypes.string,
   onClickRestore: PropTypes.func,
-  restoreInfo: PropTypes.object
+  restoreInfo: PropTypes.object,
+  restoreEnabled: PropTypes.bool
 };
 
 export default LifeCycleCounter;
