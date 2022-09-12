@@ -12,35 +12,100 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-import json
 
 from sls.cloud.s3_cloud import S3StorageOperations
 from sls.util import path_utils
 
+
+def _verify_s3_sls_properties(sls_properties, logger):
+    if not sls_properties.properties:
+        logger(
+            "There is no configured Storage Lifecycle Service properties!")
+        return False
+
+    properties = sls_properties.properties
+    if "batch_operation_job_aws_account_id" not in properties:
+        logger.log(
+            "Please provide batch_operation_job_aws_account_id within S3 storage lifecycle service cloud configuration")
+        return False
+
+    if "batch_operation_job_report_bucket" not in properties:
+        logger.log(
+            "Please provide batch_operation_job_report_bucket within S3 storage lifecycle service cloud configuration")
+        return False
+
+    if "batch_operation_job_role_arn" not in properties:
+        logger.log(
+            "Please provide batch_operation_job_role_arn within S3 storage lifecycle service cloud configuration")
+        return False
+
+    if "batch_operation_job_report_bucket_prefix" not in properties:
+        properties["batch_operation_job_report_bucket_prefix"] = "cp_storage_lifecycle_tagging"
+    properties["batch_operation_job_report_bucket_prefix"] = properties.get("batch_operation_job_report_bucket_prefix").strip(
+        "/")
+
+    if "batch_operation_job_poll_status_retry_count" not in properties:
+        properties["batch_operation_job_poll_status_retry_count"] = 30
+    if properties["batch_operation_job_poll_status_retry_count"] < 1:
+        logger.log(
+            "Value batch_operation_job_poll_status_retry_count within S3 storage lifecycle service cloud configuration should be > 1")
+        return False
+
+    if "batch_operation_job_poll_status_sleep_sec" not in properties:
+        properties["batch_operation_job_poll_status_sleep_sec"] = 5
+    if properties["batch_operation_job_poll_status_sleep_sec"] < 1:
+        logger.log(
+            "Value batch_operation_job_poll_status_sleep_sec within S3 storage lifecycle service cloud configuration should be > 1")
+        return False
+
+    return True
+
+
 S3_TYPE = "S3"
+
+
+sls_properties_verifiers = {
+    "AWS": _verify_s3_sls_properties
+}
 
 
 class PlatformToCloudOperationsAdapter:
 
-    def __init__(self, pipeline_api_client, logger):
-        storage_lifecycle_service_config = self.fetch_storage_lifecycle_service_config(pipeline_api_client)
+    def __init__(self, pipeline_api_client, logger, overridden_cloud_operations=None):
         self.regions_by_id = {region.id: region for region in pipeline_api_client.load_regions()}
         self.logger = logger
-        self.cloud_operations = {
-            S3_TYPE: S3StorageOperations(storage_lifecycle_service_config[S3_TYPE], logger)
-        }
+        invalid_region_ids = []
+        for region_id, region in self.regions_by_id.items():
+            validation_result = False
+            if region.storage_lifecycle_service_properties:
+                validation_result = sls_properties_verifiers[region.provider](
+                    region.storage_lifecycle_service_properties, logger)
+            if not validation_result:
+                self.logger.log("Region: {} hasn't valid storage_lifecycle_service_properties, will filter this region!".format(region))
+                invalid_region_ids.append(region_id)
+
+        map(lambda rid: self.regions_by_id.pop(rid), invalid_region_ids)
+
+        if overridden_cloud_operations:
+            self.cloud_operations = overridden_cloud_operations
+        else:
+            self.cloud_operations = {
+                S3_TYPE: S3StorageOperations(logger)
+            }
 
     def is_support(self, storage):
         return storage.storage_type in self.cloud_operations
 
     def prepare_bucket_if_needed(self, storage):
+        region = self.fetch_region(storage.region_id)
         storage_cloud_identifier, _ = self._parse_storage_path(storage)
-        self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(storage_cloud_identifier)
+        self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(region, storage_cloud_identifier)
 
     def list_objects_by_prefix(self, storage, prefix):
+        region = self.fetch_region(storage.region_id)
         storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
         storage_is_versioned = storage.policy.versioning if storage.policy else False
-        files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(storage_cloud_identifier,
+        files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(region, storage_cloud_identifier,
                                                                                    storage_path_prefix + prefix,
                                                                                    list_versions=storage_is_versioned)
         for file in files:
@@ -50,28 +115,29 @@ class PlatformToCloudOperationsAdapter:
 
     def tag_files_to_transit(self, storage, files, storage_class, transit_operation_id):
         try:
+            region = self.fetch_region(storage.region_id)
             storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
             for file in files:
                 if storage_path_prefix:
                     file.path = storage_path_prefix + file.path
             return self.cloud_operations[storage.storage_type].tag_files_to_transit(
-                storage_cloud_identifier, files, storage_class, storage.region_name, transit_operation_id)
+                region, storage_cloud_identifier, files, storage_class, transit_operation_id)
         except Exception as e:
             self.logger.log("Something went wrong when try to tag files from {}. Cause: {}".format(storage.path, e))
             return False
 
     def run_restore_action(self, storage, action, restore_operation_id):
         try:
+            region = self.fetch_region(storage.region_id)
             storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
             files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
-                storage_cloud_identifier, path_utils.join_paths(storage_path_prefix, action.path),
+                region, storage_cloud_identifier, path_utils.join_paths(storage_path_prefix, action.path),
                 convert_paths=False, list_versions=action.restore_versions
             )
             self.logger.log("Storage: {}. Action: {}. Path: {}. Listed '{}' files to possible restore."
                             .format(storage.id, action.action_id, action.path, len(files)))
             return self.cloud_operations[storage.storage_type].run_files_restore(
-                storage_cloud_identifier, files, action.days, action.restore_mode,
-                storage.region_name, restore_operation_id
+                region, storage_cloud_identifier, files, action.days, action.restore_mode, restore_operation_id
             )
         except Exception as e:
             self.logger.log("Storage: {}. Path: {}. Problem with restoring files, cause: {}"
@@ -84,13 +150,14 @@ class PlatformToCloudOperationsAdapter:
 
     def check_restore_action(self, storage, action):
         try:
+            region = self.fetch_region(storage.region_id)
             storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
             files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
-                storage_cloud_identifier, storage_path_prefix + action.path,
+                region, storage_cloud_identifier, storage_path_prefix + action.path,
                 convert_paths=False, list_versions=action.restore_versions
             )
             return self.cloud_operations[storage.storage_type].check_files_restore(
-                storage_cloud_identifier, files, action.updated, action.restore_mode
+                region,storage_cloud_identifier, files, action.updated, action.restore_mode
             )
         except Exception as e:
             self.logger.log("Problem with cheking restoring files, cause: {}".format(e))
@@ -101,15 +168,6 @@ class PlatformToCloudOperationsAdapter:
             }
 
     @staticmethod
-    def fetch_storage_lifecycle_service_config(data_source):
-        config_preference = data_source.load_preference("storage.lifecycle.service.cloud.config")
-        if not config_preference or "value" not in config_preference:
-            raise RuntimeError("storage.lifecycle.service.cloud.config is not defined in Cloud-Pipeline env!")
-        if S3_TYPE not in config_preference["value"]:
-            raise RuntimeError("storage.lifecycle.service.cloud.config doesn't contain S3 section!")
-        return json.loads(config_preference["value"])
-
-    @staticmethod
     def _parse_storage_path(storage):
         split_storage_path = storage.path.rsplit("/", 1)
         if len(split_storage_path) == 1:
@@ -117,10 +175,9 @@ class PlatformToCloudOperationsAdapter:
         else:
             return split_storage_path[0], "/{}".format(split_storage_path[1])
 
-    # ONLY for testing purposes
-    @classmethod
-    def _from_provided_cloud_operations(cls, cloud_operations):
-        obj = cls.__new__(cls)
-        super(PlatformToCloudOperationsAdapter, obj).__init__()
-        obj.cloud_operations = cloud_operations
-        return obj
+    def fetch_region(self, region_id):
+        if region_id in self.regions_by_id:
+            return self.regions_by_id[region_id]
+        else:
+            raise RuntimeError("Can't find region by id: {} in region map, available regions is: {}"
+                               .format(region_id, self.regions_by_id.keys()))

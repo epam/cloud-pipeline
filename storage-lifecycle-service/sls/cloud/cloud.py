@@ -14,17 +14,17 @@
 
 
 class StorageOperations:
-    def prepare_bucket_if_needed(self, bucket):
+    def prepare_bucket_if_needed(self, region, bucket):
         pass
 
-    def list_objects_by_prefix(self, bucket, prefix, list_versions=False, convert_paths=True):
+    def list_objects_by_prefix(self, region, bucket, prefix, list_versions=False, convert_paths=True):
         pass
 
-    def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
+    def tag_files_to_transit(self, region, bucket, files, storage_class, transit_id):
         pass
 
-    def run_files_restore(self, bucket, files, days, restore_tear, region, operation_id):
+    def run_files_restore(self, region, bucket, files, days, restore_tear, operation_id):
         pass
 
-    def check_files_restore(self, bucket, files, restore_timestamp, restore_mode):
+    def check_files_restore(self, region, bucket, files, restore_timestamp, restore_mode):
         pass

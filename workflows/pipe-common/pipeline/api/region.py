@@ -27,5 +27,8 @@ class CloudRegion:
 
 class StorageLifecycleServiceProperties:
 
-    def __init__(self, properties):
-        self.properties = properties
+    def __init__(self, sls_properties_object):
+        if "properties" in sls_properties_object:
+            self.properties = sls_properties_object["properties"]
+        else:
+            self.properties = {}

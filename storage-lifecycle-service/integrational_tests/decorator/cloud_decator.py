@@ -28,11 +28,11 @@ class AttributesChangingStorageOperations(StorageOperations):
             for file in storage.files:
                 self.watched_files_by_storages[storage.storage][file.path if file.path.startswith("/") else "/" + file.path] = file
 
-    def prepare_bucket_if_needed(self, bucket):
-        self.cloud_operations.prepare_bucket_if_needed(bucket)
+    def prepare_bucket_if_needed(self,region,  bucket):
+        self.cloud_operations.prepare_bucket_if_needed(region, bucket)
 
-    def list_objects_by_prefix(self, bucket, prefix, list_versions=False, convert_paths=True):
-        intermediate_result = self.cloud_operations.list_objects_by_prefix(bucket, prefix,
+    def list_objects_by_prefix(self, region, bucket, prefix, list_versions=False, convert_paths=True):
+        intermediate_result = self.cloud_operations.list_objects_by_prefix(region, bucket, prefix,
                                                                            list_versions=list_versions,
                                                                            convert_paths=convert_paths)
         for file in intermediate_result:
@@ -42,5 +42,5 @@ class AttributesChangingStorageOperations(StorageOperations):
                     days=self.watched_files_by_storages[bucket][file.path].storage_date_shift)
         return intermediate_result
 
-    def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
-        return self.cloud_operations.tag_files_to_transit(bucket, files, storage_class, region, transit_id)
+    def tag_files_to_transit(self, region, bucket, files, storage_class, transit_id):
+        return self.cloud_operations.tag_files_to_transit(region, bucket, files, storage_class, transit_id)
