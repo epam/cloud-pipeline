@@ -20,6 +20,7 @@ import objectsProcessing from './object-processing';
 import {defineResults, defineResultsInternal} from './define-results';
 import findCells from './find-cells';
 import findCytoplasm from './find-cytoplasm';
+import findMembrane from './find-membrane';
 import findNuclei from './find-nuclei';
 import findNeurites from './find-neurites';
 import findSpots from './find-spots';
@@ -44,6 +45,7 @@ export default [
     findNuclei,
     findCells,
     findCytoplasm,
+    findMembrane,
     findNeurites,
     findSpots,
     defineResults
