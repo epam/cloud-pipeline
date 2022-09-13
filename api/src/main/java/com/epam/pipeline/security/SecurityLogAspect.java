@@ -35,6 +35,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SecurityLogAspect {
 
+    public static final String OR = "||";
+
     public static final String PERMISSION_RELATED_METHODS_POINTCUT =
             "execution(* com.epam.pipeline.manager.security.GrantPermissionManager.*(..))" +
             "|| execution(* com.epam.pipeline.manager.security.GrantPermissionManager.deletePermissions(..))" +
@@ -59,9 +61,11 @@ public class SecurityLogAspect {
 
     public static final String STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT =
             "execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.create*(..))" +
-            "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.initiate*(..))" +
-            "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.update*(..))" +
-            "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.prolong*(..))" +
+            "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.init*(..))" +
+            "|| execution(" +
+                    "* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.update*(..))" +
+            "|| execution(" +
+                    "* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.prolong*(..))" +
             "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.delete*(..))";
 
     public static final String AUTHORIZATION_RELATED_METHODS_POINTCUT =
@@ -79,8 +83,8 @@ public class SecurityLogAspect {
     public static final String SECURITY_TOPIC = "Security";
 
 
-    @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT +
-            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + "||" + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
+    @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + OR + USER_RELATED_METHODS_POINTCUT +
+            OR + IMPERSONATE_RELATED_METHODS_POINTCUT + OR + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
     public void addUserInfoFromSecurityContext() {
         final SecurityContext context = SecurityContextHolder.getContext();
         if (context != null) {
@@ -90,8 +94,8 @@ public class SecurityLogAspect {
         }
     }
 
-    @Before(PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT +
-            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + "||" + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
+    @Before(PERMISSION_RELATED_METHODS_POINTCUT + OR + USER_RELATED_METHODS_POINTCUT +
+            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + OR + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
     public void addContextTopic(final JoinPoint joinPoint) {
         final String joinPointClass = joinPoint.getSourceLocation().getWithinType().getSimpleName();
         switch (joinPointClass) {
@@ -128,8 +132,8 @@ public class SecurityLogAspect {
         ThreadContext.put(KEY_USER, decode.getSubject() != null ? decode.getSubject() : ANONYMOUS);
     }
 
-    @After(value = PERMISSION_RELATED_METHODS_POINTCUT + "||" + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT +
-            "|| " + AUTHORIZATION_RELATED_METHODS_POINTCUT)
+    @After(value = PERMISSION_RELATED_METHODS_POINTCUT + OR + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT +
+            OR + AUTHORIZATION_RELATED_METHODS_POINTCUT)
     public void clearUserInfo() {
         ThreadContext.clearAll();
     }
