@@ -69,7 +69,8 @@ def create_clip(params):
 def read_images(ome_tiff_path, pages):
     images = imread(ome_tiff_path, key=pages)
     if len(pages) == 1:
-        images = np.reshape(images, (1, 1080, 1080))
+        image_size = len(images)
+        images = np.reshape(images, (1, image_size, image_size))
     return images
 
 
@@ -200,15 +201,16 @@ def merge_channels(images):
     return result
 
 
-def change_intensity(intensity, contrast_min, contrast_max):
-    return (intensity - contrast_min) / max(0.0005, (contrast_max - contrast_min))
+def change_intensity(image, contrast_min, contrast_max):
+    image1 = np.repeat(contrast_min, len(image))
+    image = np.subtract(image, image1) / max(0.0005, (contrast_max - contrast_min))
+    image = np.where(image <= 0, 0, 255 * image)
+    image = np.where(image <= 255, image, 255)
+    return image
 
 
 def color_image(image, channel):
-    image = change_intensity(image, channel['min'], channel['max'])
-    image = np.where(image <= 0, 0, 255 * image)
-    image = np.where(image <= 255, image, 255)
-    image = Image.fromarray(image)
+    image = Image.fromarray(change_intensity(image, channel['min'], channel['max']))
     grayscale_image = ImageOps.grayscale(image)
     rgb = (channel['r'], channel['g'], channel['b'])
     colored_image = ImageOps.colorize(grayscale_image, black='black', white=rgb)
