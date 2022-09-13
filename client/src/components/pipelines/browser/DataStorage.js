@@ -2337,6 +2337,7 @@ export default class DataStorage extends React.Component {
                   onClickRestore={() => this.openRestoreFilesDialog('folder')}
                   restoreInfo={this.lifeCycleRestoreInfo}
                   restoreEnabled={this.lifeCycleRestoreEnabled}
+                  visible={!this.state.selectedFile}
                 />,
                 <StorageSize storage={this.props.info.value} />
               ]}

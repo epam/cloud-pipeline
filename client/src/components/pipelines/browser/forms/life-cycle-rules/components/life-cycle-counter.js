@@ -102,7 +102,11 @@ class LifeCycleCounter extends React.Component {
     if (status === STATUS.SUCCEEDED) {
       return (
         <div>
-          <span>Restore is completed.</span>
+          <span
+            style={{marginRight: '3px'}}
+          >
+            Restore is completed.
+          </span>
           {restoredTill ? (
             <span>
               Folder is restored till {displayDate(moment.utc(restoredTill))}.
@@ -122,8 +126,11 @@ class LifeCycleCounter extends React.Component {
 
   render () {
     const {rulesAmount} = this.state;
-    const {restoreEnabled} = this.props;
-    if (!this.isS3Storage) {
+    const {
+      restoreEnabled,
+      visible
+    } = this.props;
+    if (!this.isS3Storage || !visible) {
       return null;
     }
     return (
@@ -158,7 +165,8 @@ LifeCycleCounter.propTypes = {
     folder: PropTypes.object,
     files: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
   }),
-  restoreEnabled: PropTypes.bool
+  restoreEnabled: PropTypes.bool,
+  visible: PropTypes.bool
 };
 
 export default LifeCycleCounter;
