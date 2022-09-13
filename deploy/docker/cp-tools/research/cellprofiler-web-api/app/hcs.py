@@ -7,6 +7,7 @@ import flask
 from flask import Flask, jsonify,  request
 
 from src.hcs_manager import HCSManager
+from src.hcs_clip import create_clip
 
 
 if getattr(sys, 'frozen', False):
@@ -200,10 +201,9 @@ def get_status():
 
 @app.route('/hcs/clip', methods=['GET'])
 def get_movie():
-    manager = app.config['hcs']
     try:
         params = flask.request.args
-        clip_full_path, total_time = manager.create_clip(params)
+        clip_full_path, total_time = create_clip(params)
         return jsonify(success({"path": clip_full_path, "time": total_time}))
     except Exception as e:
         print(traceback.format_exc())
