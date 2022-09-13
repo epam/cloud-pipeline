@@ -343,8 +343,12 @@ export default class DataStorage extends React.Component {
 
   @computed
   get lifeCycleRestoreInfo () {
-    const {restoreInfo, path} = this.props;
-    if (restoreInfo && restoreInfo.loaded) {
+    const {
+      restoreInfo,
+      path,
+      storage
+    } = this.props;
+    if (restoreInfo && restoreInfo.loaded && storage.loaded) {
       const [folderRestore, ...rest] = restoreInfo.value || [];
       const currentPath = path
         ? [
