@@ -58,10 +58,11 @@ public class SecurityLogAspect {
             "|| execution(* com.epam.pipeline.manager.user.ImpersonationManager.check(..))";
 
     public static final String STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT =
-            "execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.create*(..))" +
-            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycle*Manager.update*(..))" +
-            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycle*Manager.prolong*(..))" +
-            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycle*Manager.delete*(..))";
+            "execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.create*(..))" +
+            "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.initiate*(..))" +
+            "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.update*(..))" +
+            "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.prolong*(..))" +
+            "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.delete*(..))";
 
     public static final String AUTHORIZATION_RELATED_METHODS_POINTCUT =
             "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..)) " +
@@ -73,7 +74,7 @@ public class SecurityLogAspect {
 
     public static final String ANONYMOUS = "Anonymous";
     public static final String KEY_USER = "user";
-    public static final String KEY_TOPIC = "topic";
+    public static final String KEY_TOPIC = "log_topic";
     public static final String STORAGE_LIFECYCLE_TOPIC = "Storage Lifecycle";
     public static final String SECURITY_TOPIC = "Security";
 
@@ -92,7 +93,7 @@ public class SecurityLogAspect {
     @Before(PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT +
             " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + "||" + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
     public void addContextTopic(final JoinPoint joinPoint) {
-        final String joinPointClass = joinPoint.getSourceLocation().getWithinType().getName();
+        final String joinPointClass = joinPoint.getSourceLocation().getWithinType().getSimpleName();
         switch (joinPointClass) {
             case DATA_STORAGE_LIFECYCLE_MANAGER_CLASS_NAME:
             case DATA_STORAGE_LIFECYCLE_RESTORE_MANAGER_CLASS_NAME:

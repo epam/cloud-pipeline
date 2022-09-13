@@ -20,6 +20,7 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Describes strategy to decide when files defined in {@link StorageLifecycleRule} should be transitioned.
@@ -31,6 +32,10 @@ public class StorageLifecycleTransitionCriterion {
 
     StorageLifecycleTransitionCriterionType type;
     String value;
+
+    public String toDescriptionString() {
+        return "'" + type.name() + "'" + (StringUtils.isNotBlank(value) ? ":'" + value + "'" : "");
+    }
 
     public enum StorageLifecycleTransitionCriterionType {
 

@@ -95,8 +95,13 @@ public class DataStorageLifecycleRestoreManager {
                         buildStoragePathRestoreAction(storage, path, restoreMode, effectiveDays,
                                 restoreVersions, force, notification))
                 .collect(Collectors.toList());
-        return dataStoragePathRestoreActionRepository.save(actions).stream()
+        final List<StorageRestoreAction> created = dataStoragePathRestoreActionRepository.save(actions).stream()
                 .map(lifecycleEntityMapper::toDto).collect(Collectors.toList());
+        created.forEach(a ->
+                log.info(String.format(
+                        "Storage Lifecycle Restore Action was created. Action: '%s'", a.toDescriptionString()))
+        );
+        return created;
     }
 
     @Transactional
@@ -112,7 +117,10 @@ public class DataStorageLifecycleRestoreManager {
             loaded.setRestoredTill(action.getRestoredTill());
         }
         loaded.setUpdated(DateUtils.nowUTC());
-        return lifecycleEntityMapper.toDto(loaded);
+        final StorageRestoreAction updated = lifecycleEntityMapper.toDto(loaded);
+        log.info(String.format(
+                "Storage Lifecycle Restore Action was updated. Action: '%s'", updated.toDescriptionString()));
+        return updated;
     }
 
 
