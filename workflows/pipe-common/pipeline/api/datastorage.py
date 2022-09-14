@@ -35,7 +35,7 @@ class DataStorage:
     def __init__(self, id, name, description, path, policy, mask, storage_type,
                  owner, region_id, locked, parentId, mount_point, mount_options,
                  region_name=None, sensitive=False, mount_disabled=False,
-                 tools_to_mount=None, mount_status=None, shared=False):
+                 tools_to_mount=None, mount_status=None, shared=False, cloud_specific_attributes=None):
         self.id = int(id)
         self.name = str(name)
         self.description = str(description)
@@ -55,6 +55,7 @@ class DataStorage:
         self.mount_disabled = mount_disabled
         self.tools_to_mount = tools_to_mount
         self.mount_status = mount_status
+        self.cloud_specific_attributes = cloud_specific_attributes
 
     @classmethod
     def from_json(cls, data):
@@ -77,9 +78,11 @@ class DataStorage:
         tools_to_mount = JsonParser.get_optional_field(data, 'toolsToMount')
         policy = StoragePolicy.from_json(data['storagePolicy']) if 'storagePolicy' in data else None
         mount_status = JsonParser.get_optional_field(data, 'mountStatus', default=None)
+        cloud_specific_attributes = cloud_specific_attributes_from_json(type, data)
         return DataStorage(id, name, description, path, policy, mask, type, owner, region_id, locked, parentId,
                            mount_point, mount_options, region_name, sensitive=sensitive, mount_disabled=mount_disabled,
-                           tools_to_mount=tools_to_mount, mount_status=mount_status, shared=shared)
+                           tools_to_mount=tools_to_mount, mount_status=mount_status, shared=shared,
+                           cloud_specific_attributes=cloud_specific_attributes)
 
 
 class FileShareMount:
@@ -115,3 +118,22 @@ class DataStorageWithShareMount:
 
         return DataStorageWithShareMount(storage, file_share_mount)
 
+
+def cloud_specific_attributes_from_json(storage_type, data):
+    if storage_type == "S3":
+        return S3DataStorageAttributes.from_json(data)
+    else:
+        return None
+
+
+class S3DataStorageAttributes:
+
+    def __init__(self, is_use_assumed_credentials, temp_credentials_role):
+        self.is_use_assumed_credentials = is_use_assumed_credentials
+        self.temp_credentials_role = temp_credentials_role
+
+    @classmethod
+    def from_json(cls, data):
+        is_use_assumed_credentials = JsonParser.get_optional_field(data, 'useAssumedCredentials', default=False)
+        temp_credentials_role = JsonParser.get_optional_field(data, 'tempCredentialsRole')
+        return S3DataStorageAttributes(is_use_assumed_credentials, temp_credentials_role)

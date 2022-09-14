@@ -34,22 +34,18 @@ class TestCaseExecutor(TestCaseProcessor):
     def process(self, testcase):
         logger = AppLogger()
         data_source = cp_api_decator.MockedNotificationRESTApiCloudPipelineDataSource(
-            sls.pipelineapi.cp_api_interface_impl.configure_cp_data_source(
+            sls.pipelineapi.cp_api_interface_impl.configure_pipeline_api(
                 self.config.get("CP_API_URL"), self.config.get("CP_API_TOKEN"), "/tmp", logger)
         )
 
-        storage_lifecycle_service_config = self.fetch_storage_lifecycle_service_config(data_source)
         cloud_operations = {
             "S3": AttributesChangingStorageOperations(
-                S3StorageOperations(
-                   storage_lifecycle_service_config["S3"],
-                    logger
-                ),
+                S3StorageOperations(logger),
                 testcase
             )
         }
 
-        cloud_adapter = PlatformToCloudOperationsAdapter._from_provided_cloud_operations(cloud_operations)
+        cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger, cloud_operations)
 
         synchronizer = StorageLifecycleArchivingSynchronizer(
             SynchronizerConfig(command="archive"), data_source, cloud_adapter, logger)
