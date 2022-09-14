@@ -1,5 +1,6 @@
 const PublishVersionPlugin = require('./scripts/PublishVersionPlugin');
 const PublishWebDavConfigurationPlugin = require('./scripts/PublishWebDavConfigurationPlugin');
+const PublishUpdateScriptsPlugin = require('./scripts/publish-update-scripts-plugin');
 
 module.exports = {
   /**
@@ -8,7 +9,11 @@ module.exports = {
    */
   entry: './src/main.js',
   // Put your normal webpack config below here
-  plugins: [new PublishWebDavConfigurationPlugin(), new PublishVersionPlugin()],
+  plugins: [
+    new PublishWebDavConfigurationPlugin(),
+    new PublishVersionPlugin(),
+    new PublishUpdateScriptsPlugin()
+  ],
   module: {
     rules: require('./webpack.rules'),
   },
