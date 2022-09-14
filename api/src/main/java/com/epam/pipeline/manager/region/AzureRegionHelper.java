@@ -105,6 +105,7 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
         originalRegion.setMountObjectStorageRule(updatedRegion.getMountObjectStorageRule());
         originalRegion.setMountFileStorageRule(updatedRegion.getMountFileStorageRule());
         originalRegion.setMountCredentialsRule(updatedRegion.getMountCredentialsRule());
+        originalRegion.setStorageLifecycleServiceProperties(updatedRegion.getStorageLifecycleServiceProperties());
         originalRegion.setGlobalDistributionUrl(updatedRegion.getGlobalDistributionUrl());
         return originalRegion;
     }

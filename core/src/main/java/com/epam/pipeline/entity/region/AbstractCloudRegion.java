@@ -48,5 +48,6 @@ public abstract class AbstractCloudRegion extends AbstractSecuredEntity {
     private MountStorageRule mountObjectStorageRule = MountStorageRule.NONE;
     private MountStorageRule mountFileStorageRule = MountStorageRule.NONE;
     private MountStorageRule mountCredentialsRule = MountStorageRule.NONE;
+    private StorageLifecycleServiceProperties storageLifecycleServiceProperties;
     public abstract CloudProvider getProvider();
 }
