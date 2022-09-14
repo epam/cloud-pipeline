@@ -89,6 +89,23 @@ function fromJSON (obj, defaultValue) {
   return defaultValue;
 }
 
+function parseSLSProperties (propertiesObject) {
+  const {
+    properties
+  } = propertiesObject || {};
+  if (properties) {
+    return toJSON(properties);
+  }
+  return '';
+}
+
+function buildSLSProperties (properties) {
+  if (!properties) {
+    return undefined;
+  }
+  return {properties: fromJSON(properties)};
+}
+
 @inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router', 'authenticatedUserInfo')
 @observer
 export default class AWSRegionsForm extends React.Component {
@@ -151,7 +168,10 @@ export default class AWSRegionsForm extends React.Component {
           return {
             ...r,
             corsRules: preProcessJSON(r.corsRules),
-            policy: preProcessJSON(r.policy)
+            policy: preProcessJSON(r.policy),
+            storageLifecycleServiceProperties: parseSLSProperties(
+              r.storageLifecycleServiceProperties
+            )
           };
         }).filter(searchFn);
     }
@@ -735,6 +755,7 @@ class AWSRegionForm extends React.Component {
       'kmsKeyArn',
       'corsRules',
       'policy',
+      'storageLifecycleServiceProperties',
       'profile',
       'sshKeyName',
       'iamRole',
@@ -905,6 +926,7 @@ class AWSRegionForm extends React.Component {
       check('mountStorageRule', checkStringValue) ||
       check('mountCredentialsRule', checkStringValue) ||
       check('policy', checkJSONValue) ||
+      check('storageLifecycleServiceProperties', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
       check('storageAccountKey', checkStringValue) ||
       check('resourceGroup', checkStringValue) ||
@@ -1058,6 +1080,9 @@ class AWSRegionForm extends React.Component {
       this.cloudRegionFileShareMountsComponent.validate &&
       this.cloudRegionFileShareMountsComponent.validate();
       if (!err && CloudRegionFileShareMountsFormItem.validationPassed(values.fileShareMounts)) {
+        values.storageLifecycleServiceProperties = buildSLSProperties(
+          values.storageLifecycleServiceProperties
+        );
         if (this.props.isNew) {
           this.props.onCreate && await this.props.onCreate(values);
         } else {
@@ -1887,6 +1912,30 @@ class AWSRegionForm extends React.Component {
               className={this.getFieldClassName('policy', 'edit-region-policy-container')}>
               {getFieldDecorator('policy', {
                 initialValue: this.props.region.policy,
+                rules: [{
+                  validator: this.jsonValidation
+                }]
+              })(
+                <CodeEditorFormItem
+                  ref={this.initializePolicyEditor}
+                  editorClassName={styles.codeEditor}
+                  editorLanguage="application/json"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="SLS properties"
+              hasFeedback
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'storageLifecycleServiceProperties',
+                  'edit-region-sls-policy-container'
+                )
+              }
+            >
+              {getFieldDecorator('storageLifecycleServiceProperties', {
+                initialValue: this.props.region.storageLifecycleServiceProperties,
                 rules: [{
                   validator: this.jsonValidation
                 }]
