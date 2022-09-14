@@ -31,7 +31,7 @@ import {STATUS}
 import UsersRolesSelect from '../../../../../../special/users-roles-select';
 import styles from './life-cycle-restore-modal.css';
 
-const MODES = {
+const RESTORATION_MODES = {
   STANDARD: 'STANDARD',
   BULK: 'BULK'
 };
@@ -56,7 +56,7 @@ class LifeCycleRestoreModal extends React.Component {
   state={
     days: 30,
     recipients: [],
-    restoreMode: MODES.STANDARD,
+    restoreMode: RESTORATION_MODES.STANDARD,
     restoreVersions: false,
     force: false
   }
@@ -127,12 +127,44 @@ class LifeCycleRestoreModal extends React.Component {
       }));
     }
     if (mode === 'folder') {
+      payload.force = true;
       payload.paths = [{
         path: folderPath,
         type: 'FOLDER'
       }];
     }
     onOk && onOk(payload);
+  };
+
+  renderHeader = () => {
+    const {
+      mode,
+      items,
+      folderPath
+    } = this.props;
+    const currentPath = mapPathToRestorePath({
+      path: folderPath,
+      type: 'Folder'
+    });
+    if (mode === 'folder') {
+      return (
+        <p>
+          You are going to restore folder
+          <b style={{marginLeft: '3px'}}>
+            {currentPath}
+          </b>
+        </p>
+      );
+    }
+    return (
+      <p>
+        You are going to restore
+        <b style={{margin: '0 3px'}}>
+          {items.length}
+        </b>
+        {items.length > 1 ? 'items' : 'item'}
+      </p>
+    );
   };
 
   renderForceRestoreControl = () => {
@@ -161,13 +193,11 @@ class LifeCycleRestoreModal extends React.Component {
 
   render () {
     const {
-      items,
       visible,
       onCancel,
       pending,
       mode,
-      versioningEnabled,
-      folderPath
+      versioningEnabled
     } = this.props;
     const {
       days,
@@ -205,12 +235,7 @@ class LifeCycleRestoreModal extends React.Component {
       >
         <div className={styles.container}>
           <div className={styles.description}>
-            <span>
-              {mode === 'file'
-                ? `You are going to restore ${items.length} ${items.length > 1 ? 'files' : 'file'}.`
-                : `You are going to restore folder /${folderPath}/.`
-              }
-            </span>
+            {this.renderHeader()}
             <span style={{textAlign: 'center'}}>
               Please specify the period duration for which the file shall be
               restored and recipients who should be notified about restoring process.
@@ -247,12 +272,16 @@ class LifeCycleRestoreModal extends React.Component {
               onChange={this.onChangeValue('restoreMode', 'select')}
               disabled={pending}
             >
-              {Object.entries(MODES).map(([key, description]) => (
+              {Object.entries(RESTORATION_MODES).map(([key, description]) => (
                 <Select.Option
                   value={description}
                   key={key}
                 >
-                  {description}
+                  <span
+                    style={{textTransform: 'capitalize'}}
+                  >
+                    {description.toLowerCase()}
+                  </span>
                 </Select.Option>
               ))}
             </Select>
@@ -268,10 +297,18 @@ class LifeCycleRestoreModal extends React.Component {
               </Checkbox>
             </div>
           ) : null}
-          {this.someItemsAlreadyRestored
+          {this.someItemsAlreadyRestored && mode !== 'folder'
             ? this.renderForceRestoreControl()
             : null
           }
+          {mode === 'folder' ? (
+            <p>
+              <b style={{marginRight: '3px'}}>
+                Note:
+              </b>
+              all previously transferred files in sub-folders will be recursively restored as well.
+            </p>
+          ) : null}
         </div>
       </Modal>
     );
