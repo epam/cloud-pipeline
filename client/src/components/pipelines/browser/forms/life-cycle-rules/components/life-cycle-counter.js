@@ -49,8 +49,8 @@ class LifeCycleCounter extends React.Component {
   @computed
   get folderRestorationInfo () {
     const {restoreInfo} = this.props;
-    if (restoreInfo && restoreInfo.folder) {
-      return restoreInfo.folder;
+    if (restoreInfo && restoreInfo.parentRestore) {
+      return restoreInfo.parentRestore;
     }
     return undefined;
   }
@@ -162,8 +162,8 @@ LifeCycleCounter.propTypes = {
   path: PropTypes.string,
   onClickRestore: PropTypes.func,
   restoreInfo: PropTypes.shape({
-    folder: PropTypes.object,
-    files: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+    parentRestore: PropTypes.object,
+    currentRestores: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
   }),
   restoreEnabled: PropTypes.bool,
   visible: PropTypes.bool

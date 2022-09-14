@@ -349,7 +349,7 @@ export default class DataStorage extends React.Component {
       storage
     } = this.props;
     if (restoreInfo && restoreInfo.loaded && storage.loaded) {
-      const [folderRestore, ...rest] = restoreInfo.value || [];
+      const [first, ...rest] = restoreInfo.value || [];
       const currentPath = path
         ? [
           !path.startsWith('/') && '/',
@@ -357,26 +357,26 @@ export default class DataStorage extends React.Component {
           !path.endsWith('/') && '/'
         ].filter(Boolean).join('')
         : '/';
-      let folder;
-      let files;
+      let parentRestore;
+      let currentRestores;
       if (
-        folderRestore &&
-        folderRestore.type === 'FOLDER' &&
-        currentPath.startsWith(folderRestore.path)
+        first &&
+        first.type === 'FOLDER' &&
+        currentPath.startsWith(first.path)
       ) {
-        folder = folderRestore;
-        files = rest;
+        parentRestore = first;
+        currentRestores = rest;
       } else {
-        files = restoreInfo.value;
+        currentRestores = restoreInfo.value;
       }
       return {
-        folder: folder,
-        files: files || []
+        parentRestore,
+        currentRestores: currentRestores || []
       };
     }
     return {
-      folder: undefined,
-      files: []
+      parentRestore: undefined,
+      currentRestores: []
     };
   }
 
@@ -1387,14 +1387,17 @@ export default class DataStorage extends React.Component {
         return null;
       }
       const checkRestoredStatus = (item) => {
-        const {folder: folderRestoreStatus} = this.lifeCycleRestoreInfo;
+        const {
+          parentRestore,
+          currentRestores
+        } = this.lifeCycleRestoreInfo;
         if (
           item.labels &&
           item.labels.StorageClass === STORAGE_CLASSES.standard
         ) {
           return null;
         }
-        const itemRestoreStatus = this.lifeCycleRestoreInfo.files
+        const itemRestoreStatus = currentRestores
           .find(({path = ''}) => item.name === path.split('/')
             .filter(Boolean)
             .pop()
@@ -1403,7 +1406,7 @@ export default class DataStorage extends React.Component {
           return itemRestoreStatus;
         }
         return item.type === 'File'
-          ? folderRestoreStatus
+          ? parentRestore
           : null;
       };
       const restoredStatus = item.editable

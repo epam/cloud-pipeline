@@ -62,18 +62,34 @@ class LifeCycleRestoreModal extends React.Component {
   }
 
   @computed
-  get someItemsAlreadyRestored () {
-    const {items = [], restoreInfo} = this.props;
+  get showForceRestore () {
     const {
-      folder: folderRestore,
-      files: filesRestore
+      items = [],
+      restoreInfo,
+      mode
+    } = this.props;
+    const {
+      parentRestore,
+      currentRestores
     } = restoreInfo || {};
-    if (folderRestore && folderRestore.status === STATUS.SUCCEEDED) {
+    if (mode === 'folder') {
+      return false;
+    }
+    const parentRestoreApplied = parentRestore && parentRestore.status === STATUS.SUCCEEDED;
+    const files = items.filter(item => item.type === 'File');
+    const checkExplicitRestores = items => {
+      return (items || []).some(item => currentRestores.find(restore => (
+        mapPathToRestorePath(item) === restore.path &&
+        restore.status === STATUS.INITIATED
+      )));
+    };
+    if (
+      (files.length > 0 && parentRestoreApplied) ||
+      checkExplicitRestores(items)
+    ) {
       return true;
     }
-    return (filesRestore || [])
-      .filter(restore => items.find(item => mapPathToRestorePath(item) === restore.path))
-      .some(restore => restore.status === STATUS.SUCCEEDED);
+    return false;
   }
 
   onChangeValue = (field, eventType) => event => {
@@ -114,7 +130,9 @@ class LifeCycleRestoreModal extends React.Component {
       days,
       restoreVersions,
       restoreMode,
-      force,
+      force: this.showForceRestore
+        ? force
+        : true,
       notification: {
         enabled: recipients.length > 0,
         ...(recipients.length > 0 && {recipients})
@@ -127,7 +145,6 @@ class LifeCycleRestoreModal extends React.Component {
       }));
     }
     if (mode === 'folder') {
-      payload.force = true;
       payload.paths = [{
         path: folderPath,
         type: 'FOLDER'
@@ -297,7 +314,7 @@ class LifeCycleRestoreModal extends React.Component {
               </Checkbox>
             </div>
           ) : null}
-          {this.someItemsAlreadyRestored && mode !== 'folder'
+          {this.showForceRestore
             ? this.renderForceRestoreControl()
             : null
           }
@@ -321,8 +338,8 @@ LifeCycleRestoreModal.propTypes = {
   onCancel: PropTypes.func,
   items: PropTypes.array,
   restoreInfo: PropTypes.shape({
-    folder: PropTypes.object,
-    files: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
+    parentRestore: PropTypes.object,
+    currentRestores: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
   }),
   folderPath: PropTypes.string,
   pending: PropTypes.bool,
