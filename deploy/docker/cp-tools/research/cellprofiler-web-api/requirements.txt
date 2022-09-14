@@ -16,4 +16,4 @@ tifffile==2022.4.8
 moviepy==1.0.3
 pandas==1.4.3
 Pillow==9.2.0
-imagecodecs
+imagecodecs==2022.8.8
