@@ -30,12 +30,18 @@ function RemoveDirIfExists($Path) {
 
 function RemoveFileIfExists($Path) {
     if (Test-Path "$Path") {
-        Remove-Item -Path "$Path" -Force
+        Remove-Item -Path "$Path" -Force -ErrorAction Stop
     }
 }
 
 $APP_DIR = "$env:APP_DIR"
 $APP_DISTRIBUTION_URL = "$env:APP_DISTRIBUTION_URL"
+
+Log "Checking required environment variables..."
+if (-not("$APP_DIR" -and "$APP_DISTRIBUTION_URL")) {
+    Log "The following environment variables are missing: APP_DIR, APP_DISTRIBUTION_URL."
+    Exit
+}
 
 $APP_LOGS_DIR = "$APP_DIR\logs"
 $APP_BACKUP_DIR = "$APP_DIR\backup"
@@ -155,9 +161,9 @@ if ($attempt -eq $APP_RESTART_ATTEMPTS) {
     Log "Update is being reverted after $APP_RESTART_ATTEMPTS attempts."
 
     if (Test-Path "$APP_BACKUP_DIR") {
-        Log "Fallbacking to backup service directory..."
-        Get-ChildItem -Path "$APP_DIR" -Exclude $APP_SECURE_PATHS | Remove-Item -Force -Recurse -ErrorAction Stop
-        Move-Item -Path "$APP_BACKUP_DIR\*" -Destination "$APP_DIR" -Exclude $APP_SECURE_PATHS -Force -ErrorAction Stop
+        Log "Reverting to backup service directory..."
+        Get-ChildItem -Path "$APP_DIR" -Exclude $APP_SECURE_PATHS | Remove-Item -Force -Recurse -ErrorAction Continue
+        Move-Item -Path "$APP_BACKUP_DIR\*" -Destination "$APP_DIR" -Exclude $APP_SECURE_PATHS -Force -ErrorAction Continue
 
         Log "Launching service..."
         $env:APP_EXEC_PATH = $APP_EXEC_PATH
