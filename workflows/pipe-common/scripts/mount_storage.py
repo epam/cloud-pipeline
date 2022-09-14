@@ -28,6 +28,7 @@ import time
 from pipeline import PipelineAPI, DataStorageWithShareMount, RunLogger, TaskLogger, LevelLogger, LocalLogger
 from pipeline.utils.plat import is_windows
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
+from pipeline.utils.storage import StorageMountsSerializer
 
 READ_MASK = 1
 WRITE_MASK = 1 << 1
@@ -109,10 +110,11 @@ class PermissionHelper:
 
 class MountStorageTask:
 
-    def __init__(self, run_id, api, mounters):
+    def __init__(self, run_id, api, mounters, mounts_serializer):
         self.api = api
         self.run_id = int(run_id)
         self.mounters = {mounter.type(): mounter for mounter in mounters}
+        self.mounts_serializer = mounts_serializer
 
     def parse_storage(self, placeholder):
         storage_id = None
@@ -196,41 +198,36 @@ class MountStorageTask:
             # Filter out storages, which are requested to be skipped
             # NOTE: Any storage, defined by CP_CAP_FORCE_MOUNTS will still be mounted
             skip_storages = os.getenv('CP_CAP_SKIP_MOUNTS')
-            if skip_storages:
+            skip_storages_list = self.mounts_serializer.deserialize(skip_storages)
+            if skip_storages_list:
                 Logger.info('Storage(s) "{}" requested to be skipped'.format(skip_storages))
-                skip_storages_list = self.parse_storage_list(skip_storages)
-                available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id not in skip_storages_list ]
+                available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id not in skip_storages_list]
 
             # If the storages are limited by the user - we make sure that the "forced" storages are still available
             # This is useful for the tools, which require "databases" or other data from the File/Object storages
             force_storages = os.getenv('CP_CAP_FORCE_MOUNTS')
-            force_storages_list = []
-            if force_storages:
+            force_storages_list = self.mounts_serializer.deserialize(force_storages)
+            if force_storages_list:
                 Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages))
-                force_storages_list = self.parse_storage_list(force_storages)
-            
+
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
+            limited_storages_list = self.mounts_serializer.deserialize(limited_storages)
             if limited_storages:
-                # Append "forced" storage to the "limited" list, if it's set
-                if force_storages:
-                    force_storages = ','.join([str(x) for x in force_storages_list])
-                    limited_storages = ','.join([limited_storages, force_storages])
-                try:
-                    limited_storages_list = []
-                    if limited_storages.lower() != MOUNT_LIMITS_NONE:
-                        limited_storages_list = self.parse_storage_list(limited_storages)
-                    # Remove duplicates from the `limited_storages_list`, as they can be introduced by `force_storages` or a user's typo
-                    limited_storages_list = list(set(limited_storages_list))
-                    available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
-                    # append sensitive storages since they are not returned in common mounts
-                    for storage_id in limited_storages_list:
+                limited_storages_list += force_storages_list
+                # Remove duplicates from the `limited_storages_list`, as they can be introduced by `force_storages_list` or a user's typo
+                limited_storages_list = list(set(limited_storages_list))
+                available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]
+                # append sensitive storages since they are not returned in common mounts
+                for storage_id in limited_storages_list:
+                    try:
                         storage = self.api.find_datastorage(str(storage_id))
                         if storage.sensitive:
                             available_storages_with_mounts.append(DataStorageWithShareMount(storage, None))
-                    Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)))
-                except Exception:
-                    Logger.warning('Unable to parse CP_CAP_LIMIT_MOUNTS value({}).'.format(limited_storages),
-                                   trace=True)
+                    except Exception:
+                        Logger.warning('Unable to use storage with id {} because it is not found.'
+                                       .format(str(storage_id)))
+                Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'
+                            .format(limited_storages, len(available_storages_with_mounts)))
 
             if not available_storages_with_mounts:
                 Logger.success('No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none')
@@ -808,7 +805,9 @@ def main():
     else:
         mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
 
-    MountStorageTask(run_id, api, mounters).run(args.mount_root, args.tmp_dir)
+    mounts_serializer = StorageMountsSerializer(api=api, logger=Logger)
+
+    MountStorageTask(run_id, api, mounters, mounts_serializer).run(args.mount_root, args.tmp_dir)
 
 
 if __name__ == '__main__':
