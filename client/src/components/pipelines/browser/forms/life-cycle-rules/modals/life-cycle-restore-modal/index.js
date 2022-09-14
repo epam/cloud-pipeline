@@ -80,7 +80,7 @@ class LifeCycleRestoreModal extends React.Component {
     const checkExplicitRestores = items => {
       return (items || []).some(item => currentRestores.find(restore => (
         mapPathToRestorePath(item) === restore.path &&
-        restore.status === STATUS.INITIATED
+        restore.status === STATUS.SUCCEEDED
       )));
     };
     if (
