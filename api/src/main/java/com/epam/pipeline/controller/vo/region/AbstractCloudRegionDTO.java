@@ -49,7 +49,6 @@ public abstract class AbstractCloudRegionDTO {
     private boolean isDefault;
     private MountStorageRule mountStorageRule = MountStorageRule.NONE;
     private MountStorageRule mountCredentialsRule = MountStorageRule.NONE;
-    @JsonProperty(value = "storageLifecycleServiceProperties")
     private StorageLifecycleServiceProperties storageLifecycleServiceProperties;
 
     public abstract CloudProvider getProvider();
