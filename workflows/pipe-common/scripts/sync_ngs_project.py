@@ -15,7 +15,7 @@ EVENT_FAILURE = 'Failure'
 EVENT_SUCCESS = 'Success'
 
 DEFAULT_FOLDERS = ['Config', 'Data', 'Images', 'InterOp', 'Logs', 'RTALogs',
-                   'Recipe', 'Thumbnail_Images', 'Stats', 'Reports', 'tmp']
+                   'Recipe', 'Thumbnail_Images', 'Stats', 'Reports', 'tmp', 'logs']
 REQUIRED_FIELDS = ['MachineRun', 'Results', 'SampleSheet', 'ExperimentType', 'PairedEnd', 'ConfigFile']
 
 EMAIL_TEMPLATE = '''
@@ -238,7 +238,8 @@ class MachineRun(object):
             self.notifications.append(Event(self.machine_run, 'Metadata created', EVENT_SUCCESS))
             if self.is_before_processed_date(sequence_date):
                 continue
-            if not results and self.settings.configuration_id:
+            launch = (not results) or (not metadata_entity['data'][self.settings.last_processed_column])
+            if launch and self.settings.configuration_id:
                 self.run_analysis(metadata_entity, run_folder)
             failure_events = ['%s:%s' % (event.type, event.message)
                               for event in self.notifications
