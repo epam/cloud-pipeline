@@ -32,12 +32,26 @@ function readCompilationAsset(assetName) {
   return undefined;
 }
 
+function getCompilationAssetPath(assetName) {
+  try {
+    const assetFile = path.join(__dirname, assetName);
+    if (fs.existsSync(assetFile)) {
+      return assetFile;
+    }
+  } catch (_) {}
+  return undefined;
+}
+
 function getAppVersion() {
   return readCompilationAsset('VERSION')
 }
 
 function getComponentVersion() {
   return readCompilationAsset('COMPONENT_VERSION')
+}
+
+function getUpdateScriptWindows() {
+  return getCompilationAssetPath('update-win.ps1');
 }
 
 function readCertificates (root) {
@@ -213,6 +227,10 @@ module.exports = async function () {
   config.username = userNameCorrected;
   config.name = (custom ? custom.name : undefined) || DEFAULT_APP_NAME;
   config.version = getAppVersion();
+  config.componentVersion = getComponentVersion();
+  config.updateScripts = {
+    win: getUpdateScriptWindows()
+  };
   log(`Parsed configuration:\n${JSON.stringify(config, undefined, ' ')}`);
   return config;
 }
