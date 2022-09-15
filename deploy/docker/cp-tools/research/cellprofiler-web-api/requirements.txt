@@ -10,6 +10,10 @@ numpy==1.23.1
 Cython==0.29.30
 cellprofiler-core===4.2.1
 CellProfiler==4.2.1
-pandas==1.1.5
 openpyxl==3.0.10
 et-xmlfile==1.1.0
+tifffile==2022.4.8
+moviepy==1.0.3
+pandas==1.4.3
+Pillow==9.2.0
+imagecodecs==2022.8.8
