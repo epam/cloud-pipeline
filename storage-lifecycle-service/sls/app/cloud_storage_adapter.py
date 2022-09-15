@@ -72,19 +72,9 @@ sls_properties_verifiers = {
 class PlatformToCloudOperationsAdapter:
 
     def __init__(self, pipeline_api_client, logger, overridden_cloud_operations=None):
-        self.regions_by_id = {region.id: region for region in pipeline_api_client.load_regions()}
+        self.regions_by_id = {}
         self.logger = logger
-        invalid_region_ids = []
-        for region_id, region in self.regions_by_id.items():
-            validation_result = False
-            if region.storage_lifecycle_service_properties:
-                validation_result = sls_properties_verifiers[region.provider](
-                    region.storage_lifecycle_service_properties, logger)
-            if not validation_result:
-                self.logger.log("Region: {} hasn't valid storage_lifecycle_service_properties, will filter this region!".format(region.id))
-                invalid_region_ids.append(region_id)
-
-        [self.regions_by_id.pop(rid, None) for rid in invalid_region_ids]
+        self.pipeline_api_client = pipeline_api_client
 
         if overridden_cloud_operations:
             self.cloud_operations = overridden_cloud_operations
@@ -92,6 +82,9 @@ class PlatformToCloudOperationsAdapter:
             self.cloud_operations = {
                 S3_TYPE: S3StorageOperations(logger)
             }
+
+    def initialize(self):
+        self.regions_by_id = self._load_and_filter_regions()
 
     def is_support(self, storage):
         return storage.storage_type in self.cloud_operations
@@ -188,3 +181,19 @@ class PlatformToCloudOperationsAdapter:
         else:
             raise RuntimeError("Can't find region by id: {} in region map, available regions is: {}"
                                .format(region_id, self.regions_by_id.keys()))
+
+    def _load_and_filter_regions(self):
+        _regions_by_id = {region.id: region for region in self.pipeline_api_client.load_regions()}
+        invalid_region_ids = []
+        for region_id, region in _regions_by_id.items():
+            validation_result = False
+            if region.storage_lifecycle_service_properties:
+                validation_result = sls_properties_verifiers[region.provider](
+                    region.storage_lifecycle_service_properties, self.logger)
+            if not validation_result:
+                self.logger.log(
+                    "Region: {} hasn't valid storage_lifecycle_service_properties, will filter this region!".format(
+                        region.id))
+                invalid_region_ids.append(region_id)
+        [_regions_by_id.pop(rid, None) for rid in invalid_region_ids]
+        return _regions_by_id
