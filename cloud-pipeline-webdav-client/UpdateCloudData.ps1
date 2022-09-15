@@ -48,7 +48,6 @@ $APP_BACKUP_DIR = "$APP_DIR\backup"
 $APP_DISTRIBUTION_DIR = "$APP_DIR\distribution"
 $APP_DISTRIBUTION_PATH = "$APP_DIR\distribution.zip"
 $APP_SECURE_PATHS = "logs","backup","distribution","distribution.zip"
-$APP_START_DELAY_SECONDS = "5"
 $APP_FINISH_DELAY_SECONDS = "1"
 $APP_RESTART_DELAY_SECONDS = "1"
 $APP_RESTART_ATTEMPTS = "5"
@@ -77,7 +76,7 @@ public class TrustAllCertsPolicy : ICertificatePolicy {
  }
 "@
 [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-$ProgressPreference = 'SilentlyContinue'
+$ProgressPreference = "SilentlyContinue"
 
 Log "Changing working directory to $APP_LOGS_DIR..."
 Set-Location -Path "$APP_LOGS_DIR" -ErrorAction Stop
@@ -96,7 +95,7 @@ foreach($attempt in 1..$APP_RESTART_ATTEMPTS) {
         Log "Trying updating (#$attempt)..."
 
         Log "Stopping existing service processes..."
-        $processes = Get-WmiObject win32_process -Filter "name like '%$APP_PROC_NAME%'"
+        $processes = Get-WmiObject win32_process -Filter "name like `"%$APP_PROC_NAME%`""
         foreach($process in $processes) {
             $processId = $process.ProcessId
             $processCommand = $process.CommandLine
