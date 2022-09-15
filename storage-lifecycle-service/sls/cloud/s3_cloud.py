@@ -343,17 +343,19 @@ class S3StorageOperations(StorageOperations):
                     role_arn = region_cloud_attrs.iam_role
             return role_arn
 
-        def get_boto3_session(assume_role_arn=None):
+        def get_boto3_session(assume_role_arn=None, profile=None):
             def _get_client_creator(_session):
                 def client_creator(service_name, **kwargs):
                     return _session.client(service_name, **kwargs)
 
                 return client_creator
 
-            session = boto3.Session()
             if not assume_role_arn:
-                return session
+                return boto3.Session(profile_name=profile) \
+                    if profile is not None \
+                    else boto3.Session()
 
+            session = boto3.Session()
             fetcher = AssumeRoleCredentialFetcher(
                 client_creator=_get_client_creator(session),
                 source_credentials=session.get_credentials(),
@@ -365,7 +367,10 @@ class S3StorageOperations(StorageOperations):
             )
             return boto3.Session(botocore_session=botocore_session)
 
-        return get_boto3_session(_fetch_role_arn_for_storage()).client(client_type, region_name=region.region_id)
+        return get_boto3_session(
+            assume_role_arn=_fetch_role_arn_for_storage(),
+            profile=region.cloud_specific_attributes.profile
+        ).client(client_type, region_name=region.region_id)
 
     @staticmethod
     def _is_s3_batch_operation_succeeded(s3_batch_operation_job_description):
