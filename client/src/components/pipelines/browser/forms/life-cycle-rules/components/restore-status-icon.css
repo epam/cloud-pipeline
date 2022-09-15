@@ -14,28 +14,13 @@
  * limitations under the License.
  */
 
-import Remote from '../../basic/Remote';
 
-const STATUS = {
-  'INITIATED': 'INITIATED',
-  'RUNNING': 'RUNNING',
-  'SUCCEEDED': 'SUCCEEDED'
-};
-
-class DataStorageLifeCycleRulesLoad extends Remote {
-  url;
-  path;
-
-  constructor (id, path = '') {
-    super();
-    if (path) {
-      this.path = path.startsWith('/') ? path : `/${path}`;
-      this.url = `/datastorage/${id}/lifecycle/rule?path=${this.path}`;
-    } else {
-      this.url = `/datastorage/${id}/lifecycle/rule`;
-    }
-  };
+.icons-container {
+  position: relative;
+  display: inline-block;
 }
 
-export {STATUS};
-export default DataStorageLifeCycleRulesLoad;
+.icons-container .sub-icon::before {
+  background-color: white;
+  border-radius: 50%;
+}

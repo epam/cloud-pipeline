@@ -164,6 +164,10 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   margin-left: 5px;
 }
 
+.storage-actions > * {
+  margin-bottom: 3px;
+}
+
 .item-actions {
   text-align: right;
 }

@@ -16,9 +16,11 @@
 
 import LifeCycleEditModal, {DESTINATIONS} from './life-cycle-edit-modal';
 import LifeCycleHistoryModal from './life-cycle-history-modal';
+import LifeCycleRestoreModal from './life-cycle-restore-modal';
 
 export {
   DESTINATIONS,
   LifeCycleEditModal,
-  LifeCycleHistoryModal
+  LifeCycleHistoryModal,
+  LifeCycleRestoreModal
 };
