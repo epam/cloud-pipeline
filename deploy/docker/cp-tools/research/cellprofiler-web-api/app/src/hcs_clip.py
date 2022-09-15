@@ -32,7 +32,9 @@ def create_clip(params):
 
     preview_dir, sequences = parse_hcs(path, sequence_id)
     preview_dir = prepare_input_path(preview_dir)
-    index_path = os.path.join(preview_dir, 'index.xml')
+    index_path = os.path.join(preview_dir, 'Index.xml')
+    if not os.path.isfile(index_path):
+        index_path = os.path.join(preview_dir, 'index.xml')
     all_channels = get_all_channels(index_path)
     planes = get_planes(index_path)
     if plane_id not in planes:
