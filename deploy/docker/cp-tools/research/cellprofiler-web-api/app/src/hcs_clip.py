@@ -79,7 +79,7 @@ def get_clip_name(by_field, cell, clip_format, sequence_id, plane_id):
     mkdir(clip_dir)
     cell_prefix = ('field{}' if by_field else 'well{}').format(str(cell))
     plane_prefix = 'plane{}'.format(plane_id)
-    sequence_prefix = 'seq{}'.format(sequence_id)
+    sequence_prefix = '' if sequence_id is None else 'seq{}'.format(sequence_id)
     clip_name = cell_prefix + sequence_prefix + plane_prefix + clip_format
     return os.path.join(clip_dir, clip_name)
 
