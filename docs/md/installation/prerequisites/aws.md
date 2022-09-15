@@ -258,11 +258,22 @@ A new SSH key named `CP-SSH-Key`
                 "s3:DeleteObjectVersion",
                 "s3:ListBucketVersions",
                 "s3:GetBucketTagging",
-                "s3:PutBucketTagging"
+                "s3:PutBucketTagging",
+                "s3:GetLifecycleConfiguration",
+                "s3:PutLifecycleConfiguration"
             ],
             "Resource": [
                 "arn:aws:s3:::*"
             ]
+        },
+        {
+            "Sid": "PassSLSRoleAllow",
+	        "Effect": "Allow",
+	        "Action": [
+	            "iam:GetRole",
+	            "iam:PassRole"
+	        ],
+        	"Resource": "arn:aws:iam::<account-id>:role/CP-SLS-Role"
         }
     ]
 }
