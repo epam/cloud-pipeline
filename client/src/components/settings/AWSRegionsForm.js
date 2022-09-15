@@ -90,11 +90,8 @@ function fromJSON (obj, defaultValue) {
 }
 
 function parseSLSProperties (propertiesObject) {
-  const {
-    properties
-  } = propertiesObject || {};
-  if (properties) {
-    return toJSON(properties);
+  if (propertiesObject) {
+    return toJSON(propertiesObject);
   }
   return '';
 }
@@ -103,7 +100,7 @@ function buildSLSProperties (properties) {
   if (!properties) {
     return undefined;
   }
-  return {properties: fromJSON(properties)};
+  return fromJSON(properties);
 }
 
 @inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router', 'authenticatedUserInfo')
