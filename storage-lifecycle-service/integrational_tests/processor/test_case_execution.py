@@ -46,7 +46,7 @@ class TestCaseExecutor(TestCaseProcessor):
         }
 
         cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger, cloud_operations)
-
+        cloud_adapter.initialize()
         synchronizer = StorageLifecycleArchivingSynchronizer(
             SynchronizerConfig(command="archive"), data_source, cloud_adapter, logger)
         for storage in testcase.platform.storages:

@@ -52,12 +52,14 @@ class StorageLifecycleServiceProperties:
 
 class AWSRegionAttributes:
 
-    def __init__(self, iam_role, temp_credentials_role):
+    def __init__(self, iam_role, temp_credentials_role, profile):
         self.iam_role = iam_role
         self.temp_credentials_role = temp_credentials_role
+        self.profile = profile
 
     @classmethod
     def from_json(cls, data):
         iam_role = JsonParser.get_optional_field(data, 'iamRole')
         temp_credentials_role = JsonParser.get_optional_field(data, 'tempCredentialsRole')
-        return AWSRegionAttributes(iam_role, temp_credentials_role)
+        profile = JsonParser.get_optional_field(data, 'profile')
+        return AWSRegionAttributes(iam_role, temp_credentials_role, profile)
