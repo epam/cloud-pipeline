@@ -48,6 +48,7 @@ $APP_BACKUP_DIR = "$APP_DIR\backup"
 $APP_DISTRIBUTION_DIR = "$APP_DIR\distribution"
 $APP_DISTRIBUTION_PATH = "$APP_DIR\distribution.zip"
 $APP_SECURE_PATHS = "logs","backup","distribution","distribution.zip"
+$APP_START_DELAY_SECONDS = "5"
 $APP_FINISH_DELAY_SECONDS = "1"
 $APP_RESTART_DELAY_SECONDS = "1"
 $APP_RESTART_ATTEMPTS = "5"
@@ -146,7 +147,10 @@ foreach($attempt in 1..$APP_RESTART_ATTEMPTS) {
         }
         Log "The service has been launched."
 
-        Log "Update has been successfull..."
+        Log "Waiting for $APP_START_DELAY_SECONDS seconds before proceeding..."
+        Start-Sleep -Seconds "$APP_START_DELAY_SECONDS"
+
+        Log "Update has been successfull."
         Break
     } catch {
         Log "Update has failed on #$attempt attempt with error: $_"
@@ -170,7 +174,12 @@ if ($attempt -eq $APP_RESTART_ATTEMPTS) {
             & "$env:APP_EXEC_PATH" >$null 2>&1
         }
         Log "The service has been launched."
+
+        Log "Waiting for $APP_START_DELAY_SECONDS seconds before proceeding..."
+        Start-Sleep -Seconds "$APP_START_DELAY_SECONDS"
     }
+
+    Log "Update has been aborted."
 }
 
 Log "Stopping logs capturing..."
@@ -179,3 +188,4 @@ Stop-Transcript
 RemoveFileIfExists -Path "$APP_DISTRIBUTION_PATH"
 RemoveDirIfExists -Path "$APP_DISTRIBUTION_DIR"
 RemoveDirIfExists -Path "$APP_BACKUP_DIR"
+
