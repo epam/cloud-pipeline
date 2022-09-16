@@ -256,6 +256,8 @@ class HcsImage extends React.PureComponent {
               plateHeight: height
             }, () => {
               this.hcsInfo = info;
+              this.hcsInfo
+                .addURLsRegeneratedListener(this.loadImage);
               this.hcsVideoSource.setHcsFile({
                 storageId: storage ? storage.id : storageId,
                 path,
@@ -347,8 +349,6 @@ class HcsImage extends React.PureComponent {
       }, () => {
         sequence
           .fetch()
-          .then(() => sequence.resignDataURLs())
-          .then(() => sequence.fetchMetadata())
           .then(() => {
             const {wells = []} = sequence;
             this.setState({

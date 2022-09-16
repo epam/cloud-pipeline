@@ -132,14 +132,15 @@ public class DataStorageLifecycleManagerTest {
         Mockito.doReturn(Collections.singletonList(mapper.toEntity(RULE_WITH_ID)))
                 .when(lifecycleRuleRepository)
                 .findByDatastorageId(eq(ID));
-        StorageLifecycleRule ruleWithoutCriterion = RULE.toBuilder().transitionCriterion(null).build();
+        final StorageLifecycleRule ruleWithoutCriterion = RULE.toBuilder().transitionCriterion(null).build();
         lifecycleManager.createStorageLifecyclePolicyRule(ID, ruleWithoutCriterion);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailCreateLifecycleRuleIfPathNotFromRoot() {
         final StorageLifecycleRule rule = RULE.toBuilder().pathGlob("path/not/from/root").build();
-        lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
+        final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
+        Assert.assertTrue(created.getPathGlob().startsWith("/"));
     }
 
     @Test

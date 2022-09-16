@@ -40,9 +40,10 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
 
     public static final String PATH = "path";
     public static final String STATUS = "status";
+    public static final String ONE_ANY_SYMBOL = "_";
     public static final String ANY_SIGN = "%";
-    public static final String DATASTORAGE_ID = "datastorageId";
     public static final String DELIMITER = "/";
+    public static final String DATASTORAGE_ID = "datastorageId";
 
     final EntityManager em;
 
@@ -63,7 +64,7 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
                     predicates.add(cb.like(restoreAction.get(PATH), filter.getPath().getPath() + ANY_SIGN));
                     if (filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_CHILD) {
                         predicates.add(cb.notLike(restoreAction.get(PATH),
-                                filter.getPath().getPath() + ANY_SIGN + DELIMITER + ANY_SIGN));
+                                filter.getPath().getPath() + ANY_SIGN + DELIMITER + ONE_ANY_SYMBOL + ANY_SIGN));
                     }
                 } else {
                     predicates.add(cb.equal(restoreAction.get(PATH), filter.getPath().getPath()));

@@ -15,6 +15,7 @@
  */
 
 import ConvertObjectsToImage from './convert-objects-to-image';
+import ExpandOrShrinkObjects from './expand-or-shrink-objects';
 import FilterObjects, {
   FilterObjectsBySize
 } from './filter-objects';
@@ -27,6 +28,7 @@ import ResizeObjects from './resize-objects';
 
 export default [
   ConvertObjectsToImage,
+  ExpandOrShrinkObjects,
   FilterObjects,
   FilterObjectsBySize,
   IdentifyPrimaryObjects,

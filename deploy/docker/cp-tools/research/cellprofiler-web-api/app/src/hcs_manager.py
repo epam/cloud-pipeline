@@ -161,6 +161,10 @@ class HCSManager:
         return field_value
 
     @staticmethod
+    def get_required_field(json_data, field_name):
+        return HCSManager._get_required_field(json_data, field_name)
+
+    @staticmethod
     def _collect_pipeline_tiff_outputs(pipeline_id, measurements_uuid):
         results = list()
         results_dir = os.path.join(Config.COMMON_RESULTS_DIR, measurements_uuid, pipeline_id)

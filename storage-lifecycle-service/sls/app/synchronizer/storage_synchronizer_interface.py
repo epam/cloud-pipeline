@@ -15,21 +15,18 @@
 
 class StorageLifecycleSynchronizer:
 
-    def __init__(self, config, cp_data_source, cloud_bridge, logger):
+    def __init__(self, config, pipeline_api_client, cloud_bridge, logger):
         self.config = config
         self.cloud_bridge = cloud_bridge
-        self.cp_data_source = cp_data_source
+        self.pipeline_api_client = pipeline_api_client
         self.logger = logger
 
     def sync(self):
         self.logger.log("Starting object lifecycle synchronization process...")
-        available_storages = [s for s in self.cp_data_source.load_available_storages() if s.storage_type != "NFS"]
+        available_storages = [s for s in self.pipeline_api_client.load_available_storages() if s.storage_type != "NFS"]
         self.logger.log("{} storages loaded.".format(len(available_storages)))
-
-        regions_by_id = {region.id: region.region_id for region in self.cp_data_source.load_regions()}
-
+        self.cloud_bridge.initialize()
         for storage in available_storages:
-            storage.region_name = regions_by_id[storage.region_id]
             self.logger.log(
                 "Starting object lifecycle synchronization process for {} with type {}.".format(
                     storage.path, storage.storage_type)

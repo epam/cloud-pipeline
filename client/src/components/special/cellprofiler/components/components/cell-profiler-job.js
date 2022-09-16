@@ -59,6 +59,7 @@ function CellProfilerJob (props) {
         <StatusIcon
           run={job.job}
           small
+          tooltipPlacement="right"
         />
         <span
           className={styles.title}
@@ -78,6 +79,7 @@ function CellProfilerJob (props) {
         <UserName
           userName={job.owner}
           showIcon
+          tooltipPlacement="right"
         />
         {
           job.startDate && (

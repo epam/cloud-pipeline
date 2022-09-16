@@ -35,7 +35,7 @@ const findNeurites = {
   sourceImageParameter: 'input',
   output: 'output|object',
   parameters: [
-    'Select the soma/cell objects|object|Cells|REQUIRED|ALIAS soma',
+    'Select the soma/cell objects|object|Cells|REQUIRED|ALIAS soma|DEFAULT_FROM FindCells',
     'Select the input image|file|ALIAS input|REQUIRED|ALIAS input',
     'Neurites objects name|string|Neurites|REQUIRED|ALIAS output',
     'Rescale input image intensity|flag|true|ADVANCED|ALIAS rescaleBefore',

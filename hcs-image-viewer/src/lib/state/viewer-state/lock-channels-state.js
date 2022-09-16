@@ -43,6 +43,9 @@ export default function lockChannelsState(state, channelsInfo) {
       channelsVisibility: channels.map(() => true),
     };
   }
+  if (channels.length === 0) {
+    return state;
+  }
   const currentChannelNames = currentChannels.slice();
   const lockedChannels = [];
   for (let c = 0; c < channels.length; c += 1) {

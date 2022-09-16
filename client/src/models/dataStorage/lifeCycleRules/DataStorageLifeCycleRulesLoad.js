@@ -16,7 +16,13 @@
 
 import Remote from '../../basic/Remote';
 
-export default class DataStorageLifeCycleRulesLoad extends Remote {
+const STATUS = {
+  'INITIATED': 'INITIATED',
+  'RUNNING': 'RUNNING',
+  'SUCCEEDED': 'SUCCEEDED'
+};
+
+class DataStorageLifeCycleRulesLoad extends Remote {
   url;
   path;
 
@@ -30,3 +36,6 @@ export default class DataStorageLifeCycleRulesLoad extends Remote {
     }
   };
 }
+
+export {STATUS};
+export default DataStorageLifeCycleRulesLoad;

@@ -86,8 +86,7 @@ public interface NotificationService {
 
     }
 
-    default void notifyInactiveUsers(final List<PipelineUser> inactiveUsers,
-                                     final List<PipelineUser> ldapBlockedUsers) {
+    default void notifyPipelineUsers(final List<PipelineUser> inactiveUsers, final NotificationType type) {
     }
 
     default void notifyOnBillingQuotaExceeding(final AppliedQuota appliedQuota) {

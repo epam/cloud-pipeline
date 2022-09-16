@@ -18,6 +18,10 @@ import {fetchSourceInfo} from '../hcs-image-viewer';
 import * as HCSConstants from './constants';
 import HCSImageWell, {getImageInfoFromName} from './hcs-image-well';
 
+const second = 1000;
+const minute = 60 * second;
+const REGENERATE_URLS_TIMEOUT = 10 * minute;
+
 /**
  * @typedef {Object} HCSTimeSeries
  * @property {string} id
@@ -89,9 +93,22 @@ class HCSImageSequence {
     this.error = undefined;
     this.omeTiff = undefined;
     this.offsetsJson = undefined;
+    this.timeouts = [];
+    this.listeners = [];
   }
 
+  addURLsGeneratedListener = (listener) => {
+    this.removeURLsGeneratedListener(listener);
+    this.listeners.push(listener);
+  };
+
+  removeURLsGeneratedListener = (listener) => {
+    this.listeners = this.listeners.filter(aListener => aListener !== listener);
+  };
+
   destroy () {
+    this.clearTimeouts();
+    this.listeners = undefined;
     this.wells.forEach(aWell => aWell.destroy());
     this.wells = undefined;
     this.objectStorage = undefined;
@@ -106,18 +123,20 @@ class HCSImageSequence {
             json,
             {width: this.plateWidth, height: this.plateHeight}
           ))
+          .then((wells = []) => {
+            this.wells = wells.slice();
+            return Promise.resolve();
+          })
+          .then(() => this.regenerateDataURLs())
+          .then(() => this.fetchMetadata())
           .then(resolve)
-          .catch(e => reject(
-            new Error(`Error fetching sequence ${this.id} info: ${e.message}`)
-          ));
+          .catch(e => {
+            this.error = e.message;
+            reject(
+              new Error(`Error fetching sequence ${this.id} info: ${e.message}`)
+            );
+          });
       });
-      this._fetch
-        .then((wells = []) => {
-          this.wells = wells.slice();
-        })
-        .catch(e => {
-          this.error = e.message;
-        });
     }
     return this._fetch;
   }
@@ -159,10 +178,7 @@ class HCSImageSequence {
   fetchMetadata = () => {
     if (!this.metadataPromise) {
       this.metadataPromise = new Promise((resolve) => {
-        Promise.all([
-          this.generateOMETiffURL(),
-          this.generateOffsetsJsonURL()
-        ])
+        Promise.resolve()
           .then(() => {
             if (this.omeTiff && this.offsetsJson) {
               return fetchSourceInfo({url: this.omeTiff, offsetsUrl: this.offsetsJson});
@@ -232,13 +248,26 @@ class HCSImageSequence {
     return promise;
   }
 
-  resignDataURLs () {
-    return Promise.all([
+  async regenerateDataURLs () {
+    this.clearTimeouts();
+    await Promise.all([
       this.generateOMETiffURL(),
       this.generateOffsetsJsonURL(),
       this.generateOverviewOMETiffURL(),
       this.generateOverviewOffsetsJsonURL()
     ]);
+    this.listeners
+      .filter(aListener => typeof aListener === 'function')
+      .forEach(aListener => aListener(this));
+    this.urlsRegenerationTimer = setTimeout(
+      () => this.regenerateDataURLs(),
+      REGENERATE_URLS_TIMEOUT
+    );
+  }
+
+  clearTimeouts () {
+    clearTimeout(this.urlsRegenerationTimer);
+    this.urlsRegenerationTimer = undefined;
   }
 }
 

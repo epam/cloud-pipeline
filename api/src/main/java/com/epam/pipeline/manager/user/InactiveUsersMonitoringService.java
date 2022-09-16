@@ -31,7 +31,7 @@ public class InactiveUsersMonitoringService extends AbstractSchedulingManager {
 
     @PostConstruct
     public void init() {
-        scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_USER_MONITOR_DELAY,
+        scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_INACTIVE_USER_MONITOR_DELAY,
                 "InactiveUsersMonitor");
     }
 }

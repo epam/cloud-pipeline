@@ -34,7 +34,7 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
     TERMINAL_STATUSES = [SUCCEEDED_STATUS, CANCELLED_STATUS, FAILED_STATUS]
 
     def _sync_storage(self, storage):
-        ongoing_actions = self.cp_data_source.filter_restore_actions(
+        ongoing_actions = self.pipeline_api_client.filter_restore_actions(
             storage.id,
             filter_obj={
                 "datastorageId": storage.id,
@@ -149,7 +149,7 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
         copy_action_to_update.status = status
         if restored_till:
             copy_action_to_update.restored_till = restored_till
-        updated_response = self.cp_data_source.update_restore_action(copy_action_to_update)
+        updated_response = self.pipeline_api_client.update_restore_action(copy_action_to_update)
         if updated_response:
             updated_action = StorageLifecycleRestoreAction.parse_from_dict(updated_response)
             self._merge_actions(action_to_update, updated_action)
@@ -161,11 +161,11 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
     def _send_restore_notification(self, storage, action):
 
         def _prepare_message():
-            notification = self.cp_data_source.load_notification(self.DATASTORAGE_RESTORE_ACTION_NOTIFICATION_TYPE)
+            notification = self.pipeline_api_client.load_notification(self.DATASTORAGE_RESTORE_ACTION_NOTIFICATION_TYPE)
             cc_users = []
 
             if notification.settings.keep_informed_admins:
-                loaded_role = self.cp_data_source.load_role_by_name("ROLE_ADMIN")
+                loaded_role = self.pipeline_api_client.load_role_by_name("ROLE_ADMIN")
                 if loaded_role and "users" in loaded_role:
                     cc_users.extend([user["userName"] for user in loaded_role["users"]])
 
@@ -173,7 +173,7 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                 if recipient["principal"]:
                     cc_users.append(recipient["name"])
                 else:
-                    loaded_role = self.cp_data_source.load_role_by_name(recipient["name"])
+                    loaded_role = self.pipeline_api_client.load_role_by_name(recipient["name"])
                     if loaded_role and "users" in loaded_role:
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
 
@@ -190,7 +190,7 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
 
         subject, body, to_user, copy_users, parameters = _prepare_message()
         if subject and body and to_user:
-            result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
+            result = self.pipeline_api_client.send_notification(subject, body, to_user, copy_users, parameters)
             if not result:
                 self.logger.log("Storage: {}. Action: {}. Path: {}. Problem to send restore notification."
                                 .format(storage.id, action.action_id, action.path))

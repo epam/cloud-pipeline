@@ -148,6 +148,19 @@ class AnalysisModule {
     this.subModules = subModules;
   }
 
+  setParameterDefaultValues = (onlyEmpty = true) => {
+    this.parameters.forEach(aParameter => {
+      if (
+        aParameter &&
+        (aParameter.isEmpty || !onlyEmpty) &&
+        aParameter.parameter &&
+        aParameter.parameter.defaultValue
+      ) {
+        aParameter.value = aParameter.parameter.defaultValue;
+      }
+    });
+  }
+
   /**
    * @returns {Analysis}
    */

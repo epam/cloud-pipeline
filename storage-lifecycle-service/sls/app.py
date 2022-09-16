@@ -21,7 +21,7 @@ from sls.app.synchronizer.archiving_synchronizer_impl import StorageLifecycleArc
 from sls.app.synchronizer.restoring_synchronizer_impl import StorageLifecycleRestoringSynchronizer
 from sls.util.logger import AppLogger
 from sls.app.model.config_model import SynchronizerConfig
-from sls.pipelineapi.cp_api_interface_impl import configure_cp_data_source
+from sls.pipelineapi.cp_api_interface_impl import configure_pipeline_api
 
 
 def main():
@@ -42,15 +42,15 @@ def main():
 
 def run_application(args):
     logger = AppLogger(args.command, stdout=False)
-    data_source = configure_cp_data_source(args.cp_api_url, args.cp_api_token, args.log_dir, logger, args.data_source)
+    pipeline_api_client = configure_pipeline_api(args.cp_api_url, args.cp_api_token, args.log_dir, logger, args.data_source)
 
-    cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger)
+    cloud_adapter = PlatformToCloudOperationsAdapter(pipeline_api_client, logger)
     config = SynchronizerConfig(args.command, args.mode, args.start_at, args.start_each, int(args.max_execution_running_days))
     logger.log("Running application with config: {}".format(config.to_json()))
 
-    lifecycle_storage_synchronizer = StorageLifecycleRestoringSynchronizer(config, data_source, cloud_adapter, logger) \
+    lifecycle_storage_synchronizer = StorageLifecycleRestoringSynchronizer(config, pipeline_api_client, cloud_adapter, logger) \
         if config.command == "restore" \
-        else StorageLifecycleArchivingSynchronizer(config, data_source, cloud_adapter, logger)
+        else StorageLifecycleArchivingSynchronizer(config, pipeline_api_client, cloud_adapter, logger)
 
     ApplicationModeRunner.get_application_runner(lifecycle_storage_synchronizer, config).run()
 

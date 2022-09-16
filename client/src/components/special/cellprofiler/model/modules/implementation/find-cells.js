@@ -50,7 +50,7 @@ const findCells = {
   name: 'FindCells',
   composed: true,
   parameters: [
-    'Nuclei objects|object|ALIAS nuclei|REQUIRED',
+    'Nuclei objects|object|ALIAS nuclei|REQUIRED|DEFAULT_FROM FindNuclei',
     'Image|file|ALIAS input|IF multipleChannels==false OR mainMethod!=="Combine channels"|REQUIRED',
     'Objects name|string|Cells|ALIAS name|REQUIRED',
     'Method|[Default,Suppress features,Combine channels]|Default|ALIAS mainMethod',

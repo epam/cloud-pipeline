@@ -7,6 +7,7 @@ import flask
 from flask import Flask, jsonify,  request
 
 from src.hcs_manager import HCSManager
+from src.hcs_clip import create_clip
 
 
 if getattr(sys, 'frozen', False):
@@ -193,6 +194,17 @@ def get_status():
         module_id = flask.request.args.get("moduleId")
         response = manager.get_status(pipeline_id, module_id)
         return jsonify(success(response))
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/hcs/clip', methods=['GET'])
+def get_movie():
+    try:
+        params = flask.request.args
+        clip_full_path, total_time = create_clip(params)
+        return jsonify(success({"path": clip_full_path, "time": total_time}))
     except Exception as e:
         print(traceback.format_exc())
         return jsonify(error(e.__str__()))

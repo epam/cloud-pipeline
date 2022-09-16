@@ -16,10 +16,14 @@
 
 package com.epam.pipeline.dao.region;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.MountStorageRule;
+import com.epam.pipeline.entity.region.StorageLifecycleServiceProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.SneakyThrows;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.sql.ResultSet;
@@ -43,6 +47,19 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         params.addValue(CloudRegionParameters.CLOUD_PROVIDER.name(), region.getProvider().name());
         params.addValue(CloudRegionParameters.MOUNT_STORAGE_RULE.name(), region.getMountStorageRule().name());
         params.addValue(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name(), region.getMountCredentialsRule().name());
+
+        final String slsPropertiesJson = Optional.ofNullable(region.getStorageLifecycleServiceProperties())
+                .map(props -> {
+                    if (MapUtils.isNotEmpty(props.getProperties())) {
+                        return JsonMapper.convertDataToJsonStringForQuery(
+                                region.getStorageLifecycleServiceProperties());
+                    } else {
+                        return null;
+                    }
+                }).orElse(null);
+        params.addValue(CloudRegionParameters.STORAGE_LIFECYCLE_SERVICE_PROPERTIES.name(),
+                slsPropertiesJson);
+
         params.addValues(getProviderParameters(region, credentials).getValues());
         return withFilledMissingValues(params);
     }
@@ -69,5 +86,11 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
                 rs.getString(CloudRegionParameters.MOUNT_STORAGE_RULE.name())));
         region.setMountCredentialsRule(MountStorageRule.valueOf(
                 rs.getString(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name())));
+        final String slsJsonString = rs.getString(CloudRegionParameters.STORAGE_LIFECYCLE_SERVICE_PROPERTIES.name());
+        if (!rs.wasNull()) {
+            region.setStorageLifecycleServiceProperties(
+                    JsonMapper.parseData(slsJsonString, new TypeReference<StorageLifecycleServiceProperties>() {})
+            );
+        }
     }
 }

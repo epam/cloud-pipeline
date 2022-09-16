@@ -14,17 +14,25 @@
 
 
 class StorageOperations:
-    def prepare_bucket_if_needed(self, bucket):
+    def prepare_bucket_if_needed(self, region, storage_container):
         pass
 
-    def list_objects_by_prefix(self, bucket, prefix, list_versions=False, convert_paths=True):
+    def list_objects_by_prefix(self, region, storage_container, list_versions=False, convert_paths=True):
         pass
 
-    def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
+    def tag_files_to_transit(self, region, storage_container, files, storage_class, transit_id):
         pass
 
-    def run_files_restore(self, bucket, files, days, restore_tear, region, operation_id):
+    def run_files_restore(self, region, storage_container, files, days, restore_tear, operation_id):
         pass
 
-    def check_files_restore(self, bucket, files, restore_timestamp, restore_mode):
+    def check_files_restore(self, region, storage_container, files, restore_timestamp, restore_mode):
         pass
+
+
+class CloudPipelineStorageContainer:
+
+    def __init__(self, bucket_identifier, bucket_prefix, storage_object):
+        self.bucket = bucket_identifier
+        self.bucket_prefix = bucket_prefix
+        self.storage = storage_object

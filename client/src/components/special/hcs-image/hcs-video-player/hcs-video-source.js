@@ -184,7 +184,6 @@ class HcsVideoSource {
   };
 
   setZPlanes = (zPlanes = []) => {
-    console.log('set z planes', zPlanes);
     if (!numberArraysAreEqual(zPlanes, this.zPlanes)) {
       this.zPlanes = zPlanes;
       this.generateUrlDelayed();

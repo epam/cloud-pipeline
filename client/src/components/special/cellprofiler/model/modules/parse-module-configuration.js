@@ -478,6 +478,7 @@ function processParameter (input) {
   let alias = getPredefinedOption('ALIAS');
   const parameterNameParts = getPredefinedOption('PARAMETER');
   const empty = getPredefinedOption('EMPTY');
+  const defaultFromModule = getPredefinedOption('DEFAULT_FROM');
   const [namePart, typeParts, defaultValueParts] = splitParts;
   const name = joinParts(namePart);
   alias = alias || name;
@@ -492,6 +493,26 @@ function processParameter (input) {
   const e = /^['"](.*)['"]$/.exec(defaultValueParsed);
   if (typeof defaultValueParsed === 'string' && e && e[1]) {
     defaultValue = e[1];
+  }
+  if (!defaultValue && defaultFromModule) {
+    /**
+     * @param {AnalysisModule} cpModule
+     * @returns {string}
+     */
+    defaultValue = cpModule => {
+      if (cpModule) {
+        const moduleNames = defaultFromModule
+          .split(/,;\s/)
+          .map(o => o.trim());
+        const before = cpModule.modulesBefore
+          .filter(o => moduleNames.includes(o.name))
+          .pop();
+        if (before && before.outputs && before.outputs.length > 0) {
+          return before.outputs[0].name;
+        }
+      }
+      return undefined;
+    };
   }
   const parameter = {
     advanced,

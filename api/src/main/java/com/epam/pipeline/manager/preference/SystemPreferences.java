@@ -238,12 +238,6 @@ public class SystemPreferences {
             new LongPreference("storage.lifecycle.notify.before.days", 7L, DATA_STORAGE_GROUP,
                     isGreaterThan(0), true);
 
-    public static final ObjectPreference<Map<String, Map<String, String>>> STORAGE_LIFECYCLE_SERVICE_CLOUD_CONFIG =
-            new ObjectPreference<>(
-                "storage.lifecycle.service.cloud.config", Collections.emptyMap(),
-                new TypeReference<Map<String, Map<String, String>>>() {}, DATA_STORAGE_GROUP,
-                isNullOrValidJson(new TypeReference<Map<String, Map<String, String>>>() {}));
-
     public static final LongPreference STORAGE_LIFECYCLE_DEFAULT_RESTORE_DAYS =
             new LongPreference("storage.lifecycle.default.restore.days", 30L, DATA_STORAGE_GROUP,
                     isGreaterThan(0), true);
@@ -800,16 +794,18 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_OOM_EXCLUDE_EVENTS = new StringPreference(
             "system.oom.exclude.events", "flanneld|iptables|canal|kube-proxy|calico", SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USER_MONITOR_DELAY = new IntPreference(
-            "system.user.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
-    public static final BooleanPreference SYSTEM_USER_MONITOR_ENABLED = new BooleanPreference(
-            "system.user.monitor.enable", false, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_INACTIVE_USER_MONITOR_DELAY = new IntPreference(
+            "system.inactive.user.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final BooleanPreference SYSTEM_INACTIVE_USER_MONITOR_ENABLED = new BooleanPreference(
+            "system.inactive.user.monitor.enable", false, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_INACTIVE_USER_MONITOR_BLOCKED_DAYS = new IntPreference(
+            "system.inactive.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_INACTIVE_USER_MONITOR_IDLE_DAYS = new IntPreference(
+            "system.inactive.user.monitor.idle.days", 365, SYSTEM_GROUP, pass);
     public static final BooleanPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED = new BooleanPreference(
             "system.ldap.user.block.monitor.enable", false, SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USER_MONITOR_BLOCKED_DAYS = new IntPreference(
-            "system.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USER_MONITOR_IDLE_DAYS = new IntPreference(
-            "system.user.monitor.idle.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_DELAY = new IntPreference(
+            "system.ldap.user.block.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_NODE_POOL_MONITOR_DELAY = new IntPreference(
             "system.node.pool.monitor.delay", 30000, SYSTEM_GROUP, pass);
     /**

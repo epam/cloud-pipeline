@@ -97,7 +97,7 @@ class AnalysisPipeline {
       .filter(cpModule => /^RelateObjects$/i.test(cpModule.name));
     const appendSpots = (parent, child) => {
       const image = this.getSourceImageForObjet(child);
-      if (parent && child && image) {
+      if (child && image) {
         spots.push({
           parent: parent,
           name: child,
@@ -115,7 +115,7 @@ class AnalysisPipeline {
     findSpotsModules.forEach(findSpotsModule => {
       const parent = findSpotsModule.getParameterValue('parentObject');
       const child = findSpotsModule.getParameterValue('output');
-      appendSpots(parent, child);
+      appendSpots(parent === 'None' ? undefined : parent, child);
     });
     return spots.filter((aSpot, index, array) => {
       return array.slice(0, index)
@@ -235,6 +235,10 @@ class AnalysisPipeline {
     return this.spots.some(aSpot => aSpot.name === object);
   }
 
+  getObjectIsSpotWithParent = (object) => {
+    return this.spots.some(aSpot => aSpot.name === object && !!aSpot.parent);
+  }
+
   getObjectHasSpots = (object) => {
     return this.spots.some(aSpot => aSpot.parent === object);
   }
@@ -277,6 +281,7 @@ class AnalysisPipeline {
   add = async (analysisModuleConfiguration) => {
     const newModule = new AnalysisModule(this, analysisModuleConfiguration);
     this.modules.push(newModule);
+    newModule.setParameterDefaultValues();
     return newModule;
   };
 

@@ -51,20 +51,21 @@ public class DataStorageLifecycleRestoreManagerTest {
 
     private static final long ID = ONE;
     private static final String STORAGE_NAME = "storage-name";
-    private static final String PATH_1 = "data/";
-    private static final long DAYST_TO_RESTORE_50 = 50L;
+    private static final String PATH_2 = "/data2/";
+    private static final String PATH_1 = "/data/";
+    private static final long DAYS_TO_RESTORE_50 = 50L;
     private static final long DAYS_TO_RESTORE_10 = 10L;
 
     public static final StorageRestoreActionEntity SUCCEEDED_ACTION = StorageRestoreActionEntity.builder().id(ID)
             .datastorageId(ID).path(PATH_1)
             .status(StorageRestoreStatus.SUCCEEDED)
-            .days(DAYST_TO_RESTORE_50)
+            .days(DAYS_TO_RESTORE_50)
             .started(DateUtils.nowUTC().minus(TWO, ChronoUnit.DAYS)).build();
 
     public static final StorageRestoreActionEntity RUNNING_ACTION = StorageRestoreActionEntity.builder().id(ID)
             .datastorageId(ID).path(PATH_1)
             .status(StorageRestoreStatus.RUNNING)
-            .days(DAYST_TO_RESTORE_50)
+            .days(DAYS_TO_RESTORE_50)
             .started(DateUtils.nowUTC().minus(TWO, ChronoUnit.DAYS)).build();
     public static final StorageRestoreActionEntity INITIATED_ACTION = StorageRestoreActionEntity.builder().id(ID)
             .datastorageId(ID).path(PATH_1)
@@ -77,7 +78,6 @@ public class DataStorageLifecycleRestoreManagerTest {
             .status(StorageRestoreStatus.CANCELLED)
             .days(DAYS_TO_RESTORE_10)
             .started(DateUtils.nowUTC().minus(ONE, ChronoUnit.DAYS)).build();
-    private static final String PATH_2 = "data2/";
     public static final String STANDARD_RESTORE_MODE = "Standard";
     public static final StorageRestoreActionNotification DISABLED_NOTIFICATION =
             new StorageRestoreActionNotification(false, Collections.emptyList());
@@ -125,6 +125,7 @@ public class DataStorageLifecycleRestoreManagerTest {
                 lifecycleManager.loadEffectiveRestoreStorageAction(
                         dataStorage,
                         StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build());
+        Assert.assertNotNull(storageRestoreAction);
         Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
 
