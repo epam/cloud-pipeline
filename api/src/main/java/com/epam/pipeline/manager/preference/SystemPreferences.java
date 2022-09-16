@@ -581,6 +581,10 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES = new StringPreference(
             "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_VM_SEARCH_ATTEMPTS = new IntPreference("system.vm.search.attempts",
+            5, SYSTEM_GROUP, isGreaterThan(1));
+    public static final IntPreference SYSTEM_VM_SEARCH_DELAY = new IntPreference("system.vm.search.delay.ms",
+            1000, SYSTEM_GROUP, isGreaterThan(0));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

@@ -18,6 +18,7 @@ package com.epam.pipeline.utils;
 
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
+import lombok.SneakyThrows;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
@@ -71,5 +72,10 @@ public final class CommonUtils {
                 .map(Supplier::get)
                 .flatMap(o -> o.map(Stream::of).orElseGet(Stream::empty))
                 .findFirst();
+    }
+
+    @SneakyThrows
+    public static void sleep(final long timeout) {
+        Thread.sleep(timeout);
     }
 }

@@ -24,6 +24,9 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.utils.CommonUtils;
 import com.microsoft.azure.CloudException;
 import com.microsoft.azure.Page;
 import com.microsoft.azure.PagedList;
@@ -78,8 +81,8 @@ public class AzureVMService {
     }
 
     private final MessageHelper messageHelper;
-
     private final KubernetesManager kubernetesManager;
+    private final PreferenceManager preferenceManager;
 
     public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
@@ -246,14 +249,27 @@ public class AzureVMService {
                 .map(client -> client.getByResourceGroup(resourceGroup, scaleSetName));
     }
 
-    public AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region, final String tagValue) {
+    public AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region,
+                                                    final String tagValue,
+                                                    final int attempts) {
+        if (attempts <= 0) {
+            throw new AzureException(messageHelper.getMessage(
+                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, tagValue));
+        }
         final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
         return findVMContainerInPagedResult(resources.currentPage(), resources)
                 .map(vmc -> getVmStatsByVmContainer(azure, vmc))
-                .orElseThrow(() -> new AzureException(messageHelper.getMessage(
-                        MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, tagValue)));
+                .orElseGet(() -> {
+                    CommonUtils.sleep(preferenceManager.getPreference(SystemPreferences.SYSTEM_VM_SEARCH_DELAY));
+                    return getVMStatsByTag(region, tagValue, attempts - 1);
+                });
+    }
+
+    public AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region, final String tagValue) {
+        return getVMStatsByTag(region, tagValue,
+                preferenceManager.getPreference(SystemPreferences.SYSTEM_VM_SEARCH_ATTEMPTS));
     }
 
     private AzureVirtualMachineStats getVmStatsByVmContainer(final Azure azure, final GenericResource vmc) {
@@ -278,7 +294,6 @@ public class AzureVMService {
         final Optional<GenericResource> virtualMachineContainer = currentPage.items().stream()
                 .filter(r -> {
                     final String resourceType = resourceType(r);
-                    log.debug("Found resource: {} {} ", resourceType, r);
                     return resourceType.startsWith(VIRTUAL_MACHINE_PREFIX) ||
                             resourceType.equals(VIRTUAL_MACHINE_SCALE_SET_TYPE);
                 })
