@@ -26,7 +26,7 @@ async function autoUpdateWindowsApplication () {
   }
   const aProcess = spawn(
     'powershell.exe',
-    ['-ExecutionPolicy', 'Bypass', '-File', script],
+    ['-ExecutionPolicy', 'Bypass', '-File', `"${script}"`],
     {
       shell: true,
       detached: true,
