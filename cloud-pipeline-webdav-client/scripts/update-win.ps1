@@ -47,7 +47,9 @@ $APP_LOGS_DIR = "$APP_DIR\logs"
 $APP_BACKUP_DIR = "$APP_DIR\backup"
 $APP_DISTRIBUTION_DIR = "$APP_DIR\distribution"
 $APP_DISTRIBUTION_PATH = "$APP_DIR\distribution.zip"
-$APP_SECURE_PATHS = "logs","backup","distribution","distribution.zip"
+$APP_SECURE_PATHS = "logs","backup","distribution","distribution.zip","settings.json"
+$APP_BACKUP_SECURE_PATHS = "logs","distribution","distribution.zip","settings.json"
+$APP_DISTRIBUTION_SECURE_PATHS = "logs","backup","settings.json"
 $APP_START_DELAY_SECONDS = "5"
 $APP_FINISH_DELAY_SECONDS = "1"
 $APP_RESTART_DELAY_SECONDS = "1"
@@ -137,15 +139,17 @@ foreach($attempt in 1..$APP_RESTART_ATTEMPTS) {
         Remove-Item -Path "$APP_DISTRIBUTION_TMP_DIR" -Force -ErrorAction Stop
 
         Log "Applying distribution service directory..."
-        Get-ChildItem -Path "$APP_DIR" -Exclude $APP_SECURE_PATHS | Remove-Item -Force -Recurse -ErrorAction Stop
-        Move-Item -Path "$APP_DISTRIBUTION_DIR\*" -Destination "$APP_DIR\" -Exclude $APP_SECURE_PATHS -Force -ErrorAction Stop
+        Get-ChildItem -Path "$APP_DIR" -Exclude $APP_SECURE_PATHS `
+            | Remove-Item -Recurse -Force -ErrorAction Stop
+        Get-ChildItem -Path "$APP_DISTRIBUTION_DIR" -Exclude $APP_DISTRIBUTION_SECURE_PATHS `
+            | ForEach-Object { Move-Item -Path $_.FullName -Destination "$APP_DIR\" -Force -ErrorAction Stop }
 
-        Log "Launching service..."
+        Log "Launching updated service..."
         $env:APP_EXEC_PATH = $APP_EXEC_PATH
         Start-Job {
             & "$env:APP_EXEC_PATH" >$null 2>&1
         }
-        Log "The service has been launched."
+        Log "The updated service has been launched."
 
         Log "Waiting for $APP_START_DELAY_SECONDS seconds before proceeding..."
         Start-Sleep -Seconds "$APP_START_DELAY_SECONDS"
@@ -154,32 +158,34 @@ foreach($attempt in 1..$APP_RESTART_ATTEMPTS) {
         Break
     } catch {
         Log "Update has failed on #$attempt attempt with error: $_"
+
+        if ($attempt -eq $APP_RESTART_ATTEMPTS) {
+            Log "Update is being reverted after $APP_RESTART_ATTEMPTS attempts."
+
+            if (Test-Path "$APP_BACKUP_DIR") {
+                Log "Reverting to backup service directory..."
+                Get-ChildItem -Path "$APP_DIR" -Exclude $APP_SECURE_PATHS `
+                    | Remove-Item -Force -Recurse -ErrorAction Continue
+                Get-ChildItem -Path "$APP_BACKUP_DIR" -Exclude $APP_BACKUP_SECURE_PATHS `
+                    | ForEach-Object { Move-Item -Path $_.FullName -Destination "$APP_DIR\" -Force -ErrorAction Continue }
+
+                Log "Launching backuped service..."
+                $env:APP_EXEC_PATH = $APP_EXEC_PATH
+                Start-Job {
+                    & "$env:APP_EXEC_PATH" >$null 2>&1
+                }
+                Log "The backuped service has been launched."
+
+                Log "Waiting for $APP_START_DELAY_SECONDS seconds before proceeding..."
+                Start-Sleep -Seconds "$APP_START_DELAY_SECONDS"
+            }
+
+            Log "Update has been aborted."
+        }
     }
 
     Log "Waiting for $APP_RESTART_DELAY_SECONDS seconds before proceeding..."
     Start-Sleep -Seconds "$APP_RESTART_DELAY_SECONDS"
-}
-
-if ($attempt -eq $APP_RESTART_ATTEMPTS) {
-    Log "Update is being reverted after $APP_RESTART_ATTEMPTS attempts."
-
-    if (Test-Path "$APP_BACKUP_DIR") {
-        Log "Reverting to backup service directory..."
-        Get-ChildItem -Path "$APP_DIR" -Exclude $APP_SECURE_PATHS | Remove-Item -Force -Recurse -ErrorAction Continue
-        Move-Item -Path "$APP_BACKUP_DIR\*" -Destination "$APP_DIR" -Exclude $APP_SECURE_PATHS -Force -ErrorAction Continue
-
-        Log "Launching service..."
-        $env:APP_EXEC_PATH = $APP_EXEC_PATH
-        Start-Job {
-            & "$env:APP_EXEC_PATH" >$null 2>&1
-        }
-        Log "The service has been launched."
-
-        Log "Waiting for $APP_START_DELAY_SECONDS seconds before proceeding..."
-        Start-Sleep -Seconds "$APP_START_DELAY_SECONDS"
-    }
-
-    Log "Update has been aborted."
 }
 
 Log "Stopping logs capturing..."
@@ -188,4 +194,3 @@ Stop-Transcript
 RemoveFileIfExists -Path "$APP_DISTRIBUTION_PATH"
 RemoveDirIfExists -Path "$APP_DISTRIBUTION_DIR"
 RemoveDirIfExists -Path "$APP_BACKUP_DIR"
-
