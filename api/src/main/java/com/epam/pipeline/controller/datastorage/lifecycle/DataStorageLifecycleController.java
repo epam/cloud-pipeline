@@ -114,7 +114,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
         return Result.success(dataStorageLifecycleApiService.updateStorageLifecyclePolicyRule(datastorageId, rule));
     }
 
-    @PutMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}/prolong")
+    @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}/prolong")
     @ApiOperation(
             value = "Shift a moment in time when action from lifecycle rule should take place.",
             notes = "Shift a moment in time when action from lifecycle rule should take place.",

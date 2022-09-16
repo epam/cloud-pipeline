@@ -56,7 +56,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private static final String REST_API_PREFIX = "/restapi/**";
     private static final String ROUTE_URL = "/restapi/route";
-    private static final String PROLONG_URL = "/restapi/run/**/prolong**";
+    private static final String PROLONG_URL = "/restapi/**/prolong**";
 
     @Value("${jwt.key.public}")
     private String publicKey;
