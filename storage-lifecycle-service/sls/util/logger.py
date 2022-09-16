@@ -28,7 +28,7 @@ def eprint(*args, **kwargs):
 
 class AppLogger(object):
 
-    def __init__(self, log_topic, stdout=True):
+    def __init__(self, log_topic, stdout=True, backup_count=31):
         self.logger = logging.getLogger("Storage Lifecycle Service Log")
         self.logger.setLevel(logging.INFO)
         if not stdout:
@@ -36,7 +36,7 @@ class AppLogger(object):
             handler = TimedRotatingFileHandler("logs/storage-lifecycle-service-" + log_topic + ".log",
                                                when="h",
                                                interval=24,
-                                               backupCount=31)
+                                               backupCount=backup_count)
             self.logger.addHandler(handler)
 
     def log(self, message):
