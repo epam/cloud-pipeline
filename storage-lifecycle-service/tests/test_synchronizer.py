@@ -176,7 +176,7 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
     now = datetime.datetime.now(datetime.timezone.utc)
     synchronizer = \
         StorageLifecycleArchivingSynchronizer(
-            SynchronizerConfig(command="archive"), MockCloudPipelineDataSource(), None, AppLogger())
+            SynchronizerConfig(command="archive"), MockCloudPipelineDataSource(), None, AppLogger("archive"))
 
     def test_check_rule_execution_progress_still_running(self):
         subject_files = [

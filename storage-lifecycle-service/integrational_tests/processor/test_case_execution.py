@@ -24,6 +24,8 @@ from sls.cloud.s3_cloud import S3StorageOperations
 from sls.app.model.config_model import SynchronizerConfig
 from sls.util.logger import AppLogger
 
+ARCHIVE = "archive"
+
 
 class TestCaseExecutor(TestCaseProcessor):
 
@@ -32,7 +34,7 @@ class TestCaseExecutor(TestCaseProcessor):
         self.logger = logger
 
     def process(self, testcase):
-        logger = AppLogger()
+        logger = AppLogger(ARCHIVE)
         data_source = cp_api_decator.MockedNotificationRESTApiCloudPipelineDataSource(
             sls.pipelineapi.cp_api_interface_impl.configure_pipeline_api(
                 self.config.get("CP_API_URL"), self.config.get("CP_API_TOKEN"), "/tmp", logger)
@@ -48,7 +50,7 @@ class TestCaseExecutor(TestCaseProcessor):
         cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger, cloud_operations)
         cloud_adapter.initialize()
         synchronizer = StorageLifecycleArchivingSynchronizer(
-            SynchronizerConfig(command="archive"), data_source, cloud_adapter, logger)
+            SynchronizerConfig(command=ARCHIVE), data_source, cloud_adapter, logger)
         for storage in testcase.platform.storages:
             loaded_storage = data_source.load_storage(str(storage.datastorage_id))
             synchronizer._sync_storage(loaded_storage)
