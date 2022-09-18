@@ -41,7 +41,9 @@ python3 ${CP_SLS_HOME}/sls/sls/app.py --cp-api-url=${API} \
          --mode=${CP_STORAGE_LIFECYCLE_DAEMON_MODE:-single} \
          --command=${CP_STORAGE_LIFECYCLE_RUN_COMMAND} \
          --start-each=${CP_STORAGE_LIFECYCLE_DAEMON_START_EACH} \
-         --start-at="${CP_STORAGE_LIFECYCLE_DAEMON_START_AT}" 2>&1 | tee -a  $CP_SLS_HOME/logs/storage-lifecycle-service-$(date -u --iso-8601).log
+         --start-at="${CP_STORAGE_LIFECYCLE_DAEMON_START_AT}" \
+         --log-dir="${CP_SLS_HOME}/logs" \
+         --log-backup-days="${CP_STORAGE_LIFECYCLE_LOGS_BACKUP_DAYS:-31}"
 
 
 

@@ -13,8 +13,11 @@
 # limitations under the License.
 
 import datetime
+import logging
+import os
 import time
 import sys
+from logging.handlers import TimedRotatingFileHandler
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
@@ -25,8 +28,19 @@ def eprint(*args, **kwargs):
 
 class AppLogger(object):
 
+    def __init__(self, log_topic, log_dir="logs", stdout=True, backup_count=31):
+        self.logger = logging.getLogger("Storage Lifecycle Service Log")
+        self.logger.setLevel(logging.INFO)
+        if not stdout:
+            os.makedirs(log_dir, exist_ok=True)
+            handler = TimedRotatingFileHandler(os.path.join(log_dir, "storage-lifecycle-service-" + log_topic + ".log"),
+                                               when="h",
+                                               interval=24,
+                                               backupCount=backup_count)
+            self.logger.addHandler(handler)
+
     def log(self, message):
-        eprint("{} {}".format(AppLogger._build_current_date(), message))
+        self.logger.info("{} {}".format(AppLogger._build_current_date(), message))
 
     @staticmethod
     def _build_current_date():
