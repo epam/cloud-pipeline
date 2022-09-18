@@ -1099,7 +1099,7 @@ class PipelineAPI:
     def prolong_lifecycle_rule(self, datastorage_id, rule_id, path, days):
         try:
             return self.execute_request(str(self.api_url) + self.PROLONG_LIFECYCLE_RULES_URL.format(
-                                            id=datastorage_id, rule_id=rule_id, path=path, days=days), method='put')
+                                            id=datastorage_id, rule_id=rule_id, path=path, days=days))
         except Exception as e:
             raise RuntimeError("Failed to prolong lifecycle rule '{}'.",
                                "Error message: {}".format(str(rule_id), str(e.message)))
