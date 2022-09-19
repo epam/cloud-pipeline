@@ -71,8 +71,8 @@ def create_clip(params):
 def read_images(ome_tiff_path, pages):
     images = imread(ome_tiff_path, key=pages)
     if len(pages) == 1:
-        image_size = len(images)
-        images = np.reshape(images, (1, image_size, image_size))
+        image_width, image_height = get_image_size(images)
+        images = np.reshape(images, (1, image_width, image_height))
     return images
 
 
@@ -90,8 +90,8 @@ def get_pages(channel_ids, plane_id, planes, channels, timepoints, cell):
     pages = []
     num = 0
     for time_point in range(timepoints):
-        for plane in planes:
-            for channel_id in range(channels):
+        for channel_id in range(channels):
+            for plane in planes:
                 if (channel_id in channel_ids) and (plane == plane_id):
                     pages.append(num + len(planes) * channels * timepoints * cell)
                 num = num + 1
@@ -203,8 +203,17 @@ def merge_channels(images):
     return result
 
 
+def get_image_size(image):
+    image_shape = np.shape(image)
+    if len(image_shape) != 2:
+        raise RuntimeError('Incorrect image')
+    return image_shape[0], image_shape[1]
+
+
 def change_intensity(image, contrast_min, contrast_max):
-    image1 = np.repeat(contrast_min, len(image))
+    image_width, image_height = get_image_size(image)
+    image1 = np.repeat(contrast_min, image_width * image_height)
+    image1 = np.reshape(image1, (image_width, image_height))
     image = np.subtract(image, image1) / max(0.0005, (contrast_max - contrast_min))
     image = np.where(image <= 0, 0, 255 * image)
     image = np.where(image <= 255, image, 255)
