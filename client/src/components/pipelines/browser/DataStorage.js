@@ -71,7 +71,7 @@ import {
 } from '../../special/splitPanel';
 import Metadata from '../../special/metadata/Metadata';
 import LifeCycleCounter from './forms/life-cycle-rules/components/life-cycle-counter';
-import RestoreStatusIcon from './forms/life-cycle-rules/components/restore-status-icon';
+import RestoreStatusIcon, {STATUS} from './forms/life-cycle-rules/components/restore-status-icon';
 import PreviewModal from '../../search/preview/preview-modal';
 import {getTiles, getTilesInfo} from '../../search/preview/vsi-preview';
 import UploadButton from '../../special/UploadButton';
@@ -1275,6 +1275,29 @@ export default class DataStorage extends React.Component {
   };
 
   getStorageItemsTable = () => {
+    const checkRestoredStatus = (item) => {
+      const {
+        parentRestore,
+        currentRestores
+      } = this.lifeCycleRestoreInfo;
+      if (
+        !item ||
+        (item.labels && item.labels.StorageClass === STORAGE_CLASSES.standard)
+      ) {
+        return null;
+      }
+      const itemRestoreStatus = (currentRestores || [])
+        .find(({path = ''}) => item.name === path.split('/')
+          .filter(Boolean)
+          .pop()
+        );
+      if (itemRestoreStatus) {
+        return itemRestoreStatus;
+      }
+      return item.type === 'File'
+        ? parentRestore
+        : null;
+    };
     const getList = () => {
       const items = [];
       if (this.canGoToParent()) {
@@ -1295,6 +1318,7 @@ export default class DataStorage extends React.Component {
         }
         const childList = [];
         for (let version in versions) {
+          const restored = (checkRestoredStatus(item) || {}).status === STATUS.SUCCEEDED;
           if (versions.hasOwnProperty(version)) {
             childList.push({
               key: `${item.type}_${item.path}_${version}`,
@@ -1304,8 +1328,8 @@ export default class DataStorage extends React.Component {
                 !sensitive &&
                 (
                   !item.labels ||
-                  !item.labels['StorageClass'] ||
-                  item.labels['StorageClass'].toLowerCase() !== 'glacier'
+                  item.labels['StorageClass'] === STORAGE_CLASSES.standard ||
+                  restored
                 ),
               editable: versions[version].version === item.version &&
               roleModel.writeAllowed(this.props.info.value) &&
@@ -1314,7 +1338,10 @@ export default class DataStorage extends React.Component {
               selectable: false,
               shareAvailable: false,
               latest: versions[version].version === item.version,
-              isVersion: true
+              isVersion: true,
+              archived: item.labels &&
+                item.labels['StorageClass'] !== STORAGE_CLASSES.standard,
+              restored
             });
           }
         }
@@ -1338,6 +1365,7 @@ export default class DataStorage extends React.Component {
         results = this.props.storage.value.results || [];
       }
       items.push(...results.map(i => {
+        const restored = (checkRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
         return {
           key: `${i.type}_${i.path}`,
           ...i,
@@ -1346,8 +1374,8 @@ export default class DataStorage extends React.Component {
             !sensitive &&
             (
               !i.labels ||
-              !i.labels['StorageClass'] ||
-              i.labels['StorageClass'].toLowerCase() !== 'glacier'
+              i.labels['StorageClass'] === STORAGE_CLASSES.standard ||
+              restored
             ),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
           shareAvailable: !i.deleteMarker && this.sharingEnabled,
@@ -1363,7 +1391,10 @@ export default class DataStorage extends React.Component {
           ),
           hcs: !i.deleteMarker &&
             i.type.toLowerCase() === 'file' &&
-            fastCheckHCSPreviewAvailable({path: i.path, storageId: this.props.storageId})
+            fastCheckHCSPreviewAvailable({path: i.path, storageId: this.props.storageId}),
+          archived: i.labels &&
+            i.labels['StorageClass'] !== STORAGE_CLASSES.standard,
+          restored
         };
       }));
       return items;
@@ -1386,30 +1417,7 @@ export default class DataStorage extends React.Component {
       if (!item) {
         return null;
       }
-      const checkRestoredStatus = (item) => {
-        const {
-          parentRestore,
-          currentRestores
-        } = this.lifeCycleRestoreInfo;
-        if (
-          item.labels &&
-          item.labels.StorageClass === STORAGE_CLASSES.standard
-        ) {
-          return null;
-        }
-        const itemRestoreStatus = currentRestores
-          .find(({path = ''}) => item.name === path.split('/')
-            .filter(Boolean)
-            .pop()
-          );
-        if (itemRestoreStatus) {
-          return itemRestoreStatus;
-        }
-        return item.type === 'File'
-          ? parentRestore
-          : null;
-      };
-      const restoredStatus = item.editable
+      const restoredStatus = item.archived
         ? checkRestoredStatus(item)
         : null;
       if (/^file$/i.test(item.type) && SAMPLE_SHEET_FILE_NAME_REGEXP.test(item.name)) {
@@ -1726,16 +1734,6 @@ export default class DataStorage extends React.Component {
       .filter(file => file.name === this.state.selectedFile.name);
 
     return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
-  };
-
-  @computed
-  get isFileSelectedArchived () {
-    if (!this.state.selectedFile) {
-      return false;
-    }
-    const selectedFile = this.tableData
-      .find(file => file.name === this.state.selectedFile.name) || {};
-    return selectedFile.labels && selectedFile.labels.StorageClass !== STORAGE_CLASSES.standard;
   };
 
   openConvertToVersionedStorageDialog = (callback) => {
@@ -2288,7 +2286,11 @@ export default class DataStorage extends React.Component {
               downloadable={!this.props.info.value.sensitive}
               showContent={
                 !this.props.info.value.sensitive &&
-                !this.isFileSelectedArchived
+                (
+                  this.state.selectedFile && this.state.selectedFile.archived
+                    ? this.state.selectedFile.restored
+                    : true
+                )
               }
               hideMetadataTags={this.props.info.value.type === 'NFS'}
               canNavigateBack={!!this.state.selectedFile}
