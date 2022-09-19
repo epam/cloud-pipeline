@@ -54,6 +54,14 @@ function getUpdateScriptWindows() {
   return getCompilationAssetPath('update-win.ps1');
 }
 
+function getUpdateScriptDarwin() {
+  return getCompilationAssetPath('update-darwin.sh');
+}
+
+function getUpdateScriptLinux() {
+  return getCompilationAssetPath('update-linux.sh');
+}
+
 function readCertificates (root) {
   const certificates = []
   const certificatesDir = path.resolve(root, 'certs');
@@ -229,7 +237,9 @@ module.exports = async function () {
   config.version = getAppVersion();
   config.componentVersion = getComponentVersion();
   config.updateScripts = {
-    win: getUpdateScriptWindows()
+    windows: getUpdateScriptWindows(),
+    macos: getUpdateScriptDarwin(),
+    linux: getUpdateScriptLinux()
   };
   log(`Parsed configuration:\n${JSON.stringify(config, undefined, ' ')}`);
   return config;

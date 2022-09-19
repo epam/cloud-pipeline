@@ -3,10 +3,10 @@ import electron from 'electron';
 import {CloseOutlined} from '@ant-design/icons';
 import cloudPipelineAPI from '../../models/cloud-pipeline-api';
 import { log } from '../../models/log';
-import autoUpdateApplication from '../../../auto-update';
+import autoUpdateApplication, {autoUpdateAvailable} from '../../../auto-update';
 import './update-notification.css';
 
-const UPDATE_INTERVAL_MS = 5 * 1000; // 5 minutes
+const UPDATE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function UpdateNotification () {
   const config = (() => {
@@ -21,6 +21,7 @@ export default function UpdateNotification () {
   } = config;
 
   const [newVersion, setNewVersion] = useState(undefined);
+  const [available, setAvailable] = useState(undefined);
   const [userClosedNotification, setUserClosedNotification] = useState(undefined);
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -31,9 +32,14 @@ export default function UpdateNotification () {
     let stopped = false;
     const check = () => {
       clearTimeout(handler);
-      cloudPipelineAPI
-        .initialize()
-        .getAppInfo()
+      Promise.resolve()
+        .then(() => cloudPipelineAPI.initialize())
+        .then(autoUpdateAvailable)
+        .then(autoUpdateAvailableForOS => {
+            setAvailable(autoUpdateAvailableForOS);
+            return cloudPipelineAPI.getAppInfo();
+          }
+        )
         .then(version => {
           const updateAvailable = version &&
             // currentVersion &&
@@ -41,7 +47,9 @@ export default function UpdateNotification () {
           if (updateAvailable && newVersion !== version) {
             log(`New version ${version} available. Current version: ${currentVersion || 'unknown'}`);
           }
-          setNewVersion(version);
+          if (newVersion !== version) {
+            setNewVersion(version);
+          }
         })
         .catch(e => log(`Error fetching app version: ${e.message}`))
         .then(() => {
@@ -58,16 +66,19 @@ export default function UpdateNotification () {
   }, [
     newVersion,
     setNewVersion,
-    currentVersion
+    currentVersion,
+    setAvailable
   ]);
 
   useEffect(() => {
     setNotificationVisible(
+      available &&
       !!newVersion &&
       currentVersion !== newVersion &&
       userClosedNotification !== newVersion
     );
   }, [
+    available,
     userClosedNotification,
     newVersion,
     currentVersion,
@@ -78,11 +89,16 @@ export default function UpdateNotification () {
     setError(false);
     try {
       await autoUpdateApplication();
+      // Normally, update script should kill current process.
+      // If for some reason it is finished, but current process is alive,
+      // we need to warn user that something went wrong.
+      setError(`Unknown error updating and re-launching ${appName || 'Cloud Data'}.`);
+      setUpdating(false);
     } catch (e) {
       setError(e.message);
       setUpdating(false);
     }
-  }, [setUpdating, setError]);
+  }, [setUpdating, setError, appName]);
   const onCloseNotification = useCallback(
     () => setUserClosedNotification(newVersion),
     [setUserClosedNotification, newVersion]

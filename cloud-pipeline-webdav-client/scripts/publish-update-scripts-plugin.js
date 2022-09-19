@@ -1,18 +1,24 @@
 const fs = require('fs');
 const path = require('path');
 
+function publishScript(compilation, fileName) {
+  try {
+    const script = fs.readFileSync(path.resolve(__dirname, fileName));
+    compilation.assets[fileName] = {
+      source: () => Buffer.from(script),
+      size: () => Buffer.from(script).length
+    };
+  } catch (e) {
+    console.log(`Error publishing update script "${fileName}":`, e.message);
+  }
+}
+
 class PublishUpdateScriptsPlugin {
   apply(compiler) {
     compiler.hooks.emit.tapPromise('PublishUpdateScriptsPlugin', async compilation => {
-      try {
-        const updateWinScript = fs.readFileSync(path.resolve(__dirname, './update-win.ps1'));
-        compilation.assets['update-win.ps1'] = {
-          source: () => Buffer.from(updateWinScript),
-          size: () => Buffer.from(updateWinScript).length
-        };
-      } catch (e) {
-        console.log('Error publishing update script:', e.message);
-      }
+      publishScript(compilation, 'update-win.ps1');
+      publishScript(compilation, 'update-darwin.sh');
+      publishScript(compilation, 'update-linux.sh');
     });
   }
 }
