@@ -33,7 +33,7 @@ def main():
     parser.add_argument("--start-at", required=False)
     parser.add_argument("--start-each", required=False)
     parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
-    parser.add_argument("--log-dir", default="/var/log/")
+    parser.add_argument("--log-dir", default="logs")
     parser.add_argument("--log-backup-days", default=31, required=False)
     parser.add_argument("--max-execution-running-days", default=2)
 
@@ -42,7 +42,7 @@ def main():
 
 
 def run_application(args):
-    logger = AppLogger(args.command, stdout=False, backup_count=args.log_backup_days)
+    logger = AppLogger(args.command, log_dir=args.log_dir, stdout=False, backup_count=args.log_backup_days)
     pipeline_api_client = configure_pipeline_api(args.cp_api_url, args.cp_api_token, args.log_dir, logger, args.data_source)
 
     cloud_adapter = PlatformToCloudOperationsAdapter(pipeline_api_client, logger)

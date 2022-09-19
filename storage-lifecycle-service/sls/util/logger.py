@@ -28,12 +28,12 @@ def eprint(*args, **kwargs):
 
 class AppLogger(object):
 
-    def __init__(self, log_topic, stdout=True, backup_count=31):
+    def __init__(self, log_topic, log_dir="logs", stdout=True, backup_count=31):
         self.logger = logging.getLogger("Storage Lifecycle Service Log")
         self.logger.setLevel(logging.INFO)
         if not stdout:
-            os.makedirs("logs", exist_ok=True)
-            handler = TimedRotatingFileHandler("logs/storage-lifecycle-service-" + log_topic + ".log",
+            os.makedirs(log_dir, exist_ok=True)
+            handler = TimedRotatingFileHandler(os.path.join(log_dir, "storage-lifecycle-service-" + log_topic + ".log"),
                                                when="h",
                                                interval=24,
                                                backupCount=backup_count)
