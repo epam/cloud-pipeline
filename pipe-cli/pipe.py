@@ -1668,8 +1668,8 @@ def start_tunnel_options(decorating_func):
                   help='Path to .ssh directory for passwordless ssh configuration on Linux.')
     @click.option('-sh', '--ssh-host', required=False, type=str,
                   help='Host name for passwordless ssh configuration.')
-    @click.option('-su', '--ssh-user', required=False, type=str,
-                  help='User name for passwordless ssh configuration.')
+    @click.option('-su', '--ssh-user', required=False, type=str, multiple=True,
+                  help='User name for passwordless ssh configuration. Multiple options supported.')
     @click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
                   help='Keeps passwordless ssh configuration after tunnel stopping.')
     @click.option('-d', '--direct', required=False, is_flag=True, default=False,
