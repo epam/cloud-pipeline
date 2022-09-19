@@ -59,6 +59,14 @@ class HCSManager:
         pipeline = self._get_pipeline(pipeline_id)
         pipeline.run_module(module_id)
 
+    def start_debug_mode(self, pipeline_id):
+        pipeline = self._get_pipeline(pipeline_id)
+        pipeline.enable_debug_mode()
+
+    def end_debug_mode(self, pipeline_id):
+        pipeline = self._get_pipeline(pipeline_id)
+        pipeline.disable_debug_mode()
+
     def get_status(self, pipeline_id, module_id):
         pipeline = self._get_pipeline(pipeline_id)
         if not module_id:

@@ -174,9 +174,37 @@ def run_module():
         if not pipeline_id:
             raise RuntimeError("Parameter 'pipelineId' must be specified.")
         module_id = flask.request.args.get("moduleId")
-        if not pipeline_id:
+        if not module_id:
             raise RuntimeError("Parameter 'moduleId' must be specified.")
         manager.run_module(pipeline_id, module_id)
+        return jsonify({"status": "OK"})
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/hcs/debug/start', methods=['POST'])
+def debug_mode_start():
+    manager = app.config['hcs']
+    try:
+        pipeline_id = flask.request.args.get("pipelineId")
+        if not pipeline_id:
+            raise RuntimeError("Parameter 'pipelineId' must be specified.")
+        manager.start_debug_mode(pipeline_id)
+        return jsonify({"status": "OK"})
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/hcs/debug/end', methods=['POST'])
+def debug_mode_end():
+    manager = app.config['hcs']
+    try:
+        pipeline_id = flask.request.args.get("pipelineId")
+        if not pipeline_id:
+            raise RuntimeError("Parameter 'pipelineId' must be specified.")
+        manager.end_debug_mode(pipeline_id)
         return jsonify({"status": "OK"})
     except Exception as e:
         print(traceback.format_exc())
