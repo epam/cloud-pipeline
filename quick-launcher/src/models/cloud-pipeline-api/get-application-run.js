@@ -8,7 +8,7 @@ const runHasParameterWithValue = (parameter, valueRegExp) => run => {
 }
 
 function escapeRegExpString (string) {
-  let result = string;
+  let result = `${(string === undefined || string === null) ? '' : string}`;
   result = result.replace(/\+/g, '\\+');
   result = result.replace(/\./g, '\\.');
   result = result.replace(/\^/g, '\\^');
