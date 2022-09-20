@@ -296,17 +296,24 @@ class CellProfilerJobResults extends React.PureComponent {
     }
     const {
       status,
-      outputFolder: output
+      outputFolder: output,
+      input
     } = job;
     if (!/^(success)$/i.test(status) || !output) {
       return null;
     }
+    const fileName = input && input.path
+      ? input.path.split('/').pop()
+      : undefined;
     return (
       <AnalysisOutputWithDownload
         className={styles.cellProfilerJobResultsOutput}
         storageId={output.storageId}
         path={(output.path || '').concat('/Results.csv')}
         downloadPath={(output.path || '').concat('/Results.xlsx')}
+        input={fileName}
+        analysisDate={job.startDate}
+        analysisName={job.alias || job.pipelineName}
       />
     );
   };

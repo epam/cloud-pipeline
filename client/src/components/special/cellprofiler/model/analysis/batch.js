@@ -60,11 +60,57 @@ const CELLPROFILER_API_BATCH_RESULTS_STORAGE_PATH = 'CELLPROFILER_API_BATCH_RESU
 const CELLPROFILER_API_BATCH_SPEC_FILE = 'CELLPROFILER_API_BATCH_SPEC_FILE';
 const CELLPROFILER_API_BATCH_SPEC_STORAGE = 'CELLPROFILER_API_BATCH_SPEC_STORAGE';
 const CELLPROFILER_API_BATCH_SPEC_STORAGE_PATH = 'CELLPROFILER_API_BATCH_SPEC_STORAGE_PATH';
+const CELLPROFILER_API_BATCH_SPEC_INPUTS = 'CELLPROFILER_API_BATCH_SPEC_INPUTS';
+const CELLPROFILER_API_BATCH_SPEC_MODULES = 'CELLPROFILER_API_BATCH_SPEC_MODULES';
 const CELLPROFILER_API_BATCH_UUID = 'CELLPROFILER_API_BATCH_UUID';
 const CELLPROFILER_API_BATCH_PIPELINE = 'CELLPROFILER_API_BATCH_PIPELINE';
+const CELLPROFILER_API_BATCH_PIPELINE_NAME = 'CELLPROFILER_API_BATCH_PIPELINE_NAME';
 const CELLPROFILER_API_BATCH_FILE_STORAGE = 'CELLPROFILER_API_BATCH_FILE_STORAGE';
 const CELLPROFILER_API_BATCH_FILE_PATH = 'CELLPROFILER_API_BATCH_FILE_PATH';
 const CELLPROFILER_API_BATCH_FILE_NAME = 'CELLPROFILER_API_BATCH_FILE_NAME';
+
+const INDEX_TO_LETTER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function getRowName (rowIndex) {
+  if (rowIndex < INDEX_TO_LETTER.length) {
+    return INDEX_TO_LETTER[rowIndex];
+  }
+  const next = Math.floor(rowIndex / INDEX_TO_LETTER.length);
+  const current = rowIndex - next * INDEX_TO_LETTER.length;
+  return `${getRowName(next)}${getRowName(current)}`;
+}
+
+/**
+ * @param {{files: BatchAnalysisInput[]}} inputs
+ */
+function getInputFilesPresentation (inputs = {}) {
+  const {
+    files = [],
+    zPlanes = []
+  } = inputs;
+  const wellPresentation = input => {
+    const {
+      x, y
+    } = input;
+    return `${getRowName(y - 1)}${x}`;
+  };
+  const wells = [...new Set(files.map(wellPresentation))].sort();
+  const timePoints = [...new Set(files.map(input => input.timepoint))].sort((a, b) => a - b);
+  const zCoordinates = [...new Set(files.map(input => input.z))].sort((a, b) => a - b);
+  const fields = [...new Set(files.map(input => input.fieldId))].sort((a, b) => a - b);
+  // eslint-disable-next-line max-len
+  const separator = '/';
+  const itemsSeparator = ';';
+  const getDescription = (items = [], title) => title
+    ? `${title}:${items.join(itemsSeparator)}`
+    : items.join(itemsSeparator);
+  return [
+    getDescription(wells),
+    getDescription(fields),
+    getDescription(timePoints),
+    getDescription(zCoordinates, zPlanes.length > 1 ? 'merged' : undefined)
+  ].join(separator);
+}
 
 /**
  * @param {BatchAnalysisSpecification} specification
@@ -166,6 +212,18 @@ export async function submitBatchAnalysis (specification) {
   setParameterValue(
     CELLPROFILER_API_BATCH_PIPELINE,
     pipeline ? (pipeline.uuid || pipeline.path) : undefined
+  );
+  setParameterValue(
+    CELLPROFILER_API_BATCH_PIPELINE_NAME,
+    pipeline ? pipeline.name : undefined
+  );
+  setParameterValue(
+    CELLPROFILER_API_BATCH_SPEC_INPUTS,
+    getInputFilesPresentation(inputs)
+  );
+  setParameterValue(
+    CELLPROFILER_API_BATCH_SPEC_MODULES,
+    modules.map(aModule => aModule.moduleName).join(',')
   );
   setParameterValue(CELLPROFILER_API_BATCH, true);
   const tags = {};
@@ -278,6 +336,7 @@ function parseJob (run) {
     startDate: run.startDate,
     endDate: run.endDate,
     measurementUUID: getJobParameter(run, CELLPROFILER_API_BATCH_UUID),
+    pipelineName: getJobParameter(run, CELLPROFILER_API_BATCH_PIPELINE_NAME),
     input: getJobInput(run),
     outputFolder: getJobOutputFolder(run),
     spec: getJobSpec(run),

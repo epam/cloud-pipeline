@@ -28,6 +28,7 @@ import runAnalysisPipeline, {getPipelineModules} from './analysis-pipeline-utili
 import {loadPipeline, savePipeline} from './analysis-pipeline-management';
 import {submitBatchAnalysis} from './batch';
 import PhysicalSize from './physical-size';
+import moment from "moment-timezone";
 
 const AUTOUPDATE = false;
 
@@ -65,6 +66,7 @@ class Analysis {
   eventListeners = [];
   storageId;
   path;
+  analysisDate;
 
   @computed
   get analysisRequested () {
@@ -495,6 +497,7 @@ class Analysis {
           callback: reportModuleStatus
         }
       );
+      this.analysisDate = moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS');
       this.analysisResults = results.filter(o => !o.object);
       const objectResults = results.filter(o => o.object);
       const lastOverlay = objectResults.length > 0

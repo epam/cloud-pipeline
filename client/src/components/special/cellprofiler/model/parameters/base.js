@@ -85,7 +85,7 @@ class ModuleParameter {
    * @type {AnalysisModule}
    */
   @observable cpModule;
-  required;
+  @observable _required;
   advanced;
   visibilityHandler;
   valueFormatter;
@@ -135,7 +135,7 @@ class ModuleParameter {
     this.isList = isList;
     this.multiple = multiple;
     this.isRange = isRange;
-    this.required = required;
+    this._required = required;
     this._defaultValue = value;
     this.advanced = advanced;
     this.visibilityHandler = visibilityHandler;
@@ -233,6 +233,10 @@ class ModuleParameter {
       return this.visibilityHandler(this.cpModule);
     }
     return true;
+  }
+  @computed
+  get required () {
+    return this._required && this.visible;
   }
   get defaultValue () {
     if (typeof this._defaultValue === 'function') {

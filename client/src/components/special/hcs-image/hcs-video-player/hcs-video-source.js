@@ -86,6 +86,7 @@ class HcsVideoSource {
   @observable timePoints = [];
   @observable zPlanes = [];
   @observable wellView = false;
+  @observable well = undefined;
   @observable imageId;
   @observable channels = {};
   @observable videoEndpointAPI;
@@ -109,6 +110,42 @@ class HcsVideoSource {
 
   constructor () {
     (this.initialize)();
+  }
+
+  getVideoFileName (url) {
+    if (this.path && this.generatedFilePath && this.well) {
+      const name = this.path
+        .split('/')
+        .pop()
+        .split('.')
+        .slice(0, -1)
+        .join('.')
+        .replace(/\s/, '_');
+      const format = this.generatedFilePath.split('.').pop();
+      const {
+        x,
+        y
+      } = this.well;
+      const wellRow = x < 10 ? `0${x}` : x;
+      const wellCol = y < 10 ? `0${y}` : y;
+      const wellInfo = `r${wellRow}c${wellCol}`;
+      const fieldInfo = this.wellView || !this.imageId
+        ? ''
+        : `f${this.imageId.split(':').pop()}`;
+      let zPlane = 1;
+      if (this.zPlanes && this.zPlanes.length > 0) {
+        zPlane = this.zPlanes[0];
+      }
+      const planeNumber = `p${zPlane}`;
+      const timeSeriesNumber = `ts${this.sequenceId || 1}`;
+      return `${name}-${wellInfo}${fieldInfo}${planeNumber}${timeSeriesNumber}.${format}`;
+    }
+    try {
+      const urlObject = new URL(url);
+      return urlObject.pathname.split('/').pop();
+    } catch (_) {
+      return `video.${this.videoType}`;
+    }
   }
 
   @computed
@@ -190,7 +227,8 @@ class HcsVideoSource {
     }
   };
 
-  setWellView = (wellView, imageId) => {
+  setWellView = (wellView, imageId, well) => {
+    this.well = well;
     if (wellView !== this.wellView || imageId !== this.imageId) {
       this.wellView = wellView;
       this.imageId = imageId;

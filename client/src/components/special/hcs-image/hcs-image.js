@@ -20,6 +20,7 @@ import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, Button, Icon, Radio} from 'antd';
+import FileSaver from 'file-saver';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
@@ -429,7 +430,8 @@ class HcsImage extends React.PureComponent {
       if (this.hcsVideoSource) {
         this.hcsVideoSource.setWellView(
           this.showEntireWell,
-          id
+          id,
+          well
         );
       }
       if (this.hcsImageViewer) {
@@ -649,42 +651,50 @@ class HcsImage extends React.PureComponent {
     );
   }
 
-  renderDownloadBtn () {
-    if (this.hcsVideoSource.videoMode) {
-      return (
-        <Button
-          className={styles.action}
-          size="small"
-          disabled={!this.hcsVideoSource.videoUrl || this.hcsVideoSource.videoPending}
-          onClick={() => {
-            window.location.href = this.hcsVideoSource.videoUrl;
-          }}
-        >
-          <Icon
-            type="download"
-            className="cp-larger"
-          />
-        </Button>
-      );
-    }
-    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer);
-    return (
-      <Button
-        className={styles.action}
-        size="small"
-        disabled={!downloadAvailable}
-        onClick={() => downloadCurrentTiff(
+  renderDownloadBtn (options = {}) {
+    const {
+      showTitle = false,
+      buttonSize = 'small'
+    } = options;
+    const {
+      videoMode,
+      videoUrl,
+      videoPending
+    } = this.hcsVideoSource;
+    const downloadAvailable = videoMode
+      ? (videoUrl && !videoPending)
+      : downloadCurrentTiffAvailable(this.hcsImageViewer);
+    const handleClickDownload = () => {
+      if (videoMode) {
+        fetch(videoUrl)
+          .then(res => res.blob())
+          .then(blob => FileSaver.saveAs(blob, this.hcsVideoSource.getVideoFileName(videoUrl)));
+      } else {
+        downloadCurrentTiff(
           this.hcsImageViewer,
           {
             wellView: this.showEntireWell,
             wellId: this.selectedWell ? this.selectedWell.id : undefined
           }
-        )}
-      >
+        );
+      }
+    };
+    const btnContent = showTitle
+      ? `Download current ${videoMode ? 'video' : 'image'}`
+      : (
         <Icon
-          type="camera"
+          type={videoMode ? 'download' : 'camera'}
           className="cp-larger"
         />
+      );
+    return (
+      <Button
+        className={styles.action}
+        disabled={!downloadAvailable}
+        onClick={handleClickDownload}
+        size={buttonSize}
+      >
+        {btnContent}
       </Button>
     );
   }
@@ -703,8 +713,6 @@ class HcsImage extends React.PureComponent {
     ) {
       return null;
     }
-    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer) &&
-      !this.hcsVideoSource.videoMode;
     const analysisAvailable = this.hcsAnalysis && this.hcsAnalysis.available;
     if (!showConfiguration) {
       return (
@@ -788,18 +796,7 @@ class HcsImage extends React.PureComponent {
               </Radio.Group>
             </div>
           )}
-          <Button
-            className={styles.action}
-            disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(
-              this.hcsImageViewer,
-              {
-                wellView: this.showEntireWell,
-                wellId: this.selectedWell ? this.selectedWell.id : undefined
-              })}
-          >
-            Download current image
-          </Button>
+          {this.renderDownloadBtn({showTitle: true, buttonSize: 'default'})}
         </div>
       </Panel>
     );

@@ -19,9 +19,11 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import {Icon, Alert} from 'antd';
+import FileSaver from 'file-saver';
 import {Analysis} from '../model/analysis';
 import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
 import {generateResourceUrl} from '../model/analysis/output-utilities';
+import displayDate from '../../../../utils/displayDate';
 import styles from './cell-profiler.css';
 
 /**
@@ -36,6 +38,15 @@ function getDownloadUrl (output) {
     return output.fetchUrl();
   }
   return Promise.resolve(output.url);
+}
+
+function getFileNameExtensionFromUrl (url) {
+  try {
+    const urlObject = new URL(url);
+    return (urlObject.pathname || '').split(/\//).pop().split('.').pop();
+  } catch (_) {
+    return undefined;
+  }
 }
 
 @observer
@@ -121,7 +132,31 @@ class AnalysisOutputWithDownload extends React.Component {
     if (!downloadUrl) {
       return null;
     }
-    window.open(downloadUrl, '_blank');
+    const {
+      input = 'analysis',
+      analysisDate,
+      analysisName
+    } = this.props;
+    const hcsFileName = input
+      .split(/[\\/]/)
+      .pop()
+      .split('.')
+      .slice(0, -1)
+      .join('.')
+      .replace(/\s/g, '_');
+    const dateTime = analysisDate
+      ? displayDate(analysisDate, 'YYYYMMDD_HHmmss')
+      : undefined;
+    let fileName = [
+      hcsFileName,
+      analysisName ? analysisName.replace(/\s/g, '_') : undefined,
+      dateTime
+    ].filter(Boolean).join('-');
+    const extension = getFileNameExtensionFromUrl(downloadUrl) || 'xlsx';
+    fileName = fileName.concat('.').concat(extension);
+    fetch(downloadUrl)
+      .then(res => res.blob())
+      .then(blob => FileSaver.saveAs(blob, fileName));
   };
 
   renderHeader () {
@@ -221,7 +256,10 @@ AnalysisOutputWithDownload.propTypes = {
   downloadPath: PropTypes.string,
   url: PropTypes.string,
   downloadUrl: PropTypes.string,
-  onClose: PropTypes.func
+  onClose: PropTypes.func,
+  input: PropTypes.string,
+  analysisDate: PropTypes.string,
+  analysisName: PropTypes.string
 };
 
 @observer
@@ -324,6 +362,9 @@ class AnalysisOutput extends React.Component {
         url={url}
         downloadUrl={downloadUrl}
         onClose={onClose}
+        input={analysis.path}
+        analysisDate={analysis.analysisDate}
+        analysisName={analysis.pipeline ? analysis.pipeline.name : undefined}
       />
     );
   }
