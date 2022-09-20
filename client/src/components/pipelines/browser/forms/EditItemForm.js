@@ -30,7 +30,8 @@ export default class EditItemForm extends React.Component {
     visible: PropTypes.bool,
     name: PropTypes.string,
     title: PropTypes.string,
-    includeFileContentField: PropTypes.bool
+    includeFileContentField: PropTypes.bool,
+    disclaimerFn: PropTypes.func
   };
 
   formItemLayout = {
@@ -54,6 +55,7 @@ export default class EditItemForm extends React.Component {
   };
 
   render () {
+    const {disclaimerFn} = this.props;
     const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
@@ -115,6 +117,10 @@ export default class EditItemForm extends React.Component {
               </Form.Item>
             }
           </Form>
+          {disclaimerFn
+            ? disclaimerFn()
+            : null
+          }
         </Spin>
       </Modal>
     );

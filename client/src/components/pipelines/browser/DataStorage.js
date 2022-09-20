@@ -1047,9 +1047,13 @@ export default class DataStorage extends React.Component {
         </a>
       );
     }
-    if (item.isVersion
-      ? item.editable && this.versionControlsEnabled
-      : item.editable
+    if (
+      (item.isVersion
+        ? item.editable && this.versionControlsEnabled
+        : item.editable
+      ) && (
+        !item.archived || item.restored
+      )
     ) {
       actions.push(
         <Button
@@ -1274,30 +1278,31 @@ export default class DataStorage extends React.Component {
     });
   };
 
+  checkRestoredStatus = (item) => {
+    const {
+      parentRestore,
+      currentRestores
+    } = this.lifeCycleRestoreInfo;
+    if (
+      !item ||
+      (item.labels && item.labels.StorageClass === STORAGE_CLASSES.standard)
+    ) {
+      return null;
+    }
+    const itemRestoreStatus = (currentRestores || [])
+      .find(({path = ''}) => item.name === path.split('/')
+        .filter(Boolean)
+        .pop()
+      );
+    if (itemRestoreStatus) {
+      return itemRestoreStatus;
+    }
+    return item.type === 'File'
+      ? parentRestore
+      : null;
+  };
+
   getStorageItemsTable = () => {
-    const checkRestoredStatus = (item) => {
-      const {
-        parentRestore,
-        currentRestores
-      } = this.lifeCycleRestoreInfo;
-      if (
-        !item ||
-        (item.labels && item.labels.StorageClass === STORAGE_CLASSES.standard)
-      ) {
-        return null;
-      }
-      const itemRestoreStatus = (currentRestores || [])
-        .find(({path = ''}) => item.name === path.split('/')
-          .filter(Boolean)
-          .pop()
-        );
-      if (itemRestoreStatus) {
-        return itemRestoreStatus;
-      }
-      return item.type === 'File'
-        ? parentRestore
-        : null;
-    };
     const getList = () => {
       const items = [];
       if (this.canGoToParent()) {
@@ -1318,7 +1323,7 @@ export default class DataStorage extends React.Component {
         }
         const childList = [];
         for (let version in versions) {
-          const restored = (checkRestoredStatus(item) || {}).status === STATUS.SUCCEEDED;
+          const restored = (this.checkRestoredStatus(item) || {}).status === STATUS.SUCCEEDED;
           if (versions.hasOwnProperty(version)) {
             childList.push({
               key: `${item.type}_${item.path}_${version}`,
@@ -1365,7 +1370,7 @@ export default class DataStorage extends React.Component {
         results = this.props.storage.value.results || [];
       }
       items.push(...results.map(i => {
-        const restored = (checkRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
+        const restored = (this.checkRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
         return {
           key: `${i.type}_${i.path}`,
           ...i,
@@ -1417,8 +1422,8 @@ export default class DataStorage extends React.Component {
       if (!item) {
         return null;
       }
-      const restoredStatus = item.archived
-        ? checkRestoredStatus(item)
+      const restoredStatus = item.selectable
+        ? this.checkRestoredStatus(item)
         : null;
       if (/^file$/i.test(item.type) && SAMPLE_SHEET_FILE_NAME_REGEXP.test(item.name)) {
         return (
@@ -2163,6 +2168,30 @@ export default class DataStorage extends React.Component {
 
     const storageTitleClassName = this.props.info.value.locked ? styles.readonly : undefined;
 
+    const getRenameDisclaimerText = (item, operation) => {
+      if (!item) {
+        return '';
+      }
+      const activeRestore = this.checkRestoredStatus(item);
+      let disclaimer;
+      if (item.type === 'Folder' && activeRestore) {
+        disclaimer = [
+          'Files in this folder will be recursively converted',
+          ' to the "STANDARD" storage class',
+          ...(operation ? [` after ${operation}.`] : ['.'])
+        ];
+      }
+      if (item.type === 'File' && activeRestore) {
+        disclaimer = [
+          'This file will be converted to the "STANDARD" storage class',
+          ...(operation ? [` after ${operation}.`] : ['.'])
+        ];
+      }
+      return disclaimer
+        ? disclaimer.filter(Boolean).join('')
+        : '';
+    };
+
     return (
       <div style={{
         display: 'flex',
@@ -2495,7 +2524,20 @@ export default class DataStorage extends React.Component {
           name={this.state.renameItem ? this.state.renameItem.name : null}
           visible={!!this.state.renameItem}
           onCancel={() => this.closeRenameItemDialog()}
-          onSubmit={this.renameItem} />
+          onSubmit={this.renameItem}
+          disclaimerFn={() => {
+            const text = getRenameDisclaimerText(
+              this.state.renameItem,
+              'rename'
+            );
+            return text ? (
+              <Alert
+                message={text}
+                type="info"
+              />
+            ) : null;
+          }}
+        />
         <SharedItemInfo
           visible={this.state.shareDialogVisible}
           shareItems={this.state.itemsToShare}
@@ -2561,6 +2603,7 @@ export default class DataStorage extends React.Component {
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
           save={this.saveEditableFile}
+          onSaveDisclaimer={getRenameDisclaimerText(this.state.editFile, 'save')}
         />
         {this.renderPreviewModal()}
       </div>
