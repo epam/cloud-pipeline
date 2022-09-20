@@ -20,6 +20,7 @@ import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, Button, Icon, Radio} from 'antd';
+import FileSaver from 'file-saver';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
@@ -653,14 +654,28 @@ class HcsImage extends React.PureComponent {
     const {
       videoMode,
       videoUrl,
-      videoPending
+      videoPending,
+      videoFile,
+      sequenceId
     } = this.hcsVideoSource;
     const downloadAvailable = videoMode
       ? (videoUrl && !videoPending)
       : downloadCurrentTiffAvailable(this.hcsImageViewer);
     const handleClickDownload = () => {
       if (videoMode) {
-        window.location.href = videoUrl;
+        const {name, format} = videoFile;
+        const {x, y} = this.selectedWell;
+        const wellRow = x < 10 ? `0${x}` : x;
+        const wellCol = y < 10 ? `0${y}` : y;
+        const wellInfo = `r${wellRow}c${wellCol}`;
+        const fields = this.selectedWellFields;
+        const fieldInfo = fields.length === 1 ? `f${fields[0].fieldID}` : '';
+        const planeNumber = `p${this.selectedZCoordinate}`;
+        const timeSeriesNumber = `ts${sequenceId}`;
+        const fileName = `${name}-${wellInfo}${fieldInfo}${planeNumber}${timeSeriesNumber}.${format}`;
+        fetch(videoUrl)
+          .then(res => res.blob())
+          .then(blob => FileSaver.saveAs(blob, fileName));
       } else {
         downloadCurrentTiff(
           this.hcsImageViewer,
@@ -1037,6 +1052,7 @@ class HcsImage extends React.PureComponent {
       <CellProfilerJobResults
         className={styles.hcsBatchJobInfo}
         jobId={batchJobId}
+        pipelineName={this.hcsAnalysis.pipeline.name}
       />
     );
   };

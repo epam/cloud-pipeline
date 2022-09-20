@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import {Icon, Alert} from 'antd';
+import FileSaver from 'file-saver';
 import {Analysis} from '../model/analysis';
 import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
 import {generateResourceUrl} from '../model/analysis/output-utilities';
@@ -121,7 +122,13 @@ class AnalysisOutputWithDownload extends React.Component {
     if (!downloadUrl) {
       return null;
     }
-    window.open(downloadUrl, '_blank');
+    const {filePath, dateTime, analysisName} = this.props;
+    const hcsFileName = filePath.split('/').pop().split('.')[0].replaceAll(' ', '_');
+    const analysisInfo = analysisName ? `${analysisName}-` : '';
+    const fileName = `${hcsFileName}-${analysisInfo}${dateTime}.xlsx`;
+    fetch(downloadUrl)
+      .then(res => res.blob())
+      .then(blob => FileSaver.saveAs(blob, fileName));
   };
 
   renderHeader () {
@@ -221,7 +228,10 @@ AnalysisOutputWithDownload.propTypes = {
   downloadPath: PropTypes.string,
   url: PropTypes.string,
   downloadUrl: PropTypes.string,
-  onClose: PropTypes.func
+  onClose: PropTypes.func,
+  filePath: PropTypes.string,
+  dateTime: PropTypes.string,
+  analysisName: PropTypes.string
 };
 
 @observer

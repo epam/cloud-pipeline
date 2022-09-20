@@ -307,6 +307,9 @@ class CellProfilerJobResults extends React.PureComponent {
         storageId={output.storageId}
         path={(output.path || '').concat('/Results.csv')}
         downloadPath={(output.path || '').concat('/Results.xlsx')}
+        filePath={job.input.path}
+        dateTime={displayDate(job.startDate, 'YYYYMMDD_HHmmss')}
+        analysisName={job.alias || this.props.pipelineName}
       />
     );
   };
@@ -360,7 +363,8 @@ class CellProfilerJobResults extends React.PureComponent {
 CellProfilerJobResults.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  jobId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  jobId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  pipelineName: PropTypes.string
 };
 
 export default inject('dataStorages')(observer(CellProfilerJobResults));

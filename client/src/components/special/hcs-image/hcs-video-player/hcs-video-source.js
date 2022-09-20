@@ -140,6 +140,17 @@ class HcsVideoSource {
     return undefined;
   }
 
+  get videoFile () {
+    if (this.path && this.generatedFilePath) {
+      const name = this.path.split('/').pop().split('.')[0].replaceAll(' ', '_');
+      const format = this.generatedFilePath.split('.').pop();
+      return {
+        name,
+        format
+      };
+    }
+  }
+
   setVideoMode = (enabled) => {
     if (enabled !== this.videoMode) {
       this.videoMode = enabled;
