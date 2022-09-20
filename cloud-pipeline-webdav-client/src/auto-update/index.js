@@ -112,8 +112,12 @@ async function autoUpdateDarwinLinuxApplication () {
       }
     });
   aProcess.unref();
+  aProcess.stdout.on('data', message => log(`[AUTO-UPDATE-SCRIPT]: ${message.toString()}`))
   return new Promise((resolve, reject) => {
-    aProcess.on('exit', () => resolve());
+    aProcess.on('exit', (code) => {
+      log(`[AUTO-UPDATE-SCRIPT]: exit with code ${code}`);
+      resolve();
+    });
   });
 }
 
