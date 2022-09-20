@@ -30,9 +30,6 @@ class MockedNotificationRESTApiCloudPipelineDataSource(CloudPipelineDataSource):
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         return self.cp_source.load_lifecycle_rules_for_storage(datastorage_id)
 
-    def load_lifecycle_rule(self, datastorage_id, rule_id):
-        return self.cp_source.load_lifecycle_rule(datastorage_id, rule_id)
-
     def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
         return self.cp_source.create_lifecycle_rule_execution(datastorage_id, rule_id, execution)
 
