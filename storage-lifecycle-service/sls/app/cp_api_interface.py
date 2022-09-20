@@ -23,9 +23,6 @@ class CloudPipelineDataSource:
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         pass
 
-    def load_lifecycle_rule(self, datastorage_id, rule_id):
-        pass
-
     def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
         pass
 
