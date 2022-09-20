@@ -692,6 +692,9 @@ public class SystemPreferences {
             null, BASE_URLS_GROUP, pass);
     public static final StringPreference BASE_EDGE_INVALIDATE_AUTH_PATH =
             new StringPreference("base.invalidate.edge.auth.path", "/invalidate", BASE_URLS_GROUP, pass);
+    public static final ObjectPreference<Map<String, String>> CLOUD_DATA_DISTRIBUTION_URL = new ObjectPreference<>(
+            "base.cloud.data.distribution.url", null, new TypeReference<Map<String, String>>() {},
+            BASE_URLS_GROUP, isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,
