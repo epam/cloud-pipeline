@@ -125,7 +125,6 @@ public class SystemPreferences {
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
-    private static final String CLOUD_DATA_GROUP = "Cloud Data";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -699,6 +698,9 @@ public class SystemPreferences {
             null, BASE_URLS_GROUP, pass);
     public static final StringPreference BASE_EDGE_INVALIDATE_AUTH_PATH =
             new StringPreference("base.invalidate.edge.auth.path", "/invalidate", BASE_URLS_GROUP, pass);
+    public static final ObjectPreference<Map<String, String>> CLOUD_DATA_DISTRIBUTION_URL = new ObjectPreference<>(
+            "base.cloud.data.distribution.url", null, new TypeReference<Map<String, String>>() {},
+            BASE_URLS_GROUP, isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,
@@ -1079,11 +1081,6 @@ public class SystemPreferences {
                     "cloud.access.management.config", Collections.emptyList(),
                     new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
-
-    // Cloud Data
-    public static final ObjectPreference<Map<String, String>> CLOUD_DATA_DISTRIBUTION_URL = new ObjectPreference<>(
-            "cloud.data.distribution.url", null, new TypeReference<Map<String, String>>() {},
-            CLOUD_DATA_GROUP, isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
