@@ -211,7 +211,7 @@ class CloudPipelineApi {
 
   getAppDistributionUrl() {
     return new Promise((resolve, reject) => {
-      this.getPreference('misc.cloud.data.distribution.url')
+      this.getPreference('cloud.data.distribution.url')
         .then(value => Promise.resolve(JSON.parse(value)))
         .then(resolve)
         .catch(reject);
