@@ -2,5 +2,5 @@
   "keepInformedAdmins":false,
   "keepInformedOwner":false,
   "enabled":true,
-  "subject":"Restore finished. Files `#$templateParameters[\"path\"]` for storage `#$templateParameters[\"storageName\"]` is ready"
+  "subject":"Restore finished. Files #$templateParameters[\"path\"] for storage `#$templateParameters[\"storageName\"]` is ready"
 }
