@@ -62,15 +62,6 @@ class LifeCycleCounter extends React.Component {
       /^s3$/i.test(storage.storageType || storage.type);
   }
 
-  get showCounter () {
-    const {rulesAmount} = this.state;
-    return Boolean(rulesAmount);
-  }
-
-  get showActions () {
-    return true;
-  }
-
   fetchRulesInfo = async () => {
     const {path, storage} = this.props;
     const request = new DataStorageLifeCycleRulesLoad(storage.id, path);

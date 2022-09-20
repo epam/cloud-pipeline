@@ -39,7 +39,8 @@ export default class DataStorageCodeForm extends React.Component {
     file: PropTypes.object,
     cancel: PropTypes.func,
     save: PropTypes.func,
-    downloadable: PropTypes.bool
+    downloadable: PropTypes.bool,
+    onSaveDisclaimer: PropTypes.string
   };
 
   static defaultProps = {
@@ -157,7 +158,23 @@ export default class DataStorageCodeForm extends React.Component {
     };
     if (this._modifiedCode && this._originalCode !== this._modifiedCode) {
       Modal.confirm({
-        title: `Save changes to ${this.props.file.name}?`,
+        title: (
+          <div>
+            <span>
+              {`Save changes to ${this.props.file.name}?`}
+            </span>
+            {this.props.onSaveDisclaimer ? (
+              <Alert
+                message={this.props.onSaveDisclaimer}
+                style={{
+                  marginTop: '20px',
+                  marginBottom: '-10px',
+                  fontWeight: 'normal'
+                }}
+              />
+            ) : null}
+          </div>
+        ),
         style: {
           wordWrap: 'break-word'
         },
