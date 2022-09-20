@@ -257,6 +257,7 @@ public class AzureVMService {
                     MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, tagValue));
         }
         final Azure azure = AzureHelper.buildClient(region.getAuthFile());
+        log.debug("{} attempts left to fetch VM for {}", attempts, tagValue);
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
         return findVMContainerInPagedResult(resources.currentPage(), resources)
@@ -294,6 +295,7 @@ public class AzureVMService {
         final Optional<GenericResource> virtualMachineContainer = currentPage.items().stream()
                 .filter(r -> {
                     final String resourceType = resourceType(r);
+                    log.debug("Found resource type {} : {}", resourceType, r);
                     return resourceType.startsWith(VIRTUAL_MACHINE_PREFIX) ||
                             resourceType.equals(VIRTUAL_MACHINE_SCALE_SET_TYPE);
                 })
