@@ -39,6 +39,9 @@ import com.microsoft.azure.management.compute.VirtualMachineScaleSetVM;
 import com.microsoft.azure.management.network.NetworkInterface;
 import com.microsoft.azure.management.resources.GenericResource;
 import com.microsoft.azure.management.resources.fluentcore.arm.models.Resource;
+import com.microsoft.azure.management.resources.fluentcore.utils.Utils;
+import com.microsoft.azure.management.resources.implementation.GenericResourceInner;
+import com.microsoft.azure.management.resources.implementation.ResourcesInner;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -171,12 +174,20 @@ public class AzureVMService {
                 ? -1 : 0;
     }
 
+    private String resourceType(final GenericResourceInner resource) {
+        return beforeLast(resource.id().split(RESOURCE_DELIMITER)).toLowerCase();
+    }
+
     private String resourceType(final GenericResource resource) {
         return last(resource.resourceType().split(RESOURCE_DELIMITER)).toLowerCase();
     }
 
     private String last(final String[] items) {
         return items[items.length - 1];
+    }
+
+    private String beforeLast(final String[] items) {
+        return items[items.length - 2];
     }
 
     private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final AzureRegion region,
@@ -257,9 +268,12 @@ public class AzureVMService {
                     MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, tagValue));
         }
         final Azure azure = AzureHelper.buildClient(region.getAuthFile());
+
+        final ResourcesInner resourceClient = azure.genericResources().manager().inner().resources();
+
         log.debug("{} attempts left to fetch VM for {}", attempts, tagValue);
-        final PagedList<GenericResource> resources = azure.genericResources()
-                .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
+        final PagedList<GenericResourceInner> resources = resourceClient.list(
+                Utils.createOdataFilterForTags(TAG_NAME, tagValue), null, null);
         return findVMContainerInPagedResult(resources.currentPage(), resources)
                 .map(vmc -> getVmStatsByVmContainer(azure, vmc))
                 .orElseGet(() -> {
@@ -273,7 +287,7 @@ public class AzureVMService {
                 preferenceManager.getPreference(SystemPreferences.SYSTEM_VM_SEARCH_ATTEMPTS));
     }
 
-    private AzureVirtualMachineStats getVmStatsByVmContainer(final Azure azure, final GenericResource vmc) {
+    private AzureVirtualMachineStats getVmStatsByVmContainer(final Azure azure, final GenericResourceInner vmc) {
         if (resourceType(vmc).equals(VIRTUAL_MACHINE_SCALE_SET_TYPE)) {
             final VirtualMachineScaleSetVM scaleSetVM = azure.virtualMachineScaleSets().getById(vmc.id())
                     .virtualMachines().list().stream().findFirst()
@@ -287,12 +301,13 @@ public class AzureVMService {
                 MessageConstants.ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE, vmc.id()));
     }
 
-    private Optional<GenericResource> findVMContainerInPagedResult(final Page<GenericResource> currentPage,
-                                                                   final PagedList<GenericResource> resources) {
+    private Optional<GenericResourceInner> findVMContainerInPagedResult(
+            final Page<GenericResourceInner> currentPage,
+            final PagedList<GenericResourceInner> resources) {
         if (currentPage == null || CollectionUtils.isEmpty(currentPage.items())) {
             return Optional.empty();
         }
-        final Optional<GenericResource> virtualMachineContainer = currentPage.items().stream()
+        final Optional<GenericResourceInner> virtualMachineContainer = currentPage.items().stream()
                 .filter(r -> {
                     final String resourceType = resourceType(r);
                     log.debug("Found resource type {} : {}", resourceType, r);
@@ -303,8 +318,9 @@ public class AzureVMService {
         return virtualMachineContainer.isPresent() ? virtualMachineContainer : checkNextPage(currentPage, resources);
     }
 
-    private Optional<GenericResource> checkNextPage(final Page<GenericResource> currentPage,
-                                                    final PagedList<GenericResource> resources) {
+    private Optional<GenericResourceInner> checkNextPage(
+            final Page<GenericResourceInner> currentPage,
+            final PagedList<GenericResourceInner> resources) {
         if (resources.hasNextPage()) {
             try {
                 return findVMContainerInPagedResult(resources.nextPage(currentPage.nextPageLink()), resources);
