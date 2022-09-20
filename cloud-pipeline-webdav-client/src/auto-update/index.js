@@ -4,28 +4,28 @@ import cloudPipelineAPI from '../application/models/cloud-pipeline-api';
 import getAppRoot from '../get-app-root-directory';
 import { log } from '../application/models/log';
 
-async function getSettings () {
-  let platform = process.platform;
-  if (platform === 'win32') {
-    platform = 'windows';
-  } else if (platform === 'darwin') {
-    platform = 'macos';
+const Platforms = {
+  windows: 'windows',
+  macos: 'macos',
+  linux: 'linux'
+};
+
+function getPlatformName () {
+  if (process.platform === 'win32') {
+    return Platforms.windows;
+  } else if (process.platform === 'darwin') {
+    return Platforms.macos;
   }
-  log(`Auto-updating Cloud-Data application (${platform})`);
-  const currentDirectory = getAppRoot();
-  await cloudPipelineAPI.initialize();
-  const {
-    [platform]: appDistributionUrl
-  } = await cloudPipelineAPI.getAppDistributionUrl();
-  if (!appDistributionUrl) {
-    throw new Error('Application distribution url is not found');
-  }
-  log(`Auto-updating Cloud-Data application (${platform}): distribution url is "${appDistributionUrl}"`);
+  return Platforms.linux;
+}
+
+function getUpdateScriptPath () {
+  const platform = getPlatformName();
   const config = (() => {
     const cfg = (electron.remote === undefined)
       ? global.webdavClient
       : electron.remote.getGlobal('webdavClient');
-    return (cfg || {}).config;
+    return (cfg || {}).config || {};
   })();
   const {
     updateScripts = {}
@@ -33,11 +33,33 @@ async function getSettings () {
   const {
     [platform]: script
   } = updateScripts;
+  return script;
+}
+
+async function getApplicationDistributionURL () {
+  const platform = getPlatformName();
+  await cloudPipelineAPI.initialize();
+  const {
+    [platform]: url
+  } = await cloudPipelineAPI.getAppDistributionUrl();
+  return url;
+}
+
+async function getSettings () {
+  const platform = getPlatformName();
+  log(`Auto-updating Cloud-Data application (${platform})`);
+  const appDistributionUrl = await getApplicationDistributionURL();
+  if (!appDistributionUrl) {
+    throw new Error('Application distribution url is not found');
+  }
+  log(`Auto-updating Cloud-Data application (${platform}): distribution url is "${appDistributionUrl}"`);
+  const script = getUpdateScriptPath();
   log(`Auto-updating Cloud-Data application (${platform}): script location is "${script || 'unknown'}"`);
   if (!script) {
     throw new Error('Auto-update script is not found');
   }
   log(`Auto-updating Cloud-Data application (${platform}): launching an auto-update process...`);
+  const currentDirectory = getAppRoot();
   return {
     script,
     cwd: currentDirectory,
@@ -96,23 +118,14 @@ async function autoUpdateDarwinLinuxApplication () {
 }
 
 export async function autoUpdateAvailable () {
-  await cloudPipelineAPI.initialize();
-  const {
-    windows: windowsAppDistributionUrl,
-    linux: linuxAppDistributionUrl,
-    macos: macOsAppDistributionUrl
-  } = await cloudPipelineAPI.getAppDistributionUrl();
-  if (process.platform === 'darwin' ) {
-    return !!macOsAppDistributionUrl;
-  } else if (process.platform === 'linux') {
-    return !!linuxAppDistributionUrl;
-  } else {
-    return !!windowsAppDistributionUrl;
-  }
+  const url = await getApplicationDistributionURL();
+  const script = getUpdateScriptPath();
+  return !!url && script;
 }
 
 export default function autoUpdateApplication () {
-  if (process.platform !== 'win32' ) {
+  const platform = getPlatformName();
+  if (platform !== Platforms.windows) {
     return autoUpdateDarwinLinuxApplication();
   } else {
     return autoUpdateWindowsApplication();

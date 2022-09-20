@@ -13,7 +13,7 @@ export default function UpdateNotification () {
     const cfg = (electron.remote === undefined)
       ? global.webdavClient
       : electron.remote.getGlobal('webdavClient');
-    return (cfg || {}).config;
+    return (cfg || {}).config || {};
   })();
   const {
     name: appName = 'Cloud Data',
