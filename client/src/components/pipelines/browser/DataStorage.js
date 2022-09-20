@@ -2168,7 +2168,7 @@ export default class DataStorage extends React.Component {
 
     const storageTitleClassName = this.props.info.value.locked ? styles.readonly : undefined;
 
-    const getRenameDisclaimerText = (item, operation) => {
+    const restoreClassChangeDisclaimer = (item, operation) => {
       if (!item) {
         return '';
       }
@@ -2526,7 +2526,7 @@ export default class DataStorage extends React.Component {
           onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem}
           disclaimerFn={() => {
-            const text = getRenameDisclaimerText(
+            const text = restoreClassChangeDisclaimer(
               this.state.renameItem,
               'rename'
             );
@@ -2603,7 +2603,7 @@ export default class DataStorage extends React.Component {
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
           save={this.saveEditableFile}
-          onSaveDisclaimer={getRenameDisclaimerText(this.state.editFile, 'save')}
+          onSaveDisclaimer={restoreClassChangeDisclaimer(this.state.editFile, 'save')}
         />
         {this.renderPreviewModal()}
       </div>
