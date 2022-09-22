@@ -34,8 +34,8 @@ class AppLogger(object):
         if not stdout:
             os.makedirs(log_dir, exist_ok=True)
             handler = TimedRotatingFileHandler(os.path.join(log_dir, "storage-lifecycle-service-" + log_topic + ".log"),
-                                               when="h",
-                                               interval=24,
+                                               when="d",
+                                               interval=1,
                                                backupCount=backup_count)
             self.logger.addHandler(handler)
 
