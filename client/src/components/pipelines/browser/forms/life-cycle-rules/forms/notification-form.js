@@ -112,7 +112,7 @@ class NotificationForm extends React.Component {
       await request.fetch();
       this.setState({pending: false}, () => {
         if (request.error) {
-          message.error(request.error, 5);
+          return message.error(request.error, 5);
         }
         this.systemTemplate = (request.value || [])
           .find(template => template.name === TEMPLATE_KEY);
