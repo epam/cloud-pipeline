@@ -90,9 +90,10 @@ function getInputFilesPresentation (inputs = {}) {
   } = inputs;
   const wellPresentation = input => {
     const {
-      x, y
+      x: row,
+      y: column
     } = input;
-    return `${getRowName(y - 1)}${x}`;
+    return `${getRowName(row - 1)}${column}`;
   };
   const wells = [...new Set(files.map(wellPresentation))].sort();
   const timePoints = [...new Set(files.map(input => input.timepoint))].sort((a, b) => a - b);
