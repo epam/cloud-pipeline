@@ -196,6 +196,7 @@ class LifeCycleRules extends React.Component {
         <Icon type="book" />
       </Button>,
       <Button
+        className={styles.controlBtn}
         type="danger"
         onClick={() => this.deleteRule(rule.id)}
         size="small"
