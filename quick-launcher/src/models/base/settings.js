@@ -57,6 +57,7 @@ const defaultUrlParser = {
 };
 
 const defaultSettings = {
+  darkMode: DARK_MODE,
   tag: TAG,
   tagValue: TAG_VALUE,
   tagValueRegExp: TAG_VALUE_REGEXP,

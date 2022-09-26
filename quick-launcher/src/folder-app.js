@@ -166,7 +166,7 @@ function FolderApp ({location}) {
                     classNames(
                       'filter-applications',
                       {
-                        dark: DARK_MODE
+                        dark: settings?.darkMode
                       }
                     )
                   }

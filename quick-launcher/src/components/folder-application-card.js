@@ -5,6 +5,7 @@ import Gear from './shared/gear';
 import Star from './shared/star';
 import useApplicationIcon from './utilities/use-application-icon';
 import UserAttributes from './shared/user-attributes';
+import { useSettings } from "./use-settings";
 
 export default function FolderApplicationCard(
   {
@@ -18,9 +19,7 @@ export default function FolderApplicationCard(
     disabled
   }
 ) {
-  if (!application || !application.name) {
-    return null;
-  }
+  const settings = useSettings();
   const {
     iconFile,
     name,
@@ -30,7 +29,7 @@ export default function FolderApplicationCard(
     url,
     storage,
     info = {}
-  } = application;
+  } = application || {};
   const {icon} = useApplicationIcon(storage, iconFile ? iconFile.path : undefined);
   const onClickCallback = useCallback((e) => {
     if (onClick) {
@@ -53,6 +52,9 @@ export default function FolderApplicationCard(
       onFavouriteClick(application);
     }
   }, [application, onFavouriteClick]);
+  if (!application || !application.name) {
+    return null;
+  }
   const owner = info.user;
   const ownerInfo = info.ownerInfo;
   const Wrapper = ({children}) => {
@@ -77,7 +79,7 @@ export default function FolderApplicationCard(
             'app',
             'app-folder',
             {
-              dark: DARK_MODE,
+              dark: settings?.darkMode,
               published,
               disabled
             },

@@ -25,7 +25,7 @@ if (!publicPath.endsWith('/')) {
 const publicUrl = publicPath.substr(0, publicPath.length - 1);
 const cpApplicationsAPI = env.CP_APPLICATIONS_API;
 const isCPAPI = ['1', 'true'].indexOf(`${valueOrDefault(env.USE_CLOUD_PIPELINE_API, 1)}`) >= 0;
-const darkMode = ['1', 'true'].indexOf(`${env.DARK_MODE}`) >= 0;
+const darkMode = env.DARK_MODE === undefined || ['1', 'true'].indexOf(`${env.DARK_MODE}`) >= 0;
 const pollingInterval = env.POLLING_INTERVAL || 1000;
 const initialPollingDelay = env.INITIAL_POLLING_DELAY || 5000;
 const limitMounts = env.LIMIT_MOUNTS || 'default';

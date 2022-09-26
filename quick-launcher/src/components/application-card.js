@@ -3,7 +3,8 @@ import classNames from 'classnames';
 import useAppExtendedSettings from './utilities/use-app-extended-settings';
 import ApplicationSettings from './shared/application-settings';
 import './components.css';
-import {launchOptionsContainSensitiveMounts} from '../models/pre-run-checks/check-sensitive-storages';
+import {launchOptionsContainSensitiveMounts} from "../models/pre-run-checks/check-sensitive-storages";
+import {useSettings} from './use-settings';
 
 export default function ApplicationCard(
   {
@@ -12,6 +13,7 @@ export default function ApplicationCard(
     options
   }
 ) {
+  const settings = useSettings();
   const {
     appendDefault,
     getSettingValue,
@@ -26,7 +28,7 @@ export default function ApplicationCard(
   }, [extendedOptions, appendDefault]);
   return (
     <div
-      className={classNames('app', {dark: DARK_MODE, sensitive})}
+      className={classNames('app', {dark: settings?.darkMode, sensitive})}
       onClick={onLaunch}
     >
       {
