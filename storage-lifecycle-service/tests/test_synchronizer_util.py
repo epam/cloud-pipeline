@@ -14,6 +14,7 @@
 
 import datetime
 import os
+import re
 import unittest
 
 from sls.app.synchronizer import archiving_synchronizer_impl
@@ -21,6 +22,7 @@ from sls.app.synchronizer.archiving_synchronizer_impl import StorageLifecycleArc
 from sls.cloud.model.cloud_object_model import CloudObject
 from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation, StorageLifecycleRule, \
     StorageLifecycleTransitionCriterion
+from sls.util import path_utils
 
 
 class TestIdentificationSubjectFolders(unittest.TestCase):
@@ -113,6 +115,32 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
             ),
             sorted(StorageLifecycleArchivingSynchronizer._identify_subject_folders(files, glob))
         )
+
+    def test_identify_files_by_regexp(self):
+        glob = "/dir/*.*"
+        files = [
+            CloudObject("/dir/subdir1/dataset1.txt", None, None),
+            CloudObject("/dir/file.txt", None, None)
+
+        ]
+        rule_subject_files = [
+            file.path for file in files
+            if re.compile(path_utils.convert_glob_to_regexp(glob)).match(file.path)
+        ]
+        self.assertEqual(["/dir/file.txt"], rule_subject_files)
+
+    def test_identify_files_by_regexp_2(self):
+        glob = "/dir/*"
+        files = [
+            CloudObject("/dir/subdir1/dataset1.txt", None, None),
+            CloudObject("/dir/file.txt", None, None)
+
+        ]
+        rule_subject_files = [
+            file.path for file in files
+            if re.compile(path_utils.convert_glob_to_regexp(glob)).match(file.path)
+        ]
+        self.assertEqual(["/dir/file.txt"], rule_subject_files)
 
 
 class TestDefineEffectiveTransitions(unittest.TestCase):
