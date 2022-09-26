@@ -27,8 +27,9 @@ import AnalysisApi from './analysis-api';
 import runAnalysisPipeline, {getPipelineModules} from './analysis-pipeline-utilities';
 import {loadPipeline, savePipeline} from './analysis-pipeline-management';
 import {submitBatchAnalysis} from './batch';
+import {findSimilarAnalysis} from './similar-analysis';
 import PhysicalSize from './physical-size';
-import moment from "moment-timezone";
+import moment from 'moment-timezone';
 
 const AUTOUPDATE = false;
 
@@ -391,6 +392,45 @@ class Analysis {
     }
     if (this.pipeline && this.modules.length > 0) {
       this.analysisRequested = true;
+    }
+  };
+
+  @action
+  checkSimilarBatchAnalysis = async () => {
+    try {
+      this.analysing = true;
+      this.pending = true;
+      this.error = undefined;
+      this.status = 'Checking batch analysis...';
+      if (!this.namesAndTypes || !this.namesAndTypes.sourceDirectory) {
+        throw new Error('HCS file\'s measurement UUID not specified');
+      }
+      /**
+       * @type {BatchAnalysisSpecification}
+       */
+      const specification = {
+        alias: this.alias,
+        storage: this.storageId,
+        path: this.path,
+        pipeline: this.pipeline.exportPipeline(true),
+        measurementUUID: this.namesAndTypes.sourceDirectory,
+        inputs: this.getInputsPayload(),
+        modules: getPipelineModules(this.modules)
+          .map((module, idx) => ({
+            moduleName: module.name,
+            moduleId: idx + 1,
+            parameters: module.getPayload()
+          }))
+      };
+      const similar = await findSimilarAnalysis(specification);
+      this.status = 'Batch analysis checked';
+      return similar;
+    } catch (error) {
+      this.error = error.message;
+      return [];
+    } finally {
+      this.pending = false;
+      this.analysing = false;
     }
   };
 

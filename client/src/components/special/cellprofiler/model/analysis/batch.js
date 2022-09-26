@@ -60,8 +60,8 @@ const CELLPROFILER_API_BATCH_RESULTS_STORAGE_PATH = 'CELLPROFILER_API_BATCH_RESU
 const CELLPROFILER_API_BATCH_SPEC_FILE = 'CELLPROFILER_API_BATCH_SPEC_FILE';
 const CELLPROFILER_API_BATCH_SPEC_STORAGE = 'CELLPROFILER_API_BATCH_SPEC_STORAGE';
 const CELLPROFILER_API_BATCH_SPEC_STORAGE_PATH = 'CELLPROFILER_API_BATCH_SPEC_STORAGE_PATH';
-const CELLPROFILER_API_BATCH_SPEC_INPUTS = 'CELLPROFILER_API_BATCH_SPEC_INPUTS';
-const CELLPROFILER_API_BATCH_SPEC_MODULES = 'CELLPROFILER_API_BATCH_SPEC_MODULES';
+export const CELLPROFILER_API_BATCH_SPEC_INPUTS = 'CELLPROFILER_API_BATCH_SPEC_INPUTS';
+export const CELLPROFILER_API_BATCH_SPEC_MODULES = 'CELLPROFILER_API_BATCH_SPEC_MODULES';
 const CELLPROFILER_API_BATCH_UUID = 'CELLPROFILER_API_BATCH_UUID';
 const CELLPROFILER_API_BATCH_PIPELINE = 'CELLPROFILER_API_BATCH_PIPELINE';
 const CELLPROFILER_API_BATCH_PIPELINE_NAME = 'CELLPROFILER_API_BATCH_PIPELINE_NAME';
@@ -83,7 +83,7 @@ function getRowName (rowIndex) {
 /**
  * @param {{files: BatchAnalysisInput[]}} inputs
  */
-function getInputFilesPresentation (inputs = {}) {
+export function getInputFilesPresentation (inputs = {}) {
   const {
     files = [],
     zPlanes = []
@@ -111,6 +111,10 @@ function getInputFilesPresentation (inputs = {}) {
     getDescription(timePoints),
     getDescription(zCoordinates, zPlanes.length > 1 ? 'merged' : undefined)
   ].join(separator);
+}
+
+export function getModulesPresentation (modules = []) {
+  return modules.map(aModule => aModule.moduleName).join(',');
 }
 
 /**
@@ -224,7 +228,7 @@ export async function submitBatchAnalysis (specification) {
   );
   setParameterValue(
     CELLPROFILER_API_BATCH_SPEC_MODULES,
-    modules.map(aModule => aModule.moduleName).join(',')
+    getModulesPresentation(modules)
   );
   setParameterValue(CELLPROFILER_API_BATCH, true);
   const tags = {};
@@ -321,6 +325,8 @@ const getJobSpec = (job) => {
  * @property {string} [measurementUUID]
  * @property {number} [page=0] Zero-based page number
  * @property {number} [pageSize=30]
+ * @property {{files: BatchAnalysisInput[], zPlanes: number[]}} [inputs]
+ * @property {string[]} [statuses]
  */
 
 /**
@@ -398,12 +404,14 @@ export async function getBatchJobs (filters = {}) {
     page = 0,
     pageSize = 30,
     userNames = [],
-    source
+    source,
+    statuses
   } = filters;
   const payload = {
     page: page + 1,
     pageSize,
-    userModified: false
+    userModified: false,
+    statuses
   };
   if (userNames.length) {
     payload.owners = userNames.slice();

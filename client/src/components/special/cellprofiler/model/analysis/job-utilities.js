@@ -240,6 +240,24 @@ export async function getVideoSettings (refresh = false) {
   };
 }
 
+export async function getBatchAnalysisSimilarCheckSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    batch = {}
+  } = settings || {};
+  const {
+    similar = {}
+  } = batch;
+  const {
+    'max-different-parameters': maxDifferentParameters,
+    mode = 'total'
+  } = similar;
+  return {
+    maxDifferentParameters,
+    mode
+  };
+}
+
 export async function findJobWithDockerImage (options = {}) {
   const configuration = await getAnalysisSettings();
   const {

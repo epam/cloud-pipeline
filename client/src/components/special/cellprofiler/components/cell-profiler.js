@@ -26,13 +26,15 @@ import CellProfilerPipeline from './pipeline';
 import AddModulesButton from './add-modules-button';
 import SavePipelineModal from './modals/save-pipeline-modal';
 import SelectionInfo from './selection-info';
+import SimilarJobWarning from './components/similar-job-warning';
 import styles from './cell-profiler.css';
 
 class CellProfiler extends React.Component {
   state = {
     managementActionsVisible: false,
     openPipelineModalVisible: false,
-    savePipelineOptions: undefined
+    savePipelineOptions: undefined,
+    similarJobs: []
   };
 
   get analysisDisabled () {
@@ -192,7 +194,35 @@ class CellProfiler extends React.Component {
     );
   };
 
-  runAnalysis = () => {
+  runSimilarJob = () => {
+    this.setState({
+      similarJobs: []
+    }, () => this.runAnalysis({ignoreSimilar: true}));
+  };
+
+  cancelRunSimilarJob = () => {
+    this.setState({
+      similarJobs: []
+    });
+  };
+
+  openSimilarJob = (aJob) => {
+    const {
+      onOpenEvaluations
+    } = this.props;
+    this.setState({
+      similarJobs: []
+    }, () => {
+      if (aJob && typeof onOpenEvaluations === 'function') {
+        onOpenEvaluations(aJob.id);
+      }
+    });
+  };
+
+  runAnalysis = (options = {}) => {
+    const {
+      ignoreSimilar = false
+    } = options;
     const {
       analysis,
       onOpenEvaluations
@@ -201,8 +231,23 @@ class CellProfiler extends React.Component {
       return;
     }
     if (analysis.batch) {
-      analysis
-        .runBatch()
+      Promise
+        .resolve()
+        .then(() => {
+          if (ignoreSimilar) {
+            return Promise.resolve([]);
+          }
+          return analysis.checkSimilarBatchAnalysis();
+        })
+        .then((similar = []) => {
+          this.setState({
+            similarJobs: similar
+          });
+          if (similar.length > 0) {
+            return Promise.resolve(undefined);
+          }
+          return analysis.runBatch();
+        })
         .then((batchAnalysis) => {
           if (batchAnalysis && typeof onOpenEvaluations === 'function') {
             onOpenEvaluations(batchAnalysis.id);
@@ -237,6 +282,9 @@ class CellProfiler extends React.Component {
     if (!analysis) {
       return null;
     }
+    const {
+      similarJobs = []
+    } = this.state;
     return (
       <div
         className={
@@ -258,7 +306,7 @@ class CellProfiler extends React.Component {
             }}
             size="small"
             disabled={this.analysisDisabled}
-            onClick={this.runAnalysis}
+            onClick={() => this.runAnalysis()}
           >
             <Icon type="caret-right" />
             {
@@ -331,6 +379,13 @@ class CellProfiler extends React.Component {
             </div>
           )
         }
+        <SimilarJobWarning
+          visible={similarJobs.length > 0}
+          jobs={similarJobs}
+          onCancel={this.cancelRunSimilarJob}
+          onSubmit={this.runSimilarJob}
+          onOpenSimilar={this.openSimilarJob}
+        />
       </div>
     );
   }
