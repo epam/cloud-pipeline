@@ -67,6 +67,14 @@ class HCSManager:
         pipeline = self._get_pipeline(pipeline_id)
         pipeline.disable_debug_mode()
 
+    def debug_next_image_set(self, pipeline_id):
+        pipeline = self._get_pipeline(pipeline_id)
+        pipeline.next_image_set()
+
+    def flush_debug_results(self, pipeline_id):
+        pipeline = self._get_pipeline(pipeline_id)
+        pipeline.flush_debug_results()
+
     def get_status(self, pipeline_id, module_id):
         pipeline = self._get_pipeline(pipeline_id)
         if not module_id:
@@ -107,30 +115,10 @@ class HCSManager:
     def _run_pipeline(self, pipeline_id, parent_pipeline=None):
         pipeline = self._get_pipeline(pipeline_id)
         pipeline.set_pipeline_state(PipelineState.CONFIGURING)
-        delay = int(Config.RUN_DELAY)
-        pool_size = int(Config.POOL_SIZE)
         try:
-            while True:
-                available_processors = pool_size - len(self.running_processes)
-                if available_processors > 0:
-                    if len(self.queue) == 0 or self.queue[0] == pipeline_id:
-                        if len(self.queue) != 0:
-                            self.queue.remove(pipeline_id)
-                        self._set_pipeline_state(pipeline, PipelineState.RUNNING, parent_pipeline)
-                        process = Process(target=pipeline.run_pipeline)
-                        process.start()
-                        print("[DEBUG] Run process '%s' started with PID %d" % (pipeline_id, process.pid))
-                        self.running_processes.update({pipeline_id: process})
-                        process.join()
-                        print("[DEBUG] Run process '%s' finished" % pipeline_id)
-                        pipeline.set_pipeline_state(PipelineState.FINISHED)
-                        self.running_processes.pop(pipeline_id)
-                        return
-                if not self.queue.__contains__(pipeline_id):
-                    self._set_pipeline_state(pipeline, PipelineState.QUEUED, parent_pipeline)
-                    self.queue.append(pipeline_id)
-                    print("[DEBUG] Run '%s' queued" % pipeline_id)
-                sleep(delay)
+            self._set_pipeline_state(pipeline, PipelineState.RUNNING, parent_pipeline)
+            pipeline.run_pipeline()
+            print("[DEBUG] Run pipeline '%s' finished" % pipeline_id)
         except BaseException as e:
             self._set_pipeline_state(pipeline, PipelineState.FAILED, parent_pipeline, message=str(e))
             raise e

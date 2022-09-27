@@ -37,6 +37,23 @@ def error(message):
     }
 
 
+def ok():
+    return {
+        "status": "OK"
+    }
+
+
+def get_required_parameter(parameter_name):
+    param = flask.request.args.get(parameter_name)
+    if not param:
+        raise RuntimeError("Parameter '%s' must be specified." % parameter_name)
+    return param
+
+
+PIPELINE_ID = "pipelineId"
+MODULE_ID = "moduleId"
+
+
 @app.route('/hcs/pipelines', methods=['POST'])
 def create_pipeline():
     manager = app.config['hcs']
@@ -156,11 +173,8 @@ def delete_module():
 def run_pipeline():
     manager = app.config['hcs']
     try:
-        pipeline_id = flask.request.args.get("pipelineId")
-        if not pipeline_id:
-            raise RuntimeError("Parameter 'pipelineId' must be specified.")
-        manager.launch_pipeline(pipeline_id)
-        return jsonify({"status": "OK"})
+        manager.launch_pipeline(get_required_parameter(PIPELINE_ID))
+        return jsonify(ok())
     except Exception as e:
         print(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -170,14 +184,10 @@ def run_pipeline():
 def run_module():
     manager = app.config['hcs']
     try:
-        pipeline_id = flask.request.args.get("pipelineId")
-        if not pipeline_id:
-            raise RuntimeError("Parameter 'pipelineId' must be specified.")
-        module_id = flask.request.args.get("moduleId")
-        if not module_id:
-            raise RuntimeError("Parameter 'moduleId' must be specified.")
+        pipeline_id = get_required_parameter(PIPELINE_ID)
+        module_id = get_required_parameter(MODULE_ID)
         manager.run_module(pipeline_id, module_id)
-        return jsonify({"status": "OK"})
+        return jsonify(ok())
     except Exception as e:
         print(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -187,11 +197,8 @@ def run_module():
 def debug_mode_start():
     manager = app.config['hcs']
     try:
-        pipeline_id = flask.request.args.get("pipelineId")
-        if not pipeline_id:
-            raise RuntimeError("Parameter 'pipelineId' must be specified.")
-        manager.start_debug_mode(pipeline_id)
-        return jsonify({"status": "OK"})
+        manager.start_debug_mode(get_required_parameter(PIPELINE_ID))
+        return jsonify(ok())
     except Exception as e:
         print(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -201,11 +208,30 @@ def debug_mode_start():
 def debug_mode_end():
     manager = app.config['hcs']
     try:
-        pipeline_id = flask.request.args.get("pipelineId")
-        if not pipeline_id:
-            raise RuntimeError("Parameter 'pipelineId' must be specified.")
-        manager.end_debug_mode(pipeline_id)
-        return jsonify({"status": "OK"})
+        manager.end_debug_mode(get_required_parameter(PIPELINE_ID))
+        return jsonify(ok())
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/hcs/debug/flush', methods=['POST'])
+def flush_debug_results():
+    manager = app.config['hcs']
+    try:
+        manager.flush_debug_results(get_required_parameter(PIPELINE_ID))
+        return jsonify(ok())
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/hcs/debug/next', methods=['POST'])
+def debug_next_image_set():
+    manager = app.config['hcs']
+    try:
+        manager.debug_next_image_set(get_required_parameter(PIPELINE_ID))
+        return jsonify(ok())
     except Exception as e:
         print(traceback.format_exc())
         return jsonify(error(e.__str__()))

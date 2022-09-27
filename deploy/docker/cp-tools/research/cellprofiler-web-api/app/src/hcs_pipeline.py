@@ -57,6 +57,7 @@ class HcsPipeline(object):
         self._pipeline_input_dir = os.path.join(Config.RAW_IMAGE_DATA_ROOT, measurement_id)
         self._pipeline_output_dir_cloud_path = self._extract_cloud_path()
         self._modules_factory = HcsModulesFactory(self._pipeline_output_dir)
+        self._debug_mode = None
         self._add_default_modules()
         self._pipeline_state = PipelineState.CONFIGURING
         self._pipeline_state_message = ''
@@ -66,7 +67,7 @@ class HcsPipeline(object):
         self._pre_processing_pipeline_id = None
         self._z_planes = None  # z-planes to squash
         self._channels_map = dict()
-        self._debug_mode = None
+        self._image_set_length = None
         cellprofiler_core.preferences.set_headless()
 
     def set_pipeline_state(self, status: PipelineState, message: str = ''):
@@ -113,6 +114,9 @@ class HcsPipeline(object):
         data['inputs'] = list(self._input_sets)
         if self.get_pre_processing_pipeline():
             data['pre_process_pipeline'] = self.get_pre_processing_pipeline()
+        if self._image_set_length:
+            data['image_set_count'] = self._image_set_length
+        data['debug'] = True if self._debug_mode else False
         return data
 
     def get_module_status(self):
@@ -124,6 +128,9 @@ class HcsPipeline(object):
         module = self._pipeline.modules()[module_num]
         self.configure_module(new_config, module=module)
         self.set_pipeline_state(PipelineState.CONFIGURING)
+        if self._debug_mode:
+            # TODO: check it!
+            self._debug_mode.prepare_module(module)
 
     def run_pipeline(self):
         cellprofiler_core.utilities.java.start_java()
@@ -143,9 +150,10 @@ class HcsPipeline(object):
         module_num = self._adjust_module_number(module_num)
         self._verify_module_num(module_num)
         if not self._debug_mode:
-            raise RuntimeError("Module run is not supported for non debug mode")
-
-        self._run_module(module_num - 1)
+            raise RuntimeError("Module launch is not supported for non debug mode")
+        javabridge.attach()
+        self._debug_mode.run_module(self._pipeline.modules()[module_num - 1])
+        javabridge.detach()
 
     def move_module(self, module_num: int, direction: str):
         module_num = self._verify_module_num(module_num)
@@ -157,6 +165,8 @@ class HcsPipeline(object):
         module.set_module_num(module_pos)
         self._pipeline.add_module(module)
         self.set_pipeline_state(PipelineState.CONFIGURING)
+        if self._debug_mode:
+            self._debug_mode.prepare_module(module)
 
     def configure_module(self, module_config, module=None, module_name=None):
         if module is not None:
@@ -169,6 +179,8 @@ class HcsPipeline(object):
         return module
 
     def remove_module(self, module_num: int):
+        if self._debug_mode:
+            raise RuntimeError("Cannot perform pipeline modification during debug mode")
         module_num = self._adjust_module_number(module_num)
         self._verify_module_num(module_num)
         self._pipeline.remove_module(module_num)
@@ -214,13 +226,34 @@ class HcsPipeline(object):
         return image_full_path
 
     def enable_debug_mode(self):
-        self._debug_mode = DebugMode(self._pipeline)
-        # run mandatory modules
-        self._init_modules()
+        if self._debug_mode:
+            return
+        cellprofiler_core.utilities.java.start_java()
+        debug_mode = DebugMode(self._pipeline)
+        debug_mode.start_debugging()
+        self._debug_mode = debug_mode
+        self._image_set_length = self._debug_mode.get_image_set_count()
 
     def disable_debug_mode(self):
-        self._debug_mode.close()
+        if not self._debug_mode:
+            return
+        javabridge.attach()
+        self._debug_mode.stop_debugging()
         self._debug_mode = None
+        self._image_set_length = None
+        javabridge.detach()
+
+    def next_image_set(self):
+        if not self._debug_mode:
+            return
+        javabridge.attach()
+        self._debug_mode.next_image_set()
+        javabridge.detach()
+
+    def flush_debug_results(self):
+        if not self._debug_mode:
+            return
+        self._debug_mode.flush_results()
 
     def _verify_module_num(self, module_num: int):
         modules = self._pipeline.modules()
@@ -279,22 +312,3 @@ class HcsPipeline(object):
                 results.update({well_key: set()})
             results.get(well_key).add(image_coords.field)
         self._fields_by_well = results
-
-    def _init_modules(self):
-        javabridge.attach()
-        debug_mode = DebugMode(self._pipeline)
-        debug_mode.prepare(self._pipeline.modules()[0:4])
-        debug_mode.launch(self._pipeline.modules()[0:4])
-        debug_mode.post_launch(self._pipeline.modules()[0:4])
-        self._debug_mode = debug_mode
-        javabridge.detach()
-
-    def _run_module(self, module_num):
-        javabridge.attach()
-        debug_mode = DebugMode(self._pipeline)
-        debug_mode.prepare([self._pipeline.modules()[module_num]])
-        debug_mode.launch([self._pipeline.modules()[module_num]])
-        modules_count = module_num + 1
-        debug_mode.post_launch(self._pipeline.modules()[0:modules_count])
-        self._debug_mode = debug_mode
-        javabridge.detach()
