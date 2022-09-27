@@ -128,6 +128,7 @@ const STORAGE_CLASSES = {
 }, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
+  const openImage = queryParameters.open && decodeURIComponent(queryParameters.open);
   return {
     authenticatedUserInfo,
     onReloadTree,
@@ -151,7 +152,8 @@ const STORAGE_CLASSES = {
     dataStorages,
     pipelinesLibrary,
     folders,
-    preferences
+    preferences,
+    openImage
   };
 })
 @observer
@@ -2631,6 +2633,24 @@ export default class DataStorage extends React.Component {
 
   componentWillUnmount () {
     message.destroy();
+  }
+
+  componentDidMount () {
+    const {openImage, storage} = this.props;
+    if (openImage && storage) {
+      const file = {
+        path: `${storage.path}/${openImage}`,
+        name: openImage
+      };
+      this.openPreviewModal(file);
+      this.deleteOpenParameter();
+    }
+  }
+
+  deleteOpenParameter = () => {
+    const openParameter = `&open=${encodeURIComponent(this.props.openImage)}`;
+    const url = document.location.href.replace(openParameter, '');
+    window.history.pushState({}, document.title, url);
   }
 
   componentDidUpdate (prevProps) {
