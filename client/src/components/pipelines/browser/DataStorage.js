@@ -2636,10 +2636,10 @@ export default class DataStorage extends React.Component {
   }
 
   componentDidMount () {
-    const {openImage, storage} = this.props;
-    if (openImage && storage) {
+    const {openImage, path} = this.props;
+    if (openImage) {
       const file = {
-        path: `${storage.path}/${openImage}`,
+        path: `${path ? `${path}/` : ''}${openImage}`,
         name: openImage
       };
       this.openPreviewModal(file);

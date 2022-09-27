@@ -230,9 +230,10 @@ class CellProfilerJobResults extends React.PureComponent {
       if (storage) {
         displayPath = storage.pathMask.concat(storage.delimiter || '/').concat(path);
       }
-      if (key === 'HCS Image') {
-        const openImage = path.replace((parentFolder + ((storage || {}).delimiter || '/')), '');
-        link = link.concat(`&open=${openImage}`);
+      const file = (path || '').split('/').pop();
+      const fileExtension = file.split('.').pop();
+      if (fileExtension === 'hcs') {
+        link = link.concat(`&open=${file}`);
       }
       return renderInfo(
         key,
