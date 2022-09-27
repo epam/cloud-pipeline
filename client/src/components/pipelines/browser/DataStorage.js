@@ -128,6 +128,7 @@ const STORAGE_CLASSES = {
 }, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
+  const openPreview = queryParameters.preview && decodeURIComponent(queryParameters.preview);
   return {
     authenticatedUserInfo,
     onReloadTree,
@@ -151,7 +152,8 @@ const STORAGE_CLASSES = {
     dataStorages,
     pipelinesLibrary,
     folders,
-    preferences
+    preferences,
+    openPreview
   };
 })
 @observer
@@ -2631,6 +2633,17 @@ export default class DataStorage extends React.Component {
 
   componentWillUnmount () {
     message.destroy();
+  }
+
+  componentDidMount () {
+    const {openPreview, path} = this.props;
+    if (openPreview) {
+      const file = {
+        path: `${path ? `${path}/` : ''}${openPreview}`,
+        name: openPreview
+      };
+      this.openPreviewModal(file);
+    }
   }
 
   componentDidUpdate (prevProps) {

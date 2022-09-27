@@ -222,13 +222,22 @@ class CellProfilerJobResults extends React.PureComponent {
         ? path
         : (path || '').split('/').slice(0, -1).join('/');
       let link = `storage/${storageId}`;
+      const query = {};
       if (parentFolder && parentFolder.length) {
-        link = link.concat(`?path=${parentFolder}`);
+        query.path = parentFolder;
       }
       const storage = getStorageById(storageId);
       let displayPath = path;
       if (storage) {
         displayPath = storage.pathMask.concat(storage.delimiter || '/').concat(path);
+      }
+      const file = (path || '').split('/').pop();
+      if (/\.hcs$/i.test(file)) {
+        query.preview = file;
+      }
+      if (Object.keys(query).length > 0) {
+        link = link
+          .concat(`?${Object.entries(query).map(([key, value]) => `${key}=${value}`).join('&')}`);
       }
       return renderInfo(
         key,
