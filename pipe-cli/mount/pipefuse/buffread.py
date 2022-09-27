@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,6 @@ import io
 import logging
 
 from pipefuse.fsclient import FileSystemClientDecorator
-
-
-_ANY_ERROR = BaseException
 
 
 class _ReadBuffer:
@@ -122,10 +119,10 @@ class BufferingReadAheadFileSystemClient(FileSystemClientDecorator):
                     file_buf = self._new_read_buf(fh, path, file_buf.file_size, offset, length)
                     self._buffs[buf_key] = file_buf
             buf.write(file_buf.view(offset, length))
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Downloading has failed for %d:%s. '
                               'Removing the corresponding buffer.' % (fh, path))
-            self._remove_read_buf(fh, path)
+            self._remove_buf(fh, path)
             raise
 
     def _new_read_buf(self, fh, path, file_size, offset, length):
@@ -145,7 +142,7 @@ class BufferingReadAheadFileSystemClient(FileSystemClientDecorator):
             logging.info('Flushing the corresponding buffer for %d:%s' % (fh, path))
             self._inner.flush(fh, path)
             self._remove_buf(fh, path)
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Flushing has failed for %d:%s. '
                               'Removing the corresponding buffer.' % (fh, path))
             self._remove_buf(fh, path)
