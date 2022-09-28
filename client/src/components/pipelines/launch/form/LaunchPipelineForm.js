@@ -4419,6 +4419,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   );
 
   renderCmdTemplateFormItem = () => {
+    const {isRawEditEnabled} = this.state;
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'cmdTemplate')}
@@ -4430,7 +4431,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               disabled={
                 !!this.state.fireCloudMethodName ||
                 (this.props.readOnly && !this.props.canExecute) ||
-                (this.state.pipeline && this.props.detached)
+                (this.state.pipeline && this.props.detached && !isRawEditEnabled)
               }
               onChange={(e) => this.setState(
                 {
@@ -4451,7 +4452,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   disabled={
                     !!this.state.fireCloudMethodName ||
                     (this.props.readOnly && !this.props.canExecute) ||
-                    (this.state.pipeline && this.props.detached)
+                    (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                   }
                   onChange={(e) => this.setState(
                     {
@@ -4490,7 +4491,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         <Input
                           disabled={
                             (this.props.readOnly && !this.props.canExecute) ||
-                            (this.state.pipeline && this.props.detached)
+                            (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                           }
                           className={styles.hiddenItem} />
                       )}
@@ -4499,7 +4500,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         readOnly={
                           !!this.state.fireCloudMethodName ||
                           (this.props.readOnly && !this.props.canExecute) ||
-                          (this.state.pipeline && this.props.detached)
+                          (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                         }
                         className={styles.codeEditor}
                         language="shell"
