@@ -148,7 +148,7 @@ class LifeCycleEditModal extends React.Component {
     const transitionsModified = () => {
       const transitions = (form.getFieldValue('transitions') || [])
         .filter(Boolean);
-      const initialTransitions = initialRule.transitions;
+      const initialTransitions = initialRule.transitions || [];
       if (transitions.length !== initialTransitions.length) {
         return true;
       }
