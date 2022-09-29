@@ -203,12 +203,17 @@ class NotificationForm extends React.Component {
             type="flex"
             align="middle"
           >
-            <Col offset={3}>
+            <Col
+              {...fullWidthLayout.labelCol}
+              style={{
+                padding: '0px 10px 3px 0px',
+                textAlign: 'right'
+              }}
+            >
               Subject:
             </Col>
-            <Col>
+            <Col {...fullWidthLayout.wrapperCol}>
               <EmailPreview
-                style={{marginLeft: 5}}
                 iFrameStyle={{
                   height: 34,
                   width: '100%',

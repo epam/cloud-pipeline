@@ -143,7 +143,21 @@ class LifeCycleEditModal extends React.Component {
       comparerFn = ((a, b) => a === b)
     ) => {
       const fieldValue = form.getFieldValue(formPath);
-      return !compareArrays(initialValue, fieldValue, comparerFn);
+      return !compareArrays(fieldValue, initialValue, comparerFn);
+    };
+    const transitionsModified = () => {
+      const transitions = (form.getFieldValue('transitions') || [])
+        .filter(Boolean);
+      const initialTransitions = initialRule.transitions;
+      if (transitions.length !== initialTransitions.length) {
+        return true;
+      }
+      return transitions.some((current, index) => {
+        const initial = initialTransitions[index] || {};
+        return current.storageClass !== initial.storageClass ||
+        `${current.transitionAfterDays}` !== `${initial.transitionAfterDays}` ||
+        moment(current.transitionDate).diff(initial.transitionDate, 'days') !== 0;
+      });
     };
     return stringFieldModified('notification.body', notification.body) ||
       stringFieldModified('notification.disabled', !notification.enabled) ||
@@ -154,12 +168,7 @@ class LifeCycleEditModal extends React.Component {
       stringFieldModified('pathGlob', initialRule.pathGlob) ||
       objectFieldModified('transitionCriterion', initialRule.transitionCriterion) ||
       stringFieldModified('transitionMethod', initialRule.transitionMethod) ||
-      arrayFieldModified(
-        'transitions',
-        initialRule.transitions,
-        (a, b) => (a.storageClass === b.storageClass &&
-          a.transitionAfterDays === b.transitionAfterDays)
-      ) ||
+      transitionsModified() ||
       arrayFieldModified(
         'notification.recipients',
         (initialRule.notification || {}).recipients,
