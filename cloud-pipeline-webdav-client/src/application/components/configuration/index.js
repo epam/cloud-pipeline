@@ -3,9 +3,11 @@ import PropTypes from 'prop-types';
 import {Button, Checkbox, Modal, Input, Tooltip} from 'antd';
 import {CheckCircleFilled, CloseCircleFilled} from '@ant-design/icons';
 import electron from 'electron';
-import './configuration.css';
+import UpdateButton from './update-button';
+import checker from '../../../auto-update';
 import writeWebDavConfiguration from '../../../write-webdav-configuration';
 import copyPingConfiguration from '../../models/file-systems/copy-ping-configuration';
+import './configuration.css';
 
 function TestState({tested = false, error}) {
   if (!tested) {
@@ -434,6 +436,14 @@ class Configuration extends React.Component {
               </div>
             )
           }
+          {
+            checker.componentVersion && (
+              <div className="app-version">
+                {name} App Component Version: {checker.componentVersion}
+              </div>
+            )
+          }
+          <UpdateButton />
           {this.renderDiagnoseInfo('WebDav', webDavDiagnoseState, webDavDiagnoseFile)}
           {this.renderDiagnoseInfo('API', apiDiagnoseState, apiDiagnoseFile)}
         </div>
