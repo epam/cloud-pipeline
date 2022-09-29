@@ -1,8 +1,8 @@
-import {spawn, exec} from 'child_process';
+import {spawn} from 'child_process';
 import electron from 'electron';
 import cloudPipelineAPI from '../application/models/cloud-pipeline-api';
 import getAppRoot from '../get-app-root-directory';
-import { log } from '../application/models/log';
+import {log} from '../application/models/log';
 
 const Platforms = {
   windows: 'windows',
@@ -123,11 +123,109 @@ export async function autoUpdateAvailable () {
   return !!url && script;
 }
 
-export default function autoUpdateApplication () {
-  const platform = getPlatformName();
-  if (platform !== Platforms.windows) {
-    return autoUpdateDarwinLinuxApplication();
-  } else {
-    return autoUpdateWindowsApplication();
+class AutoUpdatesChecker {
+  constructor() {
+    this.listeners = [];
+    const config = (() => {
+      const cfg = (electron.remote === undefined)
+        ? global.webdavClient
+        : electron.remote.getGlobal('webdavClient');
+      return (cfg || {}).config || {};
+    })();
+    const {
+      componentVersion,
+      name: appName = 'Cloud Data'
+    } = config;
+    this.autoUpdateAvailableForOS = false;
+    this.appName = appName;
+    this.componentVersion = componentVersion;
+    this.latestVersion = undefined;
+    this.updateAvailable = false;
+    (this.checkForUpdates)();
+  }
+  destroy () {
+    this.listeners = undefined;
+  }
+  addEventListener (listener, check = false) {
+    this.removeEventListener(listener);
+    if (typeof listener === 'function') {
+      this.listeners.push(listener);
+    }
+    if (check) {
+      (this.checkForUpdates)();
+    }
+    this.emitInfo();
+  }
+  removeEventListener (listener) {
+    this.listeners = this.listeners.filter(o => o !== listener);
+  }
+  emitEvent (payload) {
+    this.listeners.forEach(aListener => aListener(payload));
+  }
+  emitInfo = () => {
+    this.emitEvent({
+      available: this.updateAvailable,
+      version: this.latestVersion,
+      isLatest: this.latestVersion === this.componentVersion,
+      availableForOS: this.autoUpdateAvailableForOS
+    });
+  }
+  async checkAvailableForOS () {
+    try {
+      await cloudPipelineAPI.initialize();
+      this.autoUpdateAvailableForOS = await autoUpdateAvailable();
+    } catch (exc) {
+      this.autoUpdateAvailableForOS = false;
+    } finally {
+      this.emitInfo();
+    }
+  }
+  checkForUpdates () {
+    if (!this.checkForUpdatesPromise) {
+      this.checkForUpdatesPromise = new Promise(async (resolve) => {
+        log('Checking for updates...');
+        const wait = (sec) => new Promise((resolve) => setTimeout(resolve, sec * 1000));
+        try {
+          await wait(2);
+          await cloudPipelineAPI.initialize();
+          await this.checkAvailableForOS();
+          if (this.autoUpdateAvailableForOS) {
+            this.latestVersion = await cloudPipelineAPI.getAppInfo();
+            this.updateAvailable = this.latestVersion && this.latestVersion !== this.componentVersion;
+            log(`Latest version ${this.latestVersion} available. Component version: ${this.componentVersion || 'unknown'}`);
+            if (this.updateAvailable) {
+              log(`New version ${this.latestVersion} available.`);
+            }
+          } else {
+            this.updateAvailable = false;
+            this.latestVersion = undefined;
+            log(`Auto-update is not available for current OS`);
+          }
+        } catch (exc) {
+          this.updateAvailable = false;
+          this.latestVersion = undefined;
+          log(`Error checking for updates: ${exc.message}`);
+        } finally {
+          this.emitInfo();
+          this.checkForUpdatesPromise = undefined;
+          resolve({available: this.updateAvailable});
+        }
+      });
+    }
+    return this.checkForUpdatesPromise;
+  }
+  update () {
+    if (!this.updateAvailable) {
+      return;
+    }
+    const platform = getPlatformName();
+    if (platform !== Platforms.windows) {
+      return autoUpdateDarwinLinuxApplication();
+    } else {
+      return autoUpdateWindowsApplication();
+    }
   }
 }
+
+const checker = new AutoUpdatesChecker();
+export default checker;
