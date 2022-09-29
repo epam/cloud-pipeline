@@ -323,7 +323,9 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
     def _check_rule_execution_progress(self, storage_id, subject_files, execution):
         if not execution.status:
-            raise RuntimeError("Malformed rule execution found.")
+            raise RuntimeError("Storage: {}. Rule: {}. Path: '{}'. Transition: {}. Malformed rule execution found."
+                               " Status not found!".format(storage_id, execution.rule_id,
+                                                           execution.path, execution.storage_class))
 
         self.logger.log(
             "Storage: {}. Rule: {}. Path: '{}'. Transition: {}. Checking existing execution, status: {}.".format(
