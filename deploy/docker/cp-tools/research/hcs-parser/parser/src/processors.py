@@ -650,10 +650,11 @@ class HcsFileParser:
                     y_start = y
                 coordinates[file_name] = [x, y, image.find(hcs_schema_prefix + 'FieldID').text]
 
-        x_merged_size = well.get_width() * image_size
-        y_merged_size = well.get_height() * image_size
-        result = np.zeros((x_merged_size, y_merged_size))
-        print("Result %s %dx%d" % (name, x_merged_size, y_merged_size))
+        x_merged_size = int(well.get_width() * image_size)
+        y_merged_size = int(well.get_height() * image_size)
+        merged_size = max(x_merged_size, y_merged_size)
+        result = np.zeros((merged_size, merged_size))
+        print("Result %s %dx%d" % (name, merged_size, merged_size))
 
         for name, coord in coordinates.items():
             coord[0] = coord[0] - x_start
