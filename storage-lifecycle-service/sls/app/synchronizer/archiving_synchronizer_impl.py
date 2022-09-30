@@ -400,11 +400,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 date=today - datetime.timedelta(days=notification.notify_before_days),
                 to_check=execution.updated.date()
             )
-            if execution.status == EXECUTION_RUNNING_STATUS:
+            if execution.status == EXECUTION_RUNNING_STATUS or execution.status == EXECUTION_FAILED_STATUS:
                 return False
-            if execution.status == EXECUTION_NOTIFICATION_SENT_STATUS or execution.status == EXECUTION_FAILED_STATUS:
-                if was_updated_before:
-                    return False
+            if execution.status == EXECUTION_NOTIFICATION_SENT_STATUS and was_updated_before:
+                return False
         return True
 
     @staticmethod
