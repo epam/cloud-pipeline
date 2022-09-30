@@ -11,3 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
+def synchronized(func):
+    def wrapper(*args, **kwargs):
+        lock = args[0]._lock
+        try:
+            lock.acquire()
+            return_value = func(*args, **kwargs)
+            return return_value
+        finally:
+            lock.release()
+    return wrapper

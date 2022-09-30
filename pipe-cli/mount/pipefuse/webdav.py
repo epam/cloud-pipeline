@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -85,10 +85,10 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             self._send('OPTIONS', '/', 200, allow_redirects=False)
             return True
         except easywebdav.OperationFailed as e:
-            logging.error('WevDav is not available: %s' % str(e.reason))
+            logging.exception('WevDav is not available: %s' % str(e.reason))
             return False
-        except BaseException as e:
-            logging.error('WevDav is not available: %s' % str(e))
+        except Exception:
+            logging.exception('WevDav is not available')
             return False
 
     def is_read_only(self):

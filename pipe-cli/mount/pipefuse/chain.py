@@ -11,3 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from abc import ABCMeta
+
+
+class ChainingService:
+    __metaclass__ = ABCMeta
+
+    def parameters(self):
+        return {}
+
+    def summary(self):
+        out = '-> ' + str(type(self).__name__)
+        params = self.parameters()
+        if params:
+            out += '[' + ''.join(key + '=' + value for key, value in params.items()) + ']'
+        inner = getattr(self, '_inner', None) or getattr(self, '_client', None)
+        if inner:
+            out += ' ->\n' + inner.summary()
+        return out
+

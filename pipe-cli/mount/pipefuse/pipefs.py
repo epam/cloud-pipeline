@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,22 +14,22 @@
 
 import datetime
 import errno
+import functools
 import io
 import logging
 import os
 import platform
 import stat
 import time
-
-import easywebdav
-from fuse import FuseOSError, Operations
 from threading import RLock
 
-import fuseutils
+import easywebdav
+from dateutil.tz import tzlocal
+from fuse import FuseOSError, Operations, ENOTSUP
 
-
-class UnsupportedOperationException(Exception):
-    pass
+from pipefuse import fuseutils
+from pipefuse.chain import ChainingService
+from pipefuse.fsclient import UnsupportedOperationException
 
 
 class FileHandleContainer(object):
@@ -86,7 +86,7 @@ def errorlogged(func):
     return wrapper
 
 
-class PipeFS(Operations):
+class PipeFS(Operations, ChainingService):
 
     def __init__(self, client, lock, mode=0o755):
         self.client = client
@@ -163,10 +163,10 @@ class PipeFS(Operations):
             yield f
 
     def readlink(self, path):
-        raise UnsupportedOperationException("readlink")
+        raise FuseOSError(ENOTSUP)
 
     def mknod(self, path, mode, dev):
-        raise UnsupportedOperationException("mknod")
+        raise FuseOSError(ENOTSUP)
 
     @syncronized
     @errorlogged
@@ -198,7 +198,7 @@ class PipeFS(Operations):
         self.client.delete(path)
 
     def symlink(self, name, target):
-        raise UnsupportedOperationException("symlink")
+        raise FuseOSError(ENOTSUP)
 
     @syncronized
     @errorlogged
@@ -206,7 +206,7 @@ class PipeFS(Operations):
         self.client.mv(old, new)
 
     def link(self, target, name):
-        raise UnsupportedOperationException("link")
+        raise FuseOSError(ENOTSUP)
 
     @errorlogged
     def utimens(self, path, times=None):
@@ -282,3 +282,76 @@ class PipeFS(Operations):
             logging.warn('Fallocate mode (%s) is not supported yet.' % mode)
         if offset + length >= props.size:
             self.client.truncate(fh, path, offset + length)
+
+    @syncronized
+    @errorlogged
+    def setxattr(self, path, name, value, options, *args):
+        self._client.upload_xattr(path, name, value)
+        return 0
+
+    @errorlogged
+    def getxattr(self, path, name, *args):
+        xattrs = self._client.download_xattrs(path) or {}
+        xattr = xattrs.get(name)
+        if xattr is None:
+            raise FuseOSError(errno.ENODATA)
+        return xattr
+
+    @errorlogged
+    def listxattr(self, path):
+        xattrs = self._client.download_xattrs(path) or {}
+        return xattrs.keys()
+
+    @syncronized
+    @errorlogged
+    def removexattr(self, path, name):
+        self._client.remove_xattr(path, name)
+        return 0
+
+
+class SupportedOperationsFS(ChainingService):
+
+    def __init__(self, inner, exclude):
+        """
+        Supported operations File System.
+
+        It allows only certain operations processing.
+
+        :param inner: Decorating file system.
+        :param exclude: Unsupported operations.
+        """
+        self._inner = inner
+        self._exclude = exclude
+
+    def __getattr__(self, name):
+        if not hasattr(self._inner, name):
+            return None
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+        return self._wrap(attr, name=name)
+
+    def __call__(self, name, *args, **kwargs):
+        if not hasattr(self._inner, name):
+            return getattr(self, name)(*args, **kwargs)
+        attr = getattr(self._inner, name)
+        return self._wrap(attr, name=name)(*args, **kwargs)
+
+    def _wrap(self, attr, name=None):
+        @functools.wraps(attr)
+        def _wrapped_attr(*args, **kwargs):
+            method_name = name or args[0]
+            if method_name in self._exclude:
+                logging.debug('Aborting excluded operation %s processing...', method_name)
+                raise FuseOSError(ENOTSUP)
+            try:
+                return attr(*args, **kwargs)
+            except UnsupportedOperationException:
+                raise FuseOSError(ENOTSUP)
+        return _wrapped_attr
+
+    def parameters(self):
+        params = {}
+        if self._exclude:
+            params['exclude'] = ','.join(self._exclude)
+        return params
