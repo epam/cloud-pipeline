@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 
-from abc import ABCMeta, abstractmethod
+from pipefuse.chain import ChainingService
 
 File = namedtuple('File', ['name', 'size', 'mtime', 'ctime', 'contenttype', 'is_dir'])
 
 
-class FileSystemClient:
+class UnsupportedOperationException(RuntimeError):
+    pass
+
+
+class FileSystemClient(ChainingService):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -125,8 +130,26 @@ class FileSystemClient:
         """
         pass
 
-    def stats(self):
-        return str(type(self).__name__)
+    def download_xattrs(self, path):
+        """
+        Returns extended attributes of a single file or folder by the given path.
+
+        :param path: Relative path to a single file or folder.
+        :return: Extended attributes or None if the given path doesn't exist.
+        """
+        pass
+
+    def upload_xattrs(self, path, xattrs):
+        pass
+
+    def upload_xattr(self, path, name, value):
+        pass
+
+    def remove_xattrs(self, path):
+        pass
+
+    def remove_xattr(self, path, name):
+        pass
 
 
 class FileSystemClientDecorator(FileSystemClient):
@@ -181,8 +204,20 @@ class FileSystemClientDecorator(FileSystemClient):
     def truncate(self, fh, path, length):
         self._inner.truncate(fh, path, length)
 
-    def stats(self):
-        return ' -> '.join([str(type(self).__name__), self._inner.stats()])
+    def download_xattrs(self, path):
+        return self._inner.download_xattrs(path)
+
+    def upload_xattrs(self, path, xattrs):
+        self._inner.upload_xattrs(path, xattrs)
+
+    def upload_xattr(self, path, name, value):
+        self._inner.upload_xattr(path, name, value)
+
+    def remove_xattrs(self, path):
+        self._inner.remove_xattrs(path)
+
+    def remove_xattr(self, path, name):
+        self._inner.remove_xattr(path, name)
 
     def __getattr__(self, name):
         if hasattr(self._inner, name):
