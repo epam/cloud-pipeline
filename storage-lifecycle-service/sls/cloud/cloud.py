@@ -29,6 +29,9 @@ class StorageOperations:
     def check_files_restore(self, region, storage_container, files, restore_timestamp, restore_mode):
         pass
 
+    def get_storage_class_transition_map(self, storage_classes):
+        pass
+
 
 class CloudPipelineStorageContainer:
 
