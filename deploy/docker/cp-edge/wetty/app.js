@@ -51,7 +51,7 @@ function load_runs(pretty_url_path, auth_key) {
         {
             'page': 1,
             'pageSize': 1,
-            'prettyUrl': '%"path":"' + pretty_url_path + '"%'
+            'prettyUrl': pretty_url_path
         }
     );
 }
