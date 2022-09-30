@@ -237,6 +237,18 @@ class S3StorageOperations(StorageOperations):
                 "reason": "All files are ready!"
             }
 
+    def get_storage_class_transition_map(self, transition_storage_classes):
+        possible_storage_classes = ["GLACIER_IR", "GLACIER", "DEEP_ARCHIVE", "DELETION"]
+        storage_class_road_map = {}
+        source_storage_classes = ["STANDARD"]
+        for storage_class in possible_storage_classes:
+            if storage_class not in transition_storage_classes:
+                source_storage_classes.append(storage_class)
+            else:
+                storage_class_road_map[storage_class] = source_storage_classes
+                source_storage_classes = [storage_class]
+        return storage_class_road_map
+
     def _run_s3_batch_operation(self, region, storage_container, files, operation_obj, operation_id):
         bucket = storage_container.bucket
         sls_properties = region.storage_lifecycle_service_properties.properties
