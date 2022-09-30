@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
 import logging
 
 from fsclient import FileSystemClientDecorator
-
-
-_ANY_ERROR = BaseException
 
 
 class _WriteBuffer:
@@ -107,7 +104,7 @@ class BufferingWriteFileSystemClient(FileSystemClientDecorator):
                 self._remove_write_buf(fh, path)
                 file_buf = self._new_write_buf(self._capacity, file_buf.end, buf=None, old_write_buf=file_buf)
                 self._buffs[path] = file_buf
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Uploading has failed for %d:%s. '
                               'Removing the corresponding buffer.' % (fh, path))
             self._remove_write_buf(fh, path)
@@ -125,7 +122,7 @@ class BufferingWriteFileSystemClient(FileSystemClientDecorator):
             self._flush_write_buf(fh, path)
             self._inner.flush(fh, path)
             self._remove_write_buf(fh, path)
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Flushing has failed for %d:%s. '
                               'Removing the corresponding buffer.' % (fh, path))
             self._remove_write_buf(fh, path)
