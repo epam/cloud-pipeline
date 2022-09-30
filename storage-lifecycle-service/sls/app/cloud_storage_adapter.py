@@ -167,6 +167,10 @@ class PlatformToCloudOperationsAdapter:
                 "value": None
             }
 
+    def get_storage_class_transition_map(self, storage, rule):
+        storage_classes = [transition.storage_class for transition in rule.transitions]
+        return self.cloud_operations[storage.storage_type].get_storage_class_transition_map(storage_classes)
+
     @staticmethod
     def _parse_storage_path(storage):
         split_storage_path = storage.path.rsplit("/", 1)
