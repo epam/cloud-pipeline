@@ -44,7 +44,8 @@ RUN yum install -y python \
                    zlib-devel \
                    cronie \
                    sshpass \
-                   perl && \
+                   perl \
+                   netcat && \
     yum group install -y "Development Tools" && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install rsa==4.0 \
