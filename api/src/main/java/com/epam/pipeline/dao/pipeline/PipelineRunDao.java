@@ -627,7 +627,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         if (StringUtils.isNotBlank(filter.getPrettyUrl())) {
             appendAnd(whereBuilder, clausesCount);
             whereBuilder.append(String.format(" r.pretty_url like :%s", PipelineRunParameters.PRETTY_URL.name()));
-            params.addValue(PipelineRunParameters.PRETTY_URL.name(), filter.getPrettyUrl());
+            params.addValue(PipelineRunParameters.PRETTY_URL.name(),
+                    String.format("%%\"path\":\"%s\"%%", filter.getPrettyUrl()));
             clausesCount++;
         }
 
