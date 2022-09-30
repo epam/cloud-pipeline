@@ -49,9 +49,9 @@ function load_runs(pretty_url_path, auth_key) {
          auth_key,
         'POST',
         {
-            'page': 0,
-            'pageSize': 100,
-            'prettyUrl': '*"path":"' + pretty_url_path + '"*'
+            'page': 1,
+            'pageSize': 1,
+            'prettyUrl': '%"path":"' + pretty_url_path + '"%'
         }
     );
 }
@@ -77,20 +77,20 @@ function extract_run_details(payload) {
     };
 }
 
-function get_run_details_by_run_id(run_id, auth_key) {
+function get_run_details(run_id, auth_key) {
     const payload = load_run(run_id, auth_key);
     return extract_run_details(payload);
 }
 
 function get_run_details_by_pretty_url_path(pretty_url_path, auth_key) {
     const payload = load_runs(pretty_url_path, auth_key);
-    if (payload && payload.length && payload[0]) {
-        return extract_run_details(payload[0]);
+    if (payload && payload.elements && payload.elements.length && payload.elements[0]) {
+        return extract_run_details(payload.elements[0]);
     }
     return null;
 }
 
-function get_run_details(referer, auth_key) {
+function get_run_id(referer, auth_key) {
     if (!referer) {
         return null;
     }
@@ -101,13 +101,7 @@ function get_run_details(referer, auth_key) {
             return null;
         }
 
-        const run_details = get_run_details_by_run_id(run_id, auth_key);
-        if (!run_details) {
-            console_log('Could not find run #' + run_id + '.');
-            return null;
-        }
-
-        return run_details;
+        return run_id;
     } else if (match = referer.match('/ssh/pipeline/(.+)$')) {
         const run_pretty_url_path = match[1];
         if (!run_pretty_url_path) {
@@ -121,7 +115,7 @@ function get_run_details(referer, auth_key) {
             return null;
         }
 
-        return run_details;
+        return run_details.id;
     } else {
         console_log('Could not find run id or ssh pretty url in referer url: ' + referer + '.');
         return null;
@@ -227,7 +221,7 @@ function get_run_sshpass(run_details, auth_key) {
     const parent_run_id = run_details.parameters['parent-id'];
     const run_shared_users_enabled = get_boolean(run_details.parameters['CP_CAP_SHARE_USERS']);
     if (run_shared_users_enabled && parent_run_id) {
-        const parent_run_details = get_run_details_by_run_id(parent_run_id, auth_key);
+        const parent_run_details = get_run_details(parent_run_id, auth_key);
         return parent_run_details.pass;
     } else {
         return run_details.pass;
@@ -283,26 +277,32 @@ io.on('connection', function(socket) {
     const referer = socket.request.headers.referer;
     console_log('Connection accepted for ' + referer);
 
-    const run_details = get_run_details(referer, auth_key);
-    if (!run_details) {
-        console_log('Aborting SSH connection because run details haven\'t been retrieved for ' + referer + '...');
+    const run_id = get_run_id(referer, auth_key)
+    if (!run_id) {
+        console_log('Aborting SSH connection because run id have not been found for ' + referer + '...');
         socket.disconnect();
         return;
     }
-    if (!run_details.id || !run_details.ip || !run_details.pass || !run_details.owner) {
-        console_log('Aborting SSH connection because run details don\'t have id/ip/pass/owner for ' + referer + '...');
-        socket.disconnect();
-        return;
-    }
-
-    const run_id = run_details.id;
-    console_log('Establishing SSH connection to run #' + run_id + '...');
 
     if (!conn_quota_available(run_id)) {
-        const conn_err_msg = 'Aborting SSH connection because quota exceeded for run #' + run_id + '. '
-                             + 'Max connections: ' + CONN_QUOTA_PER_RUN_ID + '.';
+        const conn_err_msg = 'Aborting SSH connection because quota of ' + CONN_QUOTA_PER_RUN_ID + ' connections '
+                             + 'exceeded for run #' + run_id + '...';
         console_log(conn_err_msg);
         socket.emit('output', conn_err_msg);
+        socket.disconnect();
+        return;
+    }
+
+    const run_details = get_run_details(run_id, auth_key);
+    if (!run_details) {
+        console_log('Aborting SSH connection because details have not been found for run #' + run_id + '...');
+        socket.disconnect();
+        return;
+    }
+
+    if (!run_details.id || !run_details.ip || !run_details.pass || !run_details.owner) {
+        console_log('Aborting SSH connection because id/ip/pass/owner have not been found '
+                    + 'for run #' + run_id + '...');
         socket.disconnect();
         return;
     }
