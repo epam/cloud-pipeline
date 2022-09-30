@@ -17,6 +17,7 @@ import json
 import os
 import datetime
 import math
+import numpy as np
 import shutil
 import sys
 import tempfile
@@ -27,6 +28,7 @@ from collections import OrderedDict
 from functools import cmp_to_key
 from pipeline.common import get_path_with_trailing_delimiter, get_path_without_trailing_delimiter
 from PIL import Image
+from tifffile import imread
 from .utils import HcsParsingUtils, HcsFileLogger, log_run_info, get_int_run_param, get_bool_run_param
 from .tags import HcsFileTagProcessor
 
@@ -70,6 +72,11 @@ class WellGrid:
     def __init__(self):
         self.__x_coords = set()
         self.__y_coords = set()
+        self.__fields = set()
+        self.__height = None
+        self.__width = None
+        self.__field_size_y = None
+        self.__field_size_x = None
 
     def add_x_coord(self, value):
         self.__x_coords.add(value)
@@ -77,14 +84,50 @@ class WellGrid:
     def add_y_coord(self, value):
         self.__y_coords.add(value)
 
+    def add_field(self, field):
+        self.__fields.add(field)
+
     def get_width(self):
-        return len(self.__x_coords)
+        return self.__width
+
+    def set_width(self, value):
+        self.__width = value
+
+    def calculate_width(self, size, resolution):
+        x_min = sys.maxsize
+        x_max = -sys.maxsize - 1
+        field_size = size * resolution
+        self.__field_size_x = field_size
+        for field in self.__fields:
+            if field[0] < x_min:
+                x_min = field[0]
+            if field[0] + field_size > x_max:
+                x_max = field[0] + field_size
+        return math.ceil((x_max - x_min) / field_size)
 
     def get_height(self):
-        return len(self.__y_coords)
+        return self.__height
+
+    def set_height(self, value):
+        self.__height = value
+
+    def calculate_height(self, size, resolution):
+        y_min = sys.maxsize
+        y_max = -sys.maxsize - 1
+        field_size = size * resolution
+        self.__field_size_y = field_size
+        for field in self.__fields:
+            if field[1] < y_min:
+                y_min = field[1]
+            if field[1] + field_size > y_max:
+                y_max = field[1] + field_size
+        return math.ceil((y_max - y_min) / field_size)
 
     def get_values_dict(self):
         return dict({y_coord: set(self.__x_coords) for y_coord in self.__y_coords})
+
+    def get_field_size(self):
+        return self.__field_size_y
 
 
 class HcsFileParser:
@@ -327,7 +370,7 @@ class HcsFileParser:
                 if conversion_result != 0:
                     self._processing_logger.log_info('File processing was not successful...')
                     return 1
-                sequence_overview_index_file_path = self.build_sequence_overview_index(sequence_index_file_path)
+                sequence_overview_index_file_path, wells_grid_mapping = self.build_sequence_overview_index(sequence_index_file_path)
                 conversion_result = os.system('bash "{}" "{}" "{}" {} "{}"'.format(
                     OME_TIFF_SEQUENCE_CREATION_SCRIPT, sequence_overview_index_file_path, local_preview_dir,
                     sequence_id, 'overview_data.ome.tiff'))
@@ -335,7 +378,7 @@ class HcsFileParser:
                     self._processing_logger.log_info('File processing was not successful: well preview generation failure')
                     return 1
                 self.write_dict_to_file(os.path.join(local_preview_dir, sequence_id, 'wells_map.json'),
-                                        self.build_wells_map(sequence_id))
+                                        self.build_wells_map(sequence_id, wells_grid_mapping))
             cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
                                               .format(local_preview_dir,
                                                       HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
@@ -400,7 +443,7 @@ class HcsFileParser:
         hcs_xml_info_tree.write(sequence_index_file_path)
         return sequence_index_file_path
 
-    def build_wells_map(self, sequence_id):
+    def build_wells_map(self, sequence_id, wells_grid_mapping):
         hcs_index_file_path = os.path.join(self.tmp_local_dir, sequence_id, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
         ome_xml_file_path = os.path.join(os.path.dirname(hcs_index_file_path), 'Index.ome.xml')
         self.generate_bioformats_ome_xml(hcs_index_file_path, ome_xml_file_path)
@@ -419,7 +462,9 @@ class HcsFileParser:
         wells_mapping = dict()
         is_well_round, well_size = self.extract_well_configuration(hcs_xml_info_root)
         for well_key, fields_list in measured_wells.items():
-            wells_mapping[well_key] = self.build_well_details(fields_list, well_size, is_well_round)
+            chunks = well_key.split(PLANE_COORDINATES_DELIMITER)
+            wells_mapping[well_key] = self.build_well_details(fields_list, well_size, is_well_round,
+                                                              wells_grid_mapping[chunks[0], chunks[1]])
         preview_ome_xml_info_root = ET.parse(preview_ome_xml_file_path).getroot()
         preview_ome_plate = self.extract_plate_from_ome_xml(preview_ome_xml_info_root)
         for well in preview_ome_plate.findall(ome_schema_prefix + 'Well'):
@@ -434,7 +479,7 @@ class HcsFileParser:
                 wells_mapping[coords_key] = well_details
         return HcsFileParser.ordered_by_coords(wells_mapping)
 
-    def build_well_details(self, fields_list, well_size, is_well_round):
+    def build_well_details(self, fields_list, well_size, is_well_round, well):
         x_coords = set()
         y_coords = set()
         for field in fields_list:
@@ -461,15 +506,19 @@ class HcsFileParser:
             x_coord_padding = y_coord_padding = 1
             well_view_width = well_view_height = 3
         to_ome_mapping = dict()
+        coordinates = {}
         for field in fields_list:
             field_x_coord = x_coords.index(field.x) + 1 + x_coord_padding
             field_y_coord = y_coords.index(field.y) + 1 + y_coord_padding
             to_ome_mapping[self.build_cartesian_coords_key(field_x_coord, field_y_coord)] = field.ome_image_id
+            coordinates[field.ome_image_id] = (field.x, field.y)
         well_details = {
             'width': well_view_width,
             'height': well_view_height,
             'round_radius': round(well_viewer_radius, 2) if is_well_round else None,
-            'to_ome_wells_mapping': HcsFileParser.ordered_by_coords(to_ome_mapping)
+            'to_ome_wells_mapping': HcsFileParser.ordered_by_coords(to_ome_mapping),
+            'field_size': well.get_field_size(),
+            'coordinates': coordinates
         }
         return well_details
 
@@ -523,22 +572,21 @@ class HcsFileParser:
         wells_grid_mapping = self.get_wells_grid_mapping(hcs_schema_prefix, original_images_list)
         channel_dimensions = self.get_channel_dimensions(hcs_xml_info_root, wells_grid_mapping)
         self._processing_logger.log_info('Scaling overview TIFF files...')
-        well_layers, well_grid_missing_values = self.build_well_layers(original_images_list, sequence_data_root_path,
-                                                                       channel_dimensions, sequence_preview_dir_path,
-                                                                       wells_grid_mapping)
+        well_layers = self.build_well_layers(original_images_list, sequence_data_root_path,
+                                             channel_dimensions, sequence_preview_dir_path, wells_grid_mapping)
         wells_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Wells')
         self._processing_logger.log_info('Merging overview TIFF files...')
         for well in wells_list.findall(hcs_schema_prefix + 'Well'):
             self.merge_well_layers(original_images_list, sequence_preview_dir_path, well, well_layers,
-                                   well_grid_missing_values)
+                                   wells_grid_mapping, channel_dimensions)
         hcs_xml_info_root.append(original_images_list)
         preview_sequence_index_file_path = os.path.join(sequence_preview_dir_path, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
         ET.register_namespace('', hcs_schema_prefix[1:-1])
         hcs_xml_info_tree.write(preview_sequence_index_file_path)
-        return preview_sequence_index_file_path
+        return preview_sequence_index_file_path, wells_grid_mapping
 
     def merge_well_layers(self, original_images_list, sequence_preview_dir_path, well, well_layers,
-                          well_grid_missing_values):
+                          wells_grid_mapping, channel_dimensions):
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(original_images_list)
         [well.remove(image) for image in well.findall(hcs_schema_prefix + 'Image')]
         row_id = well.find(hcs_schema_prefix + 'Row').text
@@ -553,21 +601,10 @@ class HcsFileParser:
                     vertically_sorted_mapping = OrderedDict(
                         sorted(channel_images.items(), key=cmp_to_key(lambda y1, y2: float(y2[0]) - float(y1[0]))))
                     well_rows_data = vertically_sorted_mapping.items()
-                    well_grid_missing_channel_planes = {}
-                    if channel_id in well_grid_missing_values:
-                        channel_missing_values = well_grid_missing_values[channel_id]
-                        if well_id in channel_missing_values:
-                            well_grid_missing_channel_planes = channel_missing_values[well_id]
-                    rows_image_paths = self.merge_images_by_row(hcs_schema_prefix, sequence_preview_dir_path,
-                                                                well_preview_full_name, well_rows_data,
-                                                                well_grid_missing_channel_planes)
-                    well_preview_full_path = HcsParsingUtils.quote_string(
-                        os.path.join(sequence_preview_dir_path, well_preview_full_name))
-                    exit_code = os.system('convert -append {} {}'
-                                          .format(' '.join(rows_image_paths), well_preview_full_path))
-                    if exit_code != 0:
-                        raise RuntimeError('Error during overview rows'' merging')
-                    bottom_row_details = well_rows_data[0]
+                    merged_image = self.merge_image(channel_images, hcs_schema_prefix, sequence_preview_dir_path,
+                                                    channel_dimensions[channel_id], wells_grid_mapping[well_id])
+                    merged_image.save(os.path.join(sequence_preview_dir_path, well_preview_full_name))
+                    bottom_row_details = list(well_rows_data)[0]
                     well_preview_details = bottom_row_details[1][0]
                     well_preview_details.find(hcs_schema_prefix + 'FieldID').text = '1'
                     well_preview_details.find(hcs_schema_prefix + 'URL').text = well_preview_full_name
@@ -578,6 +615,60 @@ class HcsFileParser:
                         vertically_sorted_mapping.keys()[-1]
                     original_images_list.append(well_preview_details)
                     well.append(ET.fromstring('<Image id="{}" />'.format(image_id)))
+
+    def merge_image(self, images, hcs_schema_prefix, sequence_preview_dir_path, channel, well):
+        image_size = None
+        name = None
+
+        initial_size = max(channel[0], channel[1])
+        resolution = max(channel[2], channel[3])
+
+        pixel_size = None
+        size = None
+
+        x_start = 0.0
+        y_start = 0.0
+
+        coordinates = {}
+
+        for list in images.values():
+            for image in list:
+                file_name = image.find(hcs_schema_prefix + 'URL').text
+
+                if image_size is None:
+                    name = file_name
+                    array = imread(os.path.join(sequence_preview_dir_path, file_name))
+                    image_size = array.shape[0]
+                    pixel_size = resolution * initial_size / image_size
+                    size = pixel_size * image_size
+
+                x = float(image.find(hcs_schema_prefix + 'PositionX').text)
+                y = float(image.find(hcs_schema_prefix + 'PositionY').text)
+                if x < x_start:
+                    x_start = x
+                if y < y_start:
+                    y_start = y
+                coordinates[file_name] = [x, y, image.find(hcs_schema_prefix + 'FieldID').text]
+
+        x_merged_size = well.get_width() * image_size
+        y_merged_size = well.get_height() * image_size
+        result = np.zeros((x_merged_size, y_merged_size))
+        print("Result %s %dx%d" % (name, x_merged_size, y_merged_size))
+
+        for name, coord in coordinates.items():
+            coord[0] = coord[0] - x_start
+            coord[1] = coord[1] - y_start
+
+            row_end = int((coord[1] + size) / pixel_size)
+            row_start = int(coord[1] / pixel_size)
+            col_start = int(coord[0] / pixel_size)
+            col_end = int((coord[0] + size) / pixel_size)
+
+            result[row_start:row_end, col_start:col_end] = \
+                np.flipud(imread(os.path.join(sequence_preview_dir_path, name), key=0))
+        merged_image = np.flipud(result)
+
+        return Image.fromarray(merged_image)
 
     def merge_images_by_row(self, hcs_schema_prefix, sequence_preview_dir_path, well_preview_full_name, well_rows_data,
                             well_grid_missing_channel_planes):
@@ -657,7 +748,7 @@ class HcsFileParser:
                         well_map.pop(y_coord)
                 if len(well_map) == 0:
                     channel_map.pop(well_id)
-        return well_grouping, well_grid_missing_values
+        return well_grouping
 
     def find_channel_dimensions(self, channel_dimensions, channel_id):
         if channel_id in channel_dimensions:
@@ -710,27 +801,37 @@ class HcsFileParser:
             well_grid_details = wells_grid_mapping.get(well_id, WellGrid())
             well_grid_details.add_x_coord(x_coord_value)
             well_grid_details.add_y_coord(y_coord_value)
+            well_grid_details.add_field((float(x_coord_value), float(y_coord_value)))
             wells_grid_mapping[well_id] = well_grid_details
         return wells_grid_mapping
 
     def get_channel_dimensions(self, hcs_file_root, wells_grid_mapping):
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_file_root)
-        y_scaling = 1
-        x_scaling = 1
-        for well_grid in wells_grid_mapping.values():
-            y_scaling = max(y_scaling, well_grid.get_height())
-            x_scaling = max(x_scaling, well_grid.get_height())
         channel_dimensions = dict()
         for channel_map in hcs_file_root.find(hcs_schema_prefix + 'Maps').findall(hcs_schema_prefix + 'Map'):
             for entry in channel_map.findall(hcs_schema_prefix + 'Entry'):
                 channel_size_x = entry.find(hcs_schema_prefix + 'ImageSizeX')
+                y_scaling = 1
+                x_scaling = 1
+
                 if channel_size_x is not None:
+                    resolution_x = float(entry.find(hcs_schema_prefix + 'ImageResolutionX').text)
+                    resolution_y = float(entry.find(hcs_schema_prefix + 'ImageResolutionY').text)
                     channel_size_x = int(channel_size_x.text)
                     channel_size_y = int(entry.find(hcs_schema_prefix + 'ImageSizeY').text)
                     channel_id = entry.get('ChannelID')
-                    channel_dimensions[channel_id] = tuple([channel_size_x, channel_size_y])
-                    resolution_x = entry.find(hcs_schema_prefix + 'ImageResolutionX').text
-                    resolution_y = entry.find(hcs_schema_prefix + 'ImageResolutionY').text
+                    channel_dimensions[channel_id] = tuple([channel_size_x, channel_size_y,
+                                                            resolution_x, resolution_y])
+
+                    for well_grid in wells_grid_mapping.values():
+                        height = well_grid.calculate_height(resolution_y, channel_size_y)
+                        width = well_grid.calculate_width(resolution_x, channel_size_x)
+                        size = max(height, width)
+                        well_grid.set_height(size)
+                        well_grid.set_width(size)
+                        y_scaling = max(y_scaling, size)
+                        x_scaling = max(x_scaling, size)
+
                     entry.find(hcs_schema_prefix + 'ImageResolutionX').text = \
                         str(float(resolution_x) * x_scaling).upper()
                     entry.find(hcs_schema_prefix + 'ImageResolutionY').text = \
