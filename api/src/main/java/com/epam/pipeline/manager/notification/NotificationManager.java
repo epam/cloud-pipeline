@@ -552,6 +552,11 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .filter(pool -> shouldNotify(pool.getId(), notificationSettings))
                 .collect(Collectors.toList());
 
+        if (CollectionUtils.isEmpty(filteredPools)) {
+            LOGGER.debug("No full node pools found to notify");
+            return;
+        }
+
         LOGGER.debug("Notification for node pools [{}] will be send", filteredPools.stream()
                 .map(NodePool::getId)
                 .map(String::valueOf)
