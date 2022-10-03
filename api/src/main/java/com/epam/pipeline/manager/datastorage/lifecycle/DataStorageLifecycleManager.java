@@ -101,9 +101,11 @@ public class DataStorageLifecycleManager {
                                                                  final StorageLifecycleRule rule) {
         rule.setDatastorageId(datastorageId);
         verifyStorageLifecycleRuleObject(rule);
-        final StorageLifecycleRuleEntity saved = dataStorageLifecycleRuleRepository
+        final StorageLifecycleRuleEntity savedEntity = dataStorageLifecycleRuleRepository
                 .save(lifecycleEntityMapper.toEntity(rule));
-        return lifecycleEntityMapper.toDto(saved);
+        final StorageLifecycleRule saved = lifecycleEntityMapper.toDto(savedEntity);
+        log.info("Storage lifecycle rule was created. Rule: {}", saved.toDescriptionString());
+        return saved;
     }
 
     @Transactional
@@ -119,9 +121,10 @@ public class DataStorageLifecycleManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE,
                         loadedRuleEntity.getDatastorageId()));
-        final StorageLifecycleRuleEntity saved = dataStorageLifecycleRuleRepository
-                .save(mergeRulesEntity(loadedRuleEntity, updatedRuleEntity));
-        return lifecycleEntityMapper.toDto(saved);
+        final StorageLifecycleRule saved = lifecycleEntityMapper.toDto(
+                dataStorageLifecycleRuleRepository.save(mergeRulesEntity(loadedRuleEntity, updatedRuleEntity)));
+        log.info("Storage lifecycle rule was updated. Rule: {}", saved.toDescriptionString());
+        return saved;
     }
 
     @Transactional
@@ -160,11 +163,11 @@ public class DataStorageLifecycleManager {
         if (lastProlongation.getProlongedDate() != null && !force) {
             final LocalDateTime nextNotificationDate = lastProlongation.getProlongedDate()
                     .plus(Math.max(1, effectiveDaysToProlong - effectiveNotifyBeforeDays), ChronoUnit.DAYS);
-            if(nextNotificationDate.isAfter(now)) {
+            if (nextNotificationDate.isAfter(now)) {
                 throw new IllegalStateException(
                         messageHelper.getMessage(
-                            MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE,
-                            lastProlongation.getProlongedDate(), nextNotificationDate));
+                                MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE,
+                                lastProlongation.getProlongedDate(), nextNotificationDate));
             }
         }
 
@@ -172,8 +175,12 @@ public class DataStorageLifecycleManager {
         lastProlongation.setProlongedDate(now);
         lastProlongation.setLifecycleRule(lifecycleRuleEntity);
         lastProlongation.setUserId(userManager.getCurrentUser().getId());
-        return lifecycleEntityMapper.toDto(
+        final StorageLifecycleRule prolonged = lifecycleEntityMapper.toDto(
                 dataStorageLifecycleRuleRepository.save(lifecycleRuleEntity));
+        log.info("Storage lifecycle rule was prolonged. Id: {}, datastorageId: {}, path: {}, days: {}",
+                prolonged.getId(), prolonged.getDatastorageId(),
+                lastProlongation.getPath(), lastProlongation.getDays());
+        return prolonged;
     }
 
     @Transactional
@@ -182,6 +189,7 @@ public class DataStorageLifecycleManager {
         if (loaded != null) {
             dataStorageLifecycleRuleExecutionRepository.deleteByRuleId(ruleId);
             dataStorageLifecycleRuleRepository.delete(loaded.getId());
+            log.info("Storage lifecycle rule was deleted. Rule: {}", loaded.toDescriptionString());
             return loaded;
         } else {
             throw new IllegalArgumentException(
@@ -197,6 +205,8 @@ public class DataStorageLifecycleManager {
         ).collect(Collectors.toList());
         loaded.forEach(rule -> dataStorageLifecycleRuleExecutionRepository.deleteByRuleId(rule.getId()));
         dataStorageLifecycleRuleRepository.delete(loaded);
+        loaded.stream().map(lifecycleEntityMapper::toDto)
+                .forEach(r -> log.info("Storage lifecycle rule was deleted. Rule: {}", r.toDescriptionString()));
         dataStorageLifecycleRuleRepository.flush();
     }
 
@@ -209,6 +219,9 @@ public class DataStorageLifecycleManager {
         verifyLifecycleRuleExecutionObject(execution, ruleEntity);
         final StorageLifecycleRuleExecutionEntity saved =
                 dataStorageLifecycleRuleExecutionRepository.save(lifecycleEntityMapper.toEntity(execution));
+        log.info("Storage lifecycle rule execution was created. " +
+                "ExecutionId: {}, RuleId: {}, Path: '{}', StorageClass: {}, Status: {}",
+                saved.getId(), saved.getRuleId(), saved.getPath(), saved.getStorageClass(), saved.getStatus());
         return lifecycleEntityMapper.toDto(saved);
     }
 
@@ -223,6 +236,9 @@ public class DataStorageLifecycleManager {
         execution.setStatus(status);
         execution.setUpdated(DateUtils.nowUTC());
         final StorageLifecycleRuleExecutionEntity saved = dataStorageLifecycleRuleExecutionRepository.save(execution);
+        log.info("Storage lifecycle rule execution status was updated. " +
+                        "ExecutionId: {}, RuleId: {}, Path: '{}', StorageClass: {}, Status: {}",
+                saved.getId(), saved.getRuleId(), saved.getPath(), saved.getStorageClass(), saved.getStatus());
         return lifecycleEntityMapper.toDto(saved);
     }
 

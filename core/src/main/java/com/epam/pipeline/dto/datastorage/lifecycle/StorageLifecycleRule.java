@@ -25,6 +25,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -103,4 +104,17 @@ public class StorageLifecycleRule {
     private List<StorageLifecycleRuleProlongation> prolongations;
     private List<StorageLifecycleRuleTransition> transitions;
     private StorageLifecycleNotification notification;
+
+    public String toDescriptionString() {
+        return "id: " + id + ", datastorageId: " + datastorageId + ", pathGlob: " + pathGlob +
+                ", objectGlob: " + objectGlob +
+                ", transitionCriterion: " + transitionCriterion.toDescriptionString() +
+                ", transitionMethod: " + transitionMethod.name() +
+                ", transitions: " + transitions.stream().map(t ->
+                        "[to " + t.getStorageClass()
+                                + (t.getTransitionDate() != null
+                                        ? " on " + t.getTransitionDate()
+                                        : " after " + t.getTransitionAfterDays().toString() + " days") + "]"
+                ).collect(Collectors.joining(";"));
+    }
 }
