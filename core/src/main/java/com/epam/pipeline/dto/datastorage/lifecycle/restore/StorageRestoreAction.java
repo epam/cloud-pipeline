@@ -44,10 +44,9 @@ public class StorageRestoreAction {
     private StorageRestoreActionNotification notification;
 
     public String toDescriptionString() {
-        return String.format("Id: '%d', datastorageId: '%d', path: '%s', " +
-                        "days: '%d', started: '%s', status: '%s', restoredTill: '%s'",
-                id, datastorageId, path, days, started.toString(), status.name(),
-                restoredTill != null ? restoredTill.toString() : ""
+        return String.format("Id: %d, datastorageId: %d, path: %s, days: %d, " +
+                        "started: %s, status: %s, restoredTill: %s", id, datastorageId, path, days,
+                started.toString(), status.name(), restoredTill != null ? restoredTill.toString() : ""
         );
     }
 }

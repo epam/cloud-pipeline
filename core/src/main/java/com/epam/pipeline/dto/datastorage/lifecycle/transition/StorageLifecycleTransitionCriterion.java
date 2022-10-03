@@ -34,7 +34,7 @@ public class StorageLifecycleTransitionCriterion {
     String value;
 
     public String toDescriptionString() {
-        return "'" + type.name() + "'" + (StringUtils.isNotBlank(value) ? ":'" + value + "'" : "");
+        return type.name() + (StringUtils.isNotBlank(value) ? "='" + value + "'" : "");
     }
 
     public enum StorageLifecycleTransitionCriterionType {

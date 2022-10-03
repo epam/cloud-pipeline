@@ -79,8 +79,8 @@ public class SecurityLogAspect {
     public static final String ANONYMOUS = "Anonymous";
     public static final String KEY_USER = "user";
     public static final String KEY_TOPIC = "log_topic";
-    public static final String STORAGE_LIFECYCLE_TOPIC = "Storage Lifecycle";
-    public static final String SECURITY_TOPIC = "Security";
+    public static final String STORAGE_LIFECYCLE_TOPIC = "storage lifecycle";
+    public static final String SECURITY_TOPIC = "security";
 
 
     @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + OR + USER_RELATED_METHODS_POINTCUT +

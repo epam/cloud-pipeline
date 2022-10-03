@@ -319,8 +319,9 @@ API_SRV_PIPELINE="{
     \"description\" : \"Log data extraction pipeline from API server\",
     \"processors\": [
        {
-         \"lowercase\": {
-           \"field\": \"type\"
+         \"rename\": {
+           \"field\": \"fields.type\",
+           \"target_field\": \"type\"
          }
        },
        {

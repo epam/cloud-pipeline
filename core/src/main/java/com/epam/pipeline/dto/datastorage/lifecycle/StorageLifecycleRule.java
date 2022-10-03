@@ -107,15 +107,15 @@ public class StorageLifecycleRule {
     private StorageLifecycleNotification notification;
 
     public String toDescriptionString() {
-        return "id=" + id + ", datastorageId=" + datastorageId + ", pathGlob=" + pathGlob +
-                ", objectGlob=" + objectGlob +
-                ", transitionCriterion='" + transitionCriterion.toDescriptionString() +
-                ", transitionMethod=" + transitionMethod.name() +
-                ", transitions='" + transitions.stream().map(t ->
-                        "to " + t.getStorageClass()
+        return "id: " + id + ", datastorageId: " + datastorageId + ", pathGlob: " + pathGlob +
+                ", objectGlob: " + objectGlob +
+                ", transitionCriterion: " + transitionCriterion.toDescriptionString() +
+                ", transitionMethod: " + transitionMethod.name() +
+                ", transitions: " + transitions.stream().map(t ->
+                        "[to " + t.getStorageClass()
                                 + (t.getTransitionDate() != null
                                         ? " on " + t.getTransitionDate()
-                                        : " after " + t.getTransitionAfterDays().toString() + " days")
-                ).collect(Collectors.joining(";")) + "'";
+                                        : " after " + t.getTransitionAfterDays().toString() + " days") + "]"
+                ).collect(Collectors.joining(";"));
     }
 }

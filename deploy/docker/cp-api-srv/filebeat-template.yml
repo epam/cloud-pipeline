@@ -13,12 +13,11 @@ filebeat:
       json.add_error_key: true
       fields:
         service: api-srv
-        type: security
 processors:
   - rename:
       fields:
         - from: "log_context"
-          to: "type"
+          to: "fields.type"
       ignore_missing: true
       fail_on_error: false
   - drop_fields:

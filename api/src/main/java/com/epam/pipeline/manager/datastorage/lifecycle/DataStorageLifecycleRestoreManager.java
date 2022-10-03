@@ -99,7 +99,7 @@ public class DataStorageLifecycleRestoreManager {
                 .map(lifecycleEntityMapper::toDto).collect(Collectors.toList());
         created.forEach(a ->
                 log.info(String.format(
-                        "Storage Lifecycle Restore Action was created. Action: '%s'", a.toDescriptionString()))
+                        "Storage Lifecycle Restore Action was created. Action: %s", a.toDescriptionString()))
         );
         return created;
     }
@@ -119,7 +119,7 @@ public class DataStorageLifecycleRestoreManager {
         loaded.setUpdated(DateUtils.nowUTC());
         final StorageRestoreAction updated = lifecycleEntityMapper.toDto(loaded);
         log.info(String.format(
-                "Storage Lifecycle Restore Action was updated. Action: '%s'", updated.toDescriptionString()));
+                "Storage Lifecycle Restore Action was updated. Action: %s", updated.toDescriptionString()));
         return updated;
     }
 
