@@ -16,7 +16,7 @@
 
 /* eslint-disable react/prop-types */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   VivViewer as HmsDbmiVivViewer,
   OverviewView,
