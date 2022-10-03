@@ -158,6 +158,7 @@ class Logs extends localization.LocalizedReactComponent {
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
+    this.checkCommitAllowed();
   }
 
   componentWillUnmount () {
@@ -2070,6 +2071,20 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   componentDidUpdate () {
+    const {
+      commitAllowedCheckedForDockerImage
+    } = this.state;
+    const {
+      run
+    } = this.props;
+    if (
+      run &&
+      run.loaded &&
+      run.value &&
+      run.value.dockerImage !== commitAllowedCheckedForDockerImage
+    ) {
+      this.checkCommitAllowed();
+    }
     if (this.language === null && this.props.run.loaded) {
       if (this.props.run.value.pipelineId && this.props.run.value.version) {
         this.language = pipelines.getLanguage(
