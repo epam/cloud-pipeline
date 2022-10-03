@@ -45,6 +45,7 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     private List<Long> configurationIds;
     private List<Long> projectIds;
     private List<String> dockerImages;
+    private String prettyUrl;
 
     private boolean userModified = true;
 
@@ -75,7 +76,8 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
                 && startDateFrom == null && endDateTo == null && partialParameters == null
                 && parentId == null && CollectionUtils.isEmpty(owners)
                 && CollectionUtils.isEmpty(configurationIds) && CollectionUtils.isEmpty(entitiesIds)
-                && CollectionUtils.isEmpty(projectIds);
+                && CollectionUtils.isEmpty(projectIds)
+                && prettyUrl == null;
     }
 
     @Data
