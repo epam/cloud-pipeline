@@ -17,6 +17,7 @@ import json
 
 from .pipeline_run_parameter_model import PipelineRunParameterModel
 from ..utilities import date_utilities
+import logging
 
 
 class RunSid(object):
@@ -118,9 +119,14 @@ class PipelineRunModel(object):
     def parse_service_urls(items):
         endpoints = []
         for region, service_urls_string in items:
-            service_urls = {record["name"]: record['url'] for record in json.loads(service_urls_string) if 'url' in record}
-            for name, service_url in service_urls.items():
-                endpoints.append("%s : %s : %s" % (name, region, service_url))
+            try:
+                if not service_urls_string:
+                    continue
+                service_urls = {record["name"]: record['url'] for record in json.loads(service_urls_string) if 'url' in record}
+                for name, service_url in service_urls.items():
+                    endpoints.append("%s : %s : %s" % (name, region, service_url))
+            except Exception:
+                logging.exception('Service URL cannot be parsed.')
         return endpoints
 
 
