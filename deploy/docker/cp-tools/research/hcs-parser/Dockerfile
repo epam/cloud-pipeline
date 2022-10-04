@@ -25,8 +25,10 @@ RUN yum install -y curl \
                    wget \
                    unzip \
                    python && \
+                   python-devel && \
+                   gcc && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
-    pip install pillow
+    pip install pillow==9.2.0 tifffile==2019.7.26.2 numpy==1.16.6 imagecodecs-lite==2019.12.3
 
 ARG ANACONDA_VERSION="3-latest"
 ENV ANACONDA_HOME=/opt/local/anaconda
