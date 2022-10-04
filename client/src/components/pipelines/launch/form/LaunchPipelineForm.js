@@ -3332,10 +3332,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       !this.props.editConfigurationMode;
   }
 
-  @computed
   get prettyUrlEnabled () {
-    if (this.state.fireCloudMethodName || this.props.detached) {
-      return undefined;
+    return !this.state.fireCloudMethodName && !this.props.detached;
+  }
+
+  @computed
+  get prettyUrlSSHMode () {
+    if (!this.prettyUrlEnabled) {
+      return false;
     }
     const dockerImage = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
       this.getDefaultValue('docker_image');
@@ -3350,15 +3354,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const [image] = toolAndVersion.split(':');
           const [im] = (imageGroup.tools || [])
             .filter(i => i.image.toLowerCase() === `${group}/${image}`);
-          return im && im.endpoints && (im.endpoints || []).length > 0;
+          return !(im && im.endpoints && (im.endpoints || []).length > 0);
         }
       }
     }
-    return false;
+    return true;
   }
 
   checkFriendlyURL = (rule, value, callback) => {
-    const error = prettyUrlGenerator.validate(value);
+    const error = prettyUrlGenerator.validate(value, this.prettyUrlSSHMode);
     if (error) {
       callback(error);
     }
@@ -3367,6 +3371,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderPrettyUrlFormItem = () => {
     if (this.prettyUrlEnabled && this.friendlyUrlAvailable()) {
+      const sshMode = this.prettyUrlSSHMode;
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
@@ -3394,7 +3399,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             </FormItem>
           </Col>
           <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.prettyUrlHint)}
+            {
+              hints.renderHint(
+                this.localizedStringWithSpotDictionaryFn,
+                sshMode ? hints.prettySSHUrlHint : hints.prettyUrlHint
+              )
+            }
           </Col>
         </FormItem>
       );

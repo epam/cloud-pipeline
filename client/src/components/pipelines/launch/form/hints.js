@@ -153,6 +153,15 @@ const prettyUrlHint = (localizedStringFn) => (
   </Row>
 );
 
+const prettySSHUrlHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    This value will be used in the <b>SSH URL</b> instead of the general
+    "/ssh/pipeline/run_id" string.
+    This value shall be unique across all runs. <br />
+    You can not use domain name for the SSH URL. Only alphanumeric string is allowed.
+  </Row>
+);
+
 const executionEnvironmentSummaryHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     General amount of resources that will be allocated during the run execution. Notice that in some specific configurations such as <b>hybrid autoscaling clusters</b> amount of resources can vary beyond the shown interval.
@@ -191,6 +200,7 @@ const hints = {
   limitMountsHint,
   doNotMountStoragesHint,
   prettyUrlHint,
+  prettySSHUrlHint,
   executionEnvironmentSummaryHint,
   hostedApplicationHint,
   jobNotificationsHint
