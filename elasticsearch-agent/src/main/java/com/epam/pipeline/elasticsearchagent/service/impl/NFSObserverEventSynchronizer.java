@@ -106,6 +106,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                         final @Value("${sync.nfs-file.index.name}") String indexName,
                                         final @Value("${sync.nfs-file.bulk.insert.size}") Integer bulkInsertSize,
                                         final @Value("${sync.nfs-file.bulk.load.tags.size}") Integer bulkLoadTagsSize,
+                                        final @Value("${sync.nfs-file.tag.value.delimiter:;}") String tagDelimiter,
                                         final @Value("${sync.nfs-file.observer.sync.target.bucket}")
                                             String eventsBucketUriStr,
                                         final @Value("${sync.nfs-file.observer.sync.files.chunk}")
@@ -118,7 +119,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                         final List<ObjectStorageFileManager> objectStorageFileManagers,
                                         final NFSStorageMounter nfsMounter) {
         super(indexSettingsPath, rootMountPoint, indexPrefix, indexName, bulkInsertSize, bulkLoadTagsSize,
-              cloudPipelineAPIClient, elasticsearchServiceClient, elasticIndexService, nfsMounter);
+              cloudPipelineAPIClient, elasticsearchServiceClient, elasticIndexService, nfsMounter, tagDelimiter);
 
         this.eventsFileChunkSize = eventsFileChunkSize;
         final URI eventsBucketURI = URI.create(eventsBucketUriStr);
