@@ -33,3 +33,7 @@ def parse_timestamp(timestamp_string):
 
 def parse_date(date_string):
     return datetime.datetime.strptime(date_string, ISO_DATE_FORMAT).date()
+
+
+def str_date(date):
+    return date.strftime(ISO_DATE_FORMAT)

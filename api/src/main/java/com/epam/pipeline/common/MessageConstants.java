@@ -284,6 +284,8 @@ public final class MessageConstants {
             "error.datastorage.lifecycle.rule.cant.define.days.to.prolong";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG =
             "error.datastorage.lifecycle.rule.wrong.days.to.prolong";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANT_BE_PROLONGED =
+        "error.datastorage.lifecycle.rule.cant.be.prolonged";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE =
             "error.datastorage.lifecycle.rule.was.prolong.before";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED =
