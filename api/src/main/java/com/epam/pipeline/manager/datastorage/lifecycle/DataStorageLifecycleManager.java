@@ -148,6 +148,17 @@ public class DataStorageLifecycleManager {
         Assert.isTrue(effectiveDaysToProlong > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG));
 
+        if (!force) {
+            final List<StorageLifecycleRuleExecution> executionsWithNotificationSent =
+                    listStorageLifecycleRuleExecutionsForRuleAndPath(
+                            ruleId, path, StorageLifecycleRuleExecutionStatus.NOTIFICATION_SENT);
+            Assert.notEmpty(
+                    executionsWithNotificationSent,
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_CANT_BE_PROLONGED, ruleId, path)
+            );
+        }
+
         final StorageLifecycleRuleProlongationEntity lastProlongation =
                 ListUtils.emptyIfNull(lifecycleRuleEntity.getProlongations())
                         .stream().filter(p -> p.getPath().equals(path))

@@ -199,7 +199,7 @@ class PipelineAPI:
     LOAD_AVAILABLE_STORAGES = "/datastorage/available"
     LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}"
     LIFECYCLE_RULES_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule"
-    PROLONG_LIFECYCLE_RULES_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/prolong?path={path}&days={days}"
+    PROLONG_LIFECYCLE_RULES_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/prolong?path={path}&days={days}&force={force}"
     LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution"
     LOAD_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution{filter}"
     UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}/status?status={status}"
@@ -1132,10 +1132,10 @@ class PipelineAPI:
             raise RuntimeError("Failed to delete lifecycle rule execution by ID '{}'.",
                                "Error message: {}".format(str(execution_id), str(e.message)))
 
-    def prolong_lifecycle_rule(self, datastorage_id, rule_id, path, days):
+    def prolong_lifecycle_rule(self, datastorage_id, rule_id, path, days, force=False):
         try:
             return self.execute_request(str(self.api_url) + self.PROLONG_LIFECYCLE_RULES_URL.format(
-                                            id=datastorage_id, rule_id=rule_id, path=path, days=days))
+                                            id=datastorage_id, rule_id=rule_id, path=path, days=days, force=force))
         except Exception as e:
             raise RuntimeError("Failed to prolong lifecycle rule '{}'.",
                                "Error message: {}".format(str(rule_id), str(e.message)))
