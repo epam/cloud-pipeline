@@ -12,17 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..config import Config
-from ..api.storages_api import Storages
-from ..model.storage_model import StorageModel
-from ..model.share_mount_model import ShareMountModel
-
-import sys
-import traceback
 import os
-import subprocess
 import re
-from exceptions import KeyboardInterrupt
+import subprocess
+import traceback
+
+from ..api.storages_api import Storages
+from ..config import Config
 
 # All user's directories and links should be CHMODed to 550
 # 550 is an octal number for -r-xr-x--- permissions.

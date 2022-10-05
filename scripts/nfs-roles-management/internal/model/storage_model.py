@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from user_model import UserModel
 from tool_model import ToolModel
+from user_model import UserModel
+
 
 class StorageModel(object):
     def __init__(self):

@@ -15,9 +15,9 @@
 import getopt
 import sys
 import time
+
 from internal.config import Config, ConfigNotFoundError
 from internal.synchronization.synchronization import Synchronization
-from exceptions import KeyboardInterrupt
 
 
 def configure(argv):

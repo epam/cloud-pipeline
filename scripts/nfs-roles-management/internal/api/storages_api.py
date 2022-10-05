@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from .base import API
-from ..model.storage_model import StorageModel
 from ..model.share_mount_model import ShareMountModel
+from ..model.storage_model import StorageModel
 
 
 class Storages(API):
