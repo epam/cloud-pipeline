@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import getopt
+import logging
+import os
 import sys
 import time
 
@@ -40,29 +42,32 @@ def configure(argv):
         elif opt in ("-n", "--nfs-root"):
             nfs_root = arg
     Config.store(key, api, users_root, nfs_root)
-    print 'syncnfs configuration updated'
+    logging.info('syncnfs configuration updated')
     exit(0)
 
 
 def help():
-    print 'Use \'configure\' command to setup synchronization properties and settings:'
-    print 'python syncnfs.py configure ' \
-          '--api=<api path> ' \
-          '--key=<api token> ' \
-          '--users-root=<root folder for users storages links> ' \
-          '--nfs-root=<root folder for nfs mounts>'
-    print ''
-    print 'Use \'sync\' command to synchronize users nfs permissions.'
-    print 'python syncnfs.py sync' \
-          '--api=<api path> ' \
-          '--key=<api token> ' \
-          '--users-root=<root folder for users storages links> ' \
-          '--nfs-root=<root folder for nfs mounts>' \
-          '-l[use symlinks instead of mounting directories]'
-    print ''
+    logging.info('Use \'configure\' command to setup synchronization properties and settings:')
+    logging.info('python syncnfs.py configure '
+                 '--api=<api path> '
+                 '--key=<api token> '
+                 '--users-root=<root folder for users storages links> '
+                 '--nfs-root=<root folder for nfs mounts>')
+    logging.info('')
+    logging.info('Use \'sync\' command to synchronize users nfs permissions.')
+    logging.info('python syncnfs.py sync'
+                 '--api=<api path> '
+                 '--key=<api token> '
+                 '--users-root=<root folder for users storages links> '
+                 '--nfs-root=<root folder for nfs mounts>'
+                 '-l[use symlinks instead of mounting directories]')
+    logging.info('')
 
 
 def main(argv):
+    logging_level = os.getenv('CP_DAV_MOUNT_LOGGING_LEVEL', 'INFO')
+    logging_format = os.getenv('CP_DAV_MOUNT_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    logging.basicConfig(level=logging_level, format=logging_format)
     if len(argv) > 0:
         command = argv[0]
         if command == 'help' or command == '-h' or command == '--help':
@@ -93,23 +98,23 @@ def main(argv):
                     elif opt == '-l':
                         symlink = True
                 if config.api is None:
-                    print 'API path is not configured'
+                    logging.info('API path is not configured')
                     help()
                     exit(1)
                 elif config.access_key is None:
-                    print 'API token is not configured'
+                    logging.info('API token is not configured')
                     help()
                     exit(1)
                 elif config.users_root is None:
-                    print 'Users root is not configured'
+                    logging.info('Users root is not configured')
                     help()
                     exit(1)
                 elif config.nfs_root is None:
-                    print 'Nfs root is not configured'
+                    logging.info('Nfs root is not configured')
                     help()
                     exit(1)
-            except ConfigNotFoundError as error:
-                print error.message
+            except ConfigNotFoundError:
+                logging.exception('Configuration has not been found.')
                 help()
                 exit(1)
             start = time.time()
@@ -117,14 +122,15 @@ def main(argv):
                 Synchronization(config).synchronize(user_ids=user, use_symlinks=symlink)
             except KeyboardInterrupt:
                 exit(2)
-            print ''
-            print 'Synchronization time: {} seconds'.format(time.time() - start)
+            logging.info('')
+            logging.info('Synchronization time: {} seconds'.format(time.time() - start))
         else:
-            print 'Unknown command {}'.format(command)
+            logging.error('Unknown command {}'.format(command))
             exit(1)
     else:
         help()
         exit(0)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
