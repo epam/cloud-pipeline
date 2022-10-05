@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -121,7 +122,7 @@ public class ConfigurationRunner {
         final int configurationsNodes = configurations.stream()
             .map(AnalysisConfiguration::getEntries)
             .flatMap(Collection::stream)
-            .mapToInt(AbstractRunConfigurationEntry::getWorkerCount)
+            .mapToInt(entry -> Optional.ofNullable(entry.getWorkerCount()).orElse(0))
             .filter(Objects::nonNull)
             .reduce(0, (sum, count) -> sum + count + 1);
         runLimitsService.checkRunLaunchLimits(configurationsNodes);
