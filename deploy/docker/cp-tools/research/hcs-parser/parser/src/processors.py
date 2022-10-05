@@ -353,6 +353,9 @@ class HcsFileParser:
         self.generate_ome_xml_info_file()
         xml_info_tree = ET.parse(self.ome_xml_info_file_path).getroot()
         plate_width, plate_height = self._get_plate_configuration(xml_info_tree)
+        wells_tags = self.read_wells_tags()
+        if wells_tags:
+            self._processing_logger.log_info("Tags " + str(wells_tags))
         if not TAGS_PROCESSING_ONLY:
             if not self._localize_related_files():
                 self._processing_logger.log_info('Some errors occurred during copying files from the bucket, exiting...')
@@ -378,7 +381,7 @@ class HcsFileParser:
                     self._processing_logger.log_info('File processing was not successful: well preview generation failure')
                     return 1
                 self.write_dict_to_file(os.path.join(local_preview_dir, sequence_id, 'wells_map.json'),
-                                        self.build_wells_map(sequence_id, wells_grid_mapping))
+                                        self.build_wells_map(sequence_id, wells_grid_mapping, wells_tags))
             cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
                                               .format(local_preview_dir,
                                                       HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
@@ -386,7 +389,7 @@ class HcsFileParser:
                 self._processing_logger.log_info('Results transfer was not successful...')
                 return 1
             self._write_hcs_file(time_series_details, plate_width, plate_height)
-        tags_processing_result = self.try_process_tags(xml_info_tree)
+        tags_processing_result = self.try_process_tags(xml_info_tree, wells_tags)
         if TAGS_PROCESSING_ONLY:
             return tags_processing_result
         self.create_stat_file()
@@ -443,7 +446,7 @@ class HcsFileParser:
         hcs_xml_info_tree.write(sequence_index_file_path)
         return sequence_index_file_path
 
-    def build_wells_map(self, sequence_id, wells_grid_mapping):
+    def build_wells_map(self, sequence_id, wells_grid_mapping, wells_tags):
         hcs_index_file_path = os.path.join(self.tmp_local_dir, sequence_id, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
         ome_xml_file_path = os.path.join(os.path.dirname(hcs_index_file_path), 'Index.ome.xml')
         self.generate_bioformats_ome_xml(hcs_index_file_path, ome_xml_file_path)
@@ -463,8 +466,10 @@ class HcsFileParser:
         is_well_round, well_size = self.extract_well_configuration(hcs_xml_info_root)
         for well_key, fields_list in measured_wells.items():
             chunks = well_key.split(PLANE_COORDINATES_DELIMITER)
+            well_tuple = (chunks[0], chunks[1])
             wells_mapping[well_key] = self.build_well_details(fields_list, well_size, is_well_round,
-                                                              wells_grid_mapping[chunks[0], chunks[1]])
+                                                              wells_grid_mapping[well_tuple],
+                                                              wells_tags[well_tuple])
         preview_ome_xml_info_root = ET.parse(preview_ome_xml_file_path).getroot()
         preview_ome_plate = self.extract_plate_from_ome_xml(preview_ome_xml_info_root)
         for well in preview_ome_plate.findall(ome_schema_prefix + 'Well'):
@@ -479,7 +484,7 @@ class HcsFileParser:
                 wells_mapping[coords_key] = well_details
         return HcsFileParser.ordered_by_coords(wells_mapping)
 
-    def build_well_details(self, fields_list, well_size, is_well_round, well):
+    def build_well_details(self, fields_list, well_size, is_well_round, well, well_tags):
         x_coords = set()
         y_coords = set()
         for field in fields_list:
@@ -518,7 +523,8 @@ class HcsFileParser:
             'round_radius': round(well_viewer_radius, 2) if is_well_round else None,
             'to_ome_wells_mapping': HcsFileParser.ordered_by_coords(to_ome_mapping),
             'field_size': well.get_field_size(),
-            'coordinates': coordinates
+            'coordinates': coordinates,
+            'tags': well_tags
         }
         return well_details
 
@@ -548,10 +554,13 @@ class HcsFileParser:
         is_well_round = True if 'is_round' not in well_configuration else well_configuration['is_round'] == 'false'
         return is_well_round, well_size
 
-    def try_process_tags(self, xml_info_tree):
+    def read_wells_tags(self):
+        return HcsFileTagProcessor.read_well_tags(self.hcs_root_dir)
+
+    def try_process_tags(self, xml_info_tree, wells_tags):
         tags_processing_result = 0
         try:
-            if HcsFileTagProcessor(self.hcs_root_dir, self.hcs_img_path, xml_info_tree).process_tags() != 0:
+            if HcsFileTagProcessor(self.hcs_root_dir, self.hcs_img_path, xml_info_tree).process_tags(wells_tags) != 0:
                 self._processing_logger.log_info('Some errors occurred during file tagging')
                 tags_processing_result = 1
         except Exception as e:
