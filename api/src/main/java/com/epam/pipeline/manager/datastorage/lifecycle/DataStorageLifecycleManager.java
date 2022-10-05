@@ -230,26 +230,29 @@ public class DataStorageLifecycleManager {
         verifyLifecycleRuleExecutionObject(execution, ruleEntity);
         final StorageLifecycleRuleExecutionEntity saved =
                 dataStorageLifecycleRuleExecutionRepository.save(lifecycleEntityMapper.toEntity(execution));
-        log.info("Storage lifecycle rule execution was created. " +
-                "ExecutionId: {}, RuleId: {}, Path: '{}', StorageClass: {}, Status: {}",
-                saved.getId(), saved.getRuleId(), saved.getPath(), saved.getStorageClass(), saved.getStatus());
+        log.info("Storage lifecycle rule execution was created. ExecutionId: {}, RuleId: {}, datastorageId: {}, " +
+                "Path: '{}', StorageClass: {}, Status: {}", saved.getId(), saved.getRuleId(),
+                ruleEntity.getDatastorageId(), saved.getPath(), saved.getStorageClass(), saved.getStatus());
         return lifecycleEntityMapper.toDto(saved);
     }
 
     @Transactional
     public StorageLifecycleRuleExecution updateStorageLifecycleRuleExecutionStatus(
             final Long executionId, final StorageLifecycleRuleExecutionStatus status) {
-        final StorageLifecycleRuleExecutionEntity execution =
+        final StorageLifecycleRuleExecutionEntity executionEntity =
                 dataStorageLifecycleRuleExecutionRepository.findOne(executionId);
-        Assert.notNull(execution,
+        Assert.notNull(executionEntity,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_FOUND,
                         executionId));
-        execution.setStatus(status);
-        execution.setUpdated(DateUtils.nowUTC());
-        final StorageLifecycleRuleExecutionEntity saved = dataStorageLifecycleRuleExecutionRepository.save(execution);
-        log.info("Storage lifecycle rule execution status was updated. " +
-                        "ExecutionId: {}, RuleId: {}, Path: '{}', StorageClass: {}, Status: {}",
-                saved.getId(), saved.getRuleId(), saved.getPath(), saved.getStorageClass(), saved.getStatus());
+        final StorageLifecycleRuleEntity ruleEntity = loadLifecycleRuleEntity(executionEntity.getRuleId());
+        executionEntity.setStatus(status);
+        executionEntity.setUpdated(DateUtils.nowUTC());
+        final StorageLifecycleRuleExecutionEntity saved =
+                dataStorageLifecycleRuleExecutionRepository.save(executionEntity);
+        log.info("Storage lifecycle rule execution status was updated.  ExecutionId: {}, RuleId: {}, " +
+                        "datastorageId: {}, Path: '{}', StorageClass: {}, Status: {}",
+                saved.getId(), saved.getRuleId(), ruleEntity.getDatastorageId(),
+                saved.getPath(), saved.getStorageClass(), saved.getStatus());
         return lifecycleEntityMapper.toDto(saved);
     }
 
