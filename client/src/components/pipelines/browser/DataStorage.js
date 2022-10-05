@@ -328,7 +328,9 @@ export default class DataStorage extends React.Component {
   get lifeCycleRestoreEnabled () {
     const {info, authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo.loaded && info.loaded) {
-      return roleModel.isOwner(info.value) || authenticatedUserInfo.value.admin;
+      const isS3 = /^s3$/i.test(info.value.storageType || info.value.type);
+      return isS3 &&
+        (roleModel.isOwner(info.value) || authenticatedUserInfo.value.admin);
     }
     return false;
   }
