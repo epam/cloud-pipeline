@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import json
+import glob
 import os
 import urllib
+import xml.etree.ElementTree as ET
 
 from pipeline.api import PipelineAPI, TaskStatus
 from .utils import HcsParsingUtils, log_run_info, get_list_run_param
@@ -32,6 +34,7 @@ HYPHEN = '-'
 PATH_DELIMITER = '/'
 COMMA = ','
 TAGS_MAPPING_KEYS_DELIMITER = '='
+TAG_DELIMITER = os.getenv('HCS_PARSING_TAG_DELIMITER', ';')
 
 
 class HcsFileTagProcessor:
@@ -65,10 +68,59 @@ class HcsFileTagProcessor:
                         metadata_dict[key] = value
         return metadata_dict
 
+    @staticmethod
+    def find_in_xml(element, name):
+        if element is None:
+            return None
+        else:
+            return element.find(name)
+
+    @staticmethod
+    def find_all_in_xml(element, name):
+        if element is None:
+            return []
+        else:
+            return element.findall(name)
+
+    @staticmethod
+    def read_well_tags(hcs_root_path):
+        result = {}
+        tags_folder = os.path.join(hcs_root_path, 'assaylayout')
+        if not os.path.isdir(tags_folder):
+            return result
+        for xml in glob.glob(os.path.join(tags_folder, '*.xml')):
+            xml_tags = ET.parse(xml).getroot()
+            ome_schema = HcsParsingUtils.extract_xml_schema(xml_tags)
+            layers = HcsFileTagProcessor.find_all_in_xml(xml_tags, ome_schema + 'Layer')
+            if not layers:
+                entry = HcsFileTagProcessor.find_in_xml(xml_tags, ome_schema + 'AssayLayoutEntry')
+                layout = HcsFileTagProcessor.find_in_xml(entry, ome_schema + 'AssayLayout')
+                layers = HcsFileTagProcessor.find_all_in_xml(layout, ome_schema + 'Layer')
+                if not layers:
+                    log_run_info('[{}] {}'.format(
+                        hcs_root_path, 'Failed to extract tags from %s, unexpected XML schema.' % xml),
+                        status=TaskStatus.RUNNING)
+                    return result
+            for layer in layers:
+                tag_key = layer.find(ome_schema + 'Name').text
+                if not tag_key:
+                    continue
+                for well in layer.findall(ome_schema + 'Well'):
+                    well_key = (well.find(ome_schema + 'Row').text, well.find(ome_schema + 'Col').text)
+                    tag_value = well.find(ome_schema + 'Value').text
+                    if not tag_value or tag_value == '0':
+                        continue
+                    if well_key not in result:
+                        result[well_key] = {}
+                    if tag_key not in result[well_key]:
+                        result[well_key][tag_key] = []
+                    result[well_key][tag_key].append(tag_value.encode('utf-8'))
+        return result
+
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         log_run_info('[{}] {}'.format(self.hcs_root_dir, message), status=status)
 
-    def process_tags(self):
+    def process_tags(self, wells_tags):
         existing_attributes_dictionary = self.load_existing_attributes()
         ome_schema = HcsParsingUtils.extract_xml_schema(self.xml_info_tree)
         metadata = self.xml_info_tree.find(ome_schema + 'StructuredAnnotations')
@@ -77,6 +129,12 @@ class HcsFileTagProcessor:
             return 0
         metadata_dict = self.map_to_metadata_dict(ome_schema, metadata)
         self.add_metadata_from_keyword_file(metadata_dict)
+        if wells_tags:
+            for well_tags in wells_tags.values():
+                for key, val in well_tags.items():
+                    if key not in metadata_dict:
+                        metadata_dict[key] = set()
+                    metadata_dict[key].update(val)
         tags_to_push = self.build_tags_dictionary(metadata_dict, existing_attributes_dictionary)
         if not tags_to_push:
             self.log_processing_info('No matching tags found')
@@ -161,19 +219,21 @@ class HcsFileTagProcessor:
             if len(values_to_push) > 1:
                 self.log_processing_info('Multiple tags matches occurred for "{}": [{}]'
                                          .format(attribute_name, values_to_push))
-                continue
-            value = list(values_to_push)[0]
+                value = TAG_DELIMITER.join(values_to_push)
+            else:
+                value = list(values_to_push)[0]
             if attribute_name not in existing_attributes_dictionary:
                 self.log_processing_info('No categorical attribute [{}] exists'.format(attribute_name))
                 continue
             existing_values = existing_attributes_dictionary[attribute_name]
             existing_attribute_id = existing_values[0]['attributeId']
             existing_values_names = [existing_value['value'] for existing_value in existing_values]
-            if value not in existing_values_names:
-                existing_values.append({'key': attribute_name, 'value': value})
-                attribute_updates.append({'id': int(existing_attribute_id),
-                                          'key': attribute_name, 'values': existing_values})
-            pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, value))
+            for val in values_to_push:
+                if val not in existing_values_names:
+                    existing_values.append({'key': attribute_name, 'value': val.encode('utf-8')})
+                    attribute_updates.append({'id': int(existing_attribute_id),
+                                              'key': attribute_name, 'values': existing_values})
+            pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, value.encode('utf-8')))
         if attribute_updates:
             self.log_processing_info('Updating following categorical attributes before tagging: {}'
                                      .format(attribute_updates))
@@ -189,20 +249,22 @@ class HcsFileTagProcessor:
         for key in tags_mapping.keys():
             if key in metadata_dict:
                 value = metadata_dict[key]
-                if value.startswith('[') and value.endswith(']'):
+                if isinstance(value, basestring) and value.startswith('[') and value.endswith(']'):
                     self.log_processing_info('Processing array value')
                     value = value[1:-1]
                     values = list(set(value.split(COMMA)))
-                    if len(values) != 1:
-                        self.log_processing_info('Empty or multiple metadata values, skipping [{}]'
-                                                 .format(key))
+                    if not values:
+                        self.log_processing_info('Empty metadata values, skipping [{}]'.format(key))
                         continue
-                    value = values[0]
+                    value = values
+
                 target_tag = tags_mapping[key]
-                if target_tag in tags_to_push:
+                if target_tag not in tags_to_push:
+                    tags_to_push[target_tag] = set()
+                if isinstance(value, basestring):
                     tags_to_push[target_tag].add(value)
                 else:
-                    tags_to_push[target_tag] = {value}
+                    tags_to_push[target_tag].update(value)
         return tags_to_push
 
     def map_tags(self, existing_attributes_dictionary):
