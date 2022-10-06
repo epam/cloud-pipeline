@@ -28,8 +28,8 @@ import {
   Spin
 } from 'antd';
 import moment from 'moment-timezone';
-import DataStorageLifeCycleRulesExecutionLoad
-  from '../../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesExecutionLoad';
+// eslint-disable-next-line max-len
+import DataStorageLifeCycleRulesExecutionLoad from '../../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesExecutionLoad';
 import {DESTINATIONS} from '../life-cycle-edit-modal';
 import columns from './columns';
 import styles from './life-cycle-history-modal.css';
@@ -109,7 +109,8 @@ class LifeCycleHistoryModal extends React.Component {
       file: execution.path,
       prolongation: undefined,
       transition: undefined,
-      destination: mapDestination(execution.storageClass)
+      destination: mapDestination(execution.storageClass),
+      status: execution.status
     }));
     const prolongationsData = this.prolongations
       .map(prolongation => ({
@@ -121,7 +122,8 @@ class LifeCycleHistoryModal extends React.Component {
         file: prolongation.path,
         prolongation: `${prolongation.days} days`,
         transition: getTransitionDate(prolongation),
-        destination: undefined
+        destination: undefined,
+        status: undefined
       }));
     return [...executionsData, ...prolongationsData]
       .sort((a, b) => a.date - b.date);

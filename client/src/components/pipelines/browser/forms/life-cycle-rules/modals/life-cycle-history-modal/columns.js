@@ -15,10 +15,39 @@
  */
 
 import React from 'react';
+import {
+  Icon,
+  Tooltip
+} from 'antd';
 import {DESTINATIONS} from '../life-cycle-edit-modal';
+// eslint-disable-next-line max-len
+import {EXECUTION_STATUSES} from '../../../../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesExecutionLoad';
 import displayDate from '../../../../../../../utils/displayDate';
 
 const FORMAT = 'YYYY-MM-DD';
+
+const STATUS_CONFIG = {
+  [EXECUTION_STATUSES.NOTIFICATION_SENT]: {
+    type: 'mail',
+    className: 'cp-primary',
+    description: 'Notification sent'
+  },
+  [EXECUTION_STATUSES.RUNNING]: {
+    type: 'clock-circle-o',
+    className: 'cp-primary',
+    description: 'Running'
+  },
+  [EXECUTION_STATUSES.SUCCESS]: {
+    type: 'check-circle-o',
+    className: 'cp-success',
+    description: 'Success'
+  },
+  [EXECUTION_STATUSES.FAILED]: {
+    type: 'exclamation-circle-o',
+    className: 'cp-error',
+    description: 'Failed'
+  }
+};
 
 const columns = [{
   title: 'Date',
@@ -28,7 +57,36 @@ const columns = [{
 }, {
   title: 'Action',
   dataIndex: 'action',
-  key: 'action'
+  key: 'action',
+  render: (action, record) => {
+    if (action === 'Transition') {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'nowrap'
+          }}
+        >
+          <span>
+            {action}
+          </span>
+          {STATUS_CONFIG[record.status] ? (
+            <Tooltip
+              title={STATUS_CONFIG[record.status].description}
+            >
+              <Icon
+                type={STATUS_CONFIG[record.status].type}
+                className={STATUS_CONFIG[record.status].className}
+                style={{marginLeft: 5, fontSize: 'larger'}}
+              />
+            </Tooltip>
+          ) : null}
+        </div>
+      );
+    }
+    return action;
+  }
 }, {
   title: 'User',
   dataIndex: 'user',

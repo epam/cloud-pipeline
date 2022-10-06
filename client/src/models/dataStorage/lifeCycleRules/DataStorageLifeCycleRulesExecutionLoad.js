@@ -16,9 +16,18 @@
 
 import Remote from '../../basic/Remote';
 
+const EXECUTION_STATUSES = {
+  NOTIFICATION_SENT: 'NOTIFICATION_SENT',
+  RUNNING: 'RUNNING',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED'
+};
+
 export default class DataStorageLifeCycleRulesExecutionLoad extends Remote {
   constructor (datastorageId, ruleId) {
     super();
     this.url = `/datastorage/${datastorageId}/lifecycle/rule/${ruleId}/execution`;
   }
 }
+
+export {EXECUTION_STATUSES};
