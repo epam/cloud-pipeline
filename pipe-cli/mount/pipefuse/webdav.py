@@ -12,23 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import functools
 import logging
 import platform
-import time
-import urllib
 import xml.etree.cElementTree as xml
 from numbers import Number
 
+import datetime
 import easywebdav
 import pytz
 import requests
+import time
 import urllib3
 from dateutil.tz import tzlocal
 from requests import cookies
 
 from pipefuse import fuseutils
-from pipefuse.fsclient import FileSystemClient, File
+from pipefuse.chain import ChainingService
+from pipefuse.fsclient import File, FileSystemClient, \
+    ForbiddenOperationException, NotFoundOperationException, InvalidOperationException
 
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
@@ -36,6 +38,41 @@ if py_version == '2':
     from urllib import quote, unquote
 else:
     from urllib.parse import urlparse, quote, unquote
+
+
+class WebDavAdapterFileSystemClient(ChainingService):
+
+    def __init__(self, inner):
+        self._inner = inner
+        self._mappings = {
+            401: ForbiddenOperationException,
+            403: ForbiddenOperationException,
+            405: ForbiddenOperationException,
+            404: NotFoundOperationException,
+        }
+        self._default = InvalidOperationException
+
+    def __getattr__(self, name):
+        if not hasattr(self._inner, name):
+            return None
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+        return self._wrap(attr)
+
+    def _wrap(self, attr):
+        @functools.wraps(attr)
+        def _wrapped_attr(*args, **kwargs):
+            try:
+                return attr(*args, **kwargs)
+            except easywebdav.OperationFailed as e:
+                logging.exception('WebDav call has failed with %s http code.' % e.actual_code)
+                error = self._mappings.get(e.actual_code)
+                if error:
+                    raise error()
+                raise self._default()
+        return _wrapped_attr
+
 
 # add additional methods
 easywebdav.OperationFailed._OPERATIONS = dict(
@@ -50,7 +87,7 @@ easywebdav.OperationFailed._OPERATIONS = dict(
 )
 
 
-class CPWebDavClient(easywebdav.Client, FileSystemClient):
+class WebDavClient(easywebdav.Client, FileSystemClient):
     C_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
     # 'Wed, 28 Aug 2019 12:18:02 GMT'
     M_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %Z"
@@ -86,9 +123,6 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
         try:
             self._send('OPTIONS', '/', 200, allow_redirects=False)
             return True
-        except easywebdav.OperationFailed as e:
-            logging.exception('WevDav is not available: %s' % str(e.reason))
-            return False
         except Exception:
             logging.exception('WevDav is not available')
             return False
@@ -118,9 +152,8 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
         try:
             time_value = datetime.datetime.strptime(value, date_format)
             return time.mktime(time_value.replace(tzinfo=pytz.UTC).astimezone(tzlocal()).timetuple())
-        except ValueError as e:
-            logging.error(
-                'Failed to parse date: %s. Expected format: "%s". Error: "%s"' % (value, date_format, str(e)))
+        except ValueError:
+            logging.exception('Failed to parse date: %s. Expected format: "%s".' % (value, date_format))
             return None
 
     def elem2file(self, elem, path):
@@ -162,7 +195,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
 
     def mv(self, old_path, new_path):
         headers = {'Destination': self._get_url(new_path),
-                   'Overwrite': "T"}
+                   'Overwrite': 'T'}
         self._send('MOVE', old_path, (201, 204), headers=headers, allow_redirects=True)
 
     def _send(self, method, path, expected_code, allow_redirects=False, **kwargs):

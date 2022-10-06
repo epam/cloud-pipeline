@@ -64,7 +64,7 @@ from pipefuse.storage import StorageHighLevelFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
-from pipefuse.webdav import CPWebDavClient
+from pipefuse.webdav import WebDavClient, WebDavAdapterFileSystemClient
 from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributesCache, \
     ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
 
@@ -104,7 +104,8 @@ def start(mountpoint, webdav, bucket,
     if not bearer:
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
-        client = CPWebDavClient(webdav_url=webdav, bearer=bearer)
+        client = WebDavClient(webdav_url=webdav, bearer=bearer)
+        client = WebDavAdapterFileSystemClient(client)
     else:
         if not api:
             raise RuntimeError('Cloud Pipeline API should be specified.')
