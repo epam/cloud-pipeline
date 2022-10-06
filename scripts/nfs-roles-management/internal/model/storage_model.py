@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tool_model import ToolModel
-from user_model import UserModel
+from internal.model.tool_model import ToolModel
+from internal.model.user_model import UserModel
 
 
 class StorageModel(object):
+
     def __init__(self):
         self.identifier = None
         self.name = None

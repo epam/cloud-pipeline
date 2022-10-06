@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import logging
 import os
 import re
 import subprocess
-import traceback
 
-from ..api.storages_api import Storages
-from ..config import Config
+from internal.api.storages_api import Storages
+from internal.config import Config
 
 # All user's directories and links should be CHMODed to 550
 # 550 is an octal number for -r-xr-x--- permissions.
@@ -30,6 +30,7 @@ chmod_mask_decimal = 360
 
 
 class Synchronization(object):
+
     def __init__(self, config):
         self.__storages_api__ = Storages(config)
         self.__config__ = config if config is not None else Config.instance()
