@@ -19,6 +19,7 @@ import subprocess
 
 from internal.api.storages_api import Storages
 from internal.config import Config
+from internal.model.mask import Mask, FullMask
 
 # All user's directories and links should be CHMODed to 550
 # 550 is an octal number for -r-xr-x--- permissions.
@@ -37,7 +38,7 @@ class Synchronization(object):
         self.__users__ = []
         self.__storages__ = []
 
-    def synchronize(self, user_ids=None, use_symlinks=False):
+    def synchronize(self, user_ids=None, use_symlinks=False, filter_mask=FullMask.READ):
         def user_matches_criteria(test_user):
             user_name = test_user.lower()
             return user_ids is None or len(user_ids) == 0 or len([u for u in user_ids if u.lower() == user_name]) > 0
@@ -80,14 +81,13 @@ class Synchronization(object):
             self.__storages__ = []
             self.__users__ = []
             share_mounts = self.list_share_mounts()
-            for storage in self.list_storages():
+            for storage in self.list_storages(filter_mask=filter_mask):
                 storage.mount_source = validate_storage(storage, share_mounts)
                 if storage.mount_source is not None:
                     self.__storages__.append(storage)
-                    if len(storage.users) > 0:
-                        for user in storage.users:
-                            if user.username not in self.__users__:
-                                self.__users__.append(user.username)
+                    for user in storage.users.keys():
+                        if user.username not in self.__users__:
+                            self.__users__.append(user.username)
             logging.info('{} NFS storages fetched'.format(len(self.__storages__)))
             for user in self.__users__:
                 if user_matches_criteria(user):
@@ -116,13 +116,26 @@ class Synchronization(object):
             except OSError:
                 logging.exception('Error modifying destination directory permissions.')
 
-            def user_has_permission_for_storage(test_storage):
-                return len([u for u in test_storage.users if u.username.lower() == user.lower()]) > 0
+            storages_to_synchronize = {}
+            for storage in self.__storages__:
+                for storage_user, storage_user_mask in storage.users.items():
+                    if storage_user.username.strip().lower() == user.strip().lower():
+                        storages_to_synchronize[storage] = storage_user_mask
 
-            storages_to_synchronize = [s for s in self.__storages__ if user_has_permission_for_storage(s)]
             mounted_items = os.listdir(user_destination_directory)
-            nothing_to_synchronize = len(mounted_items) == 0 and len(storages_to_synchronize) == 0
-            for storage in storages_to_synchronize:
+            if not mounted_items and not storages_to_synchronize:
+                logging.info('Nothing to synchronize')
+                return
+            for storage, mask in storages_to_synchronize.items():
+                if Mask.is_not_set(mask, Mask.READ):
+                    logging.warning('Skipping storage #{} {} linking because of no read permissions...'
+                                    .format(storage.identifier, storage.name))
+                    continue
+                if use_symlinks and Mask.is_not_set(mask, Mask.WRITE):
+                    logging.warning('Skipping storage #{} {} linking because read only mounts '
+                                    'are not supported in symlinks mode...'
+                                    .format(storage.identifier, storage.name))
+                    continue
                 mounted_storage_name = storage.name\
                     .replace(':', '_')\
                     .replace('\\', '_')\
@@ -134,7 +147,7 @@ class Synchronization(object):
                     if use_symlinks:
                         Synchronization.symlink_storage(destination, storage, mounted_storage_name)
                     else:
-                        Synchronization.mount_storage(destination, storage, mounted_storage_name)
+                        Synchronization.mount_storage(destination, storage, mounted_storage_name, mask)
                 else:
                     logging.info('Storage #{} {} already linked as {}'.format(
                         storage.identifier,
@@ -148,13 +161,11 @@ class Synchronization(object):
                     Synchronization.remove_symlink(destination, mounted_storage_to_remove)
                 else:
                     Synchronization.unmount_storage(destination, mounted_storage_to_remove)
-            if nothing_to_synchronize:
-                logging.info('Nothing to synchronize')
         except Exception:
             logging.exception('User processing has failed.')
 
     @classmethod
-    def mount_storage(cls, destination, storage, mounted_storage_name):
+    def mount_storage(cls, destination, storage, mounted_storage_name, mask):
         logging.info('Mounting storage #{} {}'.format(storage.identifier, storage.name))
         try:
             logging.info('Creating directory {}...'.format(destination))
@@ -168,12 +179,12 @@ class Synchronization(object):
         command_opts = []
         # Do not allow to WRITE for any storage which has tools limitations
         # We fully rely on the automatic mounting to the jobs for such storages
-        if len(storage.tools_to_mount) > 0 and os.getenv('CP_DAV_TOOLS_TO_MOUNT_RO', 'false') == 'true':
-            command_opts = [ "-o", "ro" ]
+        if storage.tools_to_mount and os.getenv('CP_DAV_TOOLS_TO_MOUNT_RO', 'false') == 'true' \
+                or Mask.is_not_set(mask, Mask.WRITE):
+            command_opts = ["-o", "ro"]
         
         command = ["mount", "-B", storage.mount_source, destination]
-        if len(command_opts) > 0:
-            command = command + command_opts
+        command += command_opts
         logging.info('Mounting {} storage as {}...'.format(
             storage.name,
             mounted_storage_name
@@ -233,14 +244,14 @@ class Synchronization(object):
         else:
             logging.error('Error removing link')
 
-    def list_storages(self):
+    def list_storages(self, filter_mask):
         page = 0
         page_size = 50
         result = []
         try:
             total = page_size + 1
             while total > page * page_size:
-                (storages, total_count) = self.__storages_api__.list(page + 1, page_size)
+                (storages, total_count) = self.__storages_api__.list(page + 1, page_size, filter_mask=filter_mask)
                 total = total_count
                 result.extend(storages)
                 page += 1

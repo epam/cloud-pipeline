@@ -19,6 +19,7 @@ import sys
 import time
 
 from internal.config import Config, ConfigNotFoundError
+from internal.model.mask import FullMask
 from internal.synchronization.synchronization import Synchronization
 
 
@@ -65,8 +66,8 @@ def help():
 
 
 def main(argv):
-    logging_level = os.getenv('CP_DAV_MOUNT_LOGGING_LEVEL', 'INFO')
-    logging_format = os.getenv('CP_DAV_MOUNT_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    logging_level = os.getenv('CP_DAV_LOGGING_LEVEL', 'INFO')
+    logging_format = os.getenv('CP_DAV_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
     logging.basicConfig(level=logging_level, format=logging_format)
     if len(argv) > 0:
         command = argv[0]
@@ -117,13 +118,17 @@ def main(argv):
                 logging.exception('Configuration has not been found.')
                 help()
                 exit(1)
+            filter_mask = int(os.getenv('CP_DAV_FILTER_MASK', FullMask.READ))
+            filter_permissions = FullMask.get_permissions(filter_mask)
+            logging.info('Storages with {} permissions will be synchronized...'
+                         .format('|'.join(filter_permissions) or 'any'))
             start = time.time()
             try:
-                Synchronization(config).synchronize(user_ids=user, use_symlinks=symlink)
+                Synchronization(config).synchronize(user_ids=user, use_symlinks=symlink, filter_mask=filter_mask)
             except KeyboardInterrupt:
                 exit(2)
             logging.info('')
-            logging.info('Synchronization time: {} seconds'.format(time.time() - start))
+            logging.info('Synchronization time: {:.1f} seconds'.format(time.time() - start))
         else:
             logging.error('Unknown command {}'.format(command))
             exit(1)

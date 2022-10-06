@@ -22,8 +22,9 @@ class Storages(API):
     def __init__(self, config=None):
         super(Storages, self).__init__(config)
 
-    def list(self, page, page_size):
-        response_data = self.call('datastorage/permission?page={}&pageSize={}'.format(page, page_size), None)
+    def list(self, page, page_size, filter_mask):
+        response_data = self.call('datastorage/permission?page={}&pageSize={}&filterMask={}'
+                                  .format(page, page_size, filter_mask), None)
         storages = []
         total_count = 0
         if 'payload' in response_data:
