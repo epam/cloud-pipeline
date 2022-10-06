@@ -997,11 +997,16 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  canRestoreItem = (item) => {
+  canRestoreVersion = (item) => {
     if (!this.showVersions) {
       return false;
     }
-    if ((item.type && item.type.toLowerCase() === 'folder') || !item.isVersion || item.deleteMarker) {
+    if (
+      (item.type && item.type.toLowerCase() === 'folder') ||
+      !item.isVersion ||
+      item.deleteMarker ||
+      (item.isVersion && item.archived)
+    ) {
       return false;
     }
     return !item.latest;
@@ -1069,7 +1074,7 @@ export default class DataStorage extends React.Component {
         </Button>
       );
     }
-    if (this.versionControlsEnabled && this.canRestoreItem(item)) {
+    if (this.versionControlsEnabled && this.canRestoreVersion(item)) {
       actions.push(
         <Button id={`restore ${item.name}`} key="restore" size="small" onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}>
           <Icon type="reload" />
@@ -1326,30 +1331,28 @@ export default class DataStorage extends React.Component {
           return undefined;
         }
         const childList = [];
+        const restored = (this.checkRestoredStatus(item) || {}).status === STATUS.SUCCEEDED;
         for (let version in versions) {
-          const restored = (this.checkRestoredStatus(item) || {}).status === STATUS.SUCCEEDED;
           if (versions.hasOwnProperty(version)) {
+            const archived = versions[version].labels &&
+              versions[version].labels['StorageClass'] !== STORAGE_CLASSES.standard;
+            const latest = versions[version].version === item.version;
             childList.push({
               key: `${item.type}_${item.path}_${version}`,
               ...versions[version],
               downloadable: item.type.toLowerCase() === 'file' &&
                 !versions[version].deleteMarker &&
                 !sensitive &&
-                (
-                  !item.labels ||
-                  item.labels['StorageClass'] === STORAGE_CLASSES.standard ||
-                  restored
-                ),
+                ((latest && restored) || !archived),
               editable: versions[version].version === item.version &&
               roleModel.writeAllowed(this.props.info.value) &&
               !versions[version].deleteMarker,
               deletable: roleModel.writeAllowed(this.props.info.value),
               selectable: false,
               shareAvailable: false,
-              latest: versions[version].version === item.version,
+              latest,
               isVersion: true,
-              archived: item.labels &&
-                item.labels['StorageClass'] !== STORAGE_CLASSES.standard,
+              archived,
               restored
             });
           }
@@ -1375,17 +1378,14 @@ export default class DataStorage extends React.Component {
       }
       items.push(...results.map(i => {
         const restored = (this.checkRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
+        const archived = i.labels && i.labels['StorageClass'] !== STORAGE_CLASSES.standard;
         return {
           key: `${i.type}_${i.path}`,
           ...i,
           downloadable: i.type.toLowerCase() === 'file' &&
             !i.deleteMarker &&
             !sensitive &&
-            (
-              !i.labels ||
-              i.labels['StorageClass'] === STORAGE_CLASSES.standard ||
-              restored
-            ),
+            (!archived || restored),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
           shareAvailable: !i.deleteMarker && this.sharingEnabled,
           deletable: roleModel.writeAllowed(this.props.info.value),
@@ -1401,8 +1401,7 @@ export default class DataStorage extends React.Component {
           hcs: !i.deleteMarker &&
             i.type.toLowerCase() === 'file' &&
             fastCheckHCSPreviewAvailable({path: i.path, storageId: this.props.storageId}),
-          archived: i.labels &&
-            i.labels['StorageClass'] !== STORAGE_CLASSES.standard,
+          archived,
           restored
         };
       }));
