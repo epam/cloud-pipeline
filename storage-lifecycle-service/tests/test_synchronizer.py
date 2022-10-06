@@ -82,11 +82,12 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
                 CloudObject(os.path.join(self.folder, "file2.txt"), self.now - datetime.timedelta(days=3), "STANDARD")
             ]
         }
+        transition = StorageLifecycleRuleTransition("GLACIER", transition_after_days=0)
         execution = StorageLifecycleRuleExecution(
             1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now
         )
-        self.assertIsNone(self.synchronizer._check_rule_execution_progress(1, subject_files, execution))
+        self.assertIsNone(self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution))
 
     def test_check_rule_execution_progress_running_overdue(self):
         subject_files = {
@@ -96,20 +97,22 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
                 CloudObject(os.path.join(self.folder, "file2.txt"), self.now - datetime.timedelta(days=4), "STANDARD")
             ]
         }
+        transition = StorageLifecycleRuleTransition("GLACIER", transition_after_days=0)
         execution = StorageLifecycleRuleExecution(
             1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now - datetime.timedelta(days=3)
         )
-        updated_execution = self.synchronizer._check_rule_execution_progress(1, subject_files, execution)
+        updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
         self.assertEqual(archiving_synchronizer_impl.EXECUTION_FAILED_STATUS, updated_execution.status)
 
     def test_check_rule_execution_progress_running_should_succeed(self):
         subject_files = {"GLACIER": []}
+        transition = StorageLifecycleRuleTransition("GLACIER", transition_after_days=0)
         execution = StorageLifecycleRuleExecution(
             1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now - datetime.timedelta(days=2)
         )
-        updated_execution = self.synchronizer._check_rule_execution_progress(1, subject_files, execution)
+        updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
         self.assertEqual(archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS, updated_execution.status)
 
     def test_check_rule_execution_progress_running_should_succeed_if_new_file_appear_after_execution(self):
@@ -120,11 +123,12 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
                 CloudObject(os.path.join(self.folder, "file2.txt"), self.now, "STANDARD")
             ]
         }
+        transition = StorageLifecycleRuleTransition("GLACIER", transition_after_days=0)
         execution = StorageLifecycleRuleExecution(
             1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now - datetime.timedelta(days=2)
         )
-        updated_execution = self.synchronizer._check_rule_execution_progress(1, subject_files, execution)
+        updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
         self.assertEqual(archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS, updated_execution.status)
 
 

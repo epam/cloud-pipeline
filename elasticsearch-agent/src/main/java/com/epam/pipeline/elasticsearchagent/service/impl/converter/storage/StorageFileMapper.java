@@ -30,6 +30,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.slf4j.Logger;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -47,7 +48,8 @@ public class StorageFileMapper {
                                           final AbstractDataStorage dataStorage,
                                           final String region,
                                           final PermissionsContainer permissions,
-                                          final SearchDocumentType type) {
+                                          final SearchDocumentType type,
+                                          final String tagDelimiter) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             final Map<String, String> tags = MapUtils.emptyIfNull(dataStorageFile.getTags());
             jsonBuilder
@@ -72,7 +74,13 @@ public class StorageFileMapper {
                     .array("allowed_groups", permissions.getAllowedGroups().toArray())
                     .array("denied_groups", permissions.getDeniedGroups().toArray());
             for (final Map.Entry<String, String> entry : tags.entrySet()) {
-                jsonBuilder.field(entry.getKey(), entry.getValue());
+                if (StringUtils.hasText(tagDelimiter) && StringUtils.hasText(entry.getValue())
+                        && entry.getValue().contains(tagDelimiter)) {
+                    final String[] chunks = entry.getValue().split(tagDelimiter);
+                    jsonBuilder.array(entry.getKey(), chunks);
+                } else {
+                    jsonBuilder.field(entry.getKey(), entry.getValue());
+                }
             }
             return jsonBuilder.endObject();
         } catch (IOException e) {

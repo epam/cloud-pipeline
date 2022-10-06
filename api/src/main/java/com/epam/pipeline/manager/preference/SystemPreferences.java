@@ -893,6 +893,8 @@ public class SystemPreferences {
             null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_PORT = new IntPreference("search.elastic.port",
             null, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_ELASTIC_SOCKET_TIMEOUT = new IntPreference(
+            "search.elastic.socket.timeout", 30000, SEARCH_GROUP, pass);
     public static final StringPreference SEARCH_ELASTIC_CP_INDEX_PREFIX = new StringPreference(
             "search.elastic.index.common.prefix", null, SEARCH_GROUP, pass);
     public static final StringPreference SEARCH_ELASTIC_TYPE_FIELD = new StringPreference(
