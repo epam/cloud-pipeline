@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Alert, Button, Icon, Radio} from 'antd';
+import {Alert, Button, Icon, Radio, Select} from 'antd';
 import FileSaver from 'file-saver';
 
 import HCSImageViewer from './hcs-image-viewer';
@@ -954,6 +954,10 @@ class HcsImage extends React.PureComponent {
     );
   }
 
+  changeTags = (keys) => {
+    this.setState({selectedTags: [...keys]});
+  };
+
   renderSelectors () {
     const {
       plateWidth,
@@ -962,7 +966,8 @@ class HcsImage extends React.PureComponent {
       selectedZCoordinates = [],
       mergeZPlanes,
       selectedWells = [],
-      selectedFields = []
+      selectedFields = [],
+      selectedTags = []
     } = this.state;
     const sequenceInfo = this.selectedSequence;
     const selectedWell = this.selectedWell;
@@ -982,6 +987,26 @@ class HcsImage extends React.PureComponent {
             )
           }
         >
+          <Select
+            mode="multiple"
+            className={styles.tagSelector}
+            dropdownClassName={styles.tagDropdown}
+            placeholder="Select tag"
+            notFoundContent="Not found"
+            value={selectedTags}
+            onChange={this.changeTags}
+            filterOption={(input, option) => {
+              return option.props.value.toLowerCase().indexOf((input || '').toLowerCase()) >= 0;
+            }}
+          >
+            {
+              sequenceInfo.tags.map(tag => (
+                <Select.Option key={tag} value={tag}>
+                  {tag}
+                </Select.Option>
+              ))
+            }
+          </Select>
           <HcsCellSelector
             className={styles.selectorContainer}
             cells={sequenceInfo.wells}

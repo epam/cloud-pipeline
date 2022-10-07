@@ -212,3 +212,15 @@
   height: 100%;
   overflow: auto;
 }
+
+.tag-selector {
+  width: 100%;
+}
+
+.tag-dropdown > div {
+  max-height: 70vh;
+}
+
+.tag-dropdown > div > ul {
+  max-height: unset;
+}
