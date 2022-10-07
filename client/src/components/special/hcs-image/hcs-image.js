@@ -498,8 +498,8 @@ class HcsImage extends React.PureComponent {
                 (anImage.channels || []).forEach((channel, channelIndex) => {
                   analysisInputs.push({
                     sourceDirectory: sequence.sourceDirectory,
-                    x: column,
-                    y: row,
+                    x: column + 1,
+                    y: row + 1,
                     z: Number(z) + 1,
                     t: Number(aTimePoint) + 1,
                     fieldID: anImage.fieldID,
