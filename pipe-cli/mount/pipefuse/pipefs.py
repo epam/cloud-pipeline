@@ -323,16 +323,63 @@ class PipeFS(Operations, ChainingService):
         return 0
 
 
-class SupportedOperationsFS(ChainingService):
+class ResilientFS(ChainingService):
+
+    def __init__(self, inner):
+        """
+        Resilient File System.
+
+        It properly handles underlying file system errors.
+
+        :param inner: Decorating file system.
+        """
+        self._inner = inner
+
+    def __getattr__(self, name):
+        if not hasattr(self._inner, name):
+            return None
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+        return self._wrap(attr)
+
+    def __call__(self, name, *args, **kwargs):
+        if not hasattr(self._inner, name):
+            return getattr(self, name)(*args, **kwargs)
+        attr = getattr(self._inner, name)
+        return self._wrap(attr)(*args, **kwargs)
+
+    def _wrap(self, attr):
+        @functools.wraps(attr)
+        def _wrapped_attr(*args, **kwargs):
+            try:
+                return attr(*args, **kwargs)
+            except UnsupportedOperationException:
+                raise FuseOSError(errno.ENOTSUP)
+            except ForbiddenOperationException:
+                raise FuseOSError(errno.EACCES)
+            except NotFoundOperationException:
+                raise FuseOSError(errno.ENOENT)
+            except NoDataOperationException:
+                raise FuseOSError(errno.ENODATA)
+            except InvalidOperationException:
+                raise FuseOSError(errno.EINVAL)
+            except Exception:
+                logging.exception('Uncaught exception from underlying file system.')
+                raise FuseOSError(errno.EINVAL)
+        return _wrapped_attr
+
+
+class RestrictingOperationsFS(ChainingService):
 
     def __init__(self, inner, exclude):
         """
-        Supported operations File System.
+        Restricting operations File System.
 
         It allows only certain operations processing.
 
         :param inner: Decorating file system.
-        :param exclude: Unsupported operations.
+        :param exclude: Excluding operations.
         """
         self._inner = inner
         self._exclude = exclude
@@ -357,19 +404,8 @@ class SupportedOperationsFS(ChainingService):
             method_name = name or args[0]
             if method_name in self._exclude:
                 logging.debug('Aborting excluded operation %s processing...', method_name)
-                raise FuseOSError(errno.ENOTSUP)
-            try:
-                return attr(*args, **kwargs)
-            except UnsupportedOperationException:
-                raise FuseOSError(errno.ENOTSUP)
-            except ForbiddenOperationException:
-                raise FuseOSError(errno.EACCES)
-            except NotFoundOperationException:
-                raise FuseOSError(errno.ENOENT)
-            except NoDataOperationException:
-                raise FuseOSError(errno.ENODATA)
-            except InvalidOperationException:
-                raise FuseOSError(errno.EINVAL)
+                raise UnsupportedOperationException()
+            return attr(*args, **kwargs)
         return _wrapped_attr
 
     def parameters(self):

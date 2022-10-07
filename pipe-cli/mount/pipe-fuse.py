@@ -57,14 +57,14 @@ from pipefuse.fslock import get_lock
 from pipefuse.fuseutils import MB, GB
 from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
 from pipefuse.path import PathExpandingStorageFileSystemClient
-from pipefuse.pipefs import PipeFS, SupportedOperationsFS
+from pipefuse.pipefs import PipeFS, RestrictingOperationsFS, ResilientFS
 from pipefuse.record import RecordingFileSystemClient, RecordingFS
 from pipefuse.s3 import S3StorageLowLevelClient
 from pipefuse.storage import StorageHighLevelFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
-from pipefuse.webdav import WebDavClient, WebDavAdapterFileSystemClient
+from pipefuse.webdav import WebDavClient, ResilientWebDavFileSystemClient
 from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributesCache, \
     ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
 
@@ -104,8 +104,10 @@ def start(mountpoint, webdav, bucket,
     if not bearer:
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         client = WebDavClient(webdav_url=webdav, bearer=bearer)
-        client = WebDavAdapterFileSystemClient(client)
+        client = ResilientWebDavFileSystemClient(client)
     else:
         if not api:
             raise RuntimeError('Cloud Pipeline API should be specified.')
@@ -184,7 +186,9 @@ def start(mountpoint, webdav, bucket,
     else:
         logging.info('All extended attributes operations will be disabled.')
         disabled_operations.extend(_xattrs_operations)
-    fs = SupportedOperationsFS(fs, exclude=disabled_operations)
+    if disabled_operations:
+        fs = RestrictingOperationsFS(fs, exclude=disabled_operations)
+    fs = ResilientFS(fs)
     if recording:
         fs = RecordingFS(fs)
 

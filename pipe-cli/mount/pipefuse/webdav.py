@@ -21,9 +21,7 @@ from numbers import Number
 import datetime
 import easywebdav
 import pytz
-import requests
 import time
-import urllib3
 from dateutil.tz import tzlocal
 from requests import cookies
 
@@ -40,15 +38,24 @@ else:
     from urllib.parse import urlparse, quote, unquote
 
 
-class WebDavAdapterFileSystemClient(ChainingService):
+class ResilientWebDavFileSystemClient(ChainingService):
 
     def __init__(self, inner):
+        """
+        Resilient WebDav File System Client.
+
+        It properly handles underlying WebDav client errors.
+
+        See https://www.rfc-editor.org/rfc/rfc4918.html.
+
+        :param inner: Decorating file system client.
+        """
         self._inner = inner
         self._mappings = {
             401: ForbiddenOperationException,
             403: ForbiddenOperationException,
-            405: ForbiddenOperationException,
             404: NotFoundOperationException,
+            405: NotFoundOperationException,
         }
         self._default = InvalidOperationException
 
@@ -67,6 +74,9 @@ class WebDavAdapterFileSystemClient(ChainingService):
                 return attr(*args, **kwargs)
             except easywebdav.OperationFailed as e:
                 logging.exception('WebDav call has failed with %s http code.' % e.actual_code)
+                if e.actual_code < 400:
+                    logging.warning('WebDav call has failed with non error %s http code. '
+                                    'Please send the log to Cloud Pipeline support team.')
                 error = self._mappings.get(e.actual_code)
                 if error:
                     raise error()
@@ -92,32 +102,13 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
     # 'Wed, 28 Aug 2019 12:18:02 GMT'
     M_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %Z"
 
-    def __init__(self, webdav_url, auth=None, username=None, password=None,
-                 verify_ssl=False, cert=None, bearer=None):
+    def __init__(self, webdav_url, bearer):
         url = urlparse(webdav_url)
-        host = url.scheme + '://' + url.netloc
-        path = url.path
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        self.host = host
-        self.baseurl = host.rstrip('/')
-        if path:
-            self.baseurl = '{0}/{1}'.format(self.baseurl, path.lstrip('/'))
-        self.cwd = '/'
-        self.root_path = path if path.startswith(self.cwd) else self.cwd + path
-        self.session = requests.session()
-        self.session.verify = verify_ssl
-        self.session.stream = True
-        if not bearer and not auth:
-            logging.warning("Authorization is not configured for Webdav client.")
-        if bearer:
-            cookie_obj = cookies.create_cookie(name='bearer', value=bearer)
-            self.session.cookies.set_cookie(cookie_obj)
-        if cert:
-            self.session.cert = cert
-        if auth:
-            self.session.auth = auth
-        elif username and password:
-            self.session.auth = (username, password)
+        super(WebDavClient, self).__init__(protocol=url.scheme, host=url.hostname, port=url.port,
+                                           path=url.path.lstrip('/'), verify_ssl=False)
+        self.session.cookies.set_cookie(cookies.create_cookie(name='bearer', value=bearer))
+        self.host_url = url.scheme + '://' + url.netloc
+        self.root_path = url.path if url.path.startswith(self.cwd) else self.cwd + url.path
 
     def is_available(self):
         try:
@@ -209,7 +200,5 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
     def _get_url(self, path):
         path = quote(str(path).strip())
         if path.startswith(self.root_path):
-            return self.host + path
-        if path.startswith('/'):
-            return fuseutils.join_path_with_delimiter(self.baseurl, path)
-        return ''.join((self.baseurl, self.cwd, path))
+            return self.host_url + path
+        return fuseutils.join_path_with_delimiter(self.baseurl, path, delimiter=self.cwd)
