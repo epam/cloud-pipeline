@@ -202,8 +202,10 @@ public class S3HelperTest {
         final ObjectListing bucketListing = spy(new ObjectListing());
         final S3ObjectSummary firstFileSummary = new S3ObjectSummary();
         firstFileSummary.setKey(firstFileOldPath);
+        firstFileSummary.setStorageClass(S3Helper.STANDARD_STORAGE_CLASS);
         final S3ObjectSummary secondFileSummary = new S3ObjectSummary();
         secondFileSummary.setKey(secondFileOldPath);
+        secondFileSummary.setStorageClass(S3Helper.STANDARD_STORAGE_CLASS);
         when(bucketListing.getObjectSummaries()).thenReturn(Arrays.asList(firstFileSummary, secondFileSummary));
         when(amazonS3.listObjects(any(ListObjectsRequest.class)))
                 .thenReturn(sourceListing, destinationListing, bucketListing);
