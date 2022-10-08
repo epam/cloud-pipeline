@@ -52,11 +52,6 @@ function colorToVec4 (aColor) {
 @inject('themes')
 @observer
 class HcsCellSelector extends React.Component {
-  /**
-   * Size of the unit (field) in pixels; unitScale > 0
-   * @type {number}
-   */
-  unitScale = 1.0;
   width = 1;
   height = 1;
   needRender = true;
@@ -88,6 +83,10 @@ class HcsCellSelector extends React.Component {
   selectionColor = [0, 1, 1, 1.0];
   selectedColor = [0, 1, 1, 1.0];
   selectedHoverColor = [0, 1, 1, 1.0];
+
+  setNeedRedraw = () => {
+    this.needRender = true;
+  }
 
   updateColors = () => {
     const {themes} = this.props;
@@ -300,10 +299,6 @@ class HcsCellSelector extends React.Component {
     this.textCtx = undefined;
     this.buffers = undefined;
     this.defaultGlProgram = undefined;
-  }
-
-  setNeedRedraw = () => {
-    this.needRender = true;
   }
 
   initializeViewport = () => {
