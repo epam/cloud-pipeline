@@ -131,7 +131,7 @@ class HcsCellSelector extends React.Component {
       } else {
         this._center = value;
       }
-      this.needRender = true;
+      this.setNeedRedraw();
     }
   }
 
@@ -172,7 +172,7 @@ class HcsCellSelector extends React.Component {
     const newUnitScale = Math.min(UNIT_MAX_SCALE, Math.max(this.unitMinScale, value));
     if (newUnitScale !== this._unitScale) {
       this._unitScale = newUnitScale;
-      this.needRender = true;
+      this.setNeedRedraw();
       this.zoomOutAvailable = newUnitScale > this.unitMinScale;
       this.zoomInAvailable = newUnitScale < UNIT_MAX_SCALE;
     }
@@ -227,7 +227,7 @@ class HcsCellSelector extends React.Component {
       )
     ) {
       this._hoveredElement = element;
-      this.needRender = true;
+      this.setNeedRedraw();
     }
   }
 
@@ -248,7 +248,7 @@ class HcsCellSelector extends React.Component {
         horizontal: !!horizontal,
         vertical: !!vertical
       };
-      this.needRender = true;
+      this.setNeedRedraw();
     }
   }
 
@@ -294,7 +294,12 @@ class HcsCellSelector extends React.Component {
     if (themes) {
       themes.removeThemeChangedListener(this.updateColors);
     }
-    // todo: destroy buffers
+    this.canvas = undefined;
+    this.textCanvas = undefined;
+    this.ctx = undefined;
+    this.textCtx = undefined;
+    this.buffers = undefined;
+    this.defaultGlProgram = undefined;
   }
 
   setNeedRedraw = () => {
@@ -328,7 +333,7 @@ class HcsCellSelector extends React.Component {
     });
     this.buildDefaultScale();
     this.hoveredElement = undefined;
-    this.needRender = true;
+    this.setNeedRedraw();
   };
 
   buildDefaultScale = () => {
@@ -381,7 +386,7 @@ class HcsCellSelector extends React.Component {
           this.fitCenter = this.center;
         }
       }
-      this.needRender = true;
+      this.setNeedRedraw();
     }
   };
 
@@ -391,6 +396,7 @@ class HcsCellSelector extends React.Component {
       this.canvas.addEventListener('mousedown', this.onMouseDown);
       window.addEventListener('mousemove', this.onMouseMove);
       window.addEventListener('mouseup', this.onMouseUp);
+      window.addEventListener('visibilitychange', this.setNeedRedraw);
     }
   };
 
@@ -400,6 +406,7 @@ class HcsCellSelector extends React.Component {
       this.canvas.removeEventListener('mousedown', this.onMouseDown);
       window.removeEventListener('mousemove', this.onMouseMove);
       window.removeEventListener('mouseup', this.onMouseUp);
+      window.removeEventListener('visibilitychange', this.setNeedRedraw);
     }
   };
 
@@ -717,7 +724,7 @@ class HcsCellSelector extends React.Component {
         vertical: this.mouseEvent.verticalScrollBar,
         horizontal: this.mouseEvent.horizontalScrollBar
       };
-      this.needRender = true;
+      this.setNeedRedraw();
       return;
     }
     if (this.mouseEvent) {
@@ -744,7 +751,7 @@ class HcsCellSelector extends React.Component {
       this.mouseEvent.endPx = endPx;
       this.mouseEvent.endUnits = this.pxPointToUnitPoint(endPx);
       this.mouseEvent.elements = this.getElementsWithinArea(this.mouseEvent.startUnits, this.mouseEvent.endUnits);
-      this.needRender = true;
+      this.setNeedRedraw();
       return;
     }
     if (event.target === this.canvas) {
@@ -819,7 +826,7 @@ class HcsCellSelector extends React.Component {
     }
     this.hoveredElement = undefined;
     this.mouseEvent = undefined;
-    this.needRender = true;
+    this.setNeedRedraw();
   };
 
   canvasInitializer = (aCanvas) => {
@@ -831,7 +838,12 @@ class HcsCellSelector extends React.Component {
       this.defaultGlProgram = createGLProgram(this.ctx);
       this.initializeEventListeners();
       this.resizeCanvas();
-      this.needRender = true;
+      this.setNeedRedraw();
+    } else if (!aCanvas) {
+      this.canvas = undefined;
+      this.ctx = undefined;
+      this.buffers = undefined;
+      this.defaultGlProgram = undefined;
     }
   };
 
@@ -840,7 +852,10 @@ class HcsCellSelector extends React.Component {
       this.textCanvas = textCanvas;
       this.textCtx = this.textCanvas.getContext('2d');
       this.resizeCanvas();
-      this.needRender = true;
+      this.setNeedRedraw();
+    } else if (!textCanvas) {
+      this.textCanvas = undefined;
+      this.textCtx = undefined;
     }
   };
 
