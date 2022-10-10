@@ -105,6 +105,7 @@ class HcsFileTagProcessor:
                 tag_key = layer.find(ome_schema + 'Name').text
                 if not tag_key:
                     continue
+                tag_key = tag_key.encode('utf-8').strip()
                 for well in layer.findall(ome_schema + 'Well'):
                     well_key = (well.find(ome_schema + 'Row').text, well.find(ome_schema + 'Col').text)
                     tag_value = well.find(ome_schema + 'Value').text
@@ -114,7 +115,9 @@ class HcsFileTagProcessor:
                         result[well_key] = {}
                     if tag_key not in result[well_key]:
                         result[well_key][tag_key] = []
-                    result[well_key][tag_key].append(tag_value.encode('utf-8'))
+                    tag_value = tag_value.encode('utf-8').strip()
+                    for val in tag_value.split(TAG_DELIMITER):
+                        result[well_key][tag_key].append(val.strip())
         return result
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
@@ -227,13 +230,13 @@ class HcsFileTagProcessor:
                 continue
             existing_values = existing_attributes_dictionary[attribute_name]
             existing_attribute_id = existing_values[0]['attributeId']
-            existing_values_names = [existing_value['value'] for existing_value in existing_values]
+            existing_values_names = [existing_value['value'].encode('utf-8') for existing_value in existing_values]
             for val in values_to_push:
                 if val not in existing_values_names:
-                    existing_values.append({'key': attribute_name, 'value': val.encode('utf-8')})
+                    existing_values.append({'key': attribute_name, 'value': val})
                     attribute_updates.append({'id': int(existing_attribute_id),
                                               'key': attribute_name, 'values': existing_values})
-            pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, value.encode('utf-8')))
+            pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, value))
         if attribute_updates:
             self.log_processing_info('Updating following categorical attributes before tagging: {}'
                                      .format(attribute_updates))

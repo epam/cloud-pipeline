@@ -467,9 +467,9 @@ class HcsFileParser:
         for well_key, fields_list in measured_wells.items():
             chunks = well_key.split(PLANE_COORDINATES_DELIMITER)
             well_tuple = (chunks[0], chunks[1])
+            well_tags = wells_tags.get(well_tuple, {})
             wells_mapping[well_key] = self.build_well_details(fields_list, well_size, is_well_round,
-                                                              wells_grid_mapping[well_tuple],
-                                                              wells_tags[well_tuple])
+                                                              wells_grid_mapping[well_tuple], well_tags)
         preview_ome_xml_info_root = ET.parse(preview_ome_xml_file_path).getroot()
         preview_ome_plate = self.extract_plate_from_ome_xml(preview_ome_xml_info_root)
         for well in preview_ome_plate.findall(ome_schema_prefix + 'Well'):
@@ -663,7 +663,7 @@ class HcsFileParser:
         y_merged_size = int(well.get_height() * image_size)
         merged_size = max(x_merged_size, y_merged_size)
         result = np.zeros((merged_size, merged_size))
-        print("Result %s %dx%d" % (name, merged_size, merged_size))
+        self._processing_logger.log_info("Merging images %s %dx%d" % (name, merged_size, merged_size))
 
         for name, coord in coordinates.items():
             coord[0] = coord[0] - x_start
