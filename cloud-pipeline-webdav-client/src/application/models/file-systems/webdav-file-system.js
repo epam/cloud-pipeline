@@ -368,14 +368,15 @@ class WebdavFileSystem extends FileSystem {
               setTimeout(resolve, 500, e);
             });
             writeStream.on('error', ({message}) => {
-              const regexp = /Request failed with status code (401|403)/i;
+              const regexp = /request failed with status code (401|403)(\s|$)/i;
               if (regexp.test(message)) {
                   const deniedMessage = 'Access denied';
                   error(deniedMessage);
                   reject(deniedMessage);
+              } else {
+                error(message);
+                reject(message);
               }
-              error(message);
-              reject(message);
             });
           })
           .catch(({message}) => {
