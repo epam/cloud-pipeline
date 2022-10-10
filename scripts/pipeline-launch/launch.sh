@@ -63,7 +63,7 @@ function clone_repository {
                   _RECURSIVE_CLONE="--recurse-submodules"
             fi
 
-            git  -c http.sslVerify=false  clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" "${_RECURSIVE_CLONE}"  -q
+            git  -c http.sslVerify=false  clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" ${_RECURSIVE_CLONE}  -q
             _CLONE_RESULT=$?
 
             if [ $_CLONE_RESULT -ne 0 ]; 
