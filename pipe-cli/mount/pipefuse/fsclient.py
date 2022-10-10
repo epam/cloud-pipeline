@@ -20,7 +20,27 @@ from pipefuse.chain import ChainingService
 File = namedtuple('File', ['name', 'size', 'mtime', 'ctime', 'contenttype', 'is_dir'])
 
 
-class UnsupportedOperationException(RuntimeError):
+class FileSystemOperationException(RuntimeError):
+    pass
+
+
+class UnsupportedOperationException(FileSystemOperationException):
+    pass
+
+
+class ForbiddenOperationException(FileSystemOperationException):
+    pass
+
+
+class NotFoundOperationException(FileSystemOperationException):
+    pass
+
+
+class NoDataOperationException(FileSystemOperationException):
+    pass
+
+
+class InvalidOperationException(FileSystemOperationException):
     pass
 
 
