@@ -368,8 +368,15 @@ class WebdavFileSystem extends FileSystem {
               setTimeout(resolve, 500, e);
             });
             writeStream.on('error', ({message}) => {
-              error(message);
-              reject(message);
+              const code = +message.match(/\d/g).join('');
+              if (code && (code === 403 || code === 401)) {
+                const deniedMessage = 'Access denied';
+                error(deniedMessage);
+                reject(deniedMessage);
+              } else {
+                error(message);
+                reject(message);
+              }
             });
           })
           .catch(({message}) => {
