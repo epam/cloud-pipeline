@@ -504,20 +504,25 @@ export default class Browser extends React.Component {
           .filter(o => o.path &&
             !masks.some(mask => mask.test(o.path.startsWith('/') ? o.path : '/'.concat(o.path)))
           )
-          .map(i => ({
-            key: `${i.type}_${i.path}`,
-            ...i,
-            downloadable: preferences.dataSharingDownloadEnabled &&
-              i.type.toLowerCase() === 'file' && !i.deleteMarker &&
-              (
-                !i.labels ||
-                !i.labels['StorageClass'] ||
-                i.labels['StorageClass'].toLowerCase() !== 'glacier'
-              ),
-            editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
-            deletable: roleModel.writeAllowed(this.props.info.value),
-            selectable: !i.deleteMarker
-          }))
+          .map(i => {
+            const archived = i.labels &&
+              i.labels['StorageClass'] &&
+              i.labels['StorageClass'].toLowerCase() !== 'standard';
+            return {
+              key: `${i.type}_${i.path}`,
+              ...i,
+              downloadable: preferences.dataSharingDownloadEnabled &&
+                i.type.toLowerCase() === 'file' &&
+                !i.deleteMarker &&
+                !archived,
+              editable: roleModel.writeAllowed(this.props.info.value) &&
+                !i.deleteMarker &&
+                !archived,
+              deletable: roleModel.writeAllowed(this.props.info.value) &&
+               !archived,
+              selectable: !i.deleteMarker
+            };
+          })
       );
       return items;
     };
