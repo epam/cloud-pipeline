@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,19 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 export default class EmailPreview extends React.Component {
-
   static propTypes = {
     value: PropTypes.string,
     style: PropTypes.object,
     className: PropTypes.string,
-    iFrameStyle: PropTypes.object
+    iFrameStyle: PropTypes.object,
+    renderIntoDiv: PropTypes.bool
   };
 
+  static defaultProps = {
+    renderIntoDiv: false
+  };
+
+  // eslint-disable-next-line max-len
   codeTemplateStyle = 'padding: 2px 4px;font-size: 90%;color: #c7254e;background-color: #f9f2f4;border-radius: 4px;box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);';
 
   processHtml = (regexp, fieldRegex, html) => {
@@ -54,9 +59,14 @@ export default class EmailPreview extends React.Component {
     let result = html.match(regexp);
     const isField = (str, field) => {
       const check = (checkString, openTag, closeTag) => {
-        const openIndex = checkString.toLowerCase().indexOf(openTag.toLowerCase());
+        const openIndex = checkString
+          .toLowerCase()
+          .indexOf(openTag.toLowerCase());
         if (openIndex >= 0) {
-          const closeIndex = checkString.substring(openIndex + openTag.length).toLowerCase().indexOf(closeTag.toLowerCase());
+          const closeIndex = checkString
+            .substring(openIndex + openTag.length)
+            .toLowerCase()
+            .indexOf(closeTag.toLowerCase());
           if (closeIndex >= 0) {
             return {
               pass: true,
@@ -115,25 +125,62 @@ export default class EmailPreview extends React.Component {
   getValue = () => {
     let value = this.props.value;
     if (value) {
-      value = this.processHtml(/\$templateParameters(\.get\("[^\W ]+"\))+/, /.get\("([^\W ]+)"\)/, value);
-      value = this.processHtml(/\$templateParameters(\["[^\W ]+"\])+/, /\["([^\W ]+)"\]/, value);
+      value = this.processHtml(
+        /\$templateParameters(\.get\("[^\W ]+"\))+/,
+        /.get\("([^\W ]+)"\)/,
+        value
+      );
+      value = this.processHtml(
+        /\$templateParameters(\["[^\W ]+"\])+/,
+        /\["([^\W ]+)"\]/,
+        value
+      );
     }
     return value;
   };
 
   render () {
+    const {
+      style,
+      className,
+      renderIntoDiv,
+      iFrameStyle
+    } = this.props;
+    if (renderIntoDiv) {
+      return (
+        <div
+          className={className}
+          style={Object.assign(
+            {
+              backgroundColor: 'white',
+              color: 'black',
+              border: 'none',
+              borderRadius: '3px',
+              fontFamily: 'initial',
+              fontSize: 'medium',
+              padding: '4px 8px',
+              minHeight: '32px'
+            },
+            style
+          )}
+          dangerouslySetInnerHTML={{__html: this.getValue()}}
+        />
+      );
+    }
     return (
       <div
-        className={this.props.className}
-        style={this.props.style}>
+        className={className}
+        style={style}
+      >
         <iframe
-          style={this.props.iFrameStyle || {
+          style={iFrameStyle || {
             width: '100%',
             height: '100%',
             border: 'none',
             backgroundColor: 'white'
           }}
-          src={`data:text/html;charset=utf-8,${encodeURIComponent(this.getValue())}`} />
+          src={`data:text/html;charset=utf-8,${encodeURIComponent(this.getValue())}`}
+        />
       </div>
     );
   }
