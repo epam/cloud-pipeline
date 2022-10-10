@@ -1,0 +1,14 @@
+certifi==2021.10.8
+chardet==3.0.4
+idna==2.8
+iniparse==0.4
+kitchen==1.1.1
+pycurl==7.19.0
+pygobject==3.22.0
+pygpgme==0.3
+pyliblzma==0.5.3
+pyxattr==0.5.1
+requests==2.21.0
+urlgrabber==3.10
+urllib3==1.24.3
+yum-metadata-parser==1.1.4
