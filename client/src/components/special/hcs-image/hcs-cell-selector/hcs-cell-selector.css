@@ -51,3 +51,21 @@
   padding: 0 3px;
   font-size: larger;
 }
+
+.tags {
+  display: flex;
+  align-items: center;
+}
+
+.tags-selector {
+  flex: 1;
+  margin: 5px 0;
+}
+
+.tag-dropdown > div {
+  max-height: 70vh;
+}
+
+.tag-dropdown > div > ul {
+  max-height: unset;
+}

@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
-import {Icon} from 'antd';
+import {Icon, Select} from 'antd';
 import createBuffers from './buffers';
 import {mat4translate, mat4scale, mat4identity} from './matrix-functions';
 import {createGLProgram, resizeCanvas, getLinesToDraw} from './canvas-utilities';
@@ -49,6 +49,18 @@ function colorToVec4 (aColor) {
   return [r / 255.0, g / 255.0, b / 255.0, a];
 }
 
+function buildTagValue (tag, value) {
+  return `${tag}|${value}`;
+}
+
+function parseTagValue (tagValue) {
+  const [tag, ...valueParts] = (tagValue || '').split('|');
+  return {
+    tag,
+    value: valueParts.join('|')
+  };
+}
+
 @inject('themes')
 @observer
 class HcsCellSelector extends React.Component {
@@ -74,6 +86,7 @@ class HcsCellSelector extends React.Component {
   @observable zoomInAvailable;
   @observable fitScale;
   @observable fitCenter;
+  @observable hint;
 
   backgroundColor = [1.0, 1.0, 1.0, 1.0];
   textColor = [0, 0, 0, 0.65];
@@ -83,6 +96,11 @@ class HcsCellSelector extends React.Component {
   selectionColor = [0, 1, 1, 1.0];
   selectedColor = [0, 1, 1, 1.0];
   selectedHoverColor = [0, 1, 1, 1.0];
+
+  state = {
+    selectedTags: [],
+    tags: []
+  };
 
   setNeedRedraw = () => {
     this.needRender = true;
@@ -226,6 +244,9 @@ class HcsCellSelector extends React.Component {
       )
     ) {
       this._hoveredElement = element;
+      this.hint = element && element.tags && Object.keys(element.tags).length > 0
+        ? Object.entries(element.tags).map(([key, values]) => `${key}: ${values.join(', ')}`).join('\n')
+        : undefined;
       this.setNeedRedraw();
     }
   }
@@ -271,6 +292,7 @@ class HcsCellSelector extends React.Component {
       themes.addThemeChangedListener(this.updateColors);
     }
     this.updateColors();
+    this.updateTags();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -281,6 +303,7 @@ class HcsCellSelector extends React.Component {
       prevProps.showRulers !== this.props.showRulers
     ) {
       this.initializeViewport();
+      this.updateTags();
     }
     this.setNeedRedraw();
   }
@@ -300,6 +323,75 @@ class HcsCellSelector extends React.Component {
     this.buffers = undefined;
     this.defaultGlProgram = undefined;
   }
+
+  cellIsFiltered = (aCell) => {
+    if (!aCell) {
+      return false;
+    }
+    const {tags = []} = aCell;
+    const {
+      selectedTags = []
+    } = this.state;
+    if (selectedTags.length === 0) {
+      return true;
+    }
+    const selected = selectedTags.map(parseTagValue);
+    const groups = [...new Set(selected.map(o => o.tag))];
+    for (let g = 0; g < groups.length; g++) {
+      const aGroup = groups[g];
+      const values = new Set(selected.filter(o => o.tag === aGroup).map(o => o.value));
+      const tagValues = tags[aGroup] || [];
+      if (tagValues.length === 0) {
+        return false;
+      }
+      let tagMatches = false;
+      for (let i = 0; i < tagValues.length; i++) {
+        tagMatches = tagMatches || values.has(tagValues[i]);
+      }
+      if (!tagMatches) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  updateTags = () => {
+    const {
+      cells = []
+    } = this.props;
+    const tagGroups = [];
+    cells.forEach(aCell => {
+      const {
+        tags = {}
+      } = aCell;
+      Object.entries(tags)
+        .forEach(([tagName, tagValues = []]) => {
+          if (tagValues.length === 0) {
+            return;
+          }
+          let tagGroup = tagGroups.find(group => group.name === tagName);
+          if (!tagGroup) {
+            tagGroup = {
+              name: tagName,
+              values: []
+            };
+            tagGroups.push(tagGroup);
+          }
+          tagValues.forEach(tagValue => {
+            if (!tagGroup.values.includes(tagValue)) {
+              tagGroup.values.push(tagValue);
+            }
+          });
+        });
+    });
+    tagGroups.forEach(tagGroup => {
+      tagGroup.values.sort();
+    });
+    this.setState({
+      tags: tagGroups,
+      selectedTags: []
+    });
+  };
 
   initializeViewport = () => {
     const {
@@ -1149,13 +1241,21 @@ class HcsCellSelector extends React.Component {
       }
       return this.isCellSelected(element);
     };
-    this.elements
+    const filtered = this.elements.filter(this.cellIsFiltered);
+    const unFiltered = this.elements.filter(aCell => !this.cellIsFiltered(aCell));
+    unFiltered
+      .filter(element => element !== this.hoveredElement && !elementIsSelected(element))
+      .forEach(element => renderElement(element, {stroke: this.primaryColor}));
+    unFiltered
+      .filter(element => elementIsSelected(element))
+      .forEach(element => renderElement(element, {stroke: this.selectedColor}));
+    filtered
       .filter(element => element !== this.hoveredElement && !elementIsSelected(element))
       .forEach(element => renderElement(element, {fill: this.primaryColor}));
-    this.elements
+    filtered
       .filter(element => elementIsSelected(element))
       .forEach(element => renderElement(element, {fill: this.selectedColor}));
-    this.elements
+    filtered
       .filter(element => element !== this.hoveredElement)
       .forEach(element => renderElement(element, {stroke: this.defaultColor}));
     if (this.hoveredElement) {
@@ -1467,6 +1567,59 @@ class HcsCellSelector extends React.Component {
     this.drawScrollbars();
   };
 
+  renderTagsSelector = () => {
+    const {
+      tags = [],
+      selectedTags = []
+    } = this.state;
+    const {
+      searchPlaceholder = 'Search'
+    } = this.props;
+    if (tags.length === 0) {
+      return null;
+    }
+    const onChange = (selected) => this.setState({
+      selectedTags: selected
+    }, () => this.setNeedRedraw());
+    return (
+      <div
+        className={styles.tags}
+      >
+        <Select
+          allowClear
+          mode="multiple"
+          className={styles.tagsSelector}
+          dropdownClassName={styles.tagDropdown}
+          placeholder={searchPlaceholder}
+          notFoundContent="Not found"
+          value={selectedTags}
+          onChange={onChange}
+          filterOption={(input, option) => {
+            return (option.props.tagValue || '').toLowerCase().indexOf((input || '').toLowerCase()) >= 0;
+          }}
+        >
+          {
+            tags.map((tag) => (
+              <Select.OptGroup key={tag.name} label={tag.name}>
+                {
+                  tag.values.map((value) => (
+                    <Select.Option
+                      key={value}
+                      value={buildTagValue(tag.name, value)}
+                      tagValue={value}
+                    >
+                      {value}
+                    </Select.Option>
+                  ))
+                }
+              </Select.OptGroup>
+            ))
+          }
+        </Select>
+      </div>
+    );
+  };
+
   render () {
     const {
       className,
@@ -1525,11 +1678,13 @@ class HcsCellSelector extends React.Component {
             />
           </div>
         </div>
+        {this.renderTagsSelector()}
         <div
           className={styles.canvasContainer}
           ref={this.initializeContainer}
         >
           <canvas
+            title={this.hint}
             ref={this.canvasInitializer}
             style={{position: 'absolute'}}
           />
@@ -1565,7 +1720,8 @@ HcsCellSelector.propTypes = {
   gridMode: PropTypes.oneOf([MESH_MODES.CIRCLES, MESH_MODES.LINES, MESH_MODES.CROSS, MESH_MODES.NONE]),
   showRulers: PropTypes.bool,
   scaleToROI: PropTypes.bool,
-  radius: PropTypes.number
+  radius: PropTypes.number,
+  searchPlaceholder: PropTypes.string
 };
 
 HcsCellSelector.defaultProps = {
