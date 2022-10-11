@@ -119,10 +119,25 @@ class HCSImageSequence {
       this._fetch = new Promise((resolve, reject) => {
         this.generateWellsMapURL()
           .then(() => this.objectStorage.getFileContent(this.wellsMapFileName, {json: true}))
-          .then(json => HCSImageWell.parseWellsInfo(
-            json,
-            {width: this.plateWidth, height: this.plateHeight}
-          ))
+          .then(json => {
+            Object.keys(json).forEach(key => {
+              json[key].tags = {
+                tag1: 'foo',
+                tag2: 'bar',
+                tag3: 'baz'
+              };
+            });
+            return (
+              HCSImageWell.parseWellsInfo(
+                json,
+                {width: this.plateWidth, height: this.plateHeight}
+              )
+            );
+          })
+          .then(wells => {
+            this.tags = [...new Set(...wells.map(well => Object.values(well.tags)))];
+            return wells;
+          })
           .then((wells = []) => {
             this.wells = wells.slice();
             return Promise.resolve();
