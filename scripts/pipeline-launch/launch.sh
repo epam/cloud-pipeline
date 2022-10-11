@@ -2076,8 +2076,8 @@ fi
 echo "Setup custom shells"
 echo "-"
 
-if [ "$CP_CAP_CUSTOM_SHELL_LIST" ]; then
-      custom_shells_setup "$CP_CAP_CUSTOM_SHELL_LIST"
+if [ "$CP_CAP_SHELL_LIST" ]; then
+      custom_shells_setup "$CP_CAP_SHELL_LIST"
 fi
 
 
