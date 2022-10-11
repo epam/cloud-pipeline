@@ -48,12 +48,12 @@ else
     echo "[INFO] ZSH shell is a default for root and $OWNER now"
 fi
 
-_oh_my_zsh_url=${CP_CAP_CUSTOM_SHELL_LIST_ZSH_OH_MY_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/zsh/oh-my-zsh/install.sh}
+_oh_my_zsh_url=${CP_CAP_SHELL_LIST_ZSH_OH_MY_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/zsh/oh-my-zsh/install.sh}
 
 echo "[INFO] Installing 'oh-my-zsh' framework from '${_oh_my_zsh_url}'"
 
-if [ -d ~/.oh-my-zsh ] && [ "$CP_CAP_CUSTOM_SHELL_LIST_ZSH_REINSTALL" == "true" ]; then
-    echo "[WARN] 'oh-my-zsh' already installed, but forced to reinstall via CP_CAP_CUSTOM_SHELL_LIST_ZSH_REINSTALL"
+if [ -d ~/.oh-my-zsh ] && [ "$CP_CAP_SHELL_LIST_ZSH_REINSTALL" == "true" ]; then
+    echo "[WARN] 'oh-my-zsh' already installed, but forced to reinstall via CP_CAP_SHELL_LIST_ZSH_REINSTALL"
     rm -rf ~/.oh-my-zsh ${OWNER_HOME}/.oh-my-zsh
 fi
 
