@@ -54,10 +54,16 @@ function clone_repository {
       local _RETRIES_COUNT=$3
       local _RETRIES_TIMEOUT=$4
       local _CLONE_RESULT=0
+      local _RECURSIVE_CLONE=""
 
       for _RETRY_ITERATION in $(seq 1 "$_RETRIES_COUNT");
       do
-            git  -c http.sslVerify=false  clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" -q
+            if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ];
+            then
+                  _RECURSIVE_CLONE="--recurse-submodules"
+            fi
+
+            git  -c http.sslVerify=false  clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" ${_RECURSIVE_CLONE}  -q
             _CLONE_RESULT=$?
 
             if [ $_CLONE_RESULT -ne 0 ]; 
@@ -2062,6 +2068,20 @@ fi
 
 ######################################################
 
+
+######################################################
+# Custom shells
+######################################################
+
+echo "Setup custom shells"
+echo "-"
+
+if [ "$CP_CAP_CUSTOM_SHELL_LIST" ]; then
+      custom_shells_setup "$CP_CAP_CUSTOM_SHELL_LIST"
+fi
+
+
+######################################################
 
 ######################################################
 echo Executing task

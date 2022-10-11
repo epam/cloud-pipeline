@@ -73,6 +73,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final ElasticIndexService elasticIndexService;
     private final NFSStorageMounter nfsMounter;
+    private final String tagDelimiter;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     public NFSSynchronizer(@Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
@@ -84,7 +85,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                            CloudPipelineAPIClient cloudPipelineAPIClient,
                            ElasticsearchServiceClient elasticsearchServiceClient,
                            ElasticIndexService elasticIndexService,
-                           NFSStorageMounter nfsMounter) {
+                           NFSStorageMounter nfsMounter,
+                           @Value("${sync.nfs-file.tag.value.delimiter:;}") String tagDelimiter) {
         this.indexSettingsPath = indexSettingsPath;
         this.rootMountPoint = rootMountPoint;
         this.indexPrefix = indexPrefix;
@@ -95,6 +97,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.elasticsearchServiceClient = elasticsearchServiceClient;
         this.elasticIndexService = elasticIndexService;
         this.nfsMounter = nfsMounter;
+        this.tagDelimiter = tagDelimiter;
     }
 
     @Override
@@ -268,6 +271,6 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         //  on ES side to perform both create and update using this method
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
                 .source(fileMapper.fileToDocument(file, dataStorage, null, permissionsContainer,
-                        SearchDocumentType.NFS_FILE));
+                        SearchDocumentType.NFS_FILE, tagDelimiter));
     }
 }

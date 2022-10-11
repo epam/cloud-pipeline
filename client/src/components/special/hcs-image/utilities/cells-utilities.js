@@ -25,15 +25,7 @@ export function cellsAreEqual (a, b) {
   if (!a || !b) {
     return false;
   }
-  const {
-    x: ax,
-    y: ay
-  } = a;
-  const {
-    x: bx,
-    y: by
-  } = b;
-  return Number(ax) === Number(bx) && Number(ay) === Number(by);
+  return a.id === b.id;
 }
 
 export function cellsArraysAreEqual (a, b) {

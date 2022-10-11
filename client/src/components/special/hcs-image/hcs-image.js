@@ -162,7 +162,7 @@ class HcsImage extends React.PureComponent {
     if (sequence) {
       const {selectedWells = []} = this.state;
       const wellIsSelected = aWell => selectedWells
-        .some(o => Number(o.x) === Number(aWell.x) && Number(o.y) === Number(aWell.y));
+        .some(o => o.id === aWell.id);
       const {wells = []} = sequence;
       return wells
         .filter(wellIsSelected)
@@ -180,7 +180,7 @@ class HcsImage extends React.PureComponent {
     if (well) {
       const {selectedFields = []} = this.state;
       const fieldIsSelected = aField => selectedFields
-        .some(o => Number(o.x) === Number(aField.x) && Number(o.y) === Number(aField.y));
+        .some(o => aField.id === o.id);
       return (well.images || [])
         .filter(fieldIsSelected)
         .sort((a, b) => (a.x - b.x) || (a.y - b.y));
@@ -475,27 +475,31 @@ class HcsImage extends React.PureComponent {
       const selectedZCoordinates = zCoordinates.length > 0 ? zCoordinates : [0];
       const analysisInputs = [];
       const imageSelected = anImage => selectedFields
-        .some(aField => aField.x === anImage.x && aField.y === anImage.y);
+        .some(aField => aField.fieldID === anImage.fieldID);
       this.selectedSequences.forEach(sequence => {
         const timePoints = selectedSequenceTimePoints
           .filter(o => o.sequence === sequence.id)
           .map(o => Number(o.timePoint));
         const wells = sequence.wells
-          .filter(aWell => selectedWells.some(w => w.x === aWell.x && w.y === aWell.y));
+          .filter(aWell => selectedWells.some(w => w.id === aWell.id));
         wells.forEach(aWell => {
           const {
             x: row,
             y: column
           } = aWell;
-          const images = aWell.images.filter(imageSelected);
+          let images = aWell.images.filter(imageSelected);
+          if (images.length === 0) {
+            // we should select all fields from the well
+            images = aWell.images.slice();
+          }
           images.forEach(anImage => {
             timePoints.forEach(aTimePoint => {
               selectedZCoordinates.forEach(z => {
                 (anImage.channels || []).forEach((channel, channelIndex) => {
                   analysisInputs.push({
                     sourceDirectory: sequence.sourceDirectory,
-                    x: column,
-                    y: row,
+                    x: column + 1,
+                    y: row + 1,
                     z: Number(z) + 1,
                     t: Number(aTimePoint) + 1,
                     fieldID: anImage.fieldID,
@@ -1009,34 +1013,29 @@ class HcsImage extends React.PureComponent {
           </Select>
           <HcsCellSelector
             className={styles.selectorContainer}
+            title="Plate"
             cells={sequenceInfo.wells}
             selected={selectedWells}
             onChange={this.changeWells}
             width={HcsCellSelector.widthCorrection(plateWidth, sequenceInfo.wells)}
             height={HcsCellSelector.heightCorrection(plateHeight, sequenceInfo.wells)}
-            title="Plate"
-            cellShape={HcsCellSelector.Shapes.circle}
-            showLegend
-            multiple
+            showRulers
           />
           <HcsCellSelector
             className={styles.selectorContainer}
+            title={selectedWell.id}
             cells={selectedWell.images}
-            onChange={this.changeWellImages}
             selected={selectedFields}
+            onChange={this.changeWellImages}
+            gridMode="CROSS"
             width={
               HcsCellSelector.widthCorrection(selectedWell.width, selectedWell.images)
             }
             height={
               HcsCellSelector.heightCorrection(selectedWell.height, selectedWell.images)
             }
-            title={selectedWell.id}
-            cellShape={HcsCellSelector.Shapes.rect}
-            gridShape={HcsCellSelector.Shapes.circle}
-            gridRadius={selectedWell.radius}
-            flipVertical
-            showLegend={false}
-            multiple
+            scaleToROI
+            radius={selectedWell.radius}
           />
           <HcsSequenceSelector
             sequences={this.sequences}

@@ -50,6 +50,7 @@ import PipelineRunSingleFilter from '../../../../../models/pipelines/PipelineRun
 import generateUUID from '../common/generate-uuid';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
 import {generateResourceUrl} from './output-utilities';
+import {getWellRowName} from '../../../hcs-image/hcs-cell-selector/utilities';
 
 const CELLPROFILER_API_BATCH = 'CELLPROFILER_API_BATCH';
 const CELLPROFILER_API_RAW_DATA_ROOT_DIR = 'CELLPROFILER_API_RAW_DATA_ROOT_DIR';
@@ -69,17 +70,6 @@ const CELLPROFILER_API_BATCH_FILE_STORAGE = 'CELLPROFILER_API_BATCH_FILE_STORAGE
 const CELLPROFILER_API_BATCH_FILE_PATH = 'CELLPROFILER_API_BATCH_FILE_PATH';
 const CELLPROFILER_API_BATCH_FILE_NAME = 'CELLPROFILER_API_BATCH_FILE_NAME';
 
-const INDEX_TO_LETTER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-function getRowName (rowIndex) {
-  if (rowIndex < INDEX_TO_LETTER.length) {
-    return INDEX_TO_LETTER[rowIndex];
-  }
-  const next = Math.floor(rowIndex / INDEX_TO_LETTER.length);
-  const current = rowIndex - next * INDEX_TO_LETTER.length;
-  return `${getRowName(next)}${getRowName(current)}`;
-}
-
 /**
  * @param {{files: BatchAnalysisInput[]}} inputs
  */
@@ -93,7 +83,7 @@ export function getInputFilesPresentation (inputs = {}) {
       x: row,
       y: column
     } = input;
-    return `${getRowName(row - 1)}${column}`;
+    return `${getWellRowName(row - 1)}${column}`;
   };
   const wells = [...new Set(files.map(wellPresentation))].sort();
   const timePoints = [...new Set(files.map(input => input.timepoint))].sort((a, b) => a - b);

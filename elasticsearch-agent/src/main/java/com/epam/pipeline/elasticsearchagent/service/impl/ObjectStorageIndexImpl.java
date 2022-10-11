@@ -66,6 +66,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final DataStorageType storageType;
     @Getter
     private final SearchDocumentType documentType;
+    private final String tagDelimiter;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Override
@@ -156,7 +157,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer,
-                        getDocumentType()));
+                        getDocumentType(), tagDelimiter));
     }
 
     private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,

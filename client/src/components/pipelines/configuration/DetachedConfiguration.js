@@ -388,7 +388,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         const request = new ConfigurationUpdate();
         const payload = {
@@ -686,7 +689,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         if (!configuration.configuration) {
           configuration.configuration = {};
@@ -807,7 +813,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         if (!configuration.configuration) {
           configuration.configuration = {};

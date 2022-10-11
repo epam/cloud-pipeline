@@ -12,24 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
-import errno
 import functools
 import io
 import logging
 import os
 import platform
 import stat
-import time
 from threading import RLock
 
-import easywebdav
+import datetime
+import errno
+import time
 from dateutil.tz import tzlocal
-from fuse import FuseOSError, Operations, ENOTSUP
+from fuse import FuseOSError, Operations
 
 from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
-from pipefuse.fsclient import UnsupportedOperationException
+from pipefuse.fsclient import FileSystemOperationException, \
+    UnsupportedOperationException, ForbiddenOperationException, \
+    NotFoundOperationException, NoDataOperationException, InvalidOperationException
 
 
 class FileHandleContainer(object):
@@ -78,7 +79,7 @@ def errorlogged(func):
         path = args[1]
         try:
             return func(*args, **kwargs)
-        except FuseOSError:
+        except FileSystemOperationException:
             raise
         except Exception:
             logging.exception('Error occurred while %s for %s', func.__name__, path)
@@ -128,7 +129,7 @@ class PipeFS(Operations, ChainingService):
         if path == self._root:
             return
         if self._is_skipped_mac_files(path) or not self._client.exists(path):
-            raise FuseOSError(errno.EACCES)
+            raise ForbiddenOperationException()
 
     def chmod(self, path, mode):
         pass
@@ -138,31 +139,28 @@ class PipeFS(Operations, ChainingService):
 
     @errorlogged
     def getattr(self, path, fh=None):
-        try:
-            if self._is_skipped_mac_files(path):
-                raise FuseOSError(errno.ENOENT)
-            props = self._client.attrs(path)
-            if not props:
-                raise FuseOSError(errno.ENOENT)
-            if path == self._root or props.is_dir:
-                mode = stat.S_IFDIR
-            else:
-                mode = stat.S_IFREG
-            attrs = {
-                'st_size': props.size,
-                'st_nlink': 1,
-                'st_mode': mode | self._mode,
-                'st_gid': self._gid,
-                'st_uid': self._uid,
-                'st_atime': time.mktime(datetime.datetime.now(tz=tzlocal()).timetuple())
-            }
-            if props.mtime:
-                attrs['st_mtime'] = props.mtime
-            if props.ctime:
-                attrs['st_ctime'] = props.ctime
-            return attrs
-        except easywebdav.OperationFailed:
-            raise FuseOSError(errno.ENOENT)
+        if self._is_skipped_mac_files(path):
+            raise NotFoundOperationException()
+        props = self._client.attrs(path)
+        if not props:
+            raise NotFoundOperationException()
+        if path == self._root or props.is_dir:
+            mode = stat.S_IFDIR
+        else:
+            mode = stat.S_IFREG
+        attrs = {
+            'st_size': props.size,
+            'st_nlink': 1,
+            'st_mode': mode | self._mode,
+            'st_gid': self._gid,
+            'st_uid': self._uid,
+            'st_atime': time.mktime(datetime.datetime.now(tz=tzlocal()).timetuple())
+        }
+        if props.mtime:
+            attrs['st_mtime'] = props.mtime
+        if props.ctime:
+            attrs['st_ctime'] = props.ctime
+        return attrs
 
     @errorlogged
     def readdir(self, path, fh):
@@ -178,10 +176,10 @@ class PipeFS(Operations, ChainingService):
             yield f
 
     def readlink(self, path):
-        raise FuseOSError(ENOTSUP)
+        raise UnsupportedOperationException()
 
     def mknod(self, path, mode, dev):
-        raise FuseOSError(ENOTSUP)
+        raise UnsupportedOperationException()
 
     @syncronized
     @errorlogged
@@ -191,10 +189,7 @@ class PipeFS(Operations, ChainingService):
     @syncronized
     @errorlogged
     def mkdir(self, path, mode):
-        try:
-            self._client.mkdir(path)
-        except easywebdav.OperationFailed:
-            raise FuseOSError(errno.EACCES)
+        self._client.mkdir(path)
 
     @errorlogged
     def statfs(self, path):
@@ -226,7 +221,7 @@ class PipeFS(Operations, ChainingService):
         self._client.delete(path)
 
     def symlink(self, name, target):
-        raise FuseOSError(ENOTSUP)
+        raise UnsupportedOperationException()
 
     @syncronized
     @errorlogged
@@ -234,7 +229,7 @@ class PipeFS(Operations, ChainingService):
         self._client.mv(old, new)
 
     def link(self, target, name):
-        raise FuseOSError(ENOTSUP)
+        raise UnsupportedOperationException()
 
     @errorlogged
     def utimens(self, path, times=None):
@@ -248,7 +243,7 @@ class PipeFS(Operations, ChainingService):
     def open(self, path, flags):
         if self._client.exists(path):
             return self._container.get()
-        raise FuseOSError(errno.ENOENT)
+        raise NotFoundOperationException()
 
     @syncronized
     @errorlogged
@@ -294,7 +289,7 @@ class PipeFS(Operations, ChainingService):
     def fallocate(self, path, mode, offset, length, fh):
         props = self._client.attrs(path)
         if not props:
-            raise FuseOSError(errno.ENOENT)
+            raise NotFoundOperationException()
         if mode:
             # See http://man7.org/linux/man-pages/man2/fallocate.2.html.
             # https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/falloc.h
@@ -313,7 +308,7 @@ class PipeFS(Operations, ChainingService):
         xattrs = self._client.download_xattrs(path) or {}
         xattr = xattrs.get(name)
         if xattr is None:
-            raise FuseOSError(errno.ENODATA)
+            raise NoDataOperationException()
         return xattr
 
     @errorlogged
@@ -328,16 +323,63 @@ class PipeFS(Operations, ChainingService):
         return 0
 
 
-class SupportedOperationsFS(ChainingService):
+class ResilientFS(ChainingService):
+
+    def __init__(self, inner):
+        """
+        Resilient File System.
+
+        It properly handles underlying file system errors.
+
+        :param inner: Decorating file system.
+        """
+        self._inner = inner
+
+    def __getattr__(self, name):
+        if not hasattr(self._inner, name):
+            return None
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+        return self._wrap(attr)
+
+    def __call__(self, name, *args, **kwargs):
+        if not hasattr(self._inner, name):
+            return getattr(self, name)(*args, **kwargs)
+        attr = getattr(self._inner, name)
+        return self._wrap(attr)(*args, **kwargs)
+
+    def _wrap(self, attr):
+        @functools.wraps(attr)
+        def _wrapped_attr(*args, **kwargs):
+            try:
+                return attr(*args, **kwargs)
+            except UnsupportedOperationException:
+                raise FuseOSError(errno.ENOTSUP)
+            except ForbiddenOperationException:
+                raise FuseOSError(errno.EACCES)
+            except NotFoundOperationException:
+                raise FuseOSError(errno.ENOENT)
+            except NoDataOperationException:
+                raise FuseOSError(errno.ENODATA)
+            except InvalidOperationException:
+                raise FuseOSError(errno.EINVAL)
+            except Exception:
+                logging.exception('Uncaught exception from underlying file system.')
+                raise FuseOSError(errno.EINVAL)
+        return _wrapped_attr
+
+
+class RestrictingOperationsFS(ChainingService):
 
     def __init__(self, inner, exclude):
         """
-        Supported operations File System.
+        Restricting operations File System.
 
         It allows only certain operations processing.
 
         :param inner: Decorating file system.
-        :param exclude: Unsupported operations.
+        :param exclude: Excluding operations.
         """
         self._inner = inner
         self._exclude = exclude
@@ -362,11 +404,8 @@ class SupportedOperationsFS(ChainingService):
             method_name = name or args[0]
             if method_name in self._exclude:
                 logging.debug('Aborting excluded operation %s processing...', method_name)
-                raise FuseOSError(ENOTSUP)
-            try:
-                return attr(*args, **kwargs)
-            except UnsupportedOperationException:
-                raise FuseOSError(ENOTSUP)
+                raise UnsupportedOperationException()
+            return attr(*args, **kwargs)
         return _wrapped_attr
 
     def parameters(self):

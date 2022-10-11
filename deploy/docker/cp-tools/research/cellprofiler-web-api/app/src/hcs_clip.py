@@ -1,6 +1,6 @@
 from .config import Config
 import os
-from tifffile import imread
+from .modules.tifffile_with_offsets import TiffFile, TiffPage
 import numpy as np
 from moviepy.editor import ImageSequenceClip
 import time
@@ -46,9 +46,10 @@ def create_clip(params):
     durations = []
     for seq in sequences.keys():
         timepoints = len(sequences[seq])
-        ome_tiff_path = get_ome_tiff_path(preview_dir, seq, by_field)
+        ome_tiff_path, offsets_path = get_path(preview_dir, seq, by_field)
         pages = get_pages(selected_channel_ids, plane_id, planes, channels_num, timepoints, cell)
-        images = read_images(ome_tiff_path, pages)
+        offsets = get_offsets(offsets_path, pages)
+        images = read_images(ome_tiff_path, pages, offsets)
         curr = 0
         for time_point in range(timepoints):
             channel_images = []
@@ -68,11 +69,14 @@ def create_clip(params):
     return clip_name, round((t1 - t), 2)
 
 
-def read_images(ome_tiff_path, pages):
-    images = imread(ome_tiff_path, key=pages)
-    if len(pages) == 1:
-        image_width, image_height = get_image_size(images)
-        images = np.reshape(images, (1, image_width, image_height))
+def read_images(ome_tiff_path, pages, offsets):
+    images = []
+    num = 0
+    tiff_file = TiffFile(ome_tiff_path)
+    for p in pages:
+        img = TiffPage(tiff_file, index=p, offset=offsets[num]).asarray()
+        images.append(img)
+        num = num + 1
     return images
 
 
@@ -96,6 +100,13 @@ def get_pages(channel_ids, plane_id, planes, channels, timepoints, cell):
                     pages.append(num + len(planes) * channels * timepoints * cell)
                 num = num + 1
     return pages
+
+
+def get_offsets(offsets_path, pages):
+    with open(offsets_path, 'r') as offsets_file:
+        offsets_line = offsets_file.read()
+        offsets = offsets_line.replace("[", "").replace("]", "").split(", ")
+        return np.array(offsets, np.int64)[pages]
 
 
 def extract_xml_schema(xml_info_root):
@@ -182,8 +193,13 @@ def get_selected_channels(params, channels):
     return selected_channel_ids, selected_channels
 
 
-def get_ome_tiff_path(preview_dir, seq, by_field):
-    return os.path.join(preview_dir, '{}'.format(seq), 'data.ome.tiff' if by_field else 'overview_data.ome.tiff')
+def get_path(preview_dir, seq, by_field):
+    ome_tiff_file_name = 'data.ome.tiff' if by_field else 'overview_data.ome.tiff'
+    offsets_file_name = 'data.offsets.json' if by_field else 'overview_data.offsets.json'
+    preview_seq_dir = os.path.join(preview_dir, '{}'.format(seq))
+    ome_tiff_path = os.path.join(preview_seq_dir, ome_tiff_file_name)
+    offsets_path = os.path.join(preview_seq_dir, offsets_file_name)
+    return ome_tiff_path, offsets_path
 
 
 def get_channel_params(params, channel):

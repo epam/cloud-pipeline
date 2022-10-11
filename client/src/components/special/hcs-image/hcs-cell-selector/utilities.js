@@ -14,40 +14,13 @@
  *  limitations under the License.
  */
 
-.container {
-  width: 100%;
-  user-select: none;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
+const INDEX_TO_LETTER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-.canvas-container {
-  flex: 1;
-  width: 100%;
-  min-height: 200px;
-}
-
-.header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-}
-
-.title {
-  font-weight: bold;
-}
-
-.zoom-controls {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  margin-left: auto;
-}
-
-.zoom-control-btn {
-  padding: 0 3px;
-  font-size: larger;
+export function getWellRowName (rowIndex) {
+  if (rowIndex < INDEX_TO_LETTER.length) {
+    return INDEX_TO_LETTER[rowIndex];
+  }
+  const next = Math.floor(rowIndex / INDEX_TO_LETTER.length);
+  const current = rowIndex - next * INDEX_TO_LETTER.length;
+  return `${getWellRowName(next - 1)}${getWellRowName(current)}`;
 }

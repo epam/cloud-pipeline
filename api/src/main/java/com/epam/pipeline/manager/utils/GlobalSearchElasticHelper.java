@@ -28,6 +28,7 @@ public class GlobalSearchElasticHelper {
         final String host = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST);
         final Integer port = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT);
         final String schema = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME);
+        final Integer socketTimeout = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SOCKET_TIMEOUT);
 
         Assert.isTrue(Objects.nonNull(host) && Objects.nonNull(port) && Objects.nonNull(schema),
                 "One or more of the following parameters is not configured: "
@@ -35,7 +36,9 @@ public class GlobalSearchElasticHelper {
                         + SystemPreferences.SEARCH_ELASTIC_PORT.getKey() + ", "
                         + SystemPreferences.SEARCH_ELASTIC_SCHEME.getKey()
         );
-        return RestClient.builder(new HttpHost(host, port, schema));
+        return RestClient.builder(new HttpHost(host, port, schema))
+                .setRequestConfigCallback(requestConfigBuilder ->
+                        requestConfigBuilder.setSocketTimeout(socketTimeout));
     }
 
 }
