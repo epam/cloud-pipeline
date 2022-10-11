@@ -28,11 +28,16 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.collections4.ListUtils;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Class represents pipeline configuration, that is described in config.json file and
@@ -201,5 +206,19 @@ public class PipelineConfiguration {
         if (value != null) {
             putParamIfPresent(params, name, String.valueOf(value));
         }
+    }
+
+    @JsonIgnore
+    public List<RunSid> mergeRunSids(final List<RunSid> external) {
+        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(external));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(sharedWithUsers), true));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(sharedWithRoles), false));
+        return new ArrayList<>(runSids);
+    }
+
+    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
+        return runsSids.stream()
+                .peek(runSid -> runSid.setIsPrincipal(principal))
+                .collect(Collectors.toList());
     }
 }

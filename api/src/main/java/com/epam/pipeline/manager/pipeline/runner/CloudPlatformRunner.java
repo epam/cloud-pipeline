@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.ResolvedConfiguration;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -172,6 +173,7 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
             pipelineConfigurationManager.updateWorkerConfiguration(clusterId, startVO, configuration, startNFS, true);
         }
         Pipeline pipeline = entry.getPipelineId() != null ? pipelineManager.load(entry.getPipelineId()) : null;
+        List<RunSid> runSids = configuration.mergeRunSids(startVO.getRunSids());
         List<PipelineRun> result = new ArrayList<>();
         log.debug("Launching total {} copies of entry {}", copies, entry.getName());
         for (int i = 0; i < copies; i++) {
@@ -183,7 +185,7 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
             }
             result.add(pipelineRunManager.launchPipeline(configuration, pipeline, entry.getPipelineVersion(),
                     startVO.getInstanceType(), startVO.getParentNodeId(),
-                    startVO.getConfigurationName(), clusterId, null, entityIds, configurationId, startVO.getRunSids(),
+                    startVO.getConfigurationName(), clusterId, null, entityIds, configurationId, runSids,
                     startVO.getNotifications()));
         }
         return result;

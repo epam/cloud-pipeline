@@ -252,8 +252,7 @@ public class PipelineRunManager {
         checkRunLaunchLimits(runVO);
         final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
-                configuration.getSharedWithRoles()));
+        runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
@@ -329,8 +328,7 @@ public class PipelineRunManager {
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager
                 .getPipelineConfigurationForPipeline(pipeline, runVO);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
-                configuration.getSharedWithRoles()));
+        runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
@@ -1530,21 +1528,6 @@ public class PipelineRunManager {
         return Objects.isNull(parsedImage)
                 ? null
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
-    }
-
-    private List<RunSid> mergeRunSids(final List<RunSid> runSidsFromVO,
-                                      final List<RunSid> userSidsFromConfiguration,
-                                      final List<RunSid> roleSidsFromConfiguration) {
-        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
-        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(userSidsFromConfiguration), true));
-        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(roleSidsFromConfiguration), false));
-        return new ArrayList<>(runSids);
-    }
-
-    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
-        return runsSids.stream()
-                .peek(runSid -> runSid.setIsPrincipal(principal))
-                .collect(Collectors.toList());
     }
 
     private void checkRunLaunchLimits(final PipelineStart runVO) {
