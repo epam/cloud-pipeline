@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
@@ -25,8 +26,9 @@ import {
 } from 'antd';
 import LoadingView from '../../special/LoadingView';
 import EditHotNodePool from './edit-hot-node-pool';
+import fetchData from './hot-cluster-usage/fetch-data';
+import {Period} from '../../special/periods';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
-import pools from '../../../models/cluster/HotNodePools';
 import HotNodePoolUpdate from '../../../models/cluster/HotNodePoolUpdate';
 import HotNodePoolDelete from '../../../models/cluster/HotNodePoolDelete';
 import HotNodePoolScheduleUpdate from '../../../models/cluster/HotNodePoolScheduleUpdate';
@@ -36,7 +38,6 @@ import styles from './hot-node-pool.css';
 
 @inject(() => {
   return {
-    pools,
     clusterNodes
   };
 })
@@ -45,7 +46,38 @@ class HotCluster extends React.Component {
   state = {
     createNewPool: false,
     editablePool: undefined,
-    pending: false
+    pending: false,
+    poolsError: undefined
+  };
+
+  @observable _poolsInfo;
+
+  componentDidMount () {
+    this.fetchPoolsInfo();
+  }
+
+  @computed
+  get poolsInfo () {
+    return this._poolsInfo || [];
+  }
+
+  fetchPoolsInfo = () => {
+    this.setState({
+      pending: true
+    }, async () => {
+      const newState = {
+        pending: false,
+        poolsError: undefined
+      };
+      try {
+        this._poolsInfo = await fetchData(Period.day);
+      } catch (error) {
+        message.error(error.message, 5);
+        newState.poolsError = error.message;
+      } finally {
+        this.setState(newState);
+      }
+    });
   };
 
   operationWrapper = (fn) => (...opts) => {
@@ -91,7 +123,7 @@ class HotCluster extends React.Component {
       e.preventDefault();
     }
     if (pool) {
-      const {pools, clusterNodes: nodes} = this.props;
+      const {clusterNodes: nodes} = this.props;
       const onConfirm = async () => {
         const hide = message.loading('Removing pool...', -1);
         const request = new HotNodePoolDelete(pool.id);
@@ -106,12 +138,12 @@ class HotCluster extends React.Component {
             hide();
             message.error(request.error, 5);
           } else {
-            await pools.fetch();
+            this.fetchPoolsInfo();
             await nodes.fetch();
             hide();
           }
         } else {
-          await pools.fetch();
+          this.fetchPoolsInfo();
           await nodes.fetch();
           hide();
         }
@@ -139,7 +171,7 @@ class HotCluster extends React.Component {
 
   onSaveEditablePool = async (pool, schedule) => {
     const {createNewPool, editablePool} = this.state;
-    const {pools, clusterNodes: nodes} = this.props;
+    const {clusterNodes: nodes} = this.props;
     if (createNewPool) {
       const hide = message.loading('Creating new pool...', -1);
       const scheduleRequest = new HotNodePoolScheduleUpdate();
@@ -158,7 +190,7 @@ class HotCluster extends React.Component {
           hide();
           message.error(request.error || 'Error creating pool', 5);
         } else {
-          await pools.fetch();
+          this.fetchPoolsInfo();
           await nodes.fetch();
           hide();
         }
@@ -188,7 +220,7 @@ class HotCluster extends React.Component {
         hide();
         message.error(request.error || 'Error creating pool', 5);
       } else {
-        await pools.fetch();
+        this.fetchPoolsInfo();
         await nodes.fetch();
         hide();
       }
@@ -197,35 +229,43 @@ class HotCluster extends React.Component {
   };
 
   refresh = async () => {
-    const {pools: poolsRequest, clusterNodes: nodes} = this.props;
-    await poolsRequest.fetch();
+    const {clusterNodes: nodes} = this.props;
+    this.fetchPoolsInfo();
     await nodes.fetch();
   };
 
   onPoolClick = (pool) => {
     const {router} = this.props;
     router.push(`/cluster?pool_id=${pool.id}`);
-  }
+  };
+
+  getLatestPoolStatistics = (statistics = []) => {
+    return statistics
+      .filter(record => record.poolLimit !== undefined && record.poolUsage !== undefined)
+      .pop();
+  };
 
   render () {
     const {
-      pools: poolsRequest,
       clusterNodes: nodes,
       router
     } = this.props;
-    if (
-      (poolsRequest.pending && !poolsRequest.loaded) ||
-      (nodes.pending && !nodes.loaded)
-    ) {
+    const {
+      pending,
+      poolsError,
+      createNewPool,
+      editablePool
+    } = this.state;
+    if (pending || (nodes.pending && !nodes.loaded)) {
       return (
         <LoadingView />
       );
     }
-    if (poolsRequest.error || !poolsRequest.loaded) {
+    if (poolsError) {
       return (
         <Alert
           type="error"
-          message={poolsRequest.error || 'Error fetching hot node pools'}
+          message={poolsError || 'Error fetching hot node pools'}
         />
       );
     }
@@ -237,12 +277,6 @@ class HotCluster extends React.Component {
         />
       );
     }
-    const {value: pools = []} = poolsRequest;
-    const {
-      createNewPool,
-      editablePool,
-      pending
-    } = this.state;
     return (
       <div
         className="cp-panel cp-panel-transparent"
@@ -272,14 +306,15 @@ class HotCluster extends React.Component {
         </div>
         <div>
           {
-            pools.map(pool => (
+            this.poolsInfo.map(info => (
               <PoolCard
                 disabled={pending}
-                key={pool.id}
-                pool={pool}
-                onEdit={this.openEditPoolModal({pool})}
-                onRemove={this.onRemovePool(pool)}
-                onClick={() => this.onPoolClick(pool)}
+                key={info.poolId}
+                onEdit={this.openEditPoolModal({pool: info.pool})}
+                onRemove={this.onRemovePool(info.pool)}
+                onClick={() => this.onPoolClick(info.pool)}
+                pool={info.pool}
+                statistics={this.getLatestPoolStatistics(info.records)}
                 nodes={(nodes.value || []).map(node => node)}
                 router={router}
               />

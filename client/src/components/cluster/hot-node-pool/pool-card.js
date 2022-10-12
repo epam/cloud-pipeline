@@ -109,6 +109,7 @@ function PoolCard ({
   awsRegions,
   disabled,
   pool,
+  statistics = {},
   onEdit,
   onRemove,
   onClick,
@@ -130,13 +131,10 @@ function PoolCard ({
       node.labels.hasOwnProperty('pool_id') &&
       `${node.labels.pool_id}` === `${pool.id}`
     );
-  const runNodes = poolNodes
-    .filter(node => node.labels &&
-      node.labels.hasOwnProperty('runid') &&
-      !/^p-/i.test(`${node.labels.runid}`)
-    );
-  const runs = runNodes.length;
-  const total = poolNodes.length;
+  const runs = statistics.poolUsage;
+  const total = statistics.poolLimit !== undefined
+    ? statistics.poolLimit
+    : poolNodes.length;
   const runsCountLabel = displayCount(runs);
   const totalLabel = displayCount(total);
   const fontSize = total >= 100 ? 10 : 12;
@@ -186,12 +184,17 @@ function PoolCard ({
               showInfo={false}
             />
           </div>
-          <span>
-            {runsCountLabel}
-          </span>
-          <span style={{fontWeight: 'normal', margin: '0 2px'}}>
-            /
-          </span>
+          {runsCountLabel !== undefined ? ([
+            <span key="count">
+              {runsCountLabel}
+            </span>,
+            <span
+              style={{fontWeight: 'normal', margin: '0 2px'}}
+              key="divider"
+            >
+              /
+            </span>
+          ]) : null}
           <span>
             {totalLabel}
           </span>
