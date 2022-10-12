@@ -26,6 +26,7 @@
   flex: 1;
   width: 100%;
   min-height: 200px;
+  position: relative;
 }
 
 .header {
@@ -68,4 +69,13 @@
 
 .tag-dropdown > div > ul {
   max-height: unset;
+}
+
+.tooltip-point {
+  user-select: none;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  background-color: transparent;
 }

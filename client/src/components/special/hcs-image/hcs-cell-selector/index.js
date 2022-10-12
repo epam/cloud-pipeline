@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
-import {Icon, Select} from 'antd';
+import {Icon, Select, Tooltip} from 'antd';
 import createBuffers from './buffers';
 import {mat4translate, mat4scale, mat4identity} from './matrix-functions';
 import {createGLProgram, resizeCanvas, getLinesToDraw} from './canvas-utilities';
@@ -61,7 +61,7 @@ function parseTagValue (tagValue) {
   };
 }
 
-function getElementHint (element) {
+function ElementHint ({element}) {
   if (!element) {
     return undefined;
   }
@@ -70,11 +70,22 @@ function getElementHint (element) {
     x,
     y
   } = element;
-  return [
+  const infos = [
     `${getWellRowName(y)}${x + 1}`,
     ...Object.entries(tags)
       .map(([key, values]) => `${key}: ${values.join(', ')}`)
-  ].join('\n');
+  ];
+  return (
+    <div>
+      {
+        infos.map((info, idx) => (
+          <div key={`hint-${idx}`} style={{margin: '5px 0'}}>
+            {info}
+          </div>
+        ))
+      }
+    </div>
+  );
 }
 
 @inject('themes')
@@ -95,14 +106,13 @@ class HcsCellSelector extends React.Component {
   maxColumnLabelSize = 20;
   maxRowLabelSize = 20;
 
-  _hoveredElement = undefined;
+  @observable _hoveredElement = undefined;
   _scrollBarHovered = {vertical: false, horizontal: false};
 
   @observable zoomOutAvailable;
   @observable zoomInAvailable;
   @observable fitScale;
   @observable fitCenter;
-  @observable hint;
 
   backgroundColor = [1.0, 1.0, 1.0, 1.0];
   textColor = [0, 0, 0, 0.65];
@@ -259,10 +269,12 @@ class HcsCellSelector extends React.Component {
         )
       )
     ) {
+      // we're setting this._hoveredElement to undefined first
+      // to request re-render (as it is observable) WITHOUT tooltip,
+      this._hoveredElement = undefined;
+      // and then setting it to the actual value to display a hint
+      // at the renewed position
       this._hoveredElement = element;
-      this.hint = this.props.showElementHint
-        ? getElementHint(element)
-        : undefined;
       this.setNeedRedraw();
     }
   }
@@ -578,6 +590,23 @@ class HcsCellSelector extends React.Component {
       x: x * this.unitScale,
       y: y * this.unitScale
     };
+  };
+
+  getHoveredElementPointStyle = () => {
+    if (this.hoveredElement) {
+      const {
+        x: left,
+        y: top
+      } = this.unitPointToPxPoint({
+        x: this.hoveredElement.x + (this.hoveredElement.width || 1) / 2.0,
+        y: this.hoveredElement.y + (this.hoveredElement.height || 1) / 2.0
+      });
+      return {
+        left,
+        top
+      };
+    }
+    return {};
   };
 
   getElementsByPosition = (unitPosition, options = {}) => {
@@ -1640,7 +1669,8 @@ class HcsCellSelector extends React.Component {
     const {
       className,
       style,
-      title
+      title,
+      showElementHint
     } = this.props;
     return (
       <div
@@ -1700,10 +1730,23 @@ class HcsCellSelector extends React.Component {
           ref={this.initializeContainer}
         >
           <canvas
-            title={this.hint}
             ref={this.canvasInitializer}
             style={{position: 'absolute'}}
           />
+          {
+            this.hoveredElement && showElementHint && (
+              <Tooltip
+                visible
+                title={(<ElementHint element={this.hoveredElement} />)}
+                overlayStyle={{pointerEvents: 'none'}}
+              >
+                <div
+                  className={styles.tooltipPoint}
+                  style={this.getHoveredElementPointStyle()}
+                />
+              </Tooltip>
+            )
+          }
           <canvas
             ref={this.textCanvasInitializer}
             style={{position: 'absolute', pointerEvents: 'none'}}
