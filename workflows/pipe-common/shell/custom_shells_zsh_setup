@@ -36,18 +36,21 @@ else
     echo "[INFO] ZSH shell has been installed"
 fi
 
-echo "[INFO] Setting ZSH as a default shell"
+if [ "$CP_CAP_SHELL_LIST_ZSH_SET_AS_DEFAULT" == "true" ]; then
+    echo "[INFO] Setting ZSH as a default shell"
 
-chsh -s $(which zsh) root && \
-chsh -s $(which zsh) $OWNER
+    chsh -s $(which zsh) root && \
+    chsh -s $(which zsh) $OWNER
 
-if [ $_install_result -ne 0 ]; then
-    echo "[ERROR] Unable to set ZSH as a default shell"
-    exit 1
+    if [ $_install_result -ne 0 ]; then
+        echo "[ERROR] Unable to set ZSH as a default shell"
+        exit 1
+    else
+        echo "[INFO] ZSH shell is a default for root and $OWNER now"
+    fi
 else
-    echo "[INFO] ZSH shell is a default for root and $OWNER now"
+    echo "[INFO] ZSH will not be set as a default shell. It is not requested"
 fi
-
 _oh_my_zsh_url=${CP_CAP_SHELL_LIST_ZSH_OH_MY_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/zsh/oh-my-zsh/install.sh}
 
 echo "[INFO] Installing 'oh-my-zsh' framework from '${_oh_my_zsh_url}'"
