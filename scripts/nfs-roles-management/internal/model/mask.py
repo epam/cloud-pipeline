@@ -23,6 +23,21 @@ class AbstractMask:
     def is_not_set(cls, mask, permission_mask):
         return mask & permission_mask != permission_mask
 
+    @classmethod
+    def trim(cls, mask, trimming_mask):
+        return mask & trimming_mask
+
+    @classmethod
+    def is_equal(cls, left, right, trimming_mask=None):
+        if trimming_mask:
+            left = Mask.trim(left, trimming_mask=trimming_mask)
+            right = Mask.trim(right, trimming_mask=trimming_mask)
+        return left == right
+
+    @classmethod
+    def is_not_equal(cls, left, right, trimming_mask=None):
+        return not AbstractMask.is_equal(left, right, trimming_mask=trimming_mask)
+
 
 class Mask(AbstractMask):
     """
@@ -32,6 +47,7 @@ class Mask(AbstractMask):
     READ = 0b1
     WRITE = 0b10
     EXECUTE = 0b100
+    NOTHING = 0
     ALL = READ | WRITE | EXECUTE
     READ_PERMISSION = 'READ'
     WRITE_PERMISSION = 'WRITE'
@@ -49,14 +65,18 @@ class Mask(AbstractMask):
         return permissions
 
     @classmethod
+    def as_string(cls, mask):
+        return '|'.join(cls.get_permissions(mask))
+
+    @classmethod
     def from_full(cls, full_mask):
         if not full_mask:
-            return 0
+            return Mask.NOTHING
         full_mask = str(full_mask)
         if not full_mask.isdigit():
-            return 0
+            return Mask.NOTHING
         full_mask = int(full_mask)
-        mask = 0
+        mask = Mask.NOTHING
         if full_mask & FullMask.READ == FullMask.READ:
             mask |= Mask.READ
         if full_mask & FullMask.WRITE == FullMask.WRITE:
@@ -75,6 +95,7 @@ class FullMask(AbstractMask):
     NO_WRITE = 0b1000
     EXECUTE = 0b10000
     NO_EXECUTE = 0b100000
+    NOTHING = 0
     ALL = READ | WRITE | EXECUTE
     READ_PERMISSION = 'READ'
     NO_READ_PERMISSION = 'NO_READ'
@@ -99,3 +120,7 @@ class FullMask(AbstractMask):
         if FullMask.is_set(mask, FullMask.NO_EXECUTE):
             permissions.append(FullMask.NO_EXECUTE_PERMISSION)
         return permissions
+
+    @classmethod
+    def as_string(cls, mask):
+        return '|'.join(cls.get_permissions(mask))

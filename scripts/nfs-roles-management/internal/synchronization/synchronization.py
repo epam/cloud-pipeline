@@ -99,34 +99,37 @@ class Synchronization(object):
     def synchronize_user(self, user, use_symlinks=False):
         try:
             logging.info('Processing user {}.'.format(user))
-            user_foler_name = user.split('@')[0]
-            user_destination_directory = os.path.join(self.__config__.users_root, user_foler_name)
+            user_dir_name = user.split('@')[0]
+            user_dir = os.path.join(self.__config__.users_root, user_dir_name)
             if not os.path.exists(self.__config__.users_root):
                 logging.info('Creating users destination directory {}...'.format(self.__config__.users_root))
                 os.makedirs(self.__config__.users_root)
                 logging.info('Done.')
-            if not os.path.exists(user_destination_directory):
-                logging.info('Creating destination directory {}...'.format(user_destination_directory))
-                os.mkdir(user_destination_directory)
+            if not os.path.exists(user_dir):
+                logging.info('Creating destination directory {}...'.format(user_dir))
+                os.mkdir(user_dir)
                 logging.info('Done.')
             else:
-                logging.info('Destination directory: {}'.format(user_destination_directory))
+                logging.info('Destination directory: {}'.format(user_dir))
             try:
-                os.chmod(user_destination_directory, chmod_mask_decimal)
+                os.chmod(user_dir, chmod_mask_decimal)
             except OSError:
                 logging.exception('Error modifying destination directory permissions.')
 
-            storages_to_synchronize = {}
+            syncing_storages = {}
             for storage in self.__storages__:
                 for storage_user, storage_user_mask in storage.users.items():
                     if storage_user.username.strip().lower() == user.strip().lower():
-                        storages_to_synchronize[storage] = storage_user_mask
+                        syncing_storages[storage] = storage_user_mask
 
-            mounted_items = os.listdir(user_destination_directory)
-            if not mounted_items and not storages_to_synchronize:
+            if use_symlinks:
+                existing_mounts = self.resolve_symlinks(user_dir)
+            else:
+                existing_mounts = self.resolve_mounts(user_dir)
+            if not existing_mounts and not syncing_storages:
                 logging.info('Nothing to synchronize')
                 return
-            for storage, mask in storages_to_synchronize.items():
+            for storage, mask in syncing_storages.items():
                 if Mask.is_not_set(mask, Mask.READ):
                     logging.warning('Skipping storage #{} {} linking because of no read permissions...'
                                     .format(storage.identifier, storage.name))
@@ -136,37 +139,64 @@ class Synchronization(object):
                                     'are not supported in symlinks mode...'
                                     .format(storage.identifier, storage.name))
                     continue
-                mounted_storage_name = storage.name\
+                storage_dir_name = storage.name\
                     .replace(':', '_')\
                     .replace('\\', '_')\
                     .replace('/', '_')\
                     .replace(' ', '_')\
                     .replace('-', '_')
-                if mounted_storage_name not in mounted_items:
-                    destination = os.path.join(user_destination_directory, mounted_storage_name)
+                storage_dir = os.path.join(user_dir, storage_dir_name)
+                if storage_dir not in existing_mounts:
                     if use_symlinks:
-                        Synchronization.symlink_storage(destination, storage, mounted_storage_name)
+                        self.symlink_storage(storage, storage_dir)
                     else:
-                        Synchronization.mount_storage(destination, storage, mounted_storage_name, mask)
+                        self.mount_storage(storage, storage_dir, mask)
                 else:
-                    logging.info('Storage #{} {} already linked as {}'.format(
-                        storage.identifier,
-                        storage.name,
-                        mounted_storage_name
-                    ))
-                    mounted_items.remove(mounted_storage_name)
-            for mounted_storage_to_remove in mounted_items:
-                destination = os.path.join(user_destination_directory, mounted_storage_to_remove)
+                    existing_mask = existing_mounts.pop(storage_dir, mask)
+                    logging.info('Storage #{} {} is already available as {} ({}).'
+                                 .format(storage.identifier, storage.name,
+                                         storage_dir, Mask.as_string(existing_mask)))
+                    if not use_symlinks:
+                        if Mask.is_not_equal(mask, existing_mask, trimming_mask=Mask.READ | Mask.WRITE):
+                            logging.info('Storage #{} {} has to be remounted as {} ({}).'
+                                         .format(storage.identifier, storage.name,
+                                                 storage_dir, Mask.as_string(mask)))
+                            self.remount_storage(storage, storage_dir, mask)
+            for storage_dir in existing_mounts:
                 if use_symlinks:
-                    Synchronization.remove_symlink(destination, mounted_storage_to_remove)
+                    self.remove_symlink(storage_dir)
                 else:
-                    Synchronization.unmount_storage(destination, mounted_storage_to_remove)
+                    self.unmount_storage(storage_dir)
         except Exception:
             logging.exception('User processing has failed.')
 
-    @classmethod
-    def mount_storage(cls, destination, storage, mounted_storage_name, mask):
-        logging.info('Mounting storage #{} {}'.format(storage.identifier, storage.name))
+    def resolve_symlinks(self, root_dir):
+        symlinks = {}
+        for symlink_name in os.listdir(root_dir):
+            symlink_dir = os.path.join(root_dir, symlink_name)
+            symlinks[symlink_dir] = Mask.ALL
+        return symlinks
+
+    def resolve_mounts(self, root_dir):
+        mounts = {}
+        for line in subprocess.check_output('mount').split('\n'):
+            if not line or not line.strip():
+                continue
+            line_items = line.split(' ')
+            if len(line_items) < 6:
+                logging.warning('Ignoring badly formatted mount description: {}...'.format(line))
+                continue
+            mount_dir = line_items[2]
+            if os.path.dirname(mount_dir) != root_dir:
+                continue
+            mount_options = line_items[5].strip('()').split(',')
+            mounts[mount_dir] = Mask.READ if 'ro' in mount_options else \
+                Mask.READ | Mask.WRITE if 'rw' in mount_options else \
+                Mask.NOTHING
+        return mounts
+
+    def mount_storage(self, storage, destination, mask):
+        logging.info('Mounting storage #{} {} as {}...'.format(storage.identifier, storage.name, destination))
         try:
             logging.info('Creating directory {}...'.format(destination))
             os.mkdir(destination)
@@ -175,31 +205,22 @@ class Synchronization(object):
         except OSError:
             logging.exception('Error creating directory.')
             return
-        
-        command_opts = []
-        # Do not allow to WRITE for any storage which has tools limitations
-        # We fully rely on the automatic mounting to the jobs for such storages
-        if storage.tools_to_mount and os.getenv('CP_DAV_TOOLS_TO_MOUNT_RO', 'false') == 'true' \
-                or Mask.is_not_set(mask, Mask.WRITE):
+
+        if Mask.is_not_set(mask, Mask.WRITE) or self.is_readonly(storage):
             command_opts = ["-o", "ro"]
-        
-        command = ["mount", "-B", storage.mount_source, destination]
-        command += command_opts
-        logging.info('Mounting {} storage as {}...'.format(
-            storage.name,
-            mounted_storage_name
-        ))
+        else:
+            command_opts = ["-o", "rw"]
+
+        command = ["mount", "-B", storage.mount_source, destination] + command_opts
         logging.info(command)
         code = subprocess.call(command)
         if code == 0:
             logging.info('Storage mounted: {}'.format(destination))
         else:
-            logging.error('Error mounting storage')
+            logging.error('Error mounting storage: {}'.format(destination))
 
-    @classmethod
-    def unmount_storage(cls, destination, mounted_storage_to_remove):
-        logging.info('Removing mounted storage {}...'.format(mounted_storage_to_remove))
-        logging.info('Unmounting directory...')
+    def unmount_storage(self, destination):
+        logging.info('Removing mounted storage {}...'.format(destination))
         code = subprocess.call(["umount", destination])
         if code == 0:
             logging.info('Done')
@@ -213,17 +234,28 @@ class Synchronization(object):
         else:
             logging.error('Error unmounting directory')
 
-    @classmethod
-    def symlink_storage(cls, destination, storage, mounted_storage_name):
-        logging.info('Linking storage #{} {}'.format(storage.identifier, storage.name))
-        command = ["ln", "-s", storage.mount_source, destination]
-        logging.info('Linking {} storage as {} (symlink)...'.format(
-            storage.name,
-            mounted_storage_name
-        ))
+    def remount_storage(self, storage, destination, mask):
+        logging.info('Remounting storage #{} {} as {}...'.format(storage.identifier, storage.name, destination))
+
+        if Mask.is_not_set(mask, Mask.WRITE) or self.is_readonly(storage):
+            command_opts = ["-o", "remount,ro"]
+        else:
+            command_opts = ["-o", "remount,rw"]
+
+        command = ["mount", "-B", storage.mount_source, destination] + command_opts
+        logging.info(command)
         code = subprocess.call(command)
         if code == 0:
-            logging.info('Storage linked: {}'.format(destination))
+            logging.info('Storage remounted: {}'.format(destination))
+        else:
+            logging.error('Error remounting storage: {}'.format(destination))
+
+    def symlink_storage(self, storage, destination):
+        logging.info('Symlinking storage #{} {} as {}...'.format(storage.identifier, storage.name, destination))
+        command = ["ln", "-s", storage.mount_source, destination]
+        code = subprocess.call(command)
+        if code == 0:
+            logging.info('Storage symlinked: {}'.format(destination))
             try:
                 logging.info('Modifying permissions for link...')
                 os.lchmod(destination, chmod_mask_decimal)
@@ -231,18 +263,21 @@ class Synchronization(object):
             except OSError:
                 logging.exception('Error modifying permissions.')
         else:
-            logging.error('Error linking storage')
+            logging.error('Error symlinking storage')
 
-    @classmethod
-    def remove_symlink(cls, destination, mounted_storage_to_remove):
-        logging.info('Removing linked storage {}...'.format(mounted_storage_to_remove))
+    def remove_symlink(self, destination):
+        logging.info('Removing symlinked storage {}...'.format(destination))
         command = ["rm", destination]
-        logging.info('Removing item {}...'.format(destination))
         code = subprocess.call(command)
         if code == 0:
-            logging.info('Storage link removed: {}'.format(destination))
+            logging.info('Storage symlink removed: {}'.format(destination))
         else:
-            logging.error('Error removing link')
+            logging.error('Error removing symlink')
+
+    def is_readonly(self, storage):
+        # Do not allow to WRITE for any storage which has tools limitations
+        # We fully rely on the automatic mounting to the jobs for such storages
+        return storage.tools_to_mount and os.getenv('CP_DAV_TOOLS_TO_MOUNT_RO', 'false') == 'true'
 
     def list_storages(self, filter_mask):
         page = 0
