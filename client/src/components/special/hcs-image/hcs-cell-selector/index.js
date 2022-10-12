@@ -61,6 +61,22 @@ function parseTagValue (tagValue) {
   };
 }
 
+function getElementHint (element) {
+  if (!element) {
+    return undefined;
+  }
+  const {
+    tags = {},
+    x,
+    y
+  } = element;
+  return [
+    `${getWellRowName(y)}${x + 1}`,
+    ...Object.entries(tags)
+      .map(([key, values]) => `${key}: ${values.join(', ')}`)
+  ].join('\n');
+}
+
 @inject('themes')
 @observer
 class HcsCellSelector extends React.Component {
@@ -244,8 +260,8 @@ class HcsCellSelector extends React.Component {
       )
     ) {
       this._hoveredElement = element;
-      this.hint = element && element.tags && Object.keys(element.tags).length > 0
-        ? Object.entries(element.tags).map(([key, values]) => `${key}: ${values.join(', ')}`).join('\n')
+      this.hint = this.props.showElementHint
+        ? getElementHint(element)
         : undefined;
       this.setNeedRedraw();
     }
@@ -1721,7 +1737,8 @@ HcsCellSelector.propTypes = {
   showRulers: PropTypes.bool,
   scaleToROI: PropTypes.bool,
   radius: PropTypes.number,
-  searchPlaceholder: PropTypes.string
+  searchPlaceholder: PropTypes.string,
+  showElementHint: PropTypes.bool
 };
 
 HcsCellSelector.defaultProps = {

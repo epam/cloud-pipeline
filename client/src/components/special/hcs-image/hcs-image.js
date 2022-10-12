@@ -996,6 +996,7 @@ class HcsImage extends React.PureComponent {
             height={HcsCellSelector.heightCorrection(plateHeight, sequenceInfo.wells)}
             showRulers
             searchPlaceholder="Search wells"
+            showElementHint
           />
           <HcsCellSelector
             className={styles.selectorContainer}
