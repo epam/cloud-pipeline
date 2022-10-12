@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 import time
+from logging.handlers import TimedRotatingFileHandler
 
 from internal.config import Config, ConfigNotFoundError
 from internal.model.mask import FullMask
@@ -66,9 +67,26 @@ def help():
 
 
 def main(argv):
-    logging_level = os.getenv('CP_DAV_LOGGING_LEVEL', 'INFO')
-    logging_format = os.getenv('CP_DAV_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
-    logging.basicConfig(level=logging_level, format=logging_format)
+    logging_format = os.getenv('CP_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    logging_level = os.getenv('CP_LOGGING_LEVEL', 'INFO')
+    logging_file = os.getenv('CP_LOGGING_FILE', 'sync-nfs.log')
+    logging_history = int(os.getenv('CP_LOGGING_HISTORY', default='30'))
+
+    logging_formatter = logging.Formatter(logging_format)
+
+    logging.getLogger().setLevel(logging_level)
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(logging_formatter)
+    logging.getLogger().addHandler(console_handler)
+
+    file_handler = logging.handlers.TimedRotatingFileHandler(logging_file, when='D', interval=1,
+                                                             backupCount=logging_history)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging_formatter)
+    logging.getLogger().addHandler(file_handler)
+
     if len(argv) > 0:
         command = argv[0]
         if command == 'help' or command == '-h' or command == '--help':
@@ -119,9 +137,8 @@ def main(argv):
                 help()
                 exit(1)
             filter_mask = int(os.getenv('CP_DAV_FILTER_MASK', FullMask.READ))
-            filter_permissions = FullMask.get_permissions(filter_mask)
             logging.info('Storages with {} permissions will be synchronized...'
-                         .format('|'.join(filter_permissions) or 'any'))
+                         .format(FullMask.as_string(filter_mask) or 'any'))
             start = time.time()
             try:
                 Synchronization(config).synchronize(user_ids=user, use_symlinks=symlink, filter_mask=filter_mask)

@@ -18,41 +18,44 @@ set -o allexport
 source /opt/sync/env.sh
 set +o allexport
 
-SYNC_LOG_DIR="${SYNC_LOG_DIR:-/var/log/dav/sync}"
+export SYNC_LOG_DIR="${SYNC_LOG_DIR:-/var/log/dav/sync}"
+export CP_LOGGING_FILE="${CP_LOGGING_FILE:-$SYNC_LOG_DIR/sync-nfs.log}"
+
 mkdir -p "$SYNC_LOG_DIR"
+mkdir -p "$(dirname "$CP_LOGGING_FILE")"
 
 if [ -z "$API" ]; then
-    echo "[ERROR] API is not defined" >> $SYNC_LOG_DIR/sync-nfs.log
+    echo "[ERROR] API is not defined" >> "$CP_LOGGING_FILE"
     exit 1
 fi
 
 if [ -z "$API_TOKEN" ]; then
-    echo "[ERROR] API_TOKEN is not defined" >> $SYNC_LOG_DIR/sync-nfs.log
+    echo "[ERROR] API_TOKEN is not defined" >> "$CP_LOGGING_FILE"
     exit 1
 fi
 
 if [ -z "$CP_DAV_SERVE_DIR" ]; then
-    echo "[ERROR] CP_DAV_SERVE_DIR is not defined" >> $SYNC_LOG_DIR/sync-nfs.log
+    echo "[ERROR] CP_DAV_SERVE_DIR is not defined" >> "$CP_LOGGING_FILE"
     exit 1
 fi
 
 if [ -z "$CP_DAV_MOUNT_POINT" ]; then
-    echo "[ERROR] CP_DAV_MOUNT_POINT is not defined" >> $SYNC_LOG_DIR/sync-nfs.log
+    echo "[ERROR] CP_DAV_MOUNT_POINT is not defined" >> "$CP_LOGGING_FILE"
     exit 1
 fi
 
-bash $SYNC_HOME/nfs-roles-management/syncmounts.sh "$API" "$API_TOKEN" "$CP_DAV_MOUNT_POINT" >> $SYNC_LOG_DIR/sync-nfs.log 2>&1
+bash "$SYNC_HOME/nfs-roles-management/syncmounts.sh" "$API" "$API_TOKEN" "$CP_DAV_MOUNT_POINT" >> "$CP_LOGGING_FILE" 2>&1
 
 if [ $? -ne 0 ]; then
-    echo "[ERROR] syncmounts.sh failed, syncnfs.py will NOT be run" >> $SYNC_LOG_DIR/sync-nfs.log
+    echo "[ERROR] syncmounts.sh failed, syncnfs.py will NOT be run" >> "$CP_LOGGING_FILE"
     exit 1
 fi
 
-python $SYNC_HOME/nfs-roles-management/syncnfs.py sync \
-                                --api=$API \
-                                --key=$API_TOKEN \
-                                --users-root=$CP_DAV_SERVE_DIR \
-                                --nfs-root=$CP_DAV_MOUNT_POINT >> $SYNC_LOG_DIR/sync-nfs.log 2>&1
+python "$SYNC_HOME/nfs-roles-management/syncnfs.py" sync \
+                                --api="$API" \
+                                --key="$API_TOKEN" \
+                                --users-root="$CP_DAV_SERVE_DIR" \
+                                --nfs-root="$CP_DAV_MOUNT_POINT" >/dev/null 2>&1
 
 # need to remove it here because blobfuse will inherit parent lock and next cron execution will be deadlocked
 rm -rf /var/run/sync-nfs.lock
