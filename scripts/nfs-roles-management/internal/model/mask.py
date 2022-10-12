@@ -65,6 +65,10 @@ class Mask(AbstractMask):
         return permissions
 
     @classmethod
+    def as_string(cls, mask):
+        return '|'.join(cls.get_permissions(mask))
+
+    @classmethod
     def from_full(cls, full_mask):
         if not full_mask:
             return Mask.NOTHING
@@ -116,3 +120,7 @@ class FullMask(AbstractMask):
         if FullMask.is_set(mask, FullMask.NO_EXECUTE):
             permissions.append(FullMask.NO_EXECUTE_PERMISSION)
         return permissions
+
+    @classmethod
+    def as_string(cls, mask):
+        return '|'.join(cls.get_permissions(mask))

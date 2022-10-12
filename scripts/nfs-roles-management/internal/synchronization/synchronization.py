@@ -155,14 +155,13 @@ class Synchronization(object):
                     existing_mask = existing_mounts.pop(storage_dir, mask)
                     logging.info('Storage #{} {} is already available as {} ({}).'
                                  .format(storage.identifier, storage.name,
-                                         storage_dir, Mask.get_permissions(existing_mask)))
+                                         storage_dir, Mask.as_string(existing_mask)))
                     if not use_symlinks:
                         if Mask.is_not_equal(mask, existing_mask, trimming_mask=Mask.READ | Mask.WRITE):
                             logging.info('Storage #{} {} has to be remounted as {} ({}).'
                                          .format(storage.identifier, storage.name,
-                                                 storage_dir, Mask.get_permissions(mask)))
+                                                 storage_dir, Mask.as_string(mask)))
                             self.remount_storage(storage, storage_dir, mask)
-                            continue
             for storage_dir in existing_mounts:
                 if use_symlinks:
                     self.remove_symlink(storage_dir)
@@ -207,7 +206,7 @@ class Synchronization(object):
             logging.exception('Error creating directory.')
             return
 
-        if Mask.is_not_set(mask, Mask.WRITE) or self._is_readonly(storage):
+        if Mask.is_not_set(mask, Mask.WRITE) or self.is_readonly(storage):
             command_opts = ["-o", "ro"]
         else:
             command_opts = ["-o", "rw"]
@@ -238,7 +237,7 @@ class Synchronization(object):
     def remount_storage(self, storage, destination, mask):
         logging.info('Remounting storage #{} {} as {}...'.format(storage.identifier, storage.name, destination))
 
-        if Mask.is_not_set(mask, Mask.WRITE) or self._is_readonly(storage):
+        if Mask.is_not_set(mask, Mask.WRITE) or self.is_readonly(storage):
             command_opts = ["-o", "remount,ro"]
         else:
             command_opts = ["-o", "remount,rw"]
@@ -250,11 +249,6 @@ class Synchronization(object):
             logging.info('Storage remounted: {}'.format(destination))
         else:
             logging.error('Error remounting storage: {}'.format(destination))
-
-    def _is_readonly(self, storage):
-        # Do not allow to WRITE for any storage which has tools limitations
-        # We fully rely on the automatic mounting to the jobs for such storages
-        return storage.tools_to_mount and os.getenv('CP_DAV_TOOLS_TO_MOUNT_RO', 'false') == 'true'
 
     def symlink_storage(self, storage, destination):
         logging.info('Symlinking storage #{} {} as {}...'.format(storage.identifier, storage.name, destination))
@@ -279,6 +273,11 @@ class Synchronization(object):
             logging.info('Storage symlink removed: {}'.format(destination))
         else:
             logging.error('Error removing symlink')
+
+    def is_readonly(self, storage):
+        # Do not allow to WRITE for any storage which has tools limitations
+        # We fully rely on the automatic mounting to the jobs for such storages
+        return storage.tools_to_mount and os.getenv('CP_DAV_TOOLS_TO_MOUNT_RO', 'false') == 'true'
 
     def list_storages(self, filter_mask):
         page = 0

@@ -137,9 +137,8 @@ def main(argv):
                 help()
                 exit(1)
             filter_mask = int(os.getenv('CP_DAV_FILTER_MASK', FullMask.READ))
-            filter_permissions = FullMask.get_permissions(filter_mask)
             logging.info('Storages with {} permissions will be synchronized...'
-                         .format('|'.join(filter_permissions) or 'any'))
+                         .format(FullMask.as_string(filter_mask) or 'any'))
             start = time.time()
             try:
                 Synchronization(config).synchronize(user_ids=user, use_symlinks=symlink, filter_mask=filter_mask)
