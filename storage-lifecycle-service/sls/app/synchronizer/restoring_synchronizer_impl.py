@@ -131,18 +131,25 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             self.logger.log("Storage: {}. Action: {}. Path: {}. Checking restore process finished with status: {} and reason: {}"
                             .format(storage.id, action.action_id, action.path, restore_result["status"], restore_result["reason"]))
             if restore_result["status"]:
-                self.logger.log(
-                    "Storage: {}. Action: {}. Path: {}. Restore process succeeded, restoredTill: {}"
-                    .format(storage.id, action.action_id, action.path, restore_result["value"]))
-                succeeded_action = self._update_action(action, self.SUCCEEDED_STATUS, restored_till=restore_result["value"])
-                if succeeded_action:
-                    if action.notification.enabled:
-                        self._send_restore_notification(storage, succeeded_action)
+                if restore_result["value"]:
+                    self.logger.log(
+                        "Storage: {}. Action: {}. Path: {}. Restore process succeeded, restoredTill: {}"
+                        .format(storage.id, action.action_id, action.path, restore_result["value"]))
+                    succeeded_action = self._update_action(action, self.SUCCEEDED_STATUS, restored_till=restore_result["value"])
+                    if succeeded_action:
+                        if action.notification.enabled:
+                            self._send_restore_notification(storage, succeeded_action)
+                    else:
+                        self.logger.log(
+                            "Storage: {}. Action: {}. Path: {}. Something went wrong. "
+                            "Can't updated status for succeeded action.".format(storage.id, action.action_id, action.path)
+                        )
                 else:
                     self.logger.log(
                         "Storage: {}. Action: {}. Path: {}. Something went wrong. "
-                        "Can't updated status for succeeded action.".format(storage.id, action.action_id, action.path)
+                        "Can't check status for action. Action will be failed!".format(storage.id, action.action_id, action.path)
                     )
+                    self._update_action(action, self.FAILED_STATUS)
 
     def _update_action(self, action_to_update, status, restored_till=None):
         copy_action_to_update = action_to_update.copy()
