@@ -48,7 +48,19 @@ The following AMIs shall be white-listed for the AWS Account:
 
 ## VPC S3 Endpoint
 
-A new VPC endpoint shall be created for the S3 service. No specific configuration is needed
+A new VPC endpoint shall be created for the S3 service. 
+* Policy:
+```
+{
+  "Sid": "CP-S3-Endpoint-Policy",
+  "Effect": "Allow",
+  "Principal": "*",
+  "Action": "*",
+  "Resource": "*"
+}
+```
+
+**NOTE:** Resource "*" is used here because CP need to make API calls to "s3:CreateJob" and "s3:DescribeJob" to perform archive and restore actions with s3 objects, when **Cloud-Pipeline Storage Lifecycle Service** is used.  
 
 ## SSH Key
 
@@ -179,25 +191,15 @@ A new SSH key named `CP-SSH-Key`
             ]
         },
         {
-            "Sid": "CloudUserManagementAllow",
-            "Effect": "Allow",
-            "Action": [
-                "iam:DeleteAccessKey",
-                "iam:UpdateUser",
-                "iam:GetAccessKeyLastUsed",
-                "iam:AttachUserPolicy",
-                "iam:DeleteUserPolicy",
-                "iam:UpdateAccessKey",
-                "iam:DeleteUser",
-                "iam:ListUserPolicies",
-                "iam:CreateUser",
-                "iam:CreateAccessKey",
-                "iam:GetUserPolicy",
-                "iam:PutUserPolicy",
-                "iam:GetUser",
-                "iam:ListAccessKeys"
-            ],
-            "Resource": "arn:aws:iam::<account-id>:user/cp-*"
+            "Sid": "RunS3BatchOperationsAllow",
+	        "Effect": "Allow",
+	        "Action": [
+	            "s3:CreateJob",
+	            "s3:DescribeJob",
+	            "s3:GetLifecycleConfiguration",
+	            "s3:PutLifecycleConfiguration"
+	        ],
+        	"Resource": "*"
         },
         {
             "Sid": "PassSLSRoleAllow",
@@ -258,22 +260,11 @@ A new SSH key named `CP-SSH-Key`
                 "s3:DeleteObjectVersion",
                 "s3:ListBucketVersions",
                 "s3:GetBucketTagging",
-                "s3:PutBucketTagging",
-                "s3:GetLifecycleConfiguration",
-                "s3:PutLifecycleConfiguration"
+                "s3:PutBucketTagging"
             ],
             "Resource": [
                 "arn:aws:s3:::*"
             ]
-        },
-        {
-            "Sid": "PassSLSRoleAllow",
-	        "Effect": "Allow",
-	        "Action": [
-	            "iam:GetRole",
-	            "iam:PassRole"
-	        ],
-        	"Resource": "arn:aws:iam::<account-id>:role/CP-SLS-Role"
         }
     ]
 }
@@ -301,7 +292,7 @@ A new SSH key named `CP-SSH-Key`
                 "s3:PutObjectVersionTagging",
                 "s3:GetObjectVersionTagging",
                 "s3:DeleteObjectVersionTagging",
-		        "s3:RestoreObject"
+                "s3:RestoreObject"
             ],
             "Resource": [
                 "arn:aws:s3:::*"
@@ -312,8 +303,14 @@ A new SSH key named `CP-SSH-Key`
 }
 ```
 
-* Name: **CP-SLS-Assume-Policy**
+### Roles
 
+* **AWSServiceRoleForEC2Spot**: policies according to the AWS Documentation [Manually create the AWSServiceRoleForEC2Spot service-linked role](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#service-linked-roles-spot-instance-requests)
+
+* **CP-Service**: CP-Service-Policy and CP-KMS-Assume-Policy
+
+* **CP-SLS-Service**: CP-SLS-Policy 
+  * Trust relationship:
 ```
 {
     "Version": "2012-10-17",
@@ -329,13 +326,7 @@ A new SSH key named `CP-SSH-Key`
 }
 ```
 
-### Roles
-
-* **AWSServiceRoleForEC2Spot**: policies according to the AWS Documentation [Manually create the AWSServiceRoleForEC2Spot service-linked role](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#service-linked-roles-spot-instance-requests)
-
-* **CP-Service**: CP-Service-Policy and CP-KMS-Assume-Policy
-
-* **CP-SLS-Service**: CP-SLS-Policy and CP-SLS-Assume-Policy
+**NOTE**: If access to some storages would be performed through different role that **CP-Service**, for such roles policy statements **RunS3BatchOperationsAllow** and **PassSLSRoleAllow** also should be attached.
 
 * **CP-S3viaSTS**: 
   * Policies: CP-S3viaSTS-Policy and CP-KMS-Assume-Policy
