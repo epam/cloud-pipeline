@@ -1,18 +1,18 @@
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
-  name: cp-oom-reporter
+  name: cp-reporter
   namespace: default
   labels:
-    k8s-app: cp-oom-reporter
+    k8s-app: cp-reporter
 spec:
   selector:
     matchLabels:
-      name: cp-oom-reporter
+      name: cp-reporter
   template:
     metadata:
       labels:
-        name: cp-oom-reporter
+        name: cp-reporter
     spec:
       hostPID: true
       nodeSelector:
@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cp-reporter
-        image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:oom-reporter-$CP_VERSION
+        image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:reporter-$CP_VERSION
         imagePullPolicy: "IfNotPresent"
         resources:
           limits:
