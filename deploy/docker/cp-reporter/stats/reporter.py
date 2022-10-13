@@ -158,7 +158,7 @@ logging_file = os.getenv('CP_LOGGING_FILE', default='stats.log')
 logging_history = int(os.getenv('CP_LOGGING_HISTORY', default='10'))
 
 host = os.getenv('NODE_NAME', socket.gethostname())
-procs_include = os.getenv('CP_REPORTER_STATS_PROCS_INCLUDE', 'dockerd,docker-containerd,containerd').split(',')
+procs_include = os.getenv('CP_NODE_REPORTER_STATS_PROCS_INCLUDE', 'dockerd,docker-containerd,containerd').split(',')
 
 logging_formatter = logging.Formatter(logging_format)
 

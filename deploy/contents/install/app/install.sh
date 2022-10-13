@@ -1253,15 +1253,15 @@ if is_service_requested cp-billing-srv; then
     echo
 fi
 
-# OOM reporter - monitor and report OOM related events for each pipeline run
-if is_service_requested cp-oom-reporter; then
-  print_ok "[Starting OOM reporter daemonset deployment]"
+# Node reporter - serve node metrics api as well as monitor and report OOM related events
+if is_service_requested cp-node-reporter; then
+  print_ok "[Starting Node reporter daemonset deployment]"
 
-  print_info "-> Deleting existing instance of OOM reporter daemonset"
-  kubectl delete daemonset cp-oom-reporter
+  print_info "-> Deleting existing instance of Node reporter daemonset"
+  kubectl delete daemonset cp-node-reporter
   if is_install_requested; then
-    print_info "-> Deploying OOM reporter daemonset"
-    create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
+    print_info "-> Deploying Node reporter daemonset"
+    create_kube_resource $K8S_SPECS_HOME/cp-node-reporter/cp-node-reporter.yaml
   fi
 fi
 
