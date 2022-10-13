@@ -54,16 +54,10 @@ function clone_repository {
       local _RETRIES_COUNT=$3
       local _RETRIES_TIMEOUT=$4
       local _CLONE_RESULT=0
-      local _RECURSIVE_CLONE=""
 
       for _RETRY_ITERATION in $(seq 1 "$_RETRIES_COUNT");
       do
-            if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ];
-            then
-                  _RECURSIVE_CLONE="--recurse-submodules"
-            fi
-
-            git  -c http.sslVerify=false  clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" ${_RECURSIVE_CLONE}  -q
+            git  -c http.sslVerify=false  clone "$_REPOSITORY_URL" "$_REPOSITORY_LOCAL_PATH" -q
             _CLONE_RESULT=$?
 
             if [ $_CLONE_RESULT -ne 0 ]; 
@@ -71,6 +65,22 @@ function clone_repository {
                   echo "[WARNING] Try #${_RETRY_ITERATION}. Failed to clone ${_REPOSITORY_URL} to ${_REPOSITORY_LOCAL_PATH}"
                   sleep "$_RETRIES_TIMEOUT"
             else
+                  cd $SCRIPTS_DIR
+
+                  if [ -z "$BRANCH" ];
+                  then
+                        git -c http.sslVerify=false checkout $REPO_REVISION -q
+                  else
+                        git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
+                  fi
+
+                  if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ];
+                  then
+                        git -c http.sslVerify=false submodule init
+                        git -c http.sslVerify=false submodule update
+                  fi
+
+                  _CLONE_RESULT=$?
                   break
             fi
       done
@@ -1413,6 +1423,20 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo
 fi
 
+######################################################
+echo "Setting up Gitlab credentials"
+echo "-"
+######################################################
+set_git_credentials
+
+_GIT_CREDS_RESULT=$?
+
+if [ ${_GIT_CREDS_RESULT} -ne 0 ];
+then
+    echo "Failed to get user's Gitlab credentials"
+fi
+echo "------"
+
 # check whether we shall get code from repository before executing a command or not
 if [ -z "$GIT_REPO" ] ;
 then
@@ -1428,14 +1452,6 @@ else
       then
             echo "[ERROR] Pipeline repository clone failed. Exiting"
             exit "$_CLONE_RESULT"
-      fi
-      cd $SCRIPTS_DIR
-
-      if [ -z "$BRANCH" ]
-      then
-            git -c http.sslVerify=false checkout $REPO_REVISION -q
-      else
-            git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
       fi
       cd -
 fi
@@ -1638,19 +1654,6 @@ echo
 ######################################################
 
 
-######################################################
-echo "Setting up Gitlab credentials"
-echo "-"
-######################################################
-set_git_credentials
-
-_GIT_CREDS_RESULT=$?
-
-if [ ${_GIT_CREDS_RESULT} -ne 0 ];
-then
-    echo "Failed to get user's Gitlab credentials"
-fi
-echo "------"
 ######################################################
 
 MOUNT_GIT_TASK_NAME="MountRepository"
