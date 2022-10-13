@@ -14,26 +14,28 @@ spec:
       labels:
         name: cp-oom-reporter
     spec:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: runid
-                    operator: Exists
+      hostPID: true
+      nodeSelector:
+        beta.kubernetes.io/os: "linux"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
       containers:
-      - name: cp-oom-reporter
+      - name: cp-reporter
         image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:oom-reporter-$CP_VERSION
         imagePullPolicy: "IfNotPresent"
         resources:
           limits:
+            cpu: 200m
             memory: 256Mi
           requests:
             cpu: 100m
             memory: 128Mi
         volumeMounts:
-        - name: oom-reporter
-          mountPath: /opt/oom-reporter
+        - name: cp-reporter-logs
+          mountPath: "/opt/reporter/logs"
+        - name: cp-reporter-resources
+          mountPath: "/opt/reporter/resources"
         envFrom:
         - configMapRef:
             name: cp-config-global
@@ -42,7 +44,28 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+        - name: CP_REPORTER_STATS_PORT
+          value: "8000"
+        - name: CP_REPORTER_OOM_HOSTS_INCLUDE
+          value: "*"
+        - name: CP_REPORTER_STATS_HOSTS_INCLUDE
+          value: "*"
+        - name: CP_REPORTER_STATS_PROCS_INCLUDE
+          value: "dockerd,docker-containerd,containerd"
+        - name: CP_LOGGING_LEVEL
+          value: "DEBUG"
+        - name: CP_LOGGING_DIR
+          value: "/opt/reporter/logs"
+        - name: CP_LOGGING_HISTORY
+          value: "10"
+        - name: CP_RESOURCES_DIR
+          value: "/opt/reporter/resources"
       volumes:
-      - name: oom-reporter
+      - name: cp-reporter-logs
         hostPath:
-          path: /opt/oom-reporter
+          path: "/opt/reporter/logs"
+      - name: cp-reporter-resources
+        hostPath:
+          path: "/opt/reporter/resources"
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
