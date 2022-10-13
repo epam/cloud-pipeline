@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import {Icon, Alert} from 'antd';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import {inject, observer} from 'mobx-react';
@@ -520,6 +520,88 @@ export function checkRunCapabilitiesModified (capabilities1, capabilities2, pref
     }
   }
   return false;
+}
+
+@inject('preferences')
+@observer
+export class CapabilitiesDisclaimer extends React.Component {
+  static propTypes = {
+    values: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)])
+  };
+
+  static defaultProps = {
+    values: null
+  };
+
+  state = {
+    os: undefined
+  };
+
+  componentDidMount () {
+    this.fetchDockerImageOS();
+  }
+
+  componentDidUpdate (prevProps, prevState) {
+    if (
+      prevProps.dockerImage !== this.props.dockerImage ||
+      prevProps.dockerImageOS !== this.props.dockerImageOS
+    ) {
+      this.fetchDockerImageOS();
+    }
+  }
+
+  fetchDockerImageOS () {
+    const {
+      dockerImageOS,
+      dockerImage,
+      dockerRegistries
+    } = this.props;
+    if (dockerImageOS) {
+      this.setState({
+        os: dockerImageOS
+      });
+    } else if (dockerImage) {
+      fetchToolOS(dockerImage, dockerRegistries)
+        .then(os => this.setState({os}));
+    } else {
+      this.setState({
+        os: undefined
+      });
+    }
+  }
+
+  render () {
+    const {values, preferences, platform, provider} = this.props;
+    const {os} = this.state;
+    const capabilities = getPlatformSpecificCapabilities(
+      preferences,
+      {platform, os, provider}
+    );
+    const filteredValuesDisclaimers = [];
+    for (let i = 0; i < values.length; i++) {
+      const value = values[i];
+      const disclaimer = capabilities.find(o => o.value === value).disclaimer;
+      if (disclaimer) {
+        filteredValuesDisclaimers.push(disclaimer);
+      }
+    }
+    return (
+      filteredValuesDisclaimers.length
+        ? <div className={styles.runCapabilitiesDisclaimerContainer}>
+          <div className={styles.runCapabilitiesDisclaimer}>
+            <Alert
+              type="warning"
+              message={
+                <div>
+                  {filteredValuesDisclaimers.map(disclaimer => <p>{disclaimer}</p>)}
+                </div>
+              }
+            />
+          </div>
+        </div>
+        : null
+    );
+  }
 }
 
 export default RunCapabilities;
