@@ -12,46 +12,76 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/centos:7
+ARG BASE_IMAGE="python:3.9.14-slim"
 
-ENV COMMON_REPO_DIR=/usr/sbin/CommonRepo
-ENV PATH=$PATH:$COMMON_REPO_DIR/shell
-ARG CP_API_DIST_URL
-ENV CP_PIP_EXTRA_ARGS="--index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
+FROM $BASE_IMAGE
 
-RUN if [ -z "$CP_API_DIST_URL" ]; then \
-        echo "API dist URL is not set, can't install common scripts"; \
-        exit 1; \
-    fi
+ENV CP_REPORTER_HOME="/opt/reporter"
+ENV CP_REPORTER_OOM_HOME="$CP_REPORTER_HOME/oom" \
+    CP_REPORTER_STATS_HOME="$CP_REPORTER_HOME/stats" \
+    CP_REPORTER_COMMON_HOME="$CP_REPORTER_HOME/common"
 
-RUN yum install unzip -y
+ENV CP_PYTHON2_PATH=python
 
-# Install pip
-RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 && \
-    python2 -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+RUN mkdir -p "$CP_REPORTER_HOME" \
+             "$CP_REPORTER_OOM_HOME" \
+             "$CP_REPORTER_STATS_HOME"
 
-# Install "pipeline/CommonRepo" python package
-RUN mkdir -p /tmp/cp && \
-    curl -s -k "$CP_API_DIST_URL" > /tmp/cp/cloud-pipeline.tar.gz && \
-    cd /tmp/cp &&  \
-    tar -zxf cloud-pipeline.tar.gz && \
-    cd bin && \
-    unzip pipeline.jar && \
-    mkdir -p $COMMON_REPO_DIR && \
-    mv BOOT-INF/classes/static/pipe-common.tar.gz $COMMON_REPO_DIR/pipe-common.tar.gz && \
-    rm -rf /tmp/cp && \
-    cd $COMMON_REPO_DIR && \
-    tar xf pipe-common.tar.gz && \
-    python2 -m pip install . $CP_PIP_EXTRA_ARGS -I && \
-    chmod 777 . -R && \
-    rm -f pipe-common.tar.gz
+RUN apt-get update && \
+    apt-get install -y unzip \
+                       curl
 
 # Install jq
 RUN curl -sL "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq && \
     chmod +x /usr/bin/jq
 
+# Install "pipeline/CommonRepo" python package
+ARG CP_API_DIST_URL
+ARG CP_PIPE_COMMON_DIST_URL
+
+RUN if [ -z "$CP_API_DIST_URL" ] && [ -z "$CP_PIPE_COMMON_DIST_URL" ]; then \
+        echo "Neither of API dist URL or PIPE COMMON dist URL is set. Common scripts cannot be installed."; \
+        exit 1; \
+    fi
+
+RUN if [ "$CP_API_DIST_URL" ]; then \
+        mkdir -p /tmp/cp && \
+        curl -s -k "$CP_API_DIST_URL" > /tmp/cp/cloud-pipeline.tar.gz && \
+        cd /tmp/cp &&  \
+        tar -zxf cloud-pipeline.tar.gz && \
+        cd bin && \
+        unzip pipeline.jar && \
+        mkdir -p $CP_REPORTER_COMMON_HOME && \
+        mv BOOT-INF/classes/static/pipe-common.tar.gz $CP_REPORTER_COMMON_HOME/pipe-common.tar.gz && \
+        rm -rf /tmp/cp && \
+        cd $CP_REPORTER_COMMON_HOME && \
+        tar xf pipe-common.tar.gz && \
+        python -m pip install . -I && \
+        chmod 777 . -R && \
+        rm -f pipe-common.tar.gz; \
+    fi
+
+RUN if [ "$CP_PIPE_COMMON_DIST_URL" ] && [ -z "$CP_API_DIST_URL" ]; then \
+        mkdir -p $CP_REPORTER_COMMON_HOME && \
+        curl -s -k "$CP_PIPE_COMMON_DIST_URL" > $CP_REPORTER_COMMON_HOME/pipe-common.tar.gz && \
+        cd $CP_REPORTER_COMMON_HOME && \
+        tar xf pipe-common.tar.gz && \
+        python -m pip install . -I && \
+        chmod 777 . -R && \
+        rm -f pipe-common.tar.gz; \
+    fi
+
+ENV PATH="$PATH:$CP_REPORTER_COMMON_HOME/shell"
+
+ADD oom/reporter.sh "$CP_REPORTER_OOM_HOME/reporter.sh"
+ADD stats/reporter.py "$CP_REPORTER_STATS_HOME/reporter.py"
+ADD stats/requirements.txt "$CP_REPORTER_STATS_HOME/requirements.txt"
 ADD init /init
-ADD monitor-service/monitor_service.sh /monitor_service.sh
-RUN chmod +x /init && chmod +x /monitor_service.sh
-ENV CP_PYTHON2_PATH=python2
+
+RUN pip install -r "$CP_REPORTER_STATS_HOME/requirements.txt"
+
+ENV PYTHONPATH="$PYTHONPATH:$CP_REPORTER_STATS_HOME"
+
+RUN chmod +x /init
+
 CMD [ "/init" ]
