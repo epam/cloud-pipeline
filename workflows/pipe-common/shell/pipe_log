@@ -43,12 +43,12 @@ fi
 if [ "$LOG_STATUS" == "WARNING" ]
 then
   LOG_STATUS="RUNNING"
-  CMD="from pipeline import bcolors; print bcolors.WARNING + \"${LOG_TEXT}\" + bcolors.ENDC"
+  CMD="from pipeline import bcolors; print(bcolors.WARNING + \"${LOG_TEXT}\" + bcolors.ENDC)"
   LOG_TEXT=$($CP_PYTHON2_PATH -c "$CMD")
 fi
 
 ## Validate status code
-CMD="import pipeline.api; print pipeline.api.TaskStatus.__dict__[\"${LOG_STATUS}\"]"
+CMD="import pipeline.api; print(pipeline.api.TaskStatus.__dict__[\"${LOG_STATUS}\"])"
 LOG_STATUS_ID=$($CP_PYTHON2_PATH -c "$CMD")
 if [ $? -ne 0 ]
   then
