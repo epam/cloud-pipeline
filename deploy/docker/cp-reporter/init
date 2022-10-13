@@ -40,8 +40,8 @@ function matches() {
 }
 
 export CP_NODE_REPORTER_STATS_PORT="${CP_NODE_REPORTER_STATS_PORT:-8000}"
-export CP_RESOURCES_DIR="${CP_RESOURCES_DIR:-/opt/reporter/resources}/$NODE_NAME"
-export CP_LOGGING_DIR="${CP_LOGGING_DIR:-/opt/reporter/logs}/$NODE_NAME"
+export CP_RESOURCES_DIR="${CP_RESOURCES_DIR:-/opt/node-reporter/resources}/$NODE_NAME"
+export CP_LOGGING_DIR="${CP_LOGGING_DIR:-/opt/node-reporter/logs}/$NODE_NAME"
 
 mkdir -p "$CP_RESOURCES_DIR" "$CP_LOGGING_DIR"
 
