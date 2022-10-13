@@ -55,6 +55,9 @@ RUN cd /tmp && \
 RUN cd $CP_SLS_HOME/sls && \
     python3 setup.py install
 
+ADD liveness.sh /liveness.sh
+RUN chmod +x /liveness.sh
+
 ADD start.sh /start.sh
 RUN chmod +x /start.sh
 

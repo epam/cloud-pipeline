@@ -181,9 +181,22 @@ class S3StorageOperations(StorageOperations):
 
     def check_files_restore(self, region, storage_container, files, restore_timestamp, restore_mode):
         bucket = storage_container.bucket
+
         archived_files_to_check = [f for f in files if f.storage_class != self.STANDARD]
+        if archived_files_to_check:
+            storage_class = archived_files_to_check[0].storage_class
+        else:
+            self.logger.log("There are no files to check but restore action is in progress! "
+                            "Will fail restore action. Restore process start: {}. restore mode: {}."
+                            .format(restore_timestamp, restore_mode))
+            return {
+                "status": True,
+                "value": None,
+                "reason": "There are no files to check but restore action is in progress!"
+            }
+
         is_restore_possibly_ready = self._check_if_restore_could_be_ready(
-            next(iter(archived_files_to_check), None), restore_timestamp, restore_mode)
+            storage_class, restore_timestamp, restore_mode)
         restored_till_value = None
         if not is_restore_possibly_ready:
             self.logger.log("Probably files is steel restoring because appropriate period of time is not passed. "
@@ -411,18 +424,18 @@ class S3StorageOperations(StorageOperations):
 
     # For more information on periods see:
     # https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html
-    def _check_if_restore_could_be_ready(self, file, updated, restore_mode):
-        if not file or not updated:
+    def _check_if_restore_could_be_ready(self, storage_class, updated, restore_mode):
+        if not storage_class or not updated:
             return False
         now = datetime.datetime.now(datetime.timezone.utc)
         restore_mode = self.STANDARD_RESTORE_MODE if not restore_mode else restore_mode
         check_shift_period = datetime.timedelta(hours=12)
-        if file.storage_class == self.GLACIER or file.storage_class == self.GLACIER_IR:
+        if storage_class == self.GLACIER or storage_class == self.GLACIER_IR:
             if restore_mode == self.BULK_RESTORE_MODE:
                 check_shift_period = datetime.timedelta(hours=12)
             elif restore_mode == self.STANDARD_RESTORE_MODE:
                 check_shift_period = datetime.timedelta(hours=5)
-        if file.storage_class == self.DEEP_ARCHIVE:
+        if storage_class == self.DEEP_ARCHIVE:
             if restore_mode == self.BULK_RESTORE_MODE:
                 check_shift_period = datetime.timedelta(hours=48)
             elif restore_mode == self.STANDARD_RESTORE_MODE:

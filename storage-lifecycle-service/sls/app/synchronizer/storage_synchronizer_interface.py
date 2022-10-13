@@ -22,25 +22,28 @@ class StorageLifecycleSynchronizer:
         self.logger = logger
 
     def sync(self):
-        self.logger.log("Starting object lifecycle synchronization process...")
-        available_storages = [s for s in self.pipeline_api_client.load_available_storages() if s.storage_type != "NFS"]
-        self.logger.log("{} storages loaded.".format(len(available_storages)))
-        self.cloud_bridge.initialize()
-        for storage in available_storages:
-            self.logger.log(
-                "Starting object lifecycle synchronization process for {} with type {}.".format(
-                    storage.path, storage.storage_type)
-            )
-            try:
-                self._sync_storage(storage)
-            except Exception as e:
+        try:
+            self.logger.log("Starting object lifecycle synchronization process...")
+            available_storages = [s for s in self.pipeline_api_client.load_available_storages() if s.storage_type != "NFS"]
+            self.logger.log("{} storages loaded.".format(len(available_storages)))
+            self.cloud_bridge.initialize()
+            for storage in available_storages:
                 self.logger.log(
-                    "Storage: {}. Problems to process storage. Cause: {}".format(storage.id, str(e)))
-            self.logger.log(
-                "Finish object lifecycle synchronization process for {} with type {}.".format(
-                    storage.path, storage.storage_type)
-            )
-        self.logger.log("Done object lifecycle synchronization process...")
+                    "Starting object lifecycle synchronization process for {} with type {}.".format(
+                        storage.path, storage.storage_type)
+                )
+                try:
+                    self._sync_storage(storage)
+                except Exception as e:
+                    self.logger.log(
+                        "Storage: {}. Problems to process storage. Cause: {}".format(storage.id, str(e)))
+                self.logger.log(
+                    "Finish object lifecycle synchronization process for {} with type {}.".format(
+                        storage.path, storage.storage_type)
+                )
+            self.logger.log("Done object lifecycle synchronization process...")
+        except BaseException:
+            self.logger.exception("There was a problem in process of object lifecycle synchronization.")
 
     def _sync_storage(self, storage):
         pass

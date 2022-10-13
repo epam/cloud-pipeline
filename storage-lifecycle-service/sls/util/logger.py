@@ -42,6 +42,9 @@ class AppLogger(object):
     def log(self, message):
         self.logger.info("{} {}".format(AppLogger._build_current_date(), message))
 
+    def exception(self, message):
+        self.logger.exception(message)
+
     @staticmethod
     def _build_current_date():
         current_date = datetime.datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
