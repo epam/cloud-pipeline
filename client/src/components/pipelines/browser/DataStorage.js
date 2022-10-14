@@ -1005,7 +1005,7 @@ export default class DataStorage extends React.Component {
       (item.type && item.type.toLowerCase() === 'folder') ||
       !item.isVersion ||
       item.deleteMarker ||
-      (item.isVersion && item.archived)
+      (item.isVersion && !item.restored)
     ) {
       return false;
     }
@@ -1331,11 +1331,13 @@ export default class DataStorage extends React.Component {
           return undefined;
         }
         const childList = [];
-        const restored = (this.checkRestoredStatus(item) || {}).status === STATUS.SUCCEEDED;
+        const restoreStatus = this.checkRestoredStatus(item) || {};
+        const fileRestored = restoreStatus.status === STATUS.SUCCEEDED;
         for (let version in versions) {
           if (versions.hasOwnProperty(version)) {
             const archived = versions[version].labels &&
               versions[version].labels['StorageClass'] !== STORAGE_CLASSES.standard;
+            const versionRestored = archived && restoreStatus.restoreVersions;
             const latest = versions[version].version === item.version;
             childList.push({
               key: `${item.type}_${item.path}_${version}`,
@@ -1343,17 +1345,19 @@ export default class DataStorage extends React.Component {
               downloadable: item.type.toLowerCase() === 'file' &&
                 !versions[version].deleteMarker &&
                 !sensitive &&
-                ((latest && restored) || !archived),
+                (!archived || (latest ? fileRestored : versionRestored)),
               editable: versions[version].version === item.version &&
-              roleModel.writeAllowed(this.props.info.value) &&
-              !versions[version].deleteMarker,
+                roleModel.writeAllowed(this.props.info.value) &&
+                !versions[version].deleteMarker,
               deletable: roleModel.writeAllowed(this.props.info.value),
               selectable: false,
               shareAvailable: false,
               latest,
               isVersion: true,
               archived,
-              restored
+              restored: latest
+                ? fileRestored
+                : versionRestored
             });
           }
         }
