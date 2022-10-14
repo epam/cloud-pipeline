@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolInfo;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.notification.NotificationManager;
@@ -58,7 +59,7 @@ public class NodePoolManager {
         return vo.getId() == null ? create(vo) : update(vo);
     }
 
-    public List<? extends NodePool> loadAll(final boolean loadStatus) {
+    public List<? extends NodePoolInfo> loadAll(final boolean loadStatus) {
         final List<NodePool> allPools = poolDao.loadAll();
         return loadStatus ? kubernetesPoolService.attachUsage(allPools) : allPools;
     }
