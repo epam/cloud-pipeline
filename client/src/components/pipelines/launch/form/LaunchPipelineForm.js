@@ -107,6 +107,7 @@ import RunCapabilities, {
   hasPlatformSpecificCapabilities,
   isCustomCapability,
   RUN_CAPABILITIES,
+  hasCapabilityDisclaimers,
   CapabilitiesDisclaimer
 } from './utilities/run-capabilities';
 import {
@@ -520,6 +521,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         </FormItem>
       );
     }
+  }
+
+  renderRunCapabilitiesDisclaimers = () => {
+    return (
+      <FormItem
+        className={classNames(
+          getFormItemClassName(styles.formItem, 'runCapabilities'),
+          styles.emptyLabelItem
+        )}
+        {...this.formItemLayout}
+        label=" "
+      >
+        <CapabilitiesDisclaimer
+          values={this.state.runCapabilities}
+        />
+      </FormItem>
+    );
   }
 
   @observable
@@ -5445,12 +5463,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         hints.runCapabilitiesHint
                       )
                     }
-                    <CapabilitiesDisclaimer
-                      values={this.state.runCapabilities}
-                      platform={this.toolPlatform}
-                      dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
-                      provider={this.currentCloudRegionProvider}
-                    />
+                    {
+                      (this.state.runCapabilities.length &&
+                      hasCapabilityDisclaimers(this.state.runCapabilities, this.props.preferences))
+                        ? this.renderFormItemRow(this.renderRunCapabilitiesDisclaimers)
+                        : null
+                    }
                   </div>
                 </div>
                 <div

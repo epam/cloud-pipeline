@@ -44,14 +44,3 @@
   font-size: x-small;
   cursor: pointer;
 }
-
-.run-capabilities-disclaimer-container {
-  display: flex;
-  width: 100%;
-}
-
-.run-capabilities-disclaimer {
-  margin-left: 152px;
-  margin-right: 32px;
-  width: 100%;
-}
