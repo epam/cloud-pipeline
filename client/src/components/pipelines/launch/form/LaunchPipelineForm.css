@@ -268,7 +268,3 @@
   display: flex;
   justify-content: center;
 }
-
-.empty-label-item label::after {
-  content: "" !important;
-}

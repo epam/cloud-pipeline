@@ -304,62 +304,69 @@ class RunCapabilities extends React.Component {
       );
     };
     return (
-      <Dropdown
-        overlay={(
-          <div>
-            <Menu
-              mode="vertical"
-              selectedKeys={[]}
-              onClick={onCapabilityClick}
-            >
-              {all.map(renderCapability)}
-            </Menu>
-          </div>
-        )}
-        trigger={['click']}
+      <div
+        className={className}
       >
-        <div
-          tabIndex={0}
-          className={
-            classNames(
-              styles.runCapabilitiesInput,
-              'cp-run-capabilities-input',
-              {
-                disabled,
-                [styles.disabled]: disabled
-              },
-              className
-            )
-          }
-          style={style}
+        <Dropdown
+          overlay={(
+            <div>
+              <Menu
+                mode="vertical"
+                selectedKeys={[]}
+                onClick={onCapabilityClick}
+              >
+                {all.map(renderCapability)}
+              </Menu>
+            </div>
+          )}
+          trigger={['click']}
         >
-          {
-            filteredValues.length === 0 && '\u00A0'
-          }
-          {
-            plainList(all)
-              .filter(capability => filteredValues.includes(capability.value))
-              .map((capability) => (
-                <div
-                  key={capability.value}
-                  className={
-                    classNames(
-                      styles.runCapabilitiesInputTag,
-                      'cp-run-capabilities-input-tag'
-                    )
-                  }
-                >
-                  <Capability capability={capability} />
-                  <Icon
-                    type="close"
-                    className={styles.runCapabilitiesInputTagClose}
-                    onClick={(domEvent) => onCapabilityClick({domEvent, key: capability.value})}
-                  />
-                </div>
-              ))
-          }
-        </div>
-      </Dropdown>
+          <div
+            tabIndex={0}
+            className={
+              classNames(
+                styles.runCapabilitiesInput,
+                'cp-run-capabilities-input',
+                {
+                  disabled,
+                  [styles.disabled]: disabled
+                }
+              )
+            }
+            style={style}
+          >
+            {
+              filteredValues.length === 0 && '\u00A0'
+            }
+            {
+              plainList(all)
+                .filter(capability => filteredValues.includes(capability.value))
+                .map((capability) => (
+                  <div
+                    key={capability.value}
+                    className={
+                      classNames(
+                        styles.runCapabilitiesInputTag,
+                        'cp-run-capabilities-input-tag'
+                      )
+                    }
+                  >
+                    <Capability capability={capability} />
+                    <Icon
+                      type="close"
+                      className={styles.runCapabilitiesInputTagClose}
+                      onClick={(domEvent) => onCapabilityClick({domEvent, key: capability.value})}
+                    />
+                  </div>
+                ))
+            }
+          </div>
+        </Dropdown>
+        <CapabilitiesDisclaimer
+          values={filteredValues}
+          style={{marginTop: 5}}
+        />
+      </div>
     );
   }
 }
@@ -522,59 +529,72 @@ export function checkRunCapabilitiesModified (capabilities1, capabilities2, pref
   return false;
 }
 
-export function hasCapabilityDisclaimers (values, preferences) {
-  const disclaimers = getDisclaimersList(values, preferences);
-  return disclaimers.length > 0;
-}
-
-function getDisclaimersList (values, preferences) {
+function getDisclaimersList (options = {}) {
+  const {
+    values,
+    preferences,
+    parameters
+  } = options;
+  if (!preferences) {
+    return [];
+  }
+  if ((!values || !values.length) && !parameters) {
+    return [];
+  }
+  const capabilityNames = values && values.length
+    ? values
+    : getEnabledCapabilities(parameters || {});
   const capabilities = getAllPlatformCapabilities(preferences);
-  const filteredValuesDisclaimers = [];
-  for (let i = 0; i < values.length; i++) {
-    const value = values[i];
-    const disclaimer = capabilities.find(o => o.value === value).disclaimer;
-    if (disclaimer) {
-      filteredValuesDisclaimers.push(disclaimer);
+  const disclaimers = [];
+  for (let i = 0; i < capabilityNames.length; i++) {
+    const value = capabilityNames[i];
+    const capability = capabilities.find(o => o.value === value);
+    if (capability && capability.disclaimer) {
+      disclaimers.push(capability.disclaimer);
     }
   }
-  return filteredValuesDisclaimers;
+  return disclaimers;
 }
 
-@inject('preferences')
-@observer
-export class CapabilitiesDisclaimer extends React.Component {
-  static propTypes = {
-    values: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)])
-  };
-
-  static defaultProps = {
-    values: null
-  };
-
-  render () {
-    const {
-      values,
-      preferences,
-      parameters
-    } = this.props;
-    const filteredValuesDisclaimers = getDisclaimersList(values, preferences);
-    return (
-      filteredValuesDisclaimers.length
-        ? (
-          <Alert
-            type="warning"
-            message={
-              <div>
-                {filteredValuesDisclaimers.map(disclaimer => (
-                  <p key={disclaimer}>{disclaimer}</p>
-                ))}
-              </div>
-            }
-          />
-        )
-        : null
-    );
+function CapabilitiesDisclaimerRenderer (
+  {
+    values,
+    preferences,
+    parameters,
+    className,
+    style,
+    showIcon
   }
+) {
+  const filteredValuesDisclaimers = getDisclaimersList({values, parameters, preferences});
+  return (
+    filteredValuesDisclaimers.length
+      ? (
+        <Alert
+          showIcon={showIcon}
+          type="warning"
+          className={className}
+          style={style}
+          message={
+            <div>
+              {filteredValuesDisclaimers.map(disclaimer => (
+                <p key={disclaimer}>{disclaimer}</p>
+              ))}
+            </div>
+          }
+        />
+      )
+      : null
+  );
 }
 
+const CapabilitiesDisclaimer = inject('preferences')(observer(CapabilitiesDisclaimerRenderer));
+CapabilitiesDisclaimer.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
+  values: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)]),
+  showIcon: PropTypes.bool
+};
+
+export {CapabilitiesDisclaimer};
 export default RunCapabilities;

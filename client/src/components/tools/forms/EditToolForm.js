@@ -82,9 +82,7 @@ import RunCapabilities, {
   checkRunCapabilitiesModified,
   addCapability,
   hasPlatformSpecificCapabilities,
-  isCustomCapability,
-  hasCapabilityDisclaimers,
-  CapabilitiesDisclaimer
+  isCustomCapability
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 import {
   applyParametersArray,
@@ -1507,23 +1505,6 @@ export default class EditToolForm extends React.Component {
                     />
                   </Form.Item>
                 )
-              }
-              {
-                hasCapabilityDisclaimers(this.state.runCapabilities, this.props.preferences) &&
-                this.state.runCapabilities.length
-                  ? (
-                    <Form.Item
-                      {...this.formItemLayout}
-                      label=" "
-                      style={{marginTop: 10, marginBottom: 10}}
-                      className={styles.emptyLabelItem}
-                    >
-                      <CapabilitiesDisclaimer
-                        values={this.state.runCapabilities}
-                      />
-                    </Form.Item>
-                  )
-                  : null
               }
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}

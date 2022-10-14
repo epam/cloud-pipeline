@@ -496,7 +496,3 @@
   height: 1px;
   margin: 5px 0;
 }
-
-.empty-label-item label::after {
-  content: "" !important;
-}
