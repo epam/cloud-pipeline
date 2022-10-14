@@ -1,0 +1,71 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: cp-node-reporter
+  namespace: default
+  labels:
+    k8s-app: cp-node-reporter
+spec:
+  selector:
+    matchLabels:
+      name: cp-node-reporter
+  template:
+    metadata:
+      labels:
+        name: cp-node-reporter
+    spec:
+      hostPID: true
+      nodeSelector:
+        beta.kubernetes.io/os: "linux"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: cp-node-reporter
+        image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-reporter-$CP_VERSION
+        imagePullPolicy: "IfNotPresent"
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - name: cp-node-reporter-logs
+          mountPath: "/opt/node-reporter/logs"
+        - name: cp-node-reporter-resources
+          mountPath: "/opt/node-reporter/resources"
+        envFrom:
+        - configMapRef:
+            name: cp-config-global
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: CP_NODE_REPORTER_STATS_PORT
+          value: "8000"
+        - name: CP_NODE_REPORTER_OOM_HOSTS_INCLUDE
+          value: "*"
+        - name: CP_NODE_REPORTER_STATS_HOSTS_INCLUDE
+          value: "*"
+        - name: CP_NODE_REPORTER_STATS_PROCS_INCLUDE
+          value: "dockerd,docker-containerd,containerd"
+        - name: CP_LOGGING_LEVEL
+          value: "DEBUG"
+        - name: CP_LOGGING_DIR
+          value: "/opt/node-reporter/logs"
+        - name: CP_LOGGING_HISTORY
+          value: "10"
+        - name: CP_RESOURCES_DIR
+          value: "/opt/node-reporter/resources"
+      volumes:
+      - name: cp-node-reporter-logs
+        hostPath:
+          path: "/opt/node-reporter/logs"
+      - name: cp-node-reporter-resources
+        hostPath:
+          path: "/opt/node-reporter/resources"
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
