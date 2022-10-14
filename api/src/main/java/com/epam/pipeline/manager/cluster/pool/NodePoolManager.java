@@ -43,6 +43,7 @@ public class NodePoolManager {
     private final NodePoolValidator validator;
     private final NotificationManager notificationManager;
     private final MessageHelper messageHelper;
+    private final KubernetesPoolService kubernetesPoolService;
 
     public List<NodePool> getActivePools() {
         final LocalDateTime timestamp = DateUtils.nowUTC();
@@ -57,8 +58,9 @@ public class NodePoolManager {
         return vo.getId() == null ? create(vo) : update(vo);
     }
 
-    public List<NodePool> loadAll() {
-        return poolDao.loadAll();
+    public List<? extends NodePool> loadAll(final boolean loadStatus) {
+        final List<NodePool> allPools = poolDao.loadAll();
+        return loadStatus ? kubernetesPoolService.attachUsage(allPools) : allPools;
     }
 
     public Optional<NodePool> find(final Long poolId) {
