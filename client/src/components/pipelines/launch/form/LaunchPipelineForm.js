@@ -106,7 +106,9 @@ import RunCapabilities, {
   getEnabledCapabilities,
   hasPlatformSpecificCapabilities,
   isCustomCapability,
-  RUN_CAPABILITIES
+  RUN_CAPABILITIES,
+  hasCapabilityDisclaimers,
+  CapabilitiesDisclaimer
 } from './utilities/run-capabilities';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -519,6 +521,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         </FormItem>
       );
     }
+  }
+
+  renderRunCapabilitiesDisclaimers = () => {
+    return (
+      <FormItem
+        className={classNames(
+          getFormItemClassName(styles.formItem, 'runCapabilities'),
+          styles.emptyLabelItem
+        )}
+        {...this.formItemLayout}
+        label=" "
+      >
+        <CapabilitiesDisclaimer
+          values={this.state.runCapabilities}
+        />
+      </FormItem>
+    );
   }
 
   @observable
@@ -5443,6 +5462,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         this.renderAdditionalRunCapabilities,
                         hints.runCapabilitiesHint
                       )
+                    }
+                    {
+                      (this.state.runCapabilities.length &&
+                      hasCapabilityDisclaimers(this.state.runCapabilities, this.props.preferences))
+                        ? this.renderFormItemRow(this.renderRunCapabilitiesDisclaimers)
+                        : null
                     }
                   </div>
                 </div>

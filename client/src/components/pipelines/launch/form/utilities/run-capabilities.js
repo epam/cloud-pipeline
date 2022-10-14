@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon} from 'antd';
+import {Icon, Alert} from 'antd';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import {inject, observer} from 'mobx-react';
@@ -520,6 +520,61 @@ export function checkRunCapabilitiesModified (capabilities1, capabilities2, pref
     }
   }
   return false;
+}
+
+export function hasCapabilityDisclaimers (values, preferences) {
+  const disclaimers = getDisclaimersList(values, preferences);
+  return disclaimers.length > 0;
+}
+
+function getDisclaimersList (values, preferences) {
+  const capabilities = getAllPlatformCapabilities(preferences);
+  const filteredValuesDisclaimers = [];
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
+    const disclaimer = capabilities.find(o => o.value === value).disclaimer;
+    if (disclaimer) {
+      filteredValuesDisclaimers.push(disclaimer);
+    }
+  }
+  return filteredValuesDisclaimers;
+}
+
+@inject('preferences')
+@observer
+export class CapabilitiesDisclaimer extends React.Component {
+  static propTypes = {
+    values: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)])
+  };
+
+  static defaultProps = {
+    values: null
+  };
+
+  render () {
+    const {
+      values,
+      preferences,
+      parameters
+    } = this.props;
+    const filteredValuesDisclaimers = getDisclaimersList(values, preferences);
+    return (
+      filteredValuesDisclaimers.length
+        ? (
+          <Alert
+            type="warning"
+            message={
+              <div>
+                {filteredValuesDisclaimers.map(disclaimer => (
+                  <p key={disclaimer}>{disclaimer}</p>
+                ))}
+              </div>
+            }
+          />
+        )
+        : null
+    );
+  }
 }
 
 export default RunCapabilities;
