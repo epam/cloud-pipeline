@@ -17,10 +17,7 @@
 package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
-import io.fabric8.kubernetes.api.model.Node;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
@@ -28,19 +25,14 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static com.epam.pipeline.manager.cluster.pool.NodePoolUtils.determineActiveNodesCount;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class NodePoolMonitoringServiceCore {
     private final NodePoolManager nodePoolManager;
-    private final KubernetesManager kubernetesManager;
     private final NotificationManager notificationManager;
+    private final KubernetesPoolService kubernetesPoolService;
 
     @SchedulerLock(name = "NodePoolMonitoringService_monitor", lockAtMostForString = "PT10M")
     public void monitor() {
@@ -49,22 +41,6 @@ public class NodePoolMonitoringServiceCore {
             log.debug("No active node pools found");
             return;
         }
-        notificationManager.notifyFullNodePools(filterFullNodePools(activePools));
-    }
-
-    private List<NodePool> filterFullNodePools(final List<NodePool> activePools) {
-        try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
-            final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
-            final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
-            return activePools.stream()
-                    .filter(pool -> isFull(pool, availableNodes, activePodIds))
-                    .collect(Collectors.toList());
-        }
-    }
-
-    private boolean isFull(final NodePool pool, final List<Node> availableNodes, final Set<String> activePodIds) {
-        final long activeNodesCount = determineActiveNodesCount(availableNodes, activePodIds, pool.getId());
-        return activeNodesCount >= Optional.ofNullable(pool.getMaxSize())
-                .orElse(pool.getCount());
+        notificationManager.notifyFullNodePools(kubernetesPoolService.filterFullNodePools(activePools));
     }
 }

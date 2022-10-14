@@ -36,8 +36,8 @@ public class NodePoolApiService {
     private final NodePoolUsageService nodePoolUsageService;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public List<NodePool> loadAll() {
-        return nodeManager.loadAll();
+    public List<? extends NodePool> loadAll(final boolean loadStatus) {
+        return nodeManager.loadAll(loadStatus);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
