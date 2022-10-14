@@ -16,14 +16,5 @@
 
 package com.epam.pipeline.entity.cluster.pool;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Value;
-import lombok.experimental.Delegate;
-
-@Value
-public class NodePoolWithUsage implements NodePoolInfo {
-    @Delegate
-    @JsonIgnore
-    NodePool pool;
-    long usage;
+public interface NodePoolInfo {
 }

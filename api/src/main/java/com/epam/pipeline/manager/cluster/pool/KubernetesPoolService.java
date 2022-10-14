@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolInfo;
 import com.epam.pipeline.entity.cluster.pool.NodePoolWithUsage;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import io.fabric8.kubernetes.api.model.Node;
@@ -46,15 +47,18 @@ public class KubernetesPoolService {
         }
     }
 
-    public List<NodePoolWithUsage> attachUsage(final List<NodePool> pools) {
-        try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
-            final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
-            final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
-            return pools.stream()
-                    .map(pool -> new NodePoolWithUsage(pool,
-                            determineActiveNodesCount(availableNodes, activePodIds, pool.getId())))
+    public List<NodePoolInfo> attachUsage(final List<NodePool> pools) {
+        return pools.stream()
+                    .map(pool -> new NodePoolWithUsage(pool, 3))
                     .collect(Collectors.toList());
-        }
+//        try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
+//            final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
+//            final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
+//            return pools.stream()
+//                    .map(pool -> new NodePoolWithUsage(pool,
+//                            determineActiveNodesCount(availableNodes, activePodIds, pool.getId())))
+//                    .collect(Collectors.toList());
+//        }
     }
 
     private boolean isFull(final NodePool pool, final List<Node> availableNodes, final Set<String> activePodIds) {
