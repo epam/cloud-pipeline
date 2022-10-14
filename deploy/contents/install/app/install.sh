@@ -1186,5 +1186,17 @@ if is_service_requested cp-billing-srv; then
     echo
 fi
 
+# Node reporter - serve node metrics api as well as monitor and report OOM related events
+if is_service_requested cp-node-reporter; then
+  print_ok "[Starting Node reporter daemonset deployment]"
+
+  print_info "-> Deleting existing instance of Node reporter daemonset"
+  kubectl delete daemonset cp-node-reporter
+  if is_install_requested; then
+    print_info "-> Deploying Node reporter daemonset"
+    create_kube_resource $K8S_SPECS_HOME/cp-node-reporter/cp-node-reporter.yaml
+  fi
+fi
+
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY
