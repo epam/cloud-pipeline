@@ -55,7 +55,8 @@ import SensitiveBucketsWarning from './sensitive-buckets-warning';
 import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
 import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import {
-  applyCustomCapabilitiesParameters
+  applyCustomCapabilitiesParameters,
+  CapabilitiesDisclaimer
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
@@ -701,6 +702,22 @@ export class RunConfirmation extends React.Component {
     );
   };
 
+  renderCapabilitiesDisclaimer = () => {
+    const {
+      preferences,
+      parameters
+    } = this.props;
+    return (
+      <Provider preferences={preferences}>
+        <CapabilitiesDisclaimer
+          style={{margin: 2}}
+          showIcon
+          parameters={parameters}
+        />
+      </Provider>
+    );
+  };
+
   render () {
     return (
       <div>
@@ -977,6 +994,9 @@ export class RunConfirmation extends React.Component {
           parameters={this.props.parameters}
           style={{margin: 2}}
         />
+        {
+          this.renderCapabilitiesDisclaimer()
+        }
       </div>
     );
   }

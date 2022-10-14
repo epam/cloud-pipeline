@@ -225,6 +225,7 @@ class PreferencesLoad extends Remote {
             os: parseOS(entry?.os),
             custom: true,
             params: entry?.params || {},
+            disclaimer: entry?.disclaimer || '',
             capabilities: Object.entries(capabilities).map(mapCapability)
           };
         };
