@@ -396,15 +396,6 @@ kubectl delete daemonset cp-node-logger
 print_info "-> Deploying Node logger daemonset"
 create_kube_resource $K8S_SPECS_HOME/cp-node-logger/cp-node-logger-ds.yaml
 
-# OOM reporter - monitor and report OOM related events for each pipeline run
-print_ok "[Starting OOM reporter daemonset deployment]"
-
-print_info "-> Deleting existing instance of OOM reporter daemonset"
-kubectl delete daemonset cp-oom-reporter
-
-print_info "-> Deploying OOM reporter daemonset"
-create_kube_resource $K8S_SPECS_HOME/cp-oom-reporter/cp-oom-reporter.yaml
-
 
 # Heapster (CPU Utilization monitoring)
 if is_service_requested cp-heapster; then
@@ -508,7 +499,7 @@ if is_service_requested cp-api-srv; then
                                                                             --claim user_id=1 \
                                                                             --claim user_name=$CP_DEFAULT_ADMIN_NAME \
                                                                             --claim role=ROLE_ADMIN \
-                                                                            --claim group=ADMIN")
+                                                                            --claim group=ADMIN" "SINGLE_POD")
         if [ $? -ne 0 ]; then
             print_err "Error ocurred while generating admin JWT token, docker registry and edge services cannot be configured to integrate with the API Services"
         else
@@ -1190,6 +1181,18 @@ if is_service_requested cp-billing-srv; then
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-billing-srv: http://$CP_BILLING_INTERNAL_HOST:$CP_BILLING_INTERNAL_PORT"
     fi
     echo
+fi
+
+# Node reporter - serve node metrics api as well as monitor and report OOM related events
+if is_service_requested cp-node-reporter; then
+  print_ok "[Starting Node reporter daemonset deployment]"
+
+  print_info "-> Deleting existing instance of Node reporter daemonset"
+  kubectl delete daemonset cp-node-reporter
+  if is_install_requested; then
+    print_info "-> Deploying Node reporter daemonset"
+    create_kube_resource $K8S_SPECS_HOME/cp-node-reporter/cp-node-reporter.yaml
+  fi
 fi
 
 # Monitoring Service
