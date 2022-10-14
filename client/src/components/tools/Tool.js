@@ -1085,9 +1085,10 @@ export default class Tool extends localization.LocalizedReactComponent {
     }];
 
     let data = this.toolVersionScanResults;
-    const isContainsUnscannedVersion = this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && data.filter(item => item.status === ScanStatuses.notScanned).length > 0;
+    const containsUnScannedVersion = this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
+      data.filter(item => item.platform !== 'windows' && item.status === ScanStatuses.notScanned).length > 0;
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && !this.state.isShowUnscannedVersion) {
-      data = data.filter(d => d.status !== ScanStatuses.notScanned);
+      data = data.filter(d => d.platform === 'windows' || d.status !== ScanStatuses.notScanned);
     }
     return (
       <Row style={{width: '100%'}}>
@@ -1106,8 +1107,10 @@ export default class Tool extends localization.LocalizedReactComponent {
             styles.versionTableRow,
             {
               [styles.whiteListedVersionRow]: item.fromWhiteList &&
+              !/^windows$/i.test(item.platform) &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry),
               'cp-tool-white-listed-version': item.fromWhiteList &&
+                !/^windows$/i.test(item.platform) &&
                 this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
             }
           )}
@@ -1116,6 +1119,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           pagination={{pageSize: 20}}
           onRowClick={(version) => {
             if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
+              !/^windows$/i.test(version.platform) &&
               version.status !== ScanStatuses.notScanned) {
               this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
             } else {
@@ -1124,7 +1128,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           }}
           size="small" />
         {
-          isContainsUnscannedVersion &&
+          containsUnScannedVersion &&
           <Row className={styles.viewUnscannedVersion}>
             <Button
               style={{marginTop: 10, lineHeight: 1}}
@@ -1132,7 +1136,6 @@ export default class Tool extends localization.LocalizedReactComponent {
               size="large"
               type="primary"
               ghost
-              disabled={!isContainsUnscannedVersion}
               onClick={this.onChangeViewUnscannedVersion}
             >
               {
