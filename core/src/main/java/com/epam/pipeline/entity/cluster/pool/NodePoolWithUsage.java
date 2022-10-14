@@ -16,8 +16,10 @@
 
 package com.epam.pipeline.entity.cluster.pool;
 
+import lombok.Data;
 import lombok.experimental.Delegate;
 
+@Data
 public class NodePoolWithUsage extends NodePool {
     @Delegate
     private NodePool pool;
