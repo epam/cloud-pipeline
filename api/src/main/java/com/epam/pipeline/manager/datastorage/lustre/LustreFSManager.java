@@ -30,6 +30,7 @@ import com.amazonaws.services.fsx.model.FileSystemType;
 import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.amazonaws.services.fsx.model.StorageType;
 import com.amazonaws.services.fsx.model.Tag;
+import com.amazonaws.services.fsx.model.UpdateFileSystemRequest;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
@@ -50,10 +51,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -67,6 +72,9 @@ public class LustreFSManager {
     private static final int LUSTRE_SIZE_THRESHOLD_GB = 2400;
     private static final int LUSTRE_SIZE_STEP_SCRATCH_1 = 3600;
     private static final int LUSTRE_SIZE_STEP_SCRATCH_2 = 2400;
+    private static final String PERSISTENT_PREFIX = "PERSISTENT_";
+    private static final List<Integer> PERSISTENT_1_THROUGHPUT = Arrays.asList(50, 100, 200);
+    private static final List<Integer> PERSISTENT_2_THROUGHPUT = Arrays.asList(125, 250, 500, 1000);
 
     private final PipelineRunCRUDService runService;
     private final CloudRegionManager regionManager;
@@ -74,12 +82,22 @@ public class LustreFSManager {
     private final EC2Helper ec2Helper;
     private final MessageHelper messageHelper;
 
-    public LustreFS getOrCreateLustreFS(final Long runId, final Integer size) {
+    public LustreFS getOrCreateLustreFS(final Long runId, final Integer size,
+                                        final String type, final Integer throughput) {
         final AwsRegion region = getRegionForRun(runId);
         final AmazonFSx fsxClient = buildFsxClient(region);
         return findFsForRun(runId, null, fsxClient)
                 .map(fs -> convert(fs, region))
-                .orElseGet(() -> createLustreFs(runId, size, fsxClient));
+                .orElseGet(() -> createLustreFs(runId, size, type, throughput, fsxClient));
+    }
+
+    public LustreFS updateLustreFsSize(final Long runId, final Integer size) {
+        final AwsRegion region = getRegionForRun(runId);
+        final AmazonFSx fsxClient = buildFsxClient(region);
+        return findFsForRun(runId, null, fsxClient)
+                .map(fs -> convert(updateSize(fs, size, fsxClient), region))
+                .orElseThrow(() -> new LustreFSException(
+                        messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
     }
 
     public LustreFS getLustreFS(final Long runId) {
@@ -117,12 +135,34 @@ public class LustreFSManager {
         return convert(fs, region);
     }
 
-    private LustreFS createLustreFs(final Long runId, final Integer size, final AmazonFSx fsxClient) {
+    private FileSystem updateSize(final FileSystem fileSystem, final Integer size, final AmazonFSx fsxClient) {
+        final int effectiveSize = getFSSize(size,
+                LustreDeploymentType.valueOf(fileSystem.getLustreConfiguration().getDeploymentType()));
+        if (fileSystem.getStorageCapacity().equals(effectiveSize)) {
+            log.debug("Lustre FS {} already has requested size {}", fileSystem.getFileSystemId(), effectiveSize);
+            return fileSystem;
+        }
+        if (fileSystem.getLifecycle().equals("UPDATING")) {
+            log.debug("Luster FS {} size is already being updated", fileSystem.getFileSystemId());
+            return fileSystem;
+        }
+        final UpdateFileSystemRequest request = new UpdateFileSystemRequest();
+        request.setFileSystemId(fileSystem.getFileSystemId());
+        request.setStorageCapacity(effectiveSize);
+        final FileSystem result = fsxClient.updateFileSystem(request).getFileSystem();
+        log.debug("Size change requested for LustreFS {} from {} to {}",
+                fileSystem.getFileSystemId(), fileSystem.getStorageCapacity(), result.getStorageCapacity());
+        return result;
+    }
+
+    private LustreFS createLustreFs(final Long runId, final Integer size,
+                                    final String type, final Integer throughput,
+                                    final AmazonFSx fsxClient) {
         log.debug("Creating a new lustre fs for run id {}.", runId);
         final PipelineRun pipelineRun = runService.loadRunById(runId);
         final AwsRegion regionForRun = getRegion(pipelineRun);
-        final LustreDeploymentType deploymentType = getDeploymentType();
-        final CreateFileSystemLustreConfiguration lustreConfiguration = getLustreConfig(deploymentType);
+        final LustreDeploymentType deploymentType = getDeploymentType(type);
+        final CreateFileSystemLustreConfiguration lustreConfiguration = getLustreConfig(deploymentType, throughput);
         final CreateFileSystemRequest createFileSystemRequest = new CreateFileSystemRequest()
                 .withFileSystemType(FileSystemType.LUSTRE)
                 .withStorageCapacity(getFSSize(size, deploymentType))
@@ -144,16 +184,17 @@ public class LustreFSManager {
     }
 
     private boolean isPersistent(final LustreDeploymentType deploymentType) {
-        return LustreDeploymentType.PERSISTENT_1.equals(deploymentType);
+        return deploymentType.name().startsWith(PERSISTENT_PREFIX);
     }
 
-    private CreateFileSystemLustreConfiguration getLustreConfig(final LustreDeploymentType deploymentType) {
+    private CreateFileSystemLustreConfiguration getLustreConfig(
+            final LustreDeploymentType deploymentType,
+            final Integer throughput) {
         final CreateFileSystemLustreConfiguration lustreConfiguration = new CreateFileSystemLustreConfiguration()
                 .withDeploymentType(deploymentType);
         if (isPersistent(deploymentType)) {
             lustreConfiguration
-                    .withPerUnitStorageThroughput(preferenceManager.getPreference(
-                            SystemPreferences.LUSTRE_FS_DEFAULT_THROUGHPUT))
+                    .withPerUnitStorageThroughput(getFsThroughput(throughput, deploymentType))
                     .withCopyTagsToBackups(false)
                     .withAutomaticBackupRetentionDays(preferenceManager.getPreference(
                             SystemPreferences.LUSTRE_FS_BKP_RETENTION_DAYS));
@@ -161,7 +202,13 @@ public class LustreFSManager {
         return lustreConfiguration;
     }
 
-    private LustreDeploymentType getDeploymentType() {
+    private LustreDeploymentType getDeploymentType(final String type) {
+        if (StringUtils.isNotBlank(type)) {
+            final LustreDeploymentType result = EnumUtils.getEnum(LustreDeploymentType.class, type);
+            if (Objects.nonNull(result)) {
+                return result;
+            }
+        }
         return LustreDeploymentType.valueOf(
                 preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_DEPLOYMENT_TYPE));
     }
@@ -186,8 +233,20 @@ public class LustreFSManager {
         return settings.getSecurityGroups();
     }
 
+    private int getFsThroughput(final Integer throughput, final LustreDeploymentType deploymentType) {
+        final Integer requestedThroughput = Optional.ofNullable(throughput)
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_DEFAULT_THROUGHPUT));
+        final List<Integer> availableValues = deploymentType.equals(LustreDeploymentType.PERSISTENT_1) ?
+                PERSISTENT_1_THROUGHPUT : PERSISTENT_2_THROUGHPUT;
+        return availableValues.stream()
+                .min(Comparator.comparingInt(i -> Math.abs(i - requestedThroughput)))
+                .orElseThrow(() -> new LustreFSException(
+                        messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_MISSING_THROUGHPUT)
+                ));
+    }
+
     private int getFSSize(final Integer size, final LustreDeploymentType deploymentType) {
-//        For SCRATCH_2 and PERSISTENT_1 SSD deployment types, valid values are 1200 GiB, 2400 GiB,
+//        For SCRATCH_2, PERSISTENT_2 and PERSISTENT_1 SSD deployment types, valid values are 1200 GiB, 2400 GiB,
 //        and increments of 2400 GiB.
 //        For SCRATCH_1 deployment type, valid values are 1200 GiB, 2400 GiB, and increments of 3600 GiB.
         final Integer initialSize = Optional.ofNullable(size)
