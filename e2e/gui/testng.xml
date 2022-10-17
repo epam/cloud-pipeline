@@ -526,9 +526,9 @@
         </classes>
     </test>
 
-    <test name="PrerequisitesTest">
+    <test name="EnvironmentTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.PrerequisitesTest"/>
+            <class name="com.epam.pipeline.autotests.EnvironmentTest"/>
         </classes>
     </test>
 
