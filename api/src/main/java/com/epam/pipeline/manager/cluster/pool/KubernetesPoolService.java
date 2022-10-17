@@ -48,17 +48,14 @@ public class KubernetesPoolService {
     }
 
     public List<NodePoolInfo> attachUsage(final List<NodePool> pools) {
-        return pools.stream()
-                    .map(pool -> new NodePoolWithUsage(pool, 3))
+        try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
+            final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
+            final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
+            return pools.stream()
+                    .map(pool -> new NodePoolWithUsage(pool,
+                            determineActiveNodesCount(availableNodes, activePodIds, pool.getId())))
                     .collect(Collectors.toList());
-//        try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
-//            final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
-//            final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
-//            return pools.stream()
-//                    .map(pool -> new NodePoolWithUsage(pool,
-//                            determineActiveNodesCount(availableNodes, activePodIds, pool.getId())))
-//                    .collect(Collectors.toList());
-//        }
+        }
     }
 
     private boolean isFull(final NodePool pool, final List<Node> availableNodes, final Set<String> activePodIds) {
