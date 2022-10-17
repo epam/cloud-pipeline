@@ -111,28 +111,37 @@ function FolderApp ({location}) {
       </div>
     )
   } else {
+    const filtered = availableApplications.filter(filterAppFn(filter));
+    const groups = [...new Set(filtered.map(o => o.appType))];
     applicationsContent = (
-      <div
-        className={classNames('apps', 'folder-apps')}
-      >
+      <div>
         {
-          availableApplications
-            .filter(filterAppFn(filter))
-            .sort(sorter)
-            .map((application) => (
-              <FolderApplicationCard
-                key={application.id}
-                application={application}
-                onEdit={
-                  applicationIsEditable(application)
-                    ? setApplication
-                    : undefined
-                }
-                isFavourite={isFavourite(application)}
-                onFavouriteClick={toggleFavourite}
-                onClick={setLaunchApplication}
-              />
-            ))
+          groups.map(aGroup => (
+            <div
+              key={aGroup || 'default'}
+              className={classNames('apps', 'folder-apps')}
+            >
+              {
+                filtered
+                  .filter(anApp => anApp.appType === aGroup)
+                  .sort(sorter)
+                  .map((application) => (
+                    <FolderApplicationCard
+                      key={application.id}
+                      application={application}
+                      onEdit={
+                        applicationIsEditable(application)
+                          ? setApplication
+                          : undefined
+                      }
+                      isFavourite={isFavourite(application)}
+                      onFavouriteClick={toggleFavourite}
+                      onClick={setLaunchApplication}
+                    />
+                  ))
+              }
+            </div>
+          ))
         }
       </div>
     );
@@ -219,6 +228,7 @@ function FolderApp ({location}) {
           visible={selectApplication}
           onClose={onClosePickUpApplication}
           onSelectApplication={onSelectAppToPublish}
+          allApplications
         />
         <Modal
           className="launch-folder-application-modal"

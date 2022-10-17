@@ -35,9 +35,8 @@ export default function folderApplicationRemove (application, settings, callback
         const options = settings.parseUrl(window.location.href)
         callback && callback('Finishing', 0.95);
         return fetchFolderApplications(
-          settings,
           options,
-          {userName: settings.serviceUser},
+          undefined,
           true
         );
       })

@@ -6,6 +6,7 @@ import whoAmI from './cloud-pipeline-api/who-am-i';
 import getTools from './cloud-pipeline-api/tools';
 import getToolsImages from './cloud-pipeline-api/tools-images';
 import fetchSettings from './base/settings';
+import { getApplicationTypeSettings, getFolderApplicationTypes } from "./folder-application-types";
 
 export function nameSorter(a, b) {
   if (a.name > b.name) {
@@ -18,12 +19,19 @@ export function nameSorter(a, b) {
 }
 
 async function fetchToolsByTags(keyValuePairs = []) {
-  const responses = await Promise.all(
-    keyValuePairs.map(({key, value}) => metadataSearch('TOOL', key, value))
+  const searchToolsByKeyValue = async (opts) => {
+    const {
+      key,
+      value,
+      ...rest
+    } = opts;
+    const {payload: metadata = []} = await metadataSearch('TOOL', key, value);
+    return metadata.map(metadataItem => ({id: Number(metadataItem.entityId), ...rest}));
+  };
+  const results = await Promise.all(
+    keyValuePairs.map(searchToolsByKeyValue)
   );
-  return responses
-    .map(response => response.payload || [])
-    .map(metadata => new Set(metadata.map(metadataItem => Number(metadataItem.entityId))));
+  return results.reduce((r, c) => ([...r, ...c]), []);
 }
 
 function mapApplicationToolImage (images) {
@@ -37,17 +45,6 @@ function mapApplicationToolImage (images) {
     }
     return app;
   }
-}
-
-function getApps (ids, allTools = []) {
-  if (!ids) {
-    return [];
-  }
-  const apps = allTools
-    .filter(tool => !tool.link)
-    .filter(tool => ids.has(Number(tool.id)));
-  apps.sort(nameSorter);
-  return apps;
 }
 
 async function fetchTools(opts = {}) {
@@ -91,34 +88,53 @@ async function fetchTools(opts = {}) {
   if (userInfo) {
     userInfo.storages = storages.slice();
   }
-  const hasFolderAppsTagSettings = settings.folderAppTag && settings.folderAppTagValue;
-  const folderAppsRequested = folder && hasFolderAppsTagSettings;
-  const tagsRequest = [
-    {key: settings.tag, value: settings.tagValue},
-    folderAppsRequested
-      ? {key: settings.folderAppTag, value: settings.folderAppTagValue}
-      : undefined
-  ].filter(Boolean);
-  const [
-    dockerAppIds,
-    folderAppIds
-  ] = await fetchToolsByTags(tagsRequest)
+  const tagsRequest = [{key: settings.tag, value: settings.tagValue, _folder_: false}];
+  if (folder) {
+    const applicationTypes = getFolderApplicationTypes(settings);
+    const folderTags = applicationTypes.map(appType => {
+      const appTypeSettings = getApplicationTypeSettings(settings, appType);
+      const hasFolderAppsTagSettings = appTypeSettings.folderAppTag && appTypeSettings.folderAppTagValue;
+      if (hasFolderAppsTagSettings) {
+        return {
+          key: appTypeSettings.folderAppTag,
+          value: appTypeSettings.folderAppTagValue,
+          _folder_: true,
+          _folderAppType_: appType
+        };
+      }
+      return {
+        key: appTypeSettings.tag,
+        value: appTypeSettings.tagValue,
+        _folder_: true,
+        _folderAppType_: appType
+      };
+    }).filter(Boolean);
+    tagsRequest.push(...folderTags);
+  }
+  const ids = await fetchToolsByTags(tagsRequest)
   const allTools = await getTools();
-  const dockerTools = getApps(dockerAppIds, allTools)
-    // "_folder_: folder && !hasFolderAppsTagSettings" description:
-    // if we requested "folder" apps (i.e. by `settings.folderAppTag` & `settings.folderAppTagValue`),
-    // but we don't have such settings - we use default `settings.tag` & `settings.tagValue`;
-    // in such case we consider this apps as "folder".
-    // Otherwise (if we requested docker apps or we DO have `settings.folderAppTag`),
-    // we consider these apps as "docker"
-    .map(app => ({...app, _folder_: folder && !hasFolderAppsTagSettings}));
-  const folderTools = getApps(folderAppIds, allTools)
-    .map(app => ({...app, _folder_: folder}));
-  const tools = [
-    ...dockerTools,
-    ...folderTools,
-  ];
-  !silent && console.log('apps', tools);
+
+  function matchTool (toolIdConfig, allTools = []) {
+    const {
+      id,
+      ...rest
+    } = toolIdConfig || {};
+    if (!id) {
+      return [];
+    }
+    const app = allTools
+      .filter(tool => !tool.link)
+      .find(tool => Number(tool.id) === Number(id));
+    if (!app) {
+      return undefined;
+    }
+    return {
+      ...app,
+      ...rest
+    };
+  }
+  const tools = ids.map(id => matchTool(id, allTools)).filter(Boolean);
+  !silent && console.log('tools:', tools);
   const uniqueTools = new Set(
     tools
       .filter(tool => tool && tool.hasIcon)
@@ -127,8 +143,7 @@ async function fetchTools(opts = {}) {
   const images = await getToolsImages([...uniqueTools]);
   return {
     applications: tools.map(mapApplicationToolImage(images)),
-    userInfo,
-    folderAppsRequested
+    userInfo
   };
 }
 

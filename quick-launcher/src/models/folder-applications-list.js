@@ -4,6 +4,7 @@ import getDataStorageItemContent from './cloud-pipeline-api/data-storage-item-co
 import PathComponent from './utilities/path-component';
 import removeExtraSlash from './utilities/remove-slashes';
 import updateDataStorageItem from "./cloud-pipeline-api/data-storage-item-update";
+import { getApplicationTypeSettings } from "./folder-application-types";
 
 function processApplication (application, configuration, settings) {
   const {
@@ -30,7 +31,7 @@ function getFolderApplicationsFileConfig (settings, userName) {
     !settings.folderApplicationsListStorage ||
     !settings.folderApplicationsListFile
   ) {
-    return Promise.reject(new Error('Folder applications spec file is not specified'));
+    return Promise.reject(new Error('[WARNING] Folder applications spec file is not specified'));
   }
   if (!settings.appConfigPath) {
     return Promise.reject(new Error('<appConfigPath> is not specified'));
@@ -48,9 +49,13 @@ function getFolderApplicationsFileConfig (settings, userName) {
   return Promise.resolve({path, storage: dataStorageId});
 }
 
-export function getApplications (settings, userName) {
+export function getApplications (settings, userName, appType) {
+  const appTypeSettings = getApplicationTypeSettings(settings, appType);
+  if (!appTypeSettings) {
+    return Promise.resolve([]);
+  }
   return new Promise((resolve, reject) => {
-    getFolderApplicationsFileConfig(settings, userName)
+    getFolderApplicationsFileConfig(appTypeSettings, userName)
       .then(({path, storage: dataStorageId}) => {
         getDataStorageItemContent(dataStorageId, path)
           .then((content) => {
@@ -60,11 +65,11 @@ export function getApplications (settings, userName) {
                 throw new Error('wrong file format; expected: array');
               }
               const pathComponent = new PathComponent({
-                path: removeExtraSlash(settings.appConfigPath),
+                path: removeExtraSlash(appTypeSettings.appConfigPath),
                 hasPlaceholders: true,
                 gatewaySpecFile: true
               });
-              resolve(applications.map(app => processApplication(app, pathComponent, settings)));
+              resolve(applications.map(app => processApplication(app, pathComponent, appTypeSettings)));
             } catch (e) {
               reject(new Error(`Error parsing folder applications spec file: ${e.message}`));
             }
@@ -77,7 +82,7 @@ export function getApplications (settings, userName) {
   });
 }
 
-export function updateApplication (settings, userName, application) {
+function updateApplication (settings, userName, application) {
   return new Promise((resolve, reject) => {
     getFolderApplicationsFileConfig(settings, userName)
       .then(({path, storage: dataStorageId}) => {
@@ -122,7 +127,7 @@ export function updateApplication (settings, userName, application) {
   });
 }
 
-export function removeApplication (settings, userName, application) {
+function removeApplication (settings, userName, application) {
   return new Promise((resolve, reject) => {
     getFolderApplicationsFileConfig(settings, userName)
       .then(({path, storage: dataStorageId}) => {

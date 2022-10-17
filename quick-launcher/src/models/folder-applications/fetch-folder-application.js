@@ -3,8 +3,11 @@ import removeExtraSlash from '../utilities/remove-slashes';
 import getDataStorageContents from '../cloud-pipeline-api/data-storage-contents';
 import parseStoragePlaceholder from '../parse-storage-placeholder';
 import readApplicationInfo from './read-application-info';
+import { getApplicationTypeSettings } from "../folder-application-types";
 
-export default function fetchFolderApplication (path, settings) {
+export default function fetchFolderApplication (path, globalSettings, appType) {
+  console.log('fetch folder application of type', appType || '<default>', 'by path', path);
+  const settings = getApplicationTypeSettings(globalSettings, appType);
   if (!settings || !settings.appConfigPath || !settings.appConfigStorage || !path) {
     return Promise.resolve();
   }
@@ -45,7 +48,7 @@ export default function fetchFolderApplication (path, settings) {
           path: gatewaySpecFilePath,
           storage
         }
-        return readApplicationInfo(app, user, settings);
+        return readApplicationInfo(app, user, settings, appType);
       })
       .then(resolve);
   });

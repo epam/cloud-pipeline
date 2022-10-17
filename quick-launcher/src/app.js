@@ -8,8 +8,57 @@ import Application from './components/application';
 import LoadingIndicator from './components/shared/loading-indicator';
 import ApplicationCard from './components/application-card';
 import generateParametersFromDependencies from './components/utilities/generate-parameters-from-dependencies';
+import { escapeRegExp } from './models/utilities/escape-reg-exp';
 import './components/components.css';
 import './app.css';
+
+function findApplication (settings, location, applications = []) {
+  if (!settings) {
+    return undefined;
+  }
+  const parsed = settings.parseUrl(location.href);
+  console.log(`Searching best application for "${location.href}". Url parsed:`, parsed, 'available applications:', applications);
+  let pathname = location.pathname || '';
+  if (pathname.startsWith('/')) {
+    pathname = pathname.slice(1);
+  }
+  if (pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1);
+  }
+  pathname = escapeRegExp(pathname);
+  const pathNameRegExp = new RegExp(`^\/?${pathname}\/?$`, 'i');
+  const appByUrl = applications.find(o => o.rawUrl && pathNameRegExp.test(o.rawUrl));
+  if (appByUrl) {
+    console.log(`Application with the same url found: ${appByUrl.name}, url: "${appByUrl.rawUrl}"`, appByUrl);
+    return appByUrl;
+  }
+  console.log(`Application with the same url ("${location.pathname || ''}") not found`);
+  console.log('Searching application by url parameters:', parsed);
+  const {
+    image,
+    app
+  } = parsed;
+  if (app) {
+    const appToUse = applications.find(a => (new RegExp(`^${app}$`, 'i')).test(a.name));
+    console.log(`Searching application by [app] "${app}": `, appToUse || 'not found');
+    if (appToUse) {
+      return appToUse;
+    }
+  }
+  if (image) {
+    const appToUse = applications.find(a => (new RegExp(`^${image}$`, 'i')).test(a.name));
+    console.log(`Searching application by [image] "${image}": `, appToUse || 'not found');
+    if (appToUse) {
+      return appToUse;
+    }
+  }
+  if (applications.length > 0) {
+    console.warn(`Application not found. ${applications.length} applications available. The first application will be used`);
+    return applications[0];
+  }
+  console.log('Application not found');
+  return undefined;
+}
 
 function App({launch, location}) {
   const settings = useSettings();
@@ -18,7 +67,7 @@ function App({launch, location}) {
     appExtendedSettings
   );
   const [application, setApplication] = useState(undefined);
-  const {applications, error, pending, user} = useApplications(settings);
+  const {applications, error, pending, user} = useApplications();
   const back = useCallback(() => {
     setApplication(undefined);
   }, [setApplication]);
@@ -34,18 +83,7 @@ function App({launch, location}) {
   }, [location.href, settings]);
   useEffect(() => {
     if (launch && settings && !application && applications.length > 0 && user) {
-      const {image} = settings.parseUrl(location.href);
-      const [firstApplication] = applications;
-      let appToUse;
-      if (image) {
-        [appToUse] = applications.filter(a => (new RegExp(`^${image}$`, 'i')).test(a.name));
-      }
-      if (!appToUse && applications.length > 1) {
-        console.warn(`${applications.length} applications available! The first application will be used`);
-      }
-      if (!appToUse) {
-        appToUse = firstApplication;
-      }
+      const appToUse = findApplication(settings, location, applications);
       console.log('Application:', appToUse);
       setApplication(appToUse.id);
     }

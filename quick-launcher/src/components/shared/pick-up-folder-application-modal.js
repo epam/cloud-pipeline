@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import classNames from 'classnames';
 import Modal from './modal';
 import useAuthenticatedUser from '../utilities/user-authenticated-user';
-import {useSettings} from '../use-settings';
+import { useApplicationTypeSettings } from '../use-settings';
 import getUsersInfo from '../../models/cloud-pipeline-api/get-users-info';
 import useFolderApplications from '../utilities/use-folder-applications';
 import FolderApplicationCard from '../folder-application-card';
@@ -14,6 +14,8 @@ import './pick-up-folder-application-modal.css';
 
 export default function PickUpFolderApplicationModal (
   {
+    appType,
+    allApplications,
     visible,
     onClose,
     onSelectApplication,
@@ -25,7 +27,7 @@ export default function PickUpFolderApplicationModal (
     pending: authenticating,
     error: authenticationError
   } = useAuthenticatedUser();
-  const settings = useSettings();
+  const settings = useApplicationTypeSettings(allApplications ? undefined : appType);
   const [user, setUser] = useState(undefined);
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState(undefined);
@@ -82,9 +84,12 @@ export default function PickUpFolderApplicationModal (
     }
   }, [location.href, settings, setOptions]);
   const {
-    applications,
+    applications: allApps,
     pending: applicationsPending
-  } = useFolderApplications(options, false, ...(user ? [user] : []));
+  } = useFolderApplications(options, user);
+  const applications = allApplications
+    ? allApps
+    : allApps.filter(o => o.appType === appType);
   return (
     <Modal
       visible={visible}

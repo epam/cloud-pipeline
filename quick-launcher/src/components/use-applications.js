@@ -1,105 +1,102 @@
-import React, {useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useReducer } from 'react';
 import getApplications, {nameSorter} from '../models/applications';
 import {safePromise as fetchDataStorages} from "../models/cloud-pipeline-api/data-storage-available";
-import useFolderApplications from "./utilities/use-folder-applications";
-import { processGatewaySpecParameters } from '../models/parse-gateway-spec';
+import { loadFolderApplications } from './utilities/use-folder-applications';
+import fetchSettings from '../models/base/settings';
+import mapFolderApplication from '../models/map-folder-application-with-tool';
 
 const ApplicationsContext = React.createContext([]);
 const UserContext = React.createContext(undefined);
 
 export {ApplicationsContext, UserContext};
-export function useApplications (settings) {
-  const [pending, setPending] = useState(true);
-  const [apps, setApps] = useState([]);
-  const [user, setUser] = useState(undefined);
-  const [error, setError] = useState();
-  const isFolderApps = /^(folder|folder\+docker|docker\+folder)$/i.test(settings?.applicationsSourceMode);
-  const isFolderAndDockerApps = /^(folder\+docker|docker\+folder)$/i.test(settings?.applicationsSourceMode);
-  useEffect(async () => {
-    if (!settings) {
-      return;
-    }
-    try {
-      await fetchDataStorages();
-      const payload = await getApplications({folder: isFolderApps});
-      if (!payload || payload.error) {
-        const fetchError = payload && payload.error
-          ? payload.error
-          : 'Empty response';
-        setApps([]);
-        setUser(undefined);
-        setError(fetchError);
-      } else {
-        setApps(payload.applications || []);
-        setUser(payload.userInfo);
-        setError(undefined);
-      }
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setPending(false);
-    }
-  }, [
-    setPending,
-    setApps,
-    setError,
-    settings,
-    isFolderApps,
-  ]);
-  const {
-    pending: folderAppsPending,
-    applications: folderApplications
-  } = useFolderApplications({});
-  if (!settings) {
-    return {
-      applications: [],
-      pending: true,
-      error: undefined,
-      user: undefined
-    };
+
+async function fetchApplications () {
+  const globalSettings = await fetchSettings();
+  await fetchDataStorages();
+  const isFolderApps = /^folder$/i.test(globalSettings?.applicationsSourceMode);
+  const isFolderAndDockerApps = /^(folder\+docker|docker\+folder)$/i.test(globalSettings?.applicationsSourceMode);
+  const isDockerApps = /^docker$/i.test(globalSettings?.applicationsSourceMode);
+  const payload = await getApplications({folder: isFolderApps || isFolderAndDockerApps});
+  if (!payload || payload.error) {
+    throw new Error(payload.error || 'Applications not found (empty response)');
   }
-  if (isFolderApps) {
-    const [defaultApplication] = apps.filter(app => app._folder_);
-    if (!defaultApplication) {
-      return {
-        applications: [],
-        pending: pending || folderAppsPending,
-        error: pending || folderAppsPending
-          ? undefined
-          : 'There is no associated tool for folder applications',
-        user: undefined
-      };
-    }
-    const {
-      id,
-      image
-    } = defaultApplication;
-    const mapFolderApplication = (folderApplication) => ({
-      ...folderApplication,
-      toolId: id,
-      image,
-      hasIcon: !!folderApplication.icon,
-      __launch_parameters__: {
-        FOLDER_APPLICATION_STORAGE: {value: folderApplication.storage, type: 'number'},
-        FOLDER_APPLICATION_PATH: {value: folderApplication.path, type: 'string'},
-        ...processGatewaySpecParameters(folderApplication?.info?.parameters || {})
-      }
-    });
-    const extend = (original) => [
-      ...original,
-      ...(isFolderAndDockerApps ? apps.filter(app => !app._folder_) : [])
-    ].sort(nameSorter);
+  const {
+    applications: tools = [],
+    userInfo: user
+  } = payload;
+  if (isDockerApps) {
     return {
-      applications: extend((folderApplications || []).map(mapFolderApplication)),
-      pending: pending || folderAppsPending,
-      error,
+      applications: tools,
       user
     };
   }
+  // isFolderApps OR isFolderAndDockerApps
+  const folderApplications = await loadFolderApplications({});
+  const folderApplicationsProcessed = (folderApplications || [])
+    .map(folderApp => mapFolderApplication(folderApp, tools))
+    .filter(Boolean);
+  console.log('Folder applications tools info:');
+  folderApplicationsProcessed.forEach((app) => {
+    console.log(`Application "${app.name}" ("${app.appType || 'default'}" app type): tool #${app.toolId}`);
+  })
+  console.log('');
+  const dockerApplications = tools.filter(aTool => !aTool._folder_);
   return {
-    applications: apps.filter(apps => !apps._folder_).sort(nameSorter),
-    pending,
-    error,
+    applications: [
+      ...folderApplicationsProcessed,
+      ...dockerApplications
+    ].sort(nameSorter),
     user
   };
+}
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'init':
+      return {
+        ...state,
+        pending: true,
+        error: undefined
+      };
+    case 'error':
+      return {
+        ...state,
+        pending: false,
+        error: action.error
+      };
+    case 'apps':
+      return {
+        ...state,
+        applications: action.applications || [],
+        user: action.user,
+        error: undefined,
+        pending: false
+      };
+    default:
+      return state;
+  }
+};
+const init = () => ({
+  applications: [],
+  pending: true,
+  user: undefined,
+  error: undefined
+});
+
+export function useApplications () {
+  const [state, dispatch] = useReducer(reducer, undefined, init);
+  const onInit = useCallback(() => dispatch({type: 'init'}), [dispatch]);
+  const onError = useCallback((error) => dispatch({type: 'error', error}), [dispatch]);
+  const onLoad = useCallback((applications, user) => dispatch({type: 'apps', applications, user}), [dispatch]);
+  useEffect(() => {
+    onInit();
+    fetchApplications()
+      .then(({applications, user: userInfo}) => {
+        onLoad(applications, userInfo);
+      })
+      .catch(error => {
+        onError(error.message);
+      })
+  }, [onInit, onError, onLoad]);
+  return state;
 }

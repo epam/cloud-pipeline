@@ -21,6 +21,7 @@ import {findUserRun} from './find-user-run';
 import applicationAvailable from "./folder-applications/application-available";
 import performPreRunChecks from './pre-run-checks';
 import {getPortParameters} from './utilities/ports';
+import { getApplicationTypeSettings } from "./folder-application-types";
 
 function pollRun(run, resolve, reject, initialPoll = false, appSettings) {
   const {id, status, initialized, serviceUrl} = run || {};
@@ -135,6 +136,7 @@ async function launchTool(application, user, options) {
   } = options || {};
   console.log('launchTool.application', application);
   console.log('launchTool.options', options);
+  console.log(`APPLICATION TYPE: ${application?.appType || '<default>'}`);
   const getAppOwnerInfo = () => {
     return new Promise((resolve, reject) => {
       if (!appOwner) {
@@ -166,7 +168,8 @@ async function launchTool(application, user, options) {
     return Promise.resolve();
   };
   try {
-    const appSettings = await fetchSettings();
+    const rawAppSettings = await fetchSettings();
+    const appSettings = getApplicationTypeSettings(rawAppSettings, application?.appType);
     let prettyUrlParsed;
     let prettyUrlObj;
     if (appSettings.prettyUrlDomain || appSettings.prettyUrlPath) {
@@ -426,6 +429,7 @@ export default function launchApplication(application, user, options) {
       }
       return new Promise((resolve, reject) => {
         fetchSettings()
+          .then(rawSettings => getApplicationTypeSettings(rawSettings, application?.appType))
           .then(appSettings => {
             getRun(runId)
               .then(result => {

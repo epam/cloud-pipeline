@@ -1,12 +1,12 @@
 import {useCallback, useEffect, useState, useMemo} from 'react';
-import {useSettings} from '../use-settings';
+import { useApplicationTypeSettings } from '../use-settings';
 import fetchMountsForPlaceholders from '../../models/parse-limit-mounts-placeholders-config';
 import folderApplicationPublish from '../../models/folder-application-publish';
 import folderApplicationUpdate from '../../models/folder-application-update';
 import folderApplicationRemove from '../../models/folder-application-remove';
 import useApplicationIcon from './use-application-icon';
 import fetchFolderApplication from "../../models/folder-applications/fetch-folder-application";
-import {useApplicationSession} from "../../models/validate-folder-application";
+import {useApplicationSession} from '../../models/validate-folder-application';
 
 let newAttributeId = 0;
 
@@ -59,7 +59,7 @@ function getInfoFieldValuesPromise (field, settings) {
 }
 
 export default function useEditableApplication(application) {
-  const settings = useSettings();
+  const settings = useApplicationTypeSettings(application?.appType);
   const [pending, setPending] = useState(true);
   const [name, setName] = useState(undefined);
   const [description, setDescription] = useState(undefined);
@@ -82,11 +82,12 @@ export default function useEditableApplication(application) {
   const setInfoField = useCallback((key, value) => {
     setInfoFields(o => Object.assign({}, o, {[key]: value}));
   }, [setInfoFields]);
+  const appType = application?.appType;
   const onChangeSource = useCallback(source => {
     const appPath = source || initialSource;
     if (appPath && settings) {
       setDisabled(true);
-      fetchFolderApplication(appPath, settings)
+      fetchFolderApplication(appPath, settings, appType)
         .then(redistributeApplication => {
           if (redistributeApplication) {
             const {
@@ -137,7 +138,8 @@ export default function useEditableApplication(application) {
     setIcon,
     setIconFile,
     setPathInfo,
-    setNewOwnerInfo
+    setNewOwnerInfo,
+    appType
   ]);
   const onChange = useCallback((key, value) => {
     if (/^name$/i.test(key)) {
@@ -325,7 +327,11 @@ export default function useEditableApplication(application) {
         setPending(false);
       };
       apply(application);
-      fetchFolderApplication(application?.info?.path || application?.info?.source, settings)
+      fetchFolderApplication(
+        application?.info?.path || application?.info?.source,
+        settings,
+        application?.appType
+      )
         .catch(() => application)
         .then(apply)
         .then(() => setDisabled(false));

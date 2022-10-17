@@ -2,8 +2,10 @@ import fetchFolderApplicationInfo from "../fetch-folder-application-info";
 import removeExtraSlash from "../utilities/remove-slashes";
 import combineUrl from "../base/combine-url";
 import processString from "../process-string";
+import { getApplicationTypeSettings } from "../folder-application-types";
 
-export default function readApplicationInfo (application, user, settings) {
+export default function readApplicationInfo (application, user, settings, appType) {
+  const appTypeSettings = getApplicationTypeSettings(settings, appType);
   return new Promise((resolve) => {
     fetchFolderApplicationInfo(application.storage, application.path)
       .then(info => {
@@ -11,20 +13,20 @@ export default function readApplicationInfo (application, user, settings) {
           const applicationInfoFromPath = application.info || {};
           const pathInfo = {
             ...applicationInfoFromPath,
-            [settings.folderApplicationUserPlaceholder || 'user']: user ? user.userName : undefined
+            [appTypeSettings?.folderApplicationUserPlaceholder || 'user']: user ? user.userName : undefined
           };
           const publishedPathInfo = {
             ...applicationInfoFromPath,
-            [settings.folderApplicationUserPlaceholder || 'user']: settings?.serviceUser || user?.userName || ''
+            [appTypeSettings?.folderApplicationUserPlaceholder || 'user']: appTypeSettings?.serviceUser || user?.userName || ''
           };
-          applicationInfoFromPath[settings.folderApplicationUserPlaceholder || 'user'] = user
+          applicationInfoFromPath[appTypeSettings?.folderApplicationUserPlaceholder || 'user'] = user
             ? user.userName
             : undefined;
-          if (settings.folderApplicationPathAttributes) {
-            Object.keys(settings.folderApplicationPathAttributes)
+          if (appTypeSettings?.folderApplicationPathAttributes) {
+            Object.keys(appTypeSettings?.folderApplicationPathAttributes)
               .forEach(key => {
                 if (applicationInfoFromPath.hasOwnProperty(key)) {
-                  applicationInfoFromPath[settings.folderApplicationPathAttributes[key]] =
+                  applicationInfoFromPath[appTypeSettings?.folderApplicationPathAttributes[key]] =
                     applicationInfoFromPath[key];
                   delete applicationInfoFromPath[key];
                 }
@@ -42,13 +44,13 @@ export default function readApplicationInfo (application, user, settings) {
             ...info
           };
           const published = user &&
-            (user.userName || '').toLowerCase() === (settings.serviceUser || '').toLowerCase();
+            (user.userName || '').toLowerCase() === (appTypeSettings?.serviceUser || '').toLowerCase();
           resolve({
             ...application,
             id: `${application.storage}_${application.path}`,
             icon: application.icon
               ? combineUrl(
-                settings.api,
+                appTypeSettings?.api,
                 `datastorage/${application.storage}/downloadRedirect?path=${application.icon.path}&contentDisposition=INLINE`
               )
               : undefined,
@@ -58,15 +60,16 @@ export default function readApplicationInfo (application, user, settings) {
               .concat(['source', 'path', 'user']),
             pathInfo,
             url: published
-              ? processString(settings.folderApplicationLaunchLinkFormat, pathInfo)
+              ? processString(appTypeSettings?.folderApplicationLaunchLinkFormat, pathInfo)
               : undefined,
-            rawUrl: processString(settings.folderApplicationLaunchLinkFormat, publishedPathInfo),
+            rawUrl: processString(appTypeSettings?.folderApplicationLaunchLinkFormat, publishedPathInfo),
             name: applicationInfo.name,
             description: info.description,
             fullDescription: info.fullDescription,
             version: info.version,
             user,
-            published
+            published,
+            appType
           });
         } else {
           resolve(undefined);

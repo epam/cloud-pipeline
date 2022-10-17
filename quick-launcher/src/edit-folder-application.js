@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import useEditableApplication from './components/utilities/use-editable-application';
 import PickUpFolderApplicationModal from './components/shared/pick-up-folder-application-modal';
 import PickUpUsersModal from './components/shared/pick-up-users-modal';
-import {useSettings} from './components/use-settings';
+import { useApplicationTypeSettings } from './components/use-settings';
 import Modal from './components/shared/modal';
 import LoadingIndicator from './components/shared/loading-indicator';
 import {UsersRolesContext, fetchUsersRoles} from './components/utilities/users-roles-context';
@@ -38,6 +38,7 @@ function sortAttributes (infoFields = {}) {
 function Field (
   {
     applicationId: id,
+    appType,
     name,
     field,
     disabled,
@@ -283,6 +284,7 @@ function Field (
           Redistribute application
         </label>
         <PickUpFolderApplicationModal
+          appType={appType}
           visible={pickUpApplicationVisible}
           onClose={onClosePickUpAppDialog}
           onSelectApplication={onSelectAppToPublish}
@@ -412,7 +414,7 @@ export default function EditFolderApplication(
   const closeValidationErrorDetails = useCallback(() => {
     setValidationErrorDetailsVisible(false);
   }, [setValidationErrorDetailsVisible]);
-  const settings = useSettings();
+  const settings = useApplicationTypeSettings(application?.appType);
   const [actionError, setActionError] = useState(undefined);
   const doPublish = useCallback(() => {
     publish()
@@ -633,6 +635,7 @@ export default function EditFolderApplication(
           fields.map((field) => (
             <Field
               applicationId={application?.id}
+              appType={application?.appType}
               key={field}
               name={field}
               field={infoFields[field]}

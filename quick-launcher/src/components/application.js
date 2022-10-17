@@ -11,6 +11,7 @@ import combineUrl from '../models/base/combine-url';
 import processString from '../models/process-string';
 import {StopRunsError} from '../models/find-user-run';
 import './components.css';
+import { getApplicationTypeSettings } from "../models/folder-application-types";
 
 function stopJobs (runs = []) {
   const wrapStopRun = run => new Promise((resolve, reject) => {
@@ -80,6 +81,7 @@ function useLaunch (application, user, options) {
     if (application && user && !error && !url) {
       let timeout;
       fetchSettings()
+        .then(rawSettings => getApplicationTypeSettings(rawSettings, application?.appType))
         .then(settings => {
           launchApplication(application, user, options)
             .then((info) => {

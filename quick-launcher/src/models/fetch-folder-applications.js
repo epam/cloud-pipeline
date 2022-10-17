@@ -1,13 +1,13 @@
 import parseStoragePlaceholder from './parse-storage-placeholder';
 import processString from './process-string';
 import getDataStorageContents from './cloud-pipeline-api/data-storage-contents';
-import fetchFolderApplicationInfo from './fetch-folder-application-info';
-import combineUrl from './base/combine-url';
 import {getApplications} from './folder-applications-list';
 import {ESCAPE_CHARACTERS, escapeRegExp} from './utilities/escape-reg-exp';
 import PathComponent, {pathComponentHasPlaceholder} from './utilities/path-component';
 import removeExtraSlash from './utilities/remove-slashes';
 import readApplicationInfo from './folder-applications/read-application-info';
+import {getApplicationTypeSettings, getFolderApplicationTypes} from './folder-application-types';
+import fetchSettings from "./base/settings";
 
 const applicationsCache = new Map();
 
@@ -94,8 +94,9 @@ function findMatchingPathsForPathComponent (
   }
 }
 
-function findMatchingPaths (storage, pathConfigurations, settings) {
-  const ignored = processIgnoredPaths(settings);
+function findMatchingPaths (storage, pathConfigurations, settings, appType) {
+  const appTypeSettings = getApplicationTypeSettings(settings, appType);
+  const ignored = processIgnoredPaths(appTypeSettings);
   const pathIsIgnored = path => ignored.some(i => i.test(path));
   function iterateOverStorageContents (root, info, configurations) {
     if (configurations.length === 0) {
@@ -128,18 +129,18 @@ function findMatchingPaths (storage, pathConfigurations, settings) {
   return iterateOverStorageContents('', {}, pathConfigurations);
 }
 
-function fetchApplications (storage, user, settings, processedPath) {
+function fetchApplications (storage, user, settings, processedPath, appType) {
   return new Promise((resolve) => {
-    getApplications(settings, user?.userName)
+    getApplications(settings, user?.userName, appType)
       .catch((e) => {
         if (settings?.serviceUser === user?.userName) {
           console.warn(e.message);
         }
-        return findMatchingPaths(storage, processedPath, settings);
+        return findMatchingPaths(storage, processedPath, settings, appType);
       })
       .then(applications => {
         return Promise.all(
-          applications.map(application => readApplicationInfo(application, user, settings))
+          applications.map(application => readApplicationInfo(application, user, settings, appType))
         );
       })
       .then(applications => {
@@ -148,28 +149,50 @@ function fetchApplications (storage, user, settings, processedPath) {
   });
 }
 
-export default function fetchFolderApplications (settings, options, user, force = false) {
-  if (!applicationsCache.has(user.userName) || force) {
-    const dataStorageId = parseStoragePlaceholder(settings.appConfigStorage, user);
-    if (!Number.isNaN(Number(dataStorageId)) && settings.appConfigPath) {
-      const path = processString(
-        settings.appConfigPath,
-        {
-          ...(options || {}),
-          [settings.folderApplicationUserPlaceholder || 'user']: user.userName
-        }
-      );
-      const processedPath = processPath(path);
-      applicationsCache.set(
-        user.userName,
-        fetchApplications(dataStorageId, user, settings, processedPath)
-      );
-    } else {
-      applicationsCache.set(
-        user.userName,
-        Promise.resolve([])
-      );
-    }
+function fetchFolderApplicationsByType (settings, appType, options, user) {
+  const appTypeSettings = getApplicationTypeSettings(settings, appType);
+  if (!appTypeSettings) {
+    return Promise.resolve([]);
   }
-  return applicationsCache.get(user.userName);
+  let owner = user;
+  if (!owner && appTypeSettings.serviceUser) {
+    owner = {userName: appTypeSettings.serviceUser};
+  }
+  const dataStorageId = parseStoragePlaceholder(appTypeSettings.appConfigStorage, owner);
+  if (!Number.isNaN(Number(dataStorageId)) && appTypeSettings.appConfigPath) {
+    const path = processString(
+      appTypeSettings.appConfigPath,
+      {
+        ...(options || {}),
+        [appTypeSettings.folderApplicationUserPlaceholder || 'user']: owner?.userName
+      }
+    );
+    const processedPath = processPath(path);
+    return fetchApplications(dataStorageId, owner, appTypeSettings, processedPath, appType)
+  }
+  return Promise.resolve([]);
+}
+
+export default async function fetchFolderApplications (options, user, force = false) {
+  const settings = await fetchSettings();
+  const KEY = user ? user.userName : '<SERVICE_USER>';
+  if (!applicationsCache.has(KEY) || force) {
+    const applicationTypes = getFolderApplicationTypes(settings);
+    const fetchAllAppsPromise = () => new Promise((resolve) => {
+      Promise.all(
+        applicationTypes.map(appType => fetchFolderApplicationsByType(
+          settings,
+          appType,
+          options,
+          user
+        ))
+      )
+        .then(results => resolve(results.reduce((apps, appTypeApps) => ([...apps, ...appTypeApps]), [])));
+    });
+    applicationsCache.set(
+      KEY,
+      fetchAllAppsPromise()
+    );
+  }
+  return applicationsCache.get(KEY);
 }

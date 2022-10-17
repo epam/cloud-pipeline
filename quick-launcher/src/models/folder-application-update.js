@@ -115,9 +115,8 @@ export default function folderApplicationUpdate (
         }
         const options = settings.parseUrl(window.location.href);
         return fetchFolderApplications(
-          settings,
           options,
-          {userName: settings.serviceUser},
+          undefined,
           true
         );
       })

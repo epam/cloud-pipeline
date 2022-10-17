@@ -1,10 +1,6 @@
 import combineUrl from './combine-url';
 import getFetchOptions from './get-fetch-options';
 
-const ANONYMOUS = Symbol('anonymous user');
-const ORIGINAL_USER_NAME = Symbol('original user name');
-const ORIGINAL_USER = Symbol('original user');
-
 function getSettings() {
   return new Promise((resolve, reject) => {
     try {
@@ -44,19 +40,60 @@ let settings;
 let settingsPromise;
 
 const defaultUrlParser = {
-  name: 'Default Configuration (server/user/app)',
-  test: '^http[s]?:\\/\\/([^\\/]+)\\/([^\\/]+)\\/([^?]+)(.*)?$',
-  format: '^http[s]?:\\/\\/([^\\/]+)\\/([^\\/]+)\\/([^?]+)(.*)?$',
+  name: 'Default Configuration (server/user/version/app)',
+  test: '^http[s]?:\\/\\/([^\\/]+)\\/([^\\/]+)\\/([^\\/]+)\\/([^?]+)(.*)?$',
+  format: '^http[s]?:\\/\\/([^\\/]+)\\/([^\\/]+)\\/([^\\/]+)\\/([^?]+)(.*)?$',
   map: {
     app: '[group4]',
-    redirectPathName: '[group2:uppercased]/[group3][group4]',
+    redirectPathName: '[group2:uppercased]/[group3]/[group4][group5]',
     user: '[group2:uppercased]',
     version: '[group3]',
-    rest: '[group4]'
+    rest: '[group5]'
   }
 };
 
+// const dashUrlParser = {
+//   name: 'DASH Configuration (server/user/app)',
+//   test: '^http[s]?:\\/\\/([^\\/]+)\\/([^\\/]+)\\/([^?]+)(.*)?$',
+//   format: '^http[s]?:\\/\\/([^\\/]+)\\/([^\\/]+)\\/([^?]+)(.*)?$',
+//   map: {
+//     app: '[group3]',
+//     redirectPathName: '[group2:uppercased]/[group3][group4]',
+//     user: '[group2:uppercased]',
+//     rest: '[group4]'
+//   }
+// };
+
 const defaultSettings = {
+  // applicationTypes: {
+  //   dash: {
+  //     tag: 'app_type',
+  //     tagValue: 'dash',
+  //     appConfigStorage: 4393,
+  //     appConfigPath: '/dash-apps/[user]/[app]/gateway.spec',
+  //     folderApplicationLaunchLinkFormat: '/[user]/[app]',
+  //     appConfigNodeSizes: {
+  //       'dash normal': 'm5.xlarge',
+  //       'dash medium': 'm5.2xlarge',
+  //       'dash large': 'm5.4xlarge'
+  //     },
+  //     limitMounts: 'library_storage1',
+  //     limitMountsPlaceholders: {
+  //       library_storage1: {
+  //         title: 'Dash Library',
+  //         tagName: 'selectable2',
+  //         tagValue: 'true',
+  //         default: "464"
+  //       },
+  //     },
+  //     folderApplicationValidation: {
+  //       required: false,
+  //       parameters: {
+  //         CP_CAP_DASH_VALIDATOR_MODE: true
+  //       },
+  //     }
+  //   }
+  // },
   darkMode: DARK_MODE,
   tag: TAG,
   tagValue: TAG_VALUE,
@@ -314,10 +351,12 @@ function impersonateAsAnonymous(settings) {
           roles.some(role => role.name === settings.anonymousAccess.role)
         ) {
           console.warn('ANONYMOUS USER');
-          settings[ANONYMOUS] = true;
-          settings[ORIGINAL_USER_NAME] = ownerInfo?.payload?.userName;
-          settings[ORIGINAL_USER] = ownerInfo?.payload;
+          settings.isAnonymous = true;
+          settings.originalUserName = ownerInfo?.payload?.userName;
+          settings.originalUser = ownerInfo?.payload;
           return wrapWhoAmICall(settings, ownerInfo);
+        } else {
+          settings.isAnonymous = false;
         }
         return Promise.resolve(ownerInfo);
       })
@@ -410,24 +449,6 @@ export default function fetchSettings() {
         return Promise.resolve(settings);
       })
       .then(correctApplicationsMode)
-      .then(settings => {
-        Object.defineProperty(settings, 'isAnonymous', {
-          get () {
-            return !!(this[ANONYMOUS]);
-          }
-        });
-        Object.defineProperty(settings, 'originalUserName', {
-          get () {
-            return this[ORIGINAL_USER_NAME];
-          }
-        });
-        Object.defineProperty(settings, 'originalUser', {
-          get () {
-            return this[ORIGINAL_USER];
-          }
-        });
-        return Promise.resolve(settings);
-      })
       .then(settings => impersonateAsAnonymous(settings))
       .then(resolve)
   });

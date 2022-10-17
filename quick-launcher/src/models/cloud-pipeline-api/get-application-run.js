@@ -3,8 +3,8 @@ import getUserRuns from './get-user-runs';
 const runHasParameterWithValue = (parameter, valueRegExp) => run => {
   const result = (run.pipelineRunParameters || [])
     .find(p => p.name === parameter && valueRegExp.test(`${p.value}`));
-  console.log(`Checking parameter "${parameter}" value: ${result}`);
-  return result;
+  console.log(`Checking parameter "${parameter}" value:`,!!result);
+  return !!result;
 }
 
 function escapeRegExpString (string) {
@@ -44,21 +44,23 @@ export default function getApplicationRun(
     let parametersCheck = () => true;
     const searchCriteriaDescriptions = [];
     if (dockerImage) {
-      searchCriteriaDescriptions.push(`docker image is "${dockerImage}"`);
+      searchCriteriaDescriptions.push(`docker image should be "${dockerImage}"`);
     }
-    searchCriteriaDescriptions.push(`APPLICATION parameter is ${application}`);
+    searchCriteriaDescriptions.push(`APPLICATION parameter should be ${application}`);
     if (storageUser) {
-      searchCriteriaDescriptions.push(`DEFAULT_STORAGE_USER parameter is "${storageUser}"`);
+      // We're checking this parameter ALWAYS when not in validation mode;
+      // However, we're setting this parameter only if settings.limitMounts === 'default'
+      searchCriteriaDescriptions.push(`DEFAULT_STORAGE_USER parameter should be "${storageUser}"`);
     }
     if (prettyUrl) {
-      searchCriteriaDescriptions.push(`RUN_PRETTY_URL parameter is "${prettyUrlCorrected}"`);
+      searchCriteriaDescriptions.push(`RUN_PRETTY_URL parameter should be "${prettyUrlCorrected}"`);
     }
     if (parametersToCheck && !!Object.values(parametersToCheck || {}).find(o => o !== undefined)) {
       const conditions = [];
       Object.entries(parametersToCheck || {})
         .forEach(([key, value]) => {
           const parameterValue = value && value.value ? value.value : value;
-          searchCriteriaDescriptions.push(`${key} parameter is "${parameterValue}"`);
+          searchCriteriaDescriptions.push(`${key} parameter should be "${parameterValue}"`);
           const regExp = new RegExp(`^${escapeRegExpString(parameterValue)}$`, 'i');
           conditions.push(runHasParameterWithValue(key, regExp));
         });

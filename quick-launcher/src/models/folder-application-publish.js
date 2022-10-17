@@ -230,9 +230,8 @@ export default function folderApplicationPublish (
             callback && callback('Finishing', 0.9);
             const options = settings.parseUrl(window.location.href)
             return fetchFolderApplications(
-              settings,
               options,
-              {userName: settings.serviceUser},
+              undefined,
               true
             );
           })
