@@ -20,8 +20,8 @@ REQUEST_FOLDER_FOR_ID="$2"
 REQUEST_TYPE="$3"
 FS_SETUP_TASK="$4"
 
-local _REQUEST_PARAMS=""
-local _DELIMITER="?"
+_REQUEST_PARAMS=""
+_DELIMITER="?"
 
 if [ "$REQUEST_TYPE" == "POST" ] ; then
     if  [ ! -z "$CP_CAP_SHARE_FS_SIZE" ] ; then
