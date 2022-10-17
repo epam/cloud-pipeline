@@ -25,6 +25,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
@@ -467,6 +468,30 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return $(tagName("tbody")).shouldBe(visible)
                 .findAll(tagName("tr")).findBy(text(id)).is(exist);
     }
+
+    public boolean runWithAliasExists(final String runAlias) {
+        return $(tagName("tbody"))
+                .shouldBe(visible)
+                .findAll(className("ant-table-row"))
+                .stream()
+                .filter(element ->
+                        element.find(byClassName("un-name__alias")).getText().equals(runAlias))
+                .count() > 0;
+    }
+
+    public String getRunIdByAlias(final String runAlias) {
+        return $(tagName("tbody"))
+                .shouldBe(visible)
+                .findAll(className("ant-table-row"))
+                .stream()
+                .filter(element ->
+                     element.find(byClassName("un-name__alias")).getText().equals(runAlias))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchWindowException(String.format(
+                        "No such run with alias {%s}.", runAlias)))
+                .find(byClassName("un-name__original"))
+                .getText().replace("pipeline-","");
+            }
 
     public enum HeaderColumn {
         RUN("run-table__run-row-name"),

@@ -167,6 +167,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public String getOperationSystemInstallationContent() {
+            return $(byId("pip-install-url-input")).getText();
+        }
+
         public CliAO generateAccessKey() {
             click(byId("generate-access-key-button"));
             return this;
