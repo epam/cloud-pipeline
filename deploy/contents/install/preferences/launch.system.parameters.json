@@ -283,8 +283,22 @@
     {
         "name": "CP_CAP_SHARE_FS_SIZE",
         "type": "int",
-        "description": "Allows to specify shared file system size (supported for luster FS only)",
+        "description": "Allows to specify shared file system size (supported for Lustre FS only)",
         "defaultValue": "1200",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE",
+        "type": "string",
+        "description": "Allows to specify shared file deployment type: [SCRATCH_1, SCRATCH_2, PERSISTENT_1, PERSISTENT_2] (supported for Lustre FS only)",
+        "defaultValue": "SCRATCH_2",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_THROUGHPUT",
+        "type": "int",
+        "description": "Allows to specify shared file system throughput (supported for persistent Lustre FS only)",
+        "defaultValue": "500",
         "passToWorkers": false
     },
     {

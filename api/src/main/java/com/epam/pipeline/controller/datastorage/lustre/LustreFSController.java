@@ -47,8 +47,10 @@ public class LustreFSController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<LustreFS> getOrCreateLustreFS(@PathVariable(value = RUN_ID) final Long runId,
-                                                @RequestParam(required = false) final Integer size) {
-        return Result.success(lustreFSApiService.getOrCreateLustreFS(runId, size));
+                                                @RequestParam(required = false) final Integer size,
+                                                @RequestParam(required = false) final String type,
+                                                @RequestParam(required = false) final Integer throughput) {
+        return Result.success(lustreFSApiService.getOrCreateLustreFS(runId, size, type, throughput));
     }
 
     @GetMapping(value = RUN_ID_PATH)

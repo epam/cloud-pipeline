@@ -587,6 +587,7 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
     public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
     public static final String ERROR_LUSTRE_MISSING_NETWORK = "error.lustre.missing.network";
+    public static final String ERROR_LUSTRE_MISSING_THROUGHPUT = "error.lustre.missing.throughput";
 
     //Node Schedule
     public static final String ERROR_NODE_SCHEDULE_MISSING_ENTRIES = "error.node.schedule.missing.entries";

@@ -794,7 +794,7 @@ public class SystemPreferences {
     public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
             "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
-            "lustre.fs.default.throughput", 50, LUSTRE_GROUP, pass);
+            "lustre.fs.default.throughput", 500, LUSTRE_GROUP, pass);
     public static final StringPreference LUSTRE_FS_MOUNT_OPTIONS = new StringPreference(
             "lustre.fs.mount.options", null, LUSTRE_GROUP, pass);
     public static final StringPreference LUSTRE_FS_DEPLOYMENT_TYPE = new StringPreference(
