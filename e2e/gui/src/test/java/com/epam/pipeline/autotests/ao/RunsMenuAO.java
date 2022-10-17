@@ -469,23 +469,15 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .findAll(tagName("tr")).findBy(text(id)).is(exist);
     }
 
-    public boolean runWithAliasExists(final String runAlias) {
-        return $(tagName("tbody"))
-                .shouldBe(visible)
-                .findAll(className("ant-table-row"))
-                .stream()
-                .filter(element ->
-                        element.find(byClassName("un-name__alias")).getText().equals(runAlias))
-                .count() > 0;
-    }
-
     public String getRunIdByAlias(final String runAlias) {
         return $(tagName("tbody"))
                 .shouldBe(visible)
                 .findAll(className("ant-table-row"))
                 .stream()
                 .filter(element ->
-                     element.find(byClassName("un-name__alias")).getText().equals(runAlias))
+                     element.find(byClassName("un-name__alias")).exists())
+                .filter(element ->
+                        element.find(byClassName("un-name__alias")).getText().equals(runAlias))
                 .findFirst()
                 .orElseThrow(() -> new NoSuchWindowException(String.format(
                         "No such run with alias {%s}.", runAlias)))

@@ -39,11 +39,7 @@ public class PrerequisitesTest extends AbstractBfxPipelineTest implements Naviga
     @Test
     @TestCase(value = "TC-TEST-ENVIRONMENT-3")
     public void checkUpdatePipeVersionInExistingRun() {
-        if (("false".equals(AUTH_TOKEN)) ||
-                (! runsMenu()
-                    .activeRuns()
-                    .viewAvailableActiveRuns()
-                    .runWithAliasExists(TEST_RUN_NAME))) {
+        if ("false".equals(AUTH_TOKEN)) {
             return;
         }
         operationSystemInstallationContent = navigationMenu()
