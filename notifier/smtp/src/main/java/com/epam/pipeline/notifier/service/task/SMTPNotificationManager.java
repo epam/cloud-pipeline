@@ -24,6 +24,7 @@ import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
+import org.apache.commons.validator.EmailValidator;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.tools.generic.NumberTool;
@@ -163,7 +164,7 @@ public class SMTPNotificationManager implements NotificationManager {
         }
 
         String userEmail = getTargetUserEmail(message);
-        if (userEmail != null) {
+        if (isValidEmail(userEmail)) {
             email.addTo(userEmail);
         }
 
@@ -171,7 +172,7 @@ public class SMTPNotificationManager implements NotificationManager {
 
         for (PipelineUser user : keepInformedUsers) {
             String address = user.getEmail();
-            if (address != null) {
+            if (isValidEmail(address)) {
                 email.addBcc(address);
             }
         }
@@ -224,6 +225,10 @@ public class SMTPNotificationManager implements NotificationManager {
             Thread.currentThread().interrupt();
             LOGGER.error(e.getMessage(), e);
         }
+    }
+
+    private boolean isValidEmail(final String email) {
+        return EmailValidator.getInstance().isValid(email);
     }
 
 }
