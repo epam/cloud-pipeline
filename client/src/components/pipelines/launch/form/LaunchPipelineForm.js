@@ -2843,8 +2843,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             justify="space-around">
             <Button.Group>
               <Button
-                disabled={(this.props.readOnly && !this.props.canExecute) ||
-                (!!this.state.pipeline && this.props.detached)}
+                disabled={
+                  !this.state.isRawEditEnabled && (
+                    (this.props.readOnly && !this.props.canExecute) ||
+                    (!!this.state.pipeline && this.props.detached)
+                  )
+                }
                 id="add-parameter-button"
                 onClick={
                   () => this.addParameter(sectionName, {type: 'string'}, isSystemParametersSection)
