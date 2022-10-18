@@ -209,12 +209,18 @@ class AllRuns extends Component {
   refreshTimer;
   startTimer = () => {
     if (!this.refreshTimer) {
-      this.refreshTimer = setInterval(this.reloadTable, refreshInterval);
+      this.reloadTable();
+      const timer = () => {
+        this.endTimer();
+        this.reloadTable();
+        this.refreshTimer = setTimeout(timer, refreshInterval);
+      };
+      this.refreshTimer = setTimeout(timer, refreshInterval);
     }
   };
   endTimer = () => {
     if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
+      clearTimeout(this.refreshTimer);
       this.refreshTimer = null;
     }
   };
