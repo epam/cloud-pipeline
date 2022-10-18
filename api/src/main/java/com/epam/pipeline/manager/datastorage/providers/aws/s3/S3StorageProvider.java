@@ -61,7 +61,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.Assert;
@@ -412,8 +411,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public Pair<Boolean, String> isRestoreActionEligible(final S3bucketDataStorage dataStorage, final String path) {
-        return Pair.of(true, StringUtils.EMPTY);
+    public void verifyRestoreActionSupported() {
+        // s3 provider supports restore - nothing to do
     }
 
     @Override

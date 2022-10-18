@@ -40,7 +40,6 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -245,7 +244,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public Pair<Boolean, String> isRestoreActionEligible(final GSBucketStorage dataStorage, final String path) {
+    public void verifyRestoreActionSupported() {
         throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
     }
 
