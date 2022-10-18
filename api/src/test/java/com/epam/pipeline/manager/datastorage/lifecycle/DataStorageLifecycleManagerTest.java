@@ -41,6 +41,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -219,11 +220,12 @@ public class DataStorageLifecycleManagerTest {
 
     @Test
     public void shouldSuccessfullyUpdateStatusForLifecycleRuleExecution() {
-        final LocalDateTime startPoint = DateUtils.nowUTC();
+        final LocalDateTime startPoint = DateUtils.nowUTC().minus(1, ChronoUnit.SECONDS);
         final StorageLifecycleRuleExecutionEntity execution = StorageLifecycleRuleExecutionEntity.builder()
                 .ruleId(ID).path("/data/1/dataset1")
                 .storageClass(STORAGE_CLASS)
                 .status(StorageLifecycleRuleExecutionStatus.RUNNING)
+                .updated(DateUtils.nowUTC())
                 .build();
         Mockito.doReturn(execution).when(lifecycleRuleExecutionRepository).findOne(eq(ID));
         Mockito.doReturn(execution).when(lifecycleRuleExecutionRepository)
