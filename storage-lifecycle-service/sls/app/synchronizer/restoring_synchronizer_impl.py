@@ -33,6 +33,8 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
     ACTIVE_STATUSES = [SUCCEEDED_STATUS, INITIATED_STATUS, RUNNING_STATUS]
     TERMINAL_STATUSES = [SUCCEEDED_STATUS, CANCELLED_STATUS, FAILED_STATUS]
 
+    PATH_TYPE_FOLDER = "FOLDER"
+
     def _sync_storage(self, storage):
         ongoing_actions = self.pipeline_api_client.filter_restore_actions(
             storage.id,
@@ -209,18 +211,22 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
 
     @staticmethod
     def _fetch_related_actions_to_current_one(root_action, actions, search_down=None, statuses=None):
-        def _relation_search_filter(a):
-            if search_down is None:
-                return root_action.path.startswith(a.path) or a.path.startswith(root_action.path)
-            elif search_down:
-                return a.path.startswith(root_action.path)
+        def _has_relation(action, _search_down):
+            if _search_down is None:
+                return _has_relation(action, False) or _has_relation(action, True)
+            elif _search_down:
+                parent_folder_path = root_action.path if root_action.path.endswith("/") else root_action.path + "/"
+                is_child_action = root_action.path_type == StorageLifecycleRestoringSynchronizer.PATH_TYPE_FOLDER and action.path.startswith(parent_folder_path)
+                return action.path == root_action.path or is_child_action
             else:
-                return root_action.path.startswith(a.path)
+                parent_folder_path = action.path if action.path.endswith("/") else action.path + "/"
+                is_parent_action = action.path_type == StorageLifecycleRestoringSynchronizer.PATH_TYPE_FOLDER and root_action.path.startswith(parent_folder_path)
+                return action.path == root_action.path or is_parent_action
 
         if statuses is None:
             statuses = []
         return [a for a in actions
-                if _relation_search_filter(a)
+                if _has_relation(a, search_down)
                 and root_action.started > a.started
                 and root_action is not a
                 and (not statuses or a.status in statuses)]
