@@ -39,6 +39,7 @@ import java.util.List;
 public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestoreActionRepositoryCustomQueries {
 
     public static final String PATH = "path";
+    public static final String PATH_TYPE = "type";
     public static final String STATUS = "status";
     public static final String ONE_ANY_SYMBOL = "_";
     public static final String ANY_SIGN = "%";
@@ -56,9 +57,14 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
         Assert.notNull(filter.getSearchType(), "searchType should be provided!");
         predicates.add(cb.equal(restoreAction.get(DATASTORAGE_ID), filter.getDatastorageId()));
         if (filter.getPath() != null && filter.getPath().getPath() != null) {
+            final Predicate isTheSamePathAction = cb.equal(restoreAction.get(PATH), filter.getPath().getPath());
             if (filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT) {
                 final Expression<String> pathFromDb = cb.concat(restoreAction.get(PATH), ANY_SIGN);
-                predicates.add(cb.like(cb.literal(filter.getPath().getPath()), pathFromDb));
+                final Predicate isParentFolderAction = cb.and(
+                        cb.like(cb.literal(filter.getPath().getPath()), pathFromDb),
+                        cb.equal(restoreAction.get(PATH_TYPE), StorageRestorePathType.FOLDER)
+                );
+                predicates.add(cb.or(isTheSamePathAction, isParentFolderAction));
             } else {
                 if (filter.getPath().getType() == StorageRestorePathType.FOLDER) {
                     predicates.add(cb.like(restoreAction.get(PATH), filter.getPath().getPath() + ANY_SIGN));
@@ -67,7 +73,7 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
                                 filter.getPath().getPath() + ANY_SIGN + DELIMITER + ONE_ANY_SYMBOL + ANY_SIGN));
                     }
                 } else {
-                    predicates.add(cb.equal(restoreAction.get(PATH), filter.getPath().getPath()));
+                    predicates.add(isTheSamePathAction);
                 }
             }
         }
