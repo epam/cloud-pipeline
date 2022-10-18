@@ -15,21 +15,22 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.Test;
 
 import static com.epam.pipeline.autotests.utils.C.AUTH_TOKEN;
-import static com.epam.pipeline.autotests.utils.C.TEST_RUN_NAME;
+import static com.epam.pipeline.autotests.utils.C.TEST_RUN_TAG;
 import static java.lang.String.format;
 import static org.testng.Assert.assertFalse;
 
 public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigation {
 
-    private final String PIPE_PATH = "~/pipe_new_version/";
-    private final String COMMAND_VERSION = "%spipe --version";
-    private final String COMMAND_SSH = "%spipe ssh %s";
+    private final String COMMAND_VERSION = "%s --version";
+    private final String COMMAND_SSH = "%s ssh %s";
     private final String rootHost = "root@pipeline";
+    private final String init_pipe_path = "pipe";
     private String old_pipe_version;
     private String new_pipe_version;
     private String operationSystemInstallationContent;
@@ -40,17 +41,20 @@ public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigat
         if ("false".equals(AUTH_TOKEN)) {
             return;
         }
-        operationSystemInstallationContent = navigationMenu()
+        final SettingsPageAO.CliAO cliAO = navigationMenu()
                 .settings()
                 .switchToCLI()
                 .switchPipeCLI()
-                .selectOperationSystem("Linux-Binary")
-                .getOperationSystemInstallationContent()
-                .replaceAll("~/pipe", PIPE_PATH);
+                .selectOperationSystem("Linux-Binary");
+        final String operationSystemInstallationContent = cliAO.getOperationSystemInstallationContent();
+        final String cliConfigureCommand = cliAO
+                .generateAccessKey()
+                .getCLIConfigureCommand();
+        final String pipe_with_path = getPipePath(cliConfigureCommand);
         String runID = runsMenu()
                 .activeRuns()
                 .viewAvailableActiveRuns()
-                .getRunIdByTag(TEST_RUN_NAME);
+                .getRunIdByTag(TEST_RUN_TAG);
         runsMenu()
                 .activeRuns()
                 .viewAvailableActiveRuns()
@@ -60,19 +64,19 @@ public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigat
                     String sshFirstLine = shell.waitUntilTextAppears(runID).getFirstLine();
                     old_pipe_version = shell
                             .waitUntilTextAppears(runID)
-                            .execute(format(COMMAND_VERSION, ""))
-                            .assertNextStringIsVisible(format(COMMAND_VERSION, ""), rootHost)
-                            .lastCommandResult(format(COMMAND_VERSION, ""));
-                    shell.execute(format(COMMAND_SSH, "", runID))
-                            .assertNextStringIsVisible(format(COMMAND_SSH, "", runID), rootHost)
+                            .execute(format(COMMAND_VERSION, init_pipe_path))
+                            .assertNextStringIsVisible(format(COMMAND_VERSION, init_pipe_path), rootHost)
+                            .lastCommandResult(format(COMMAND_VERSION, init_pipe_path));
+                    shell.execute(format(COMMAND_SSH, init_pipe_path, runID))
+                            .assertNextStringIsVisible(format(COMMAND_SSH, init_pipe_path, runID), rootHost)
                             .assertPageAfterCommandContainsStrings(sshFirstLine);
                     new_pipe_version = shell.execute(operationSystemInstallationContent)
-                            .execute(format(COMMAND_VERSION, PIPE_PATH))
-                            .assertNextStringIsVisible(format(COMMAND_VERSION, PIPE_PATH), rootHost)
-                            .lastCommandResult(format(COMMAND_VERSION, PIPE_PATH));
+                            .execute(format(COMMAND_VERSION, pipe_with_path))
+                            .assertNextStringIsVisible(format(COMMAND_VERSION, pipe_with_path), rootHost)
+                            .lastCommandResult(format(COMMAND_VERSION, pipe_with_path));
                     checkPipeVersion(old_pipe_version, new_pipe_version);
-                    shell.execute(format(COMMAND_SSH, "", runID))
-                            .assertNextStringIsVisible(format(COMMAND_SSH, "", runID), rootHost)
+                    shell.execute(format(COMMAND_SSH, pipe_with_path, runID))
+                            .assertNextStringIsVisible(format(COMMAND_SSH, pipe_with_path, runID), rootHost)
                             .assertPageAfterCommandContainsStrings(sshFirstLine)
                             .close();
                 });
@@ -81,5 +85,9 @@ public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigat
     private void checkPipeVersion(String old_version, String new_version) {
         assertFalse(old_version.substring(0, old_version.indexOf("Access"))
                 .equals(new_version.substring(0, new_version.indexOf("Access"))));
+    }
+
+    private String getPipePath(String command) {
+        return command.substring(0, command.indexOf(" configure"));
     }
 }
