@@ -114,6 +114,14 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
 
     def _process_action_and_update(self, storage, action):
         if action.status == self.INITIATED_STATUS:
+
+            if not self.cloud_bridge.is_support(storage):
+                self.logger.log(
+                    "Lifecycle restore feature is not implemented for storage with type {}.".format(storage.storage_type)
+                )
+                self._update_action(action, self.FAILED_STATUS)
+                return
+
             self.logger.log("Storage: {}. Action: {}. Path: {}. Initiating restore process for '{}' days."
                             .format(storage.id, action.action_id, action.path, action.days))
             restore_result = self.cloud_bridge.run_restore_action(storage, action, self._get_restore_operation_id(action))

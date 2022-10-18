@@ -58,6 +58,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             self.logger.log(
                 "Lifecycle rules feature is not implemented for storage with type {}.".format(storage.storage_type)
             )
+            return
 
         file_listing_cache = {}
         self.cloud_bridge.prepare_bucket_if_needed(storage)

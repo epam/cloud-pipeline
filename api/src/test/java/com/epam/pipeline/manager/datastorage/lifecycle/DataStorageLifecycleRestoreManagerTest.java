@@ -37,7 +37,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mockito;
-import org.springframework.data.util.Pair;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -131,22 +130,21 @@ public class DataStorageLifecycleRestoreManagerTest {
 
     @Test(expected = IllegalStateException.class)
     public void failToInitiateRestoreIfAlreadyExistAndIsntForcedTest() {
-        Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
-        lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
+        lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1)
+                        .type(StorageRestorePathType.FOLDER).build(),
                 STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false, DISABLED_NOTIFICATION);
     }
 
     @Test(expected = IllegalStateException.class)
     public void failToInitiateRestoreWithoutWellFormedNotificationTest() {
-        Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
-        lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
+        lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1)
+                        .type(StorageRestorePathType.FOLDER).build(),
                 STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false,
                 new StorageRestoreActionNotification(true, Collections.emptyList()));
     }
 
     @Test(expected = IllegalStateException.class)
     public void failToInitiateRestoreIfAlreadyExistRunningAndIsForcedTest() {
-        Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         Mockito.doReturn(StorageRestoreActionEntity.builder().id(ID).status(StorageRestoreStatus.INITIATED).build())
                 .when(dataStoragePathRestoreActionRepository)
                 .save(Mockito.any(StorageRestoreActionEntity.class));
@@ -160,7 +158,6 @@ public class DataStorageLifecycleRestoreManagerTest {
 
     @Test
     public void succeedToInitiateRestoreIfAlreadyExistAndIsForcedTest() {
-        Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         Mockito.doReturn(Collections.singletonList(SUCCEEDED_ACTION))
                 .when(dataStoragePathRestoreActionRepository).filterBy(Mockito.any());
         Mockito.doReturn(StorageRestoreActionEntity.builder().id(ID).status(StorageRestoreStatus.INITIATED).build())
@@ -176,7 +173,6 @@ public class DataStorageLifecycleRestoreManagerTest {
 
     @Test
     public void succeedToInitiateRestoreIfIsntAlreadyExistAndIsntForcedTest() {
-        Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         Mockito.doReturn(INITIATED_ACTION.toBuilder().build())
                 .when(dataStoragePathRestoreActionRepository)
                 .save(Mockito.any(StorageRestoreActionEntity.class));

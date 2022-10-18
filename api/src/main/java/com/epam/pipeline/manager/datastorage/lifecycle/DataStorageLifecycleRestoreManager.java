@@ -42,7 +42,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -73,6 +72,12 @@ public class DataStorageLifecycleRestoreManager {
                                                               final StorageRestoreActionRequest request) {
         Assert.state(!CollectionUtils.isEmpty(request.getPaths()),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED));
+        request.getPaths().forEach(
+            path -> Assert.state(path.getPath() != null && path.getType() != null,
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED)
+            )
+        );
 
         final StorageRestoreActionNotification notification = request.getNotification();
         final boolean notificationFormedCorrectly = notification != null
@@ -91,10 +96,11 @@ public class DataStorageLifecycleRestoreManager {
         final boolean restoreVersions = BooleanUtils.isTrue(request.getRestoreVersions());
         final List<StorageRestoreActionEntity> actions = request.getPaths().stream()
                 .sorted(Comparator.comparing(StorageRestorePath::getPath))
-                .map(path ->
-                        buildStoragePathRestoreAction(storage, path, restoreMode, effectiveDays,
-                                restoreVersions, force, notification))
-                .collect(Collectors.toList());
+                .map(path -> {
+                    path.setPath(getEffectivePathForRestoreAction(path, storage.getDelimiter()));
+                    return buildStoragePathRestoreAction(storage, path, restoreMode, effectiveDays,
+                            restoreVersions, force, notification);
+                }).collect(Collectors.toList());
         final List<StorageRestoreAction> created = dataStoragePathRestoreActionRepository.save(actions).stream()
                 .map(lifecycleEntityMapper::toDto).collect(Collectors.toList());
         created.forEach(a ->
@@ -196,14 +202,7 @@ public class DataStorageLifecycleRestoreManager {
             final AbstractDataStorage storage, final StorageRestorePath path,
             final String restoreMode, final Long days, final boolean restoreVersions, final boolean force,
             final StorageRestoreActionNotification notification) {
-        Assert.state(path.getPath() != null && path.getType() != null,
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED));
-        final String effectivePath = getEffectivePathForRestoreAction(path, storage.getDelimiter());
-        final Pair<Boolean, String> eligibility = storageProviderManager.isRestoreActionEligible(
-                storage, effectivePath);
-        Assert.isTrue(eligibility.getFirst(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE,
-                        storage.getPath(), storage.getType(), effectivePath, eligibility.getSecond()));
+        storageProviderManager.verifyRestoreActionSupported(storage);
 
         final StorageRestoreAction effectiveRestore = filterRestoreStorageActions(
                 storage,
@@ -236,7 +235,7 @@ public class DataStorageLifecycleRestoreManager {
         return StorageRestoreActionEntity.builder()
                 .datastorageId(storage.getId())
                 .userActor(userManager.getCurrentUser())
-                .path(effectivePath)
+                .path(path.getPath())
                 .type(path.getType())
                 .restoreMode(restoreMode)
                 .restoreVersions(restoreVersions)
