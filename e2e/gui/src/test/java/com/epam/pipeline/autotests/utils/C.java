@@ -125,7 +125,7 @@ public class C {
         BACKUP_STORAGE_PATH = conf.getProperty("e2e.ui.backup.storage.path");
         BACKUP_STORAGE_OFFSET = Integer.parseInt(conf.getProperty("e2e.ui.backup.storage.offset"));
         DEFAULT_CLUSTER_AWS_EBS_TYPE = conf.getProperty("e2e.ui.cluster.aws.ebs.type");
-        TEST_RUN_NAME = conf.getProperty("e2e.ui.test.run.name");
+        TEST_RUN_NAME = conf.getProperty("e2e.ui.test.run.tag");
     }
 
     public static final int DEFAULT_TIMEOUT;

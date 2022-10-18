@@ -469,21 +469,26 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .findAll(tagName("tr")).findBy(text(id)).is(exist);
     }
 
-    public String getRunIdByAlias(final String runAlias) {
-        return $(tagName("tbody"))
+    public String getRunIdByTag(final String runTag) {
+         return $(tagName("tbody"))
                 .shouldBe(visible)
                 .findAll(className("ant-table-row"))
                 .stream()
                 .filter(element ->
-                     element.find(byClassName("un-name__alias")).exists())
-                .filter(element ->
-                        element.find(byClassName("un-name__alias")).getText().equals(runAlias))
+                     element.find(byClassName("un-tags__more-label")).exists())
+                .filter(element -> {
+                        element.find(byClassName("un-tags__more-label")).hover();
+                        $(byClassName("un-tags__run-tag"))
+                                .has(text(runTag.toUpperCase()));
+                        return true;
+                        }
+                )
                 .findFirst()
                 .orElseThrow(() -> new NoSuchWindowException(String.format(
-                        "No such run with alias {%s}.", runAlias)))
+                        "No such run with tag {%s}.", runTag)))
                 .find(byClassName("un-name__original"))
                 .getText().replace("pipeline-","");
-            }
+    }
 
     public enum HeaderColumn {
         RUN("run-table__run-row-name"),
