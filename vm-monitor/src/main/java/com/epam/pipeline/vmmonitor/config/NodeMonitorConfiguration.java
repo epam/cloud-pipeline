@@ -27,12 +27,13 @@ public class NodeMonitorConfiguration {
             final Notifier<List<NodeThresholdEvent>> notifier,
             final NodeStatsClient nodeStatsClient,
             @Value("${monitor.node.namespace:default}") final String namespace,
-            @Value("${monitor.node.target.node.label:cloud-pipeline/cp-node-monitor}") final String monitoringNodeLabel,
-            @Value("${monitor.node.target.pod.label.name:cp-node-reporter}") final String reportingPodLabel,
+            @Value("${monitor.node.monitoring.node.label:cloud-pipeline/cp-node-monitor}")
+            final String monitoringNodeLabel,
+            @Value("${monitor.node.reporting.pod.name:cp-node-reporter}") final String reportingPodName,
             @Value("#{${monitor.node.thresholds:{NOFILE:60}}}") final Map<NodeReporterStatsType, Long> thresholds,
             @Value("${monitor.node.pool.size:1}") final int poolSize) {
         return new NodeMonitor(notifier, nodeStatsClient, Executors.newFixedThreadPool(poolSize),
-                namespace, monitoringNodeLabel, reportingPodLabel, thresholds);
+                namespace, monitoringNodeLabel, reportingPodName, thresholds);
     }
 
     @Bean

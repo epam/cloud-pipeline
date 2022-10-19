@@ -49,7 +49,7 @@ public class NodeMonitor implements Monitor {
     private final Executor executor;
     private final String namespace;
     private final String monitoringNodeLabel;
-    private final String reportingPodLabel;
+    private final String reportingPodName;
     private final Map<NodeReporterStatsType, Long> thresholds;
 
     @Override
@@ -100,7 +100,7 @@ public class NodeMonitor implements Monitor {
     private Stream<Pod> reportingPods(final KubernetesClient client) {
         return Optional.ofNullable(client.pods()
                         .inNamespace(namespace)
-                        .withLabel(NAME_LABEL, reportingPodLabel)
+                        .withLabel(NAME_LABEL, reportingPodName)
                         .list()
                         .getItems())
                 .map(List::stream)
