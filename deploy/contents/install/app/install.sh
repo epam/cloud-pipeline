@@ -836,7 +836,17 @@ if is_service_requested cp-git; then
         GITLAB_ROOT_TOKEN=""
         GITLAB_ROOT_TOKEN_ATTEMPTS=60
         CP_GITLAB_INIT_TIMEOUT=30
-        if [ -z "$CP_GITLAB_SESSION_API_DISABLE" ] || [ "$CP_GITLAB_SESSION_API_DISABLE" == "true" ]; then
+        if [ -z "$CP_GITLAB_SESSION_API_DISABLE" ] || [ "$CP_GITLAB_SESSION_API_DISABLE" != "true" ]; then
+            print_info "-> Getting GitLab root's private_token (gitlab will be pinged $GITLAB_ROOT_TOKEN_ATTEMPTS times as it may still be not initialized...)"
+            while [ -z "$GITLAB_ROOT_TOKEN" ] || [ "$GITLAB_ROOT_TOKEN" == "null" ]; do
+                if [ "$GITLAB_ROOT_TOKEN_ATTEMPTS" == 0 ]; then
+                    print_err "Unable to get GitLab root's private_token after $GITLAB_ROOT_TOKEN_ATTEMPTS attempts"
+                    break
+                fi
+                GITLAB_ROOT_TOKEN=$(curl -k https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/session -s -F "login=$GITLAB_ROOT_USER" -F "password=$GITLAB_ROOT_PASSWORD" | jq -r '.private_token')
+                sleep 10
+                GITLAB_ROOT_TOKEN_ATTEMPTS=$((GITLAB_ROOT_TOKEN_ATTEMPTS-1))
+        else
             print_info "-> Setting GitLab root's private_token"
             GITLAB_ROOT_TOKEN=$(openssl rand -hex 20)
             gitlab_access_tokens_scopes=${CP_GITLAB_ACCESS_TOKEN_SCOPES:-":read_user,:read_repository,:api,:read_api,:write_repository,:sudo"}
@@ -848,16 +858,6 @@ if is_service_requested cp-git; then
             else
                 print_ok "GitLab root's private_token successfully added"
             fi
-        else
-            print_info "-> Getting GitLab root's private_token (gitlab will be pinged $GITLAB_ROOT_TOKEN_ATTEMPTS times as it may still be not initialized...)"
-            while [ -z "$GITLAB_ROOT_TOKEN" ] || [ "$GITLAB_ROOT_TOKEN" == "null" ]; do
-                if [ "$GITLAB_ROOT_TOKEN_ATTEMPTS" == 0 ]; then
-                    print_err "Unable to get GitLab root's private_token after $GITLAB_ROOT_TOKEN_ATTEMPTS attempts"
-                    break
-                fi
-                GITLAB_ROOT_TOKEN=$(curl -k https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/session -s -F "login=$GITLAB_ROOT_USER" -F "password=$GITLAB_ROOT_PASSWORD" | jq -r '.private_token')
-                sleep 10
-                GITLAB_ROOT_TOKEN_ATTEMPTS=$((GITLAB_ROOT_TOKEN_ATTEMPTS-1))
         done
         fi
 
