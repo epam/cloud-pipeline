@@ -51,7 +51,7 @@ export default function createSharedStorage (
       .fetchIfNeededOrWait()
       .then(() => {
         if (preferences.sharedStoragesSystemDirectory) {
-          const request = new CreateDataStorage(false);
+          const request = new CreateDataStorage(false, true);
           const serviceType = /^nfs$/i.test(sharedStorage.type)
             ? ServiceTypes.fileShare
             : ServiceTypes.objectStorage;
