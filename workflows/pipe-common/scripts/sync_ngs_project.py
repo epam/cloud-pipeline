@@ -295,7 +295,7 @@ class MachineRun(object):
             configuration = self.api.load_configuration(int(self.settings.configuration_id))
             target_entry = None
             for entry in configuration['entries']:
-                if entry['configName'] == self.settings.configuration_entry_name:
+                if entry['name'] == self.settings.configuration_entry_name:
                     target_entry = entry
             if not target_entry:
                 raise ValueError(
