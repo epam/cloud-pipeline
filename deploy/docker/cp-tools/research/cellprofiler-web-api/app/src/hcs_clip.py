@@ -23,7 +23,10 @@ def create_clip(params):
     if duration < 1:
         raise RuntimeError('Duration should be >= 1')
     sequence_id = params.get('sequenceId') if 'sequenceId' in params else None
-    plane_id = params.get('planeId') if 'planeId' in params else '1'
+    plane_id = params.get('planeId') if 'planeId' in params else None
+    time_point_id = params.get('tpId') if 'tpId' in params else None
+    if plane_id is None and time_point_id is None:
+        plane_id = '1'
 
     path = HCSManager.get_required_field(params, 'path')
     path = prepare_input_path(path)
@@ -37,21 +40,26 @@ def create_clip(params):
         index_path = os.path.join(preview_dir, 'index.xml')
     all_channels = get_all_channels(index_path)
     planes = get_planes(index_path)
-    if plane_id not in planes:
-        raise RuntimeError('Incorrect Z plane id [{}]'.format(plane_id))
+    if plane_id is not None:
+        if plane_id not in planes:
+            raise RuntimeError('Incorrect Z plane id [{}]'.format(plane_id))
     channels_num = len(all_channels)
     selected_channel_ids, selected_channels = get_selected_channels(params, all_channels)
 
     clips = []
     durations = []
     for seq in sequences.keys():
-        timepoints = len(sequences[seq])
+        timepoints = sequences[seq]
+        if time_point_id is not None:
+            if time_point_id not in timepoints:
+                raise RuntimeError('Incorrect timepoint id [{}]'.format(time_point_id))
         ome_tiff_path, offsets_path = get_path(preview_dir, seq, by_field)
-        pages = get_pages(selected_channel_ids, plane_id, planes, channels_num, timepoints, cell)
+        pages = get_pages(selected_channel_ids, plane_id, planes, channels_num, time_point_id, timepoints, cell)
         offsets = get_offsets(offsets_path, pages)
         images = read_images(ome_tiff_path, pages, offsets)
         curr = 0
-        for time_point in range(timepoints):
+        frames = timepoints if time_point_id is None else planes
+        for _ in frames:
             channel_images = []
             for channel in selected_channels:
                 channel_image = images[curr]
@@ -80,24 +88,27 @@ def read_images(ome_tiff_path, pages, offsets):
     return images
 
 
-def get_clip_name(by_field, cell, clip_format, sequence_id, plane_id):
+def get_clip_name(by_field, cell, clip_format, sequence_id, plane_id, time_point_id):
     clip_dir = os.path.join(Config.COMMON_RESULTS_DIR, 'video', str(uuid.uuid4()))
     mkdir(clip_dir)
     cell_prefix = ('field{}' if by_field else 'well{}').format(str(cell))
-    plane_prefix = 'plane{}'.format(plane_id)
+    plane_prefix = '' if plane_id is None else 'plane{}'.format(plane_id)
+    time_point_prefix = '' if time_point_id is None else 'tp{}'.format(time_point_id)
     sequence_prefix = '' if sequence_id is None else 'seq{}'.format(sequence_id)
-    clip_name = cell_prefix + sequence_prefix + plane_prefix + clip_format
+    clip_name = cell_prefix + sequence_prefix + plane_prefix + time_point_prefix + clip_format
     return os.path.join(clip_dir, clip_name)
 
 
-def get_pages(channel_ids, plane_id, planes, channels, timepoints, cell):
+def get_pages(channel_ids, plane_id, planes, channels, time_point_id, timepoints, cell):
     pages = []
     num = 0
-    for time_point in range(timepoints):
+    for time_point in timepoints:
         for channel_id in range(channels):
             for plane in planes:
-                if (channel_id in channel_ids) and (plane == plane_id):
-                    pages.append(num + len(planes) * channels * timepoints * cell)
+                if (channel_id in channel_ids) and \
+                        (plane == plane_id if plane_id is not None else True) and \
+                        (time_point == time_point_id if time_point_id is not None else True):
+                    pages.append(num + len(planes) * channels * len(timepoints) * cell)
                 num = num + 1
     return pages
 
