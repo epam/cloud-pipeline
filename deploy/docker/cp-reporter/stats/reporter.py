@@ -30,7 +30,6 @@ from flask import Flask
 Value = namedtuple('Value', 'value')
 Limit = namedtuple('Limit', 'soft,hard')
 ProcStat = namedtuple('ProcStat', 'pid,name,type,current,limit')
-HostStat = namedtuple('HostStat', 'name,type,current,limit')
 
 
 class StatType(Enum):
@@ -46,12 +45,12 @@ class StatsResolver(ABC):
 
 class HostOpenFilesResolver(StatsResolver):
 
-    def __init__(self, host):
-        self._host = host
+    def __init__(self):
+        pass
 
     def get(self):
         logging.info('Collecting host open files stats...')
-        yield HostStat(name=self._host, type=StatType.NOFILE,
+        yield ProcStat(pid=0, name='all processes', type=StatType.NOFILE,
                        current=self._get_value(), limit=self._get_limit())
 
     def _get_value(self):
@@ -119,37 +118,30 @@ class StatsViewer(ABC):
 
 class JsonStatsViewer(StatsViewer):
 
-    def __init__(self):
+    def __init__(self, host):
+        self._host = host
         self._datetime_format = '%Y-%m-%d %H:%M:%S.%f'
+        self._datetime_suffix_crop_length = 3
 
     def view(self, stats):
         host_view = {
-            'timestamp': datetime.datetime.now().strftime(self._datetime_format)
+            'name': self._host,
+            'timestamp': datetime.datetime.now().strftime(self._datetime_format)[:-self._datetime_suffix_crop_length]
         }
         for stat in stats:
-            if isinstance(stat, ProcStat):
-                host_view['procs'] = host_view.get('procs', [])
-                proc_view = {'pid': stat.pid}
-                self._insert(proc_view, stat)
-                host_view['procs'].append(proc_view)
-            elif isinstance(stat, HostStat):
-                self._insert(host_view, stat)
-            else:
-                logging.warning('Ignoring unsupported %s stats.', type(stat))
+            host_view['processes'] = host_view.get('processes', [])
+            proc_view = {'pid': stat.pid, 'name': stat.name}
+            proc_view['limits'] = proc_view.get('limits', {})
+            proc_view['limits'][stat.type.name] = {
+                'soft_limit': stat.limit.soft,
+                'hard_limit': stat.limit.hard
+            }
+            proc_view['stats'] = proc_view.get('stats', {})
+            proc_view['stats'][stat.type.name] = {
+                'value': stat.current.value
+            }
+            host_view['processes'].append(proc_view)
         return host_view
-
-    def _insert(self, view, stat):
-        view['name'] = stat.name
-        view['limits'] = view.get('limits', {})
-        view['limits'][stat.type.name.lower()] = {
-            'soft_limit': stat.limit.soft,
-            'hard_limit': stat.limit.hard
-        }
-        view['stats'] = view.get('stats', {})
-        view['stats'][stat.type.name.lower()] = {
-            'value': stat.current.value
-        }
-        return view
 
 
 logging_format = os.getenv('CP_LOGGING_FORMAT', default='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
@@ -176,9 +168,9 @@ file_handler.setFormatter(logging_formatter)
 logging.getLogger().addHandler(file_handler)
 
 collector = StatsCollector(resolvers=[
-    HostOpenFilesResolver(host=host),
+    HostOpenFilesResolver(),
     ProcOpenFilesResolver(include=procs_include)])
-viewer = JsonStatsViewer()
+viewer = JsonStatsViewer(host=host)
 
 logging.info('Initializing...')
 app = Flask(__name__)

@@ -20,11 +20,15 @@ package com.epam.pipeline.vmmonitor.service;
 import com.epam.pipeline.vmmonitor.service.certificate.CertificateMonitor;
 import com.epam.pipeline.vmmonitor.service.filesystem.FileSystemMonitor;
 import com.epam.pipeline.vmmonitor.service.k8s.KubernetesDeploymentMonitor;
+import com.epam.pipeline.vmmonitor.service.node.NodeMonitor;
 import com.epam.pipeline.vmmonitor.service.vm.VMMonitor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Nullable;
 
 @Service
 @RequiredArgsConstructor
@@ -36,48 +40,45 @@ public class MonitorScheduleService {
     private final CertificateMonitor certificateMonitor;
     private final KubernetesDeploymentMonitor deploymentMonitor;
     private final FileSystemMonitor fileSystemMonitor;
+    @Nullable
+    private final NodeMonitor nodeMonitor;
 
     @Scheduled(cron = "${monitor.schedule.cron}")
-    public void monitor() {
-        try {
-            log.debug("Starting VM monitoring");
-            vmMonitor.monitor();
-            log.debug("Finished VM monitoring");
-        } catch (Exception e) {
-            log.error("Un error occurred during VM monitoring", e);
-        }
+    public void monitorVMs() {
+        monitor("VMs", vmMonitor);
     }
 
     @Scheduled(cron = "${monitor.cert.schedule.cron}")
     public void monitorCerts() {
-        try {
-            log.debug("Starting PKI certificates check.");
-            certificateMonitor.checkCertificates();
-            log.debug("Finished PKI certificates check.");
-        } catch (Exception e) {
-            log.error("An error occurred during PKI certificates check.", e);
-        }
+        monitor("PKI certificates", certificateMonitor);
     }
 
     @Scheduled(cron = "${monitor.k8s.deployment.cron}")
     public void monitorDeployments() {
-        try {
-            log.debug("Starting k8s deployment check.");
-            deploymentMonitor.monitorDeployments();
-            log.debug("Finished k8s deployment check.");
-        } catch (Exception e) {
-            log.error("An error occurred during Pk8s deployment check.", e);
-        }
+        monitor("k8s deployments", deploymentMonitor);
     }
 
     @Scheduled(cron = "${monitor.filesystem.cron}")
     public void monitorFileSystem() {
+        monitor("filesystems", fileSystemMonitor);
+    }
+
+    @Scheduled(cron = "${monitor.node.cron}")
+    public void monitorNodes() {
+        monitor("nodes", nodeMonitor);
+    }
+
+    private void monitor(final String name, final Monitor monitor) {
+        if (monitor == null) {
+            log.debug(StringUtils.capitalize(String.format("Skipping disabled %s monitoring...", name)));
+            return;
+        }
         try {
-            log.debug("Starting filesystem check.");
-            fileSystemMonitor.checkFileSystemConsumption();
-            log.debug("Finished filesystem check.");
+            log.debug("Starting {} monitoring...", name);
+            monitor.monitor();
+            log.debug("Finished {} monitoring.", name);
         } catch (Exception e) {
-            log.error("An error occurred during filesystem check.", e);
+            log.error("Failed {} monitoring.", name, e);
         }
     }
 }
