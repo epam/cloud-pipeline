@@ -1287,15 +1287,12 @@ export default class DataStorage extends React.Component {
     });
   };
 
-  checkRestoredStatus = (item) => {
+  getRestoredStatus = (item) => {
     const {
       parentRestore,
       currentRestores
     } = this.lifeCycleRestoreInfo;
-    if (
-      !item ||
-      (item.labels && item.labels.StorageClass === STORAGE_CLASSES.standard)
-    ) {
+    if (!item) {
       return null;
     }
     const itemRestoreStatus = (currentRestores || [])
@@ -1331,13 +1328,13 @@ export default class DataStorage extends React.Component {
           return undefined;
         }
         const childList = [];
-        const restoreStatus = this.checkRestoredStatus(item) || {};
+        const restoreStatus = this.getRestoredStatus(item) || {};
         const fileRestored = restoreStatus.status === STATUS.SUCCEEDED;
         for (let version in versions) {
           if (versions.hasOwnProperty(version)) {
             const archived = versions[version].labels &&
               versions[version].labels['StorageClass'] !== STORAGE_CLASSES.standard;
-            const versionRestored = archived && restoreStatus.restoreVersions;
+            const versionRestored = restoreStatus.restoreVersions;
             const latest = versions[version].version === item.version;
             childList.push({
               key: `${item.type}_${item.path}_${version}`,
@@ -1381,7 +1378,7 @@ export default class DataStorage extends React.Component {
         results = this.props.storage.value.results || [];
       }
       items.push(...results.map(i => {
-        const restored = (this.checkRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
+        const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
         const archived = i.labels && i.labels['StorageClass'] !== STORAGE_CLASSES.standard;
         return {
           key: `${i.type}_${i.path}`,
@@ -1429,8 +1426,8 @@ export default class DataStorage extends React.Component {
       if (!item) {
         return null;
       }
-      const restoredStatus = item.selectable
-        ? this.checkRestoredStatus(item)
+      const restoredStatus = item.archived && item.restored
+        ? this.getRestoredStatus(item)
         : null;
       if (/^file$/i.test(item.type) && SAMPLE_SHEET_FILE_NAME_REGEXP.test(item.name)) {
         return (
@@ -2179,7 +2176,9 @@ export default class DataStorage extends React.Component {
       if (!item) {
         return '';
       }
-      const activeRestore = this.checkRestoredStatus(item);
+      const activeRestore = item.archived
+        ? this.getRestoredStatus(item)
+        : null;
       let disclaimer;
       if (item.type === 'Folder' && activeRestore) {
         disclaimer = [
