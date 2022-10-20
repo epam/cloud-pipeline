@@ -18,17 +18,25 @@ def create_clip(params):
 
     clip_format = params.get('format') if 'format' in params else '.webm'
     codec = params.get('codec') if 'codec' in params else ('mpeg4' if clip_format == '.mp4' else None)
+    # fps for whole clip
     fps = int(params.get('fps')) if 'fps' in params else 1
+    # frame duration
     duration = float(params.get('duration')) if 'duration' in params else 1
     if duration < 1:
         raise RuntimeError('Duration should be >= 1')
     sequence_id = params.get('sequenceId') if 'sequenceId' in params else None
-    point_id = params.get('pointId') if 'pointId' in params else '1'
+    # by_time = 1 - create video for all timepoints and specified z-plane id
+    # by_time = 0 - create video for all z-planes and specified time point id
     by_time = int(params.get('byTime')) if 'byTime' in params else 1
+    # z-plane id if by_time = 1, time point id if by_time = 0
+    point_id = params.get('pointId') if 'pointId' in params else '1'
 
     path = HCSManager.get_required_field(params, 'path')
     path = prepare_input_path(path)
+    # by_field = 1 - create video for specified well field
+    # by_field = 0 - create video for specified well
     by_field = int(HCSManager.get_required_field(params, 'byField'))
+    # well or well field id
     cell = int(HCSManager.get_required_field(params, 'cell'))
 
     preview_dir, sequences = parse_hcs(path, sequence_id)
@@ -37,6 +45,7 @@ def create_clip(params):
     if not os.path.isfile(index_path):
         index_path = os.path.join(preview_dir, 'index.xml')
     all_channels = get_all_channels(index_path)
+    # z-planes
     planes = get_planes(index_path)
     if by_time:
         if point_id not in planes:
