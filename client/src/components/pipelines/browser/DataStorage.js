@@ -1334,7 +1334,8 @@ export default class DataStorage extends React.Component {
           if (versions.hasOwnProperty(version)) {
             const archived = versions[version].labels &&
               versions[version].labels['StorageClass'] !== STORAGE_CLASSES.standard;
-            const versionRestored = restoreStatus.restoreVersions;
+            const versionRestored = restoreStatus.restoreVersions &&
+              restoreStatus.status === STATUS.SUCCEEDED;
             const latest = versions[version].version === item.version;
             childList.push({
               key: `${item.type}_${item.path}_${version}`,
@@ -1426,9 +1427,13 @@ export default class DataStorage extends React.Component {
       if (!item) {
         return null;
       }
-      const restoredStatus = item.archived && item.restored
-        ? this.getRestoredStatus(item)
-        : null;
+      let restoredStatus = this.getRestoredStatus(item);
+      if (
+        restoredStatus &&
+        (!item.archived || (item.isVersion && !restoredStatus.restoreVersions))
+      ) {
+        restoredStatus = null;
+      }
       if (/^file$/i.test(item.type) && SAMPLE_SHEET_FILE_NAME_REGEXP.test(item.name)) {
         return (
           <RestoreStatusIcon restoreInfo={restoredStatus}>
