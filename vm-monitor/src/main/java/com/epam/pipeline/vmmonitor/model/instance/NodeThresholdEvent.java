@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.exception;
+package com.epam.pipeline.vmmonitor.model.instance;
 
-public class PipelineResponseException extends RuntimeException {
+import lombok.Builder;
+import lombok.Value;
 
-    public PipelineResponseException(final String message) {
-        super(message);
-    }
+import java.time.LocalDateTime;
 
-    public PipelineResponseException(final Throwable cause) {
-        super(cause);
-    }
-
-    public PipelineResponseException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
+@Value
+@Builder(toBuilder = true)
+public class NodeThresholdEvent {
+    String parameter;
+    String node;
+    String process;
+    String usage;
+    String threshold;
+    LocalDateTime timestamp;
 }

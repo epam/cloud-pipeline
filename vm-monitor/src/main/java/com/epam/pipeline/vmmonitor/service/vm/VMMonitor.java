@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.PipelineResponseException;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
+import com.epam.pipeline.vmmonitor.service.Monitor;
 import com.epam.pipeline.vmmonitor.service.pipeline.CloudPipelineAPIClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -49,7 +50,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class VMMonitor {
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
+public class VMMonitor implements Monitor {
 
     private static final String POOL_RUN_ID_PREFIX = "p-";
     private static final int SECONDS_IN_MINUTES = 60;
@@ -79,6 +81,7 @@ public class VMMonitor {
         this.vmMaxLiveMinutes = vmMaxLiveMinutes;
     }
 
+    @Override
     public void monitor() {
         try {
             ListUtils.emptyIfNull(apiClient.loadRegions())
