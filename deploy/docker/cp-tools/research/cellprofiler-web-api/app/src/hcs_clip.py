@@ -18,16 +18,25 @@ def create_clip(params):
 
     clip_format = params.get('format') if 'format' in params else '.webm'
     codec = params.get('codec') if 'codec' in params else ('mpeg4' if clip_format == '.mp4' else None)
+    # fps for whole clip
     fps = int(params.get('fps')) if 'fps' in params else 1
+    # frame duration
     duration = float(params.get('duration')) if 'duration' in params else 1
     if duration < 1:
         raise RuntimeError('Duration should be >= 1')
     sequence_id = params.get('sequenceId') if 'sequenceId' in params else None
-    plane_id = params.get('planeId') if 'planeId' in params else '1'
+    # by_time = 1 - create video for all timepoints and specified z-plane id
+    # by_time = 0 - create video for all z-planes and specified time point id
+    by_time = int(params.get('byTime')) if 'byTime' in params else 1
+    # z-plane id if by_time = 1, time point id if by_time = 0
+    point_id = params.get('pointId') if 'pointId' in params else '1'
 
     path = HCSManager.get_required_field(params, 'path')
     path = prepare_input_path(path)
+    # by_field = 1 - create video for specified well field
+    # by_field = 0 - create video for specified well
     by_field = int(HCSManager.get_required_field(params, 'byField'))
+    # well or well field id
     cell = int(HCSManager.get_required_field(params, 'cell'))
 
     preview_dir, sequences = parse_hcs(path, sequence_id)
@@ -36,22 +45,28 @@ def create_clip(params):
     if not os.path.isfile(index_path):
         index_path = os.path.join(preview_dir, 'index.xml')
     all_channels = get_all_channels(index_path)
+    # z-planes
     planes = get_planes(index_path)
-    if plane_id not in planes:
-        raise RuntimeError('Incorrect Z plane id [{}]'.format(plane_id))
+    if by_time:
+        if point_id not in planes:
+            raise RuntimeError('Incorrect Z plane id [{}]'.format(point_id))
     channels_num = len(all_channels)
     selected_channel_ids, selected_channels = get_selected_channels(params, all_channels)
 
     clips = []
     durations = []
     for seq in sequences.keys():
-        timepoints = len(sequences[seq])
+        timepoints = sequences[seq]
+        if not by_time:
+            if point_id not in timepoints:
+                raise RuntimeError('Incorrect timepoint id [{}]'.format(point_id))
         ome_tiff_path, offsets_path = get_path(preview_dir, seq, by_field)
-        pages = get_pages(selected_channel_ids, plane_id, planes, channels_num, timepoints, cell)
+        pages = get_pages(selected_channel_ids, point_id, planes, channels_num, by_time, timepoints, cell)
         offsets = get_offsets(offsets_path, pages)
         images = read_images(ome_tiff_path, pages, offsets)
         curr = 0
-        for time_point in range(timepoints):
+        frames = timepoints if by_time else planes
+        for _ in frames:
             channel_images = []
             for channel in selected_channels:
                 channel_image = images[curr]
@@ -62,7 +77,7 @@ def create_clip(params):
             clips.append(np.array(merged_image))
             durations.append(duration)
 
-    clip_name = get_clip_name(by_field, cell, clip_format, sequence_id, plane_id)
+    clip_name = get_clip_name(by_field, cell, clip_format, sequence_id, point_id, by_time)
     slide = ImageSequenceClip(clips, durations=durations)
     slide.write_videofile(clip_name, codec=codec, fps=fps)
     t1 = time.time()
@@ -80,24 +95,24 @@ def read_images(ome_tiff_path, pages, offsets):
     return images
 
 
-def get_clip_name(by_field, cell, clip_format, sequence_id, plane_id):
+def get_clip_name(by_field, cell, clip_format, sequence_id, point_id, by_time):
     clip_dir = os.path.join(Config.COMMON_RESULTS_DIR, 'video', str(uuid.uuid4()))
     mkdir(clip_dir)
     cell_prefix = ('field{}' if by_field else 'well{}').format(str(cell))
-    plane_prefix = 'plane{}'.format(plane_id)
+    prefix = ('plane{}' if by_time else 'tp{}').format(point_id)
     sequence_prefix = '' if sequence_id is None else 'seq{}'.format(sequence_id)
-    clip_name = cell_prefix + sequence_prefix + plane_prefix + clip_format
+    clip_name = cell_prefix + sequence_prefix + prefix + clip_format
     return os.path.join(clip_dir, clip_name)
 
 
-def get_pages(channel_ids, plane_id, planes, channels, timepoints, cell):
+def get_pages(channel_ids, point_id, planes, channels, by_time, timepoints, cell):
     pages = []
     num = 0
-    for time_point in range(timepoints):
+    for time_point in timepoints:
         for channel_id in range(channels):
             for plane in planes:
-                if (channel_id in channel_ids) and (plane == plane_id):
-                    pages.append(num + len(planes) * channels * timepoints * cell)
+                if (channel_id in channel_ids) and (plane == point_id if by_time else time_point == point_id):
+                    pages.append(num + len(planes) * channels * len(timepoints) * cell)
                 num = num + 1
     return pages
 
