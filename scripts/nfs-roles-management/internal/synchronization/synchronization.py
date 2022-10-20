@@ -18,6 +18,7 @@ import re
 import subprocess
 
 from internal.api.storages_api import Storages
+from internal.api.users_api import Users
 from internal.config import Config
 from internal.model.mask import Mask, FullMask
 
@@ -34,6 +35,7 @@ class Synchronization(object):
 
     def __init__(self, config):
         self.__storages_api__ = Storages(config)
+        self.__users_api__ = Users(config)
         self.__config__ = config if config is not None else Config.instance()
         self.__users__ = []
         self.__storages__ = []
@@ -89,14 +91,17 @@ class Synchronization(object):
                         if user.username not in self.__users__:
                             self.__users__.append(user.username)
             logging.info('{} NFS storages fetched'.format(len(self.__storages__)))
+            logging.info('Fetching users...')
+            users_details = self.get_user_details()
+            logging.info('{} users fetched'.format(len(users_details)))
             for user in self.__users__:
                 if user_matches_criteria(user):
-                    self.synchronize_user(user, use_symlinks=use_symlinks)
+                    self.synchronize_user(user, users_details.get(user), use_symlinks=use_symlinks)
                     logging.info('')
         except Exception:
             logging.exception('Storages fetching has failed.')
 
-    def synchronize_user(self, user, use_symlinks=False):
+    def synchronize_user(self, user, details=None, use_symlinks=False):
         try:
             logging.info('Processing user {}.'.format(user))
             user_dir_name = user.split('@')[0]
@@ -121,6 +126,10 @@ class Synchronization(object):
                 for storage_user, storage_user_mask in storage.users.items():
                     if storage_user.username.strip().lower() == user.strip().lower():
                         syncing_storages[storage] = storage_user_mask
+
+            if not details or details.blocked:
+                logging.warning('Skipping user {} storages linking because the user is blocked...'.format(user))
+                syncing_storages = {}
 
             if use_symlinks:
                 existing_mounts = self.resolve_symlinks(user_dir)
@@ -299,3 +308,6 @@ class Synchronization(object):
             return self.__storages_api__.list_share_mounts()
         except Exception:
             logging.exception('Share mounts listing has failed.')
+
+    def get_user_details(self):
+        return {user.username: user for user in self.__users_api__.list()}

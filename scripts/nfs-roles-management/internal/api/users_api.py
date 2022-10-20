@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class UserModel(object):
+from internal.api.base import API
+from internal.model.user_model import UserModel
 
-    def __init__(self):
-        self.username = None
-        self.blocked = None
 
-    @classmethod
-    def load(cls, json):
-        instance = UserModel()
-        instance.username = json.get('userName')
-        instance.blocked = json.get('blocked')
-        return instance
+class Users(API):
+
+    def __init__(self, config=None):
+        super(Users, self).__init__(config)
+
+    def list(self):
+        response_data = self.call('users', None)
+        users = response_data.get('payload', [])
+        for user in users:
+            yield UserModel.load(user)
