@@ -1430,6 +1430,7 @@ export default class DataStorage extends React.Component {
       let restoredStatus = this.getRestoredStatus(item);
       if (
         restoredStatus &&
+        item.type !== 'Folder' &&
         (!item.archived || (item.isVersion && !restoredStatus.restoreVersions))
       ) {
         restoredStatus = null;
