@@ -28,11 +28,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 
-@Service
 @RequiredArgsConstructor
 public class NodeStatsClient {
 
