@@ -25,7 +25,7 @@ import {
 import {AnalysisPipeline} from './pipeline';
 import AnalysisApi from './analysis-api';
 import runAnalysisPipeline, {getPipelineModules} from './analysis-pipeline-utilities';
-import {loadPipeline, savePipeline} from './analysis-pipeline-management';
+import {savePipeline} from './analysis-pipeline-management';
 import {submitBatchAnalysis} from './batch';
 import {findSimilarAnalysis} from './similar-analysis';
 import PhysicalSize from './physical-size';
@@ -203,38 +203,25 @@ class Analysis {
     if (asNew) {
       this.pipeline.path = undefined;
     }
-    const path = await savePipeline(this.pipeline);
-    if (path) {
-      this.pipeline.path = path;
-    }
+    await this.userInfo.fetchIfNeededOrWait();
+    this.pipeline.author = (this.userInfo.value || {}).userName;
+    await savePipeline(this.pipeline);
   };
 
   /**
-   * @param {AnalysisPipelineFile} pipelineFile
-   * @returns {Promise<void>}
+   * @param {AnalysisPipeline} pipeline
    */
-  loadPipeline = async (pipelineFile) => {
-    if (!pipelineFile) {
+  loadPipeline = (pipeline) => {
+    if (!pipeline) {
       return;
     }
-    try {
-      this.pending = true;
-      this.status = `Opening pipeline ${pipelineFile.name}...`;
-      const pipeline = pipelineFile.pipeline || (await loadPipeline(pipelineFile));
-      if (!pipeline) {
-        throw new Error(`Error opening pipeline ${pipelineFile.name}: empty pipeline`);
-      }
-      pipeline.analysis = this;
-      this.pipeline = pipeline;
-      this.status = `Pipeline ${pipeline.name} opened`;
-      this.error = undefined;
-      this.changed = true;
-      this.analysisRequested = true;
-    } catch (error) {
-      this.error = error.message;
-    } finally {
-      this.pending = false;
-    }
+    pipeline.analysis = this;
+    this.pipeline = pipeline;
+    this.status = `Pipeline ${pipeline.name} opened`;
+    this.error = undefined;
+    this.changed = true;
+    this.analysisRequested = true;
+    this.pending = false;
   };
 
   destroy = () => {

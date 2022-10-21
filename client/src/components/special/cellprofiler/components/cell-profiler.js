@@ -125,7 +125,7 @@ class CellProfiler extends React.Component {
     const onPipelineSelected = (pipelineFile) => {
       closeModal();
       if (analysis) {
-        (analysis.loadPipeline)(pipelineFile);
+        analysis.loadPipeline(pipelineFile);
       }
     };
     const handleVisibility = (visible) => this.setState({managementActionsVisible: visible});

@@ -32,6 +32,7 @@ class AnalysisPipeline {
   @observable createdDate;
   @observable modifiedDate;
   @observable path;
+  @observable version;
   @observable isNew = true;
   usedChannels = [];
   /**
@@ -303,6 +304,7 @@ class AnalysisPipeline {
       return {
         uuid: this.uuid,
         path: this.path,
+        version: this.version,
         name: this.name,
         description: this.description,
         channels: this.channels,
@@ -354,6 +356,8 @@ class AnalysisPipeline {
           pipeline.uuid = value;
         } else if (/^name$/i.test(key)) {
           pipeline.name = value;
+        } else if (/^version$/i.test(key)) {
+          pipeline.version = value;
         } else if (/^description$/i.test(key)) {
           pipeline.description = value;
         } else if (/^author$/i.test(key)) {
