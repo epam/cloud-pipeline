@@ -39,11 +39,15 @@ function processPath (path) {
   return pathWithoutLeadingSlash
     .split('/')
     .map(path => ({path, hasPlaceholders: pathComponentHasPlaceholder(path)}))
-    .reduce((r, current) => {
+    .reduce((r, current, idx, array) => {
       if (r.length === 0) {
         return [current];
       }
-      if (r[r.length - 1].hasPlaceholders || current.hasPlaceholders) {
+      if (
+        r[r.length - 1].hasPlaceholders ||
+        current.hasPlaceholders ||
+        idx === array.length - 1//we should extract last component (gateway.spec)
+      ) {
         return [...r, current];
       }
       const last = r.pop();
@@ -94,7 +98,7 @@ function findMatchingPathsForPathComponent (
   }
 }
 
-function findMatchingPaths (storage, pathConfigurations, settings, appType) {
+function findMatchingPaths (storage, pathConfigurations, settings, appType, mapper = {}) {
   const appTypeSettings = getApplicationTypeSettings(settings, appType);
   const ignored = processIgnoredPaths(appTypeSettings);
   const pathIsIgnored = path => ignored.some(i => i.test(path));
@@ -103,7 +107,6 @@ function findMatchingPaths (storage, pathConfigurations, settings, appType) {
       return Promise.resolve([]);
     }
     if (pathIsIgnored(root)) {
-      console.log('ignore path', root);
       return Promise.resolve([]);
     }
     const [
@@ -126,17 +129,17 @@ function findMatchingPaths (storage, pathConfigurations, settings, appType) {
         .then(results => resolve(results.reduce((r, c) => ([...r, ...c]), [])));
     });
   }
-  return iterateOverStorageContents('', {}, pathConfigurations);
+  return iterateOverStorageContents('', {...mapper}, pathConfigurations);
 }
 
-function fetchApplications (storage, user, settings, processedPath, appType) {
+function fetchApplications (storage, user, settings, processedPath, appType, mapper) {
   return new Promise((resolve) => {
     getApplications(settings, user?.userName, appType)
       .catch((e) => {
         if (settings?.serviceUser === user?.userName) {
           console.warn(e.message);
         }
-        return findMatchingPaths(storage, processedPath, settings, appType);
+        return findMatchingPaths(storage, processedPath, settings, appType, mapper);
       })
       .then(applications => {
         return Promise.all(
@@ -158,32 +161,60 @@ function fetchFolderApplicationsByType (settings, appType, options, user) {
   if (!owner && appTypeSettings.serviceUser) {
     owner = {userName: appTypeSettings.serviceUser};
   }
+  if (
+    options &&
+    appTypeSettings &&
+    appTypeSettings.folderApplicationUserPlaceholder &&
+    options[appTypeSettings.folderApplicationUserPlaceholder]
+  ) {
+    owner = {userName: options[appTypeSettings.folderApplicationUserPlaceholder]};
+  }
   const dataStorageId = parseStoragePlaceholder(appTypeSettings.appConfigStorage, owner);
   if (!Number.isNaN(Number(dataStorageId)) && appTypeSettings.appConfigPath) {
     const path = processString(
       appTypeSettings.appConfigPath,
       {
+        [appTypeSettings.folderApplicationUserPlaceholder || 'user']: owner?.userName,
         ...(options || {}),
-        [appTypeSettings.folderApplicationUserPlaceholder || 'user']: owner?.userName
       }
     );
     const processedPath = processPath(path);
-    return fetchApplications(dataStorageId, owner, appTypeSettings, processedPath, appType)
+    return fetchApplications(
+      dataStorageId,
+      owner,
+      appTypeSettings,
+      processedPath,
+      appType,
+      options
+    )
   }
   return Promise.resolve([]);
 }
 
-export default async function fetchFolderApplications (options, user, force = false) {
+/**
+ * @param {{options: Object?, user: Object?, force: boolean?, appType: string?}} options
+ * @returns {Promise<any>}
+ */
+export default async function fetchFolderApplications (options = {}) {
+  const {
+    options: mapper,
+    user,
+    force = false,
+    appType
+  } = options;
   const settings = await fetchSettings();
-  const KEY = user ? user.userName : '<SERVICE_USER>';
+  let KEY = user ? user.userName : '<SERVICE_USER>';
+  if (appType) {
+    KEY = `${KEY}-${appType}`;
+  }
   if (!applicationsCache.has(KEY) || force) {
-    const applicationTypes = getFolderApplicationTypes(settings);
+    const applicationTypes = appType ? [appType] : getFolderApplicationTypes(settings);
     const fetchAllAppsPromise = () => new Promise((resolve) => {
       Promise.all(
-        applicationTypes.map(appType => fetchFolderApplicationsByType(
+        applicationTypes.map(aType => fetchFolderApplicationsByType(
           settings,
-          appType,
-          options,
+          aType,
+          mapper,
           user
         ))
       )

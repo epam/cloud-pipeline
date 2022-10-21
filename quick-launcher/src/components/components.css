@@ -158,6 +158,16 @@
   overflow: hidden;
 }
 
+.app.app-folder .application-type {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 4px;
+  font-size: x-small;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 5px 0 5px 0;
+  text-transform: uppercase;
+}
 
 .app .version {
   margin-left: 5px;

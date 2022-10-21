@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import {useApplications, ApplicationsContext, UserContext} from './components/use-applications';
 import {useSettings, SettingsContext} from './components/use-settings';
@@ -67,7 +67,11 @@ function App({launch, location}) {
     appExtendedSettings
   );
   const [application, setApplication] = useState(undefined);
-  const {applications, error, pending, user} = useApplications();
+  const useApplicationsPayload = useMemo(() => ({
+    launch,
+    location: location.href
+  }), [launch, location?.href]);
+  const {applications, error, pending, user} = useApplications(useApplicationsPayload);
   const back = useCallback(() => {
     setApplication(undefined);
   }, [setApplication]);

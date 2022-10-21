@@ -61,7 +61,8 @@ const defaultUrlParser = {
 //     redirectPathName: '[group2:uppercased]/[group3][group4]',
 //     user: '[group2:uppercased]',
 //     rest: '[group4]'
-//   }
+//   },
+//   appType: 'dash'
 // };
 
 const defaultSettings = {
@@ -92,6 +93,10 @@ const defaultSettings = {
   //         CP_CAP_DASH_VALIDATOR_MODE: true
   //       },
   //     }
+  //   },
+  //   jupyter: {
+  //     appConfigStorage: 1880,//'user_default_storage',
+  //     appConfigPath: '/[user]/ShinyApps/[version]/[app]/gateway.spec',
   //   }
   // },
   darkMode: DARK_MODE,
@@ -258,7 +263,17 @@ function parseUrl(url, verbose = false) {
   return result;
 }
 
+function getApplicationTypeByUrl(url) {
+  const [config] = (this.urlParser || [])
+    .filter(c => (new RegExp(c.test || c.format || '', 'i')).test(url));
+  if (config && url) {
+    return config.appType;
+  }
+  return undefined;
+}
+
 defaultSettings.parseUrl = parseUrl.bind(defaultSettings);
+defaultSettings.getApplicationTypeByUrl = getApplicationTypeByUrl.bind(defaultSettings);
 
 function mergeSettings (...o) {
   if (o.length === 0) {
@@ -434,6 +449,7 @@ export default function fetchSettings() {
           (result || {})[document.location.hostname]);
         settings.tagValueRegExp = new RegExp(`^${settings.tagValue}$`, 'i')
         settings.parseUrl = parseUrl.bind(settings);
+        settings.getApplicationTypeByUrl = getApplicationTypeByUrl.bind(settings);
         if ((settings.urlParser || []).indexOf(defaultUrlParser) === -1) {
           if (Array.isArray(settings.urlParser)) {
             settings.urlParser.push(defaultUrlParser);
@@ -446,6 +462,7 @@ export default function fetchSettings() {
         console.error(e);
         settings = mergeSettings(defaultSettings);
         settings.parseUrl = parseUrl.bind(settings);
+        settings.getApplicationTypeByUrl = getApplicationTypeByUrl.bind(settings);
         return Promise.resolve(settings);
       })
       .then(correctApplicationsMode)

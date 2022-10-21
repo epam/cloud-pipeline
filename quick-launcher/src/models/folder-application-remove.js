@@ -34,11 +34,7 @@ export default function folderApplicationRemove (application, settings, callback
       .then(() => {
         const options = settings.parseUrl(window.location.href)
         callback && callback('Finishing', 0.95);
-        return fetchFolderApplications(
-          options,
-          undefined,
-          true
-        );
+        return fetchFolderApplications({options, force: true});
       })
       .then(resolve)
       .catch(reject);

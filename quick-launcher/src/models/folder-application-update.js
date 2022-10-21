@@ -114,11 +114,7 @@ export default function folderApplicationUpdate (
           return Promise.resolve();
         }
         const options = settings.parseUrl(window.location.href);
-        return fetchFolderApplications(
-          options,
-          undefined,
-          true
-        );
+        return fetchFolderApplications({options, force: true});
       })
       .then(() => {
         callback && callback(undefined, 1);

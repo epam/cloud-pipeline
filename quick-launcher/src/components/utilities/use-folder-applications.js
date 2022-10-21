@@ -5,11 +5,16 @@ import {safePromise as fetchDataStorages} from "../../models/cloud-pipeline-api/
 import {nameSorter} from '../../models/applications';
 import fetchSettings from '../../models/base/settings';
 
-export async function loadFolderApplications(options, user) {
+/**
+ *
+ * @param {{options: Object?, user: Object?, force: boolean?, appType: string?}} options
+ * @returns {Promise<*[]|*>}
+ */
+export async function loadFolderApplications(options) {
   const settings = await fetchSettings();
   if (settings && /^(folder|docker\+folder|folder\+docker)$/i.test(settings.applicationsSourceMode)) {
     await fetchDataStorages();
-    return fetchFolderApplications(options, user)
+    return fetchFolderApplications(options)
   }
   return Promise.resolve([]);
 }
@@ -23,7 +28,7 @@ export default function useFolderApplications(options, user) {
   useEffect(() => {
     let ignore = false;
     setPending(true);
-    loadFolderApplications(options, user)
+    loadFolderApplications({options, user})
       .then(apps => {
         if (!ignore) {
           console.log('Folder applications:', apps);

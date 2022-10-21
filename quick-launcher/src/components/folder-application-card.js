@@ -28,7 +28,8 @@ export default function FolderApplicationCard(
     published,
     url,
     storage,
-    info = {}
+    info = {},
+    appType
   } = application || {};
   const {icon} = useApplicationIcon(storage, iconFile ? iconFile.path : undefined);
   const onClickCallback = useCallback((e) => {
@@ -108,7 +109,7 @@ export default function FolderApplicationCard(
                   <span className="version">
                     {version}
                   </span>
-                    )
+                )
               }
             </div>
             <div className="app-description" title={description}>
@@ -161,6 +162,13 @@ export default function FolderApplicationCard(
             )
           }
         </div>
+        {
+          appType && (
+            <div className="application-type">
+              {appType}
+            </div>
+          )
+        }
       </div>
     </Wrapper>
   );

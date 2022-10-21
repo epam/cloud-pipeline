@@ -229,11 +229,7 @@ export default function folderApplicationPublish (
           .then(() => {
             callback && callback('Finishing', 0.9);
             const options = settings.parseUrl(window.location.href)
-            return fetchFolderApplications(
-              options,
-              undefined,
-              true
-            );
+            return fetchFolderApplications({options, force: true});
           })
           .then(resolve)
           .catch(e => {

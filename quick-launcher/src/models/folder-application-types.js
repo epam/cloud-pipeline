@@ -1,15 +1,19 @@
 export function getFolderApplicationTypes (settings) {
-  if (!settings) {
-    return [undefined];
+  if (
+    !settings ||
+    !settings.applicationTypes
+  ) {
+    return [undefined];// default behavior
   }
-  return [
-    undefined,// default or "no-type"
-    ...Object.keys(settings?.applicationTypes || {})
-      .filter(appType =>
-        !!settings?.applicationTypes[appType]?.appConfigPath &&
-        !!settings?.applicationTypes[appType]?.appConfigStorage
-      )
-  ];
+  const types = Object.keys(settings?.applicationTypes || {})
+    .filter(appType =>
+      !!settings?.applicationTypes[appType]?.appConfigPath &&
+      !!settings?.applicationTypes[appType]?.appConfigStorage
+    );
+  if (types.length === 0) {
+    return [undefined];// default behavior
+  }
+  return types;
 }
 
 export function getApplicationTypeSettings (settings, appType = undefined) {

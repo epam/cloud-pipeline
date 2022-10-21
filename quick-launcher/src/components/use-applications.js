@@ -10,8 +10,14 @@ const UserContext = React.createContext(undefined);
 
 export {ApplicationsContext, UserContext};
 
-async function fetchApplications () {
+async function fetchApplications (options) {
+  const {
+    launch,
+    location
+  } = options;
   const globalSettings = await fetchSettings();
+  const applicationType = launch ? globalSettings.getApplicationTypeByUrl(location) : undefined;
+  const mapper = launch ? globalSettings.parseUrl(location || '') : {};
   await fetchDataStorages();
   const isFolderApps = /^folder$/i.test(globalSettings?.applicationsSourceMode);
   const isFolderAndDockerApps = /^(folder\+docker|docker\+folder)$/i.test(globalSettings?.applicationsSourceMode);
@@ -31,7 +37,10 @@ async function fetchApplications () {
     };
   }
   // isFolderApps OR isFolderAndDockerApps
-  const folderApplications = await loadFolderApplications({});
+  const folderApplications = await loadFolderApplications({
+    options: mapper,
+    appType: applicationType
+  });
   const folderApplicationsProcessed = (folderApplications || [])
     .map(folderApp => mapFolderApplication(folderApp, tools))
     .filter(Boolean);
@@ -45,7 +54,7 @@ async function fetchApplications () {
     applications: [
       ...folderApplicationsProcessed,
       ...dockerApplications
-    ].sort(nameSorter),
+    ].sort(nameSorter).filter(app => !applicationType || app.appType === applicationType),
     user
   };
 }
@@ -83,20 +92,25 @@ const init = () => ({
   error: undefined
 });
 
-export function useApplications () {
+export function useApplications (options = {}) {
   const [state, dispatch] = useReducer(reducer, undefined, init);
   const onInit = useCallback(() => dispatch({type: 'init'}), [dispatch]);
   const onError = useCallback((error) => dispatch({type: 'error', error}), [dispatch]);
   const onLoad = useCallback((applications, user) => dispatch({type: 'apps', applications, user}), [dispatch]);
   useEffect(() => {
     onInit();
-    fetchApplications()
+    fetchApplications(options)
       .then(({applications, user: userInfo}) => {
         onLoad(applications, userInfo);
       })
       .catch(error => {
         onError(error.message);
       })
-  }, [onInit, onError, onLoad]);
+  }, [
+    onInit,
+    onError,
+    onLoad,
+    options
+  ]);
   return state;
 }
