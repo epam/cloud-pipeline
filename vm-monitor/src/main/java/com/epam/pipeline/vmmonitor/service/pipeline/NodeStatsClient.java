@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import lombok.RequiredArgsConstructor;
 
+import java.net.Proxy;
 import java.text.SimpleDateFormat;
 
 @RequiredArgsConstructor
@@ -49,6 +50,6 @@ public class NodeStatsClient {
     }
 
     private NodeReporterClient getClient(final String host) {
-        return builder.build(NodeReporterClient.class, schema, host, port, DEFAULT_MAPPER);
+        return builder.build(NodeReporterClient.class, schema, host, port, DEFAULT_MAPPER, Proxy.NO_PROXY);
     }
 }
