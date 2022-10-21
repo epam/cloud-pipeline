@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from json_parser import JsonParser
+from .json_parser import JsonParser
 
 
 class StoragePolicy:

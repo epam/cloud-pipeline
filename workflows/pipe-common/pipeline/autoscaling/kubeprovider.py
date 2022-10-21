@@ -15,7 +15,7 @@
 from time import sleep
 
 import pykube
-import utils
+from pipeline.autoscaling import utils
 import re
 
 RUN_ID_LABEL = 'runid'
