@@ -26,8 +26,9 @@ import os
 import fnmatch
 import csv
 import ast
-import api
-from storage import S3Bucket
+from . import api
+from .storage import S3Bucket
+
 
 try:
     from pykube.config import KubeConfig

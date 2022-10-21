@@ -1,4 +1,4 @@
-from json_parser import JsonParser
+from .json_parser import JsonParser
 
 
 class CloudRegion:

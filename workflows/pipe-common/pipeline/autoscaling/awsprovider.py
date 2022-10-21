@@ -27,9 +27,9 @@ import sys
 
 from botocore.exceptions import ClientError
 
-from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from .cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
 from pipeline import TaskStatus
-from pipeline.autoscaling import utils
+from . import utils
 
 ROOT_DEVICE_DEFAULT = {
     "DeviceName": "/dev/sda1",

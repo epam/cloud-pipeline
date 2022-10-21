@@ -21,9 +21,9 @@ import sys
 import time
 import urllib3
 
-from region import CloudRegion
-from datastorage import DataStorage
-from datastorage import DataStorageWithShareMount
+from .region import CloudRegion
+from .datastorage import DataStorage
+from .datastorage import DataStorageWithShareMount
 
 # Date format expected by Pipeline API
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
