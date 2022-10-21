@@ -19,16 +19,6 @@ import {inject, observer} from 'mobx-react';
 import {Slider} from 'antd';
 import styles from './hcs-image-controls.css';
 
-function VideoSettingsWrapper ({selectable, children}) {
-  return (
-    <div
-      className={styles.videoSettings}
-    >
-      {children}
-    </div>
-  );
-}
-
 function HcsVideoSpeedControl (
   {hcsVideoSource}
 ) {
@@ -39,20 +29,18 @@ function HcsVideoSpeedControl (
   } = hcsVideoSource || {};
   if (videoMode) {
     return (
-      <VideoSettingsWrapper>
-        <div>
-          <div className={styles.header}>
-            Frames delay: <b>{delay} second{delay !== 1 ? 's' : ''}</b>
-          </div>
-          <Slider
-            min={1}
-            max={10}
-            step={1}
-            value={delay}
-            onChange={setPlaybackDelay}
-          />
+      <div className={styles.videoSettings}>
+        <div className={styles.header}>
+          Frames delay: <b>{delay} second{delay !== 1 ? 's' : ''}</b>
         </div>
-      </VideoSettingsWrapper>
+        <Slider
+          min={1}
+          max={10}
+          step={1}
+          value={delay}
+          onChange={setPlaybackDelay}
+        />
+      </div>
     );
   }
   return null;

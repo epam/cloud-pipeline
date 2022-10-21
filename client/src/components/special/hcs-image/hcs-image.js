@@ -322,7 +322,8 @@ class HcsImage extends React.PureComponent {
       }
       this.hcsVideoSource.setSequenceTimePoints(
         newSequenceId,
-        this.selectedTimePoints
+        timePointId,
+        newSequence ? (newSequence.timeSeries || []).length > 1 : false
       );
     });
   };
@@ -337,7 +338,7 @@ class HcsImage extends React.PureComponent {
       if (newZ !== currentZ && this.hcsImageViewer) {
         this.hcsImageViewer.setGlobalZPosition(Number(newZ));
       }
-      this.hcsVideoSource.setZPlanes([this.selectedZCoordinate + 1]);
+      this.hcsVideoSource.setZPlanes(this.selectedZCoordinate);
       this.loadImageForAnalysis();
     });
   };
@@ -422,6 +423,7 @@ class HcsImage extends React.PureComponent {
       let url = sequence.omeTiff;
       let offsetsJsonUrl = sequence.offsetsJson;
       let {id} = fields[0];
+      const multipleZCoordinates = fields[0].depth > 1;
       if (this.showEntireWell) {
         url = sequence.overviewOmeTiff;
         offsetsJsonUrl = sequence.overviewOffsetsJson;
@@ -431,7 +433,8 @@ class HcsImage extends React.PureComponent {
         this.hcsVideoSource.setWellView(
           this.showEntireWell,
           id,
-          well
+          well,
+          multipleZCoordinates
         );
       }
       if (this.hcsImageViewer) {
@@ -718,6 +721,7 @@ class HcsImage extends React.PureComponent {
       return null;
     }
     const analysisAvailable = this.hcsAnalysis && this.hcsAnalysis.available;
+    const selectedImage = this.selectedWellFields[0];
     if (!showConfiguration) {
       return (
         <div
@@ -737,7 +741,10 @@ class HcsImage extends React.PureComponent {
           <VideoButton
             className={styles.action}
             videoSource={this.hcsVideoSource}
-            available={this.selectedSequence && this.selectedSequence.timeSeries.length > 1}
+            available={
+              (this.selectedSequence && this.selectedSequence.timeSeries.length > 1) ||
+              (selectedImage && selectedImage.depth > 1)
+            }
           />
           {this.renderDownloadBtn()}
           <Button
