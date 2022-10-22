@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3m12.75s</div>
+<div class="counter">3m19.00s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,12 +73,12 @@
 <a name="removeEntities"></a>
 <h3 class="failures">removeEntities</h3>
 <span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4602953923884685450')]]}
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4605407774437023556')]]}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1660222866932.179.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1660222866932.179.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1666442109148.150.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1666442109148.150.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4602953923884685450')]]
+Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4605407774437023556')]]
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -92,7 +92,7 @@ Caused by: NoSuchElementException: Cannot locate an element using title of a By.
 	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
 	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:246)
 	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.removeStorage(PipelinesLibraryAO.java:234)
-	at com.epam.pipeline.autotests.LaunchLimitMountsTest.removeEntities(LaunchLimitMountsTest.java:115)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.removeEntities(LaunchLimitMountsTest.java:116)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -106,10 +106,10 @@ Caused by: NoSuchElementException: Cannot locate an element using title of a By.
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4602953923884685450')]]
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4605407774437023556')]]
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '38342624ce7e', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '87150adc4bbd', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: driver.version: unknown
 	at org.openqa.selenium.By.findElement(By.java:162)
 	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
@@ -124,20 +124,20 @@ Driver info: driver.version: unknown
 <a name="setPreferences"></a>
 <h3 class="failures">setPreferences</h3>
 <span class="code">
-<pre>Element not found {By.id: navigation-button-logo}
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'launchLimitMountsStorage4606125601886439044')]]}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1660222768752.178.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1660222768752.178.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1666442008140.149.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1666442008140.149.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logo&quot; type=&quot;button&quot; class=&quot;ant-btn cp-navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 22). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot; style=&quot;&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_16279-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot; style=&quot;&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.resetMouse(AccessObject.java:308)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.clickOnCreateStorageButton(PipelinesLibraryAO.java:195)
-	at com.epam.pipeline.autotests.LaunchLimitMountsTest.setPreferences(LaunchLimitMountsTest.java:82)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.selectStorage(PipelinesLibraryAO.java:246)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.setPreferences(LaunchLimitMountsTest.java:86)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -151,16 +151,16 @@ Caused by: WebDriverException: unknown error: Element &lt;button id=&quot;naviga
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;button id=&quot;navigation-button-logo&quot; type=&quot;button&quot; class=&quot;ant-btn cp-navigation-menu-item&quot;&gt;...&lt;/button&gt; is not clickable at point (32, 22). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot; style=&quot;&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_16279-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot; style=&quot;&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '38342624ce7e', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '87150adc4bbd', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: debd7e82ec81c58ce9c84616f1c9abdb
-	at sun.reflect.GeneratedConstructorAccessor25.newInstance(Unknown Source)
+Session ID: 78ed190610ee2553c6b0171c549cd93b
+	at sun.reflect.GeneratedConstructorAccessor24.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -220,7 +220,7 @@ Session ID: debd7e82ec81c58ce9c84616f1c9abdb
 </tr>
 <tr>
 <td class="failures">removeEntities</td>
-<td>1m38.15s</td>
+<td>1m40.95s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
@@ -240,7 +240,7 @@ Session ID: debd7e82ec81c58ce9c84616f1c9abdb
 </tr>
 <tr>
 <td class="failures">setPreferences</td>
-<td>1m34.60s</td>
+<td>1m38.05s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -253,7 +253,7 @@ Session ID: debd7e82ec81c58ce9c84616f1c9abdb
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 11, 2022 6:09:19 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Oct 22, 2022 4:34:30 PM</p>
 </div>
 </div>
 </body>
