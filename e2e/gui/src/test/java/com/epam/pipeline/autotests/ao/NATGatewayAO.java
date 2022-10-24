@@ -356,7 +356,6 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
          public NATAddRouteAO addMorePorts(final String port, int portNumber) {
              context().findAll(By.className("cp-nat-route-port-control")).get(portNumber - 1)
                      .find(".ant-form-item-control")
-                     .find("input")
                      .shouldBe(visible)
                      .setValue(port);
              return this;
