@@ -227,11 +227,17 @@ def merge_channels(images):
         image = images[i]
         r1, g1, b1 = image.split()
         r2, g2, b2 = result.split()
-        r = np.minimum(255, np.add(np.array(r1), np.array(r2)))
-        g = np.minimum(255, np.add(np.array(g1), np.array(g2)))
-        b = np.minimum(255, np.add(np.array(b1), np.array(b2)))
+        r = _merge_color_channel(r1, r2)
+        g = _merge_color_channel(g1, g2)
+        b = _merge_color_channel(b1, b2)
         result = Image.merge("RGB", (Image.fromarray(r), Image.fromarray(g), Image.fromarray(b)))
     return result
+
+
+def _merge_color_channel(r1, r2):
+    r = np.add(np.array(r1, dtype='uint16'), np.array(r2, dtype='uint16'))
+    r = np.where(r <= 255, r, 255).astype('uint8')
+    return r
 
 
 def get_image_size(image):
