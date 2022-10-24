@@ -317,6 +317,15 @@ class WebdavFileSystem extends FileSystem {
     });
     return getContents(item);
   }
+  async buildDestination(directory) {
+    const isDirectory = await this.isDirectory(directory);
+    if (!isDirectory) {
+      const parentDirectory = this.joinPath(...this.parsePath(directory).slice(0, -1));
+      return super.buildDestination(parentDirectory);
+    }
+    return super.buildDestination(directory);
+  }
+
   getContentsStream(path) {
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
