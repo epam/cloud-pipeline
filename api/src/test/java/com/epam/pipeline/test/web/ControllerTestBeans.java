@@ -27,6 +27,7 @@ import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.preprocessing.NgsPreprocessingApiService;
 import com.epam.pipeline.acl.quota.QuotaApiService;
 import com.epam.pipeline.acl.report.ReportApiService;
+import com.epam.pipeline.acl.resource.StaticResourceApiService;
 import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
@@ -266,4 +267,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected ApplicationInfoManager applicationInfoManager;
+
+    @MockBean
+    protected StaticResourceApiService staticResourceApiService;
 }
