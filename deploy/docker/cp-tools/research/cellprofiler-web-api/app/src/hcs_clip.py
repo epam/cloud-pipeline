@@ -227,9 +227,12 @@ def merge_channels(images):
         image = images[i]
         r1, g1, b1 = image.split()
         r2, g2, b2 = result.split()
-        r = np.minimum(255, np.add(np.array(r1), np.array(r2)))
-        g = np.minimum(255, np.add(np.array(g1), np.array(g2)))
-        b = np.minimum(255, np.add(np.array(b1), np.array(b2)))
+        r = np.add(np.array(r1, dtype='uint16'), np.array(r2, dtype='uint16'))
+        r = np.where(r <= 255, r, 255).astype('uint8')
+        g = np.add(np.array(g1, dtype='uint16'), np.array(g2, dtype='uint16'))
+        g = np.where(g <= 255, g, 255).astype('uint8')
+        b = np.add(np.array(b1, dtype='uint16'), np.array(b2, dtype='uint16'))
+        b = np.where(b <= 255, b, 255).astype('uint8')
         result = Image.merge("RGB", (Image.fromarray(r), Image.fromarray(g), Image.fromarray(b)))
     return result
 
