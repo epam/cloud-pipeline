@@ -1739,6 +1739,23 @@ export default class DataStorage extends React.Component {
     }
   };
 
+  firstPage = () => {
+    const {path} = this.props;
+    const {pathNavigation} = this.state;
+    const {markers} = this.getPathNavigationInfo(path);
+    this.storage.fetchPage(null);
+    this.setState({
+      pathNavigation: {
+        ...pathNavigation,
+        [path]: {
+          markers,
+          currentPage: 0
+        }
+      },
+      pagePerformed: false
+    });
+  };
+
   prevPage = () => {
     const {path} = this.props;
     const {pathNavigation} = this.state;
@@ -2180,6 +2197,15 @@ export default class DataStorage extends React.Component {
           align="middle"
           style={{marginTop: 10, marginBottom: 10, paddingRight: 15}}
         >
+          <Button
+            id="first-page-button"
+            onClick={this.firstPage}
+            disabled={navigationInfo.currentPage === 0}
+            size="small"
+          >
+            <Icon style={{marginRight: '-3px'}} type="caret-left" />
+            <Icon type="caret-left" />
+          </Button>
           <Button
             id="prev-page-button"
             onClick={this.prevPage}
