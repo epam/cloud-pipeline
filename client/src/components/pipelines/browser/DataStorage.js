@@ -1005,7 +1005,7 @@ export default class DataStorage extends React.Component {
       (item.type && item.type.toLowerCase() === 'folder') ||
       !item.isVersion ||
       item.deleteMarker ||
-      (item.isVersion && !item.restored)
+      (item.isVersion && item.archived && !item.restored)
     ) {
       return false;
     }
