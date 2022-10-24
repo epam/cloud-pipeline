@@ -313,7 +313,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 entry(SERVER_NAME, context().find(byAttribute("placeholder", "Server name"))),
                 entry(PORT, context().find(byText("Port:"))
                         .closest(".dd-route-modal__form-item-container")
-                        .find(".dd-route-modal__form-item").find("input")),
+                        .find(".dd-route-modal__form-item")),
                 entry(COMMENT, context().find(byAttribute("placeholder", "Comment"))),
                 entry(SPECIFY_IP, context().find(elementWithText(byClassName("ant-checkbox-wrapper"),
                         "Specify IP address"))),
