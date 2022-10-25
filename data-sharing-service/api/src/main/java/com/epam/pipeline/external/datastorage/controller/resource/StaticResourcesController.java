@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.resource;
+package com.epam.pipeline.external.datastorage.controller.resource;
 
-import com.epam.pipeline.acl.resource.StaticResourceApiService;
-import com.epam.pipeline.controller.AbstractRestController;
+import com.epam.pipeline.external.datastorage.manager.resource.StaticResourcesService;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
-@RequiredArgsConstructor
 @Api(value = "Static resources API")
-public class StaticResourcesController extends AbstractRestController {
+@RequestMapping("/static-resources")
+@RequiredArgsConstructor
+public class StaticResourcesController {
 
     private static final String STATIC_RESOURCES = "/static-resources/";
-    private final StaticResourceApiService resourcesService;
+    private final StaticResourcesService resourcesService;
 
-    @GetMapping(value = "/static-resources/**")
+    @GetMapping(value = "/**")
     public byte[] getStaticFile(final HttpServletRequest request) {
         return resourcesService.getContent(request.getPathInfo().replaceFirst(STATIC_RESOURCES, ""));
     }
