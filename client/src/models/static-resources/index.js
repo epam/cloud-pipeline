@@ -16,11 +16,13 @@
 
 import {API_PATH, SERVER} from '../../config';
 
-const removeLeadingSlash = o => (o || '').startsWith('/') ? o.slice(1) : (o || '');
-const removeTrailingSlash = o => (o || '').endsWith('/') ? o.slice(0, -1) : (o || '');
-const removeSlash = o => removeLeadingSlash(removeTrailingSlash(o));
-
-const prefix = [SERVER, API_PATH].map(removeSlash).join('/');
+let prefix = SERVER + API_PATH;
+if (SERVER.endsWith('/') && API_PATH.startsWith('/')) {
+  prefix = SERVER + API_PATH.slice(1);
+}
+if (prefix.endsWith('/')) {
+  prefix = prefix.slice(0, -1);
+}
 
 export function getStaticResourceUrl (storageName, path) {
   return `${prefix}/static-resources/${storageName}/${path}`;
