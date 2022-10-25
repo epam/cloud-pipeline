@@ -104,6 +104,7 @@ import {
   checkPreviewAvailable as checkHCSPreviewAvailable
 } from '../../special/hcs-image/utilities/check-preview-available';
 
+import {getStaticResourceUrl} from '../../../models/static-resources';
 import styles from './Browser.css';
 
 const PAGE_SIZE = 40;
@@ -1236,6 +1237,23 @@ export default class DataStorage extends React.Component {
     this.setState({previewModal: null});
   };
 
+  openDataStorageItemPreview = async (item, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    const {
+      info: storage
+    } = this.props;
+    try {
+      storage.fetchIfNeededOrWait();
+      const {
+        path
+      } = storage.value;
+      const url = getStaticResourceUrl(path, item.path);
+      window.open(url, '_blank');
+    } catch (_) {}
+  };
+
   checkWsiPreviewAvailability = (file) => {
     if (!file) {
       return;
@@ -1309,6 +1327,11 @@ export default class DataStorage extends React.Component {
   };
 
   getStorageItemsTable = () => {
+    const documentPreviewAvailable = (item) => {
+      const {preferences} = this.props;
+      return /^file$/i.test(item.type) &&
+        preferences.dataStorageItemPreviewMasks.some(mask => mask.test(item.path));
+    };
     const getList = () => {
       const items = [];
       if (this.canGoToParent()) {
@@ -1403,6 +1426,8 @@ export default class DataStorage extends React.Component {
           hcs: !i.deleteMarker &&
             i.type.toLowerCase() === 'file' &&
             fastCheckHCSPreviewAvailable({path: i.path, storageId: this.props.storageId}),
+          documentPreview: !i.deleteMarker &&
+            documentPreviewAvailable(i),
           archived,
           restored
         };
@@ -1416,7 +1441,7 @@ export default class DataStorage extends React.Component {
     for (
       let i = 0; i < this.tableData.length; i++) {
       const item = this.tableData[i];
-      if (item.miew || item.vsi || item.hcs) {
+      if (item.miew || item.vsi || item.hcs || item.documentPreview) {
         hasAppsColumn = true;
       }
       if (item.versions) {
@@ -1536,6 +1561,21 @@ export default class DataStorage extends React.Component {
               key={item.key}
             >
               <img src="icons/file-extensions/hcs.png" />
+            </div>
+          );
+        }
+        if (item.documentPreview) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.openDataStorageItemPreview(item, event)}
+              key={item.key}
+            >
+              <Icon
+                type="export"
+                className="cp-primary"
+                style={{fontSize: 'larger'}}
+              />
             </div>
           );
         }
