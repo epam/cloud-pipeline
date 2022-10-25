@@ -1,12 +1,13 @@
 import datetime
 import glob
 import json
+import math
 import os
 import time
 
 from pipeline import Logger, PipelineAPI, common
 
-BYTES_IN_GB = 1024 * 1024 * 1024
+BYTES_IN_GB = 1000 * 1000 * 1000
 MIN_LUSTRE_SIZE = 1200
 
 DATE_PATTERN = '%Y-%m-%d %H:%M:%S.%f'
@@ -238,7 +239,7 @@ class MachineRun(object):
             self.notifications.append(Event(self.machine_run, 'Metadata created', EVENT_SUCCESS))
             if self.is_before_processed_date(sequence_date):
                 continue
-            launch = (not results) or (not metadata_entity['data'][self.settings.last_processed_column])
+            launch = (not results) or (not metadata_entity['data'][self.settings.last_processed_column].get('value', None))
             if launch and self.settings.configuration_id:
                 self.run_analysis(metadata_entity, run_folder)
             failure_events = ['%s:%s' % (event.type, event.message)
@@ -302,7 +303,8 @@ class MachineRun(object):
                     'Analysis configuration is misconfigured. Failed to find configuration entry %s.' % self.settings.configuration_entry_name)
             configuration['entries'] = [target_entry]
             if self.settings.estimate_size:
-                size_gb = max(MIN_LUSTRE_SIZE, self.estimate_disk_size(run_folder) * self.settings.data_size_multiplier)
+                size_gb = max(MIN_LUSTRE_SIZE,
+                              math.ceil(self.estimate_disk_size(run_folder) * self.settings.data_size_multiplier))
                 Logger.info('Requesting %d Gb file system for machine run %s.' % (size_gb, self.machine_run), task_name=self.machine_run)
                 target_entry['configuration']['parameters']['CP_CAP_SHARE_FS_SIZE'] = {
                     "value": size_gb,
@@ -396,10 +398,10 @@ class MachineRun(object):
         if not os.path.exists(data_folder):
             return 0
         try:
-            exit_code, out, err = common.execute_cmd_command_and_get_stdout_stderr('du -s ' + data_folder,
-                                                                                   silent=True)
-            size = int(out.split()[0])
-            return size / BYTES_IN_GB
+            result = self.api.get_paths_size([data_folder.replace('/cloud-data/', 's3://')])
+            if result:
+                return float(result[0].get('size', 0)) / BYTES_IN_GB
+            return 0
         except BaseException as e:
             Logger.warn('Failed to estimate data size for path %s: %s' % (run_folder, str(e.message)),
                         task_name=self.machine_run)
@@ -470,7 +472,7 @@ def main():
     deploy_name = os.getenv('NGS_SYNC_DEPLOY_NAME', 'Cloud Pipeline')
     last_processed_column = os.getenv('NGS_SYNC_LAST_PROCESSD_COLUMN', 'LastProcessed')
     config_prefix = os.getenv('NGS_SYNC_CONFIG_PREFIX', '')
-    data_size_multiplier = os.getenv('NGS_SYNC_SIZE_MULTIPLIER', 2)
+    data_size_multiplier = int(os.getenv('NGS_SYNC_SIZE_MULTIPLIER', 10))
     estimate_size = os.getenv('NGS_SYNC_ESTIMATE_DATA_SIZE', 'false')
     sample_sheet_prefix = os.getenv('NGS_SYNC_SAMPLE_SHEET_PREFIX', 'SampleSheet')
     demultiplex_config_prefix = os.getenv('NGS_SYNC_DEMU_CONFIG_PREFIX', 'demu_config')
