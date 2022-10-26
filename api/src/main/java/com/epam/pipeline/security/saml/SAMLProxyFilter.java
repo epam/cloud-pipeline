@@ -39,6 +39,7 @@ import org.opensaml.xml.schema.XSString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -63,7 +64,6 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_EXTE
 
 public class SAMLProxyFilter extends OncePerRequestFilter {
     private static final Logger LOGGER = LoggerFactory.getLogger(SAMLProxyFilter.class);
-    private static final int MAX_AUTHENTICATION_AGE = 93600;
     private static final int RESPONSE_SKEW = 1200;
 
     @Autowired
@@ -74,6 +74,9 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
 
     @Autowired
     private UserAccessService accessService;
+
+    @Value("${saml.authn.max.authentication.age:93600}")
+    private Long maxAuthentificationAge;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -129,7 +132,7 @@ public class SAMLProxyFilter extends OncePerRequestFilter {
         try (FileReader metadataReader = new FileReader(new File(endpoint.getMetadataPath()))) {
             CustomSamlClient client = CustomSamlClient.fromMetadata(
                 endpointId, metadataReader, RESPONSE_SKEW);
-            client.setMaxAuthenticationAge(MAX_AUTHENTICATION_AGE);
+            client.setMaxAuthenticationAge(maxAuthentificationAge);
 
             SamlResponse parsedResponse = client.validate(decoded);
             String userName = parsedResponse.getNameID().toUpperCase();
