@@ -329,7 +329,7 @@ class VersionedStorageTable extends React.Component {
           }
           {
             writeAllowed && (
-              <UploadButton
+              <UploadButton.Directory
                 multiple
                 synchronous
                 onRefresh={this.onUploadFinished}

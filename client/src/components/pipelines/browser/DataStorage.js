@@ -2124,7 +2124,7 @@ export default class DataStorage extends React.Component {
               }
               {
                 roleModel.writeAllowed(this.props.info.value) && (
-                  <UploadButton
+                  <UploadButton.Directory
                     multiple
                     onRefresh={this.refreshList}
                     title={'Upload'}

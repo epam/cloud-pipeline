@@ -25,3 +25,7 @@
 .dropdown-container button[class~="ant-btn"]:hover {
   z-index: 1;
 }
+
+.dropdown-menu-item {
+  padding: 7px 10px;
+}

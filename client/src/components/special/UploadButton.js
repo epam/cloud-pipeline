@@ -26,14 +26,99 @@ import {
   Modal,
   Progress,
   Col,
-  Tooltip
+  Tooltip,
+  Menu,
+  Dropdown
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
-import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
+import styles from './UploadButton.css';
 
 const KB = 1024;
 const MB = 1024 * KB;
 const MAX_NFS_FILE_SIZE_MB = 500;
+
+class UploadButtonDirectory extends React.Component {
+  uploadRef;
+
+  setDirectoryAttribute = () => {
+    if (this.uploadRef?.uploadButton?.refs?.upload?.uploader?.fileInput) {
+      this.uploadRef.uploadButton.refs.upload.uploader.fileInput
+        .setAttribute('directory', '');
+      this.uploadRef.uploadButton.refs.upload.uploader.fileInput
+        .setAttribute('webkitdirectory', '');
+    }
+  };
+
+  removeDirectoryAttribute = () => {
+    if (this.uploadRef?.uploadButton?.refs?.upload?.uploader?.fileInput) {
+      this.uploadRef.uploadButton.refs.upload.uploader.fileInput
+        .removeAttribute('directory', '');
+      this.uploadRef.uploadButton.refs.upload.uploader.fileInput
+        .removeAttribute('webkitdirectory', '');
+    }
+  };
+
+  handleMenuClick = ({key}) => {
+    if (!this.uploadRef) {
+      return;
+    }
+    if (key === 'folder') {
+      this.setDirectoryAttribute();
+    }
+    this.uploadRef.triggerClick && this.uploadRef.triggerClick();
+    setTimeout(this.removeDirectoryAttribute);
+  };
+
+  initializeUploadButton = (component) => {
+    const {onInitialized} = this.props;
+    this.uploadRef = component;
+    onInitialized && onInitialized(component);
+  };
+
+  render () {
+    const {buttonStyle} = this.props;
+    const menu = (
+      <Menu onClick={this.handleMenuClick}>
+        <Menu.Item
+          key="files"
+          className={styles.dropdownMenuItem}
+        >
+          Files
+        </Menu.Item>
+        <Menu.Item
+          key="folder"
+          className={styles.dropdownMenuItem}
+        >
+          Folder
+        </Menu.Item>
+      </Menu>
+    );
+    return (
+      <div className={styles.dropdownContainer}>
+        <UploadButton
+          {...this.props}
+          onInitialized={this.initializeUploadButton}
+          buttonStyle={Object.assign({
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0
+          }, buttonStyle)}
+        />
+        <Dropdown overlay={menu}>
+          <Button
+            style={{
+              marginLeft: 0,
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0
+            }}
+            size="small"
+          >
+            <Icon type="down" />
+          </Button>
+        </Dropdown>
+      </div>
+    );
+  }
+}
 
 class UploadButton extends React.Component {
   static propTypes = {
@@ -50,7 +135,8 @@ class UploadButton extends React.Component {
     region: PropTypes.string,
     owner: PropTypes.string,
     onInitialized: PropTypes.func,
-    style: PropTypes.object
+    style: PropTypes.object,
+    buttonStyle: PropTypes.object
   };
 
   state = {
@@ -59,6 +145,8 @@ class UploadButton extends React.Component {
     uploadingFiles: [],
     synchronousUploadingFiles: []
   };
+
+  static Directory = UploadButtonDirectory;
 
   @observable s3Storage;
   @observable s3StorageError;
@@ -570,6 +658,7 @@ class UploadButton extends React.Component {
         size="small"
         id="upload-button"
         disabled={this.props.uploadToS3 && !!this.s3StorageError}
+        style={this.props.buttonStyle}
       >
         <Icon type="upload" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
         <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>{this.props.title}</span>
