@@ -478,11 +478,12 @@ export default class DataStorage extends React.Component {
 
   refreshList = async () => {
     const {path} = this.props;
+    this.clearPathNavigation(path, true);
     await this.props.info.fetch();
     await this.storage.fetchPage(null);
     this.setState({
       pagePerformed: false
-    }, () => this.clearPathNavigation(path, true));
+    });
   };
 
   isDataRefreshing = () => {
@@ -601,11 +602,12 @@ export default class DataStorage extends React.Component {
         } else {
           this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
         }
+        this.clearPathNavigation(path, true);
         this.setState({
           pagePerformed: false,
           selectedItems: [],
           selectedFile: null
-        }, () => this.clearPathNavigation(path, true));
+        });
       } else {
         message.error('You cannot navigate to another storage.', 3);
       }
