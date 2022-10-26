@@ -392,7 +392,7 @@ export default class DataStorage extends React.Component {
       ));
   }
 
-  fetchStorage = () => {
+  fetchStorage = (keepState = false) => {
     const {storageId, path, showVersions} = this.props;
     const {currentPage, markers} = this.getPathNavigationInfo(path);
     const marker = markers[currentPage];
@@ -404,10 +404,10 @@ export default class DataStorage extends React.Component {
       marker
     );
     this.setState({
-      metadata: undefined,
-      selectedItems: [],
-      selectedFile: null,
-      editFile: null
+      metadata: keepState ? this.state.metadata : undefined,
+      selectedItems: keepState ? this.state.selectedItems : [],
+      selectedFile: keepState ? this.state.selectedFile : null,
+      editFile: keepState ? this.state.editFile : null
     }, async () => {
       await this._storage.fetch();
       this.setState({
@@ -480,10 +480,7 @@ export default class DataStorage extends React.Component {
     const {path} = this.props;
     this.clearPathNavigation(path, true);
     await this.props.info.fetch();
-    await this.storage.fetchPage(null);
-    this.setState({
-      pagePerformed: false
-    });
+    this.fetchStorage(true);
   };
 
   isDataRefreshing = () => {
