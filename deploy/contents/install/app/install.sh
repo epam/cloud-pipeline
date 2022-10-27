@@ -797,7 +797,6 @@ if is_service_requested cp-gitlab-db; then
                                     "/opt/gitlab-postgresql"
     delete_deployment_and_service   "cp-bkp-worker-cp-gitlab-db"
 
-
     if is_install_requested; then
         print_info "-> Deploying Gitlab postgres DB"
         create_kube_resource $K8S_SPECS_HOME/cp-gitlab-db/cp-gitlab-db-dpl.yaml
@@ -813,7 +812,7 @@ if is_service_requested cp-gitlab-db; then
         unset CP_BKP_SERVICE_NAME
         unset CP_BKP_SERVICE_WD
 
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-db: $CP_GITLAB_PSG_HOST:$CP_GITLAB_PSG_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-db: $GITLAB_DATABASE_HOST:$GITLAB_DATABASE_PORT"
     fi
     echo
 fi

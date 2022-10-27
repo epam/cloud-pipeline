@@ -18,11 +18,11 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-gitlab-db
-          image: postgres:${CP_GITLAB_PSG_VERSION}
+          image: postgres:${GITLAB_DATABASE_VERSION}
           imagePullPolicy: "IfNotPresent"
           args:
-            - --shared_buffers=${CP_GITLAB_PSG_SHARED_BUFFERS}
-            - --max_connections=${CP_GITLAB_PSG_MAX_CONNECTIONS}
+            - --shared_buffers=${GITLAB_DATABASE_SHARED_BUFFERS}
+            - --max_connections=${GITLAB_DATABASE_MAX_CONNECTIONS}
           ports:
             - containerPort: ${PSG_PORT}
           env:
@@ -55,7 +55,7 @@ spec:
       volumes:
         - name: gitlab-pgdata
           hostPath:
-            path: /opt/postgresql/data
+            path: /opt/gitlab-postgresql/data
         - name: gitlab-dshm
           emptyDir:
             medium: Memory
