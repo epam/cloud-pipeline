@@ -54,6 +54,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SPECIFY_IP;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -228,6 +229,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .getInternalIP(server1Port80ExternalIPAddress, PORT_80);
         tools().perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .doNotMountStoragesSelect(true)
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForSshLink()
