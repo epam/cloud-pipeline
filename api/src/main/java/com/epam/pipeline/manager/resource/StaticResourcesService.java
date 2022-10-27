@@ -23,12 +23,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-
-import java.io.InputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +37,7 @@ public class StaticResourcesService {
     private final MessageHelper messageHelper;
 
     @SneakyThrows
-    public byte[] getContent(final String path) {
+    public DataStorageStreamingContent getContent(final String path) {
         Assert.isTrue(StringUtils.isNotBlank(path) && path.contains(DELIMITER),
                 messageHelper.getMessage(MessageConstants.ERROR_STATIC_RESOURCES_INVALID_PATH));
         final String[] split = path.split(DELIMITER, 2);
@@ -49,10 +46,6 @@ public class StaticResourcesService {
         Assert.isTrue(StringUtils.isNotBlank(filePath),
                 messageHelper.getMessage(MessageConstants.ERROR_STATIC_RESOURCES_INVALID_PATH));
         final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(bucketName);
-        final DataStorageStreamingContent content = dataStorageManager.getStreamingContent(
-                storage.getId(), filePath, null);
-        try (InputStream is = content.getContent()) {
-            return IOUtils.toByteArray(is);
-        }
+        return dataStorageManager.getStreamingContent(storage.getId(), filePath, null);
     }
 }

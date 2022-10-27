@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller;
+package com.epam.pipeline.external.datastorage.controller;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileItemFactory;
-import org.apache.commons.fileupload.FileItemIterator;
-import org.apache.commons.fileupload.FileItemStream;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.tomcat.util.http.fileupload.FileItemIterator;
+import org.apache.tomcat.util.http.fileupload.FileItemStream;
+import org.apache.tomcat.util.http.fileupload.FileUploadException;
+import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -38,11 +32,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 public abstract class AbstractRestController {
 
@@ -114,7 +105,7 @@ public abstract class AbstractRestController {
 
     protected <T> List<T> processStreamingUpload(HttpServletRequest request,
                                                  BiFunction<InputStream, String, T> uploadMapper)
-        throws IOException, FileUploadException {
+            throws IOException, FileUploadException {
         Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
 
         ServletFileUpload upload = new ServletFileUpload();
@@ -201,43 +192,5 @@ public abstract class AbstractRestController {
                 return MediaType.APPLICATION_OCTET_STREAM;
         }
     }
-
-    /**
-     * Consumes the whole multipart file to memory
-     * @param request a HttpServletRequest to controller
-     * @return a {@link MultipartFile}, containing all the dile data in memory
-     * @throws FileUploadException
-     */
-    protected MultipartFile consumeMultipartFile(HttpServletRequest request) throws FileUploadException {
-        return consumeMultipartFile(request, Collections.emptySet());
-    }
-
-    /**
-     * Consumes the whole multipart file to memory
-     * @param request a HttpServletRequest to controller
-     * @param allowedExtensions a set of file extensions, that are allowed for uploading. Example: txt, png
-     * @return a {@link MultipartFile}, containing all the dile data in memory
-     * @throws FileUploadException
-     */
-    protected MultipartFile consumeMultipartFile(HttpServletRequest request, Set<String> allowedExtensions)
-        throws FileUploadException {
-        Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
-        FileItemFactory factory = new DiskFileItemFactory();
-        ServletFileUpload upload = new ServletFileUpload(factory);
-        List<FileItem> items = upload.parseRequest(request);
-        MultipartFile file = new CommonsMultipartFile(items.stream()
-                                            .findFirst()
-                                            .orElseThrow(() -> new IllegalArgumentException(NO_FILES_MESSAGE))
-        );
-
-        if (CollectionUtils.isNotEmpty(allowedExtensions)) {
-            String extension = FilenameUtils.getExtension(file.getOriginalFilename()).toLowerCase();
-            Assert.isTrue(allowedExtensions.contains(extension),
-                          String.format("File type %s is not allowed for uploading. Allowed types: %s", extension,
-                                        allowedExtensions.stream().collect(Collectors.joining(", "))));
-        }
-
-        return file;
-    }
-
 }
+

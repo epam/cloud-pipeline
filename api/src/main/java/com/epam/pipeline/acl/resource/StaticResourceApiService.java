@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.resource;
 
+import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.manager.resource.StaticResourcesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,7 +29,7 @@ public class StaticResourceApiService {
     private final StaticResourcesService resourcesService;
 
     @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByPath(#path, 'READ')")
-    public byte[] getContent(final String path) {
+    public DataStorageStreamingContent getContent(final String path) {
         return resourcesService.getContent(path);
     }
 }

@@ -20,7 +20,6 @@ import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
 import com.epam.pipeline.external.datastorage.manager.CloudPipelineApiBuilder;
 import com.epam.pipeline.external.datastorage.manager.auth.PipelineAuthManager;
 import lombok.SneakyThrows;
-import org.apache.commons.io.IOUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriUtils;
 
@@ -43,9 +42,8 @@ public class StaticResourcesService {
     }
 
     @SneakyThrows
-    public byte[] getContent(final String path) {
-        final InputStream response = apiExecutor.getResponseStream(client.getContent(
+    public InputStream getContent(final String path) {
+        return apiExecutor.getResponseStream(client.getContent(
                 UriUtils.encodePath(path, StandardCharsets.UTF_8.displayName()), authManager.getHeader()));
-        return IOUtils.toByteArray(response);
     }
 }
