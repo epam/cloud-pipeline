@@ -125,9 +125,10 @@ public class GitManager {
     }
 
     public GitlabClient getGitlabClient(String gitHost, String gitToken, Long gitAdminId, String gitAdminName) {
+        final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
         return GitlabClient
                 .initializeGitlabClientFromHostAndToken(gitHost, gitToken, authManager.getAuthorizedUser(),
-                        gitAdminId, gitAdminName);
+                        gitAdminId, gitAdminName, apiVersion);
     }
 
     private GitlabClient getGitlabClientForPipeline(Pipeline pipeline) {
@@ -145,9 +146,10 @@ public class GitManager {
         boolean externalHost = !StringUtils.isNullOrEmpty(providedToken);
         String token = externalHost ? providedToken :
                 preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
+        final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
         return GitlabClient.initializeGitlabClientFromRepositoryAndToken(
                 rootClient ? adminName : authManager.getAuthorizedUser(),
-                repository, token, adminId, adminName, externalHost);
+                repository, token, adminId, adminName, externalHost, apiVersion);
     }
 
     public GitCredentials getGitCredentials(Long id) {
@@ -740,8 +742,9 @@ public class GitManager {
         String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
+        String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
         return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, gitToken,
-                authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
+                authManager.getAuthorizedUser(), gitAdminId, gitAdminName, apiVersion);
     }
 
     public GitProject createRepository(String templateId,

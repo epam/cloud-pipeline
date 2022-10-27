@@ -115,6 +115,7 @@ public class GitlabClient {
     private Long adminId;
     private String adminName;
     private GitLabApi gitLabApi;
+    private String apiVersion;
 
     /**
      * Indicates that user-provided adminToken shall be used for authentication. Mainly it means
@@ -123,7 +124,8 @@ public class GitlabClient {
     private boolean externalHost;
 
     GitlabClient(String host, String namespace, String user, String adminToken, String project,
-                         String fullUrl, Long gitAdminId, String adminName, boolean externalHost) {
+                 String fullUrl, Long gitAdminId, String adminName, boolean externalHost,
+                 String apiVersion) {
         this.gitHost = host;
         this.namespace = namespace;
         this.projectName = project;
@@ -134,11 +136,16 @@ public class GitlabClient {
         this.externalHost = externalHost;
         this.gitLabApi = buildGitLabApi(host, adminToken);
         this.user = user;
+        this.apiVersion = apiVersion;
     }
 
-    public static GitlabClient initializeGitlabClientFromRepositoryAndToken(String user, String repository,
-                                                                            String token, Long adminId,
-                                                                            String adminName, boolean externalHost) {
+    public static GitlabClient initializeGitlabClientFromRepositoryAndToken(final String user,
+                                                                            final String repository,
+                                                                            final String token,
+                                                                            final Long adminId,
+                                                                            final String adminName,
+                                                                            final boolean externalHost,
+                                                                            final String apiVersion) {
         final GitRepositoryUrl gitRepositoryUrl = GitRepositoryUrl.from(repository);
         final String host = gitRepositoryUrl.getProtocol() + gitRepositoryUrl.getHost();
         final String namespace = gitRepositoryUrl.getNamespace()
@@ -150,12 +157,14 @@ public class GitlabClient {
 
         LOGGER.trace("Created Git client for repository {}", repository);
         return new GitlabClient(host, namespace, userOrNamespace, token, project,
-                repository, adminId, adminName, externalHost);
+                repository, adminId, adminName, externalHost, apiVersion);
     }
 
-    public static GitlabClient initializeGitlabClientFromHostAndToken(String gitHost, String token, String userName,
-                                                                      Long gitAdminId, String adminName) {
-        return new GitlabClient(gitHost, adminName, userName, token, null, null, gitAdminId, adminName, false);
+    public static GitlabClient initializeGitlabClientFromHostAndToken(final String gitHost, final String token,
+                                                                      final String userName, final Long gitAdminId,
+                                                                      final String adminName, final String apiVersion) {
+        return new GitlabClient(gitHost, adminName, userName, token, null, null, gitAdminId,
+                adminName, false, apiVersion);
     }
 
     public GitCredentials buildCloneCredentials(boolean useEnvVars, boolean issueToken, Long duration)

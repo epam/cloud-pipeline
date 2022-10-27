@@ -268,6 +268,9 @@ public class SystemPreferences {
             GIT_GROUP, isGreaterThan(0));
     public static final IntPreference GIT_FORK_RETRY_COUNT = new IntPreference("git.fork.retry.count", 5,
             GIT_GROUP, isGreaterThan(0));
+    public static final StringPreference GITLAB_API_VERSION = new StringPreference(
+            "git.gitlab.api.version", "v3", GIT_GROUP, pass);
+
 
     // DOCKER_SECURITY_GROUP
     /**

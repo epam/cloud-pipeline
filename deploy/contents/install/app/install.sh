@@ -167,6 +167,11 @@ CP_API_SRV_KUBE_NODE_NAME=${CP_API_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-api-srv to $CP_API_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_API_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-api-srv="true" --overwrite
 
+# Allow to schedule GitLab DB to the master
+CP_GITLAB_DB_KUBE_NODE_NAME=${CP_GITLAB_DB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-gitlab-db to $CP_GITLAB_DB_KUBE_NODE_NAME"
+kubectl label nodes "$CP_GITLAB_DB_KUBE_NODE_NAME" cloud-pipeline/cp-gitlab-db="true" --overwrite
+
 # Allow to schedule GitLab to the master
 CP_GITLAB_KUBE_NODE_NAME=${CP_GITLAB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-git to $CP_GITLAB_KUBE_NODE_NAME"
@@ -734,6 +739,35 @@ if is_service_requested cp-edge; then
     echo
 fi
 
+# Gitlab postgres db
+if is_service_requested cp-gitlab-db; then
+    print_ok "[Starting GitLab postgres DB deployment]"
+
+    print_info "-> Deleting existing instance of GitLab postgres DB"
+    delete_deployment_and_service   "cp-gitlab-db" \
+                                    "/opt/gitlab-postgresql"
+    delete_deployment_and_service   "cp-bkp-worker-cp-gitlab-db"
+
+    if is_install_requested; then
+        print_info "-> Deploying Gitlab postgres DB"
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-db/cp-gitlab-db-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-db/cp-gitlab-db-svc.yaml
+
+        print_info "-> Waiting for Gitlab postgres DB to initialize"
+        wait_for_deployment "cp-gitlab-db"
+
+        # Install the PSQL backup service
+        export CP_BKP_SERVICE_NAME="cp-gitlab-db"
+        export CP_BKP_SERVICE_WD="/opt/gitlab-postgresql/data/bkp"
+        create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
+        unset CP_BKP_SERVICE_NAME
+        unset CP_BKP_SERVICE_WD
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-db: $GITLAB_DATABASE_HOST:$GITLAB_DATABASE_PORT"
+    fi
+    echo
+fi
+
 # GitLab
 # FIXME 1. External IP is used to configure client credentials in a container. Fix API?
 if is_service_requested cp-git; then
@@ -746,7 +780,7 @@ if is_service_requested cp-git; then
 
     if is_install_requested; then
         print_info "-> Creating postgres DB user and schema for GitLab"
-        create_user_and_db  "cp-api-db" \
+        create_user_and_db  "cp-gitlab-db" \
                             "$GITLAB_DATABASE_USERNAME" \
                             "$GITLAB_DATABASE_PASSWORD" \
                             "$GITLAB_DATABASE_DATABASE"
@@ -787,16 +821,31 @@ if is_service_requested cp-git; then
         GITLAB_ROOT_TOKEN=""
         GITLAB_ROOT_TOKEN_ATTEMPTS=60
         CP_GITLAB_INIT_TIMEOUT=30
-        print_info "-> Getting GitLab root's private_token (gitlab will be pinged $GITLAB_ROOT_TOKEN_ATTEMPTS times as it may still be not initialized...)"
-        while [ -z "$GITLAB_ROOT_TOKEN" ] || [ "$GITLAB_ROOT_TOKEN" == "null" ]; do
-            if [ "$GITLAB_ROOT_TOKEN_ATTEMPTS" == 0 ]; then
-                print_err "Unable to get GitLab root's private_token after $GITLAB_ROOT_TOKEN_ATTEMPTS attempts"
-                break
+        if [ -z "$CP_GITLAB_SESSION_API_DISABLE" ] || [ "$CP_GITLAB_SESSION_API_DISABLE" != "true" ]; then
+            print_info "-> Getting GitLab root's private_token (gitlab will be pinged $GITLAB_ROOT_TOKEN_ATTEMPTS times as it may still be not initialized...)"
+            while [ -z "$GITLAB_ROOT_TOKEN" ] || [ "$GITLAB_ROOT_TOKEN" == "null" ]; do
+                if [ "$GITLAB_ROOT_TOKEN_ATTEMPTS" == 0 ]; then
+                    print_err "Unable to get GitLab root's private_token after $GITLAB_ROOT_TOKEN_ATTEMPTS attempts"
+                    break
+                fi
+                GITLAB_ROOT_TOKEN=$(curl -k https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/session -s -F "login=$GITLAB_ROOT_USER" -F "password=$GITLAB_ROOT_PASSWORD" | jq -r '.private_token')
+                sleep 10
+                GITLAB_ROOT_TOKEN_ATTEMPTS=$((GITLAB_ROOT_TOKEN_ATTEMPTS-1))
+        else
+            print_info "-> Setting GitLab root's private_token"
+            GITLAB_ROOT_TOKEN=$(openssl rand -hex 20)
+            gitlab_access_tokens_scopes=${CP_GITLAB_ACCESS_TOKEN_SCOPES:-":read_user,:read_repository,:api,:read_api,:write_repository,:sudo"}
+            gitlab_set_token_cmd="token=User.find_by_username('$GITLAB_ROOT_USER').personal_access_tokens.create(scopes:[$gitlab_access_tokens_scopes], name:'CloudPipelineRootToken'); token.set_token('$GITLAB_ROOT_TOKEN'); token.save!"
+            gitlab_set_token_response=$(execute_deployment_command cp-git cp-git "gitlab-rails runner \"$gitlab_set_token_cmd\"")
+            if [ $? -ne 0 ]; then
+                print_err "Error occurred during adding GitLab root's private_token"
+                print_err "$gitlab_set_token_response"
+            else
+                print_ok "GitLab root's private_token successfully added"
             fi
-            GITLAB_ROOT_TOKEN=$(curl -k https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/session -s -F "login=$GITLAB_ROOT_USER" -F "password=$GITLAB_ROOT_PASSWORD" | jq -r '.private_token')
-            sleep 10
-            GITLAB_ROOT_TOKEN_ATTEMPTS=$((GITLAB_ROOT_TOKEN_ATTEMPTS-1))
         done
+        fi
+
         if [ "$GITLAB_ROOT_TOKEN" ] && [ "$GITLAB_ROOT_TOKEN" != "null" ]; then
             print_ok "GitLab token retrieved: $GITLAB_ROOT_TOKEN"
             export GITLAB_ROOT_TOKEN
