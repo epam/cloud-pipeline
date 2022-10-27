@@ -202,6 +202,11 @@ CP_API_SRV_KUBE_NODE_NAME=${CP_API_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-api-srv to $CP_API_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_API_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-api-srv="true" --overwrite
 
+# Allow to schedule GitLab DB to the master
+CP_GITLAB_DB_KUBE_NODE_NAME=${CP_GITLAB_DB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-gitlab-db to $CP_GITLAB_DB_KUBE_NODE_NAME"
+kubectl label nodes "$CP_GITLAB_DB_KUBE_NODE_NAME" cloud-pipeline/cp-gitlab-db="true" --overwrite
+
 # Allow to schedule GitLab to the master
 CP_GITLAB_KUBE_NODE_NAME=${CP_GITLAB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-git to $CP_GITLAB_KUBE_NODE_NAME"
@@ -783,6 +788,36 @@ if is_service_requested cp-edge; then
     echo
 fi
 
+# Gitlab postgres db
+if is_service_requested cp-gitlab-db; then
+    print_ok "[Starting GitLab postgres DB deployment]"
+
+    print_info "-> Deleting existing instance of GitLab postgres DB"
+    delete_deployment_and_service   "cp-gitlab-db" \
+                                    "/opt/gitlab-postgresql"
+    delete_deployment_and_service   "cp-bkp-worker-cp-gitlab-db"
+
+
+    if is_install_requested; then
+        print_info "-> Deploying Gitlab postgres DB"
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-db/cp-gitlab-db-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-gitlab-db/cp-gitlab-db-svc.yaml
+
+        print_info "-> Waiting for Gitlab postgres DB to initialize"
+        wait_for_deployment "cp-gitlab-db"
+
+        # Install the PSQL backup service
+        export CP_BKP_SERVICE_NAME="cp-gitlab-db"
+        export CP_BKP_SERVICE_WD="/opt/gitlab-postgresql/data/bkp"
+        create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
+        unset CP_BKP_SERVICE_NAME
+        unset CP_BKP_SERVICE_WD
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-db: $CP_GITLAB_PSG_HOST:$CP_GITLAB_PSG_PORT"
+    fi
+    echo
+fi
+
 # GitLab
 # FIXME 1. External IP is used to configure client credentials in a container. Fix API?
 if is_service_requested cp-git; then
@@ -795,7 +830,7 @@ if is_service_requested cp-git; then
 
     if is_install_requested; then
         print_info "-> Creating postgres DB user and schema for GitLab"
-        create_user_and_db  "cp-api-db" \
+        create_user_and_db  "cp-gitlab-db" \
                             "$GITLAB_DATABASE_USERNAME" \
                             "$GITLAB_DATABASE_PASSWORD" \
                             "$GITLAB_DATABASE_DATABASE"

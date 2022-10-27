@@ -54,6 +54,13 @@ CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT=/opt/api/ext/templates/error-templat
 CP_PREF_API_STATIC_DIRECTORY_EXT=/opt/api/ext/templates/static
 CP_PREF_API_ETC_DIRECTORY=/opt/api/etc
 
+# cp-gitlab-db config
+CP_GITLAB_PSG_VERSION=9.6
+CP_GITLAB_PSG_SHARED_BUFFERS=128MB
+CP_GITLAB_PSG_MAX_CONNECTIONS=100
+CP_GITLAB_PSG_PORT=6543
+CP_GITLAB_PSG_HOST=cp-gitlab-db.default.svc.cluster.local
+
 # cp-git config
 GITLAB_DATABASE_ADAPTER=postgresql
 GITLAB_DATABASE_DATABASE=gitlabhq_production
