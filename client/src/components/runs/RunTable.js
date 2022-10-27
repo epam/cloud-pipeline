@@ -1329,7 +1329,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         onChange={this.props.handleTableChange}
         onRowClick={this.props.onSelect}
         pagination={this.props.pagination}
-        loading={this.props.loading}
+        loading={!source.length && this.props.loading}
         size="small"
         indentSize={10}
         locale={{emptyText: 'No Data', filterConfirm: 'OK', filterReset: 'Clear'}}
