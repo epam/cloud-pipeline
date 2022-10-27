@@ -303,6 +303,8 @@ public class SystemPreferences {
             new StringPreference("git.fsbrowser.workdir", "/git-workdir", GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_USER_NAME =
             new StringPreference("bitbucket.user.name", null, GIT_GROUP, pass);
+    public static final StringPreference GITLAB_API_VERSION = new StringPreference(
+            "git.gitlab.api.version", "v3", GIT_GROUP, pass);
 
 
     // DOCKER_SECURITY_GROUP
