@@ -21,8 +21,3 @@ setfacl -d -m g::rwx $_ANACONDA_HOME
 wget -q "https://repo.anaconda.com/miniconda/Miniconda${_ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
     bash /tmp/Anaconda_Install.sh -f -b -p $_ANACONDA_HOME && \
     rm -f /tmp/Anaconda_Install.sh
-
-echo ". $_ANACONDA_HOME/etc/profile.d/conda.sh" >> /etc/bash.bashrc && \
-echo ". $_ANACONDA_HOME/etc/profile.d/conda.sh" >> /etc/profile && \
-echo "conda activate" >> /etc/bash.bashrc && \
-echo "conda activate" >> /etc/profile
