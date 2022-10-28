@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.exception.StorageForbiddenOperationException;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
 import org.apache.commons.lang3.StringUtils;
@@ -75,6 +76,8 @@ public class ExceptionHandlerAdvice {
             return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.UNAUTHORIZED);
         } else if (exception instanceof StorageForbiddenOperationException) {
             return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.FORBIDDEN);
+        } else if (exception instanceof ObjectNotFoundException) {
+            throw new ObjectNotFoundException(exception.getMessage());
         } else {
             message = exception.getMessage();
         }

@@ -46,6 +46,7 @@ public class StaticResourcesService {
         Assert.isTrue(StringUtils.isNotBlank(filePath),
                 messageHelper.getMessage(MessageConstants.ERROR_STATIC_RESOURCES_INVALID_PATH));
         final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(bucketName);
+        dataStorageManager.checkDataStorageObjectExists(storage, filePath, null);
         return dataStorageManager.getStreamingContent(storage.getId(), filePath, null);
     }
 }
