@@ -336,6 +336,18 @@ tr.table-row-selected {
   background-color: #d2eafb;
 }
 
+.current-page-counter {
+  border: 0;
+  margin: 0;
+  min-width: 22px;
+  height: 22px;
+  line-height: 22px;
+}
+
+.current-page-counter:hover {
+  cursor: default;
+}
+
 .metadata-table {
   border-radius: 0 0 5px 5px;
 }

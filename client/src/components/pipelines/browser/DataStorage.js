@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
 import DataStorageUpdate from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
-from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageItemRestore from '../../../models/dataStorage/DataStorageItemRestore';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import DataStorageItemUpdate from '../../../models/dataStorage/DataStorageItemUpdate';
@@ -84,7 +84,7 @@ import roleModel from '../../../utils/roleModel';
 import moment from 'moment-timezone';
 import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink
-from '../../../models/dataStorage/DataStorageGenerateSharedLink';
+  from '../../../models/dataStorage/DataStorageGenerateSharedLink';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import HiddenObjects from '../../../utils/hidden-objects';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
@@ -137,12 +137,6 @@ const STORAGE_CLASSES = {
     storageId: params.id,
     path: decodeURIComponent(queryParameters.path || ''),
     showVersions: showVersions,
-    storage: new DataStorageRequest(
-      params.id,
-      decodeURIComponent(queryParameters.path || ''),
-      showVersions,
-      PAGE_SIZE
-    ),
     restoreInfo: new LifeCycleEffectiveHierarchy(
       params.id,
       decodeURIComponent(queryParameters.path || ''),
@@ -174,9 +168,8 @@ export default class DataStorage extends React.Component {
     renameItem: null,
     createFolder: false,
     createFile: false,
-    currentPage: 0,
     itemsToDelete: null,
-    pageMarkers: [null],
+    pathNavigation: {},
     pagePerformed: false,
     selectedFile: null,
     editFile: null,
@@ -187,10 +180,17 @@ export default class DataStorage extends React.Component {
     restorePending: false
   };
 
+  @observable _storage;
+
   @observable
   _shareStorageLink = null;
 
   @observable generateDownloadUrls;
+
+  @computed
+  get storage () {
+    return this._storage;
+  }
 
   @computed
   get showMetadata () {
@@ -350,10 +350,9 @@ export default class DataStorage extends React.Component {
   get lifeCycleRestoreInfo () {
     const {
       restoreInfo,
-      path,
-      storage
+      path
     } = this.props;
-    if (restoreInfo && restoreInfo.loaded && storage.loaded) {
+    if (restoreInfo && restoreInfo.loaded && this.storage.loaded) {
       const [first, ...rest] = restoreInfo.value || [];
       const currentPath = path
         ? [
@@ -393,6 +392,30 @@ export default class DataStorage extends React.Component {
         item.type === 'Folder'
       ));
   }
+
+  fetchStorage = (keepState = false) => {
+    const {storageId, path, showVersions} = this.props;
+    const {currentPage, markers} = this.getPathNavigationInfo(path);
+    const marker = markers[currentPage];
+    this._storage = new DataStorageRequest(
+      storageId,
+      decodeURIComponent(path || ''),
+      showVersions,
+      PAGE_SIZE,
+      marker
+    );
+    this.setState({
+      metadata: keepState ? this.state.metadata : undefined,
+      selectedItems: keepState ? this.state.selectedItems : [],
+      selectedFile: keepState ? this.state.selectedFile : null,
+      editFile: keepState ? this.state.editFile : null
+    }, async () => {
+      await this._storage.fetch();
+      this.setState({
+        pagePerformed: false
+      });
+    });
+  };
 
   onDataStorageEdit = async (storage) => {
     const dataStorage = {
@@ -455,17 +478,14 @@ export default class DataStorage extends React.Component {
   };
 
   refreshList = async () => {
+    const {path} = this.props;
+    this.clearPathNavigation(path, true);
     await this.props.info.fetch();
-    await this.props.storage.fetchPage(null);
-    this.setState({
-      currentPage: 0,
-      pageMarkers: [null],
-      pagePerformed: false
-    });
+    this.fetchStorage(true);
   };
 
   isDataRefreshing = () => {
-    return this.props.storage.pending;
+    return this.storage.pending;
   };
 
   afterDataStorageEdit = () => {
@@ -545,7 +565,12 @@ export default class DataStorage extends React.Component {
     } else {
       this.props.router.push(`/storage/${id}?versions=${this.showVersions}`);
     }
-    this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
+    this.clearPathNavigation(path, true);
+    this.setState({
+      pagePerformed: false,
+      selectedItems: [],
+      selectedFile: null
+    });
   };
 
   navigateFull = (path) => {
@@ -575,7 +600,12 @@ export default class DataStorage extends React.Component {
         } else {
           this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
         }
-        this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
+        this.clearPathNavigation(path, true);
+        this.setState({
+          pagePerformed: false,
+          selectedItems: [],
+          selectedFile: null
+        });
       } else {
         message.error('You cannot navigate to another storage.', 3);
       }
@@ -825,7 +855,7 @@ export default class DataStorage extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
-      await this.props.storage.fetch();
+      await this.storage.fetch();
       await currentItemContent.fetch();
       this.closeEditFileForm();
       await this.refreshList();
@@ -1343,7 +1373,8 @@ export default class DataStorage extends React.Component {
           downloadable: false,
           editable: false,
           selectable: false,
-          shareAvailable: false
+          shareAvailable: false,
+          navigationBackward: true
         });
       }
       const getChildList = (item, versions, sensitive) => {
@@ -1398,8 +1429,8 @@ export default class DataStorage extends React.Component {
       const sensitive = this.props.info.loaded
         ? this.props.info.value.sensitive
         : false;
-      if (this.props.storage.loaded) {
-        results = this.props.storage.value.results || [];
+      if (this.storage.loaded) {
+        results = this.storage.value.results || [];
       }
       items.push(...results.map(i => {
         const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
@@ -1435,7 +1466,7 @@ export default class DataStorage extends React.Component {
       return items;
     };
 
-    this.tableData = this.props.storage.pending ? (this.tableData || []) : getList();
+    this.tableData = this.storage.pending ? (this.tableData || []) : getList();
     let hasAppsColumn = false;
     let hasVersions = false;
     for (
@@ -1649,18 +1680,12 @@ export default class DataStorage extends React.Component {
       if (path && path.endsWith('/')) {
         path = path.substring(0, path.length - 1);
       }
+      !item.navigationBackward && this.clearPathNavigation(item.path);
       if (path) {
         this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
       } else {
         this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
       }
-      this.setState({
-        selectedFile: null,
-        currentPage: 0,
-        pageMarkers: [null],
-        pagePerformed: false,
-        selectedItems: []
-      });
     } else if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
       const extension = (item.path || '')
         .split('.')
@@ -1704,13 +1729,13 @@ export default class DataStorage extends React.Component {
   }
 
   get selectAllAvailable () {
-    if (this.props.storage.loaded &&
-      this.props.storage.value &&
-      this.props.storage.value.results) {
+    if (this.storage.loaded &&
+      this.storage.value &&
+      this.storage.value.results) {
       let allSelected = false;
       if (this.state.selectedItems) {
         allSelected = true;
-        const values = (this.props.storage.value.results || []);
+        const values = (this.storage.value.results || []);
         for (let i = 0; i < values.length; i++) {
           const value = values[i];
           if (this.state.selectedItems.filter(si => si.path === value.path && si.type === value.type).length === 0) {
@@ -1729,7 +1754,7 @@ export default class DataStorage extends React.Component {
   }
 
   selectAll = (type) => {
-    if (this.props.storage.loaded && this.tableData) {
+    if (this.storage.loaded && this.tableData) {
       const selectedItems = this.tableData.filter(item => {
         if (!item.editable && !item.downloadable) {
           return false;
@@ -1756,25 +1781,58 @@ export default class DataStorage extends React.Component {
     }
   };
 
+  firstPage = () => {
+    const {path} = this.props;
+    const {pathNavigation} = this.state;
+    const {markers} = this.getPathNavigationInfo(path);
+    this.storage.fetchPage(null);
+    this.setState({
+      pathNavigation: {
+        ...pathNavigation,
+        [path]: {
+          markers,
+          currentPage: 0
+        }
+      },
+      pagePerformed: false
+    });
+  };
+
   prevPage = () => {
-    if (this.state.currentPage > 0) {
-      const currentPage = this.state.currentPage - 1;
-      const marker = this.state.pageMarkers[currentPage];
-      this.props.storage.fetchPage(marker);
+    const {path} = this.props;
+    const {pathNavigation} = this.state;
+    const {markers, currentPage} = this.getPathNavigationInfo(path);
+    if (currentPage > 0) {
+      const marker = markers[currentPage - 1];
+      this.storage.fetchPage(marker);
       this.setState({
-        currentPage,
+        pathNavigation: {
+          ...pathNavigation,
+          [path]: {
+            markers,
+            currentPage: currentPage - 1
+          }
+        },
         pagePerformed: false
       });
     }
   };
 
   nextPage = () => {
-    if (this.state.currentPage + 1 < this.state.pageMarkers.length) {
-      const currentPage = this.state.currentPage + 1;
-      const marker = this.state.pageMarkers[currentPage];
-      this.props.storage.fetchPage(marker);
+    const {path} = this.props;
+    const {pathNavigation} = this.state;
+    const {markers, currentPage} = this.getPathNavigationInfo(path);
+    if (currentPage + 1 < markers.length) {
+      const marker = markers[currentPage + 1];
+      this.storage.fetchPage(marker);
       this.setState({
-        currentPage,
+        pathNavigation: {
+          ...pathNavigation,
+          [path]: {
+            markers,
+            currentPage: currentPage + 1
+          }
+        },
         pagePerformed: false
       });
     }
@@ -1856,6 +1914,8 @@ export default class DataStorage extends React.Component {
   };
 
   renderEditAction = () => {
+    const {path} = this.props;
+    const {markers} = this.getPathNavigationInfo(path);
     const convertToVersionedStorageActionAvailable = this.props.info &&
       this.props.info.loaded &&
       roleModel.isOwner(this.props.info.value) &&
@@ -1863,10 +1923,10 @@ export default class DataStorage extends React.Component {
       (
         this.props.path ||
         (
-          this.props.storage.loaded &&
-          ((this.props.storage.value || {}).results || []).length > 0
+          this.storage.loaded &&
+          ((this.storage.value || {}).results || []).length > 0
         ) ||
-        (this.state.pageMarkers || []).length > 1
+        (markers || []).length > 1
       );
     if (convertToVersionedStorageActionAvailable) {
       const {editDropdownVisible} = this.state;
@@ -1987,6 +2047,7 @@ export default class DataStorage extends React.Component {
 
   render () {
     if (
+      !this.storage ||
       (!this.props.info.loaded && this.props.info.pending) ||
       (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending)
     ) {
@@ -1998,8 +2059,9 @@ export default class DataStorage extends React.Component {
     if (this.props.authenticatedUserInfo.error) {
       return <Alert message={this.props.authenticatedUserInfo.error} type="error" />;
     }
+    const navigationInfo = this.getPathNavigationInfo(this.props.path);
     let contents;
-    if (!this.props.storage.error) {
+    if (!this.storage.error) {
       const table = this.getStorageItemsTable();
       const folderKey = 'folder';
       const fileKey = 'file';
@@ -2161,32 +2223,66 @@ export default class DataStorage extends React.Component {
           key="table"
           dataSource={table.data}
           columns={table.columns}
-          loading={this.props.storage.pending}
+          loading={this.storage.pending}
           title={title}
           rowKey="key"
           pagination={false}
-          rowClassName={(item) => classNames({[styles[item.type.toLowerCase()]]: true}, {'cp-storage-deleted-row': !!item.deleteMarker})}
+          rowClassName={(item) => classNames({
+            [styles[item.type.toLowerCase()]]: true}, {'cp-storage-deleted-row': !!item.deleteMarker
+          })}
           locale={{emptyText: 'Folder is empty'}}
           size="small" />,
-        <Row key="pagination" type="flex" justify="end" style={{marginTop: 10, marginBottom: 10, paddingRight: 15}}>
+        <Row
+          key="pagination"
+          type="flex"
+          justify="end"
+          align="middle"
+          style={{marginTop: 10, marginBottom: 10, paddingRight: 15}}
+        >
+          <Button
+            id="first-page-button"
+            onClick={this.firstPage}
+            disabled={navigationInfo.currentPage === 0}
+            size="small"
+          >
+            <Icon style={{marginRight: '-3px'}} type="caret-left" />
+            <Icon type="caret-left" />
+          </Button>
           <Button
             id="prev-page-button"
             onClick={this.prevPage}
-            disabled={this.state.currentPage === 0}
-            style={{margin: 3}} size="small"><Icon type="caret-left" /></Button>
+            disabled={navigationInfo.currentPage === 0}
+            style={{margin: 3}}
+            size="small"
+          >
+            <Icon type="caret-left" />
+          </Button>
+          <span
+            className={classNames(
+              styles.currentPageCounter,
+              'ant-pagination-item',
+              'ant-pagination-item-active'
+            )}
+          >
+            {navigationInfo.currentPage + 1}
+          </span>
           <Button
             id="next-page-button"
             onClick={this.nextPage}
-            disabled={this.state.pageMarkers.length <= this.state.currentPage + 1}
-            style={{margin: 3}} size="small"><Icon type="caret-right" /></Button>
+            disabled={navigationInfo.markers.length <= navigationInfo.currentPage + 1}
+            style={{margin: 3}}
+            size="small"
+          >
+            <Icon type="caret-right" />
+          </Button>
         </Row>
       ];
-    } else if (this.props.storage.error) {
+    } else if (this.storage.error) {
       contents = (
         <div>
           <br />
           <Alert
-            message={`Error retrieving data storage items: ${this.props.storage.error}`} type="error" />
+            message={`Error retrieving data storage items: ${this.storage.error}`} type="error" />
         </div>
       );
     } else {
@@ -2662,22 +2758,63 @@ export default class DataStorage extends React.Component {
     );
   }
 
+  getPathNavigationInfo = (path) => {
+    const {pathNavigation} = this.state;
+    const currentNavigation = pathNavigation[path];
+    if (!currentNavigation) {
+      return {
+        currentPage: 0,
+        markers: [null]
+      };
+    }
+    return currentNavigation;
+  };
+
+  clearPathNavigation = (path, clearAll = false) => {
+    const {pathNavigation} = this.state;
+    if (clearAll) {
+      return this.setState({
+        pathNavigation: {}
+      });
+    }
+    return this.setState({
+      pathNavigation: {
+        ...pathNavigation,
+        [path]: {
+          currentPage: 0,
+          markers: [null]
+        }
+      }
+    });
+  };
+
   performPage = () => {
-    const pageMarkers = this.state.pageMarkers;
-    if (!this.props.storage.error) {
-      if (this.props.storage.value.nextPageMarker) {
-        if (pageMarkers.length > this.state.currentPage + 1) {
-          pageMarkers[this.state.currentPage + 1] = this.props.storage.value.nextPageMarker;
+    const {path} = this.props;
+    const {pathNavigation} = this.state;
+    const {currentPage, markers} = this.getPathNavigationInfo(path);
+    if (!this.storage.error) {
+      if (this.storage.value.nextPageMarker) {
+        if (markers.length > currentPage + 1) {
+          markers[currentPage + 1] = this.storage.value.nextPageMarker;
         } else {
-          pageMarkers.push(this.props.storage.value.nextPageMarker);
+          markers.push(this.storage.value.nextPageMarker);
         }
       } else {
-        pageMarkers.splice(this.state.currentPage + 1, pageMarkers.length - this.state.currentPage - 1);
+        markers.splice(
+          currentPage + 1,
+          markers.length - currentPage - 1
+        );
       }
     }
     this.setState({
       pagePerformed: true,
-      pageMarkers
+      pathNavigation: {
+        ...pathNavigation,
+        [path]: {
+          markers,
+          currentPage
+        }
+      }
     });
   };
 
@@ -2694,20 +2831,16 @@ export default class DataStorage extends React.Component {
       };
       this.openPreviewModal(file);
     }
+    this.fetchStorage();
   }
 
   componentDidUpdate (prevProps) {
-    if (prevProps.storageId !== this.props.storageId) {
-      this.setState({
-        metadata: undefined,
-        pageMarkers: [null],
-        currentPage: 0,
-        pagePerformed: false,
-        selectedItems: [],
-        selectedFile: null,
-        editFile: null
-      });
-    } else if (!this.props.storage.pending && !this.state.pagePerformed) {
+    if (
+      prevProps.storageId !== this.props.storageId ||
+      this.props.path !== prevProps.path
+    ) {
+      this.fetchStorage();
+    } else if (!this.storage.pending && !this.state.pagePerformed) {
       this.performPage();
     } else if (this.props.showVersions !== prevProps.showVersions) {
       this.refreshList();
