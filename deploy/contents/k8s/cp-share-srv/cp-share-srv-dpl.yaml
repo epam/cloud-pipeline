@@ -72,7 +72,7 @@ spec:
           hostPath:
             path: /opt/share-srv/prefs
         - name: share-static
-            hostPath:
-              path: /opt/share-srv/static
+          hostPath:
+            path: /opt/share-srv/static
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
