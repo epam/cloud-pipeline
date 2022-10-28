@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +71,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -85,6 +89,8 @@ public class DockerContainerOperationManager {
     private static final String GLOBAL_KNOWN_HOSTS_FILE = "GlobalKnownHostsFile=/dev/null";
     private static final String USER_KNOWN_HOSTS_FILE = "UserKnownHostsFile=/dev/null";
     private static final String COMMIT_COMMAND_DESCRIPTION = "ssh session to commit pipeline run";
+    private static final String CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION =
+            "ssh session to get docker container layers count";
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
     private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
     private static final String EMPTY = "";
@@ -139,6 +145,9 @@ public class DockerContainerOperationManager {
     @Value("${commit.run.script.starter.url}")
     private String commitRunStarterScriptUrl;
 
+    @Value("${container.layers.script.url}")
+    private String containerLayersCountScriptUrl;
+
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
 
@@ -146,7 +155,7 @@ public class DockerContainerOperationManager {
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
-        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
                 run.getActualDockerImage());
 
         final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
@@ -216,6 +225,37 @@ public class DockerContainerOperationManager {
         }
         updatePipelineRunCommitStatus(run, CommitStatus.COMMITTING);
         return run;
+    }
+
+    public long getContainerLayers(final PipelineRun run) {
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+                run.getActualDockerImage());
+        final long layersCount;
+        try {
+            Assert.notNull(containerId,
+                    messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+            final String containerLayersCommand = DockerContainerLayersCommand.builder()
+                    .runScriptUrl(containerLayersCountScriptUrl)
+                    .containerId(containerId)
+                    .build()
+                    .getCommand();
+            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
+                final String lines = reader.lines().collect(Collectors.joining());
+                layersCount = Arrays.stream(lines.split(" ")).count();
+            }
+            boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.GET_LAYERS_COUNT_TIMEOUT), TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
+        } catch (IllegalStateException | IllegalArgumentException | IOException e) {
+            LOGGER.error(e.getMessage());
+            throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
+        }
+        return layersCount;
     }
 
     @Async("pauseRunExecutor")
