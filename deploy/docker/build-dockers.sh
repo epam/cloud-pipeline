@@ -161,9 +161,17 @@ docker build    $DOCKERS_SOURCES_PATH/cp-clair \
 docker push "$CP_CLAIR_DIST_NAME"
 
 # GitLab
-CP_GITLAB_DIST_NAME=${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-${DOCKERS_VERSION}"}
+# 9.4.0 version
+CP_GITLAB_DIST_NAME=${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-9-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 -t "$CP_GITLAB_DIST_NAME"
+docker push "$CP_GITLAB_DIST_NAME"
+
+# 15.4.3 version
+CP_GITLAB_DIST_NAME=${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-15-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-git \
+                -t "$CP_GITLAB_DIST_NAME" \
+                --build-arg BASE_IMAGE="gitlab/gitlab-ce:15.4.3-ce.0"
 docker push "$CP_GITLAB_DIST_NAME"
 
 # Notifier
