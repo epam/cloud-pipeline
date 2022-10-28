@@ -155,7 +155,7 @@ public class DockerContainerOperationManager {
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
-        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
                 run.getActualDockerImage());
 
         final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
