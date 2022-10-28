@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import json
+import os
 
 from .pipeline_run_parameter_model import PipelineRunParameterModel
 from ..utilities import date_utilities
@@ -52,10 +52,14 @@ class PipelineRunModel(object):
 
     @property
     def is_initialized(self):
+        task_to_check = os.getenv('CP_SSH_INIT_TASK_NAME', 'InitializeEnvironment')
+        task_status = task_to_check == 'NONE' or \
+                        next(( True for t in self.tasks \
+                            if t.name == task_to_check and t.status == 'SUCCESS' ), False)
+        
         return self.status == 'RUNNING' and \
-            self.pod_ip is not None and \
-                next(( True for t in self.tasks \
-                    if t.name == 'InitializeEnvironment' and t.status == 'SUCCESS' ), False)
+                    self.pod_ip is not None and \
+                        task_status
 
     @classmethod
     def load(cls, result):

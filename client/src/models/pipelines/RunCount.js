@@ -16,6 +16,7 @@
 
 import Remote from '../basic/Remote';
 import RemotePost from '../basic/RemotePost';
+import continuousFetch from '../../utils/continuous-fetch';
 
 const DEFAULT_STATUSES = [
   'RUNNING',
@@ -77,10 +78,6 @@ export default class RunCount extends Remote {
 
   constructor () {
     super();
-    const fetch = ::this.silentFetch;
-    (function tick () {
-      fetch();
-      setTimeout(tick, 5000);
-    })();
+    continuousFetch({request: this});
   }
 }

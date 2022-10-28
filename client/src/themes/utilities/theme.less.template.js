@@ -1104,7 +1104,8 @@ export default `
 @THEME .ant-pagination-item-active:focus {
   background-color: @primary-hover-color;
 }
-@THEME .ant-pagination-item.ant-pagination-item-active > a {
+@THEME .ant-pagination-item.ant-pagination-item-active > a,
+@THEME span.ant-pagination-item.ant-pagination-item-active {
   color: @primary-text-color;
 }
 @THEME .ant-pagination-jump-prev::after,

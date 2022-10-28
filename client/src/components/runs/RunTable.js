@@ -192,11 +192,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
           isArray: true,
           searchString: null
         },
-        versions: {
+        dockerImages: {
           visible: false,
-          value: null,
-          finalValue: null,
-          filtered: false
+          value: [],
+          finalValue: [],
+          filtered: false,
+          isArray: true,
+          searchString: null
         },
         owners: {
           visible: false,

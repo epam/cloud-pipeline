@@ -65,6 +65,7 @@ import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
@@ -1172,12 +1173,14 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
-    private void checkDataStorageObjectExists(final AbstractDataStorage dataStorage,
-                                              final String path,
-                                              final String version) {
-        Assert.isTrue(storageProviderManager.findFile(dataStorage, path, version).isPresent(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
-                        path, dataStorage.getRoot()));
+    public void checkDataStorageObjectExists(final AbstractDataStorage dataStorage,
+                                             final String path,
+                                             final String version) {
+        storageProviderManager.findFile(dataStorage, path, version)
+                .orElseThrow(() ->
+                        new ObjectNotFoundException(
+                                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
+                                        path, dataStorage.getRoot())));
     }
 
     private void assertToolsToMount(final DataStorageVO dataStorageVO) {

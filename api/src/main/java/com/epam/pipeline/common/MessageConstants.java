@@ -828,6 +828,10 @@ public final class MessageConstants {
     public static final String ERROR_NGS_PREPROCESSING_SAMPLE_ID_NOT_FOUND =
             "error.ngs.preprocessing.sampleid.is.not.found";
 
+    // Static resource
+    public static final String ERROR_STATIC_RESOURCES_INVALID_PATH =
+            "error.static.resources.invalid.path";
+
     private MessageConstants() {
         // no-op
     }

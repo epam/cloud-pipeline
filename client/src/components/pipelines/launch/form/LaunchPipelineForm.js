@@ -2809,8 +2809,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             type="flex"
             justify="space-around">
             <Button
-              disabled={(this.props.readOnly && !this.props.canExecute) ||
-              (!!this.state.pipeline && this.props.detached)}
+              disabled={
+                !this.state.isRawEditEnabled && (
+                  (this.props.readOnly && !this.props.canExecute) ||
+                  (!!this.state.pipeline && this.props.detached)
+                )
+              }
               id="add-system-parameter-button"
               onClick={this.openSystemParameterBrowser}>
               Add system parameter
@@ -2843,8 +2847,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             justify="space-around">
             <Button.Group>
               <Button
-                disabled={(this.props.readOnly && !this.props.canExecute) ||
-                (!!this.state.pipeline && this.props.detached)}
+                disabled={
+                  !this.state.isRawEditEnabled && (
+                    (this.props.readOnly && !this.props.canExecute) ||
+                    (!!this.state.pipeline && this.props.detached)
+                  )
+                }
                 id="add-parameter-button"
                 onClick={
                   () => this.addParameter(sectionName, {type: 'string'}, isSystemParametersSection)

@@ -69,3 +69,11 @@
 .video-settings .header {
   font-weight: bold;
 }
+
+.video-generation-mode-toggle {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+}

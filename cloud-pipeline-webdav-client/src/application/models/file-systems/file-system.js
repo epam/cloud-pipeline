@@ -50,7 +50,7 @@ class FileSystem {
   buildSources (item) {
     return Promise.resolve([item]);
   }
-  buildDestination (directory) {
+  async buildDestination (directory) {
     return directory || this.root || '';
   }
   getContentsStream(path) {

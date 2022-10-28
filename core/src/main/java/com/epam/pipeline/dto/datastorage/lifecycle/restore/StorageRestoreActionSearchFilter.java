@@ -45,6 +45,14 @@ public class StorageRestoreActionSearchFilter {
 
     private List<StorageRestoreStatus> statuses;
 
+    /**
+     * SEARCH_PARENT - will search for all action that has path type == FOLDER and include path from filter,
+     *                 also will include actions with the same path
+     * SEARCH_CHILD - if path from filter is a folder, will search for all action under this path
+     *                (one hierarchy level only), also will include actions with the same path
+     * SEARCH_CHILD_RECURSIVELY - if path from filter is a folder, will search for all action under this path
+     *                            (all hierarchy levels), also will include actions with the same path
+     * */
     public enum SearchType {
         SEARCH_PARENT, SEARCH_CHILD, SEARCH_CHILD_RECURSIVELY
     }

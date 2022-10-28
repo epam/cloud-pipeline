@@ -93,6 +93,16 @@ class Preferences extends Remote {
     }
     return masks.map(buildFileMask);
   }
+
+  @computed
+  get dataStorageItemPreviewMasks () {
+    const extensions = this.getPreferenceValue('ui.storage.static.preview.mask') || '';
+    return extensions
+      .split(/[,;\s]/g)
+      .filter(o => o.length)
+      .map(o => o.startsWith('.') ? o.slice(1) : o)
+      .map(o => new RegExp(`\\.${o}$`, 'i'));
+  }
 }
 
 export {Preferences};

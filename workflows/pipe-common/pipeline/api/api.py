@@ -236,7 +236,7 @@ class PipelineAPI:
     NOTIFICATION_TEMPLATE_URL = 'notification/template'
     LIFECYCLE_RESTORE_ACTION_URL = "/datastorage/{id}/lifecycle/restore"
     LIFECYCLE_RESTORE_ACTION_FILTER_URL = "/datastorage/{id}/lifecycle/restore/filter"
-
+    DATA_STORAGE_PATH_SIZE_URL = '/datastorage/path/size'
 
     # Pipeline API default header
 
@@ -1171,3 +1171,12 @@ class PipelineAPI:
             raise RuntimeError(
                 "Failed to update lifecycle restore actions for storage: '{}', action: '{}'.".format(
                     str(datastorage_id), restore_action), "Error message: {}".format(str(e.message)))
+
+    def get_paths_size(self, paths):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.DATA_STORAGE_PATH_SIZE_URL,
+                                        data=json.dumps(paths), method='post')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed get size for paths: '{}'. Error message: {}".format(','.join(paths), str(e.message)))

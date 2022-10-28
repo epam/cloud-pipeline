@@ -16,6 +16,15 @@
 
 import moment from 'moment-timezone';
 
+const uuids = new Map();
+
 export default function generateUUID () {
-  return Number(moment.utc().format('YYYYMMDDHHmmssSSS')).toString(16);
+  const main = Number(moment.utc().format('YYYYMMDDHHmmssSSS')).toString(16);
+  if (!uuids.has(main)) {
+    uuids.set(main, 0);
+    return main;
+  }
+  const extra = uuids.get(main) + 1;
+  uuids.set(main, extra);
+  return `${main}${Number(extra).toString(16)}`;
 }

@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
@@ -54,6 +55,7 @@ public class StoragePermissionManager {
     private final PermissionsService permissionsService;
     private final QuotaService quotaService;
     private final AuthManager authManager;
+    private final DataStoragePathLoader storagePathLoader;
 
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
@@ -94,6 +96,16 @@ public class StoragePermissionManager {
                                            final String permissionName) {
         final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
         return grantPermissionManager.storagePermission(storage, permissionName);
+    }
+
+    public boolean storagePermissionByPath(final String path,
+                                           final String permissionName) {
+        try {
+            final AbstractSecuredEntity storage = storagePathLoader.loadDataStorageByPathOrId(path);
+            return grantPermissionManager.storagePermission(storage, permissionName);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public void filterStorage(final List<AbstractDataStorage> storages,

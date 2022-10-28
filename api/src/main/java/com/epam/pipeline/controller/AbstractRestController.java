@@ -148,8 +148,17 @@ public abstract class AbstractRestController {
                                          InputStream stream,
                                          String fileName,
                                          MediaType contentType) throws IOException {
+        writeStreamToResponse(response, stream, fileName, contentType, false);
+    }
+
+    protected void writeStreamToResponse(HttpServletResponse response,
+                                         InputStream stream,
+                                         String fileName,
+                                         MediaType contentType,
+                                         boolean inline) throws IOException {
         try (InputStream in = stream) {
-            writeToResponse(response, ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType);
+            writeToResponse(response,
+                    ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType, inline);
         }
     }
 
@@ -161,14 +170,22 @@ public abstract class AbstractRestController {
     protected void writeToResponse(final HttpServletResponse response,
                                    final ResultWriter writer,
                                    final MediaType contentType) throws IOException {
-        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, getContentDisposition(writer));
+        writeToResponse(response, writer, contentType, false);
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType,
+                                   final boolean inline) throws IOException {
+        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, getContentDisposition(writer, inline));
         response.setContentType(contentType.toString());
         writer.write(response);
         response.flushBuffer();
     }
 
-    private String getContentDisposition(final ResultWriter writer) {
-        return "attachment;filename=" + writer.getName();
+    private String getContentDisposition(final ResultWriter writer, final boolean inline) {
+        final String disposition = inline ? "inline": "attachment";
+        return disposition + ";filename=" + writer.getName();
     }
 
     protected MediaType guessMediaType(String fileName) {

@@ -677,6 +677,8 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
     public static final StringPreference UI_MY_COSTS_DISCLAIMER = new StringPreference("ui.my.costs.disclaimer",
             "", UI_GROUP, pass);
+    public static final StringPreference UI_STORAGE_STATIC_PREVIEW_MASK =
+            new StringPreference("ui.storage.static.preview.mask", "html,htm", UI_GROUP, pass, true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(

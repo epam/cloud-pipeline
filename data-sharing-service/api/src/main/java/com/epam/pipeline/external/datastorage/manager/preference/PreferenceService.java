@@ -19,6 +19,7 @@ package com.epam.pipeline.external.datastorage.manager.preference;
 import com.epam.pipeline.external.datastorage.message.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,22 @@ public class PreferenceService {
                              final MessageHelper messageHelper) {
         this.preferencesPath = preferencesPath;
         this.messageHelper = messageHelper;
+    }
+
+    public String getValue(final String name) {
+        try {
+            final Map<String, Map<String, Object>> preferences = loadAll();
+            return MapUtils.emptyIfNull(preferences)
+                    .values()
+                    .stream()
+                    .flatMap(map -> map.entrySet().stream())
+                    .filter(entry -> name.equals(entry.getKey()))
+                    .map(entry -> String.valueOf(entry.getValue()))
+                    .findFirst()
+                    .orElse(null);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public Map<String, Map<String, Object>> loadAll() {
