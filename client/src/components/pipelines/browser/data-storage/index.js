@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import connect from '../../../utils/connect';
 import {Link} from 'react-router';
 import classNames from 'classnames';
 import {computed, observable} from 'mobx';
@@ -36,93 +35,71 @@ import {
 } from 'antd';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem} from 'rc-menu';
-import LoadingView from '../../special/LoadingView';
-import Breadcrumbs from '../../special/Breadcrumbs';
-import DataStorageRequest from '../../../models/dataStorage/DataStoragePage';
-import dataStorages from '../../../models/dataStorage/DataStorages';
-import folders from '../../../models/folders/Folders';
-import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
-import DataStorageUpdate from '../../../models/dataStorage/DataStorageUpdate';
-import DataStorageUpdateStoragePolicy
-from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
-import DataStorageItemRestore from '../../../models/dataStorage/DataStorageItemRestore';
-import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
-import DataStorageItemUpdate from '../../../models/dataStorage/DataStorageItemUpdate';
-import DataStorageItemUpdateContent from '../../../models/dataStorage/DataStorageItemUpdateContent';
-import DataStorageItemDelete from '../../../models/dataStorage/DataStorageItemDelete';
-import GenerateDownloadUrlRequest from '../../../models/dataStorage/GenerateDownloadUrl';
-import GenerateDownloadUrlsRequest from '../../../models/dataStorage/GenerateDownloadUrls';
-import EditItemForm from './forms/EditItemForm';
-import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
-import DataStorageNavigation from './forms/DataStorageNavigation';
-import RestrictedImagesInfo from './forms/restrict-docker-images/restricted-images-info';
+import moment from 'moment-timezone';
+import LoadingView from '../../../special/LoadingView';
+import Breadcrumbs from '../../../special/Breadcrumbs';
+import DataStorageUpdate from '../../../../models/dataStorage/DataStorageUpdate';
+import UpdateStoragePolicy from '../../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+import DataStorageItemRestore from '../../../../models/dataStorage/DataStorageItemRestore';
+import DataStorageDelete from '../../../../models/dataStorage/DataStorageDelete';
+import DataStorageItemUpdate from '../../../../models/dataStorage/DataStorageItemUpdate';
+import UpdateContent from '../../../../models/dataStorage/DataStorageItemUpdateContent';
+import DataStorageItemDelete from '../../../../models/dataStorage/DataStorageItemDelete';
+import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateDownloadUrl';
+import GenerateDownloadUrlsRequest from '../../../../models/dataStorage/GenerateDownloadUrls';
+import EditItemForm from '../forms/EditItemForm';
+import {DataStorageEditDialog, ServiceTypes} from '../forms/DataStorageEditDialog';
+import DataStorageNavigation from '../forms/DataStorageNavigation';
+import RestrictedImagesInfo from '../forms/restrict-docker-images/restricted-images-info';
 import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY
-} from '../../special/splitPanel/SplitPanel';
-import Metadata from '../../special/metadata/Metadata';
-import UploadButton from '../../special/UploadButton';
-import AWSRegionTag from '../../special/AWSRegionTag';
-import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
-import parseQueryParameters from '../../../utils/queryParameters';
-import displayDate from '../../../utils/displayDate';
-import displaySize from '../../../utils/displaySize';
-import roleModel from '../../../utils/roleModel';
-import moment from 'moment-timezone';
-import styles from './Browser.css';
-import DataStorageCodeForm from './forms/DataStorageCodeForm';
-import DataStorageGenerateSharedLink
-from '../../../models/dataStorage/DataStorageGenerateSharedLink';
-import {ItemTypes} from '../model/treeStructureFunctions';
-import HiddenObjects from '../../../utils/hidden-objects';
+} from '../../../special/splitPanel/SplitPanel';
+import Metadata from '../../../special/metadata/Metadata';
+import UploadButton from '../../../special/UploadButton';
+import AWSRegionTag from '../../../special/AWSRegionTag';
+import EmbeddedMiew from '../../../applications/miew/EmbeddedMiew';
+import parseQueryParameters from '../../../../utils/queryParameters';
+import displayDate from '../../../../utils/displayDate';
+import displaySize from '../../../../utils/displaySize';
+import roleModel from '../../../../utils/roleModel';
+import DataStorageCodeForm from './../forms/DataStorageCodeForm';
+import {ItemTypes} from '../../model/treeStructureFunctions';
+import HiddenObjects from '../../../../utils/hidden-objects';
 import {
   METADATA_KEY as FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
-} from '../../special/metadata/special/fs-notifications';
+} from '../../../special/metadata/special/fs-notifications';
 import {
   METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
-} from '../../special/metadata/special/request-dav-access';
-import StorageSize from '../../special/storage-size';
-import BashCode from '../../special/bash-code';
-import {extractFileShareMountList} from './forms/DataStoragePathInput';
+} from '../../../special/metadata/special/request-dav-access';
+import StorageSize from '../../../special/storage-size';
+import {extractFileShareMountList} from '../forms/DataStoragePathInput';
+import DataStorageListing from '../../../../models/dataStorage/data-storage-listing';
+import LabelsRenderer from './components/labels-renderer';
+import StoragePagination from './components/storage-pagination';
+import StorageSharedLinkButton from './components/storage-shared-link-button';
+import styles from '../Browser.css';
 
-const PAGE_SIZE = 40;
-
-@connect({
-  dataStorages, folders, pipelinesLibrary
-})
 @roleModel.authenticationInfo
-@inject('awsRegions')
+@inject(
+  'awsRegions',
+  'pipelines',
+  'dataStorages',
+  'folders',
+  'pipelinesLibrary',
+  'dataStorageCache',
+  'preferences'
+)
 @HiddenObjects.checkStorages(props => props.params.id)
-@inject(({
-  authenticatedUserInfo,
-  routing,
-  dataStorages,
-  folders,
-  pipelinesLibrary,
-  preferences,
-  dataStorageCache
-}, {params, onReloadTree}) => {
+@inject(({routing}, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
   return {
-    authenticatedUserInfo,
     onReloadTree,
-    dataStorageCache,
     storageId: params.id,
     path: decodeURIComponent(queryParameters.path || ''),
-    showVersions: showVersions,
-    storage: new DataStorageRequest(
-      params.id,
-      decodeURIComponent(queryParameters.path || ''),
-      showVersions,
-      PAGE_SIZE
-    ),
-    info: dataStorages.load(params.id),
-    dataStorages,
-    pipelinesLibrary,
-    folders,
-    preferences
+    showVersions: showVersions
   };
 })
 @observer
@@ -134,38 +111,33 @@ export default class DataStorage extends React.Component {
     renameItem: null,
     createFolder: false,
     createFile: false,
-    currentPage: 0,
     itemsToDelete: null,
-    pageMarkers: [null],
-    pagePerformed: false,
     selectedFile: null,
-    editFile: null,
-    shareStorageDialogVisible: false
+    editFile: null
   };
 
-  @observable
-  _shareStorageLink = null;
+  @observable storage = new DataStorageListing({
+    keepPagesHistory: true
+  });
 
   @observable generateDownloadUrls;
 
-  @computed
   get showMetadata () {
-    if (this.state.metadata === undefined && this.props.info.loaded) {
-      return this.props.info.value.hasMetadata && roleModel.readAllowed(this.props.info.value);
+    if (this.state.metadata === undefined && this.storage.info) {
+      return this.storage.info.hasMetadata &&
+        this.storage.readAllowed;
     }
     return !!this.state.metadata;
   }
 
-  @computed
   get region () {
-    if (this.props.info && this.props.info.loaded && this.props.awsRegions.loaded) {
-      const {regionId} = this.props.info.value;
+    if (this.storage.info && this.props.awsRegions.loaded) {
+      const {regionId} = this.storage.info;
       return (this.props.awsRegions.value || []).find(r => +r.id === +regionId);
     }
     return null;
   }
 
-  @computed
   get regionName () {
     const region = this.region;
     if (region) {
@@ -184,22 +156,14 @@ export default class DataStorage extends React.Component {
       : false;
   }
 
-  @computed
-  get dataStorageShareLinkDisclaimer () {
-    if (this.props.preferences.loaded) {
-      let code = (this.props.preferences.getPreferenceValue('data.sharing.disclaimer') || '');
-      code = code.replace(/\\n/g, '\n');
-      code = code.replace(/\\r/g, '\r');
-      return code;
-    }
-    return null;
-  }
-
-  @computed
   get toolsToMount () {
-    const {info = {}} = this.props;
-    if (info.loaded && info.value.toolsToMount) {
-      return (info.value.toolsToMount || []).map(t => t);
+    if (
+      this.storage.infoLoaded &&
+      this.storage.info &&
+      this.storage.info.toolsToMount &&
+      !this.storage.info.mountDisabled
+    ) {
+      return (this.storage.info.toolsToMount || []).map(t => t);
     }
     return undefined;
   }
@@ -213,13 +177,12 @@ export default class DataStorage extends React.Component {
     return [];
   }
 
-  @computed
   get fileShareMount () {
-    if (this.props.info && this.props.info.loaded) {
+    if (this.storage.info) {
       const {
         fileShareMountId,
         type
-      } = this.props.info.value || {};
+      } = this.storage.info;
       if (/^nfs$/i.test(type)) {
         return this.fileShareMountList.find(mount => mount.id === fileShareMountId);
       }
@@ -228,44 +191,51 @@ export default class DataStorage extends React.Component {
   }
 
   @computed
-  get versionControlsEnabled () {
+  get storageVersioningAllowed () {
     const {
       preferences,
-      authenticatedUserInfo,
-      info
+      authenticatedUserInfo
     } = this.props;
-    const loaded = info &&
-      info.loaded &&
-      preferences &&
+    const loaded = preferences &&
       preferences.loaded &&
       authenticatedUserInfo &&
       authenticatedUserInfo.loaded;
-    if (
-      loaded &&
-      info.value.type !== 'NFS' &&
-      info.value.storagePolicy &&
-      info.value.storagePolicy.versioningEnabled
-    ) {
+    if (loaded) {
       const isAdmin = authenticatedUserInfo.value.admin;
       return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
     }
     return false;
   }
 
+  get versionControlsEnabled () {
+    return this.storageVersioningAllowed &&
+      this.storage.info &&
+      !/^nfs$/i.test(this.storage.info.type) &&
+      this.storage.info.storagePolicy &&
+      this.storage.info.storagePolicy.versioningEnabled;
+  }
+
   @computed
   get showVersions () {
-    if (this.props.info.pending) {
+    if (!this.storage.info) {
       return false;
     }
-    return this.props.info.value.type !== 'NFS' &&
+    return this.storage.info.type !== 'NFS' &&
       this.props.showVersions &&
-      roleModel.isOwner(this.props.info.value);
+      this.storage.isOwner;
   }
 
   onDataStorageEdit = async (storage) => {
+    if (!this.storage.info) {
+      return;
+    }
+    const {
+      parentFolderId,
+      policySupported
+    } = this.storage.info;
     const dataStorage = {
       id: this.props.storageId,
-      parentFolderId: this.props.info.value.parentFolderId,
+      parentFolderId,
       name: storage.name,
       description: storage.description,
       path: storage.path,
@@ -281,10 +251,16 @@ export default class DataStorage extends React.Component {
       hide();
       message.error(request.error, 5);
     } else {
-      if (this.props.info.value.policySupported && storage.serviceType !== ServiceTypes.fileShare && (storage.longTermStorageDuration !== undefined ||
-      storage.shortTermStorageDuration !== undefined ||
-      storage.backupDuration !== undefined || !storage.versioningEnabled)) {
-        const updatePolicyRequest = new DataStorageUpdateStoragePolicy();
+      if (
+        policySupported &&
+        storage.serviceType !== ServiceTypes.fileShare &&
+        (
+          storage.longTermStorageDuration !== undefined ||
+          storage.shortTermStorageDuration !== undefined ||
+          storage.backupDuration !== undefined || !storage.versioningEnabled
+        )
+      ) {
+        const updatePolicyRequest = new UpdateStoragePolicy();
         await updatePolicyRequest.send({
           id: this.props.storageId,
           storagePolicy: {
@@ -300,38 +276,121 @@ export default class DataStorage extends React.Component {
         } else {
           hide();
           this.closeEditDialog();
-          this.props.info.fetch();
+          this.storage.refreshStorageInfo();
           if (this.props.onReloadTree) {
-            this.props.onReloadTree(!this.props.info.value.parentFolderId);
+            this.props.onReloadTree(!parentFolderId);
           }
         }
       } else {
         hide();
         this.closeEditDialog();
-        this.props.info.fetch();
+        this.storage.refreshStorageInfo();
         if (this.props.onReloadTree) {
-          this.props.onReloadTree(!this.props.info.value.parentFolderId);
+          this.props.onReloadTree(!parentFolderId);
         }
       }
     }
   };
 
-  refreshList = async () => {
-    await this.props.info.fetch();
-    await this.props.storage.fetchPage(null);
-    this.setState({
-      currentPage: 0,
-      pageMarkers: [null],
-      pagePerformed: false
-    });
+  get items () {
+    const {
+      pageElements: elements = [],
+      pagePath: path,
+      info
+    } = this.storage;
+    if (!info) {
+      return [];
+    }
+    const writeAllowed = this.storage.writeAllowed;
+    const {sensitive} = info;
+    const items = [];
+    if (path) {
+      const parentPathParts = path.split('/').slice(0, -1);
+      const parentPath = parentPathParts.length ? parentPathParts.join('/') : undefined;
+      items.push({
+        key: `folder_${parentPath || '<parent>'}`,
+        name: '..',
+        path: parentPath,
+        type: 'folder',
+        downloadable: false,
+        editable: false,
+        selectable: false
+      });
+    }
+    const getChildList = (item, versions, sensitive) => {
+      if (!versions || !this.showVersions) {
+        return undefined;
+      }
+      const childList = [];
+      for (let version in versions) {
+        if (versions.hasOwnProperty(version)) {
+          const latest = versions[version].version === item.version;
+          childList.push({
+            key: `${item.type}_${item.path}_${version}`,
+            ...versions[version],
+            downloadable: item.type.toLowerCase() === 'file' &&
+              !versions[version].deleteMarker &&
+              !sensitive &&
+              (
+                !item.labels ||
+                !item.labels['StorageClass'] ||
+                item.labels['StorageClass'].toLowerCase() !== 'glacier'
+              ),
+            editable: versions[version].version === item.version &&
+              writeAllowed &&
+              !versions[version].deleteMarker,
+            deletable: writeAllowed,
+            selectable: false,
+            latest,
+            isVersion: true
+          });
+        }
+      }
+      childList.sort((a, b) => {
+        const dateA = moment(a.changed);
+        const dateB = moment(b.changed);
+        if (dateA > dateB) {
+          return -1;
+        } else if (dateA < dateB) {
+          return 1;
+        }
+        return 0;
+      });
+      return childList;
+    };
+    items.push(...elements.map(i => {
+      return {
+        key: `${i.type}_${i.path}`,
+        ...i,
+        downloadable: i.type.toLowerCase() === 'file' &&
+          !i.deleteMarker &&
+          !sensitive &&
+          (
+            !i.labels ||
+            !i.labels['StorageClass'] ||
+            i.labels['StorageClass'].toLowerCase() !== 'glacier'
+          ),
+        editable: writeAllowed && !i.deleteMarker,
+        deletable: writeAllowed,
+        children: getChildList(i, i.versions, sensitive),
+        selectable: !i.deleteMarker,
+        miew: !i.deleteMarker &&
+          i.type.toLowerCase() === 'file' &&
+          i.path.toLowerCase().endsWith('.pdb')
+      };
+    }));
+    return items;
   };
 
-  isDataRefreshing = () => {
-    return this.props.storage.pending;
+  refreshList = async (keepCurrentPage = false) => {
+    await Promise.all([
+      this.storage.refreshStorageInfo(),
+      this.storage.refreshCurrentPath(keepCurrentPage)
+    ]);
   };
 
   afterDataStorageEdit = () => {
-    this.props.info.fetch();
+    this.storage.refreshStorageInfo();
   };
 
   openEditDialog = () => {
@@ -340,17 +399,25 @@ export default class DataStorage extends React.Component {
 
   closeEditDialog = () => {
     this.setState({editDialogVisible: false}, () => {
-      this.props.info.fetch();
+      this.storage.refreshStorageInfo();
     });
   };
 
   renameDataStorage = async (name) => {
+    if (!this.storage.info) {
+      return;
+    }
+    const {
+      parentFolderId,
+      description,
+      path
+    } = this.storage.info;
     const dataStorage = {
       id: this.props.storageId,
-      parentFolderId: this.props.info.value.parentFolderId,
+      parentFolderId,
       name: name,
-      description: this.props.info.value.description,
-      path: this.props.info.value.path
+      description,
+      path
     };
     const hide = message.loading('Renaming data storage...');
     const request = new DataStorageUpdate();
@@ -359,14 +426,14 @@ export default class DataStorage extends React.Component {
       hide();
       message.error(request.error, 5);
     } else {
-      await this.props.info.fetch();
-      if (this.props.info.value.parentFolderId) {
-        this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
+      await this.storage.refreshStorageInfo();
+      if (parentFolderId) {
+        this.props.folders.invalidateFolder(parentFolderId);
       } else {
         this.props.pipelinesLibrary.invalidateCache();
       }
       if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.info.value.parentFolderId);
+        this.props.onReloadTree(!parentFolderId);
       }
       hide();
       this.closeEditDialog();
@@ -374,45 +441,64 @@ export default class DataStorage extends React.Component {
   };
 
   deleteStorage = async (cloud) => {
+    if (!this.storage.info) {
+      return;
+    }
+    const {
+      name,
+      parentFolderId
+    } = this.storage.info;
     const request = new DataStorageDelete(this.props.storageId, cloud);
-    const hide = message.loading(`${cloud ? 'Deleting' : 'Unregistering'} storage ${this.props.info.value.name}...`, 0);
+    const hide = message.loading(`${cloud ? 'Deleting' : 'Unregistering'} storage ${name}...`, 0);
     await request.fetch();
     hide();
     if (request.error) {
       message.error(request.error, 5);
     } else {
       await this.props.dataStorages.fetch();
-      if (this.props.info.value.parentFolderId) {
-        this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
+      if (parentFolderId) {
+        this.props.folders.invalidateFolder(parentFolderId);
       } else {
         this.props.pipelinesLibrary.invalidateCache();
       }
       if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.info.value.parentFolderId);
+        this.props.onReloadTree(!parentFolderId);
       }
-      if (this.props.info.value.parentFolderId) {
-        this.props.router.push(`/folder/${this.props.info.value.parentFolderId}`);
+      if (parentFolderId) {
+        this.props.router.push(`/folder/${parentFolderId}`);
       } else {
         this.props.router.push('/library');
       }
     }
   };
 
-  navigate = (id, path) => {
+  navigate = (id, path, options = {}) => {
+    const {
+      showVersions = this.showVersions,
+      clearPathMarkers = true
+    } = options;
     if (path && path.endsWith('/')) {
       path = path.substring(0, path.length - 1);
     }
-    if (path) {
-      this.props.router.push(`/storage/${id}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
-    } else {
-      this.props.router.push(`/storage/${id}?versions=${this.showVersions}`);
-    }
-    this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
+    this.storage.clearMarkersForPath(path, clearPathMarkers);
+    const params = [
+      path ? `path=${encodeURIComponent(path)}` : false,
+      `versions=${showVersions}`
+    ].filter(Boolean).join('&');
+    this.props.router.push(`/storage/${id}?${params}`);
+    this.setState({
+      selectedItems: [],
+      selectedFile: null
+    });
   };
 
   navigateFull = (path) => {
-    if (path && !this.props.info.pending && !this.props.info.error) {
-      let {pathMask, path: bucketPath, delimiter = '/'} = this.props.info.value;
+    if (path && this.storage.info) {
+      let {
+        pathMask,
+        path: bucketPath,
+        delimiter = '/'
+      } = this.storage.info;
       let bucketPathMask = `^[^:/]+://[^${delimiter}]+(|${delimiter}(.*))$`;
       if (pathMask) {
         if (pathMask.endsWith(delimiter)) {
@@ -432,44 +518,11 @@ export default class DataStorage extends React.Component {
         if (relativePath && relativePath.endsWith(delimiter)) {
           relativePath = relativePath.substr(0, relativePath.length - 1);
         }
-        if (relativePath) {
-          this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(relativePath)}&versions=${this.showVersions}`);
-        } else {
-          this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
-        }
-        this.setState({currentPage: 0, pageMarkers: [null], pagePerformed: false, selectedItems: [], selectedFile: null});
+        this.navigate(this.props.storageId, relativePath);
       } else {
         message.error('You cannot navigate to another storage.', 3);
       }
     }
-  };
-
-  canGoToParent () {
-    return this.props.path;
-  }
-
-  parentDirectory () {
-    if (this.props.path) {
-      const parts = this.props.path.split('/');
-      if (parts.length > 1) {
-        parts.pop();
-        return parts.join('/');
-      }
-    }
-    return undefined;
-  }
-
-  labelsRenderer = (labels, item) => {
-    const labelsList = [];
-    for (let key in labels) {
-      if (labels.hasOwnProperty(key)) {
-        labelsList.push({
-          key: key,
-          value: labels[key]
-        });
-      }
-    }
-    return labelsList.map(l => (<span className={styles.label} key={l.key}>{l.value}</span>));
   };
 
   downloadSingleFile = async (event, item) => {
@@ -622,7 +675,7 @@ export default class DataStorage extends React.Component {
       this.state.selectedFile.path,
       this.state.selectedFile.version
     );
-    const request = new DataStorageItemUpdateContent(this.props.storageId, path);
+    const request = new UpdateContent(this.props.storageId, path);
     const hide = message.loading('Uploading changes...');
 
     await request.send(content);
@@ -630,10 +683,9 @@ export default class DataStorage extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
-      await this.props.storage.fetch();
       await currentItemContent.fetch();
       this.closeEditFileForm();
-      await this.refreshList();
+      await this.refreshList(true);
     }
   };
 
@@ -650,6 +702,7 @@ export default class DataStorage extends React.Component {
     if (this.showVersions) {
       if (item.isVersion) {
         const removeItem = () => this.removeItems([item], true, true);
+        // eslint-disable-next-line max-len
         let content = `Are you sure you want to delete selected version of the ${item.type.toLowerCase()} '${item.name}' from object storage?`;
         Modal.confirm({
           title: `Remove ${item.type.toLowerCase()}'s version`,
@@ -663,6 +716,7 @@ export default class DataStorage extends React.Component {
         });
       } else if (item.deleteMarker) {
         const removeItem = () => this.removeItems([item], true, true);
+        // eslint-disable-next-line max-len
         let content = `Are you sure you want to delete ${item.type.toLowerCase()} '${item.name}' from object storage?`;
         if (item.type.toLowerCase() === 'folder') {
           content = (
@@ -746,7 +800,8 @@ export default class DataStorage extends React.Component {
       if (clearSelectedItems) {
         const selectedItems = this.state.selectedItems;
         const removeItemFromSelectedList = (item) => {
-          const [selectedItem] = selectedItems.filter(s => s.name === item.name && s.type === item.type);
+          const selectedItem = selectedItems
+            .find(s => s.name === item.name && s.type === item.type);
           if (selectedItem) {
             const index = selectedItems.indexOf(selectedItem);
             selectedItems.splice(index, 1);
@@ -756,7 +811,6 @@ export default class DataStorage extends React.Component {
         this.setState({selectedItems});
       }
       this.setState({
-        pagePerformed: false,
         selectedFile
       }, async () => {
         await this.refreshList();
@@ -807,7 +861,11 @@ export default class DataStorage extends React.Component {
     if (!this.showVersions) {
       return false;
     }
-    if ((item.type && item.type.toLowerCase() === 'folder') || !item.isVersion || item.deleteMarker) {
+    if (
+      (item.type && item.type.toLowerCase() === 'folder') ||
+      !item.isVersion ||
+      item.deleteMarker
+    ) {
       return false;
     }
     return !item.latest;
@@ -835,7 +893,9 @@ export default class DataStorage extends React.Component {
           key="download"
           id={`download ${item.name}`}
           className="cp-button"
-          href={GenerateDownloadUrlRequest.getRedirectUrl(this.props.storageId, item.path, item.version)}
+          href={
+            GenerateDownloadUrlRequest.getRedirectUrl(this.props.storageId, item.path, item.version)
+          }
           target="_blank"
           download={item.name}
           onClick={(e) => this.downloadSingleFile(e, item)}
@@ -844,9 +904,11 @@ export default class DataStorage extends React.Component {
         </a>
       );
     }
-    if (item.isVersion
-      ? item.editable && this.versionControlsEnabled
-      : item.editable
+    if (
+      (item.isVersion
+        ? item.editable && this.versionControlsEnabled
+        : item.editable
+      )
     ) {
       actions.push(
         <Button
@@ -860,7 +922,12 @@ export default class DataStorage extends React.Component {
     }
     if (this.versionControlsEnabled && this.canRestoreItem(item)) {
       actions.push(
-        <Button id={`restore ${item.name}`} key="restore" size="small" onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}>
+        <Button
+          id={`restore ${item.name}`}
+          key="restore"
+          size="small"
+          onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}
+        >
           <Icon type="reload" />
         </Button>
       );
@@ -889,12 +956,14 @@ export default class DataStorage extends React.Component {
   };
 
   fileIsSelected = (item) => {
-    return this.state.selectedItems.filter(s => s.name === item.name && s.type === item.type).length === 1;
+    return !!this.state.selectedItems
+      .find(s => s.name === item.name && s.type === item.type);
   };
 
   selectFile = (item) => () => {
     const selectedItems = this.state.selectedItems;
-    const [selectedItem] = this.state.selectedItems.filter(s => s.name === item.name && s.type === item.type);
+    const selectedItem = this.state.selectedItems
+      .find(s => s.name === item.name && s.type === item.type);
     if (selectedItem) {
       const index = selectedItems.indexOf(selectedItem);
       selectedItems.splice(index, 1);
@@ -904,19 +973,13 @@ export default class DataStorage extends React.Component {
     this.setState({selectedItems});
   };
 
-  openShareStorageDialog = () => {
-    this.setState({shareStorageDialogVisible: true});
-  };
-
-  closeShareStorageDialog = () => {
-    this._shareStorageLink = null;
-    this.setState({shareStorageDialogVisible: false});
-  };
-
-  openEditFileForm = (item) => {
-    const sensitive = this.props.info.loaded
-      ? this.props.info.value.sensitive
-      : false;
+  openEditFileForm = async (item) => {
+    if (!this.storage.infoLoaded) {
+      await this.storage.refreshStorageInfo(false);
+    }
+    const {
+      sensitive
+    } = this.storage.info || {};
     if (sensitive) {
       message.info('This operation is forbidden for sensitive storages', 5);
     } else {
@@ -928,108 +991,27 @@ export default class DataStorage extends React.Component {
     this.setState({editFile: null});
   };
 
-  getStorageItemsTable = () => {
-    const getList = () => {
-      const items = [];
-      if (this.canGoToParent()) {
-        items.push({
-          key: `folder_${this.parentDirectory()}`,
-          name: '..',
-          path: this.parentDirectory(),
-          type: 'folder',
-          downloadable: false,
-          editable: false,
-          selectable: false
-        });
+  get columns () {
+    const tableData = this.items;
+    const hasAppsColumn = tableData.some(o => o.miew);
+    const hasVersions = tableData.some(o => o.versions);
+    const getItemIcon = (item) => {
+      if (!item) {
+        return null;
       }
-      const getChildList = (item, versions, sensitive) => {
-        if (!versions || !this.showVersions) {
-          return undefined;
-        }
-        const childList = [];
-        for (let version in versions) {
-          if (versions.hasOwnProperty(version)) {
-            childList.push({
-              key: `${item.type}_${item.path}_${version}`,
-              ...versions[version],
-              downloadable: item.type.toLowerCase() === 'file' &&
-                !versions[version].deleteMarker &&
-                !sensitive &&
-                (
-                  !item.labels ||
-                  !item.labels['StorageClass'] ||
-                  item.labels['StorageClass'].toLowerCase() !== 'glacier'
-                ),
-              editable: versions[version].version === item.version &&
-              roleModel.writeAllowed(this.props.info.value) &&
-              !versions[version].deleteMarker,
-              deletable: roleModel.writeAllowed(this.props.info.value),
-              selectable: false,
-              latest: versions[version].version === item.version,
-              isVersion: true
-            });
-          }
-        }
-        childList.sort((a, b) => {
-          const dateA = moment(a.changed);
-          const dateB = moment(b.changed);
-          if (dateA > dateB) {
-            return -1;
-          } else if (dateA < dateB) {
-            return 1;
-          }
-          return 0;
-        });
-        return childList;
-      };
-      let results = [];
-      const sensitive = this.props.info.loaded
-        ? this.props.info.value.sensitive
-        : false;
-      if (this.props.storage.loaded) {
-        results = this.props.storage.value.results || [];
-      }
-      items.push(...results.map(i => {
-        return {
-          key: `${i.type}_${i.path}`,
-          ...i,
-          downloadable: i.type.toLowerCase() === 'file' &&
-            !i.deleteMarker &&
-            !sensitive &&
-            (
-              !i.labels ||
-              !i.labels['StorageClass'] ||
-              i.labels['StorageClass'].toLowerCase() !== 'glacier'
-            ),
-          editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
-          deletable: roleModel.writeAllowed(this.props.info.value),
-          children: getChildList(i, i.versions, sensitive),
-          selectable: !i.deleteMarker,
-          miew: !i.deleteMarker &&
-                i.type.toLowerCase() === 'file' &&
-                i.path.toLowerCase().endsWith('.pdb')
-        };
-      }));
-      return items;
+      return (
+        <Icon
+          className={styles.itemType}
+          type={item.type.toLowerCase()}
+        />
+      );
     };
-
-    this.tableData = this.props.storage.pending ? (this.tableData || []) : getList();
-    let hasAppsColumn = false;
-    let hasVersions = false;
-    for (
-      let i = 0; i < this.tableData.length; i++) {
-      const item = this.tableData[i];
-      if (item.miew) {
-        hasAppsColumn = true;
-      }
-      if (item.versions) {
-        hasVersions = true;
-      }
-    }
     const selectionColumn = {
       key: 'selection',
       title: '',
-      className: (this.showVersions || hasVersions) ? styles.checkboxCellVersions : styles.checkboxCell,
+      className: (this.showVersions || hasVersions)
+        ? styles.checkboxCellVersions
+        : styles.checkboxCell,
       render: (item) => {
         if (item.selectable && (item.downloadable || item.editable)) {
           return (
@@ -1048,7 +1030,7 @@ export default class DataStorage extends React.Component {
       title: '',
       className: styles.itemTypeCell,
       onCellClick: (item) => this.didSelectDataStorageItem(item),
-      render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />
+      render: (text, item) => getItemIcon(item)
     };
     const appsColumn = {
       key: 'apps',
@@ -1076,6 +1058,7 @@ export default class DataStorage extends React.Component {
                 className={styles.appLink}
                 to={
                   item.version
+                    // eslint-disable-next-line max-len
                     ? `miew?storageId=${this.props.storageId}&path=${item.path}&version=${item.version}`
                     : `miew?storageId=${this.props.storageId}&path=${item.path}`
                 }
@@ -1122,7 +1105,12 @@ export default class DataStorage extends React.Component {
       key: 'labels',
       title: '',
       className: styles.labelsCell,
-      render: this.labelsRenderer,
+      render: (labels) => (
+        <LabelsRenderer
+          labelClassName={styles.label}
+          labels={labels}
+        />
+      ),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const actionsColumn = {
@@ -1131,43 +1119,24 @@ export default class DataStorage extends React.Component {
       render: this.actionsRenderer
     };
 
-    const columns = [];
-    columns.push(selectionColumn);
-    columns.push(typeColumn);
-    if (hasAppsColumn) {
-      columns.push(appsColumn);
-    }
-    columns.push(nameColumn);
-    columns.push(sizeColumn);
-    columns.push(changedColumn);
-    columns.push(labelsColumn);
-    columns.push(actionsColumn);
-
-    return {
-      columns,
-      data: this.tableData
-    };
+    return [
+      selectionColumn,
+      typeColumn,
+      hasAppsColumn && appsColumn,
+      nameColumn,
+      sizeColumn,
+      changedColumn,
+      labelsColumn,
+      actionsColumn
+    ].filter(Boolean);
   };
 
   didSelectDataStorageItem = (item) => {
     if (item.type.toLowerCase() === 'folder') {
-      let path = item.path;
-      if (path && path.endsWith('/')) {
-        path = path.substring(0, path.length - 1);
-      }
-      if (path) {
-        this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(path)}&versions=${this.showVersions}`);
-      } else {
-        this.props.router.push(`/storage/${this.props.storageId}?versions=${this.showVersions}`);
-      }
-      this.setState({
-        selectedFile: null,
-        currentPage: 0,
-        pageMarkers: [null],
-        pagePerformed: false,
-        selectedItems: []
-      });
-    } else if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
+      this.navigate(this.props.storageId, item.path, {clearPathMarkers: false});
+      return;
+    }
+    if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
       this.setState({
         selectedFile: item,
         metadata: true
@@ -1176,7 +1145,7 @@ export default class DataStorage extends React.Component {
   };
 
   get bulkDownloadEnabled () {
-    if (this.props.info.loaded && this.props.info.value.sensitive) {
+    if (this.storage.info && this.storage.info.sensitive) {
       return false;
     }
     const selectedItemsLength = this.state.selectedItems.length;
@@ -1195,24 +1164,9 @@ export default class DataStorage extends React.Component {
   }
 
   get selectAllAvailable () {
-    if (this.props.storage.loaded &&
-      this.props.storage.value &&
-      this.props.storage.value.results) {
-      let allSelected = false;
-      if (this.state.selectedItems) {
-        allSelected = true;
-        const values = (this.props.storage.value.results || []);
-        for (let i = 0; i < values.length; i++) {
-          const value = values[i];
-          if (this.state.selectedItems.filter(si => si.path === value.path && si.type === value.type).length === 0) {
-            allSelected = false;
-            break;
-          }
-        }
-      }
-      return !allSelected;
-    }
-    return false;
+    return !!this.storage.pageElements &&
+      this.storage.pageElements.length > 0 &&
+      this.storage.pageElements.some(o => !this.fileIsSelected(o));
   }
 
   get clearSelectionVisible () {
@@ -1220,19 +1174,17 @@ export default class DataStorage extends React.Component {
   }
 
   selectAll = (type) => {
-    if (this.props.storage.loaded && this.tableData) {
-      const selectedItems = this.tableData.filter(item => {
-        if (!item.editable && !item.downloadable) {
-          return false;
-        }
-        if (type) {
-          return item.type.toLowerCase() === type.toLowerCase();
-        } else {
-          return true;
-        }
-      });
-      this.setState({selectedItems});
-    }
+    const selectedItems = this.items.filter(item => {
+      if (!item.editable && !item.downloadable) {
+        return false;
+      }
+      if (type) {
+        return item.type.toLowerCase() === type.toLowerCase();
+      } else {
+        return true;
+      }
+    });
+    this.setState({selectedItems});
   };
 
   clearSelection = () => {
@@ -1240,130 +1192,102 @@ export default class DataStorage extends React.Component {
   };
 
   showFilesVersionsChanged = (e) => {
-    if (this.props.path) {
-      this.props.router.push(`/storage/${this.props.storageId}?path=${encodeURIComponent(this.props.path)}&versions=${e.target.checked}`);
-    } else {
-      this.props.router.push(`/storage/${this.props.storageId}?versions=${e.target.checked}`);
-    }
+    this.navigate(this.props.storageId, this.props.path, {showVersions: e.target.checked});
   };
 
-  prevPage = () => {
-    if (this.state.currentPage > 0) {
-      const currentPage = this.state.currentPage - 1;
-      const marker = this.state.pageMarkers[currentPage];
-      this.props.storage.fetchPage(marker);
-      this.setState({
-        currentPage,
-        pagePerformed: false
-      });
-    }
-  };
-
-  nextPage = () => {
-    if (this.state.currentPage + 1 < this.state.pageMarkers.length) {
-      const currentPage = this.state.currentPage + 1;
-      const marker = this.state.pageMarkers[currentPage];
-      this.props.storage.fetchPage(marker);
-      this.setState({
-        currentPage,
-        pagePerformed: false
-      });
-    }
-  };
-
-  @computed
   get isFileSelectedEmpty () {
     if (!this.state.selectedFile) {
       return false;
     }
-    const [selectedFile] = this.tableData
-      .filter(file => file.name === this.state.selectedFile.name);
+    const selectedFile = this.items
+      .find(file => file.name === this.state.selectedFile.name);
 
     return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
   };
 
-  render () {
-    if (
-      (!this.props.info.loaded && this.props.info.pending) ||
-      (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending)
-    ) {
-      return <LoadingView />;
+  renderContent = () => {
+    if (this.storage.pageError) {
+      return (
+        <div
+          style={{flex: 1}}
+        >
+          <br />
+          <Alert
+            message={`Error retrieving data storage items: ${this.storage.pageError}`}
+            type="error"
+          />
+        </div>
+      );
     }
-    if (this.props.info.error) {
-      return <Alert message={this.props.info.error} type="error" />;
-    }
-    if (this.props.authenticatedUserInfo.error) {
-      return <Alert message={this.props.authenticatedUserInfo.error} type="error" />;
-    }
-    let contents;
-    if (!this.props.storage.error) {
-      const table = this.getStorageItemsTable();
-      const folderKey = 'folder';
-      const fileKey = 'file';
-      const onCreateActionSelect = ({key}) => {
-        const type = key.split('_').shift();
-        switch (type) {
-          case folderKey:
-            this.openCreateFolderDialog();
-            break;
-          case fileKey:
-            this.openCreateFileDialog();
-            break;
-        }
-      };
+    const {
+      type
+    } = this.storage.info || {};
+    const folderKey = 'folder';
+    const fileKey = 'file';
+    const onCreateActionSelect = ({key}) => {
+      const type = key.split('_').shift();
+      switch (type) {
+        case folderKey:
+          this.openCreateFolderDialog();
+          break;
+        case fileKey:
+          this.openCreateFileDialog();
+          break;
+      }
+    };
 
-      const title = () => {
-        return (
-          <Row
-            className={styles.storageActions}
-            type="flex"
-            justify="space-between">
-            <div>
-              {
-                this.selectAllAvailable &&
-                (
-                  <Button
-                    id="select-all-button"
-                    size="small" onClick={() => this.selectAll(undefined)}>
-                    Select page
-                  </Button>
-                )
-              }
-              {
-                this.clearSelectionVisible &&
+    const title = () => {
+      return (
+        <Row
+          className={styles.storageActions}
+          type="flex"
+          justify="space-between">
+          <div>
+            {
+              this.selectAllAvailable &&
+              (
                 <Button
-                  style={{marginLeft: 5}}
-                  id="clear-selection-button"
-                  size="small" onClick={() => this.clearSelection()}>
-                  Clear selection
+                  id="select-all-button"
+                  size="small" onClick={() => this.selectAll(undefined)}>
+                  Select page
                 </Button>
-              }
-              {
-                this.versionControlsEnabled
-                  ? (
-                    <Checkbox
-                      checked={this.showVersions}
-                      onChange={this.showFilesVersionsChanged}
-                      style={{marginLeft: 10}}>
-                      Show files versions
-                    </Checkbox>
-                  ) : undefined
-              }
-            </div>
-            <div style={{paddingRight: 8}}>
-              {
-                this.bulkDownloadEnabled &&
-                this.storageAllowSignedUrls &&
-                <Button
-                  id="bulk-url-button"
-                  size="small"
-                  onClick={this.toggleGenerateDownloadUrlsModalFn}>
-                  Generate URL
-                </Button>
-              }
-              {
-                this.removeAllSelectedItemsEnabled &&
-                roleModel.writeAllowed(this.props.info.value) &&
+              )
+            }
+            {
+              this.clearSelectionVisible &&
+              <Button
+                style={{marginLeft: 5}}
+                id="clear-selection-button"
+                size="small" onClick={() => this.clearSelection()}>
+                Clear selection
+              </Button>
+            }
+            {
+              this.versionControlsEnabled
+                ? (
+                  <Checkbox
+                    checked={this.showVersions}
+                    onChange={this.showFilesVersionsChanged}
+                    style={{marginLeft: 10}}>
+                    Show files versions
+                  </Checkbox>
+                ) : undefined
+            }
+          </div>
+          <div style={{paddingRight: 8}}>
+            {
+              this.bulkDownloadEnabled &&
+              this.storageAllowSignedUrls &&
+              <Button
+                id="bulk-url-button"
+                size="small"
+                onClick={this.toggleGenerateDownloadUrlsModalFn}>
+                Generate URL
+              </Button>
+            }
+            {
+              this.removeAllSelectedItemsEnabled &&
+              this.storage.writeAllowed && (
                 <Button
                   id="remove-all-selected-button"
                   size="small"
@@ -1371,13 +1295,14 @@ export default class DataStorage extends React.Component {
                   type="danger">
                   Remove all selected
                 </Button>
-              }
-              {
-                this.removeAllSelectedItemsEnabled && this.bulkDownloadEnabled &&
-                <div style={{display: 'inline-block', marginLeft: 10, width: 2, height: 2}} />
-              }
-              {
-                roleModel.writeAllowed(this.props.info.value) &&
+              )
+            }
+            {
+              this.removeAllSelectedItemsEnabled && this.bulkDownloadEnabled &&
+              <div style={{display: 'inline-block', marginLeft: 10, width: 2, height: 2}} />
+            }
+            {
+              this.storage.writeAllowed && (
                 <Dropdown
                   placement="bottomRight"
                   trigger={['hover']}
@@ -1408,102 +1333,102 @@ export default class DataStorage extends React.Component {
                     <Icon type="plus" /> Create <Icon type="down" />
                   </Button>
                 </Dropdown>
-              }
-              {
-                roleModel.writeAllowed(this.props.info.value) && (
-                  <UploadButton
-                    multiple
-                    onRefresh={this.refreshList}
-                    title={'Upload'}
-                    storageId={this.props.storageId}
-                    path={this.props.path}
-                    storageInfo={this.props.info.value}
-                    region={this.regionName}
-                    // synchronous
-                    uploadToS3={this.props.info.value.type === 'S3'}
-                    uploadToNFS={this.props.info.value.type === 'NFS'}
-                    action={
-                      DataStorageItemUpdate.uploadUrl(
-                        this.props.storageId,
-                        this.props.path
-                      )
-                    }
-                    owner={
-                      this.props.authenticatedUserInfo.loaded
-                        ? this.props.authenticatedUserInfo.value.userName
-                        : undefined
-                    }
-                  />
-                )
-              }
-            </div>
-          </Row>
-        );
-      };
-
-      contents = [
-        <Table
-          className={styles.table}
-          style={{flex: 1}}
-          key="table"
-          dataSource={table.data}
-          columns={table.columns}
-          loading={this.props.storage.pending}
-          title={title}
-          rowKey="key"
-          pagination={false}
-          rowClassName={(item) => classNames({[styles[item.type.toLowerCase()]]: true}, {'cp-storage-deleted-row': !!item.deleteMarker})}
-          locale={{emptyText: 'Folder is empty'}}
-          size="small" />,
-        <Row key="pagination" type="flex" justify="end" style={{marginTop: 10, marginBottom: 10, paddingRight: 15}}>
-          <Button
-            id="prev-page-button"
-            onClick={this.prevPage}
-            disabled={this.state.currentPage === 0}
-            style={{margin: 3}} size="small"><Icon type="caret-left" /></Button>
-          <Button
-            id="next-page-button"
-            onClick={this.nextPage}
-            disabled={this.state.pageMarkers.length <= this.state.currentPage + 1}
-            style={{margin: 3}} size="small"><Icon type="caret-right" /></Button>
+              )
+            }
+            {
+              this.storage.writeAllowed && (
+                <UploadButton
+                  multiple
+                  onRefresh={() => this.refreshList()}
+                  title={'Upload'}
+                  storageId={this.props.storageId}
+                  path={this.props.path}
+                  storageInfo={this.storage.info}
+                  region={this.regionName}
+                  // synchronous
+                  uploadToS3={/^s3$/i.test(type)}
+                  uploadToNFS={/^nfs$/i.test(type)}
+                  action={
+                    DataStorageItemUpdate.uploadUrl(
+                      this.props.storageId,
+                      this.props.path
+                    )
+                  }
+                  owner={
+                    this.props.authenticatedUserInfo.loaded
+                      ? this.props.authenticatedUserInfo.value.userName
+                      : undefined
+                  }
+                />
+              )
+            }
+          </div>
         </Row>
-      ];
-    } else if (this.props.storage.error) {
-      contents = (
-        <div>
-          <br />
-          <Alert
-            message={`Error retrieving data storage items: ${this.props.storage.error}`} type="error" />
-        </div>
       );
+    };
+
+    return (
+      <Table
+        className={styles.table}
+        style={{flex: 1}}
+        key="table"
+        dataSource={this.items}
+        columns={this.columns}
+        loading={this.storage.pagePending}
+        title={title}
+        rowKey="key"
+        pagination={false}
+        rowClassName={(item) => classNames({
+          [styles[item.type.toLowerCase()]]: true,
+          'cp-storage-deleted-row': !!item.deleteMarker
+        })}
+        locale={{emptyText: 'Folder is empty'}}
+        size="small"
+      />
+    );
+  };
+
+  onToggleMetadata = () => {
+    if (this.showMetadata) {
+      this.setState({metadata: !this.showMetadata, selectedFile: null});
     } else {
-      contents = (
-        <div>
-          <Row type="flex" justify="center">
-            <br />
-            <Spin />
-          </Row>
-        </div>
-      );
+      this.setState({metadata: !this.showMetadata});
     }
+  };
 
-    const onToggleMetadata = () => {
-      if (this.showMetadata) {
-        this.setState({metadata: !this.showMetadata, selectedFile: null});
-      } else {
-        this.setState({metadata: !this.showMetadata});
-      }
-    };
+  onPanelClose = (key) => {
+    switch (key) {
+      case METADATA_PANEL_KEY:
+        this.setState({metadata: false});
+        break;
+    }
+  };
 
-    const onPanelClose = (key) => {
-      switch (key) {
-        case METADATA_PANEL_KEY:
-          this.setState({metadata: false});
-          break;
-      }
-    };
-
-    const storageTitleClassName = this.props.info.value.locked ? styles.readonly : undefined;
+  render () {
+    if (
+      (this.storage.pending && !this.storage.infoLoaded) ||
+      (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending)
+    ) {
+      return <LoadingView />;
+    }
+    if (this.storage.infoError) {
+      return <Alert message={this.storage.infoError} type="error" />;
+    }
+    if (this.props.authenticatedUserInfo.error) {
+      return <Alert message={this.props.authenticatedUserInfo.error} type="error" />;
+    }
+    const {
+      name,
+      description,
+      type,
+      locked,
+      sensitive,
+      regionId,
+      mountStatus,
+      mask,
+      policySupported,
+      storagePolicy
+    } = this.storage.info || {};
 
     return (
       <div style={{
@@ -1517,22 +1442,32 @@ export default class DataStorage extends React.Component {
               style={{height: '31px'}}
               id={parseInt(this.props.storageId)}
               type={ItemTypes.storage}
-              textEditableField={this.props.info.value.name}
+              textEditableField={name}
               onSaveEditableField={this.renameDataStorage}
-              readOnlyEditableField={!roleModel.writeAllowed(this.props.info.value)}
+              readOnlyEditableField={!this.storage.writeAllowed}
               editStyleEditableField={{flex: 1}}
-              icon={
-                this.props.info.value && this.props.info.value.type.toLowerCase() !== 'nfs'
-                  ? 'inbox'
-                  : 'hdd'
+              icon={!/^nfs$/i.test(type) ? 'inbox' : 'hdd'}
+              iconClassName={
+                classNames(
+                  styles.editableControl,
+                  {
+                    [styles.readonly]: locked
+                  }
+                )
               }
-              iconClassName={`${styles.editableControl} ${storageTitleClassName}`}
-              lock={this.props.info.value.locked}
-              lockClassName={`${styles.editableControl} ${storageTitleClassName}`}
-              sensitive={this.props.info.value.sensitive}
+              lock={locked}
+              lockClassName={
+                classNames(
+                  styles.editableControl,
+                  {
+                    [styles.readonly]: locked
+                  }
+                )
+              }
+              sensitive={sensitive}
               displayTextEditableField={
                 <span>
-                  {this.props.info.value.name}
+                  {name}
                   <AWSRegionTag
                     className={classNames(
                       styles.storageRegion
@@ -1540,12 +1475,12 @@ export default class DataStorage extends React.Component {
                     displayName
                     flagStyle={{fontSize: 'smaller'}}
                     providerStyle={{fontSize: 'smaller'}}
-                    regionId={this.props.info.value.regionId}
+                    regionId={regionId}
                     style={{marginLeft: 5, fontSize: 'medium'}}
                   />
                 </span>
               }
-              subject={this.props.info.value}
+              subject={this.storage.info}
             />
           </Col>
           <Col>
@@ -1557,97 +1492,100 @@ export default class DataStorage extends React.Component {
             >
               <RestrictedImagesInfo
                 toolsToMount={this.toolsToMount}
-                status={this.props.info.value.mountStatus}
+                status={mountStatus}
               />
               <Button
                 id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
                 size="small"
-                onClick={onToggleMetadata}>
+                onClick={this.onToggleMetadata}>
                 {
                   this.showMetadata ? 'Hide attributes' : 'Show attributes'
                 }
               </Button>
-              {
-                roleModel.writeAllowed(this.props.info.value) &&
-                this.props.info.value.type !== 'NFS' &&
-                this.props.info.value.shared &&
-                <Button
-                  id="share-storage-button"
-                  size="small"
-                  onClick={this.openShareStorageDialog}>
-                  Share
-                </Button>
-              }
+              <StorageSharedLinkButton
+                storageId={this.props.storageId}
+              />
               <Button
                 id="edit-storage-button"
                 size="small"
                 onClick={() => this.openEditDialog()}>
-                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+                <Icon
+                  type="setting"
+                  style={{lineHeight: 'inherit', verticalAlign: 'middle'}}
+                />
               </Button>
               <Button
                 id="refresh-storage-button"
                 size="small"
-                onClick={() => this.refreshList()}
-                disabled={this.isDataRefreshing()}>Refresh</Button>
+                onClick={() => this.refreshList(true)}
+                disabled={this.storage.pagePending}>Refresh</Button>
             </Row>
           </Col>
         </Row>
         <ContentMetadataPanel
           style={{flex: 1, overflow: 'auto'}}
-          onPanelClose={onPanelClose}
+          onPanelClose={this.onPanelClose}
           contentContainerStyle={{overflow: 'inherit'}}>
           <div
             key={CONTENT_PANEL_KEY}
             style={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto'}}>
             <Row className={styles.dataStorageInfoContainer}>
               {
-                this.props.info.value.description &&
-                <Row><b>Description: </b>{this.props.info.value.description}</Row>
+                description && (
+                  <Row>
+                    <b>Description: </b>
+                    {description}
+                  </Row>
+                )
               }
               {
-                this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.shortTermStorageDuration !== undefined
-                  ? (
-                    <Row>
-                      <b>Short-Term Storage duration: </b>
-                      {`${this.props.info.value.storagePolicy.shortTermStorageDuration} days`}
-                    </Row>
-                  ) : undefined
+                storagePolicy &&
+                storagePolicy.shortTermStorageDuration !== undefined && (
+                  <Row>
+                    <b>Short-Term Storage duration: </b>
+                    {`${storagePolicy.shortTermStorageDuration} days`}
+                  </Row>
+                )
               }
               {
-                this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.longTermStorageDuration !== undefined
-                  ? (
-                    <Row>
-                      <b>Long-Term Storage duration: </b>
-                      {`${this.props.info.value.storagePolicy.longTermStorageDuration} days`}
-                    </Row>
-                  ) : undefined
+                storagePolicy &&
+                storagePolicy.longTermStorageDuration !== undefined && (
+                  <Row>
+                    <b>Long-Term Storage duration: </b>
+                    {`${storagePolicy.longTermStorageDuration} days`}
+                  </Row>
+                )
               }
             </Row>
             <Row style={{marginLeft: 5}}>
               <DataStorageNavigation
                 path={this.props.path}
-                storage={this.props.info.value}
+                storage={this.storage.info}
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />
             </Row>
-            {contents}
+            {
+              this.renderContent()
+            }
+            <StoragePagination
+              storage={this.storage}
+              style={{marginTop: 10, marginBottom: 10, paddingRight: 15}}
+            />
           </div>
           {
             this.showMetadata &&
             <Metadata
               key={METADATA_PANEL_KEY}
-              readOnly={!roleModel.isOwner(this.props.info.value)}
-              downloadable={!this.props.info.value.sensitive}
-              showContent={!this.props.info.value.sensitive}
-              hideMetadataTags={this.props.info.value.type === 'NFS'}
+              readOnly={!this.storage.isOwner}
+              downloadable={!sensitive}
+              showContent={!sensitive}
+              hideMetadataTags={/^nfs$/i.test(type)}
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
               entityName={
                 this.state.selectedFile
                   ? this.state.selectedFile.name
-                  : this.props.info.value.name
+                  : name
               }
               entityId={
                 this.state.selectedFile
@@ -1676,19 +1614,19 @@ export default class DataStorage extends React.Component {
               }
               fileIsEmpty={this.isFileSelectedEmpty}
               extraKeys={[
-                this.props.info.value.type === 'NFS'
+                /^nfs$/i.test(type)
                   ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
                   : false,
-                this.props.info.value.type !== 'NFS' && !this.state.selectedFile
+                !/^nfs$/i.test(type) && !this.state.selectedFile
                   ? REQUEST_DAV_ACCESS_ATTRIBUTE
                   : false
               ].filter(Boolean)}
               extraInfo={[
-                <StorageSize storage={this.props.info.value} />
+                <StorageSize storage={this.storage.info} />
               ]}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
-                storageMask: this.props.info.value.mask,
+                storageMask: mask,
                 storageId: Number(this.props.storageId)
               }}
             />
@@ -1696,9 +1634,9 @@ export default class DataStorage extends React.Component {
         </ContentMetadataPanel>
         <DataStorageEditDialog
           visible={this.state.editDialogVisible}
-          dataStorage={this.props.info.value}
-          pending={this.props.info.pending}
-          policySupported={this.props.info.value.policySupported}
+          dataStorage={this.storage.info}
+          pending={this.storage.infoPending}
+          policySupported={policySupported}
           versionControlsEnabled={this.versionControlsEnabled}
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
@@ -1744,44 +1682,6 @@ export default class DataStorage extends React.Component {
             )
           }
         </Modal>
-        <Modal
-          title="Share storage link"
-          width="80%"
-          visible={this.state.shareStorageDialogVisible}
-          onOk={this.closeShareStorageDialog}
-          onCancel={this.closeShareStorageDialog}
-          footer={
-            <Button
-              type="primary"
-              onClick={this.closeShareStorageDialog}>
-              OK
-            </Button>
-          }>
-          <div>
-            {
-              this._shareStorageLink && (!this._shareStorageLink.error
-                ? (!this._shareStorageLink.pending
-                  ? (
-                    <Input
-                      autosize
-                      type="textarea"
-                      value={this._shareStorageLink.value}
-                    />
-                  )
-                  : <LoadingView />)
-                : <Alert message={this._shareStorageLink.error} type="error" />)
-            }
-            {
-              this.dataStorageShareLinkDisclaimer && (
-                <BashCode
-                  id="data-sharing-disclaimer"
-                  className={styles.dataSharingDisclaimer}
-                  code={this.dataStorageShareLinkDisclaimer}
-                />
-              )
-            }
-          </div>
-        </Modal>
         <EditItemForm
           pending={false}
           title="Create folder"
@@ -1808,7 +1708,8 @@ export default class DataStorage extends React.Component {
           name={this.state.renameItem ? this.state.renameItem.name : null}
           visible={!!this.state.renameItem}
           onCancel={() => this.closeRenameItemDialog()}
-          onSubmit={this.renameItem} />
+          onSubmit={this.renameItem}
+        />
         <Modal
           visible={!!this.state.itemsToDelete}
           onCancel={this.closeDeleteModal}
@@ -1854,7 +1755,7 @@ export default class DataStorage extends React.Component {
         </Modal>
         <DataStorageCodeForm
           file={this.state.editFile}
-          downloadable={!this.props.info.value.sensitive}
+          downloadable={!sensitive}
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
           save={this.saveEditableFile}
@@ -1863,46 +1764,24 @@ export default class DataStorage extends React.Component {
     );
   }
 
-  performPage = () => {
-    const pageMarkers = this.state.pageMarkers;
-    if (!this.props.storage.error) {
-      if (this.props.storage.value.nextPageMarker) {
-        if (pageMarkers.length > this.state.currentPage + 1) {
-          pageMarkers[this.state.currentPage + 1] = this.props.storage.value.nextPageMarker;
-        } else {
-          pageMarkers.push(this.props.storage.value.nextPageMarker);
-        }
-      } else {
-        pageMarkers.splice(this.state.currentPage + 1, pageMarkers.length - this.state.currentPage - 1);
-      }
-    }
-    this.setState({
-      pagePerformed: true,
-      pageMarkers
-    });
-  };
+  componentWillUnmount () {
+    message.destroy();
+    this.storage.destroy();
+  }
+
+  componentDidMount () {
+    this.updateStorageIfRequired();
+  }
 
   componentDidUpdate (prevProps) {
-    if (prevProps.storageId !== this.props.storageId) {
-      this.setState({
-        metadata: undefined,
-        pageMarkers: [null],
-        currentPage: 0,
-        pagePerformed: false,
-        selectedItems: [],
-        selectedFile: null,
-        editFile: null
-      });
-    } else if (!this.props.storage.pending && !this.state.pagePerformed) {
-      this.performPage();
-    } else if (this.props.showVersions !== prevProps.showVersions) {
-      this.refreshList();
-    }
-    if (this.state.shareStorageDialogVisible &&
-      (!this._shareStorageLink || this._shareStorageLink.storageId !== this.props.storageId ||
-      (!this._shareStorageLink.loaded && !this._shareStorageLink.pending))) {
-      this._shareStorageLink = new DataStorageGenerateSharedLink(this.props.storageId);
-      this._shareStorageLink.fetch();
-    }
+    this.updateStorageIfRequired();
   }
+
+  updateStorageIfRequired = () => {
+    this.storage.initialize(
+      this.props.storageId,
+      this.props.path,
+      this.props.showVersions
+    );
+  };
 }

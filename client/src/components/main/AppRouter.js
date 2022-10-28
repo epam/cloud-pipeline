@@ -21,7 +21,7 @@ import HomePageLoader from './home/HomePageLoader';
 import PipelinesLibrary from '../pipelines/PipelinesLibrary';
 import Browser from '../pipelines/browser/Browser';
 import FolderBrowser from '../pipelines/browser/Folder';
-import StorageBrowser from '../pipelines/browser/DataStorage';
+import StorageBrowser from '../pipelines/browser/data-storage';
 import PipelineBrowser from '../pipelines/browser/Pipeline';
 import MetadataFolderBrowser from '../pipelines/browser/MetadataFolder';
 import MetadataBrowser from '../pipelines/browser/Metadata';

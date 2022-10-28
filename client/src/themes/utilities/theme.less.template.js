@@ -160,6 +160,12 @@ export default `
 @THEME .cp-link.cp-danger:focus {
   color: lighten(@color-red, 5%);
 }
+@THEME .cp-bordered {
+  border: 1px solid @panel-border-color;
+}
+@THEME .cp-outline-bordered {
+  outline: 1px solid @panel-border-color;
+}
 @THEME .cp-divider.top,
 @THEME .cp-divider.horizontal {
   border-top: 1px solid @panel-border-color;
@@ -275,6 +281,14 @@ export default `
 @THEME .ant-layout {
   background-color: @application-background-color;
   color: @application-color;
+  background-image: @background-image;
+  background-size: cover;
+}
+@THEME .app-background {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+@THEME .app-background:not(.no-image) {
   background-image: @background-image;
   background-size: cover;
 }
@@ -399,7 +413,9 @@ export default `
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
-@THEME .ant-form-item-control.has-error .ant-input {
+@THEME .ant-form-item-control.has-error .ant-select-selection,
+@THEME .ant-form-item-control.has-error .ant-input,
+@THEME .ant-form-item-control.has-error .CodeMirror-wrap {
   border-color: @color-red;
 }
 @THEME .cp-text-not-important {
@@ -531,6 +547,9 @@ export default `
   border-left: 1px solid @card-border-color;
   border-right: 1px solid @card-border-color;
   border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-tabs-no-padding .ant-tabs-bar {
+  margin-bottom: 0;
 }
 @THEME .ant-checkbox-wrapper + span {
   color: @application-color;
@@ -939,6 +958,9 @@ export default `
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
+@THEME .rc-menu-item-group-title {
+  border-bottom: 1px solid @card-border-color;
+}
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
   border-color: @panel-border-color;
@@ -972,9 +994,7 @@ export default `
   color: @application-color-disabled;
 }
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item,
-@THEME .ant-dropdown-menu > .ant-dropdown-menu-item,
-@THEME .ant-dropdown-menu-submenu-title,
-@THEME .ant-dropdown-menu-submenu-title::after {
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item {
   color: @application-color;
 }
 @THEME .ant-select-dropdown-menu-item.cp-danger,
@@ -991,8 +1011,7 @@ export default `
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item-selected,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item:hover,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item-active,
-@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-selected,
-@THEME .ant-dropdown-menu-submenu-title:hover {
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-selected {
   color: @element-hover-color;
   background-color: @element-hover-background-color;
 }
@@ -1085,7 +1104,8 @@ export default `
 @THEME .ant-pagination-item-active:focus {
   background-color: @primary-hover-color;
 }
-@THEME .ant-pagination-item.ant-pagination-item-active > a {
+@THEME .ant-pagination-item.ant-pagination-item-active > a,
+@THEME span.ant-pagination-item.ant-pagination-item-active {
   color: @primary-text-color;
 }
 @THEME .ant-pagination-jump-prev::after,

@@ -73,6 +73,14 @@ a.cp-danger:focus,
   color: lighten(@color-red, 5%);
 }
 
+.cp-bordered {
+  border: 1px solid @panel-border-color;
+}
+
+.cp-outline-bordered {
+  outline: 1px solid @panel-border-color;
+}
+
 .cp-divider.top,
 .cp-divider.horizontal {
   border-top: 1px solid @panel-border-color;
@@ -221,6 +229,16 @@ a.cp-danger:focus,
   background-size: cover;
 }
 
+.app-background {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+
+.app-background:not(.no-image) {
+  background-image: @background-image;
+  background-size: cover;
+}
+
 h1,
 h2,
 h3,
@@ -361,7 +379,9 @@ h6 {
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
 
-.ant-form-item-control.has-error .ant-input{
+.ant-form-item-control.has-error .ant-select-selection,
+.ant-form-item-control.has-error .ant-input,
+.ant-form-item-control.has-error .CodeMirror-wrap {
   border-color: @color-red;
 }
 
@@ -523,6 +543,10 @@ h6 {
   border-left: 1px solid @card-border-color;
   border-right: 1px solid @card-border-color;
   border-bottom: 1px solid @card-border-color;
+}
+
+.cp-tabs-no-padding .ant-tabs-bar {
+  margin-bottom: 0;
 }
 
 .ant-checkbox-wrapper + span {
@@ -1016,6 +1040,10 @@ li.ant-calendar-time-picker-select-option-selected {
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
 
+.rc-menu-item-group-title {
+  border-bottom: 1px solid @card-border-color;
+}
+
 .rc-menu,
 .rc-dropdown-menu {
   border-color: @panel-border-color;
@@ -1055,9 +1083,7 @@ li.ant-calendar-time-picker-select-option-selected {
 }
 
 .rc-dropdown-menu > .rc-dropdown-menu-item,
-.ant-dropdown-menu > .ant-dropdown-menu-item,
-.ant-dropdown-menu-submenu-title,
-.ant-dropdown-menu-submenu-title::after {
+.ant-dropdown-menu > .ant-dropdown-menu-item {
   color: @application-color;
 }
 
@@ -1076,8 +1102,7 @@ li.ant-calendar-time-picker-select-option-selected {
 .rc-dropdown-menu > .rc-dropdown-menu-item-selected,
 .ant-dropdown-menu > .ant-dropdown-menu-item:hover,
 .ant-dropdown-menu > .ant-dropdown-menu-item-active,
-.ant-dropdown-menu > .ant-dropdown-menu-item-selected,
-.ant-dropdown-menu-submenu-title:hover {
+.ant-dropdown-menu > .ant-dropdown-menu-item-selected {
   color: @element-hover-color;
   background-color: @element-hover-background-color;
 }
@@ -1190,7 +1215,8 @@ li.ant-calendar-time-picker-select-option-selected {
   background-color: @primary-hover-color;
 }
 
-.ant-pagination-item.ant-pagination-item-active > a {
+.ant-pagination-item.ant-pagination-item-active > a,
+span.ant-pagination-item.ant-pagination-item-active {
   color: @primary-text-color;
 }
 
