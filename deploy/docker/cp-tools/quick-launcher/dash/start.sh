@@ -102,7 +102,7 @@ cd $APP_PATH
 nohup gunicorn  -b 0.0.0.0:${DASH_PORT} \
                 -u $OWNER \
                 -w $worker_processes "$DASH_WSGI_APP" \
-                --log-level $DASH_LOG_LEVEL >> $LOG_DIR_PATH/gunicorn.log 2>&1 &
+                --log-level $DASH_LOG_LEVEL >> $LOG_DIR_PATH/gunicorn_${RUN_ID}.log 2>&1 &
 
 pipe_log_success "Gateway App has been started" "InitializeApp"
 
