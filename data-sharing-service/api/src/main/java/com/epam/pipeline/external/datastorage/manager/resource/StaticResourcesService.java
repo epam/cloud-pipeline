@@ -17,6 +17,8 @@
 package com.epam.pipeline.external.datastorage.manager.resource;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
+import com.epam.pipeline.exception.ObjectNotFoundException;
+import com.epam.pipeline.external.datastorage.exception.ResourceNotFoundException;
 import com.epam.pipeline.external.datastorage.manager.CloudPipelineApiBuilder;
 import com.epam.pipeline.external.datastorage.manager.auth.PipelineAuthManager;
 import lombok.SneakyThrows;
@@ -43,7 +45,11 @@ public class StaticResourcesService {
 
     @SneakyThrows
     public InputStream getContent(final String path) {
-        return apiExecutor.getResponseStream(client.getContent(
-                UriUtils.encodePath(path, StandardCharsets.UTF_8.displayName()), authManager.getHeader()));
+        try {
+            return apiExecutor.getResponseStream(client.getContent(
+                    UriUtils.encodePath(path, StandardCharsets.UTF_8.displayName()), authManager.getHeader()));
+        } catch (ObjectNotFoundException e) {
+            throw new ResourceNotFoundException(String.format("Storage path '%s' does not exist.", path));
+        }
     }
 }
