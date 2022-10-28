@@ -72,6 +72,7 @@ CP_GITLAB_INTERNAL_HOST=cp-git.default.svc.cluster.local
 CP_GITLAB_INTERNAL_PORT=30080
 CP_GITLAB_EXTERNAL_PORT=30080
 CP_GITLAB_CERT_DIR=/opt/gitlab/pki
+CP_GITLAB_VERSION=9
 
 # cp-idp config
 IDP_HOST=cp-idp.default.svc.cluster.local
