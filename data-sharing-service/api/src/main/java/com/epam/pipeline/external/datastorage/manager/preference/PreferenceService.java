@@ -18,6 +18,7 @@ package com.epam.pipeline.external.datastorage.manager.preference;
 
 import com.epam.pipeline.external.datastorage.message.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -38,11 +39,13 @@ public class PreferenceService {
 
     private final String preferencesPath;
     private final MessageHelper messageHelper;
+    private final JsonMapper objectMapper;
 
     public PreferenceService(@Value("${preferences.path:}") final String preferencesPath,
                              final MessageHelper messageHelper) {
         this.preferencesPath = preferencesPath;
         this.messageHelper = messageHelper;
+        this.objectMapper = new JsonMapper();
     }
 
     public String getValue(final String name) {
@@ -61,10 +64,12 @@ public class PreferenceService {
         }
     }
 
+    public <T> T getValue(final String name, final TypeReference type) {
+        return parseData(getValue(name), type);
+    }
+
     public Map<String, Map<String, Object>> loadAll() {
         final File preferencesFile = validatePreferencesFileAndGet();
-        final JsonMapper objectMapper = new JsonMapper();
-
         try {
             return objectMapper.readValue(preferencesFile, TypeFactory.defaultInstance()
                     .constructParametricType(Map.class, String.class, Object.class));
@@ -82,5 +87,17 @@ public class PreferenceService {
         Assert.isTrue(Files.exists(preferencesFile) && Files.isRegularFile(preferencesFile),
                 messageHelper.getMessage("preferences.file.not.found"));
         return preferencesFile.toFile();
+    }
+
+    public <T> T parseData(final String data,
+                           final TypeReference type) {
+        if (StringUtils.isBlank(data)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(data, type);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Could not parse json data " + data, e);
+        }
     }
 }

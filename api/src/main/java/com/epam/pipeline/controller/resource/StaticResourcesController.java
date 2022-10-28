@@ -23,6 +23,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +35,8 @@ import java.io.IOException;
 import java.net.FileNameMap;
 import java.net.URLConnection;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -53,7 +56,17 @@ public class StaticResourcesController extends AbstractRestController {
         final String fileName = FilenameUtils.getName(content.getName());
         final MediaType mediaType = getMediaType(fileName);
         writeStreamToResponse(response, content.getContent(), fileName, mediaType,
-                !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType));
+                !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(fileName));
+    }
+
+    private Map<String, String> getCustomHeaders(final String fileName) {
+        final Map<String, Map<String, String>> headers = preferenceManager.getPreference(
+                SystemPreferences.DATA_SHARING_STATIC_HEADERS);
+        final String extension = FilenameUtils.getExtension(fileName);
+        if (MapUtils.isEmpty(headers) || !headers.containsKey(extension)) {
+            return Collections.emptyMap();
+        }
+        return headers.get(extension);
     }
 
     private MediaType getMediaType(final String fileName) {

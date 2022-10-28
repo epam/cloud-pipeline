@@ -19,8 +19,10 @@ package com.epam.pipeline.external.datastorage.controller.resource;
 import com.epam.pipeline.external.datastorage.controller.AbstractRestController;
 import com.epam.pipeline.external.datastorage.manager.preference.PreferenceService;
 import com.epam.pipeline.external.datastorage.manager.resource.StaticResourcesService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
@@ -35,6 +37,8 @@ import java.io.InputStream;
 import java.net.FileNameMap;
 import java.net.URLConnection;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 
 @RestController
 @Api(value = "Static resources API")
@@ -45,6 +49,7 @@ public class StaticResourcesController extends AbstractRestController {
     private static final FileNameMap FILE_NAME_MAP = URLConnection.getFileNameMap();
     private static final String STATIC_RESOURCES = "/static-resources/";
     private static final String UI_STORAGE_STATIC_PREVIEW_MASK = "ui.storage.static.preview.mask";
+    private static final String DATA_SHARING_STATIC_RESOURCE_HEADERS = "data.sharing.static.resource.headers";
 
     private final StaticResourcesService resourcesService;
     private final PreferenceService preferenceService;
@@ -57,7 +62,18 @@ public class StaticResourcesController extends AbstractRestController {
         final MediaType mediaType = getMediaType(fileName);
         final InputStream content = resourcesService.getContent(path);
         writeStreamToResponse(response, content, fileName, mediaType,
-                !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType));
+                !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(fileName));
+    }
+
+    private Map<String, String> getCustomHeaders(final String fileName) {
+        final Map<String, Map<String, String>> headers =
+                preferenceService.getValue(DATA_SHARING_STATIC_RESOURCE_HEADERS,
+                        new TypeReference<Map<String, Map<String, String>>>() {});
+        final String extension = FilenameUtils.getExtension(fileName);
+        if (MapUtils.isEmpty(headers) || !headers.containsKey(extension)) {
+            return Collections.emptyMap();
+        }
+        return headers.get(extension);
     }
 
     private MediaType getMediaType(final String fileName) {

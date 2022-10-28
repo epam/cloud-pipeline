@@ -125,15 +125,11 @@ public class SystemPreferences {
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
+    private static final String CLOUD_REGION_GROUP = "Cloud region";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
     private static final String FACETED_FILTER_GROUP = "Faceted Filter";
-
-    public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS =
-            new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
-            new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
-            isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -707,7 +703,14 @@ public class SystemPreferences {
             DATA_SHARING_GROUP, pass);
     public static final StringPreference DATA_SHARING_FOLDERS_DIR =
             new StringPreference("data.sharing.storage.folders.directory", null, DATA_SHARING_GROUP, pass);
-    private static final String CLOUD_REGION_GROUP = "Cloud region";
+    public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS =
+            new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
+                    new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
+                    isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
+    public static final ObjectPreference<Map<String, Map<String, String>>> DATA_SHARING_STATIC_HEADERS =
+            new ObjectPreference<>("data.sharing.static.resource.headers", null,
+                    new TypeReference<Map<String, Map<String, String>>>() {}, DATA_SHARING_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, Map<String, String>>>() {}));
 
     // SYSTEM_GROUP
     /**

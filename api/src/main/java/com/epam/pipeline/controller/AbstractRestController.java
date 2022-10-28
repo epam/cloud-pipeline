@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.FileItemIterator;
@@ -40,6 +41,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -162,6 +164,18 @@ public abstract class AbstractRestController {
         }
     }
 
+    protected void writeStreamToResponse(HttpServletResponse response,
+                                         InputStream stream,
+                                         String fileName,
+                                         MediaType contentType,
+                                         boolean inline,
+                                         Map<String, String> headers) throws IOException {
+        try (InputStream in = stream) {
+            writeToResponse(response,
+                    ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType, inline, headers);
+        }
+    }
+
     protected void writeToResponse(final HttpServletResponse response,
                                    final ResultWriter writer) throws IOException {
         writeToResponse(response, writer, MediaType.APPLICATION_OCTET_STREAM);
@@ -177,8 +191,17 @@ public abstract class AbstractRestController {
                                    final ResultWriter writer,
                                    final MediaType contentType,
                                    final boolean inline) throws IOException {
+        writeToResponse(response, writer, contentType, inline, Collections.emptyMap());
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType,
+                                   final boolean inline,
+                                   final Map<String, String> headers) throws IOException {
         response.addHeader(HttpHeaders.CONTENT_DISPOSITION, getContentDisposition(writer, inline));
         response.setContentType(contentType.toString());
+        MapUtils.emptyIfNull(headers).forEach(response::setHeader);
         writer.write(response);
         response.flushBuffer();
     }
