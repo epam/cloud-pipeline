@@ -392,7 +392,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region, 
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region,
                 parentRun.orElse(null), entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);

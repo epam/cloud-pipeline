@@ -496,7 +496,7 @@
     },
     {
         "name": "CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE",
-        "type": "boolen",
+        "type": "boolean",
         "description": "Whether fail or keep a job running if a config file based localization fails",
         "defaultValue": "true",
         "passToWorkers": false
@@ -513,6 +513,13 @@
         "type": "string",
         "description": "Specifies the target ENI to be attached to the node for run",
         "defaultValue": "",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_DEDICATED_INSTANCE",
+        "type": "boolean",
+        "description": "Specifies if the instance should be dedicated (has a dedicated hardware)",
+        "defaultValue": "false",
         "passToWorkers": false
     }
 ]
