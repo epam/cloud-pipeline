@@ -149,6 +149,8 @@ public class SystemPreferences {
             "commit.additional.envs.to.clean", "CP_EXEC_TIMEOUT", COMMIT_GROUP, pass);
     public static final IntPreference GET_LAYERS_COUNT_TIMEOUT = new IntPreference("get.layers.count.timeout", 600,
             COMMIT_GROUP, isGreaterThan(0));
+    public static final IntPreference COMMIT_MAX_LAYERS = new IntPreference("commit.max.layers", 127,
+            COMMIT_GROUP, isGreaterThan(0));
 
     // DATA_STORAGE_GROUP
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(

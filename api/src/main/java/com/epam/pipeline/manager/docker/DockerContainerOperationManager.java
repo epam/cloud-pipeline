@@ -241,8 +241,8 @@ public class DockerContainerOperationManager {
                     .getCommand();
             Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
-                final String lines = reader.lines().collect(Collectors.joining());
-                layersCount = Arrays.stream(lines.split(" ")).count();
+                final String result = reader.lines().collect(Collectors.joining());
+                layersCount = Long.parseLong(result);
             }
             boolean isFinished = sshConnection.waitFor(
                     preferenceManager.getPreference(SystemPreferences.GET_LAYERS_COUNT_TIMEOUT), TimeUnit.SECONDS);

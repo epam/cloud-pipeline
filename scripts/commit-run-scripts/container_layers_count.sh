@@ -15,7 +15,9 @@
 # limitations under the License.
 
 image=`docker ps --filter "id=$1" --format "{{.Image}}"`
-if [[ "$image" != "" ]]
+if [[ "$image" = "" ]]
 then
-  docker image inspect $image -f ''{{.RootFS.Layers}}''
+  exit 1
+else
+  docker history $image -q | wc -l
 fi
