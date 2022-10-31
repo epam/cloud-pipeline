@@ -178,11 +178,11 @@ docker build    $DOCKERS_SOURCES_PATH/cp-git \
 docker push "$CP_GITLAB_DIST_NAME"
 
 # 15.4.3 version
-CP_GITLAB_DIST_NAME=${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-15-${DOCKERS_VERSION}"}
+CP_GITLAB_15_DIST_NAME=${CP_GITLAB_15_DIST_NAME:-"$CP_DIST_REPO_NAME:git-15-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 -t "$CP_GITLAB_DIST_NAME" \
                 --build-arg BASE_IMAGE="gitlab/gitlab-ce:15.4.3-ce.0"
-docker push "$CP_GITLAB_DIST_NAME"
+docker push "$CP_GITLAB_15_DIST_NAME"
 
 # Notifier
 CP_NOTIFIER_DIST_NAME=${CP_NOTIFIER_DIST_NAME:-"$CP_DIST_REPO_NAME:notifier-${DOCKERS_VERSION}"}
