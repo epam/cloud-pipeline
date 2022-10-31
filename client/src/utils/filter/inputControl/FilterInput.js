@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,6 @@ import 'codemirror/addon/edit/trailingspace';
 
 @observer
 export default class FilterInput extends React.Component {
-
   static propTypes = {
     className: PropTypes.string,
     defaultValue: PropTypes.string,
@@ -79,7 +78,10 @@ export default class FilterInput extends React.Component {
 
   _onCodeChange = (editor, change) => {
     if (this.props.onEdit && change.from) {
-      this.props.onEdit(editor.getValue(), change.from.ch + (change.from.sticky === 'after' ? -1 : 0));
+      this.props.onEdit(
+        editor.getValue(),
+        change.from.ch + (change.from.sticky === 'after' ? -1 : 0)
+      );
     }
   };
 
@@ -168,10 +170,10 @@ export default class FilterInput extends React.Component {
     this.codeMirrorInstance.off('beforeChange', this._beforeChange);
     if (code) {
       this.codeMirrorInstance.setValue(code || '');
-      this.codeMirrorInstance.focus();
       if (position !== undefined) {
         this.codeMirrorInstance.setCursor({line: 0, ch: position});
       }
+      setTimeout(() => this.codeMirrorInstance.focus(), 0);
     }
     this.codeMirrorInstance.on('change', this._onCodeChange);
     this.codeMirrorInstance.on('keyHandled', this._keyHandled);
@@ -218,6 +220,7 @@ export default class FilterInput extends React.Component {
           token: ['variable-2']
         },
         {
+          // eslint-disable-next-line max-len
           regex: /(\s)*(<|<=|=|!=|>=|>)(\s)*('(?:[^\\]|\\.)*?(?:'|$)|"(?:[^\\]|\\.)*?(?:"|$)|[^\s'"()[\]{}/\\]+)/,
           token: [null, null, null, 'comment']
         }
