@@ -52,6 +52,8 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final Set<String> prePulledImages;
     private final String availabilityZone;
     private final String networkInterface;
+    private final boolean isDedicated;
+
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -109,6 +111,10 @@ public class NodeUpCommand extends AbstractClusterCommand {
         if (StringUtils.isNotBlank(networkInterface)) {
             commands.add("--network_interface");
             commands.add(networkInterface);
+        }
+        if (isDedicated) {
+            commands.add("--dedicated");
+            commands.add("True");
         }
         return commands;
     }

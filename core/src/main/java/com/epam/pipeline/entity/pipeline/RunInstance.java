@@ -63,6 +63,13 @@ public class RunInstance {
     private String availabilityZone;
     private String networkInterfaceId;
 
+    /**
+     * Defines if instance should be created as dedicated,
+     * can be useful in case of BYOL (Bring Your Own License) case
+     */
+    private boolean dedicated;
+
+
     public RunInstance(final String nodeType,
                        final Integer nodeDisk,
                        final Integer effectiveNodeDisk,
