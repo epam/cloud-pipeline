@@ -374,7 +374,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(dependsOnMethods = {"changeDescriptionAndValidate"})
+    @Test(dependsOnMethods = {"changeDescriptionAndValidate"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-474"})
     public void changeLtsDurationAndValidate() {
         navigateToLibrary()
@@ -386,7 +386,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
     }
 
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(dependsOnMethods = {"changeLtsDurationAndValidate"})
+    @Test(dependsOnMethods = {"changeLtsDurationAndValidate"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-473"})
     public void changeStsDurationAndValidate() {
         navigateToLibrary()
