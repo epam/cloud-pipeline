@@ -410,7 +410,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkConfigureClusterLabel(String label) {
-        context().find(byXpath(".//div[@class='ant-row-flex ant-row-flex-end']/a"))
+        context().find(byXpath(".//div[@class='ant-row-flex launch-pipeline-form__form-item-container']/a"))
                 .shouldBe(visible).shouldHave(text(label));
         return this;
     }
