@@ -234,7 +234,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .ensure(taskWithName(gridEngineAutoscalingTask), visible)
                 .click(taskWithName(gridEngineAutoscalingTask))
-                .waitForLog(String.format("Additional worker with host=%s has been stopped.",
+                .waitForLog(String.format("Additional worker %s has been scaled down.",
                         String.format("pipeline-%s", childRunID2)));
 
         navigationMenu()
