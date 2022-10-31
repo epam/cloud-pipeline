@@ -142,7 +142,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .clickEditStorageButton()
             .clickDeleteStorageButton()
             .clickCrossButton()
-            .cancel()
+            .clickCancel()
             .validateStorage(storage);
     }
 
