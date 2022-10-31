@@ -1,7 +1,6 @@
 import datetime
 import glob
 import json
-import math
 import os
 import time
 
@@ -303,8 +302,9 @@ class MachineRun(object):
                     'Analysis configuration is misconfigured. Failed to find configuration entry %s.' % self.settings.configuration_entry_name)
             configuration['entries'] = [target_entry]
             if self.settings.estimate_size:
-                size_gb = max(MIN_LUSTRE_SIZE,
-                              math.ceil(self.estimate_disk_size(run_folder) * self.settings.data_size_multiplier))
+                data_size = int(self.estimate_disk_size(run_folder))
+                Logger.info('Estimated BCL size is %d Gb.' % data_size, task_name=self.machine_run)
+                size_gb = max(MIN_LUSTRE_SIZE, data_size * self.settings.data_size_multiplier)
                 Logger.info('Requesting %d Gb file system for machine run %s.' % (size_gb, self.machine_run), task_name=self.machine_run)
                 target_entry['configuration']['parameters']['CP_CAP_SHARE_FS_SIZE'] = {
                     "value": size_gb,
