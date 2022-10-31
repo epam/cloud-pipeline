@@ -251,7 +251,7 @@ public class PipelineRunController extends AbstractRestController {
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<Long> getContainerLayersCount(@PathVariable(value = RUN_ID) Long runId) {
-            return Result.success(runApiService.getContainerLayersCount(runId));
+        return Result.success(runApiService.getContainerLayersCount(runId));
     }
 
     @GetMapping(value = "/run/{runId}/commit/check")
