@@ -44,7 +44,30 @@ if [ ! -f "$APP_PATH/$DASH_APP_ENTRYPOINT" ]; then
     exit 1
 fi
 
-export LOG_DIR_PATH="/cloud-home/${OWNER}/DashApps/log"
+user_default_storage_id=$(curl -s -k \
+                                -X GET \
+                                -H "Authorization: Bearer $API_TOKEN" \
+                                "$API/whoami" \
+                            | jq -r '.payload.defaultStorageId')
+if [ "$user_default_storage_id" ] && [ "$user_default_storage_id" != null ]; then
+    user_default_storage_mountpoint=$(curl -s -k \
+                                    -X GET \
+                                    -H "Authorization: Bearer $API_TOKEN" \
+                                    "$API/datastorage/$user_default_storage_id/load" \
+                                | jq -r '.payload.mountPoint')
+    if [ "$user_default_storage_mountpoint" ] && [ "$user_default_storage_mountpoint" != null ]; then
+        if [ -d "$user_default_storage_mountpoint" ]; then
+            export LOG_DIR_PATH="${user_default_storage_mountpoint}/DashApps/log"
+        else
+            echo "[ERROR] User default storage ($user_default_storage_id) is not mounted to the instance at $user_default_storage_mountpoint"
+        fi
+    else
+        echo "[ERROR] User default storage ($user_default_storage_id) mountpoint can not be found"
+    fi
+else
+    echo "[ERROR] User default storage was not found. '/home/${OWNER}/DashApps/log' directory will be used for logs"
+    export LOG_DIR_PATH="/home/${OWNER}/DashApps/log"
+fi
 mkdir -p $LOG_DIR_PATH
 
 export DASH_CPU_NUM="${DASH_CPU_NUM:-$(nproc --all)}"
