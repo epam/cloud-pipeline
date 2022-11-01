@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -153,7 +154,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .selectStorage(storage)
                 .createFolder(folder)
                 .messageShouldAppear(String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
-        clickCanceButtonlIfItIsDisplayed();
+        clickCancelButtonIfItIsDisplayed();
         refresh();
     }
 
@@ -209,7 +210,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .createNfsMount("/" + storage, storage)
                 .messageShouldAppear(String.format("Error: data storage with name: '%s' or path: '%s' already exists.",
                         storage, nfsPrefix + storage));
-        clickCanceButtonlIfItIsDisplayed();
+        clickCancelButtonIfItIsDisplayed();
         refresh();
     }
 
@@ -314,7 +315,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                         .messageShouldAppear(String.format(
                                 "Could not create nfs datastorage '%s', mount point '%s' is in black list!", nfsPrefix +
                                         mountPointStorage, value))
-                        .also(this::clickCanceButtonlIfItIsDisplayed)
+                        .also(this::clickCancelButtonIfItIsDisplayed)
         );
 }
 
@@ -324,7 +325,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .createNfsMount("/", nfsPrefix)
                 .messageShouldAppear("Invalid path")
-                .also(this::clickCanceButtonlIfItIsDisplayed);
+                .also(this::clickCancelButtonIfItIsDisplayed);
 
     }
 
@@ -390,9 +391,11 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         $(byClassName("pipelines-library-tree-node-folder_root")).should(appear);
     }
 
-    private void clickCanceButtonlIfItIsDisplayed() {
-        if($(button("Cancel")).isDisplayed()){
-            $(button("Cancel")).click();
+    private void clickCancelButtonIfItIsDisplayed() {
+        SelenideElement cancel = ($(button("Cancel")).isDisplayed()) ? $(button("Cancel"))
+                : $(button("CANCEL"));
+        if(cancel.isDisplayed()){
+            cancel.click();
         }
     }
 
