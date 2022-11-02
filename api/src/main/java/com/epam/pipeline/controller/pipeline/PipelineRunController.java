@@ -244,7 +244,7 @@ public class PipelineRunController extends AbstractRestController {
         );
     }
 
-    @GetMapping(value = "/run/$id/layers")
+    @GetMapping(value = "/run/{runId}/layers")
     @ApiOperation(
         value = "Gets run docker container layers count.",
         notes = "Gets run docker container layers count.",
