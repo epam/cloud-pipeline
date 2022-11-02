@@ -167,6 +167,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .sleep(1, SECONDS)
                                 .click(SAVE)
                                 .sleep(3, SECONDS)
+                                .ensure(SAVE, disabled)
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType))
                                 .dropDownCount(INSTANCE_TYPE));
