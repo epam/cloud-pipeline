@@ -66,8 +66,7 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
         final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, storage, STORAGE_FOLDER,
                 getPipelineName());
         new PipelineCodeTabAO(getPipelineName())
-             .ensure(RUN, not(disabled))
-             .runPipeline()
+            .runPipeline()
             .addOutputParameter("output", pathToFile)
             .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);
