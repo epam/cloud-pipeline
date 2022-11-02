@@ -25,6 +25,9 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static com.codeborne.selenide.Condition.disabled;
+import static com.codeborne.selenide.Condition.not;
+import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
@@ -63,7 +66,8 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
         final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, storage, STORAGE_FOLDER,
                 getPipelineName());
         new PipelineCodeTabAO(getPipelineName())
-            .runPipeline()
+             .ensure(RUN, not(disabled))
+             .runPipeline()
             .addOutputParameter("output", pathToFile)
             .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);

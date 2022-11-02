@@ -44,7 +44,6 @@ public class Launch_NonRequiredParameterTest extends AbstractAutoRemovingPipelin
                                 .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
                 .ensure(RUN, not(disabled))
-
                 .runPipeline()
                 .validateThereIsParameterOfType("param", "value", ParameterType.STRING, false);
     }
