@@ -20,7 +20,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.Collections;
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,16 +42,28 @@ public class DataStorageTagProviderManager {
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
 
-    public void createFileTags(final AbstractDataStorage storage,
+    public Map<String, String> createFileTags(final AbstractDataStorage storage,
                                final String path,
                                final String version) {
         final String authorizedUser = authManager.getAuthorizedUser();
         final String absolutePath = storage.resolveAbsolutePath(path);
-        final Map<String, String> defaultTags = Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, authorizedUser);
+        final Map<String, String> defaultTags = new HashMap<>();
+        defaultTags.put(ProviderUtils.OWNER_TAG_KEY, authorizedUser);
+
+        final String creationDateTagName = preferenceManager.getPreference(SystemPreferences.STORAGE_CREATION_TAG_NAME);
+        if (StringUtils.isNotBlank(creationDateTagName)) {
+            final Map<String, String> tags = loadFileTags(storage, path, version);
+            final String creationDate = tags.containsKey(creationDateTagName) ?
+                    tags.get(creationDateTagName) :
+                    LocalDate.now().toString();
+            defaultTags.put(creationDateTagName, creationDate);
+        }
+
         tagManager.insert(storage.getRootId(), new DataStorageObject(absolutePath, null), defaultTags);
         if (storage.isVersioningEnabled()) {
             tagManager.insert(storage.getRootId(), new DataStorageObject(absolutePath, version), defaultTags);
         }
+        return defaultTags;
     }
 
     public Map<String, String> loadFileTags(final AbstractDataStorage storage,

@@ -1127,7 +1127,8 @@ public class DataStorageManager implements SecuredEntityManager {
                                                   final String path,
                                                   final byte[] contents) throws DataStorageException {
         final DataStorageFile file = storageProviderManager.createFile(storage, path, contents);
-        tagProviderManager.createFileTags(storage, path, file.getVersion());
+        final Map<String, String> tags = tagProviderManager.createFileTags(storage, path, file.getVersion());
+        storageProviderManager.updateObjectTags(storage, path, tags, file.getVersion());
         return file;
     }
 
@@ -1135,7 +1136,8 @@ public class DataStorageManager implements SecuredEntityManager {
                                                   final String path, 
                                                   final InputStream contentStream) {
         final DataStorageFile file = storageProviderManager.createFile(storage, path, contentStream);
-        tagProviderManager.createFileTags(storage, path, file.getVersion());
+        final Map<String, String> tags = tagProviderManager.createFileTags(storage, path, file.getVersion());
+        storageProviderManager.updateObjectTags(storage, path, tags, file.getVersion());
         return file;
     }
 
