@@ -24,6 +24,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
@@ -67,7 +69,8 @@ public class LaunchParametersRoleModelTest
                 .clearAndFillPipelineFile(
                         getPipelineName().toLowerCase() + ".sh",
                         Utils.readResourceFully(shellTemplate)
-                );
+                )
+                .sleep(2, TimeUnit.SECONDS);
 
         addAccountToPipelinePermissions(user, getPipelineName());
 
