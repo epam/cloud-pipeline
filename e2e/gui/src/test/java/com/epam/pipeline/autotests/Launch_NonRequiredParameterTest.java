@@ -15,12 +15,17 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.ParameterType;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
+
+import static com.codeborne.selenide.Condition.disabled;
+import static com.codeborne.selenide.Condition.not;
+import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 
 public class Launch_NonRequiredParameterTest extends AbstractAutoRemovingPipelineRunningTest {
 
@@ -38,6 +43,8 @@ public class Launch_NonRequiredParameterTest extends AbstractAutoRemovingPipelin
                         Utils.readResourceFully(CONFIG_JSON)
                                 .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
+                .ensure(RUN, not(disabled))
+
                 .runPipeline()
                 .validateThereIsParameterOfType("param", "value", ParameterType.STRING, false);
     }
