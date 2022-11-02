@@ -185,6 +185,8 @@ public class SystemPreferences {
             "storage.webdav.access.duration.seconds",  Constants.SECONDS_IN_DAY, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final BooleanPreference DATA_STORAGE_POLICY_BACKUP_VISIBLE_NON_ADMINS =
         new BooleanPreference("storage.policy.backup.visible.non.admins", true, DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_CREATION_TAG_NAME = new StringPreference(
+            "storage.creation.tag.name", null, DATA_STORAGE_GROUP, pass);
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
