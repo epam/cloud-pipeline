@@ -925,8 +925,8 @@ public class RoleModelTest
     private PipelineCodeTabAO getFirstVersionOfPipeline(final String pipelineName) {
         return navigationMenu()
                 .library()
-                .clickOnPipeline(pipelineName)
                 .sleep(2, SECONDS)
+                .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .codeTab();
     }
