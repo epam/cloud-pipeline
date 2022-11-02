@@ -69,20 +69,6 @@ class HcsFileTagProcessor:
         return metadata_dict
 
     @staticmethod
-    def find_in_xml(element, name):
-        if element is None:
-            return None
-        else:
-            return element.find(name)
-
-    @staticmethod
-    def find_all_in_xml(element, name):
-        if element is None:
-            return []
-        else:
-            return element.findall(name)
-
-    @staticmethod
     def read_well_tags(hcs_root_path):
         result = {}
         tags_folder = os.path.join(hcs_root_path, 'assaylayout')
@@ -91,11 +77,11 @@ class HcsFileTagProcessor:
         for xml in glob.glob(os.path.join(tags_folder, '*.xml')):
             xml_tags = ET.parse(xml).getroot()
             ome_schema = HcsParsingUtils.extract_xml_schema(xml_tags)
-            layers = HcsFileTagProcessor.find_all_in_xml(xml_tags, ome_schema + 'Layer')
+            layers = HcsParsingUtils.find_all_in_xml(xml_tags, ome_schema + 'Layer')
             if not layers:
-                entry = HcsFileTagProcessor.find_in_xml(xml_tags, ome_schema + 'AssayLayoutEntry')
-                layout = HcsFileTagProcessor.find_in_xml(entry, ome_schema + 'AssayLayout')
-                layers = HcsFileTagProcessor.find_all_in_xml(layout, ome_schema + 'Layer')
+                entry = HcsParsingUtils.find_in_xml(xml_tags, ome_schema + 'AssayLayoutEntry')
+                layout = HcsParsingUtils.find_in_xml(entry, ome_schema + 'AssayLayout')
+                layers = HcsParsingUtils.find_all_in_xml(layout, ome_schema + 'Layer')
                 if not layers:
                     log_run_info('[{}] {}'.format(
                         hcs_root_path, 'Failed to extract tags from %s, unexpected XML schema.' % xml),
