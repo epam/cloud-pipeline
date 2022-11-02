@@ -100,16 +100,18 @@ class GitCommitDialog extends React.Component {
       <Row type="flex" justify="end">
         <Button
           onClick={this.onCancel}
+          id="vs-actions-commit-modal-cancel-btn"
         >
-          Cancel
+          CANCEL
         </Button>
         <Button
           type="primary"
           disabled={!this.messageIsCorrect || !selectedFiles.length || commitInProgress}
           onClick={this.onOk}
           loading={commitInProgress}
+          id="vs-actions-commit-modal-commit-btn"
         >
-          Commit
+          COMMIT
         </Button>
       </Row>
     );

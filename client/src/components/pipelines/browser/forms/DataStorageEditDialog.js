@@ -266,7 +266,7 @@ export class DataStorageEditDialog extends React.Component {
         <Row type="flex" justify="end">
           <Button
             id="edit-storage-dialog-cancel-button"
-            onClick={this.props.onCancel}>Cancel</Button>
+            onClick={this.props.onCancel}>CANCEL</Button>
         </Row>
       );
     }
@@ -277,13 +277,13 @@ export class DataStorageEditDialog extends React.Component {
       <Row>
         <Button
           id="edit-storage-dialog-cancel-button"
-          onClick={this.props.onCancel}>Cancel</Button>
+          onClick={this.props.onCancel}>CANCEL</Button>
         <Button
           id="edit-storage-dialog-create-button"
           type="primary"
           htmlType="submit"
           disabled={this.isNfsMount && !this.isStoragePathValid}
-          onClick={this.handleSubmit}>Create</Button>
+          onClick={this.handleSubmit}>CREATE</Button>
       </Row>
     );
   };
@@ -296,7 +296,7 @@ export class DataStorageEditDialog extends React.Component {
           <Row type="flex" justify="start">
             <Button
               id="edit-storage-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}>Cancel</Button>
+              onClick={this.closeDeleteDialog}>CANCEL</Button>
           </Row>
         </Col>
         <Col span={12}>
@@ -304,7 +304,7 @@ export class DataStorageEditDialog extends React.Component {
             <Button
               id="edit-storage-delete-dialog-unregister-button"
               type="danger"
-              onClick={() => this.onDeleteClicked(false)}>Unregister</Button>
+              onClick={() => this.onDeleteClicked(false)}>UNREGISTER</Button>
             {
               !isMirrorStorage && (
                 <Button
@@ -312,7 +312,7 @@ export class DataStorageEditDialog extends React.Component {
                   type="danger"
                   onClick={() => this.onDeleteClicked(true)}
                 >
-                  Delete
+                  DELETE
                 </Button>
               )
             }

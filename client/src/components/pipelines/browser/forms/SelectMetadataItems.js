@@ -385,13 +385,15 @@ class SelectMetadataItems extends React.Component {
           <div className={styles.footer}>
             <Button
               onClick={onClose}
+              id="select-metadata-items-modal-cancel-btn"
             >
-              Cancel
+              CANCEL
             </Button>
             <Button
               type="primary"
               disabled={disabled}
               onClick={this.onOkClicked}
+              id="select-metadata-items-modal-ok-btn"
             >
               OK {selection.length > 0 ? `(${selection.length} entities)` : ''}
             </Button>

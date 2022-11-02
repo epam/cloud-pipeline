@@ -54,8 +54,20 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
     const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
-        <Button onClick={this.props.onCancel}>Cancel</Button>
-        <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>Create</Button>
+        <Button
+          onClick={this.props.onCancel}
+          id="pipeline-storage-rule-create-modal-cancel-btn"
+        >
+          CANCEL
+        </Button>
+        <Button
+          type="primary"
+          htmlType="submit"
+          onClick={this.handleSubmit}
+          id="pipeline-storage-rule-create-modal-create-btn"
+        >
+          CREATE
+        </Button>
       </Row>
     );
     const onClose = () => {

@@ -564,8 +564,9 @@ class CopyMetadataEntitiesDialog extends React.Component {
             <Button
               disabled={disabled}
               onClick={() => onCancel()}
+              id="copy-metadata-modal-cancel-btn"
             >
-              Cancel
+              CANCEL
             </Button>
             <div
               className={styles.actions}
@@ -574,15 +575,17 @@ class CopyMetadataEntitiesDialog extends React.Component {
                 disabled={disabled || !selectedFolder || selectedFolder.id === folderId}
                 type="primary"
                 onClick={() => this.doOperation()}
+                id="copy-metadata-modal-copy-btn"
               >
-                Copy
+                COPY
               </Button>
               <Button
                 disabled={disabled || !selectedFolder || selectedFolder.id === folderId}
                 type="primary"
                 onClick={() => this.doOperation(true)}
+                id="copy-metadata-modal-move-btn"
               >
-                Move
+                MOVE
               </Button>
             </div>
           </div>

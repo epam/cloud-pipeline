@@ -125,7 +125,7 @@ class CreateLinkForm extends React.Component {
       <Modal
         title="Create tool link"
         visible={visible}
-        okText="Link"
+        okText="LINK"
         onCancel={onClose}
         closable={!disabled}
         maskClosable={!disabled}
@@ -134,15 +134,17 @@ class CreateLinkForm extends React.Component {
             <Button
               disabled={disabled}
               onClick={onClose}
+              id="create-tool-link-modal-cancel-btn"
             >
-              Cancel
+              CANCEL
             </Button>
             <Button
               type="primary"
               disabled={disabled || !selectedGroupId}
               onClick={this.onCreateLinkClicked}
+              id="create-tool-link-modal-create-link-btn"
             >
-              Create Link
+              CREATE LINK
             </Button>
           </Row>
         )}

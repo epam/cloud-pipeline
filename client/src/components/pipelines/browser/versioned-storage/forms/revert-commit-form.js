@@ -60,8 +60,20 @@ class RevertCommitForm extends React.Component {
     const {getFieldDecorator, resetFields} = form;
     const modalFooter = pending ? false : (
       <Row>
-        <Button onClick={onCancel}>Cancel</Button>
-        <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>Revert</Button>
+        <Button
+          onClick={onCancel}
+          id="revert-commit-modal-cancel-btn"
+        >
+          CANCEL
+        </Button>
+        <Button
+          type="primary"
+          htmlType="submit"
+          onClick={this.handleSubmit}
+          id="revert-commit-modal-revert-btn"
+        >
+          REVERT
+        </Button>
       </Row>
     );
     const onClose = () => resetFields();

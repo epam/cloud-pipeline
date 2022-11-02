@@ -376,7 +376,7 @@ export default class AvailableStoragesBrowser extends Component {
         footer={
           <Row type="flex" justify="end">
             <Button onClick={this.onCancel}>
-              Cancel
+              CANCEL
             </Button>
             <Button
               type="primary"

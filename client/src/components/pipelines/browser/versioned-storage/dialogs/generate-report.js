@@ -319,14 +319,14 @@ class GenerateReportDialog extends localization.LocalizedReactComponent {
           onClick={this.handleCancel}
           id={this.getHtmlId('cancel-btn')}
         >
-          Cancel
+          CANCEL
         </Button>
         <Button
           type="primary"
           onClick={this.handleOk}
           id={this.getHtmlId('ok-btn')}
         >
-          Download report
+          DOWNLOAD REPORT
         </Button>
       </Row>);
     return (

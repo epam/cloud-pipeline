@@ -132,7 +132,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
           <Row type="flex" justify="start">
             <Button
               id="edit-configuration-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}>Cancel</Button>
+              onClick={this.closeDeleteDialog}>CANCEL</Button>
           </Row>
         </Col>
         <Col span={12}>
@@ -142,7 +142,7 @@ export default class EditDetachedConfigurationForm extends React.Component {
                 <Button
                   id="edit-configuration-delete-dialog-delete-button"
                   type="danger"
-                  onClick={() => this.onDeleteClicked()}>Delete</Button>
+                  onClick={() => this.onDeleteClicked()}>DELETE</Button>
               )
             }
           </Row>

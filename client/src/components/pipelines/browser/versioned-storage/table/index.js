@@ -355,8 +355,9 @@ class VersionedStorageTable extends React.Component {
       <Row type="flex" justify="space-between">
         <Button
           onClick={this.hideDeleteDialog}
+          id="versioned-storage-delete-item-modal-cancel-btn"
         >
-          Cancel
+          CANCEL
         </Button>
         <Button
           type="danger"
@@ -364,8 +365,9 @@ class VersionedStorageTable extends React.Component {
             onDeleteDocument && onDeleteDocument(deletingDocument, comment);
             this.hideDeleteDialog();
           }}
+          id="versioned-storage-delete-item-modal-delete-btn"
         >
-          Delete
+          DELETE
         </Button>
       </Row>
     );

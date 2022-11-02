@@ -856,8 +856,10 @@ class ConfigureClusterDialog extends React.Component {
         }
         onCancel={this.props.onClose}
         onOk={this.onOkClicked}
+        cancelText="CANCEL"
         visible={this.props.visible}
-        width={566}>
+        width={566}
+      >
         <div>
           <Row type="flex">
             <div style={{marginLeft: LEFT_MARGIN}}>

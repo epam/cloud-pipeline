@@ -609,8 +609,9 @@ class CloudCredentialsProfileForm extends React.Component {
                     disabled={loading}
                     type="danger"
                     onClick={this.onRemoveClicked}
+                    id="cloud-credentials-profile-modal-remove-btn"
                   >
-                    Remove
+                    REMOVE
                   </Button>
                 )
               }
@@ -620,16 +621,18 @@ class CloudCredentialsProfileForm extends React.Component {
                 className={styles.button}
                 disabled={loading}
                 onClick={onClose}
+                id="cloud-credentials-profile-modal-cancel-btn"
               >
-                Cancel
+                CANCEL
               </Button>
               <Button
                 className={styles.button}
                 type="primary"
                 disabled={loading || !this.modified || !this.valid}
                 onClick={this.onSaveClicked}
+                id="cloud-credentials-profile-modal-ok-btn"
               >
-                {isNew ? 'Create' : 'Update'}
+                {isNew ? 'CREATE' : 'UPDATE'}
               </Button>
             </div>
           </div>

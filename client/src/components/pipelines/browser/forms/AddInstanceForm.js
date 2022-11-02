@@ -499,12 +499,12 @@ export default class AddInstanceForm extends React.Component {
         <Row type="flex" justify="end" className={styles.actions}>
           <Button
             id="add-instance-form-cancel-button"
-            onClick={this.props.onCancel}>Cancel</Button>
+            onClick={this.props.onCancel}>CANCEL</Button>
           <Button
             id="add-instance-form-create-button"
             type="primary"
             htmlType="submit"
-            onClick={this.handleSubmit}>Create</Button>
+            onClick={this.handleSubmit}>CREATE</Button>
         </Row>
       );
     return (

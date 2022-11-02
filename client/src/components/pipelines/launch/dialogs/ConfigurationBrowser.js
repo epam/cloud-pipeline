@@ -382,9 +382,14 @@ export default class ConfigurationBrowser extends React.Component {
             <Col />
             <Col className={styles.buttonsContainer}>
               <Button
-                onClick={() => this.onCancelClicked()}>Cancel</Button>
+                onClick={() => this.onCancelClicked()}
+                id="configuration-browser-select-modal-cancel-btn"
+              >
+                CANCEL
+              </Button>
               <Button
                 type="primary"
+                id="configuration-browser-select-modal-ok-btn"
                 disabled={
                   !this.state.selectedConfiguration ||
                   !roleModel.executeAllowed(this.state.selectedConfiguration)

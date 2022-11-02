@@ -84,7 +84,7 @@ class CheckoutDialog extends React.Component {
               id="cancel-checkout-button"
               onClick={onClose}
             >
-              Cancel
+              CANCEL
             </Button>
             <Button
               id="do-checkout-button"
@@ -92,7 +92,7 @@ class CheckoutDialog extends React.Component {
               disabled={!version || version === repository?.revision}
               onClick={this.onSelect}
             >
-              Change Revision
+              CHANGE REVISION
             </Button>
           </div>
         )}

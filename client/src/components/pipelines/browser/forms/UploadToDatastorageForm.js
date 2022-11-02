@@ -127,8 +127,10 @@ export default class UploadToDatastorageForm extends React.Component {
           <Row type="flex" align="middle" justify="end">
             <Button
               onClick={this.props.onClose}
-              style={{marginRight: 5}}>
-              Cancel
+              style={{marginRight: 5}}
+              id="upload-to-datastorage-modal-cancel-btn"
+            >
+              CANCEL
             </Button>
             <Button
               onClick={this.onTransfer}
@@ -138,8 +140,10 @@ export default class UploadToDatastorageForm extends React.Component {
                 this.state.pathFields.length === 0 ||
                 !this.state.threadsCountValid
               }
-              style={{marginRight: 5}}>
-              Start download
+              style={{marginRight: 5}}
+              id="upload-to-datastorage-modal-ok-btn"
+            >
+              START DOWNLOAD
             </Button>
           </Row>
         }
