@@ -31,12 +31,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
-import static com.codeborne.selenide.Condition.appears;
-import static com.codeborne.selenide.Condition.empty;
-import static com.codeborne.selenide.Condition.not;
-import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.value;
-import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Condition.*;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
@@ -167,7 +162,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .sleep(1, SECONDS)
                                 .click(SAVE)
                                 .sleep(3, SECONDS)
-                                .ensure(SAVE, disabled)
+                                .ensureDisable(SAVE)
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType))
                                 .dropDownCount(INSTANCE_TYPE));
