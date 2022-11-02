@@ -37,6 +37,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.sleep;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
 
 public interface Authorization extends Navigation {
@@ -140,6 +141,7 @@ public interface Authorization extends Navigation {
 
     default void addAccountToPipelinePermissions(Account account, String pipelineName) {
         library()
+                .sleep(2, SECONDS)
                 .clickOnPipeline(pipelineName)
                 .clickEditButton()
                 .clickOnPermissionsTab()
