@@ -252,7 +252,7 @@ public class SamplesMetadataTest
                             final String r2value = r2key.getValue();
                             r2key.changeValue(r2value.replace(nonExistingPath, path(dataStorage)))
                                     .close();
-
+                            refresh();
                             sleep(500, MILLISECONDS);
 
                             row.getCell("R1_Fastq")
