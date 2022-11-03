@@ -65,12 +65,12 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
                     .searchUserEntry(admin.login.toUpperCase())
                     .edit()
                     .resetConfigureRunAs(user.login)
-                    .resetConfigureRunAs(userWithoutCompletedRuns.login)
+                    .resetConfigureRunAs(userWithoutCompletedRuns.login.toLowerCase())
                     .ok();
             tools()
                     .performWithin(registry, group, tool, tool ->
                             tool.permissions()
-                                    .deleteIfPresent(userWithoutCompletedRuns.login)
+                                    .deleteIfPresent(userWithoutCompletedRuns.login.toLowerCase())
                                     .closeAll()
                     );
         });
@@ -160,7 +160,7 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
-                                .deleteIfPresent(userWithoutCompletedRuns.login)
+                                .deleteIfPresent(userWithoutCompletedRuns.login.toLowerCase())
                                 .addNewUser(userWithoutCompletedRuns.login)
                                 .closeAll()
                 );
