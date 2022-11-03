@@ -53,6 +53,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -419,17 +420,20 @@ public class NFSQuotasMonitor {
     }
 
     private void controlNotifications(final Map<Long, NFSDataStorage> nfsMapping, final LocalDateTime checkTime) {
+        final List<NFSQuotaTrigger> triggersToDelete = new ArrayList<>();
         latestTriggers.values().stream()
             .filter(NFSQuotaTrigger::isNotificationRequired)
             .filter(trigger -> trigger.getExecutionTime()
                 .plus(notificationResendTimeout, ChronoUnit.MINUTES)
                 .isBefore(checkTime))
             .forEach(expiredTrigger ->
-                         resendNotification(expiredTrigger, nfsMapping.get(expiredTrigger.getStorageId()), checkTime));
+                         resendNotification(expiredTrigger, nfsMapping.get(expiredTrigger.getStorageId()), checkTime,
+                                 triggersToDelete));
+        ListUtils.emptyIfNull(triggersToDelete).forEach(this::deleteTrigger);
     }
 
     private void resendNotification(final NFSQuotaTrigger expiredTrigger, final NFSDataStorage storage,
-                                    final LocalDateTime checkTime) {
+                                    final LocalDateTime checkTime, final List<NFSQuotaTrigger> triggersToDelete) {
         final NFSStorageMountStatus newStatus = expiredTrigger.getTargetStatus();
         final NFSQuotaNotificationEntry notification = expiredTrigger.getQuota();
         final List<NFSQuotaNotificationRecipient> recipients = expiredTrigger.getRecipients();
@@ -437,7 +441,17 @@ public class NFSQuotasMonitor {
                                                           storage.getMountStatus().equals(newStatus)
                                                           ? null
                                                           : expiredTrigger.getTargetStatusActivationTime());
-        updateTrigger(expiredTrigger.toBuilder().executionTime(checkTime).build());
+        if (expiredTrigger.getQuota().equals(NO_ACTIVE_QUOTAS_NOTIFICATION)) {
+            //NO_ACTIVE_QUOTA is sent only once
+            triggersToDelete.add(expiredTrigger);
+        } else {
+            updateTrigger(expiredTrigger.toBuilder().executionTime(checkTime).build());
+        }
+    }
+
+    private void deleteTrigger(final NFSQuotaTrigger expiredTrigger) {
+        triggersManager.delete(expiredTrigger);
+        latestTriggers.remove(expiredTrigger.getStorageId());
     }
 
     private void updateTrigger(final NFSQuotaTrigger triggerUpdate) {
