@@ -43,6 +43,7 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
     private String updateQuotaTriggerQuery;
     private String findQuotaTriggerQuery;
     private String loadAllQuotaTriggersQuery;
+    private String deleteQuotaTriggerQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void create(final NFSQuotaTrigger triggerEntry) {
@@ -68,6 +69,11 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
     public List<NFSQuotaTrigger> loadAll() {
         return getNamedParameterJdbcTemplate()
             .query(loadAllQuotaTriggersQuery, TriggerDetailsParameters.getRowMapper());
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void delete(final Long storageId) {
+        getJdbcTemplate().update(deleteQuotaTriggerQuery, storageId);
     }
 
     public enum TriggerDetailsParameters {
@@ -138,5 +144,10 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadAllQuotaTriggersQuery(final String loadAllQuotaTriggersQuery) {
         this.loadAllQuotaTriggersQuery = loadAllQuotaTriggersQuery;
+    }
+
+    @Required
+    public void setDeleteQuotaTriggerQuery(String deleteQuotaTriggerQuery) {
+        this.deleteQuotaTriggerQuery = deleteQuotaTriggerQuery;
     }
 }
