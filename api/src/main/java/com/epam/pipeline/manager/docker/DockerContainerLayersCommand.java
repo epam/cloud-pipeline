@@ -23,7 +23,7 @@ import java.util.List;
 @Builder
 public class DockerContainerLayersCommand extends AbstractDockerCommand {
     private static final String LAYERS_COMMAND_TEMPLATE = "curl -k -s \"%s\" | sudo -E /bin/bash " +
-            "--login /dev/stdin %s &> ~/container_layers.log &";
+            "--login /dev/stdin %s";
 
     private final String containerId;
 
