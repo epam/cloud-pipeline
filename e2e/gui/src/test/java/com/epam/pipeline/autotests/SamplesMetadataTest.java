@@ -222,6 +222,8 @@ public class SamplesMetadataTest
                 .uploadMetadata(getFile(wes11repset))
                 .sleep(2, SECONDS)
                 .ensure(byText(metadataFolder), visible);
+                sleep(600, SECONDS);
+                refresh();
     }
 
     @Test(priority = 1, dependsOnMethods = {"metadataUploading"})
@@ -253,7 +255,6 @@ public class SamplesMetadataTest
                             r2key.changeValue(r2value.replace(nonExistingPath, path(dataStorage)))
                                     .close();
                             sleep(500, MILLISECONDS);
-                            sleep(120, SECONDS);
 
                             row.getCell("R1_Fastq")
                                     .ensureCellContainsHyperlink();
