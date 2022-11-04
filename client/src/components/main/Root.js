@@ -66,7 +66,7 @@ import CloudPipelineThemes from '../../themes';
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
-const localization = new AppLocalization.Localization();
+const localization = AppLocalization.localization;
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
