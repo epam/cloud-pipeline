@@ -221,7 +221,8 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         }
 
         public void ensureCellContainsHyperlink() {
-            particularCell.shouldHave(hyperlink());
+            particularCell.findElement(tagName("a")).isDisplayed();
+//                    .shouldHave(hyperlink());
         }
 
         public void ensureCellContains(String substring) {
