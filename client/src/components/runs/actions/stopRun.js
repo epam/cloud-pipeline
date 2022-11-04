@@ -16,13 +16,12 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {computed, observable} from 'mobx';
+import {observable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Checkbox, Icon, message, Modal, Row} from 'antd';
 import moment from 'moment-timezone';
 import CommitRunForm from '../logs/forms/CommitRunForm';
-import {PipelineRunCommitCheck} from '../../../models/pipelines/PipelineRunCommitCheck';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import StopPipeline from '../../../models/pipelines/StopPipeline';
 import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
@@ -94,6 +93,7 @@ export function stopRun (parent, callback) {
     console.warn('"stopRun" function should be called with parent component passed to arguments:');
     console.warn('"stopRun(parent)"');
     console.warn('Parent component should be marked with @runPipelineActions');
+    // eslint-disable-next-line max-len
     throw new Error('"stopRun" function should be called with parent component passed to arguments:');
   }
   const {
@@ -109,9 +109,11 @@ export function stopRun (parent, callback) {
 
 export function terminateRun (parent, callback) {
   if (!parent) {
+    // eslint-disable-next-line max-len
     console.warn('"terminateRun" function should be called with parent component passed to arguments:');
     console.warn('"terminateRun(parent)"');
     console.warn('Parent component should be marked with @runPipelineActions');
+    // eslint-disable-next-line max-len
     throw new Error('"terminateRun" function should be called with parent component passed to arguments:');
   }
   const {
@@ -353,36 +355,15 @@ class StopRunConfirmation extends React.Component {
 
   _commitRunForm;
 
-  @observable
-  _commitCheck = null;
-
   componentDidMount () {
     const {dockerImage, dockerRegistries} = this.props;
     checkCommitAllowedForTool(dockerImage, dockerRegistries)
       .then(allowed => this.setState({commitAllowed: allowed}));
   }
 
-  fetchCommitCheck = async () => {
-    this._commitCheck = new PipelineRunCommitCheck(this.props.runId);
-    await this._commitCheck.fetch();
-  };
-
-  @computed
-  get commitCheck () {
-    if (!this._commitCheck || !this._commitCheck.loaded) {
-      return true;
-    }
-
-    return !!this._commitCheck.value;
-  }
-
   onChange = (e) => {
     this.setState({
       persistState: e.target.checked
-    }, () => {
-      if (e.target.checked) {
-        this.fetchCommitCheck();
-      }
     });
   };
 
@@ -440,16 +421,20 @@ class StopRunConfirmation extends React.Component {
           </Row>
         }
         {
-          this.state.persistState && this.props.canCommitRun && commitAllowed && !maintenanceMode &&
-          <CommitRunForm
-            onInitialized={this.onInitializeForm}
-            visible={this.state.persistState}
-            stopPipeline
-            commitCheck={this.commitCheck}
-            pending={this._commitCheck && this._commitCheck.pending}
-            displayStopPipelineSelector={false}
-            displayDeleteRuntimeFilesSelector={false}
-            defaultDockerImage={this.props.dockerImage} />
+          this.state.persistState &&
+          this.props.canCommitRun &&
+          commitAllowed &&
+          !maintenanceMode && (
+            <CommitRunForm
+              runId={this.props.runId}
+              onInitialized={this.onInitializeForm}
+              visible={this.state.persistState}
+              stopPipeline
+              displayStopPipelineSelector={false}
+              displayDeleteRuntimeFilesSelector={false}
+              defaultDockerImage={this.props.dockerImage}
+            />
+          )
         }
       </div>
     );

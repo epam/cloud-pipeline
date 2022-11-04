@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 import Remote from '../basic/Remote';
 
-export class PipelineRunCommitCheck extends Remote {
-  constructor (id) {
+class PipelineRunLayers extends Remote {
+  constructor (runId) {
     super();
-    this.url = `/run/${id}/commit/check`;
+    this.url = `/run/${runId}/layers`;
   }
 }
+
+export default PipelineRunLayers;
