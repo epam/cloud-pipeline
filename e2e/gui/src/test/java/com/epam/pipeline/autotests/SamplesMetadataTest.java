@@ -16,10 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.*;
-import com.epam.pipeline.autotests.utils.C;
-import com.epam.pipeline.autotests.utils.SelenideElements;
-import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.Utils;
+import com.epam.pipeline.autotests.utils.*;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -33,6 +30,7 @@ import java.util.function.Consumer;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.CollectionCondition.sizeLessThanOrEqual;
 import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
@@ -221,9 +219,8 @@ public class SamplesMetadataTest
                 .uploadMetadata(getFile(wes11repsamples))
                 .uploadMetadata(getFile(wes11repset))
                 .sleep(2, SECONDS)
-                .ensure(byText(metadataFolder), visible);
-                sleep(600, SECONDS);
-                refresh();
+                .ensure(byText(metadataFolder), visible)
+                .sleep(180, SECONDS);
     }
 
     @Test(priority = 1, dependsOnMethods = {"metadataUploading"})
@@ -475,6 +472,7 @@ public class SamplesMetadataTest
                                 )
                                 .click(byText(projectOutput), in(comboboxDropdown()))
                                 .click(save())
+                                .ensure(save(), disabled)
                 );
     }
 
