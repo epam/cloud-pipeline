@@ -220,7 +220,8 @@ public class SamplesMetadataTest
                 .uploadMetadata(getFile(wes11repset))
                 .sleep(2, SECONDS)
                 .ensure(byText(metadataFolder), visible)
-                .sleep(580, SECONDS);
+                .sleep(300, SECONDS)
+                .refresh();
     }
 
     @Test(priority = 1, dependsOnMethods = {"metadataUploading"})
