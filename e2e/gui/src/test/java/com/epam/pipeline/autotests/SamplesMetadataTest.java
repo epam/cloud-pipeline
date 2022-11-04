@@ -220,7 +220,7 @@ public class SamplesMetadataTest
                 .uploadMetadata(getFile(wes11repset))
                 .sleep(2, SECONDS)
                 .ensure(byText(metadataFolder), visible)
-                .sleep(300, SECONDS)
+//                .sleep(300, SECONDS)
                 .refresh();
     }
 
@@ -413,6 +413,7 @@ public class SamplesMetadataTest
                         profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .selectPipeline(pipeline)
                                 .click(save())
+                                .ensure(save(), disabled)
                                 .ensure(pipeline(), valueContains(pipeline))
                                 .ensure(image(), not(empty))
                                 .ensure(instanceType(), text(instanceType))
@@ -489,6 +490,7 @@ public class SamplesMetadataTest
                                 .selectValue(rootEntityType(), rootEntityTypeSampleSet)
                                 .ensure(rootEntityType(), text(rootEntityTypeSampleSet))
                                 .click(save())
+                                .ensure(save(), disabled)
                 );
     }
 
@@ -532,6 +534,7 @@ public class SamplesMetadataTest
                                         )
                                 ).click(byText(sampleNameAutocomplete), in(comboboxDropdown()))
                                 .click(save())
+                                .ensure(save(), disabled)
                                 .sleep(1, SECONDS)
                 );
     }
