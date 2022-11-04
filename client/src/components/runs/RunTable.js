@@ -807,7 +807,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
             }
             if (this.state.pauseConfirmPending) {
               return (
-                <Icon type="loading" style={{width: '100%'}} />
+                <Icon type="loading" style={{width: 40}} />
               );
             }
             return <a
