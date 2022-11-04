@@ -18,19 +18,29 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import classNames from 'classnames';
+import {
+  Alert,
+  message,
+  Modal,
+  Row,
+  Button
+} from 'antd';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import {
   PipelineRunCommitCheck,
   PIPELINE_RUN_COMMIT_CHECK_FAILED
 } from '../../../../models/pipelines/PipelineRunCommitCheck';
+import PipelineRunLayers, {LAYERS_EXCEEDED_DISCLAIMER}
+  from '../../../../models/pipelines/PipelineRunLayers';
 import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
 import CardsPanel from './components/CardsPanel';
 import renderRunCard from './components/renderRunCard';
 import getRunActions from './components/getRunActions';
 import LoadingView from '../../../special/LoadingView';
+import ModalConfirm from '../../../special/ModalConfirm';
 import localization from '../../../../utils/localization';
-import {Alert, message, Modal, Row} from 'antd';
 import {openReRunForm, runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
@@ -53,8 +63,18 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   };
 
   state = {
-    hovered: undefined
+    hovered: undefined,
+    showModalConfirmDialog: null
   };
+
+  @computed
+  get commitMaxLayers () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return preferences.commitMaxLayers;
+    }
+    return undefined;
+  }
 
   get usesActiveRuns () {
     return true;
@@ -87,32 +107,58 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
 
   confirmPause = async (run, warning, actionText, action) => {
     const checkRequest = new PipelineRunCommitCheck(run.id);
-    await checkRequest.fetch();
-    let content;
+    const layersRequest = new PipelineRunLayers(run.id);
+    await Promise.all([
+      checkRequest.fetch(),
+      layersRequest.fetch()
+    ]);
+    const layersExceeded = layersRequest.loaded &&
+      layersRequest.value &&
+      !layersRequest.error &&
+      this.commitMaxLayers &&
+      layersRequest.value >= this.commitMaxLayers;
+    const alerts = [];
     if (checkRequest.loaded && !checkRequest.value) {
-      content = (
+      alerts.push(
         <Alert
           type="error"
-          message={PIPELINE_RUN_COMMIT_CHECK_FAILED} />
+          key="checkRequestError"
+          message={PIPELINE_RUN_COMMIT_CHECK_FAILED}
+          style={{marginBottom: 5}}
+        />
       );
     }
-    Modal.confirm({
-      title: warning,
-      content,
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk: () => action(),
-      okText: actionText,
-      cancelText: 'CANCEL',
-      width: 450
+    if (layersExceeded) {
+      alerts.push(
+        <Alert
+          type="error"
+          key="layersExceeded"
+          message={LAYERS_EXCEEDED_DISCLAIMER}
+          style={{marginBottom: 5}}
+        />
+      );
+    }
+    this.setState({
+      showModalConfirmDialog: {
+        run,
+        alerts,
+        warning,
+        actionText,
+        action,
+        okDisabled: layersExceeded
+      }
     });
+  };
+
+  closeModalConfirmDialog = () => {
+    this.setState({showModalConfirmDialog: null});
   };
 
   pauseRun = async (run) => {
     const hide = message.loading('Pausing...', -1);
     const request = new PausePipeline(run.id);
     await request.send({});
+    this.closeModalConfirmDialog();
     if (request.error) {
       hide();
       message.error(request.error);
@@ -219,6 +265,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   };
 
   render () {
+    const {showModalConfirmDialog} = this.state;
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
@@ -228,6 +275,32 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
     return (
       <div className={styles.container}>
         {this.renderContent()}
+        {showModalConfirmDialog ? (
+          <ModalConfirm
+            onOk={showModalConfirmDialog.action}
+            onCancel={this.closeModalConfirmDialog}
+            visible={!!showModalConfirmDialog}
+            title={showModalConfirmDialog.warning}
+            footer={(
+              <div>
+                <Button
+                  onClick={this.closeModalConfirmDialog}
+                >
+                  CANCEL
+                </Button>
+                <Button
+                  disabled={showModalConfirmDialog.okDisabled}
+                  type="primary"
+                  onClick={showModalConfirmDialog.action}
+                >
+                  {showModalConfirmDialog.actionText}
+                </Button>
+              </div>
+            )}
+          >
+            {showModalConfirmDialog.alerts}
+          </ModalConfirm>
+        ) : null}
       </div>
     );
   }

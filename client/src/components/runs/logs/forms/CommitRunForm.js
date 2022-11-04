@@ -26,6 +26,7 @@ import CommitRunDockerImageInput from './CommitRunDockerImageInput';
 import {
   PIPELINE_RUN_COMMIT_CHECK_FAILED
 } from '../../../../models/pipelines/PipelineRunCommitCheck';
+import {LAYERS_EXCEEDED_DISCLAIMER} from '../../../../models/pipelines/PipelineRunLayers';
 import HiddenObjects from '../../../../utils/hidden-objects';
 
 @Form.create()
@@ -42,6 +43,7 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
     pending: PropTypes.bool,
     visible: PropTypes.bool,
     commitCheck: PropTypes.bool,
+    layersCheck: PropTypes.bool,
     defaultDockerImage: PropTypes.string,
     deleteRuntimeFiles: PropTypes.bool,
     stopPipeline: PropTypes.bool,
@@ -290,6 +292,15 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
                 <Alert
                   type="error"
                   message={PIPELINE_RUN_COMMIT_CHECK_FAILED} />
+                <br />
+              </Row>
+            }
+            {
+              `${this.props.layersCheck}`.toLowerCase() === 'false' &&
+              <Row>
+                <Alert
+                  type="error"
+                  message={LAYERS_EXCEEDED_DISCLAIMER} />
                 <br />
               </Row>
             }

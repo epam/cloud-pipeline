@@ -202,6 +202,9 @@ export default `
 @THEME .cp-accent {
   color: @application-color-accent;
 }
+@THEME .cp-alert-color {
+  color: @alert-warning-icon;
+}
 @THEME .cp-warning {
   color: @color-yellow;
 }

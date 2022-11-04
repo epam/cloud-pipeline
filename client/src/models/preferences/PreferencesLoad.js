@@ -432,6 +432,15 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
+  @computed
+  get commitMaxLayers () {
+    const value = this.getPreferenceValue('commit.max.layers');
+    if (!value || Number.isNaN(value)) {
+      return undefined;
+    }
+    return Number(value);
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

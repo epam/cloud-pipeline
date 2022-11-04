@@ -31,7 +31,8 @@ import {
   Modal,
   Popover,
   Row,
-  Spin
+  Spin,
+  Button
 } from 'antd';
 import SplitPane from 'react-split-pane';
 import {
@@ -48,6 +49,8 @@ import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKu
 import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
+import PipelineRunLayers, {LAYERS_EXCEEDED_DISCLAIMER}
+  from '../../../models/pipelines/PipelineRunLayers';
 import Roles from '../../../models/user/Roles';
 import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
@@ -78,6 +81,7 @@ import UserName from '../../special/UserName';
 import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
 import LoadingView from '../../special/LoadingView';
+import ModalConfirm from '../../special/ModalConfirm';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
@@ -155,7 +159,9 @@ class Logs extends localization.LocalizedReactComponent {
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
-    commitAllowedCheckedForDockerImage: undefined
+    commitAllowedCheckedForDockerImage: undefined,
+    showPauseConfirmDialog: null,
+    pauseConfirmPending: false
   };
 
   componentDidMount () {
@@ -308,28 +314,45 @@ class Logs extends localization.LocalizedReactComponent {
   showPauseConfirmDialog = async () => {
     const dockerImageParts = (this.props.run.value.dockerImage || '').split('/');
     const imageName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
-    const pipelineName = this.props.run.value.pipelineName || imageName || this.localizedString('pipeline');
-    const checkRequest = new PipelineRunCommitCheck(this.props.runId);
-    await checkRequest.fetch();
-    let content;
-    if (checkRequest.loaded && !checkRequest.value) {
-      content = (
-        <Alert
-          type="error"
-          message={PIPELINE_RUN_COMMIT_CHECK_FAILED} />
-      );
-    }
-    Modal.confirm({
-      title: `Do you want to pause ${pipelineName}?`,
-      content,
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk: () => this.pausePipeline(),
-      okText: 'PAUSE',
-      cancelText: 'CANCEL',
-      width: 450
+    const pipelineName = this.props.run.value.pipelineName ||
+      imageName ||
+      this.localizedString('pipeline');
+    this.setState({pauseConfirmPending: true}, async () => {
+      await this.checkCommitAndLayers();
+      const alerts = [];
+      if (!this.commitCheck) {
+        alerts.push(
+          <Alert
+            type="error"
+            key="checkRequestError"
+            message={PIPELINE_RUN_COMMIT_CHECK_FAILED}
+            style={{marginBottom: 5}}
+          />
+        );
+      }
+      if (this.layersExceeded) {
+        alerts.push(
+          <Alert
+            type="error"
+            key="layersExceeded"
+            message={LAYERS_EXCEEDED_DISCLAIMER}
+            style={{marginBottom: 5}}
+          />
+        );
+      }
+      this.setState({
+        pauseConfirmPending: false,
+        showPauseConfirmDialog: {
+          alerts,
+          title: `Do you want to pause ${pipelineName}?`,
+          okDisabled: this.layersExceeded
+        }
+      });
     });
+  };
+
+  closePauseConfirmDialog = () => {
+    this.setState({showPauseConfirmDialog: null});
   };
 
   showResumeConfirmDialog = () => {
@@ -358,6 +381,7 @@ class Logs extends localization.LocalizedReactComponent {
       message.error(pausePipeline.error);
     }
     this.props.run.fetch();
+    this.closePauseConfirmDialog();
   };
 
   resumePipeline = async (e) => {
@@ -1111,10 +1135,8 @@ class Logs extends localization.LocalizedReactComponent {
   @observable
   _commitCheck = null;
 
-  fetchCommitCheck = async () => {
-    this._commitCheck = new PipelineRunCommitCheck(this.props.runId);
-    await this._commitCheck.fetch();
-  };
+  @observable
+  _layersCheck = null;
 
   @computed
   get commitCheck () {
@@ -1125,8 +1147,37 @@ class Logs extends localization.LocalizedReactComponent {
     return !!this._commitCheck.value;
   }
 
-  openCommitRunForm = () => {
-    this.operationWrapper(this.fetchCommitCheck);
+  @computed
+  get layersExceeded () {
+    const {preferences} = this.props;
+    if (!this._layersCheck || !preferences.loaded) {
+      return true;
+    }
+    if (this._layersCheck.error) {
+      return false;
+    }
+    return this._layersCheck.loaded &&
+      this._layersCheck.value &&
+      preferences.commitMaxLayers &&
+      this._layersCheck.value >= preferences.commitMaxLayers;
+  }
+
+  checkCommitAndLayers = () => {
+    return new Promise(resolve => {
+      this._commitCheck = new PipelineRunCommitCheck(this.props.runId);
+      this._layersCheck = new PipelineRunLayers(this.props.runId);
+      this.setState({operationInProgress: true}, async () => {
+        await Promise.all([
+          this._commitCheck.fetch(),
+          this._layersCheck.fetch()
+        ]);
+        this.setState({operationInProgress: false}, () => resolve());
+      });
+    });
+  };
+
+  openCommitRunForm = async () => {
+    this.checkCommitAndLayers();
     this.setState({commitRun: true});
   };
 
@@ -1838,7 +1889,9 @@ class Logs extends localization.LocalizedReactComponent {
         !this.props.run.value.instance.spot) {
         switch (status.toLowerCase()) {
           case 'running':
-            if (canPauseRun(this.props.run.value)) {
+            if (this.state.pauseConfirmPending) {
+              PauseResumeButton = <Icon type="loading" style={{width: 40}} />;
+            } else if (canPauseRun(this.props.run.value)) {
               PauseResumeButton = this.maintenanceMode
                 ? getMaintenanceDisabledButton('PAUSE')
                 : <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
@@ -2062,13 +2115,40 @@ class Logs extends localization.LocalizedReactComponent {
           pending={this.state.operationInProgress}
           visible={this.state.commitRun}
           commitCheck={this.commitCheck}
+          layersCheck={!this.layersExceeded}
           onCancel={this.closeCommitRunForm}
-          onSubmit={this.operationWrapper(this.commitRun)} />
+          onSubmit={this.operationWrapper(this.commitRun)}
+        />
         <LaunchCommand
           payload={this.runPayload}
           visible={this.state.showLaunchCommands}
           onClose={this.hideLaunchCommands}
         />
+        {this.state.showPauseConfirmDialog ? (
+          <ModalConfirm
+            onCancel={this.closePauseConfirmDialog}
+            visible={!!this.state.showPauseConfirmDialog}
+            title={this.state.showPauseConfirmDialog.title}
+            footer={(
+              <div>
+                <Button
+                  onClick={this.closePauseConfirmDialog}
+                >
+                  CANCEL
+                </Button>
+                <Button
+                  disabled={this.state.showPauseConfirmDialog.okDisabled}
+                  type="primary"
+                  onClick={this.pausePipeline}
+                >
+                  PAUSE
+                </Button>
+              </div>
+            )}
+          >
+            {this.state.showPauseConfirmDialog.alerts}
+          </ModalConfirm>
+        ) : null}
       </Card>
     );
   }

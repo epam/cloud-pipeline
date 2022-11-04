@@ -29,7 +29,8 @@ import {
   Modal,
   Popover,
   Row,
-  Table
+  Table,
+  Button
 } from 'antd';
 import UserAutoComplete from '../special/UserAutoComplete';
 import StopPipeline from '../../models/pipelines/StopPipeline';
@@ -39,10 +40,13 @@ import {
   PipelineRunCommitCheck,
   PIPELINE_RUN_COMMIT_CHECK_FAILED
 } from '../../models/pipelines/PipelineRunCommitCheck';
+import PipelineRunLayers, {LAYERS_EXCEEDED_DISCLAIMER}
+  from '../../models/pipelines/PipelineRunLayers';
 import {stopRun, canPauseRun, canStopRun, runPipelineActions, terminateRun} from './actions';
 import StatusIcon from '../special/run-status-icon';
 import AWSRegionTag from '../special/AWSRegionTag';
 import UserName from '../special/UserName';
+import ModalConfirm from '../special/ModalConfirm';
 import styles from './RunTable.css';
 import DayPicker from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
@@ -134,7 +138,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
       filtered: false,
       isDate: true,
       isLastHour: true
-    }
+    },
+    showPauseConfirmDialog: null,
+    pauseConfirmPending: false
   };
 
   @computed
@@ -144,6 +150,15 @@ export default class RunTable extends localization.LocalizedReactComponent {
       return preferences.systemMaintenanceMode;
     }
     return false;
+  }
+
+  @computed
+  get commitMaxLayers () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return preferences.commitMaxLayers;
+    }
+    return undefined;
   }
 
   @computed
@@ -652,6 +667,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     }
     const pausePipeline = new PausePipeline(id);
     await pausePipeline.send({});
+    this.closePauseConfirmDialog();
     if (pausePipeline.error) {
       message.error(pausePipeline.error);
     }
@@ -700,30 +716,51 @@ export default class RunTable extends localization.LocalizedReactComponent {
   showPauseConfirmDialog = async (event, run) => {
     event.stopPropagation();
     const checkRequest = new PipelineRunCommitCheck(run.id);
-    await checkRequest.fetch();
-    let content;
-    if (checkRequest.loaded && !checkRequest.value) {
-      content = (
-        <Alert
-          type="error"
-          message={PIPELINE_RUN_COMMIT_CHECK_FAILED} />
-      );
-    }
-    Modal.confirm({
-      title: (
-        <Row>
-          Do you want to pause {this.renderPipelineName(run, true, true) || this.localizedString('pipeline')}?
-        </Row>
-      ),
-      content,
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk: () => this.pausePipeline(run.id),
-      okText: 'PAUSE',
-      cancelText: 'CANCEL',
-      width: 450
+    const layersRequest = new PipelineRunLayers(run.id);
+    this.setState({pauseConfirmPending: true}, async () => {
+      await Promise.all([
+        checkRequest.fetch(),
+        layersRequest.fetch()
+      ]);
+      const layersExceeded = layersRequest.loaded &&
+        layersRequest.value &&
+        !layersRequest.error &&
+        this.commitMaxLayers &&
+        layersRequest.value >= this.commitMaxLayers;
+      const alerts = [];
+      if (checkRequest.loaded && !checkRequest.value) {
+        alerts.push(
+          <Alert
+            type="error"
+            key="checkRequestError"
+            message={PIPELINE_RUN_COMMIT_CHECK_FAILED}
+            style={{marginBottom: 5}}
+          />
+        );
+      }
+      if (layersExceeded) {
+        alerts.push(
+          <Alert
+            type="error"
+            key="layersExceeded"
+            message={LAYERS_EXCEEDED_DISCLAIMER}
+            style={{marginBottom: 5}}
+          />
+        );
+      }
+      this.setState({
+        pauseConfirmPending: false,
+        showPauseConfirmDialog: {
+          run,
+          alerts,
+          pauseDisabled: layersExceeded
+        }
+      });
     });
+  };
+
+  closePauseConfirmDialog = () => {
+    this.setState({showPauseConfirmDialog: null});
   };
 
   showResumeConfirmDialog = (event, run) => {
@@ -767,6 +804,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
             const buttonId = `run-${record.id}-pause-button`;
             if (this.maintenanceMode) {
               return getMaintenanceDisabledButton('PAUSE', buttonId);
+            }
+            if (this.state.pauseConfirmPending) {
+              return (
+                <Icon type="loading" style={{width: '100%'}} />
+              );
             }
             return <a
               id={buttonId}
@@ -1310,32 +1352,61 @@ export default class RunTable extends localization.LocalizedReactComponent {
     const style = this.props.className ? {className: this.props.className} : {};
     const serviceClass = 'cp-runs-table-service-url-run';
     return (
-      <Table
-        className={`${styles.table} runs-table`}
-        {...style}
-        ref={(ele) => { this.table = ele; }}
-        columns={this.getColumns()}
-        rowKey={record => record.id}
-        rowClassName={(record) => `${
-          record.serviceUrl &&
-          (
-            record.status === 'RUNNING' ||
-            record.status === 'PAUSED' ||
-            record.status === 'PAUSING' ||
-            record.status === 'RESUMING'
-          ) &&
-          record.initialized
-            ? serviceClass : styles.run
-        } run-${record.id}`}
-        dataSource={source}
-        onChange={this.props.handleTableChange}
-        onRowClick={this.props.onSelect}
-        pagination={this.props.pagination}
-        loading={this.props.loading}
-        size="small"
-        indentSize={10}
-        locale={{emptyText: 'No Data', filterConfirm: 'OK', filterReset: 'Clear'}}
-      />);
+      <div>
+        <Table
+          className={`${styles.table} runs-table`}
+          {...style}
+          ref={(ele) => { this.table = ele; }}
+          columns={this.getColumns()}
+          rowKey={record => record.id}
+          rowClassName={(record) => `${
+            record.serviceUrl &&
+            (
+              record.status === 'RUNNING' ||
+              record.status === 'PAUSED' ||
+              record.status === 'PAUSING' ||
+              record.status === 'RESUMING'
+            ) &&
+            record.initialized
+              ? serviceClass : styles.run
+          } run-${record.id}`}
+          dataSource={source}
+          onChange={this.props.handleTableChange}
+          onRowClick={this.props.onSelect}
+          pagination={this.props.pagination}
+          loading={this.props.loading}
+          size="small"
+          indentSize={10}
+          locale={{emptyText: 'No Data', filterConfirm: 'OK', filterReset: 'Clear'}}
+        />
+        {this.state.showPauseConfirmDialog ? (
+          <ModalConfirm
+            onOk={() => this.pausePipeline(this.state.showPauseConfirmDialog.run.id)}
+            onCancel={this.closePauseConfirmDialog}
+            visible={!!this.state.showPauseConfirmDialog}
+            // eslint-disable-next-line max-len
+            title={`Do you want to pause ${this.renderPipelineName(this.state.showPauseConfirmDialog.run, true, true) || this.localizedString('pipeline')}?`}
+            footer={(
+              <div>
+                <Button
+                  onClick={this.closePauseConfirmDialog}
+                >
+                  CANCEL
+                </Button>
+                <Button
+                  disabled={this.state.showPauseConfirmDialog.pauseDisabled}
+                  type="primary"
+                  onClick={() => this.pausePipeline(this.state.showPauseConfirmDialog.run.id)}
+                >
+                  PAUSE
+                </Button>
+              </div>
+            )}
+          >
+            {this.state.showPauseConfirmDialog.alerts}
+          </ModalConfirm>
+        ) : null}
+      </div>);
   }
 
   componentDidMount () {

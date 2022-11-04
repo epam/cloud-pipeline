@@ -34,6 +34,7 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     pending: PropTypes.bool,
     visible: PropTypes.bool,
     commitCheck: PropTypes.bool,
+    layersCheck: PropTypes.bool,
     defaultDockerImage: PropTypes.string
   };
 
@@ -79,7 +80,7 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
         { this.registries.length && <Button
           id="commit-pipeline-run-form-commit-button"
           type="primary" htmlType="submit"
-          disabled={!this.toolValid}
+          disabled={!this.toolValid || !this.props.layersCheck}
           onClick={this.handleSubmit}>COMMIT</Button> }
       </Row>
     );
@@ -96,14 +97,17 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
         visible={this.props.visible}
         title={`Commit ${this.localizedString('pipeline')} run`}
         onCancel={this.props.onCancel}
-        footer={modalFooter}>
+        footer={modalFooter}
+      >
         <CommitRunForm
           onInitialized={this.onInitialize}
           onPressEnter={this.handleSubmit}
           visible={this.props.visible}
           commitCheck={this.props.commitCheck}
+          layersCheck={this.props.layersCheck}
           defaultDockerImage={this.props.defaultDockerImage}
-          pending={this.props.pending} />
+          pending={this.props.pending}
+        />
       </Modal>
     );
   }
