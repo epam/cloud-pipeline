@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">5</div>
+<div class="counter">13</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">10</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">13m58.05s</div>
+<div class="counter">39m14.78s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">28%</div>
+<div class="percent">23%</div>
 <p>successful</p>
 </div>
 </td>
@@ -75,10 +75,10 @@
 <span class="code">
 <pre>Element not found {By.id: navigation-button-library}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1667339308283.173.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1667339308283.173.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667657718070.196.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667657718070.196.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -87,7 +87,7 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
 	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.openEditUserTab(RestrictionsOnInstancePriceTypeTest.java:657)
 	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForUser(RestrictionsOnInstancePriceTypeTest.java:666)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.deletingEntities(RestrictionsOnInstancePriceTypeTest.java:107)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.deletingEntities(RestrictionsOnInstancePriceTypeTest.java:106)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -101,16 +101,16 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '112b3ab8a4da', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: d10c98f6f1e0df3ea186838af7ec55d4
-	at sun.reflect.GeneratedConstructorAccessor34.newInstance(Unknown Source)
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -133,73 +133,24 @@ Session ID: d10c98f6f1e0df3ea186838af7ec55d4
 </span>
 </div>
 <div class="test">
-<a name="preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637"></a>
-<h3 class="failures">preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637</h3>
+<a name="validationOfInstanceTypesRestrictionsCreatingObjects - EPMCMBIBPC-2639"></a>
+<h3 class="failures">validationOfInstanceTypesRestrictionsCreatingObjects - EPMCMBIBPC-2639</h3>
 <span class="code">
-<pre>Element not found {combo box of By.xpath: (//*[contains(@class, 'form-item') and .//*[contains(@class, 'ant-form-item-label') and .//*[contains(text(), 'Node type')]]])[last()]}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1667338565894.166.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1667338565894.166.html
-Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using combo box of By.xpath: (//*[contains(@class, 'form-item') and .//*[contains(@class, 'ant-form-item-label') and .//*[contains(text(), 'Node type')]]])[last()]
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.impl.WebElementSource.findAndAssertElementIsVisible(WebElementSource.java:72)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.dropDownCount(AccessObject.java:544)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.lambda$preparationForValidationOfInstanceTypesRestrictions$2(RestrictionsOnInstancePriceTypeTest.java:172)
-	at com.epam.pipeline.autotests.ao.PipelineConfigurationTabAO.editConfiguration(PipelineConfigurationTabAO.java:82)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.preparationForValidationOfInstanceTypesRestrictions(RestrictionsOnInstancePriceTypeTest.java:161)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using combo box of By.xpath: (//*[contains(@class, 'form-item') and .//*[contains(@class, 'ant-form-item-label') and .//*[contains(text(), 'Node type')]]])[last()]
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '112b3ab8a4da', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 24 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642"></a>
-<h3 class="failures">validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-tools}
+<pre>Element not found {By.id: navigation-button-library}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1667338877099.168.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1667338877099.168.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667656081028.177.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667656081028.177.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-tools&quot; class=&quot;cp-navigation-menu-item selected&quot; href=&quot;#/tools&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 198). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.mixins.Navigation.tools(Navigation.java:56)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfToolsInstanceTypesRestrictionsOverInstanceManagement(RestrictionsOnInstancePriceTypeTest.java:320)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.openEditUserTab(RestrictionsOnInstancePriceTypeTest.java:657)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForUser(RestrictionsOnInstancePriceTypeTest.java:666)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfInstanceTypesRestrictionsCreatingObjects(RestrictionsOnInstancePriceTypeTest.java:239)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -213,16 +164,326 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-tools&quot; class=&quot;cp-navigation-menu-item selected&quot; href=&quot;#/tools&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 198). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '112b3ab8a4da', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: d10c98f6f1e0df3ea186838af7ec55d4
-	at sun.reflect.GeneratedConstructorAccessor34.newInstance(Unknown Source)
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 19 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfInstanceTypesRestrictionsExistingObjects - EPMCMBIBPC-2638"></a>
+<h3 class="failures">validationOfInstanceTypesRestrictionsExistingObjects - EPMCMBIBPC-2638</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667656253302.179.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667656253302.179.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.openEditUserTab(RestrictionsOnInstancePriceTypeTest.java:657)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForUser(RestrictionsOnInstancePriceTypeTest.java:666)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfInstanceTypesRestrictionsExistingObjects(RestrictionsOnInstancePriceTypeTest.java:203)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 19 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2640"></a>
+<h3 class="failures">validationOfInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2640</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667656425609.181.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667656425609.181.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForGroup(RestrictionsOnInstancePriceTypeTest.java:672)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfInstanceTypesRestrictionsForUserGroup(RestrictionsOnInstancePriceTypeTest.java:254)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2646"></a>
+<h3 class="failures">validationOfInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2646</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667656598035.183.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667656598035.183.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setClusterAllowedStringPreference(RestrictionsOnInstancePriceTypeTest.java:682)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfInstanceTypesRestrictionsHierarchy(RestrictionsOnInstancePriceTypeTest.java:461)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2644"></a>
+<h3 class="failures">validationOfInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2644</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667656770240.185.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667656770240.185.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setClusterAllowedStringPreference(RestrictionsOnInstancePriceTypeTest.java:682)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfInstanceTypesRestrictionsSystemSettings(RestrictionsOnInstancePriceTypeTest.java:394)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfPriceTypesRestrictionsForUserGroup - EPMCMBIBPC-2649"></a>
+<h3 class="failures">validationOfPriceTypesRestrictionsForUserGroup - EPMCMBIBPC-2649</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667656942443.187.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667656942443.187.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfPriceTypesRestrictionsForUserGroup(RestrictionsOnInstancePriceTypeTest.java:550)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -245,78 +506,15 @@ Session ID: d10c98f6f1e0df3ea186838af7ec55d4
 </span>
 </div>
 <div class="test">
-<a name="validationOfToolsInstanceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2641"></a>
-<h3 class="failures">validationOfToolsInstanceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2641</h3>
+<a name="validationOfPriceTypesRestrictionsHierarchy - EPMCMBIBPC-2652"></a>
+<h3 class="failures">validationOfPriceTypesRestrictionsHierarchy - EPMCMBIBPC-2652</h3>
 <span class="code">
 <pre>Element not found {By.id: navigation-button-library}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1667339049717.170.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1667339049717.170.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667657114940.189.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667657114940.189.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.openEditUserTab(RestrictionsOnInstancePriceTypeTest.java:657)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForUser(RestrictionsOnInstancePriceTypeTest.java:666)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfToolsInstanceTypesRestrictionsOverUserManagement(RestrictionsOnInstancePriceTypeTest.java:273)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '112b3ab8a4da', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: d10c98f6f1e0df3ea186838af7ec55d4
-	at sun.reflect.GeneratedConstructorAccessor34.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 19 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="validationOfToolsInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2645"></a>
-<h3 class="failures">validationOfToolsInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2645</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-library}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1667339222106.172.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1667339222106.172.html
-Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -324,7 +522,7 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at com.sun.proxy.$Proxy15.click(Unknown Source)
 	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
 	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setClusterAllowedStringPreference(RestrictionsOnInstancePriceTypeTest.java:682)
-	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfToolsInstanceTypesRestrictionsSystemSettings(RestrictionsOnInstancePriceTypeTest.java:413)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfPriceTypesRestrictionsHierarchy(RestrictionsOnInstancePriceTypeTest.java:643)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -338,16 +536,16 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '112b3ab8a4da', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: d10c98f6f1e0df3ea186838af7ec55d4
-	at sun.reflect.GeneratedConstructorAccessor34.newInstance(Unknown Source)
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -369,6 +567,311 @@ Session ID: d10c98f6f1e0df3ea186838af7ec55d4
 </pre>
 </span>
 </div>
+<div class="test">
+<a name="validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650"></a>
+<h3 class="failures">validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650</h3>
+<span class="code">
+<pre>Element not found {By.xpath: //div/b[text()='Allowed price types']/following::div/input}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667655529075.173.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667655529075.173.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//div/b[text()='Allowed price types']/following::div/input&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:228)
+	at com.epam.pipeline.autotests.ao.AccessObject.lambda$ensureVisible$3(AccessObject.java:233)
+	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:647)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensureVisible(AccessObject.java:233)
+	at com.epam.pipeline.autotests.ao.ToolDescription$InstanceManagementSectionAO.clearAllowedPriceTypeField(ToolDescription.java:133)
+	at com.epam.pipeline.autotests.ao.ToolDescription.showInstanceManagement(ToolDescription.java:79)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.lambda$validationOfPriceTypesRestrictionsOverInstanceManagement$25(RestrictionsOnInstancePriceTypeTest.java:594)
+	at java.util.function.Consumer.lambda$andThen$0(Consumer.java:65)
+	at com.epam.pipeline.autotests.ao.ToolGroup.toolWithin(ToolGroup.java:52)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$0(ToolsPage.java:90)
+	at com.epam.pipeline.autotests.ao.Registry.groupWithin(Registry.java:49)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$performWithin$1(ToolsPage.java:89)
+	at com.epam.pipeline.autotests.ao.ToolsPage.registryWithin(ToolsPage.java:127)
+	at com.epam.pipeline.autotests.ao.ToolsPage.performWithin(ToolsPage.java:88)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfPriceTypesRestrictionsOverInstanceManagement(RestrictionsOnInstancePriceTypeTest.java:593)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;//div/b[text()='Allowed price types']/following::div/input&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+*** Element info: {Using=xpath, value=//div/b[text()='Allowed price types']/following::div/input}
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
+	at org.openqa.selenium.remote.RemoteWebElement.findElementByXPath(RemoteWebElement.java:255)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 36 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfPriceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2648"></a>
+<h3 class="failures">validationOfPriceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2648</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667657287180.191.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667657287180.191.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.openEditUserTab(RestrictionsOnInstancePriceTypeTest.java:657)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfPriceTypesRestrictionsOverUserManagement(RestrictionsOnInstancePriceTypeTest.java:525)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfPriceTypesRestrictionsSystemSettings - EPMCMBIBPC-2651"></a>
+<h3 class="failures">validationOfPriceTypesRestrictionsSystemSettings - EPMCMBIBPC-2651</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667657459654.193.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667657459654.193.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setClusterAllowedStringPreference(RestrictionsOnInstancePriceTypeTest.java:682)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfPriceTypesRestrictionsSystemSettings(RestrictionsOnInstancePriceTypeTest.java:611)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfToolsInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2647"></a>
+<h3 class="failures">validationOfToolsInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2647</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667657631976.195.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667657631976.195.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setClusterAllowedStringPreference(RestrictionsOnInstancePriceTypeTest.java:682)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfToolsInstanceTypesRestrictionsHierarchy(RestrictionsOnInstancePriceTypeTest.java:497)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '17e776adf19d', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7c90fc8f1aabb0cb46476ae7905d1300
+	at sun.reflect.GeneratedConstructorAccessor29.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 18 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validationOfToolsInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2645"></a>
+<h3 class="failures">validationOfToolsInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2645</h3>
+<span class="code">
+<pre>Element should be selected navigation menu item {By.id: navigation-button-library}
+Element: '&lt;a class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot; id=&quot;navigation-button-library&quot;&gt;&lt;/a&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667655908557.175.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667655908557.175.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:39)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setClusterAllowedStringPreference(RestrictionsOnInstancePriceTypeTest.java:682)
+	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.validationOfToolsInstanceTypesRestrictionsSystemSettings(RestrictionsOnInstancePriceTypeTest.java:413)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
 </div>
 <div id="tab1" class="tab">
 <h2>Tests</h2>
@@ -382,87 +885,87 @@ Session ID: d10c98f6f1e0df3ea186838af7ec55d4
 </thead>
 <tr>
 <td class="failures">deletingEntities</td>
-<td>1m20.98s</td>
+<td>1m20.89s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637</td>
-<td>2m6.93s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="skipped">validationOfInstanceTypesRestrictionsCreatingObjects</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validationOfInstanceTypesRestrictionsExistingObjects</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validationOfInstanceTypesRestrictionsForUserGroup</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validationOfInstanceTypesRestrictionsHierarchy</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validationOfInstanceTypesRestrictionsSystemSettings</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validationOfPriceTypesRestrictionsForUserGroup</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">validationOfPriceTypesRestrictionsHierarchy</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="success">validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650</td>
-<td>1m13.25s</td>
+<td class="success">preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637</td>
+<td>1m7.02s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfPriceTypesRestrictionsOverUserManagement</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="failures">validationOfInstanceTypesRestrictionsCreatingObjects - EPMCMBIBPC-2639</td>
+<td>2m47.22s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfPriceTypesRestrictionsSystemSettings</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="failures">validationOfInstanceTypesRestrictionsExistingObjects - EPMCMBIBPC-2638</td>
+<td>2m47.04s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">validationOfInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2640</td>
+<td>2m47.09s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">validationOfInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2646</td>
+<td>2m47.18s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">validationOfInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2644</td>
+<td>2m46.91s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">validationOfPriceTypesRestrictionsForUserGroup - EPMCMBIBPC-2649</td>
+<td>2m47.19s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">validationOfPriceTypesRestrictionsHierarchy - EPMCMBIBPC-2652</td>
+<td>2m47.02s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650</td>
+<td>2m57.31s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">validationOfPriceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2648</td>
+<td>2m47.04s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">validationOfPriceTypesRestrictionsSystemSettings - EPMCMBIBPC-2651</td>
+<td>2m47.32s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validationOfToolsInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2643</td>
-<td>50.922s</td>
+<td>52.074s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validationOfToolsInstanceTypesRestrictionsHierarchy</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="failures">validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642</td>
-<td>2m51.46s</td>
+<td class="failures">validationOfToolsInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2647</td>
+<td>2m46.96s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">validationOfToolsInstanceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2641</td>
-<td>2m47.27s</td>
-<td class="failures">failed</td>
+<td class="success">validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642</td>
+<td>1m8.24s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">validationOfToolsInstanceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2641</td>
+<td>51.328s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">validationOfToolsInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2645</td>
-<td>2m47.24s</td>
+<td>3m6.98s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -475,7 +978,7 @@ Session ID: d10c98f6f1e0df3ea186838af7ec55d4
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 1, 2022 9:48:30 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 5, 2022 2:15:19 PM</p>
 </div>
 </div>
 </body>

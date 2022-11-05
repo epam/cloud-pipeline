@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3h10m42.68s</div>
+<div class="counter">3h18m28.66s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">92%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,110 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validationOfSlurmCluster - EPMCMBIBPC-3151"></a>
+<h3 class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</h3>
+<span class="code">
+<pre>Element should contains messages {By.className: ReactVirtualized__List}
+Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;042:[2022-11-04 23:36:32] Waiting for execution hosts to connect. 0 out of 1 are ready
+043:[2022-11-04 23:36:43] Waiting for execution hosts to connect. 0 out of 1 are ready
+044:[2022-11-04 23:36:54] Waiting for execution hosts to connect. 0 out of 1 are ready
+045:[2022-11-04 23:37:04] Waiting for execution hosts to connect. 0 out of 1 are ready
+046:[2022-11-04 23:37:15] Waiting for execution hosts to connect. 0 out of 1 are ready
+047:[2022-11-04 23:37:25] Waiting for execution hosts to connect. 0 out of 1 are ready
+048:[2022-11-04 23:37:36] Waiting for execution hosts to connect. 0 out of 1 are ready
+049:[2022-11-04 23:37:46] Waiting for execution hosts to connect. 0 out of 1 are ready
+050:[2022-11-04 23:37:57] Waiting for execution hosts to connect. 0 out of 1 are ready
+051:[2022-11-04 23:38:08] Waiting for execution hosts to connect. 0 out of 1 are ready
+052:[2022-11-04 23:38:18] Waiting for execution hosts to connect. 0 out of 1 are ready
+053:[2022-11-04 23:38:29] Waiting for execution hosts to connect. 0 out of 1 are ready
+054:[2022-11-04 23:38:39] Waiting for execution hosts to connect. 0 out of 1 are ready
+055:[2022-11-04 23:38:50] Waiting for execution hosts to connect. 0 out of 1 are ready
+056:[2022-11-04 23:39:01] Waiting for execution hosts to connect. 0 out of 1 are ready
+057:[2022-11-04 23:39:11] Waiting for execution hosts to connect. 0 out of 1 are ready
+058:[2022-11-04 23:39:22] Waiting for execution hosts to connect. 0 out of 1 are ready
+059:[2022-11-04 23:39:32] Waiting for execution hosts to connect. 0 out of 1 are ready
+060:[2022-11-04 23:39:43] Waiting for execution hosts to connect. 0 out of 1 are ready
+061:[2022-11-04 23:39:54] NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached&lt;/div&gt;'
+Actual value: Following messages wasn't found in log:
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667605299771.89.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667605299771.89.html
+Timeout: 80 s.
+Caused by: java.lang.IndexOutOfBoundsException: Index: 20, Size: 20
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:191)
+	at com.epam.pipeline.autotests.LaunchClusterTest.validationOfSlurmCluster(LaunchClusterTest.java:330)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: java.lang.IndexOutOfBoundsException: Index: 20, Size: 20
+	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
+	at java.util.ArrayList.get(ArrayList.java:435)
+	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.getSize(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO$1.lambda$apply$0(LogAO.java:513)
+	at java.util.stream.ReferencePipeline$4$1.accept(ReferencePipeline.java:210)
+	at java.util.Iterator.forEachRemaining(Iterator.java:116)
+	at java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1801)
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
+	at java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:708)
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.util.stream.IntPipeline.reduce(IntPipeline.java:479)
+	at java.util.stream.IntPipeline.sum(IntPipeline.java:437)
+	at com.epam.pipeline.autotests.ao.LogAO$1.apply(LogAO.java:513)
+	at com.epam.pipeline.autotests.ao.LogAO$2.lambda$apply$0(LogAO.java:532)
+	at java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:174)
+	at java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:193)
+	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
+	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
+	at java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:485)
+	at com.epam.pipeline.autotests.ao.LogAO$2.apply(LogAO.java:533)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:45)
+	... 22 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,81 +176,80 @@
 </thead>
 <tr>
 <td class="success">autoScaledClusterWithDefaultChildNodesValidationTest - EPMCMBIBPC-2628</td>
-<td>49m39.86s</td>
+<td>48m8.81s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeMastersConfig - EPMCMBIBPC-3161</td>
-<td>12m25.80s</td>
+<td>12m0.86s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeOnDemand - EPMCMBIBPC-3160</td>
-<td>11m37.17s</td>
+<td>11m41.97s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</td>
-<td>11m23.46s</td>
+<td>11m36.36s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledCluster - EPMCMBIBPC-3153</td>
-<td>18m25.60s</td>
+<td>17m57.16s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlock - EPMCMBIBPC-3154</td>
-<td>12m28.92s</td>
+<td>12m36.99s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions - EPMCMBIBPC-3159</td>
-<td>11m23.08s</td>
+<td>11m26.91s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterInstanceTypeFamily - EPMCMBIBPC-3155</td>
-<td>11m49.36s</td>
+<td>11m22.20s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">invalidValuesOnConfigureClusterPopUp - EPMCMBIBPC-2620</td>
-<td>28.261s</td>
+<td>29.009s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchAutoScaledClusterTest - EPMCMBIBPC-2618</td>
-<td>12m40.17s</td>
+<td>12m20.41s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchPipelineWithLaunchFlag - EPMCMBIBPC-975</td>
-<td>9m42.05s</td>
+<td>9m20.43s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfApacheSparkCluster - EPMCMBIBPC-3152</td>
-<td>11m13.22s</td>
+<td>11m19.36s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfGECluster - EPMCMBIBPC-3150</td>
-<td>8m56.63s</td>
+<td>9m8.40s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
-<td>8m29.11s</td>
-<td class="success">passed</td>
+<td class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
+<td>18m59.80s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Run with id 32876 has been stopped.
-Run with id 32875 has been stopped.
+<pre>Run with id 33197 has been stopped.
 </pre>
 </span>
 </div>
@@ -165,7 +261,7 @@ Run with id 32875 has been stopped.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 1, 2022 9:48:30 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 5, 2022 2:15:19 PM</p>
 </div>
 </div>
 </body>
