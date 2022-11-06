@@ -16,7 +16,9 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
+
 import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.Objects;
@@ -24,9 +26,9 @@ import java.util.Objects;
 import static com.codeborne.selenide.Condition.attribute;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.exactText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
@@ -114,7 +116,9 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
 
     public PipelineRunFormAO runPipeline() {
         sleep(2, SECONDS);
-        ensure(RUN, not(disabled));
+//        ensure(RUN, not(disabled));
+        get(RUN).waitUntil(not(disabled), C.DEFAULT_TIMEOUT);
+        sleep(2, SECONDS);
         click(RUN);
         sleep(1, SECONDS);
         return new PipelineRunFormAO(pipelineName);

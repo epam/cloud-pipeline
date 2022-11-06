@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.mixins.Authorization;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -1383,7 +1384,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public PreferencesAO save() {
             click(SAVE);
-            get(SAVE).shouldBe(disabled);
+            get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
             return this;
         }
 
