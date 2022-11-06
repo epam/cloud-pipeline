@@ -17,6 +17,8 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.interactions.Actions;
 
 import java.io.File;
 import java.util.Arrays;
@@ -24,8 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.interactions.Actions;
+
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.exist;
@@ -223,7 +224,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         }
 
         public PipelineCodeTabAO saveAndCommitWithMessage(String message) {
-            return openCommitDialog().typeInField(message).ok();
+            return openCommitDialog().typeInField(message).ok().sleep(2, SECONDS);
         }
 
         private CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {
