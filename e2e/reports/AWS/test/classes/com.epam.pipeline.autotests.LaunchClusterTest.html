@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3h18m28.66s</div>
+<div class="counter">2h42m57.08s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">92%</div>
+<div class="percent">85%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,39 +73,121 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
+<a name="autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156"></a>
+<h3 class="failures">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</h3>
+<span class="code">
+<pre>Element not found {By.className: ant-select-dropdown-menu}
+Expected: enabled
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667735503730.24.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667735503730.24.html
+Timeout: 80 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-select-dropdown-menu&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setTypeValue(PipelineRunFormAO.java:125)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setLaunchOptions(PipelineRunFormAO.java:113)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.setDefaultLaunchOptions(PipelineRunFormAO.java:107)
+	at com.epam.pipeline.autotests.LaunchClusterTest.autoScaledClusterWorkersPriceTypeSpot(LaunchClusterTest.java:560)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;ant-select-dropdown-menu&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '361436cbfd66', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 3e14405a27a396cbd7484e754ebf1145
+*** Element info: {Using=class name, value=ant-select-dropdown-menu}
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByClassName(RemoteWebDriver.java:457)
+	at org.openqa.selenium.By$ByClassName.findElement(By.java:391)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 24 more
+</pre>
+</span>
+</div>
+<div class="test">
 <a name="validationOfSlurmCluster - EPMCMBIBPC-3151"></a>
 <h3 class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</h3>
 <span class="code">
 <pre>Element should contains messages {By.className: ReactVirtualized__List}
-Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;042:[2022-11-04 23:36:32] Waiting for execution hosts to connect. 0 out of 1 are ready
-043:[2022-11-04 23:36:43] Waiting for execution hosts to connect. 0 out of 1 are ready
-044:[2022-11-04 23:36:54] Waiting for execution hosts to connect. 0 out of 1 are ready
-045:[2022-11-04 23:37:04] Waiting for execution hosts to connect. 0 out of 1 are ready
-046:[2022-11-04 23:37:15] Waiting for execution hosts to connect. 0 out of 1 are ready
-047:[2022-11-04 23:37:25] Waiting for execution hosts to connect. 0 out of 1 are ready
-048:[2022-11-04 23:37:36] Waiting for execution hosts to connect. 0 out of 1 are ready
-049:[2022-11-04 23:37:46] Waiting for execution hosts to connect. 0 out of 1 are ready
-050:[2022-11-04 23:37:57] Waiting for execution hosts to connect. 0 out of 1 are ready
-051:[2022-11-04 23:38:08] Waiting for execution hosts to connect. 0 out of 1 are ready
-052:[2022-11-04 23:38:18] Waiting for execution hosts to connect. 0 out of 1 are ready
-053:[2022-11-04 23:38:29] Waiting for execution hosts to connect. 0 out of 1 are ready
-054:[2022-11-04 23:38:39] Waiting for execution hosts to connect. 0 out of 1 are ready
-055:[2022-11-04 23:38:50] Waiting for execution hosts to connect. 0 out of 1 are ready
-056:[2022-11-04 23:39:01] Waiting for execution hosts to connect. 0 out of 1 are ready
-057:[2022-11-04 23:39:11] Waiting for execution hosts to connect. 0 out of 1 are ready
-058:[2022-11-04 23:39:22] Waiting for execution hosts to connect. 0 out of 1 are ready
-059:[2022-11-04 23:39:32] Waiting for execution hosts to connect. 0 out of 1 are ready
-060:[2022-11-04 23:39:43] Waiting for execution hosts to connect. 0 out of 1 are ready
-061:[2022-11-04 23:39:54] NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached&lt;/div&gt;'
+Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;042:[2022-11-06 13:56:58] Waiting for execution hosts to connect. 0 out of 1 are ready
+043:[2022-11-06 13:57:09] Waiting for execution hosts to connect. 0 out of 1 are ready
+044:[2022-11-06 13:57:19] Waiting for execution hosts to connect. 0 out of 1 are ready
+045:[2022-11-06 13:57:30] Waiting for execution hosts to connect. 0 out of 1 are ready
+046:[2022-11-06 13:57:40] Waiting for execution hosts to connect. 0 out of 1 are ready
+047:[2022-11-06 13:57:51] Waiting for execution hosts to connect. 0 out of 1 are ready
+048:[2022-11-06 13:58:01] Waiting for execution hosts to connect. 0 out of 1 are ready
+049:[2022-11-06 13:58:12] Waiting for execution hosts to connect. 0 out of 1 are ready
+050:[2022-11-06 13:58:23] Waiting for execution hosts to connect. 0 out of 1 are ready
+051:[2022-11-06 13:58:33] Waiting for execution hosts to connect. 0 out of 1 are ready
+052:[2022-11-06 13:58:44] Waiting for execution hosts to connect. 0 out of 1 are ready
+053:[2022-11-06 13:58:54] Waiting for execution hosts to connect. 0 out of 1 are ready
+054:[2022-11-06 13:59:05] Waiting for execution hosts to connect. 0 out of 1 are ready
+055:[2022-11-06 13:59:16] Waiting for execution hosts to connect. 0 out of 1 are ready
+056:[2022-11-06 13:59:26] Waiting for execution hosts to connect. 0 out of 1 are ready
+057:[2022-11-06 13:59:37] Waiting for execution hosts to connect. 0 out of 1 are ready
+058:[2022-11-06 13:59:47] Waiting for execution hosts to connect. 0 out of 1 are ready
+059:[2022-11-06 13:59:58] Waiting for execution hosts to connect. 0 out of 1 are ready
+060:[2022-11-06 14:00:08] Waiting for execution hosts to connect. 0 out of 1 are ready
+061:[2022-11-06 14:00:19] NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached&lt;/div&gt;'
 Actual value: Following messages wasn't found in log:
 All SLURM hosts are connected
 All SLURM hosts are connected
 All SLURM hosts are connected
 All SLURM hosts are connected
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1667605299771.89.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1667605299771.89.html
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1667743311006.47.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1667743311006.47.html
 Timeout: 80 s.
-Caused by: java.lang.IndexOutOfBoundsException: Index: 20, Size: 20
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
@@ -129,37 +211,6 @@ Caused by: java.lang.IndexOutOfBoundsException: Index: 20, Size: 20
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: java.lang.IndexOutOfBoundsException: Index: 20, Size: 20
-	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
-	at java.util.ArrayList.get(ArrayList.java:435)
-	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.getSize(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO$1.lambda$apply$0(LogAO.java:513)
-	at java.util.stream.ReferencePipeline$4$1.accept(ReferencePipeline.java:210)
-	at java.util.Iterator.forEachRemaining(Iterator.java:116)
-	at java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1801)
-	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
-	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
-	at java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:708)
-	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
-	at java.util.stream.IntPipeline.reduce(IntPipeline.java:479)
-	at java.util.stream.IntPipeline.sum(IntPipeline.java:437)
-	at com.epam.pipeline.autotests.ao.LogAO$1.apply(LogAO.java:513)
-	at com.epam.pipeline.autotests.ao.LogAO$2.lambda$apply$0(LogAO.java:532)
-	at java.util.stream.ReferencePipeline$2$1.accept(ReferencePipeline.java:174)
-	at java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:193)
-	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
-	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
-	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
-	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:150)
-	at java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:173)
-	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
-	at java.util.stream.ReferencePipeline.forEach(ReferencePipeline.java:485)
-	at com.epam.pipeline.autotests.ao.LogAO$2.apply(LogAO.java:533)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:45)
-	... 22 more
 </pre>
 </span>
 </div>
@@ -176,72 +227,72 @@ Caused by: java.lang.IndexOutOfBoundsException: Index: 20, Size: 20
 </thead>
 <tr>
 <td class="success">autoScaledClusterWithDefaultChildNodesValidationTest - EPMCMBIBPC-2628</td>
-<td>48m8.81s</td>
+<td>47m55.60s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeMastersConfig - EPMCMBIBPC-3161</td>
-<td>12m0.86s</td>
+<td>7m54.66s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeOnDemand - EPMCMBIBPC-3160</td>
-<td>11m41.97s</td>
+<td>7m25.16s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</td>
-<td>11m36.36s</td>
-<td class="success">passed</td>
+<td class="failures">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</td>
+<td>1m50.89s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledCluster - EPMCMBIBPC-3153</td>
-<td>17m57.16s</td>
+<td>18m11.77s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlock - EPMCMBIBPC-3154</td>
-<td>12m36.99s</td>
+<td>7m46.88s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions - EPMCMBIBPC-3159</td>
-<td>11m26.91s</td>
+<td>7m3.32s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterInstanceTypeFamily - EPMCMBIBPC-3155</td>
-<td>11m22.20s</td>
+<td>7m57.56s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">invalidValuesOnConfigureClusterPopUp - EPMCMBIBPC-2620</td>
-<td>29.009s</td>
+<td>31.329s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchAutoScaledClusterTest - EPMCMBIBPC-2618</td>
-<td>12m20.41s</td>
+<td>8m24.22s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchPipelineWithLaunchFlag - EPMCMBIBPC-975</td>
-<td>9m20.43s</td>
+<td>8m59.10s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfApacheSparkCluster - EPMCMBIBPC-3152</td>
-<td>11m19.36s</td>
+<td>11m18.98s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfGECluster - EPMCMBIBPC-3150</td>
-<td>9m8.40s</td>
+<td>8m51.19s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
-<td>18m59.80s</td>
+<td>18m46.42s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -249,7 +300,8 @@ Caused by: java.lang.IndexOutOfBoundsException: Index: 20, Size: 20
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Run with id 33197 has been stopped.
+<pre>Run with id 33334 has been stopped.
+Run with id 33333 has been stopped.
 </pre>
 </span>
 </div>
@@ -261,7 +313,7 @@ Caused by: java.lang.IndexOutOfBoundsException: Index: 20, Size: 20
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 5, 2022 2:15:19 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 7, 2022 4:57:10 AM</p>
 </div>
 </div>
 </body>
