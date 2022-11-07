@@ -83,7 +83,6 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     public ToolDescription showInstanceManagement(final Consumer<InstanceManagementSectionAO> action) {
-        $(byId("run-latest-menu-button")).waitUntil(visible, DEFAULT_TIMEOUT);
         showMetadata(showInstanceManagement);
         action.accept(new InstanceManagementSectionAO(this));
         return this;
@@ -106,6 +105,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     private void showMetadata(final By attribute) {
+        $(byId("run-latest-menu-button")).waitUntil(visible, DEFAULT_TIMEOUT);
         click(SHOW_METADATA);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,
