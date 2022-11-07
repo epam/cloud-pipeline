@@ -16,11 +16,11 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import java.util.Map;
-import java.util.function.Consumer;
-
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
+
+import java.util.Map;
+import java.util.function.Consumer;
 
 import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.visible;
@@ -29,7 +29,15 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
-import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.ao.Primitive.APPLY;
+import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
+import static com.epam.pipeline.autotests.ao.Primitive.FULL_DESCRIPTION;
+import static com.epam.pipeline.autotests.ao.Primitive.PERMISSIONS;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.SHORT_DESCRIPTION;
+import static com.epam.pipeline.autotests.ao.Primitive.SHOW_METADATA;
+import static com.epam.pipeline.autotests.ao.Primitive.TOOL_SETTINGS;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.attributesMenu;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showInstanceManagement;
@@ -75,6 +83,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     public ToolDescription showInstanceManagement(final Consumer<InstanceManagementSectionAO> action) {
+        $(byId("run-latest-menu-button")).waitUntil(visible, DEFAULT_TIMEOUT);
         showMetadata(showInstanceManagement);
         action.accept(new InstanceManagementSectionAO(this));
         return this;
