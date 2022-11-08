@@ -133,15 +133,15 @@ It defines which user's attribute shall be used to display the users in the **Bi
 
 Possible values for described preference: _`userName`_, _`FirstName`_, _`LastName`_, etc.
 
-### Export reports in `csv` from any Billing page
+### Export reports in `CSV` from any Billing page
 
-Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `*.csv` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `*.png` image format only.
+Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `CSV` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `PNG` image format only.
 
-Currently, `*.csv` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
+Currently, `CSV` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
 
 - reports display the same structure as in the GUI - the top 10 records of the corresponding entities (e.g. storages or instances)
 - for the reports, which contain more than one table - all the tables are exported one after another
-- export in `*.csv` from the "General" page remains the same
+- export in `CSV` from the "General" page remains the same
 
 Example of an export from the "CPU" page:
 
@@ -150,10 +150,10 @@ Example of an export from the "CPU" page:
 
 ### Breakdown the billing reports by month
 
-**Cloud Pipeline** allows exporting billing reports in the `*.csv`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
+**Cloud Pipeline** allows exporting billing reports in the `CSV`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
 
 In the current version, this ability is implemented.  
-Now, if any period - longer than a month is selected (including a `custom` period), the `*.csv`-report contains an aggregate for each month of that period.  
+Now, if any period - longer than a month is selected (including a `custom` period), the `CSV`-report contains an aggregate for each month of that period.  
 The whole period summary is being included as well (as previously).
 
 Example of the report for a custom period:  
@@ -460,9 +460,9 @@ For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.
 
 ## Export cluster utilization in Excel format
 
-Previously, users could export **Cluster Node Monitor** reports only in **`csv`** format.
+Previously, users could export **Cluster Node Monitor** reports only in **`CSV`** format.
 
-From now, the ability to export these reports in **`xls`** format is implemented.  
+From now, the ability to export these reports in **`XLSX`** format is implemented.  
 Users can choose the format of the report before the download:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
 
@@ -712,6 +712,23 @@ In some cases, it could be convenient not to specify entity ID during import. Th
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
 
 > **_Note_**: IDs still should be unique
+
+### Ability to add SampleSet item via GUI
+
+Now, users may create SampleSets or other "Container-like" entities from the GUI (previously it was possible via the `CSV` import only).  
+This feature could be useful, if the Samples were imported using the IDs autogeneration, as it could be complicated to grab those IDs and copy to the `CSV`.
+
+To create a new SampleSet:
+
+- Click the **+ Add instance** button in the Metadata section and choose the _SampleSet_ instance type:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_16.png)
+- Provide the information for the new SampleSet and click the **Browse** button to select a list of Samples, which will be associated with the creating SampleSet:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_17.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_18.png)
+- After creation, the new SampleSet will appear in the corresponding metadata class:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_19.png)
+
+See details [here](../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items.md#add-sampleset-item).
 
 ### Preselect instances for a rerun
 
