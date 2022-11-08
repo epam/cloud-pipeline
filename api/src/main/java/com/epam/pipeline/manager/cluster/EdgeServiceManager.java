@@ -126,8 +126,8 @@ public class EdgeServiceManager {
     }
 
     public String buildEdgeExternalUrl(final String region) {
-        final Map<String, String> labels = buildRegionsLabels(getEdgeRegion(region));
-        return kubernetesManager.getServicesByLabels(labels, edgeLabel).stream()
+        return getEdgeForRegionOrDefault(region)
+                .stream()
                 .findFirst()
                 .map(edgeService -> buildEdgeExternalUrl(getServiceDescription(edgeService)))
                 .orElseGet(this::logServiceNotFoundAndReturnNull);
@@ -230,5 +230,18 @@ public class EdgeServiceManager {
     private String logServiceNotFoundAndReturnNull() {
         log.debug("Could not find any edge service");
         return null;
+    }
+
+    private List<Service> getEdgeForRegionOrDefault(final String region) {
+        final List<Service> services = getEdgeServiceForRegion(region);
+        if (CollectionUtils.isNotEmpty(services)) {
+            return services;
+        }
+        return getEdgeServiceForRegion(null);
+    }
+
+    private List<Service> getEdgeServiceForRegion(final String region) {
+        final Map<String, String> labels = buildRegionsLabels(getEdgeRegion(region));
+        return kubernetesManager.getServicesByLabels(labels, edgeLabel);
     }
 }
