@@ -20,23 +20,25 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import org.junit.Test;
-
-import freemarker.template.TemplateException;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.context.ApplicationContext;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.epam.pipeline.manager.resource.StaticResourcesService.buildHtml;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StaticResourceServiceTest extends AbstractSpringTest {
 
+    private static final String TEMPLATES_PATH = "classpath:views/";
+    private static final String TEMPLATE_NAME = "folder.vm";
+
     @Autowired
-    private StaticResourcesService staticResourcesService;
+    private ApplicationContext context;
 
     @Test
-    public void getHtmlContentTest() throws IOException, TemplateException {
+    public void getHtmlContentTest() throws IOException {
         final List<AbstractDataStorageItem> items = new ArrayList<>();
         final DataStorageFile file1 = getDataStorageFile("file1", "path1",
                 1234567899, "10/24/22, 9:27:20 PM");
@@ -51,7 +53,9 @@ public class StaticResourceServiceTest extends AbstractSpringTest {
         final DataStorageFile file2 = getDataStorageFile("file2", "path2",
                 123, "10/24/20, 9:27:20 PM");
         items.add(file2);
-        assertThat(staticResourcesService.buildHtml(items)).isNotBlank();
+
+        assertThat(buildHtml(items, context.getResource(TEMPLATES_PATH).getFile().getAbsolutePath(),
+                TEMPLATE_NAME, "")).isNotBlank();
     }
 
     private DataStorageFolder getDataStorageFolder(final String name, final String path) {

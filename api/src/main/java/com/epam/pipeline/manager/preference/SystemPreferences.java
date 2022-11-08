@@ -126,6 +126,7 @@ public class SystemPreferences {
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
     private static final String CLOUD_REGION_GROUP = "Cloud region";
+    private static final String STATIC_RESOURCES_GROUP = "Static Resources";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -1088,6 +1089,15 @@ public class SystemPreferences {
                     "cloud.access.management.config", Collections.emptyList(),
                     new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
+
+    // Static Resources Group
+    public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
+            new StringPreference("static.resources.folder.template.path", "classpath:views/",
+                    STATIC_RESOURCES_GROUP, pass);
+    public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE =
+            new StringPreference("static.resources.folder.template", "folder.vm",
+                    STATIC_RESOURCES_GROUP, pass);
+
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

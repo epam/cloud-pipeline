@@ -26,16 +26,16 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.Version;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.velocity.Template;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.runtime.RuntimeConstants;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import freemarker.template.TemplateException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -43,9 +43,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.controller.resource.StaticResourcesController.STATIC_RESOURCES;
@@ -55,9 +53,6 @@ import static com.epam.pipeline.controller.resource.StaticResourcesController.ST
 public class StaticResourcesService {
 
     private static final String DELIMITER = "/";
-    private static final String TEMPLATE = "folder.ftlh";
-    private static final String VERSION = "2.3.23";
-    private static final String TEMPLATES_FOLDER = "/views";
 
     private final DataStorageManager dataStorageManager;
     private final MessageHelper messageHelper;
@@ -76,32 +71,37 @@ public class StaticResourcesService {
         if (Files.isDirectory(Paths.get(path))) {
             final List<AbstractDataStorageItem> items = dataStorageManager.getDataStorageItems(storage.getId(),
                     path, false, null, null).getResults();
-            final String html = buildHtml(items);
+            final String tmplPath = preferenceManager.getPreference(
+                    SystemPreferences.STATIC_RESOURCES_FOLDER_TEMPLATE_PATH);
+            final String tmplName = preferenceManager.getPreference(SystemPreferences.STATIC_RESOURCES_FOLDER_TEMPLATE);
+            final String staticResourcesPrefix = preferenceManager.getPreference(SystemPreferences.BASE_API_HOST)
+                    + STATIC_RESOURCES;
+            final String html = buildHtml(items, tmplPath, tmplName, staticResourcesPrefix);
             return new DataStorageStreamingContent(new ByteArrayInputStream(html.getBytes()), filePath);
         }
         dataStorageManager.checkDataStorageObjectExists(storage, filePath, null);
         return dataStorageManager.getStreamingContent(storage.getId(), filePath, null);
     }
 
-    public String buildHtml(final List<AbstractDataStorageItem> items) throws IOException, TemplateException {
-        final Configuration cfg = new Configuration(new Version(VERSION));
-
-        cfg.setClassForTemplateLoading(StaticResourcesService.class, TEMPLATES_FOLDER);
-        cfg.setDefaultEncoding("UTF-8");
-
-        final Template template = cfg.getTemplate(TEMPLATE);
-        final Map<String, Object> templateData = new HashMap<>();
-        templateData.put("items", getHtmlStorageItems(items));
+    public static String buildHtml(final List<AbstractDataStorageItem> items,
+                            final String templatePath,
+                            final String templateName,
+                            final String staticResourcesPrefix) throws IOException{
+        final VelocityEngine engine = new VelocityEngine();
+        engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, templatePath);
+        engine.init();
+        final Template template = engine.getTemplate(templateName);
+        final VelocityContext velocityContext = new VelocityContext();
+        velocityContext.put("items", getHtmlStorageItems(items, staticResourcesPrefix));
 
         try (StringWriter out = new StringWriter()) {
-            template.process(templateData, out);
+            template.merge(velocityContext, out);
             return out.getBuffer().toString();
         }
     }
 
-    private List<HtmlStorageItem> getHtmlStorageItems(final List<AbstractDataStorageItem> items) {
-        final String staticResourcesPrefix = preferenceManager.getPreference(SystemPreferences.BASE_API_HOST)
-                + STATIC_RESOURCES;
+    private static List<HtmlStorageItem> getHtmlStorageItems(final List<AbstractDataStorageItem> items,
+                                                      final String staticResourcesPrefix) {
         return items.stream()
                 .map(i -> HtmlStorageItem.builder()
                     .name(i.getName())
@@ -114,7 +114,7 @@ public class StaticResourcesService {
                 .collect(Collectors.toList());
     }
 
-    private String getFileSize(final AbstractDataStorageItem item) {
+    private static String getFileSize(final AbstractDataStorageItem item) {
         return item.getType() == DataStorageItemType.File ?
                 FileUtils.byteCountToDisplaySize(((DataStorageFile) item).getSize()) : "";
     }

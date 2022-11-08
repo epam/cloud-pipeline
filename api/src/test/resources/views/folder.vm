@@ -10,13 +10,13 @@
                 </tr>
             </thead>
             <tbody>
-                <#list items as item>
+                #foreach($item in $items)
                     <tr>
                         <td align="left"><a href="${item.path}">${item.name}</a></td>
                         <td align="left">${item.size}</td>
                         <td align="left">${item.changed}</td>
                     </tr>
-                </#list>
+                #end
             </tbody>
         </table>
     </body>
