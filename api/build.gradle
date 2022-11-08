@@ -249,6 +249,9 @@ dependencies {
     compile('io.reflectoring.diffparser:diffparser:1.4')
 
     compile 'dnsjava:dnsjava:3.4.3'
+
+    //Template engine
+    compile group: 'org.freemarker', name: 'freemarker', version: '2.3.23'
 }
 
 // >>>>> processes profiles

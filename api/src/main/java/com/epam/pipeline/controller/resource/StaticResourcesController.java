@@ -44,7 +44,7 @@ import java.util.Map;
 public class StaticResourcesController extends AbstractRestController {
 
     private static final FileNameMap FILE_NAME_MAP = URLConnection.getFileNameMap();
-    private static final String STATIC_RESOURCES = "/static-resources/";
+    public static final String STATIC_RESOURCES = "/static-resources/";
     private final StaticResourceApiService resourcesService;
     private final PreferenceManager preferenceManager;
 
