@@ -41,7 +41,6 @@ import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_SELECTION;
-import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -162,7 +161,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .perform(registry, group, testTool, tool ->
                         tool
                                 .settings()
-                                .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                                 .runWithCustomSettings()
                 )
