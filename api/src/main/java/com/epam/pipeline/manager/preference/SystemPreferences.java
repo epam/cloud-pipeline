@@ -1092,12 +1092,8 @@ public class SystemPreferences {
 
     // Static Resources Group
     public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
-            new StringPreference("static.resources.folder.template.path", "classpath:views/",
+            new StringPreference("static.resources.folder.template.path", "classpath:/views/folder.vm",
                     STATIC_RESOURCES_GROUP, pass);
-    public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE =
-            new StringPreference("static.resources.folder.template", "folder.vm",
-                    STATIC_RESOURCES_GROUP, pass);
-
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

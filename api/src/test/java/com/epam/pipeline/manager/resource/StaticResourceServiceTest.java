@@ -31,8 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class StaticResourceServiceTest extends AbstractSpringTest {
 
-    private static final String TEMPLATES_PATH = "classpath:views/";
-    private static final String TEMPLATE_NAME = "folder.vm";
+    private static final String TEMPLATES_PATH = "classpath:/views/folder.vm";
 
     @Autowired
     private ApplicationContext context;
@@ -54,8 +53,8 @@ public class StaticResourceServiceTest extends AbstractSpringTest {
                 123, "10/24/20, 9:27:20 PM");
         items.add(file2);
 
-        assertThat(buildHtml(items, context.getResource(TEMPLATES_PATH).getFile().getAbsolutePath(),
-                TEMPLATE_NAME, "")).isNotBlank();
+        assertThat(buildHtml(items, context.getResource(TEMPLATES_PATH).getFile().getAbsolutePath(), ""))
+                .isNotBlank();
     }
 
     private DataStorageFolder getDataStorageFolder(final String name, final String path) {
