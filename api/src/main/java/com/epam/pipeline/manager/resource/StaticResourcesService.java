@@ -40,8 +40,6 @@ import org.springframework.util.Assert;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -68,7 +66,8 @@ public class StaticResourcesService {
         Assert.isTrue(StringUtils.isNotBlank(filePath),
                 messageHelper.getMessage(MessageConstants.ERROR_STATIC_RESOURCES_INVALID_PATH));
         final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(bucketName);
-        if (Files.isDirectory(Paths.get(path))) {
+        final DataStorageItemType itemType = dataStorageManager.getItemType(storage, filePath, null);
+        if (itemType == DataStorageItemType.Folder) {
             final List<AbstractDataStorageItem> items = dataStorageManager.getDataStorageItems(storage.getId(),
                     path, false, null, null).getResults();
             final String tmplPath = preferenceManager.getPreference(
@@ -79,7 +78,6 @@ public class StaticResourcesService {
             final String html = buildHtml(items, tmplPath, tmplName, staticResourcesPrefix);
             return new DataStorageStreamingContent(new ByteArrayInputStream(html.getBytes()), filePath);
         }
-        dataStorageManager.checkDataStorageObjectExists(storage, filePath, null);
         return dataStorageManager.getStreamingContent(storage.getId(), filePath, null);
     }
 
