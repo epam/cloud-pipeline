@@ -449,7 +449,9 @@ export default class EndpointInput extends React.Component {
           <CodeEditor
             readOnly={this.props.disabled || !this.additionalConfigurationEditable}
             ref={this.initializeEditor}
-            placeholder="Add any additional nginx configuration here"
+            placeholder={ this.additionalConfigurationEditable ? 
+                          "Add any additional nginx configuration here" : 
+                          "You have no permissions to modify the additional nginx configuration" }
             lineNumbers={false}
             className={styles.endpointCodeEditor}
             language="shell"
