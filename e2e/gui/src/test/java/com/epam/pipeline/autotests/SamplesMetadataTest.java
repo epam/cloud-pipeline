@@ -412,7 +412,7 @@ public class SamplesMetadataTest
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .selectPipeline(pipeline)
-                                .ensure(byText("Estimated price per hour"), visible)
+                                .ensure(byText("Estimated price per hour: "), visible)
                                 .click(save())
                                 .ensure(save(), disabled)
                                 .ensure(pipeline(), valueContains(pipeline))
