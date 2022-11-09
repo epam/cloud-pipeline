@@ -178,12 +178,12 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .createConfiguration(anotherProfile)
             .editConfiguration(defaultProfile, profile -> {
                 profile.clickAddStringParameter().setName(firstParameter).setValue(firstParameterValue);
-                profile.click(SAVE);
+                profile.click(SAVE).ensureDisable(SAVE);
             })
             .sleep(5, SECONDS)
             .editConfiguration(anotherProfile, profile -> {
                 profile.refresh().clickAddPathParameter().setName(secondParameter).setValue(secondParameterValue);
-                profile.click(SAVE);
+                profile.click(SAVE).ensureDisable(SAVE);
             })
             .sleep(5, SECONDS)
             .editConfiguration(defaultProfile, profile ->
