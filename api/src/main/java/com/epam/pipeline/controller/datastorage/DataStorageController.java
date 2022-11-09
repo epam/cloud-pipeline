@@ -400,6 +400,26 @@ public class DataStorageController extends AbstractRestController {
         }
     }
 
+    @RequestMapping(value = "/datastorage/{id}/type", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns data storage item's type.",
+            notes = "Returns data storage item's type",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<DataStorageItemType> getStorageItemType(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH) final String path,
+            @RequestParam(value = VERSION, required = false) final String version) {
+        if (StringUtils.hasText(version)) {
+            return Result.success(dataStorageApiService.getItemTypeOwner(id, path, version));
+        } else {
+            return Result.success(dataStorageApiService.getItemType(id, path, version));
+        }
+    }
+
     @GetMapping(value = "/datastorage/{id}/generateUploadUrl")
     @ResponseBody
     @ApiOperation(
