@@ -1389,8 +1389,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public PreferencesAO saveIfNeeded() {
+            sleep(5, SECONDS);
             if(get(SAVE).isEnabled()) {
-                sleep(4, SECONDS);
+                sleep(10, SECONDS);
                 save();
             }
             return this;
