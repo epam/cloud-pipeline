@@ -1183,6 +1183,18 @@ public class DataStorageManager implements SecuredEntityManager {
                                         path, dataStorage.getRoot())));
     }
 
+    public DataStorageItemType getItemType(final Long id,
+                                           final String path,
+                                           final String version) {
+        return storageProviderManager.getItemType(load(id), path, version);
+    }
+
+    public DataStorageItemType getItemType(final AbstractDataStorage dataStorage,
+                                             final String path,
+                                             final String version) {
+        return storageProviderManager.getItemType(dataStorage, path, version);
+    }
+
     private void assertToolsToMount(final DataStorageVO dataStorageVO) {
         if (!CollectionUtils.isEmpty(dataStorageVO.getToolsToMount())) {
             for (ToolFingerprint tool : dataStorageVO.getToolsToMount()) {

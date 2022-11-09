@@ -132,6 +132,17 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
         }
     }
 
+    @Override
+    public Response<ResponseBody> getResponse(final Call<ResponseBody> call) {
+        try {
+            final Response<ResponseBody> response = call.execute();
+            validateResponseStatus(response);
+            return response;
+        } catch (IOException e) {
+            throw new PipelineResponseIOException(e);
+        }
+    }
+
     private byte[] internalGetByteResponse(final Call<byte[]> call) throws IOException {
         try {
             final Response<byte[]> response = call.execute();

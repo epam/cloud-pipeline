@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -248,5 +249,11 @@ public class StorageProviderManager {
     public String verifyOrDefaultRestoreMode(final AbstractDataStorage dataStorage,
                                              final StorageRestoreActionRequest restoreActionRequest) {
         return getStorageProvider(dataStorage).verifyOrDefaultRestoreMode(restoreActionRequest);
+    }
+
+    public DataStorageItemType getItemType(final AbstractDataStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        return getStorageProvider(dataStorage).getItemType(dataStorage, path, version);
     }
 }

@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -440,6 +441,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
         return new TemporaryCredentialsS3Helper(credentials, messageHelper, region);
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final S3bucketDataStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        return getS3Helper(dataStorage).getItemType(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path), version);
     }
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {

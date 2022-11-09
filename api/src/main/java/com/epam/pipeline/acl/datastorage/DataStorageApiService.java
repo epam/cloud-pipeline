@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
@@ -368,5 +369,15 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByName(#id, 'WRITE')")
     public void updateStorageUsage(final String id) {
         eventsService.ifPresent(s -> s.addReindexEvent(id));
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public DataStorageItemType getItemType(final Long id, final String path, final String version) {
+        return dataStorageManager.getItemType(id, path, version);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public DataStorageItemType getItemTypeOwner(final Long id, final String path, final String version) {
+        return dataStorageManager.getItemType(id, path, version);
     }
 }

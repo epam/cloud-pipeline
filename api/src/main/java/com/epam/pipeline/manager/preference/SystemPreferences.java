@@ -715,6 +715,9 @@ public class SystemPreferences {
             new ObjectPreference<>("data.sharing.static.resource.headers", null,
                     new TypeReference<Map<String, Map<String, String>>>() {}, DATA_SHARING_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, Map<String, String>>>() {}));
+    public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
+            new StringPreference("data.sharing.static.resource.template.path", "classpath:views/folder.vm",
+                    DATA_SHARING_GROUP, pass);
 
     // SYSTEM_GROUP
     /**

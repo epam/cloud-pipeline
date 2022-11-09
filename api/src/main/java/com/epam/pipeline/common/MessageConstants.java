@@ -830,8 +830,9 @@ public final class MessageConstants {
             "error.ngs.preprocessing.sampleid.is.not.found";
 
     // Static resource
-    public static final String ERROR_STATIC_RESOURCES_INVALID_PATH =
-            "error.static.resources.invalid.path";
+    public static final String ERROR_STATIC_RESOURCES_INVALID_PATH = "error.static.resources.invalid.path";
+    public static final String ERROR_STATIC_RESOURCES_FOLDER_PATH = "error.static.resources.folder.path";
+
 
     private MessageConstants() {
         // no-op
