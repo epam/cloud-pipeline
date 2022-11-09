@@ -30,13 +30,16 @@
                 </tr>
             </thead>
             <tbody>
+                <tr>
+                    <td align="left"> <a class="icon dir" href="../">..</a> </td>
+                </tr>
                 #foreach($item in $items)
                     <tr>
                         <td align="left">
                             #if($item.type == "Folder")
-                                <a class="icon dir" href="${item.path}">${item.name}</a>
+                                <a class="icon dir" href="./${item.path}/">${item.name}</a>
                             #else
-                                <a class="icon file" href="${item.path}">${item.name}</a>
+                                <a class="icon file" href="./${item.path}">${item.name}</a>
                             #end
                         </td>
                         <td class="detailsColumn">${item.size}</td>

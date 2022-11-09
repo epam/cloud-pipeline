@@ -23,7 +23,9 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.exception.InvalidPathException;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -45,47 +47,46 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.controller.resource.StaticResourcesController.STATIC_RESOURCES;
-
 @Service
 @RequiredArgsConstructor
 public class StaticResourcesService {
 
-    private static final String DELIMITER = "/";
+    private static final String HTML = ".html";
 
     private final DataStorageManager dataStorageManager;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
 
     @SneakyThrows
-    public DataStorageStreamingContent getContent(final String path) {
-        Assert.isTrue(StringUtils.isNotBlank(path) && path.contains(DELIMITER),
+    public DataStorageStreamingContent getContent(final String requestPath) {
+        Assert.isTrue(StringUtils.isNotBlank(requestPath),
                 messageHelper.getMessage(MessageConstants.ERROR_STATIC_RESOURCES_INVALID_PATH));
-        final String[] split = path.split(DELIMITER, 2);
+        final String[] split = requestPath.split(ProviderUtils.DELIMITER, 2);
         final String bucketName = split[0];
-        final String filePath = split[1];
-        Assert.isTrue(StringUtils.isNotBlank(filePath),
-                messageHelper.getMessage(MessageConstants.ERROR_STATIC_RESOURCES_INVALID_PATH));
+        final String filePath = getFilePath(split);
         final AbstractDataStorage storage = dataStorageManager.loadByNameOrId(bucketName);
         final DataStorageItemType itemType = dataStorageManager.getItemType(storage, filePath, null);
         if (itemType == DataStorageItemType.Folder) {
+            if (!requestPath.endsWith(ProviderUtils.DELIMITER)) {
+                throw new InvalidPathException(
+                        messageHelper.getMessage(MessageConstants.ERROR_STATIC_RESOURCES_FOLDER_PATH));
+            }
             final List<AbstractDataStorageItem> items = dataStorageManager.getDataStorageItems(storage.getId(),
-                    filePath, false, null, null).getResults();
+                    ProviderUtils.withTrailingDelimiter(filePath), false, null, null).getResults();
             final String templatePath = preferenceManager.getPreference(
                     SystemPreferences.STATIC_RESOURCES_FOLDER_TEMPLATE_PATH);
-            final String staticResourcesPrefix = preferenceManager.getPreference(SystemPreferences.BASE_API_HOST)
-                    + STATIC_RESOURCES;
-            final String html = buildHtml(items, templatePath, staticResourcesPrefix);
-            return new DataStorageStreamingContent(new ByteArrayInputStream(html.getBytes()), filePath);
+            final String html = buildHtml(items, templatePath, filePath);
+            return new DataStorageStreamingContent(new ByteArrayInputStream(html.getBytes()),
+                    ProviderUtils.withoutTrailingDelimiter(filePath) + HTML);
         }
         return dataStorageManager.getStreamingContent(storage.getId(), filePath, null);
     }
 
     public static String buildHtml(final List<AbstractDataStorageItem> items,
-                            final String templatePath,
-                            final String staticResourcesPrefix) throws IOException{
+                                   final String templatePath,
+                                   final String folder) throws IOException {
         final VelocityContext velocityContext = new VelocityContext();
-        velocityContext.put("items", getHtmlStorageItems(items, staticResourcesPrefix));
+        velocityContext.put("items", getHtmlStorageItems(items, folder));
         final String template = IOUtils.toString(new FileReader(ResourceUtils.getFile(templatePath)));
         try (StringWriter out = new StringWriter()) {
             Velocity.evaluate(velocityContext, out, "folder", template);
@@ -94,11 +95,11 @@ public class StaticResourcesService {
     }
 
     private static List<HtmlStorageItem> getHtmlStorageItems(final List<AbstractDataStorageItem> items,
-                                                      final String staticResourcesPrefix) {
+                                                             final String folder) {
         return items.stream()
                 .map(i -> HtmlStorageItem.builder()
                     .name(i.getName())
-                    .path(staticResourcesPrefix + i.getPath())
+                    .path(i.getPath().replaceFirst(folder, ""))
                     .size(getFileSize(i))
                     .type(i.getType())
                     .changed(i.getType() == DataStorageItemType.File ? ((DataStorageFile) i).getChanged() : "")
@@ -110,5 +111,9 @@ public class StaticResourcesService {
     private static String getFileSize(final AbstractDataStorageItem item) {
         return item.getType() == DataStorageItemType.File ?
                 FileUtils.byteCountToDisplaySize(((DataStorageFile) item).getSize()) : "";
+    }
+
+    private String getFilePath(final String[] chunks) {
+        return chunks.length == 1 ? "" : chunks[1];
     }
 }

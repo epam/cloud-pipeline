@@ -19,12 +19,15 @@ package com.epam.pipeline.controller.resource;
 import com.epam.pipeline.acl.resource.StaticResourceApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.exception.InvalidPathException;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,19 +47,26 @@ import java.util.Map;
 public class StaticResourcesController extends AbstractRestController {
 
     private static final FileNameMap FILE_NAME_MAP = URLConnection.getFileNameMap();
-    public static final String STATIC_RESOURCES = "/static-resources/";
+    private static final String STATIC_RESOURCES = "/static-resources/";
+
     private final StaticResourceApiService resourcesService;
     private final PreferenceManager preferenceManager;
 
     @GetMapping(value = "/static-resources/**")
     public void getStaticFile(final HttpServletRequest request, final HttpServletResponse response)
             throws IOException {
-        final DataStorageStreamingContent content = resourcesService.getContent(
-                request.getPathInfo().replaceFirst(STATIC_RESOURCES, ""));
-        final String fileName = FilenameUtils.getName(content.getName());
-        final MediaType mediaType = getMediaType(fileName);
-        writeStreamToResponse(response, content.getContent(), fileName, mediaType,
-                !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(fileName));
+        try {
+            final DataStorageStreamingContent content = resourcesService.getContent(
+                    request.getPathInfo().replaceFirst(STATIC_RESOURCES, ""));
+            final String fileName = FilenameUtils.getName(content.getName());
+            final MediaType mediaType = getMediaType(fileName);
+
+            writeStreamToResponse(response, content.getContent(), fileName, mediaType,
+                    !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(fileName));
+        } catch (InvalidPathException e) {
+            response.setHeader("Location", request.getRequestURI() + ProviderUtils.DELIMITER);
+            response.setStatus(HttpStatus.FOUND.value());
+        }
     }
 
     private Map<String, String> getCustomHeaders(final String fileName) {

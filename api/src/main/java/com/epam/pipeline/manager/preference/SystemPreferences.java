@@ -126,7 +126,6 @@ public class SystemPreferences {
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
     private static final String CLOUD_REGION_GROUP = "Cloud region";
-    private static final String STATIC_RESOURCES_GROUP = "Static Resources";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -716,6 +715,9 @@ public class SystemPreferences {
             new ObjectPreference<>("data.sharing.static.resource.headers", null,
                     new TypeReference<Map<String, Map<String, String>>>() {}, DATA_SHARING_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, Map<String, String>>>() {}));
+    public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
+            new StringPreference("data.sharing.static.resource.template.path", "classpath:views/folder.vm",
+                    DATA_SHARING_GROUP, pass);
 
     // SYSTEM_GROUP
     /**
@@ -1089,11 +1091,6 @@ public class SystemPreferences {
                     "cloud.access.management.config", Collections.emptyList(),
                     new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
-
-    // Static Resources Group
-    public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
-            new StringPreference("static.resources.folder.template.path", "classpath:/views/folder.vm",
-                    STATIC_RESOURCES_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
