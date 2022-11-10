@@ -28,19 +28,17 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.utils.ResourceLoadingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.util.ResourceUtils;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Comparator;
@@ -87,7 +85,7 @@ public class StaticResourcesService {
                                    final String folder) throws IOException {
         final VelocityContext velocityContext = new VelocityContext();
         velocityContext.put("items", getHtmlStorageItems(items, folder));
-        final String template = IOUtils.toString(new FileReader(ResourceUtils.getFile(templatePath)));
+        final String template = ResourceLoadingUtils.readResource(templatePath);
         try (StringWriter out = new StringWriter()) {
             Velocity.evaluate(velocityContext, out, "folder", template);
             return out.getBuffer().toString();

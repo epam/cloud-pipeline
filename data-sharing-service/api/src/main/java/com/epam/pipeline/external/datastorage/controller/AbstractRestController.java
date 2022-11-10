@@ -195,6 +195,27 @@ public abstract class AbstractRestController {
         response.flushBuffer();
     }
 
+    protected void writeStreamToResponse(final HttpServletResponse response,
+                                         final InputStream stream,
+                                         final String fileName,
+                                         final String disposition,
+                                         final MediaType contentType) throws IOException {
+        try (InputStream in = stream) {
+            writeToResponse(response,
+                    ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType, disposition);
+        }
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType,
+                                   final String disposition) throws IOException {
+        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, disposition);
+        response.setContentType(contentType.toString());
+        writer.write(response);
+        response.flushBuffer();
+    }
+
     private String getContentDisposition(final ResultWriter writer, final boolean inline) {
         final String disposition = inline ? "inline": "attachment";
         return disposition + ";filename=" + writer.getName();
