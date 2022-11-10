@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 import json
 import os
 import pandas
-from utils import HcsParsingUtils
+from utils import HcsParsingUtils, log_run_info
 
 
 ID = 'Id'
@@ -38,7 +38,11 @@ class HcsFileEvalProcessor:
         self.hcs_eval_dir = hcs_eval_dir
         self.hcs_results_dir = hcs_results_dir
 
+    def log_processing_info(self, message):
+        log_run_info('[{}] {}'.format(self.hcs_eval_dir, message))
+
     def parse_evaluations(self):
+        self.log_processing_info("Processing started")
         dir_names = self.get_evals_directories()
         for dir_name in dir_names:
             evaluation_path = os.path.join(self.hcs_results_dir, "eval", dir_name)
@@ -49,15 +53,27 @@ class HcsFileEvalProcessor:
             source_evaluations_path = os.path.join(self.hcs_eval_dir, dir_name)
 
             root_xml_file, root_keyword_file = self.get_evals_files(source_evaluations_path)
+            if not root_xml_file:
+                self.log_processing_info("Evaluation xml file is missing '%s'" % root_xml_file)
+            if not root_keyword_file:
+                self.log_processing_info("Evaluation keyword file is missing '%s'" % root_keyword_file)
 
             evaluations_map = self.build_evaluations_spec(root_xml_file, root_keyword_file)
-            with open(os.path.join(evaluation_path, 'spec.json'), "w") as file_stream:
-                json.dump(evaluations_map, file_stream)
+            if evaluations_map:
+                with open(os.path.join(evaluation_path, 'spec.json'), "w") as file_stream:
+                    json.dump(evaluations_map, file_stream)
+            else:
+                self.log_processing_info("No evaluation specification can be constructed")
 
             plate_results_path = os.path.join(source_evaluations_path, 'plateresult')
             plate_results_xml_file, _ = self.get_evals_files(plate_results_path)
+            if not plate_results_xml_file:
+                self.log_processing_info("Plate results xml file is missing '%s'" % plate_results_xml_file)
 
             self.build_evaluation_results(plate_results_xml_file, evaluation_path)
+
+            self.log_processing_info("Finished '%s' directory processing" % dir_name)
+        self.log_processing_info("Processing finished")
 
     @staticmethod
     def parse_xml_array(selection, schema, xml_element_name):
@@ -74,34 +90,36 @@ class HcsFileEvalProcessor:
 
     def build_evaluations_spec(self, xml_path, keyword_path):
         evaluations_map = {}
-        root = ET.parse(xml_path).getroot()
-        schema = HcsParsingUtils.extract_xml_schema(root)
-        selection = root.find(schema + 'Selection')
-        xml_wells = selection.find(schema + 'Wells').findall(schema + 'Well')
-        json_wells = []
-        for well in xml_wells:
-            json_wells.append(
-                {
-                    "x": well.find(schema + 'Col').text,
-                    "y": well.find(schema + 'Row').text
-                }
-            )
-        evaluations_map.update({"wells": json_wells})
+        if xml_path:
+            root = ET.parse(xml_path).getroot()
+            schema = HcsParsingUtils.extract_xml_schema(root)
+            selection = root.find(schema + 'Selection')
+            xml_wells = selection.find(schema + 'Wells').findall(schema + 'Well')
+            json_wells = []
+            for well in xml_wells:
+                json_wells.append(
+                    {
+                        "x": well.find(schema + 'Col').text,
+                        "y": well.find(schema + 'Row').text
+                    }
+                )
+            evaluations_map.update({"wells": json_wells})
 
-        evaluations_map.update({"fields": self.parse_xml_array(selection, schema, 'Fields')})
-        evaluations_map.update({"planes": self.parse_xml_array(selection, schema, 'Planes')})
-        evaluations_map.update({"timepoints": self.parse_xml_array(selection, schema, 'KineticRepetitions')})
+            evaluations_map.update({"fields": self.parse_xml_array(selection, schema, 'Fields')})
+            evaluations_map.update({"planes": self.parse_xml_array(selection, schema, 'Planes')})
+            evaluations_map.update({"timepoints": self.parse_xml_array(selection, schema, 'KineticRepetitions')})
 
-        keyword_file = open(keyword_path, 'r')
-        keyword_data = "".join(keyword_file.readlines()[1:-2])
-        if keyword_data:
-            keyword_json_data = json.loads(keyword_data)
-            evaluations_map.update({"name": keyword_json_data['NAME']})
-            evaluations_map.update({"owner": keyword_json_data['OWNER']})
-            evaluations_map.update({"date": keyword_json_data['DATE']})
-            evaluations_map.update({"channels": keyword_json_data['CHANNEL']})
-        else:
-            print("No keyword data '%s' fond" % keyword_path)
+        if keyword_path:
+            with open(keyword_path, 'r') as keyword_file:
+                keyword_data = "".join(keyword_file.readlines()[1:-2])
+            if keyword_data:
+                keyword_json_data = json.loads(keyword_data)
+                evaluations_map.update({"name": keyword_json_data['NAME']})
+                evaluations_map.update({"owner": keyword_json_data['OWNER']})
+                evaluations_map.update({"date": keyword_json_data['DATE']})
+                evaluations_map.update({"channels": keyword_json_data['CHANNEL']})
+            else:
+                self.log_processing_info("No keyword data '%s' fond" % keyword_path)
 
         return evaluations_map
 
@@ -114,6 +132,8 @@ class HcsFileEvalProcessor:
         return attribute_value
 
     def build_evaluation_results(self, plate_results_xml_path, result_dir):
+        if not plate_results_xml_path:
+            return
         root = ET.parse(plate_results_xml_path).getroot()
         schema = HcsParsingUtils.extract_xml_schema(root)
 
@@ -150,6 +170,10 @@ class HcsFileEvalProcessor:
                         for j in range(0, i):
                             result_data.get(column_name).append("")
                     result_data.get(column_name).append(value)
+
+        if not result_data:
+            self.log_processing_info("No evaluation results found")
+            return
 
         df = pandas.DataFrame()
         # place mandatory fields at the beginning
