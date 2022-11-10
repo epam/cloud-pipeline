@@ -38,6 +38,8 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
@@ -97,6 +99,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
 
     @BeforeClass
     public void initialLogout() {
+        refresh();
         logout();
     }
 
@@ -186,6 +189,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                 .click(OK)
                                 )
                                 .click(SAVE)
+                                .ensureDisable(SAVE)
+                                .ensure(byText("Estimated price per hour:"), visible)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType)));
     }
 
@@ -347,7 +352,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     )
                                     .setValue(DISK, customDisk)
                                     .sleep(3, SECONDS)
-                                    .click(SAVE))
+                                    .click(SAVE)
+                                    .ensureDisable(SAVE)
+                                    .ensure(byText("Estimated price per hour:"), visible))
                     .sleep(2, SECONDS);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
             logout();
