@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
@@ -149,5 +150,13 @@ public class StoragePermissionManager {
         return permissions.stream()
                 .anyMatch(permission -> permissionsService.isMaskBitSet(storage.getMask(),
                         permission.getSimpleMask()));
+    }
+
+    public boolean checkTagSearchResultPermission(final DataStorageTagSearchResult searchResultEntry,
+                                                  final String permissionName) {
+        return grantPermissionManager.storagePermission(
+                entityManager.load(AclClass.DATA_STORAGE, searchResultEntry.getId()),
+                permissionName
+        );
     }
 }

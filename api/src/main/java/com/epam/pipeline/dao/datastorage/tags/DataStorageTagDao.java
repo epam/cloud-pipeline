@@ -1,18 +1,39 @@
+/*
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.dao.datastorage.tags;
 
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.util.Pair;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
+import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,6 +52,8 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     private final String deleteSpecificTagsQuery;
     private final String batchDeleteAllTagsQuery;
     private final String deleteAllTagsByPathPatternQuery;
+    private final String searchDatastorageObjectsByTagQuery;
+    private final String searchDatastorageObjectsByTagInSpecificStoragesQuery;
     
     public List<DataStorageTag> batchUpsert(final Long root, final DataStorageTag... tags) {
         return batchUpsert(root, Arrays.stream(tags));
@@ -129,6 +152,31 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                 .addValue(Parameters.DATASTORAGE_PATH.name(), pathPattern));
     }
 
+    public Map<Long, List<DataStorageTag>> search(final DataStorageObjectSearchByTagRequest request) {
+        Assert.state(request.getTags().size() == 1,
+                "Please specify exactly one tag to be search by!");
+        final Map.Entry<String, String> tagToSearch = request.getTags().entrySet().stream()
+                .findFirst().orElseThrow(() -> new IllegalStateException("Tag should be present!"));
+        final MapSqlParameterSource sqlParameterSource = new MapSqlParameterSource();
+        sqlParameterSource.addValue(Parameters.TAG_KEY.name(), tagToSearch.getKey());
+        sqlParameterSource.addValue(
+                Parameters.TAG_VALUE.name(),
+                StringUtils.isNotBlank(tagToSearch.getValue()) ? tagToSearch.getValue() : null
+        );
+        if (CollectionUtils.isNotEmpty(request.getDatastorageIds())) {
+            sqlParameterSource.addValue(Parameters.DATASTORAGE_ROOT_ID.name(), request.getDatastorageIds());
+        }
+        return getNamedParameterJdbcTemplate().query(
+                CollectionUtils.isNotEmpty(request.getDatastorageIds())
+                        ? searchDatastorageObjectsByTagInSpecificStoragesQuery
+                        : searchDatastorageObjectsByTagQuery,
+                sqlParameterSource,
+                Parameters.getSearchByTagRowMapper()
+        ).stream().collect(
+                Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toList()))
+        );
+    }
+
     enum Parameters {
         DATASTORAGE_ROOT_ID,
         DATASTORAGE_PATH,
@@ -187,6 +235,21 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                         rs.getTimestamp(CREATED_DATE.name()).getTime());
                 final DataStorageObject object = new DataStorageObject(path, version);
                 return new DataStorageTag(object, key, value, createdDate);
+            };
+        }
+
+        public static RowMapper<Pair<Long, DataStorageTag>> getSearchByTagRowMapper() {
+            return (rs, rowNum) -> {
+                final String path = rs.getString(DATASTORAGE_PATH.name());
+                final String version = Optional.of(rs.getString(DATASTORAGE_VERSION.name()))
+                        .filter(StringUtils::isNotEmpty).orElse(null);
+                final String key = rs.getString(TAG_KEY.name());
+                final String value = rs.getString(TAG_VALUE.name());
+                final LocalDateTime createdDate = DateUtils.convertEpochMillisToLocalDateTime(
+                        rs.getTimestamp(CREATED_DATE.name()).getTime());
+                final DataStorageObject object = new DataStorageObject(path, version);
+                final long datastorageId = rs.getLong(DATASTORAGE_ROOT_ID.name());
+                return Pair.of(datastorageId, new DataStorageTag(object, key, value, createdDate));
             };
         }
     }

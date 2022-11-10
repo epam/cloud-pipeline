@@ -29,6 +29,8 @@ import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -683,6 +685,22 @@ public class DataStorageController extends AbstractRestController {
         return showVersion
                 ? Result.success(dataStorageApiService.getDataStorageItemOwnerWithTags(id, path, showVersion))
                 : Result.success(dataStorageApiService.getDataStorageItemWithTags(id, path, showVersion));
+    }
+
+    @RequestMapping(value = "/datastorage/tags/search", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Search datastorage items by tag.",
+            notes = "Search datastorage items by tag. " +
+                    "Returns map where key is a storage ID and value is a list of DataStorageTag" +
+                    " representing storage item with specified tag",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<DataStorageTagSearchResult>> searchDataStorageItemByTag(
+            @RequestBody final DataStorageObjectSearchByTagRequest request) {
+        return Result.success(dataStorageApiService.searchDataStorageItemByTag(request));
     }
 
     @GetMapping(value = "/datastorage/{id}/sharedLink")
