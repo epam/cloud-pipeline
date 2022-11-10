@@ -70,6 +70,8 @@ const CELLPROFILER_API_BATCH_FILE_STORAGE = 'CELLPROFILER_API_BATCH_FILE_STORAGE
 const CELLPROFILER_API_BATCH_FILE_PATH = 'CELLPROFILER_API_BATCH_FILE_PATH';
 const CELLPROFILER_API_BATCH_FILE_NAME = 'CELLPROFILER_API_BATCH_FILE_NAME';
 
+const HCS_ANALISYS_TAG = 'HCS Analysis';
+
 /**
  * @param {{files: BatchAnalysisInput[]}} inputs
  */
@@ -221,7 +223,13 @@ export async function submitBatchAnalysis (specification) {
     getModulesPresentation(modules)
   );
   setParameterValue(CELLPROFILER_API_BATCH, true);
-  const tags = {};
+  const tags = {
+    analysisFileName: (specification.path || '')
+      .split(/[\\/]/).pop()
+      .split('.').slice(0, -1).join('.'),
+    analysisPipeline: pipeline ? pipeline.name : undefined,
+    [HCS_ANALISYS_TAG]: true
+  };
   if (specification.alias) {
     tags.analysisAlias = specification.alias;
   }
@@ -395,6 +403,7 @@ export async function getBatchJobs (filters = {}) {
     pageSize = 30,
     userNames = [],
     source,
+    pipeline,
     statuses
   } = filters;
   const payload = {
@@ -406,10 +415,16 @@ export async function getBatchJobs (filters = {}) {
   if (userNames.length) {
     payload.owners = userNames.slice();
   }
-  if (source) {
-    payload.partialParameters = `${CELLPROFILER_API_BATCH_FILE_NAME}=${source}`;
-  } else {
-    payload.partialParameters = `${CELLPROFILER_API_BATCH}=true`;
+  const appendTag = (tag, value) => {
+    if (!payload.tags) {
+      payload.tags = {};
+    }
+    payload.tags[tag] = value;
+  };
+  appendTag(HCS_ANALISYS_TAG, true);
+  payload.partialParameters = `${CELLPROFILER_API_BATCH_FILE_NAME}=${source}`;
+  if (pipeline) {
+    appendTag('analysisPipeline', pipeline);
   }
   const request = new PipelineRunSingleFilter(payload, false, false);
   await request.filter();
