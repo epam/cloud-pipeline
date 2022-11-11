@@ -68,7 +68,7 @@ class HcsFileEvalProcessor:
             plate_results_path = os.path.join(source_evaluations_path, 'plateresult')
             plate_results_xml_file, _ = self.get_evals_files(plate_results_path)
             if not plate_results_xml_file:
-                self.log_processing_info("Plate results xml file is missing '%s'" % plate_results_xml_file)
+                self.log_processing_info("Plate results xml file is missing '%s'" % plate_results_path)
 
             self.build_evaluation_results(plate_results_xml_file, evaluation_path)
 

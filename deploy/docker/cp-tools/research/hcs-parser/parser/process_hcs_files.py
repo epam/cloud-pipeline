@@ -22,6 +22,7 @@ from src.fs import get_processing_roots
 from src.processors import HcsFileParser
 
 TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
+EVAL_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_EVAL_ONLY')
 FORCE_PROCESSING = get_bool_run_param('HCS_PARSING_FORCE_PROCESSING')
 
 HCS_OME_COMPATIBLE_INDEX_FILE_NAME = 'Index.xml'
@@ -66,6 +67,8 @@ def process_hcs_files():
     log_run_info('{} thread(s) enabled for HCS processing'.format(processing_threads))
     if TAGS_PROCESSING_ONLY:
         log_run_info('Only tags will be processed, since TAGS_PROCESSING_ONLY is set to `true`')
+    if EVAL_PROCESSING_ONLY:
+        log_run_info('Only evaluations will be processed, since EVAL_PROCESSING_ONLY is set to `true`')
     if processing_threads == 1:
         for file_path in paths_to_hcs_roots:
             try_process_hcs(file_path)
