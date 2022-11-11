@@ -117,6 +117,10 @@
   height: unset;
 }
 
+.app.app-folder.error {
+  background-color: rgba(0, 0, 0, 0.05)!important;
+}
+
 .app.app-folder .header .name {
   flex: 1;
   font-size: smaller;
@@ -139,6 +143,10 @@
   margin: 0 10px 0 0;
   max-height: 100px;
   border-radius: 5px;
+}
+
+.app.error .layout {
+  opacity: 0.25;
 }
 
 .app.app-folder .layout .layout-column {
@@ -350,6 +358,7 @@
 .app-folder .folder-app-actions-container .folder-app-action {
   color: #999;
   display: block;
+  cursor: pointer;
 }
 
 .app-folder .folder-app-actions-container .folder-app-action:hover {
@@ -358,6 +367,11 @@
 
 .app-folder .folder-app-actions-container .folder-app-action svg {
   stroke: currentColor;
+}
+
+.app-folder .folder-app-actions-container .folder-app-action.exclamation {
+  color: #c24949;
+  cursor: pointer;
 }
 
 .app-folder .folder-app-gear {

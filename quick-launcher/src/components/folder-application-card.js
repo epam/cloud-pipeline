@@ -6,6 +6,7 @@ import Star from './shared/star';
 import useApplicationIcon from './utilities/use-application-icon';
 import UserAttributes from './shared/user-attributes';
 import { useSettings } from "./use-settings";
+import Exclamation from "./shared/exclamation";
 
 export default function FolderApplicationCard(
   {
@@ -31,14 +32,18 @@ export default function FolderApplicationCard(
     info = {},
     appType
   } = application || {};
+  const gatewayParseError = info.__gatewaySpecError__;
   const {icon} = useApplicationIcon(storage, iconFile ? iconFile.path : undefined);
   const onClickCallback = useCallback((e) => {
+    if (gatewayParseError) {
+      return;
+    }
     if (onClick) {
       e.stopPropagation();
       e.preventDefault();
       onClick(application);
     }
-  }, [application, onClick]);
+  }, [application, onClick, gatewayParseError]);
   const onEditCallback = useCallback((e) => {
     if (onEdit) {
       e.stopPropagation();
@@ -82,7 +87,8 @@ export default function FolderApplicationCard(
             {
               dark: settings?.darkMode,
               published,
-              disabled
+              disabled: disabled || !!gatewayParseError,
+              error: !!gatewayParseError
             },
             className
           )
@@ -158,6 +164,14 @@ export default function FolderApplicationCard(
                   )
                 }
                 onClick={onFavouriteClickCallback}
+              />
+            )
+          }
+          {
+            gatewayParseError && (
+              <Exclamation
+                className={classNames('folder-app-action', 'exclamation')}
+                hint={gatewayParseError}
               />
             )
           }

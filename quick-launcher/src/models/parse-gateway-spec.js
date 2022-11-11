@@ -9,7 +9,7 @@ export function processGatewaySpecParameters(parameters) {
     .reduce((r, c) => ({ ...r, ...c }), {});
 }
 
-function processGatewaySpec (appSettings, content, resolve) {
+function processGatewaySpec (appSettings, content, resolve, reject) {
   try {
     const json = JSON.parse(content);
     const {
@@ -89,17 +89,18 @@ function processGatewaySpec (appSettings, content, resolve) {
     }
   } catch (e) {
     console.warn(`Error parsing gateway.spec: ${e.message}`);
-    resolve();
+    const message = e.message || '';
+    reject(new Error(`gateway.spec: ${message.slice(0, 1).toLowerCase()}${message.slice(1)}`));
   }
 }
 
 export default function parseGatewaySpec (appSettings, options, user, currentUser) {
   if (options.__gateway_spec__) {
-    return new Promise((resolve) =>
-      processGatewaySpec(appSettings, JSON.stringify(options.__gateway_spec__), resolve)
+    return new Promise((resolve, reject) =>
+      processGatewaySpec(appSettings, JSON.stringify(options.__gateway_spec__), resolve, reject)
     );
   }
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const dataStorageId = parseStoragePlaceholder(appSettings.appConfigStorage, user, currentUser);
     if (!Number.isNaN(Number(dataStorageId)) && appSettings.appConfigPath) {
       const path = processString(appSettings.appConfigPath, options);
@@ -110,7 +111,7 @@ export default function parseGatewaySpec (appSettings, options, user, currentUse
         .then(content => {
           if (content) {
             console.log('Parsing gateway.spec:', content, `(storage: #${dataStorageId}; path: ${path})`);
-            processGatewaySpec(appSettings, content, resolve);
+            processGatewaySpec(appSettings, content, resolve, reject);
           } else {
             console.warn('gateway.spec is empty', `(storage: #${dataStorageId}; path: ${path})`);
             resolve();

@@ -6,6 +6,7 @@ export default function buildGatewaySpec (appInfo, settings) {
   }
   const result = {
     instance: appInfo.instance,
+    mounts: appInfo.mounts
   };
   const extendPlaceholders = [];
   Object.entries(settings.limitMountsPlaceholders || {})
