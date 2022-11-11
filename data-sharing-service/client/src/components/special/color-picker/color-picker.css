@@ -14,49 +14,22 @@
  *  limitations under the License.
  */
 
-.container {
-  padding: 5px;
+.color-presenter {
+  display: inline-block;
+  margin: 0 2px;
+  stroke: black;
+  stroke-width: 1;
+  width: 1em;
+  height: 1em;
 }
 
-.color-map {
-  margin: 5px 0;
-  display: flex;
-  align-items: center;
+.color-presenter.borderless {
+  stroke-width: 0;
+  padding: 0;
 }
 
-.color-map .header {
-  font-weight: bold;
-  margin-right: 5px;
-}
-
-.color-map .color-map-selector {
-  flex: 1;
-}
-
-.channels .header {
-  margin: 5px 0;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.channel {
-  margin: 5px 0;
-  padding: 5px 0;
-}
-
-.channel .header {
-  display: flex;
-  align-items: center;
-}
-
-.channel .configuration {
-  display: flex;
-  align-items: center;
-}
-
-.lens-container {
-  display: flex;
-  align-items: center;
+.color-picker.color-presenter {
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
 }

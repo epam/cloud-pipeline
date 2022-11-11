@@ -14,49 +14,13 @@
  *  limitations under the License.
  */
 
-.container {
-  padding: 5px;
-}
+const INDEX_TO_LETTER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-.color-map {
-  margin: 5px 0;
-  display: flex;
-  align-items: center;
-}
-
-.color-map .header {
-  font-weight: bold;
-  margin-right: 5px;
-}
-
-.color-map .color-map-selector {
-  flex: 1;
-}
-
-.channels .header {
-  margin: 5px 0;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.channel {
-  margin: 5px 0;
-  padding: 5px 0;
-}
-
-.channel .header {
-  display: flex;
-  align-items: center;
-}
-
-.channel .configuration {
-  display: flex;
-  align-items: center;
-}
-
-.lens-container {
-  display: flex;
-  align-items: center;
+export function getWellRowName (rowIndex) {
+  if (rowIndex < INDEX_TO_LETTER.length) {
+    return INDEX_TO_LETTER[rowIndex];
+  }
+  const next = Math.floor(rowIndex / INDEX_TO_LETTER.length);
+  const current = rowIndex - next * INDEX_TO_LETTER.length;
+  return `${getWellRowName(next - 1)}${getWellRowName(current)}`;
 }

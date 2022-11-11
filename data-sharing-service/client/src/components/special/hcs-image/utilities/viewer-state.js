@@ -84,26 +84,6 @@ class ChannelState {
   }
 }
 
-function buildZPositionsArray (max, zSize, zUnit) {
-  const basePower = Math.floor(Math.log10(zSize || 1));
-  const base = 10 ** basePower;
-  const decimalDigits = 2;
-  const format = o => {
-    const rounded = Math.round(o / base * (10 ** decimalDigits)) / (10 ** decimalDigits);
-    const postfix = basePower !== 0 ? `e${basePower}` : '';
-    return [
-      `${rounded}${postfix}`,
-      zUnit
-    ].filter(Boolean).join('');
-  };
-  return (new Array(max))
-    .fill('')
-    .map((o, z) => ({
-      z,
-      title: format((z + 1) * zSize)
-    }));
-}
-
 class ViewerState {
   @observable loader;
   @observable use3D = false;
@@ -126,7 +106,8 @@ class ViewerState {
   @observable channels = [];
   @observable channelsLocked = false;
   @observable imageZPosition = 0;
-  @observable availableZPositions = [];
+  @observable fieldID;
+  listeners = [];
 
   constructor (viewer) {
     this.attachToViewer(viewer);
@@ -151,6 +132,20 @@ class ViewerState {
       );
     }
   }
+
+  addEventListener = (listener) => {
+    this.listeners.push(listener);
+  };
+
+  removeEventListener = (listener) => {
+    this.listeners = this.listeners.filter(aListener => aListener !== listener);
+  };
+
+  emitOnChange = () => {
+    this.listeners
+      .filter(aListener => typeof aListener === 'function')
+      .forEach(aListener => aListener(this));
+  };
 
   @action
   onViewerStateChange = (viewer, newState) => {
@@ -199,19 +194,16 @@ class ViewerState {
     this.imageZPosition = globalSelection && globalSelection.z
       ? globalSelection.z
       : 0;
-    const zDimension = globalDimensions.find(o => /^z$/i.test(o.label));
-    const zSize = zDimension ? Math.max(zDimension.size || 0, 1) : 1;
-    let zPhysicalSize = 1;
-    let zPhysicalSizeUnit;
-    if (metadata && metadata.Pixels) {
-      const {
-        PhysicalSizeZ = 1,
-        PhysicalSizeZUnit
-      } = metadata.Pixels;
-      zPhysicalSize = PhysicalSizeZ;
-      zPhysicalSizeUnit = PhysicalSizeZUnit;
+    if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
+      const e = /field ([\d]+)/i.exec(metadata.Name);
+      if (e && e.length) {
+        this.fieldID = Number(e[1]);
+      } else {
+        this.fieldID = undefined;
+      }
+    } else {
+      this.fieldID = undefined;
     }
-    this.availableZPositions = buildZPositionsArray(zSize, zPhysicalSize, zPhysicalSizeUnit);
     /**
      * updated channels options
      * @type {ChannelOptions[]}
@@ -246,6 +238,7 @@ class ViewerState {
         this.channels.push(new ChannelState(updatedChannels[i]));
       }
     }
+    this.emitOnChange();
   };
 
   @action
@@ -263,6 +256,7 @@ class ViewerState {
         this.viewer.setChannelProperties(channelIndex, {channelsVisibility: visible});
       }
     }
+    this.emitOnChange();
   };
 
   @action
@@ -280,6 +274,7 @@ class ViewerState {
         this.viewer.setChannelProperties(channelIndex, {contrastLimits});
       }
     }
+    this.emitOnChange();
   };
 
   @action
@@ -297,6 +292,7 @@ class ViewerState {
         this.viewer.setChannelProperties(channelIndex, {colors: color});
       }
     }
+    this.emitOnChange();
   };
 
   @action

@@ -14,49 +14,36 @@
  *  limitations under the License.
  */
 
-.container {
-  padding: 5px;
+export function ascSorter (a, b) {
+  return a - b;
 }
 
-.color-map {
-  margin: 5px 0;
-  display: flex;
-  align-items: center;
+export function cellsAreEqual (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.id === b.id;
 }
 
-.color-map .header {
-  font-weight: bold;
-  margin-right: 5px;
-}
-
-.color-map .color-map-selector {
-  flex: 1;
-}
-
-.channels .header {
-  margin: 5px 0;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.channel {
-  margin: 5px 0;
-  padding: 5px 0;
-}
-
-.channel .header {
-  display: flex;
-  align-items: center;
-}
-
-.channel .configuration {
-  display: flex;
-  align-items: center;
-}
-
-.lens-container {
-  display: flex;
-  align-items: center;
+export function cellsArraysAreEqual (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b || a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    const aa = a[i];
+    const bb = b[i];
+    if (
+      !b.find(bCell => cellsAreEqual(bCell, aa)) ||
+      !a.find(aCell => cellsAreEqual(aCell, bb))
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
