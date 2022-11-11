@@ -16,6 +16,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
+import PropTypes from 'prop-types';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
@@ -94,6 +95,23 @@ function getTotalCosts (billing) {
   return {};
 }
 
+function fetchUserName (userName, authenticatedUserInfo) {
+  if (userName) {
+    return Promise.resolve(userName);
+  }
+  return new Promise((resolve) => {
+    authenticatedUserInfo
+      .fetchIfNeededOrWait()
+      .then(() => {
+        if (authenticatedUserInfo.loaded && authenticatedUserInfo.value) {
+          resolve(authenticatedUserInfo.value.userName);
+        } else {
+          resolve();
+        }
+      });
+  });
+}
+
 @roleModel.authenticationInfo
 @inject('preferences')
 @observer
@@ -106,18 +124,24 @@ export default class UserCostsPanel extends React.Component {
   _billingRequests;
 
   componentDidMount () {
-    const {authenticatedUserInfo} = this.props;
-    if (authenticatedUserInfo) {
-      authenticatedUserInfo
-        .fetchIfNeededOrWait()
-        .then(() => {
-          if (authenticatedUserInfo.loaded) {
-            const userName = authenticatedUserInfo.value.userName;
-            this.fetchBillingInfo(userName);
-          }
-        });
+    this.updateFromProps();
+  }
+
+  componentDidUpdate (prevProps) {
+    const {userName, period} = this.props;
+    if (
+      (prevProps.userName !== userName) ||
+      (period && period !== prevProps.period)
+    ) {
+      this.updateFromProps();
     }
   }
+
+  updateFromProps = () => {
+    const {userName, authenticatedUserInfo} = this.props;
+    fetchUserName(userName, authenticatedUserInfo)
+      .then(this.fetchBillingInfo.bind(this));
+  };
 
   @computed
   get billingInfo () {
@@ -145,10 +169,20 @@ export default class UserCostsPanel extends React.Component {
   }
 
   fetchBillingInfo = (userName) => {
+    const {
+      billingPeriods = BILLING_PERIODS,
+      period: periodDate
+    } = this.props;
     this.setState({pending: true}, async () => {
-      const promises = BILLING_PERIODS.map(period => {
+      const promises = billingPeriods.map(period => {
         return new Promise((resolve) => {
-          const periodInfo = getPeriod(period);
+          const rangeFormat = period === Period.month
+            ? 'YYYY-MM'
+            : 'YYYY';
+          const range = periodDate
+            ? moment(periodDate).format(rangeFormat)
+            : undefined;
+          const periodInfo = getPeriod(period, range);
           const request = new GetBillingData(
             {
               user: userName,
@@ -193,6 +227,9 @@ export default class UserCostsPanel extends React.Component {
   };
 
   renderBillingInfo = (billing) => {
+    const {
+      showPeriodHeaders = true
+    } = this.props;
     const {filters, period, percent, current, previous} = billing;
     const {
       start,
@@ -221,18 +258,22 @@ export default class UserCostsPanel extends React.Component {
     };
     return (
       [
-        <span
-          className={
-            classNames(
-              styles.subHeader,
-              'cp-divider',
-              'bottom'
-            )
-          }
-        >
-          {period}
-        </span>,
+        showPeriodHeaders && (
+          <span
+            key="period-header"
+            className={
+              classNames(
+                styles.subHeader,
+                'cp-divider',
+                'bottom'
+              )
+            }
+          >
+            {period}
+          </span>
+        ),
         <div
+          key="period-name"
           className={classNames(
             styles.cell,
             styles.leftColumn
@@ -248,6 +289,7 @@ export default class UserCostsPanel extends React.Component {
           </Tooltip>
         </div>,
         <div
+          key="period-current-billing"
           className={classNames(
             styles.cell,
             styles.spendingsContainer
@@ -259,6 +301,7 @@ export default class UserCostsPanel extends React.Component {
           {renderStatistics(percent)}
         </div>,
         <div
+          key="period-previous"
           className={classNames(
             styles.cell,
             styles.leftColumn
@@ -273,22 +316,26 @@ export default class UserCostsPanel extends React.Component {
             </span>
           </Tooltip>
         </div>,
-        <span className={styles.cell}>
+        <span
+          key="period-previous-billing"
+          className={styles.cell}
+        >
           {previous ? (`$${previous}`) : longDash}
         </span>
-      ]
+      ].filter(Boolean)
     );
   };
 
   render () {
     const {pending} = this.state;
+    const {showDisclaimer} = this.props;
     return (
       <Spin
         spinning={pending}
         wrapperClassName={styles.spinner}
       >
         <div className={styles.container}>
-          {this.renderDisclaimer()}
+          {showDisclaimer ? this.renderDisclaimer() : null}
           <div className={styles.gridContainer}>
             {this.billingInfo.map(billing => (
               this.renderBillingInfo(billing)
@@ -299,3 +346,16 @@ export default class UserCostsPanel extends React.Component {
     );
   }
 }
+
+UserCostsPanel.PropTypes = {
+  showDisclaimer: PropTypes.bool,
+  userName: PropTypes.string,
+  billingPeriods: PropTypes.arrayOf(PropTypes.string),
+  period: PropTypes.string,
+  showPeriodHeaders: PropTypes.bool
+};
+
+UserCostsPanel.defaultProps = {
+  showDisclaimer: true,
+  showPeriodHeaders: true
+};
