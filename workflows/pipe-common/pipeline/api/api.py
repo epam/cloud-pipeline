@@ -237,6 +237,7 @@ class PipelineAPI:
     LIFECYCLE_RESTORE_ACTION_URL = "/datastorage/{id}/lifecycle/restore"
     LIFECYCLE_RESTORE_ACTION_FILTER_URL = "/datastorage/{id}/lifecycle/restore/filter"
     DATA_STORAGE_PATH_SIZE_URL = '/datastorage/path/size'
+    SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL = '/datastorage/tags/search'
 
     # Pipeline API default header
 
@@ -1139,6 +1140,17 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to prolong lifecycle rule '{}'.",
                                "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def search_datastorage_items_by_tag(self, request):
+        try:
+            return self.execute_request(
+                str(self.api_url) + self.SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL,
+                method="post",
+                data=json.dumps(request)
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to search datastorage items by tag: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
 
     def load_notification_templates(self):
         try:
