@@ -16,6 +16,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
+import PropTypes from 'prop-types';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
@@ -106,17 +107,40 @@ export default class UserCostsPanel extends React.Component {
   _billingRequests;
 
   componentDidMount () {
-    const {authenticatedUserInfo} = this.props;
-    if (authenticatedUserInfo) {
+    const {externalUser, authenticatedUserInfo} = this.props;
+    if (externalUser) {
+      this.fetchBillingInfo();
+    } else if (authenticatedUserInfo) {
       authenticatedUserInfo
         .fetchIfNeededOrWait()
         .then(() => {
           if (authenticatedUserInfo.loaded) {
-            const userName = authenticatedUserInfo.value.userName;
-            this.fetchBillingInfo(userName);
+            this.fetchBillingInfo();
           }
         });
     }
+  }
+
+  componentDidUpdate (prevProps) {
+    const {externalUser, period} = this.props;
+    if (
+      (externalUser && prevProps.externalUser !== externalUser) ||
+      (period && period !== prevProps.period)
+    ) {
+      this.fetchBillingInfo();
+    }
+  }
+
+  @computed
+  get userName () {
+    const {externalUser, authenticatedUserInfo} = this.props;
+    if (externalUser) {
+      return externalUser.userName;
+    }
+    if (authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.userName;
+    }
+    return undefined;
   }
 
   @computed
@@ -144,21 +168,27 @@ export default class UserCostsPanel extends React.Component {
     return '';
   }
 
-  fetchBillingInfo = (userName) => {
+  fetchBillingInfo = () => {
     this.setState({pending: true}, async () => {
-      const promises = BILLING_PERIODS.map(period => {
+      const {billingPeriods, period} = this.props;
+      const promises = (billingPeriods || BILLING_PERIODS).map(billingPeriod => {
         return new Promise((resolve) => {
-          const periodInfo = getPeriod(period);
-          const request = new GetBillingData(
-            {
-              user: userName,
-              ...periodInfo,
-              filterBy: [
-                GetBillingData.FILTER_BY.compute,
-                GetBillingData.FILTER_BY.storages
-              ]
-            }
-          );
+          const rangeFormat = billingPeriod === Period.month
+            ? 'YYYY-MM'
+            : 'YYYY';
+          const range = period
+            ? moment(period).format(rangeFormat)
+            : undefined;
+          const periodInfo = getPeriod(billingPeriod, range);
+          const requestFilters = {
+            user: this.userName,
+            ...periodInfo,
+            filterBy: [
+              GetBillingData.FILTER_BY.compute,
+              GetBillingData.FILTER_BY.storages
+            ]
+          };
+          const request = new GetBillingData(requestFilters);
           request.fetch()
             .then(() => resolve(request))
             .catch(() => resolve(request));
@@ -282,13 +312,14 @@ export default class UserCostsPanel extends React.Component {
 
   render () {
     const {pending} = this.state;
+    const {showDisclaimer} = this.props;
     return (
       <Spin
         spinning={pending}
         wrapperClassName={styles.spinner}
       >
         <div className={styles.container}>
-          {this.renderDisclaimer()}
+          {showDisclaimer ? this.renderDisclaimer() : null}
           <div className={styles.gridContainer}>
             {this.billingInfo.map(billing => (
               this.renderBillingInfo(billing)
@@ -299,3 +330,14 @@ export default class UserCostsPanel extends React.Component {
     );
   }
 }
+
+UserCostsPanel.PropTypes = {
+  showDisclaimer: PropTypes.bool,
+  externalUser: PropTypes.object,
+  billingPeriods: PropTypes.arrayOf(PropTypes.string),
+  period: PropTypes.string
+};
+
+UserCostsPanel.defaultProps = {
+  showDisclaimer: true
+};

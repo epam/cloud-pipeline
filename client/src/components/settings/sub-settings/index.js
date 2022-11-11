@@ -17,10 +17,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
+import {computed} from 'mobx';
 import classNames from 'classnames';
 import {message, Table} from 'antd';
+import roleModel from '../../../utils/roleModel';
 import styles from './sub-settings.css';
 
+@roleModel.authenticationInfo
+@observer
 class SubSettings extends React.Component {
   state = {
     section: undefined,
@@ -57,6 +61,17 @@ class SubSettings extends React.Component {
       shallowCompareState('section') ||
       shallowCompareState('sub') ||
       subSectionProp !== this.state.sub;
+  }
+
+  @computed
+  get user () {
+    if (
+      this.props.authenticatedUserInfo &&
+      this.props.authenticatedUserInfo.loaded
+    ) {
+      return this.props.authenticatedUserInfo.value;
+    }
+    return undefined;
   }
 
   updateFromProps = () => {
@@ -218,7 +233,8 @@ class SubSettings extends React.Component {
     const props = {
       router,
       section: currentSection,
-      sub: router && router.params ? router.params.sub : undefined
+      sub: router && router.params ? router.params.sub : undefined,
+      user: this.user
     };
     if (typeof currentSection.render === 'function') {
       content = currentSection.render(props);

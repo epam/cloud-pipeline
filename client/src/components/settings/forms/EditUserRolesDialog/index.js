@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,33 +18,43 @@ import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Modal, Row, Button, message, Icon, Table, Select} from 'antd';
-import User from '../../../models/user/User';
-import Roles from '../../../models/user/Roles';
-import MetadataUpdateKeys from '../../../models/metadata/MetadataUpdateKeys';
-import MetadataDeleteKeys from '../../../models/metadata/MetadataDeleteKeys';
-import RoleAssign from '../../../models/user/RoleAssign';
-import RoleRemove from '../../../models/user/RoleRemoveFromUser';
-import UserUpdate from '../../../models/user/UserUpdate';
-import UserBlock from '../../../models/user/UserBlock';
-import Runners from '../../../models/user/Runners';
-import RunnersUpdate from '../../../models/user/RunnersUpdate';
+import {
+  Modal,
+  Row,
+  Button,
+  message,
+  Icon,
+  Table,
+  Select,
+  Tabs
+} from 'antd';
+import UserInfoSummary from './UserInfoSummary';
+import User from '../../../../models/user/User';
+import Roles from '../../../../models/user/Roles';
+import MetadataUpdateKeys from '../../../../models/metadata/MetadataUpdateKeys';
+import MetadataDeleteKeys from '../../../../models/metadata/MetadataDeleteKeys';
+import RoleAssign from '../../../../models/user/RoleAssign';
+import RoleRemove from '../../../../models/user/RoleRemoveFromUser';
+import UserUpdate from '../../../../models/user/UserUpdate';
+import UserBlock from '../../../../models/user/UserBlock';
+import Runners from '../../../../models/user/Runners';
+import RunnersUpdate from '../../../../models/user/RunnersUpdate';
 import {
   AssignCredentialProfiles,
   LoadEntityCredentialProfiles
-} from '../../../models/cloudCredentials';
-import styles from './UserManagement.css';
-import roleModel from '../../../utils/roleModel';
+} from '../../../../models/cloudCredentials';
+import roleModel from '../../../../utils/roleModel';
 import {
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
   SplitPanel
-} from '../../special/splitPanel';
-import Metadata, {ApplyChanges} from '../../special/metadata/Metadata';
-import InstanceTypesManagementForm from './InstanceTypesManagementForm';
-import AWSRegionTag from '../../special/AWSRegionTag';
-import UserName from '../../special/UserName';
-import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
+} from '../../../special/splitPanel';
+import Metadata, {ApplyChanges} from '../../../special/metadata/Metadata';
+import InstanceTypesManagementForm from '../InstanceTypesManagementForm';
+import AWSRegionTag from '../../../special/AWSRegionTag';
+import UserName from '../../../special/UserName';
+import ShareWithForm from '../../../runs/logs/forms/ShareWithForm';
+import styles from './EditUserRolesDialog.css';
 
 @roleModel.authenticationInfo
 @inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles', 'impersonation')
@@ -74,6 +84,7 @@ export default class EditUserRolesDialog extends React.Component {
   };
 
   state = {
+    activeTab: 'user',
     selectedRole: null,
     defaultStorageId: undefined,
     defaultStorageIdInitial: undefined,
@@ -108,6 +119,17 @@ export default class EditUserRolesDialog extends React.Component {
     } else {
       this.updateValues();
     }
+  }
+
+  @computed
+  get isAdmin () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      admin
+    } = this.props.authenticatedUserInfo.value;
+    return admin;
   }
 
   onInstanceTypesFormInitialized = (form) => {
@@ -792,15 +814,8 @@ export default class EditUserRolesDialog extends React.Component {
     }
   };
 
-  render () {
-    if (!this.props.userInfo) {
-      return null;
-    }
+  renderUserRolesTab = () => {
     const {readOnly} = this.props;
-    let blocked = false;
-    if (this.props.userInfo.loaded) {
-      blocked = this.props.userInfo.value.blocked;
-    }
     const {metadata} = this.state;
     const credentialProfilesPending = this.props.credentialProfiles
       ? this.props.credentialProfiles.pending
@@ -808,6 +823,305 @@ export default class EditUserRolesDialog extends React.Component {
     const runnersPending = this.props.runners
       ? this.props.runners.pending
       : false;
+    return (
+      <SplitPanel
+        contentInfo={[
+          {
+            key: CONTENT_PANEL_KEY,
+            containerStyle: {
+              display: 'flex',
+              flexDirection: 'column',
+              overflowX: 'hidden'
+            },
+            size: {
+              priority: 0,
+              percentMinimum: 33,
+              percentDefault: 60
+            }
+          },
+          {
+            key: 'METADATA_AND_INSTANCE_MANAGEMENT',
+            size: {
+              keepPreviousSize: true,
+              priority: 2,
+              percentDefault: 40,
+              pxMinimum: 200
+            }
+          }
+        ]}>
+        <div
+          style={{display: 'flex', flexDirection: 'column', height: '100%'}}
+          key={CONTENT_PANEL_KEY}>
+          <Row type="flex" style={{marginBottom: 10}} align="middle">
+            <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
+              Default data storage:
+            </span>
+            <Select
+              allowClear
+              showSearch
+              disabled={this.state.operationInProgress || readOnly}
+              value={this.defaultStorageId}
+              style={{flex: 1}}
+              onChange={this.onChangeDefaultStorageId}
+              size="small"
+              filterOption={(input, option) =>
+                option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+                option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }>
+              {
+                this.dataStorages.map(d => {
+                  return (
+                    <Select.Option
+                      key={d.id}
+                      value={`${d.id}`}
+                      title={d.name}
+                      name={d.name}
+                      pathMask={d.pathMask}>
+                      <b>{d.name}</b> ({d.pathMask})
+                    </Select.Option>
+                  );
+                })
+              }
+            </Select>
+          </Row>
+          <Row type="flex" style={{marginBottom: 10}} align="middle">
+            <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
+              Add role or group:
+            </span>
+            <div style={{flex: 1}} id="find-role-select-container">
+              <Select
+                disabled={this.state.operationInProgress || readOnly}
+                value={this.state.selectedRole}
+                size="small"
+                showSearch
+                style={{width: '100%'}}
+                allowClear
+                placeholder="Add role or group"
+                optionFilterProp="children"
+                onChange={this.addRoleInputChanged}
+                filterOption={
+                  (input, option) =>
+                    option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }>
+                {
+                  this.availableRoles.map(t =>
+                    <Select.Option
+                      key={t.id}
+                      value={`${t.id}`}>
+                      {t.predefined ? t.name : this.splitRoleName(t.name)}
+                    </Select.Option>
+                  )
+                }
+              </Select>
+            </div>
+            <div style={{paddingLeft: 10, textAlign: 'right'}}>
+              <Button
+                id="add-role-button"
+                size="small"
+                onClick={this.assignRole}
+                disabled={
+                  this.state.selectedRole === null ||
+                  this.state.selectedRole === undefined ||
+                  this.state.operationInProgress ||
+                  readOnly
+                }>
+                <Icon type="plus" /> Add
+              </Button>
+            </div>
+          </Row>
+          {this.renderUserRolesList()}
+        </div>
+        <SplitPanel
+          orientation="vertical"
+          key="METADATA_AND_INSTANCE_MANAGEMENT"
+          contentInfo={[
+            {
+              key: METADATA_PANEL_KEY,
+              title: 'Attributes',
+              containerStyle: {
+                display: 'flex',
+                flexDirection: 'column'
+              },
+              size: {
+                keepPreviousSize: true,
+                priority: 2,
+                percentDefault: 50,
+                pxMinimum: 200
+              }
+            },
+            {
+              key: 'INSTANCE_MANAGEMENT',
+              title: 'Launch options',
+              containerStyle: {
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'auto'
+              },
+              size: {
+                keepPreviousSize: true,
+                priority: 2,
+                percentDefault: 50,
+                pxMinimum: 200
+              }
+            }
+          ]}>
+          <Metadata
+            readOnly={this.state.operationInProgress || readOnly}
+            key={METADATA_PANEL_KEY}
+            entityId={this.props.userId}
+            entityClass="PIPELINE_USER"
+            applyChanges={ApplyChanges.callback}
+            onChange={this.onChangeMetadata}
+            value={metadata}
+          />
+          <div
+            key="INSTANCE_MANAGEMENT"
+          >
+            <div style={{marginTop: 5, padding: 2}}>
+              <span
+                style={{fontWeight: 'bold', float: 'left'}}
+              >
+                Can run as this user:
+              </span>
+              <a
+                onClick={this.openShareDialog}
+                style={{marginLeft: 5, wordBreak: 'break-word'}}
+              >
+                {this.renderRunners()}
+              </a>
+              <ShareWithForm
+                endpointsAvailable
+                visible={this.state.shareDialogOpened}
+                roles={
+                  this.props.roles.loaded
+                    ? (this.props.roles.value || []).slice()
+                    : []
+                }
+                sids={
+                  this.state.runners.map(runner => ({
+                    ...runner,
+                    isPrincipal: runner.principal
+                  }))
+                }
+                pending={runnersPending}
+                onSave={this.saveShareSids}
+                onClose={this.closeShareDialog}
+              />
+            </div>
+            <InstanceTypesManagementForm
+              className={styles.instanceTypesManagementForm}
+              key="instance types management form"
+              disabled={this.state.operationInProgress || readOnly}
+              resourceId={this.props.userId}
+              level="USER"
+              onInitialized={this.onInstanceTypesFormInitialized}
+              onModified={this.onInstanceTypesModified}
+              showApplyButton={false}
+            />
+            <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
+              Cloud Credentials Profiles
+            </div>
+            <div
+              style={{padding: '0 2px'}}
+            >
+              <Select
+                allowClear
+                showSearch
+                mode="multiple"
+                disabled={
+                  this.state.operationInProgress ||
+                  readOnly ||
+                  credentialProfilesPending
+                }
+                value={this.state.profiles.map(o => `${o}`)}
+                style={{width: '100%'}}
+                onChange={this.onChangeCredentialProfiles}
+                filterOption={(input, option) =>
+                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }>
+                {
+                  this.cloudCredentialProfiles.map(d => (
+                    <Select.Option
+                      key={`${d.id}`}
+                      value={`${d.id}`}
+                      name={d.profileName}
+                      title={d.profileName}
+                    >
+                      <AWSRegionTag
+                        provider={d.cloudProvider}
+                        showProvider
+                        displayName={false}
+                        displayFlag={false}
+                      />
+                      <span>{d.profileName}</span>
+                    </Select.Option>
+                  ))
+                }
+              </Select>
+            </div>
+            <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
+              Default Credentials Profile
+            </div>
+            <div
+              style={{padding: '0 2px'}}
+            >
+              <Select
+                allowClear
+                showSearch
+                disabled={
+                  this.state.operationInProgress ||
+                  readOnly ||
+                  this.state.profiles.length === 0 ||
+                  credentialProfilesPending
+                }
+                value={this.defaultProfileId}
+                style={{width: '100%'}}
+                onChange={this.onChangeDefaultProfileId}
+                filterOption={(input, option) =>
+                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }>
+                {
+                  this.cloudCredentialProfiles
+                    .filter(d => this.state.profiles.indexOf(+d.id) >= 0)
+                    .map(d => (
+                      <Select.Option
+                        key={`${d.id}`}
+                        value={`${d.id}`}
+                        name={d.profileName}
+                        title={d.profileName}
+                      >
+                        <AWSRegionTag
+                          provider={d.cloudProvider}
+                          showProvider
+                          displayName={false}
+                          displayFlag={false}
+                        />
+                        <span>{d.profileName}</span>
+                      </Select.Option>
+                    ))
+                }
+              </Select>
+            </div>
+          </div>
+        </SplitPanel>
+      </SplitPanel>
+    );
+  };
+
+  onChangeTab = (key) => {
+    this.setState({activeTab: key});
+  };
+
+  render () {
+    if (!this.props.userInfo) {
+      return null;
+    }
+    const {readOnly} = this.props;
+    const {activeTab} = this.state;
+    let blocked = false;
+    if (this.props.userInfo.loaded) {
+      blocked = this.props.userInfo.value.blocked;
+    }
     return (
       <Modal
         width="80%"
@@ -818,30 +1132,7 @@ export default class EditUserRolesDialog extends React.Component {
         bodyStyle={{
           height: '80vh'
         }}
-        title={(
-          <div className={styles.userManagementFooter}>
-            <div>
-              <span>
-                {this.props.user.userName}
-              </span>
-              {
-                blocked &&
-                <span
-                  style={{fontStyle: 'italic', marginLeft: 5}}
-                >
-                  - blocked
-                </span>
-              }
-            </div>
-            <Button
-              type="primary"
-              onClick={this.onImpersonate}
-            >
-              IMPERSONATE
-            </Button>
-          </div>
-        )}
-        footer={
+        footer={activeTab === 'user' ? (
           <Row type="flex" justify="space-between">
             <div>
               <Button
@@ -876,289 +1167,55 @@ export default class EditUserRolesDialog extends React.Component {
               </Button>
             </div>
           </Row>
-        }
-        visible={this.props.visible}>
-        <SplitPanel
-          contentInfo={[
-            {
-              key: CONTENT_PANEL_KEY,
-              containerStyle: {
-                display: 'flex',
-                flexDirection: 'column',
-                overflowX: 'hidden'
-              },
-              size: {
-                priority: 0,
-                percentMinimum: 33,
-                percentDefault: 60
-              }
-            },
-            {
-              key: 'METADATA_AND_INSTANCE_MANAGEMENT',
-              size: {
-                keepPreviousSize: true,
-                priority: 2,
-                percentDefault: 40,
-                pxMinimum: 200
-              }
-            }
-          ]}>
-          <div
-            style={{display: 'flex', flexDirection: 'column', height: '100%'}}
-            key={CONTENT_PANEL_KEY}>
-            <Row type="flex" style={{marginBottom: 10}} align="middle">
-              <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
-                Default data storage:
-              </span>
-              <Select
-                allowClear
-                showSearch
-                disabled={this.state.operationInProgress || readOnly}
-                value={this.defaultStorageId}
-                style={{flex: 1}}
-                onChange={this.onChangeDefaultStorageId}
-                size="small"
-                filterOption={(input, option) =>
-                  option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
-                  option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }>
-                {
-                  this.dataStorages.map(d => {
-                    return (
-                      <Select.Option
-                        key={d.id}
-                        value={`${d.id}`}
-                        title={d.name}
-                        name={d.name}
-                        pathMask={d.pathMask}>
-                        <b>{d.name}</b> ({d.pathMask})
-                      </Select.Option>
-                    );
-                  })
-                }
-              </Select>
-            </Row>
-            <Row type="flex" style={{marginBottom: 10}} align="middle">
-              <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
-                Add role or group:
-              </span>
-              <div style={{flex: 1}} id="find-role-select-container">
-                <Select
-                  disabled={this.state.operationInProgress || readOnly}
-                  value={this.state.selectedRole}
-                  size="small"
-                  showSearch
-                  style={{width: '100%'}}
-                  allowClear
-                  placeholder="Add role or group"
-                  optionFilterProp="children"
-                  onChange={this.addRoleInputChanged}
-                  filterOption={
-                    (input, option) =>
-                      option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                  }>
+        ) : null}
+        visible={this.props.visible}
+      >
+        <div className={styles.modalContainer}>
+          <Tabs
+            activeKey={activeTab}
+            onChange={this.onChangeTab}
+          >
+            <Tabs.TabPane
+              tab={(
+                <div>
+                  <span>
+                    PROFILE
+                  </span>
                   {
-                    this.availableRoles.map(t =>
-                      <Select.Option
-                        key={t.id}
-                        value={`${t.id}`}>
-                        {t.predefined ? t.name : this.splitRoleName(t.name)}
-                      </Select.Option>
-                    )
+                    blocked &&
+                    <span
+                      style={{fontStyle: 'italic', marginLeft: 5}}
+                    >
+                      - blocked
+                    </span>
                   }
-                </Select>
-              </div>
-              <div style={{paddingLeft: 10, textAlign: 'right'}}>
-                <Button
-                  id="add-role-button"
-                  size="small"
-                  onClick={this.assignRole}
-                  disabled={
-                    this.state.selectedRole === null ||
-                    this.state.selectedRole === undefined ||
-                    this.state.operationInProgress ||
-                    readOnly
-                  }>
-                  <Icon type="plus" /> Add
-                </Button>
-              </div>
-            </Row>
-            {this.renderUserRolesList()}
-          </div>
-          <SplitPanel
-            orientation="vertical"
-            key="METADATA_AND_INSTANCE_MANAGEMENT"
-            contentInfo={[
-              {
-                key: METADATA_PANEL_KEY,
-                title: 'Attributes',
-                containerStyle: {
-                  display: 'flex',
-                  flexDirection: 'column'
-                },
-                size: {
-                  keepPreviousSize: true,
-                  priority: 2,
-                  percentDefault: 50,
-                  pxMinimum: 200
-                }
-              },
-              {
-                key: 'INSTANCE_MANAGEMENT',
-                title: 'Launch options',
-                containerStyle: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'auto'
-                },
-                size: {
-                  keepPreviousSize: true,
-                  priority: 2,
-                  percentDefault: 50,
-                  pxMinimum: 200
-                }
-              }
-            ]}>
-            <Metadata
-              readOnly={this.state.operationInProgress || readOnly}
-              key={METADATA_PANEL_KEY}
-              entityId={this.props.userId}
-              entityClass="PIPELINE_USER"
-              applyChanges={ApplyChanges.callback}
-              onChange={this.onChangeMetadata}
-              value={metadata}
-            />
-            <div
-              key="INSTANCE_MANAGEMENT"
+                </div>
+              )}
+              key="user"
             >
-              <div style={{marginTop: 5, padding: 2}}>
-                <span
-                  style={{fontWeight: 'bold', float: 'left'}}
-                >
-                  Can run as this user:
-                </span>
-                <a
-                  onClick={this.openShareDialog}
-                  style={{marginLeft: 5, wordBreak: 'break-word'}}
-                >
-                  {this.renderRunners()}
-                </a>
-                <ShareWithForm
-                  endpointsAvailable
-                  visible={this.state.shareDialogOpened}
-                  roles={
-                    this.props.roles.loaded
-                      ? (this.props.roles.value || []).slice()
-                      : []
-                  }
-                  sids={
-                    this.state.runners.map(runner => ({
-                      ...runner,
-                      isPrincipal: runner.principal
-                    }))
-                  }
-                  pending={runnersPending}
-                  onSave={this.saveShareSids}
-                  onClose={this.closeShareDialog}
+              {this.renderUserRolesTab()}
+            </Tabs.TabPane>
+            {this.isAdmin ? (
+              <Tabs.TabPane
+                tab="STATISTICS"
+                key="user-statistics"
+              >
+                <UserInfoSummary
+                  user={this.props.user}
                 />
-              </div>
-              <InstanceTypesManagementForm
-                className={styles.instanceTypesManagementForm}
-                key="instance types management form"
-                disabled={this.state.operationInProgress || readOnly}
-                resourceId={this.props.userId}
-                level="USER"
-                onInitialized={this.onInstanceTypesFormInitialized}
-                onModified={this.onInstanceTypesModified}
-                showApplyButton={false}
-              />
-              <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
-                Cloud Credentials Profiles
-              </div>
-              <div
-                style={{padding: '0 2px'}}
-              >
-                <Select
-                  allowClear
-                  showSearch
-                  mode="multiple"
-                  disabled={
-                    this.state.operationInProgress ||
-                    readOnly ||
-                    credentialProfilesPending
-                  }
-                  value={this.state.profiles.map(o => `${o}`)}
-                  style={{width: '100%'}}
-                  onChange={this.onChangeCredentialProfiles}
-                  filterOption={(input, option) =>
-                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                  }>
-                  {
-                    this.cloudCredentialProfiles.map(d => (
-                      <Select.Option
-                        key={`${d.id}`}
-                        value={`${d.id}`}
-                        name={d.profileName}
-                        title={d.profileName}
-                      >
-                        <AWSRegionTag
-                          provider={d.cloudProvider}
-                          showProvider
-                          displayName={false}
-                          displayFlag={false}
-                        />
-                        <span>{d.profileName}</span>
-                      </Select.Option>
-                    ))
-                  }
-                </Select>
-              </div>
-              <div style={{marginTop: 5, padding: 2, fontWeight: 'bold', width: 160}}>
-                Default Credentials Profile
-              </div>
-              <div
-                style={{padding: '0 2px'}}
-              >
-                <Select
-                  allowClear
-                  showSearch
-                  disabled={
-                    this.state.operationInProgress ||
-                    readOnly ||
-                    this.state.profiles.length === 0 ||
-                    credentialProfilesPending
-                  }
-                  value={this.defaultProfileId}
-                  style={{width: '100%'}}
-                  onChange={this.onChangeDefaultProfileId}
-                  filterOption={(input, option) =>
-                    option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                  }>
-                  {
-                    this.cloudCredentialProfiles
-                      .filter(d => this.state.profiles.indexOf(+d.id) >= 0)
-                      .map(d => (
-                        <Select.Option
-                          key={`${d.id}`}
-                          value={`${d.id}`}
-                          name={d.profileName}
-                          title={d.profileName}
-                        >
-                          <AWSRegionTag
-                            provider={d.cloudProvider}
-                            showProvider
-                            displayName={false}
-                            displayFlag={false}
-                          />
-                          <span>{d.profileName}</span>
-                        </Select.Option>
-                      ))
-                  }
-                </Select>
-              </div>
-            </div>
-          </SplitPanel>
-        </SplitPanel>
+              </Tabs.TabPane>
+            ) : null}
+          </Tabs>
+          {activeTab === 'user' ? (
+            <Button
+              type="primary"
+              onClick={this.onImpersonate}
+              className={styles.impersonateBtn}
+            >
+              IMPERSONATE
+            </Button>
+          ) : null}
+        </div>
       </Modal>
     );
   }

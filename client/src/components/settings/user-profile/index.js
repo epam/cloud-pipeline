@@ -18,6 +18,7 @@ import React from 'react';
 import SubSettings from '../sub-settings';
 import ProfileSettings from './profile';
 import AppearanceSettings, {MANAGEMENT_SECTION} from './appearance';
+import UserInfoSummary from '../forms/EditUserRolesDialog/UserInfoSummary';
 
 const sections = [
   {
@@ -34,6 +35,14 @@ const sections = [
         router={router}
         management={MANAGEMENT_SECTION.toLowerCase() === (sub || '').toLowerCase()}
       />)
+  }, {
+    key: 'statistics',
+    title: 'STATISTICS',
+    render: ({user}) => (
+      <UserInfoSummary
+        user={user}
+      />
+    )
   }
 ];
 
