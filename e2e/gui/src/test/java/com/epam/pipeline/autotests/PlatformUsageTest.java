@@ -25,7 +25,6 @@ import org.testng.annotations.Test;
 
 import java.time.LocalDateTime;
 
-import static com.epam.pipeline.autotests.ao.Primitive.SEARCH;
 import static com.epam.pipeline.autotests.ao.Primitive.SHOW_USERS;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static java.time.format.DateTimeFormatter.ofPattern;
@@ -43,7 +42,7 @@ public class PlatformUsageTest extends AbstractBfxPipelineTest implements Naviga
                 .switchToUsers()
                 .searchUserEntry(userWithoutCompletedRuns.login)
                 .edit()
-                .addRoleOrGroup(ROLE_USER_READER)
+                .addRoleOrGroupIfNonExist(ROLE_USER_READER)
                 .ok();
     }
 

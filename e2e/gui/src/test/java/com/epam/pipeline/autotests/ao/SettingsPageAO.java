@@ -51,6 +51,7 @@ import static com.epam.pipeline.autotests.utils.Utils.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
 
@@ -798,6 +799,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
 
+                    public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
+                        if ($(className(format("role-%s", value))).exists()) {
+                            return this;
+                        }
+                        return addRoleOrGroup(value);
+                    }
+
                     public EditUserPopup deleteRoleOrGroup(final String value) {
                         $$(byClassName("role-name-column"))
                                 .findBy(text(value))
@@ -1391,6 +1399,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public PreferencesAO saveIfNeeded() {
             sleep(5, SECONDS);
             if(get(SAVE).isEnabled()) {
+                sleep(10, SECONDS);
                 save();
             }
             return this;
