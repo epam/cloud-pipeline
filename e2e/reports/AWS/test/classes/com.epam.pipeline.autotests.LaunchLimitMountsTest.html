@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">30m27.83s</div>
+<div class="counter">25m1.60s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">87%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,48 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480"></a>
+<h3 class="failures">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</h3>
+<span class="code">
+<pre>java.lang.AssertionError: warning 'A large number of the object data storages (12) are going to be mounted for this job' should be visible on Launch form:  expected [true] but found [false]
+	at org.testng.Assert.fail(Assert.java:93)
+	at org.testng.Assert.failNotEquals(Assert.java:512)
+	at org.testng.Assert.assertEqualsImpl(Assert.java:134)
+	at org.testng.Assert.assertEquals(Assert.java:115)
+	at org.testng.Assert.assertEquals(Assert.java:304)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.checkLaunchMessage(PipelineRunFormAO.java:343)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.checkOOMwarningMessage(LaunchLimitMountsTest.java:409)
+	at com.epam.pipeline.autotests.LaunchLimitMountsTest.checkWarningInCaseOfOOMriskDueToStorageMountsNumber(LaunchLimitMountsTest.java:333)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,55 +114,55 @@
 </thead>
 <tr>
 <td class="success">allowToLaunchRunsWithoutMounts - 1590</td>
-<td>5m46.25s</td>
+<td>5m28.44s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
-<td>2m40.05s</td>
-<td class="success">passed</td>
+<td class="failures">checkWarningInCaseOfOOMriskDueToStorageMountsNumber - 1480</td>
+<td>2m32.81s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">displayingCPCAPLIMITMOUNTSinUserFriendlyManner - 1447</td>
-<td>38.526s</td>
+<td>42.051s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareLimitMounts - EPMCMBIBPC-2681</td>
-<td>23.372s</td>
+<td>24.394s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">prepareSensitiveLimitMounts - EPMCMBIBPC-3177</td>
-<td>33.579s</td>
+<td>35.285s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">rerunPipelineWithoutLimitMounts - EPMCMBIBPC-2683</td>
-<td>7m3.80s</td>
+<td>3m40.46s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithLimitMounts - EPMCMBIBPC-2682</td>
-<td>7m19.73s</td>
+<td>5m4.18s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runPipelineWithSensitiveLimitMounts - EPMCMBIBPC-3178</td>
-<td>6m2.53s</td>
+<td>6m33.98s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 33385 from [33385]
-Returns latest run with runId 33386 from [33385, 33386]
-Returns latest run with runId 33386 from [33385, 33386]
-Returns latest run with runId 33387 from [33385, 33386, 33387]
-Returns latest run with runId 33388 from [33385, 33386, 33387, 33388]
-Returns latest run with runId 33389 from [33385, 33386, 33387, 33388, 33389]
+<pre>Returns latest run with runId 33786 from [33786]
+Returns latest run with runId 33787 from [33786, 33787]
+Returns latest run with runId 33787 from [33786, 33787]
+Returns latest run with runId 33788 from [33786, 33787, 33788]
+Returns latest run with runId 33789 from [33786, 33787, 33788, 33789]
+Returns latest run with runId 33790 from [33786, 33787, 33788, 33789, 33790]
 </pre>
 </span>
 </div>
@@ -139,7 +174,7 @@ Returns latest run with runId 33389 from [33385, 33386, 33387, 33388, 33389]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 7, 2022 4:57:10 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Nov 13, 2022 12:02:19 AM</p>
 </div>
 </div>
 </body>
