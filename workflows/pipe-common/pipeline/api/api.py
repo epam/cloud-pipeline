@@ -1152,17 +1152,15 @@ class PipelineAPI:
             formed_url = self.LOAD_STORAGE_ITEM_CONTENT_URL.format(id=storage_id, path=path)
             if version:
                 formed_url = formed_url + "&version={version}".format(version=version)
-            return self.execute_request(str(self.api_url) + formed_url)
+            return self._request(endpoint=formed_url, http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage item content: storage_id - '{}', path - '{}', version - '{}'.",
                                "Error message: {}".format(storage_id, path, version, str(e.message)))
 
     def search_datastorage_items_by_tag(self, request):
         try:
-            return self.execute_request(
-                str(self.api_url) + self.SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL,
-                method="post",
-                data=json.dumps(request)
+            return self._request(
+                endpoint=self.SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL, http_method="post", data=request
             )
         except Exception as e:
             raise RuntimeError("Failed to search datastorage items by tag: request - '{}'.",
@@ -1170,48 +1168,45 @@ class PipelineAPI:
 
     def load_datastorage_item_with_tags(self, storage_id, path, show_versions=False):
         try:
-            return self.execute_request(
-                str(self.api_url) + self.DATA_STORAGE_ITEM_TAG_LIST_URL.format(id=storage_id, path=path, show_versions=show_versions),
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAG_LIST_URL.format(id=storage_id, path=path, show_versions=show_versions),
+                http_method="get"
             )
         except Exception as e:
             raise RuntimeError("Failed to load datastorage item with tags: storage_id - '{}', path - '{}', show_versions - '{}'.",
                                "Error message: {}".format(storage_id, path, show_versions, str(e.message)))
 
-    def insert_datastorage_item_tags(self, request):
+    def insert_datastorage_item_tags(self, storage_id, request):
         try:
-            return self.execute_request(
-                str(self.api_url) + self.DATA_STORAGE_ITEM_TAGS_BATCH_INSERT_URL,
-                method="put", data=json.dumps(request)
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_INSERT_URL.format(id=storage_id), http_method="put", data=request
             )
         except Exception as e:
             raise RuntimeError("Failed to batch insert tags: request - '{}'.",
                                "Error message: {}".format(request, str(e.message)))
 
-    def upsert_datastorage_item_tags(self, request):
+    def upsert_datastorage_item_tags(self, storage_id, request):
         try:
-            return self.execute_request(
-                str(self.api_url) + self.DATA_STORAGE_ITEM_TAGS_BATCH_UPSERT_URL,
-                method="put", data=json.dumps(request)
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_UPSERT_URL.format(id=storage_id), http_method="put", data=request
             )
         except Exception as e:
             raise RuntimeError("Failed to batch upsert tags: request - '{}'.",
                                "Error message: {}".format(request, str(e.message)))
 
-    def delete_datastorage_item_tags(self, request):
+    def delete_datastorage_item_tags(self, storage_id, request):
         try:
-            return self.execute_request(
-                str(self.api_url) + self.DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL,
-                method="delete", data=json.dumps(request)
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL.format(id=storage_id), http_method="delete", data=request
             )
         except Exception as e:
             raise RuntimeError("Failed to batch delete tags: request - '{}'.",
                                "Error message: {}".format(request, str(e.message)))
 
-    def delete_all_datastorage_item_tags(self, request):
+    def delete_all_datastorage_item_tags(self, storage_id, request):
         try:
-            return self.execute_request(
-                str(self.api_url) + self.DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL,
-                method="delete", data=json.dumps(request)
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL.format(id=storage_id), http_method="delete", data=request
             )
         except Exception as e:
             raise RuntimeError("Failed to batch delete all tags: request - '{}'.",
