@@ -155,7 +155,7 @@ public class StoragePermissionManager {
     public boolean checkTagSearchResultPermission(final DataStorageTagSearchResult searchResultEntry,
                                                   final String permissionName) {
         return grantPermissionManager.storagePermission(
-                entityManager.load(AclClass.DATA_STORAGE, searchResultEntry.getId()),
+                entityManager.load(AclClass.DATA_STORAGE, searchResultEntry.getDatastorageId()),
                 permissionName
         );
     }

@@ -24,7 +24,7 @@ import java.util.List;
 @AllArgsConstructor
 public class DataStorageTagSearchResult {
 
-    Long id;
-    List<DataStorageTag> object;
+    Long datastorageId;
+    List<DataStorageTag> items;
 
 }
