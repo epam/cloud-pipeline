@@ -477,8 +477,7 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         toolManager.updateToolVersionScanStatus(
                 tool.getId(), ToolScanStatus.COMPLETED, new Date(), LATEST_TAG,
-                new ToolOSVersion(TEST, TEST), LAYER_REF, DIGEST, new HashMap<>()
-        );
+                new ToolOSVersion(TEST, TEST), LAYER_REF, DIGEST, new HashMap<>(), null, null);
         toolManager.updateToolVulnerabilities(Collections.emptyList(), tool.getId(), LATEST_TAG);
         toolManager.updateToolDependencies(Collections.emptyList(), tool.getId(), LATEST_TAG);
         Assert.assertNotNull(toolManager.load(tool.getId()));
@@ -525,7 +524,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         ToolScanStatus status = ToolScanStatus.COMPLETED;
 
         toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, new ToolOSVersion(TEST, TEST),
-                layerRef, digest, new HashMap<>());
+                layerRef, digest, new HashMap<>(), null, null);
         toolManager.updateWhiteListWithToolVersionStatus(tool.getId(), LATEST_TAG, true);
         ToolVersionScanResult versionScan = toolManager.loadToolVersionScan(
                 tool.getId(), LATEST_TAG).get();
@@ -539,7 +538,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         now = new Date();
 
         toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, new ToolOSVersion(TEST, TEST),
-                layerRef, digest, new HashMap<>());
+                layerRef, digest, new HashMap<>(), null, null);
         Assert.assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(now, versionScan.getScanDate());
@@ -566,7 +565,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
 
         toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, scanDate,
-                latestVersion, new ToolOSVersion(CENTOS, CENTOS_VERSION), testRef, testRef, new HashMap<>());
+                latestVersion, new ToolOSVersion(CENTOS, CENTOS_VERSION), testRef, testRef, new HashMap<>(), null, null);
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
         ToolOSVersion toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
@@ -598,7 +597,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
 
         toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, scanDate,
-                latestVersion, new ToolOSVersion(TEST, TEST), testRef, testRef, new HashMap<>());
+                latestVersion, new ToolOSVersion(TEST, TEST), testRef, testRef, new HashMap<>(), null, null);
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
         Assert.assertEquals(
@@ -674,7 +673,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         ToolScanStatus status = ToolScanStatus.FAILED;
 
         toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, layerRef,
-                digest, new HashMap<>());
+                digest, new HashMap<>(), null, null);
         ToolVersionScanResult versionScan = toolManager.loadToolVersionScan(
                 tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(status, versionScan.getStatus());
@@ -699,7 +698,7 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         toolManager.updateToolVersionScanStatus(
                 tool.getId(), status, scanDate, LATEST_TAG, new ToolOSVersion(TEST, TEST), layerRef, digest,
-                new HashMap<>());
+                new HashMap<>(), null, null);
         ToolVersionScanResult versionScan =
                 toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(status, versionScan.getStatus());
@@ -712,7 +711,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         Date newScanDate = new Date();
 
         toolManager.updateToolVersionScanStatus(
-                tool.getId(), status, newScanDate, LATEST_TAG, layerRef, digest, new HashMap<>());
+                tool.getId(), status, newScanDate, LATEST_TAG, layerRef, digest, new HashMap<>(), null, null);
         Assert.assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(newScanDate, versionScan.getScanDate());
@@ -795,10 +794,10 @@ public class ToolManagerTest extends AbstractManagerTest {
         assertThrows(IllegalArgumentException.class, 
             () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
                     DateUtils.now(), LATEST_TAG, new ToolOSVersion(CENTOS, CENTOS_VERSION), LAYER_REF, DIGEST,
-                    new HashMap<>()));
+                    new HashMap<>(), null, null));
         assertThrows(IllegalArgumentException.class, 
             () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
-                    DateUtils.now(), LATEST_TAG, LAYER_REF, DIGEST, new HashMap<>()));
+                    DateUtils.now(), LATEST_TAG, LAYER_REF, DIGEST, new HashMap<>(), null, null));
         assertThrows(IllegalArgumentException.class, 
             () -> toolManager.updateToolDependencies(Collections.emptyList(), symlink.getId(), LATEST_TAG));
         assertThrows(IllegalArgumentException.class, 
@@ -863,5 +862,4 @@ public class ToolManagerTest extends AbstractManagerTest {
         tool.setToolGroup(toolGroupName);
         return tool;
     }
-
 }
