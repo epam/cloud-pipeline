@@ -22,6 +22,7 @@ import Collapse from '../collapse';
 import {getExternalEvaluations} from '../../model/analysis/external-evaluations';
 import CellProfilerOtherJob from './cell-profiler-other-job';
 import UserName from '../../../UserName';
+import {compareUserNames, compareUserNamesWithoutDomain} from '../../../../../utils/users-filters';
 
 function parseFilters (filters = {}) {
   const {
@@ -32,6 +33,13 @@ function parseFilters (filters = {}) {
     hcsFile: source,
     owners: userNames
   };
+}
+
+function filterByOwner (owners, owner) {
+  if (!owners || owners.length === 0) {
+    return true;
+  }
+  return owners.some(o => compareUserNames(o, owner) || compareUserNamesWithoutDomain(o, owner));
 }
 
 class CellProfilerExternalJobs extends React.PureComponent {
@@ -48,9 +56,7 @@ class CellProfilerExternalJobs extends React.PureComponent {
     const {
       jobs = []
     } = this.state;
-    return jobs.filter(aJob => !aJob.owner ||
-      (owners.length === 0 || owners.includes(aJob.owner))
-    );
+    return jobs.filter(aJob => !aJob.owner || filterByOwner(owners, aJob.owner));
   }
 
   componentDidMount () {
