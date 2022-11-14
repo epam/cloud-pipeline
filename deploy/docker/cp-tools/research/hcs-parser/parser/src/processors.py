@@ -593,11 +593,12 @@ class HcsFileParser:
     def try_process_eval(self):
         result = 0
         local_eval_folder = os.path.join(self.tmp_local_dir, HCS_EVAL_DIR_NAME)
-        if not os.path.exists(local_eval_folder) or not os.listdir(local_eval_folder):
+        harmony_eval_folder = os.path.join(self.hcs_root_dir, HCS_EVAL_DIR_NAME)
+        if not os.path.exists(harmony_eval_folder) or not os.listdir(harmony_eval_folder):
             self._processing_logger.log_info('Evaluation files not found.')
             return result
         try:
-            HcsFileEvalProcessor(os.path.join(self.hcs_root_dir, HCS_EVAL_DIR_NAME), local_eval_folder)\
+            HcsFileEvalProcessor(harmony_eval_folder, local_eval_folder)\
                 .parse_evaluations()
             eval_results_path = os.path.join(local_eval_folder, HCS_EVAL_DIR_NAME)
             if os.path.exists(eval_results_path) and os.listdir(eval_results_path):
