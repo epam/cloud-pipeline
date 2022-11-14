@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-image=`docker ps --filter "id=$1" --format "{{.Image}}"`
+image=$(docker inspect "$1" --format="{{.Config.Image}}")
 if [[ "$image" = "" ]]
 then
   exit 1
