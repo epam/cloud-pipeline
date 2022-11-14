@@ -172,8 +172,8 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolDependencies(scanResult.getDependencies(), tool.getId(), version);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
                             scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
-                            scanResult.getLastLayerRef(), scanResult.getDigest(),
-                            scanResult.getVulnerabilitiesCount(), scanResult.getDefaultCmd(), scanResult.getLayersCount());
+                            scanResult.getLastLayerRef(), scanResult.getDigest(), scanResult.getVulnerabilitiesCount(),
+                            scanResult.getDefaultCmd(), scanResult.getLayersCount());
                     return scanResult;
                 } catch (Exception e) {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
