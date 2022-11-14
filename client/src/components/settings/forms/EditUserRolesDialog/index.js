@@ -825,6 +825,7 @@ export default class EditUserRolesDialog extends React.Component {
       : false;
     return (
       <SplitPanel
+        style={{flex: 1, height: 'unset', overflow: 'auto'}}
         contentInfo={[
           {
             key: CONTENT_PANEL_KEY,
@@ -1112,15 +1113,137 @@ export default class EditUserRolesDialog extends React.Component {
     this.setState({activeTab: key});
   };
 
-  render () {
-    if (!this.props.userInfo) {
-      return null;
-    }
+  renderFooter = () => {
     const {readOnly} = this.props;
     const {activeTab} = this.state;
     let blocked = false;
     if (this.props.userInfo.loaded) {
       blocked = this.props.userInfo.value.blocked;
+    }
+    if (activeTab === 'user') {
+      return (
+        <Row type="flex" justify="space-between">
+          <div>
+            <Button
+              disabled={readOnly}
+              id="delete-user-button"
+              type="danger"
+              onClick={this.onDelete}>DELETE</Button>
+            <Button
+              disabled={readOnly}
+              type="danger"
+              onClick={() => this.onBlockUnBlock(!blocked)}
+            >
+              {
+                blocked ? 'UNBLOCK' : 'BLOCK'
+              }
+            </Button>
+          </div>
+          <div>
+            <Button
+              id="revert-changes-edit-user-form"
+              onClick={() => this.revertChanges()}
+              disabled={readOnly || !this.modified}
+            >
+              REVERT
+            </Button>
+            <Button
+              id="close-edit-user-form"
+              type="primary"
+              onClick={this.operationWrapper(this.saveChanges)}
+            >
+              OK
+            </Button>
+          </div>
+        </Row>
+      );
+    }
+    return (
+      <Row type="flex" justify="end">
+        <Button
+          id="close-edit-user-form"
+          type="primary"
+          onClick={() => this.onClose()}
+        >
+          OK
+        </Button>
+      </Row>
+    );
+  };
+
+  renderTabs = () => {
+    const {activeTab} = this.state;
+    let blocked = false;
+    if (this.props.userInfo.loaded) {
+      blocked = this.props.userInfo.value.blocked;
+    }
+    return (
+      <Tabs
+        activeKey={activeTab}
+        onChange={this.onChangeTab}
+      >
+        <Tabs.TabPane
+          tab={(
+            <div>
+              <span>
+                PROFILE
+              </span>
+              {
+                blocked &&
+                <span
+                  style={{fontStyle: 'italic', marginLeft: 5}}
+                >
+                  - blocked
+                </span>
+              }
+            </div>
+          )}
+          key="user"
+        />
+        {
+          this.isAdmin && (
+            <Tabs.TabPane
+              tab="STATISTICS"
+              key="user-statistics"
+            />
+          )
+        }
+      </Tabs>
+    );
+  };
+
+  renderContent = () => {
+    const {activeTab} = this.state;
+    if (activeTab === 'user-statistics') {
+      return (
+        <UserInfoSummary
+          user={this.props.user}
+          style={{flex: 1, overflow: 'auto'}}
+        />
+      );
+    }
+    return this.renderUserRolesTab();
+  };
+
+  renderImpersonateButton = () => {
+    const {activeTab} = this.state;
+    if (activeTab === 'user') {
+      return (
+        <Button
+          type="primary"
+          onClick={this.onImpersonate}
+          className={styles.impersonateBtn}
+        >
+          IMPERSONATE
+        </Button>
+      );
+    }
+    return null;
+  };
+
+  render () {
+    if (!this.props.userInfo) {
+      return null;
     }
     return (
       <Modal
@@ -1132,89 +1255,13 @@ export default class EditUserRolesDialog extends React.Component {
         bodyStyle={{
           height: '80vh'
         }}
-        footer={activeTab === 'user' ? (
-          <Row type="flex" justify="space-between">
-            <div>
-              <Button
-                disabled={readOnly}
-                id="delete-user-button"
-                type="danger"
-                onClick={this.onDelete}>DELETE</Button>
-              <Button
-                disabled={readOnly}
-                type="danger"
-                onClick={() => this.onBlockUnBlock(!blocked)}
-              >
-                {
-                  blocked ? 'UNBLOCK' : 'BLOCK'
-                }
-              </Button>
-            </div>
-            <div>
-              <Button
-                id="revert-changes-edit-user-form"
-                onClick={() => this.revertChanges()}
-                disabled={readOnly || !this.modified}
-              >
-                REVERT
-              </Button>
-              <Button
-                id="close-edit-user-form"
-                type="primary"
-                onClick={this.operationWrapper(this.saveChanges)}
-              >
-                OK
-              </Button>
-            </div>
-          </Row>
-        ) : null}
+        footer={this.renderFooter()}
         visible={this.props.visible}
       >
         <div className={styles.modalContainer}>
-          <Tabs
-            activeKey={activeTab}
-            onChange={this.onChangeTab}
-          >
-            <Tabs.TabPane
-              tab={(
-                <div>
-                  <span>
-                    PROFILE
-                  </span>
-                  {
-                    blocked &&
-                    <span
-                      style={{fontStyle: 'italic', marginLeft: 5}}
-                    >
-                      - blocked
-                    </span>
-                  }
-                </div>
-              )}
-              key="user"
-            >
-              {this.renderUserRolesTab()}
-            </Tabs.TabPane>
-            {this.isAdmin ? (
-              <Tabs.TabPane
-                tab="STATISTICS"
-                key="user-statistics"
-              >
-                <UserInfoSummary
-                  user={this.props.user}
-                />
-              </Tabs.TabPane>
-            ) : null}
-          </Tabs>
-          {activeTab === 'user' ? (
-            <Button
-              type="primary"
-              onClick={this.onImpersonate}
-              className={styles.impersonateBtn}
-            >
-              IMPERSONATE
-            </Button>
-          ) : null}
+          {this.renderTabs()}
+          {this.renderImpersonateButton()}
+          {this.renderContent()}
         </div>
       </Modal>
     );

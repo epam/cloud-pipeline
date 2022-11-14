@@ -95,6 +95,23 @@ function getTotalCosts (billing) {
   return {};
 }
 
+function fetchUserName (userName, authenticatedUserInfo) {
+  if (userName) {
+    return Promise.resolve(userName);
+  }
+  return new Promise((resolve) => {
+    authenticatedUserInfo
+      .fetchIfNeededOrWait()
+      .then(() => {
+        if (authenticatedUserInfo.loaded && authenticatedUserInfo.value) {
+          resolve(authenticatedUserInfo.value.userName);
+        } else {
+          resolve();
+        }
+      });
+  });
+}
+
 @roleModel.authenticationInfo
 @inject('preferences')
 @observer
@@ -107,41 +124,24 @@ export default class UserCostsPanel extends React.Component {
   _billingRequests;
 
   componentDidMount () {
-    const {externalUser, authenticatedUserInfo} = this.props;
-    if (externalUser) {
-      this.fetchBillingInfo();
-    } else if (authenticatedUserInfo) {
-      authenticatedUserInfo
-        .fetchIfNeededOrWait()
-        .then(() => {
-          if (authenticatedUserInfo.loaded) {
-            this.fetchBillingInfo();
-          }
-        });
-    }
+    this.updateFromProps();
   }
 
   componentDidUpdate (prevProps) {
-    const {externalUser, period} = this.props;
+    const {userName, period} = this.props;
     if (
-      (externalUser && prevProps.externalUser !== externalUser) ||
+      (prevProps.userName !== userName) ||
       (period && period !== prevProps.period)
     ) {
-      this.fetchBillingInfo();
+      this.updateFromProps();
     }
   }
 
-  @computed
-  get userName () {
-    const {externalUser, authenticatedUserInfo} = this.props;
-    if (externalUser) {
-      return externalUser.userName;
-    }
-    if (authenticatedUserInfo.loaded) {
-      return authenticatedUserInfo.value.userName;
-    }
-    return undefined;
-  }
+  updateFromProps = () => {
+    const {userName, authenticatedUserInfo} = this.props;
+    fetchUserName(userName, authenticatedUserInfo)
+      .then(this.fetchBillingInfo.bind(this));
+  };
 
   @computed
   get billingInfo () {
@@ -168,27 +168,31 @@ export default class UserCostsPanel extends React.Component {
     return '';
   }
 
-  fetchBillingInfo = () => {
+  fetchBillingInfo = (userName) => {
+    const {
+      billingPeriods = BILLING_PERIODS,
+      period: periodDate
+    } = this.props;
     this.setState({pending: true}, async () => {
-      const {billingPeriods, period} = this.props;
-      const promises = (billingPeriods || BILLING_PERIODS).map(billingPeriod => {
+      const promises = billingPeriods.map(period => {
         return new Promise((resolve) => {
-          const rangeFormat = billingPeriod === Period.month
+          const rangeFormat = period === Period.month
             ? 'YYYY-MM'
             : 'YYYY';
-          const range = period
-            ? moment(period).format(rangeFormat)
+          const range = periodDate
+            ? moment(periodDate).format(rangeFormat)
             : undefined;
-          const periodInfo = getPeriod(billingPeriod, range);
-          const requestFilters = {
-            user: this.userName,
-            ...periodInfo,
-            filterBy: [
-              GetBillingData.FILTER_BY.compute,
-              GetBillingData.FILTER_BY.storages
-            ]
-          };
-          const request = new GetBillingData(requestFilters);
+          const periodInfo = getPeriod(period, range);
+          const request = new GetBillingData(
+            {
+              user: userName,
+              ...periodInfo,
+              filterBy: [
+                GetBillingData.FILTER_BY.compute,
+                GetBillingData.FILTER_BY.storages
+              ]
+            }
+          );
           request.fetch()
             .then(() => resolve(request))
             .catch(() => resolve(request));
@@ -333,7 +337,7 @@ export default class UserCostsPanel extends React.Component {
 
 UserCostsPanel.PropTypes = {
   showDisclaimer: PropTypes.bool,
-  externalUser: PropTypes.object,
+  userName: PropTypes.string,
   billingPeriods: PropTypes.arrayOf(PropTypes.string),
   period: PropTypes.string
 };

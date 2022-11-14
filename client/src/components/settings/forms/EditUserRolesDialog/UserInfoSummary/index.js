@@ -357,7 +357,7 @@ export default class UserInfoSummary extends React.Component {
         <div style={{minWidth: '200px'}}>
           <UserCostsPanel
             showDisclaimer={false}
-            externalUser={user}
+            userName={user.userName}
             billingPeriods={[Period.month]}
             period={period}
           />
@@ -369,7 +369,7 @@ export default class UserInfoSummary extends React.Component {
   renderTable = () => {
     const {tableMode, pending} = this.state;
     return (
-      <div>
+      <div className={styles.details}>
         <p className={styles.title}>
           Detailed usage data
         </p>
@@ -377,15 +377,13 @@ export default class UserInfoSummary extends React.Component {
           <Button.Group>
             <Button
               type={tableMode === TABLE_MODES.computed ? 'primary' : 'default'}
-              style={{width: 80, borderRadius: 0}}
               onClick={() => this.setTableMode(TABLE_MODES.computed)}
               size="small"
             >
-              Computed
+              Compute instances
             </Button>
             <Button
               type={tableMode === TABLE_MODES.storages ? 'primary' : 'default'}
-              style={{width: 80, borderRadius: 0}}
               onClick={() => this.setTableMode(TABLE_MODES.storages)}
               size="small"
             >
@@ -437,12 +435,24 @@ export default class UserInfoSummary extends React.Component {
   };
 
   render () {
-    const {user} = this.props;
+    const {
+      user,
+      className,
+      style
+    } = this.props;
     if (!user) {
       return null;
     }
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            className
+          )
+        }
+        style={style}
+      >
         {this.renderTitle()}
         {this.renderUserStatistics()}
         {this.renderTable()}
@@ -460,5 +470,7 @@ export default class UserInfoSummary extends React.Component {
 }
 
 UserInfoSummary.propTypes = {
-  user: PropTypes.object
+  className: PropTypes.string,
+  user: PropTypes.object,
+  style: PropTypes.object
 };
