@@ -565,7 +565,8 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
 
         toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, scanDate,
-                latestVersion, new ToolOSVersion(CENTOS, CENTOS_VERSION), testRef, testRef, new HashMap<>(), null, null);
+                latestVersion, new ToolOSVersion(CENTOS, CENTOS_VERSION), testRef, testRef, new HashMap<>(),
+                null, null);
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
         ToolOSVersion toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
