@@ -143,45 +143,24 @@ export default class UserInfoSummary extends React.Component {
   @computed
   get tools () {
     const {dockerRegistries} = this.props;
-    const result = [];
     if (dockerRegistries.loaded) {
-      const {registries = []} = dockerRegistries.value || {};
-      for (let r = 0; r < registries.length; r++) {
-        const registry = registries[r];
+      const result = [];
+      const {registries = []} = dockerRegistries.value;
+      for (let registry of registries) {
         const {groups = []} = registry;
-        for (let g = 0; g < groups.length; g++) {
-          const group = groups[g];
-          const {tools: groupTools = []} = group;
-          if (groupTools.length > 0) {
-            const tools = {
-              label: (
-                <span>
-                  {registry.description || registry.path}
-                  <Icon type="right" />
-                  {group.name}
-                </span>
-              ),
-              key: `${registry.path}/${group.name}`,
-              tools: []
-            };
-            result.push(tools);
-            for (let t = 0; t < groupTools.length; t++) {
-              const tool = groupTools[t];
-              if (!/^windows$/i.test(tool.platform)) {
-                tools.tools.push({
-                  ...tool,
-                  dockerImage: `${registry.path}/${tool.image}`,
-                  registry,
-                  group,
-                  name: tool.image.split('/').pop()
-                });
-              }
-            }
-          }
+        for (let group of groups) {
+          const {tools = []} = group;
+          result.push(
+            ...(tools.map(tool => ({
+              ...tool,
+              group
+            })))
+          );
         }
       }
+      return result;
     }
-    return result;
+    return [];
   }
 
   setTableMode = (mode) => {
@@ -229,13 +208,9 @@ export default class UserInfoSummary extends React.Component {
   getToolId = (docker) => {
     const [r, g, iv] = docker.split('/');
     const [i] = iv.split(':');
-    const currentTool = this.tools.find(tool => tool.key === `${r}/${g}`);
-    if (currentTool) {
-      const currentImage = (currentTool.tools || [])
-        .find(image => image.dockerImage === `${r}/${g}/${i}`);
-      return (currentImage || {}).id;
-    }
-    return undefined;
+    const currentTool = this.tools
+      .find(tool => tool.registry === r && tool.image === `${g}/${i}`);
+    return (currentTool || {}).id;
   };
 
   changePeriod = (shift) => () => {
