@@ -305,7 +305,8 @@ public class SystemPreferences {
             new StringPreference("bitbucket.user.name", null, GIT_GROUP, pass);
     public static final StringPreference GITLAB_API_VERSION = new StringPreference(
             "git.gitlab.api.version", "v3", GIT_GROUP, pass);
-
+    public static final BooleanPreference GITLAB_HASHED_REPO_SUPPORT = new BooleanPreference(
+            "git.gitlab.hashed.repo.support", false, GIT_GROUP, pass);
 
     // DOCKER_SECURITY_GROUP
     /**

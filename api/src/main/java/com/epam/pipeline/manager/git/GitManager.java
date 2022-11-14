@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitGroup;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -527,7 +528,7 @@ public class GitManager {
                                                                           final Integer pageSize) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
-                GitRepositoryUrl.from(pipeline.getRepository()),
+                getGitlabRepositoryPath(pipeline),
                 new GitReaderLogsPathFilter(getContextPathList(path)), version, page, pageSize
         ));
     }
@@ -536,7 +537,7 @@ public class GitManager {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         final GitReaderEntryListing<GitReaderObject> listing =
                 callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
-                    GitRepositoryUrl.from(pipeline.getRepository()),
+                        getGitlabRepositoryPath(pipeline),
                         new GitReaderLogsPathFilter(getContextPathList(path)),
                         version, 0L, 1
                 ));
@@ -555,7 +556,7 @@ public class GitManager {
                                                                                         final Integer pageSize) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
-                GitRepositoryUrl.from(pipeline.getRepository()),
+                getGitlabRepositoryPath(pipeline),
                 new GitReaderLogsPathFilter(getContextPathList(path)),
                 version, page, pageSize
         ));
@@ -567,7 +568,7 @@ public class GitManager {
         final GitReaderLogsPathFilter paths) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
-                GitRepositoryUrl.from(pipeline.getRepository()), version, paths
+                getGitlabRepositoryPath(pipeline), version, paths
         ));
     }
 
@@ -578,7 +579,7 @@ public class GitManager {
         final GitCommitsFilter filter) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommits(
-                GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize,
+                getGitlabRepositoryPath(pipeline), page, pageSize,
                 buildFiltersWithUsersFromGitLab(filter), getFilesToIgnore()
         ));
     }
@@ -587,7 +588,7 @@ public class GitManager {
                                                   final GitCommitsFilter filter) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiffs(
-                GitRepositoryUrl.from(pipeline.getRepository()),
+                getGitlabRepositoryPath(pipeline),
                 includeDiff, buildFiltersWithUsersFromGitLab(filter), getFilesToIgnore()
         ));
     }
@@ -596,7 +597,7 @@ public class GitManager {
                                                       final String path) {
         final Pipeline pipeline = pipelineManager.load(id);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiff(
-                GitRepositoryUrl.from(pipeline.getRepository()),
+                getGitlabRepositoryPath(pipeline),
                 commit,
                 new GitReaderLogsPathFilter(
                         ListUtils.union(getContextPathList(path), getFilesToIgnore())
@@ -760,5 +761,22 @@ public class GitManager {
 
     private String getConfigFilePath(final String configPath) {
         return StringUtils.isNullOrEmpty(configPath) ? CONFIG_FILE_NAME : configPath;
+    }
+
+    private String getGitlabRepositoryPath(final Pipeline pipeline) {
+        final boolean hashedRepositoriesSupported = preferenceManager.getPreference(
+                SystemPreferences.GITLAB_HASHED_REPO_SUPPORT);
+        final GitRepositoryUrl gitRepositoryUrl = GitRepositoryUrl.from(pipeline.getRepository());
+        final String namespace = gitRepositoryUrl.getNamespace()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid repository URL format"));
+        final String project = gitRepositoryUrl.getProject()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid repository URL format"));
+        if (hashedRepositoriesSupported) {
+            final GitProjectStorage projectStorage = getDefaultGitlabClient().getProjectStorage(project);
+            if (Objects.nonNull(projectStorage)) {
+                return projectStorage.getDiskPath();
+            }
+        }
+        return Paths.get(namespace, project + ".git").toString();
     }
 }
