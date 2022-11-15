@@ -317,12 +317,11 @@ public class AggregatingToolScanManager implements ToolScanManager {
             final String digest = client.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
             final List<ImageHistoryLayer> imageHistory = client.getImageHistory(registry, tool.getImage(), tag);
             final String defaultCmd = toolManager.loadToolDefaultCommand(imageHistory);
-            final int layersCount = client.getLayersCount(registry, tool.getImage(), tag);
 
             final ClairScanResult clairResult = getScanResult(tool, clairService.getScanResult(clairRef));
             final DockerComponentScanResult dockerScanResult = dockerComponentService == null ? null :
                     getScanResult(tool, dockerComponentService.getScanResult(clairRef));
-            return convertResults(clairResult, dockerScanResult, tool, tag, digest, defaultCmd, layersCount);
+            return convertResults(clairResult, dockerScanResult, tool, tag, digest, defaultCmd, imageHistory.size());
         } catch (IOException e) {
             throw new ToolScanExternalServiceException(tool, e);
         }
