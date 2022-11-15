@@ -182,7 +182,7 @@ public class ToolManager implements SecuredEntityManager {
                 String digest = dockerRegistryManager.getDockerClient(registry, tool.getImage())
                         .getVersionAttributes(registry, tool.getImage(), tag).getDigest();
                 updateToolVersionScanStatus(tool.getId(), ToolScanStatus.NOT_SCANNED,
-                        DateUtils.now(), tag, null, digest, new HashMap<>());
+                        DateUtils.now(), tag, null, digest, new HashMap<>(), null, null);
             }
         } catch (DockerConnectionException e) {
             throw new IllegalArgumentException(
@@ -521,7 +521,13 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public String loadToolDefaultCommand(final Long id, final String tag) {
-        final List<String> commands = loadToolHistory(id, tag)
+        return toolVulnerabilityDao.loadToolVersionScan(id, tag)
+                .map(ToolVersionScanResult::getDefaultCmd)
+                .orElseGet(() -> loadToolDefaultCommand(loadToolHistory(id, tag)));
+    }
+
+    public String loadToolDefaultCommand(final List<ImageHistoryLayer> imageHistory) {
+        final List<String> commands = imageHistory
             .stream()
             .map(ImageHistoryLayer::getCommand)
             .collect(Collectors.toList());
@@ -603,7 +609,8 @@ public class ToolManager implements SecuredEntityManager {
     public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
                                             String version, ToolOSVersion toolOSVersion,
                                             String layerRef, String digest,
-                                            Map<VulnerabilitySeverity, Integer> vulnerabilityCount) {
+                                            Map<VulnerabilitySeverity, Integer> vulnerabilityCount,
+                                            String defaultCmd, Integer layersCount) {
         final Tool tool = load(toolId);
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
@@ -616,19 +623,20 @@ public class ToolManager implements SecuredEntityManager {
                 whiteList = false;
             }
             toolVulnerabilityDao.updateToolVersionScan(toolId, version, toolOSVersion, layerRef, digest, newStatus,
-                    scanDate, whiteList, vulnerabilityCount);
+                    scanDate, whiteList, vulnerabilityCount, defaultCmd, layersCount);
         } else {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, toolOSVersion, layerRef,
-                    digest, newStatus, scanDate, vulnerabilityCount);
+                    digest, newStatus, scanDate, vulnerabilityCount, defaultCmd, layersCount);
         }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate,
                                             String version, String layerRef, String digest,
-                                            Map<VulnerabilitySeverity, Integer> vulnerabilityCount) {
+                                            Map<VulnerabilitySeverity, Integer> vulnerabilityCount,
+                                            String defaultCmd, Integer layersCount) {
         updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef, digest,
-                vulnerabilityCount);
+                vulnerabilityCount, defaultCmd, layersCount);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -640,7 +648,7 @@ public class ToolManager implements SecuredEntityManager {
         Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
         if (!toolVersionScanResult.isPresent()) {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
-                    DateUtils.now(), new HashMap<>());
+                    DateUtils.now(), new HashMap<>(), null, null);
         }
         toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
         return loadToolVersionScan(tool, version).orElse(null);
