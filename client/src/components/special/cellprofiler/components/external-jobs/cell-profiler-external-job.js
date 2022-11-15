@@ -21,7 +21,7 @@ import styles from '../cell-profiler.css';
 import UserName from '../../../UserName';
 import displayDate from '../../../../../utils/displayDate';
 
-function CellProfilerOtherJob (props) {
+function CellProfilerExternalJob (props) {
   const {
     className,
     job,
@@ -100,7 +100,7 @@ function CellProfilerOtherJob (props) {
   );
 }
 
-CellProfilerOtherJob.propTypes = {
+CellProfilerExternalJob.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   job: PropTypes.object,
@@ -108,4 +108,4 @@ CellProfilerOtherJob.propTypes = {
   pending: PropTypes.bool
 };
 
-export default CellProfilerOtherJob;
+export default CellProfilerExternalJob;

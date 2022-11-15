@@ -254,6 +254,7 @@ class CellProfilerJobs extends React.Component {
           selected={this.selectedJobId}
           onSelect={this.onSelectJob}
           filters={this.filters}
+          onChangeFilters={this.onChangeFilters}
         />
         {
           error && (

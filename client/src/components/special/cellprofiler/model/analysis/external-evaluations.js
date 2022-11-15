@@ -14,11 +14,11 @@
  *  limitations under the License.
  */
 
+import moment from 'moment-timezone';
 import {getExternalEvaluationsSettings} from './job-utilities';
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import storages from '../../../../../models/dataStorage/DataStorageAvailable';
 import parseHCSFileParts from '../../../hcs-image/utilities/parse-hcs-file-parts';
-import moment from "moment-timezone";
 
 const EVALUATION_PLACEHOLDER = 'EVALUATION_ID';
 const OWNER_PLACEHOLDER = 'OWNER';

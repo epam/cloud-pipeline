@@ -3163,7 +3163,7 @@ export default `
 @THEME .cell-profiler-module.expanded .cell-profiler-module-header {
   border-bottom: 1px @card-border-color solid;
 }
-@THEME .cell-profiler-module-header:hover {
+@THEME .cell-profiler-module:not(.empty) .cell-profiler-module-header:hover {
   background-color: darken(@card-background-color, 5%);
 }
 @THEME .cell-profiler-results-table {

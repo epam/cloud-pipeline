@@ -94,7 +94,9 @@ class Collapse extends React.Component {
             'cell-profiler-module',
             {
               expanded,
-              [styles.expanded]: expanded
+              empty,
+              [styles.expanded]: expanded,
+              [styles.empty]: empty
             },
             className
           )

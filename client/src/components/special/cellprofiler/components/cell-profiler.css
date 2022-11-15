@@ -78,6 +78,10 @@
   align-items: center;
 }
 
+.cell-profiler-collapse.empty .cell-profiler-collapse-header {
+  cursor: default;
+}
+
 .cell-profiler-collapse-header .title {
   margin-right: auto;
 }

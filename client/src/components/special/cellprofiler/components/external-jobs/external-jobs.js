@@ -18,11 +18,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Icon} from 'antd';
+import {computed} from 'mobx';
+import {observer} from 'mobx-react';
 import Collapse from '../collapse';
 import {getExternalEvaluations} from '../../model/analysis/external-evaluations';
-import CellProfilerOtherJob from './cell-profiler-other-job';
+import CellProfilerExternalJob from './cell-profiler-external-job';
 import UserName from '../../../UserName';
 import {compareUserNames, compareUserNamesWithoutDomain} from '../../../../../utils/users-filters';
+import roleModel from '../../../../../utils/roleModel';
 
 function parseFilters (filters = {}) {
   const {
@@ -42,12 +45,54 @@ function filterByOwner (owners, owner) {
   return owners.some(o => compareUserNames(o, owner) || compareUserNamesWithoutDomain(o, owner));
 }
 
-class CellProfilerExternalJobs extends React.PureComponent {
+function jobArraysAreTheSame (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  const aIds = [...new Set(a.map(job => job.id))].sort();
+  const bIds = [...new Set(b.map(job => job.id))].sort();
+  if (aIds.length !== bIds.length) {
+    return false;
+  }
+  for (let i = 0; i < aIds.length; i++) {
+    if (aIds[i] !== bIds[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+class CellProfilerExternalJobs extends React.Component {
   state = {
     pending: false,
     jobs: [],
     expanded: false
   };
+
+  @computed
+  get currentUserName () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (!authenticatedUserInfo.loaded || !authenticatedUserInfo.value) {
+      return undefined;
+    }
+    return authenticatedUserInfo.value.userName;
+  }
+
+  get currentUserSelected () {
+    const {
+      owners = []
+    } = parseFilters(this.props.filters);
+    const currentUserName = this.currentUserName;
+    if (!currentUserName) {
+      return false;
+    }
+    return owners.some(o => o.toLowerCase() === currentUserName.toLowerCase());
+  }
 
   get filteredJobs () {
     const {
@@ -56,7 +101,27 @@ class CellProfilerExternalJobs extends React.PureComponent {
     const {
       jobs = []
     } = this.state;
-    return jobs.filter(aJob => !aJob.owner || filterByOwner(owners, aJob.owner));
+    return jobs.filter(aJob => filterByOwner(owners, aJob.owner));
+  }
+
+  get currentUserJobs () {
+    if (!this.currentUserName) {
+      return [];
+    }
+    const {
+      jobs = []
+    } = this.state;
+    return jobs.filter(aJob => aJob.owner && filterByOwner([this.currentUserName], aJob.owner));
+  }
+
+  get otherUserJobs () {
+    if (!this.currentUserName) {
+      return [];
+    }
+    const {
+      jobs = []
+    } = this.state;
+    return jobs.filter(aJob => !aJob.owner || !filterByOwner([this.currentUserName], aJob.owner));
   }
 
   componentDidMount () {
@@ -106,6 +171,99 @@ class CellProfilerExternalJobs extends React.PureComponent {
     });
   }
 
+  handleChangeOwnersFilters = (newOwners = []) => {
+    const {
+      onChangeFilters,
+      filters = {}
+    } = this.props;
+    if (typeof onChangeFilters === 'function') {
+      const {
+        userNames,
+        ...restFilters
+      } = filters;
+      onChangeFilters({...restFilters, userNames: newOwners});
+      this.setState({expanded: true});
+    }
+  };
+
+  handleShowOtherJobs = (event) => {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    this.handleChangeOwnersFilters();
+  };
+
+  handleShowCurrentUserJobs = (event) => {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    this.handleChangeOwnersFilters([this.currentUserName].filter(Boolean));
+  };
+
+  renderShowMyJobsButton = () => {
+    /*
+    if:
+    a) current user is not selected AND
+    b) there are current user jobs AND
+    c) there are other user jobs OR current filtered jobs are empty
+     */
+    const {
+      pending
+    } = this.state;
+    const currentUserJobs = this.currentUserJobs;
+    const filteredJobs = this.filteredJobs;
+    const otherUserJobs = this.otherUserJobs;
+    if (
+      !pending &&
+      !this.currentUserSelected &&
+      currentUserJobs.length > 0 &&
+      (otherUserJobs.length > 0 || filteredJobs.length === 0)
+    ) {
+      return (
+        <div>
+          <a onClick={this.handleShowCurrentUserJobs}>
+            {/* eslint-disable-next-line max-len */}
+            Show {currentUserJobs.length} my job{currentUserJobs.length > 1 ? 's' : ''}
+          </a>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  renderShowAllJobsButton = () => {
+    /*
+    if:
+    a) current filtered jobs are not the same as all jobs AND
+    b) all jobs are not empty
+    c) all jobs are not current user's jobs
+     */
+    const {
+      pending,
+      jobs = []
+    } = this.state;
+    const filteredJobs = this.filteredJobs;
+    const currentUserJobs = this.currentUserJobs;
+    if (
+      pending ||
+      jobArraysAreTheSame(jobs, filteredJobs) ||// current filtered jobs are the same as all jobs
+      jobs.length === 0 ||// all jobs are empty
+      jobArraysAreTheSame(jobs, currentUserJobs)// all jobs are the same as current user's jobs
+    ) {
+      return null;
+    }
+    return (
+      <div>
+        <a onClick={this.handleShowOtherJobs}>
+          {/* eslint-disable-next-line max-len */}
+          Show all {jobs.length} job{jobs.length > 1 ? 's' : ''}
+        </a>
+      </div>
+    );
+  };
+
   render () {
     const {
       pending,
@@ -125,16 +283,26 @@ class CellProfilerExternalJobs extends React.PureComponent {
       return null;
     }
 
+    const filteredJobs = this.filteredJobs;
+
     return (
       <Collapse
         className={className}
         style={style}
-        expanded={expanded && this.filteredJobs.length > 0}
+        expanded={expanded && filteredJobs.length > 0}
         onExpandedChange={this.onChangeExpanded}
-        empty={this.filteredJobs.length === 0}
+        empty={filteredJobs.length === 0}
         header={(
           <div>
             <b>External jobs</b>
+            {
+              !pending && filteredJobs.length > 0 && (
+                <span>
+                  {': '}
+                  {filteredJobs.length}
+                </span>
+              )
+            }
             {
               pending && (
                 <Icon
@@ -144,7 +312,7 @@ class CellProfilerExternalJobs extends React.PureComponent {
               )
             }
             {
-              !pending && this.filteredJobs.length === 0 && (
+              !pending && filteredJobs.length === 0 && (
                 <span>
                   {' '}
                   not found for <i>{hcsFile}</i> file
@@ -162,26 +330,21 @@ class CellProfilerExternalJobs extends React.PureComponent {
                         key={owner}
                         userName={owner}
                         style={{marginRight: 5}}
+                        showIcon
                       />
                     ))
                   }
                 </span>
               )
             }
-            {
-              !pending && this.filteredJobs.length > 0 && (
-                <span>
-                  {': '}
-                  {this.filteredJobs.length}
-                </span>
-              )
-            }
+            {this.renderShowMyJobsButton()}
+            {this.renderShowAllJobsButton()}
           </div>
         )}
       >
         {
-          this.filteredJobs.map((aJob) => (
-            <CellProfilerOtherJob
+          filteredJobs.map((aJob) => (
+            <CellProfilerExternalJob
               key={aJob.id}
               job={aJob}
               className={
@@ -206,7 +369,8 @@ CellProfilerExternalJobs.propTypes = {
   style: PropTypes.object,
   selected: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onSelect: PropTypes.func,
-  filters: PropTypes.object
+  filters: PropTypes.object,
+  onChangeFilters: PropTypes.func
 };
 
-export default CellProfilerExternalJobs;
+export default roleModel.authenticationInfo(observer(CellProfilerExternalJobs));
