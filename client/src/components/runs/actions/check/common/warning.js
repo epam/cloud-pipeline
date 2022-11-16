@@ -32,6 +32,7 @@ function RunOperationWarningAlert (
     className,
     style,
     type,
+    showIcon,
     message,
     checkResult
   }
@@ -46,6 +47,7 @@ function RunOperationWarningAlert (
       }
       style={style}
       type={type}
+      showIcon={showIcon}
       message={wrapWarningProp(message)(checkResult)}
     />
   );
@@ -62,22 +64,33 @@ class RunOperationWarning extends React.PureComponent {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
+    const {
+      optionsComparator = ((a, b) => a === b)
+    } = this.props;
+    if (!optionsComparator(prevProps.options, this.props.options)) {
+      console.log('options changed', this.props.options);
+    }
     if (
-      prevProps.runId !== this.props.runId ||
-      prevProps.check !== this.props.check
+      prevProps.objectId !== this.props.objectId ||
+      prevProps.check !== this.props.check ||
+      !optionsComparator(prevProps.options, this.props.options)
     ) {
       this.checkRun();
     }
   }
 
   checkRun = () => {
-    const {runId, check} = this.props;
-    if (runId && typeof check === 'function') {
+    const {
+      objectId,
+      check,
+      options
+    } = this.props;
+    if (objectId && typeof check === 'function') {
       this.setState({
         pending: true,
         checkResult: {result: false}
       }, () => {
-        check(runId)
+        check(objectId, options)
           .then(result => this.setState({
             pending: false,
             checkResult: result
@@ -95,15 +108,16 @@ class RunOperationWarning extends React.PureComponent {
     const {
       className,
       style,
-      runId,
+      objectId,
       type = 'error',
+      showIcon,
       warning
     } = this.props;
     const {
       pending,
       checkResult
     } = this.state;
-    if (!runId || pending) {
+    if (!objectId || pending) {
       return null;
     }
     const {
@@ -117,6 +131,7 @@ class RunOperationWarning extends React.PureComponent {
         className={className}
         style={style}
         type={type}
+        showIcon={showIcon}
         message={warning}
         checkResult={checkResult}
       />
@@ -127,8 +142,11 @@ class RunOperationWarning extends React.PureComponent {
 RunOperationWarning.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  objectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  options: PropTypes.any,
+  optionsComparator: PropTypes.func,
   type: PropTypes.string,
+  showIcon: PropTypes.bool,
   check: PropTypes.func,
   warning: PropTypes.oneOfType([PropTypes.func, PropTypes.node])
 };

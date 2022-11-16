@@ -39,7 +39,8 @@ function asyncFunctionCall (fn, ...options) {
 
 /**
  * @typedef {Object} RunOperationCheckProviderOptions
- * @property {function(runId:number):Promise<boolean>} check
+ * @property {function(objectId:number|string, options: *?):Promise<boolean>} check
+ * @property {function(a:*, b:*):boolean} [checkOptionsComparator]
  * @property {React.ReactNode|function} warning
  * @property {string} [storeName]
  */
@@ -71,12 +72,13 @@ function asyncFunctionCall (fn, ...options) {
 
 /**
  * @param {RunOperationCheckProviderOptions} options
- * @returns {React.ComponentClass & RunOperationCheckProviderType}
+ * @returns {{CheckProvider: React.ComponentClass} & RunOperationCheckProviderType}
  */
 export default function generateProvider (options) {
   storeIndex += 1;
   const {
     check,
+    checkOptionsComparator = ((a, b) => a === b),
     warning,
     storeName = `checkRunStore${storeIndex}`
   } = options || {};
@@ -87,7 +89,8 @@ export default function generateProvider (options) {
     @observable storeObj = {
       pending: false,
       checkResult: {result: false},
-      runId: undefined
+      objectId: undefined,
+      options: undefined
     };
 
     componentDidMount () {
@@ -97,8 +100,9 @@ export default function generateProvider (options) {
     componentDidUpdate (prevProps, prevState, snapshot) {
       if (
         (
-          prevProps.runId !== this.props.runId ||
-          prevProps.active !== this.props.active
+          prevProps.objectId !== this.props.objectId ||
+          prevProps.active !== this.props.active ||
+          !checkOptionsComparator(prevProps.options, this.props.options)
         ) &&
         this.props.active
       ) {
@@ -107,15 +111,19 @@ export default function generateProvider (options) {
     }
 
     checkRun () {
-      const {active, runId} = this.props;
-      this.storeObj.runId = runId;
-      if (active && runId && typeof check === 'function') {
+      const {active, objectId, options} = this.props;
+      this.storeObj.objectId = objectId;
+      this.storeObj.options = options;
+      if (active && objectId && typeof check === 'function') {
         this.storeObj.pending = true;
         this.storeObj.checkResult = {result: false};
-        asyncFunctionCall(check, runId)
+        asyncFunctionCall(check, objectId, options)
           .catch(() => Promise.resolve(false))
           .then(result => {
-            if (this.storeObj.runId === runId) {
+            if (
+              this.storeObj.objectId === objectId &&
+              checkOptionsComparator(this.storeObj.options, options)
+            ) {
               this.storeObj.pending = false;
               this.storeObj.checkResult = result;
             }
@@ -139,7 +147,8 @@ export default function generateProvider (options) {
   };
 
   RunOperationCheckProvider.propTypes = {
-    runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    objectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    options: PropTypes.any,
     children: PropTypes.node,
     active: PropTypes.bool
   };
@@ -170,7 +179,8 @@ export default function generateProvider (options) {
     const {
       className,
       style,
-      type = 'error'
+      type = 'error',
+      showIcon
     } = props;
     const {
       pending,
@@ -187,6 +197,7 @@ export default function generateProvider (options) {
         className={className}
         style={style}
         type={type}
+        showIcon={showIcon}
         message={warning}
         checkResult={checkResult}
       />
@@ -197,17 +208,19 @@ export default function generateProvider (options) {
   WrappedWarning.propTypes = {
     className: PropTypes.string,
     style: PropTypes.object,
-    type: PropTypes.string
+    type: PropTypes.string,
+    showIcon: PropTypes.bool
   };
   WrappedWarning.defaultProps = {
     type: 'error'
   };
 
-  RunOperationCheckProvider.store = storeName;
-  RunOperationCheckProvider.inject = (...opts) => inject(storeName)(...opts);
-  RunOperationCheckProvider.Warning = WrappedWarning;
-  RunOperationCheckProvider.getCheckInfo = getCheckInfo;
-  RunOperationCheckProvider.getCheckResult = getCheckResult;
-
-  return RunOperationCheckProvider;
+  return {
+    CheckProvider: RunOperationCheckProvider,
+    store: storeName,
+    inject: (...opts) => inject(storeName)(...opts),
+    Warning: WrappedWarning,
+    getCheckInfo,
+    getCheckResult
+  };
 }

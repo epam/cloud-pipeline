@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import checkLayers from './check';
+import checkToolLayers from './check';
 import {WarningMessage} from './warning';
 import generateProvider from '../common';
 
@@ -28,39 +28,38 @@ const {
   getCheckInfo,
   getCheckResult
 } = generateProvider({
-  check: checkLayers,
+  check: checkToolLayers,
   warning: WarningMessage
 });
 
-function LayersCheckProvider ({active, children, runId}) {
+function ToolLayersCheckProvider ({active, children, toolId}) {
   return (
-    <CheckProvider active={active} objectId={runId}>
+    <CheckProvider active={active} objectId={toolId}>
       {children}
     </CheckProvider>
   );
 }
 
-LayersCheckProvider.propTypes = {
-  runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+ToolLayersCheckProvider.propTypes = {
+  toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   children: PropTypes.node,
   active: PropTypes.bool
 };
-LayersCheckProvider.defaultProps = {
+ToolLayersCheckProvider.defaultProps = {
   active: true
 };
-
-LayersCheckProvider.inject = inject;
-LayersCheckProvider.store = store;
-LayersCheckProvider.getCheckInfo = getCheckInfo;
-LayersCheckProvider.getCheckResult = getCheckResult;
-LayersCheckProvider.Warning = Warning;
-LayersCheckProvider.Warning.propTypes = {
+ToolLayersCheckProvider.inject = inject;
+ToolLayersCheckProvider.store = store;
+ToolLayersCheckProvider.getCheckInfo = getCheckInfo;
+ToolLayersCheckProvider.getCheckResult = getCheckResult;
+ToolLayersCheckProvider.Warning = Warning;
+ToolLayersCheckProvider.Warning.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   type: PropTypes.string
 };
-LayersCheckProvider.Warning.defaultProps = {
+ToolLayersCheckProvider.Warning.defaultProps = {
   type: 'error'
 };
 
-export default LayersCheckProvider;
+export default ToolLayersCheckProvider;

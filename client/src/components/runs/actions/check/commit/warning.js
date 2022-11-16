@@ -27,6 +27,7 @@ function CommitCheckWarning (props) {
   return (
     <RunOperationWarning
       {...props}
+      objectId={props.runId}
       check={commitCheck}
       warning={WarningMessage}
     />
@@ -37,7 +38,8 @@ CommitCheckWarning.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  type: PropTypes.string
+  type: PropTypes.string,
+  showIcon: PropTypes.bool
 };
 
 export {WarningMessage};

@@ -58,6 +58,7 @@ import {
   applyCustomCapabilitiesParameters,
   CapabilitiesDisclaimer
 } from '../../pipelines/launch/form/utilities/run-capabilities';
+import ToolLayersCheckWarning from './check/tool-layers/warning';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -354,6 +355,7 @@ function runFn (
             }
             preferences={stores.preferences}
             skipCheck={skipCheck}
+            dockerImage={payload.dockerImage}
             authenticatedUserInfo={authenticatedUserInfo}
           />
         ),
@@ -462,7 +464,8 @@ export class RunConfirmation extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
-    skipCheck: PropTypes.bool
+    skipCheck: PropTypes.bool,
+    dockerImage: PropTypes.string
   };
 
   static defaultProps = {
@@ -997,6 +1000,11 @@ export class RunConfirmation extends React.Component {
         {
           this.renderCapabilitiesDisclaimer()
         }
+        <ToolLayersCheckWarning
+          style={{margin: 2}}
+          toolId={this.props.dockerImage}
+          showIcon
+        />
       </div>
     );
   }
@@ -1046,7 +1054,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       payload: PropTypes.object
     }),
     skipCheck: PropTypes.bool,
-    authenticatedUserInfo: PropTypes.object
+    authenticatedUserInfo: PropTypes.object,
+    dockerImage: PropTypes.string
   };
 
   static defaultProps = {
@@ -1188,6 +1197,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             permissionErrors={this.props.permissionErrors}
             preferences={this.props.preferences}
             skipCheck={this.props.skipCheck}
+            dockerImage={this.props.dockerImage}
           />
         </Row>
         {
