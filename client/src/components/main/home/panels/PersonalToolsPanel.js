@@ -806,7 +806,11 @@ export default class PersonalToolsPanel extends React.Component {
           {
             this.state.runToolInfo &&
               <RunConfirmation
-                cloudRegions={this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : []}
+                cloudRegions={
+                  this.props.awsRegions.loaded
+                    ? (this.props.awsRegions.value || []).map(r => r)
+                    : []
+                }
                 cloudRegionId={this.state.runToolInfo.payload.cloudRegionId}
                 onChangePriceType={this.onChangePriceType}
                 onChangeInstanceType={this.onChangeInstanceType}
@@ -819,7 +823,9 @@ export default class PersonalToolsPanel extends React.Component {
                 instanceType={this.state.runToolInfo.payload.instanceType}
                 showInstanceTypeSelection={!this.state.runToolInfo.payload.instanceType}
                 instanceTypes={this.state.runToolInfo.availableInstanceTypes}
-                onDemandSelectionAvailable={this.state.runToolInfo.availablePriceTypes.indexOf(false) >= 0}
+                onDemandSelectionAvailable={
+                  this.state.runToolInfo.availablePriceTypes.indexOf(false) >= 0
+                }
                 dataStorages={
                   this.props.dataStorageAvailable.loaded
                     ? (this.props.dataStorageAvailable.value || []).map(d => d)
@@ -839,6 +845,7 @@ export default class PersonalToolsPanel extends React.Component {
                 permissionErrors={this.state.runToolInfo.permissionErrors}
                 preferences={this.props.preferences}
                 platform={this.state.runToolInfo.tool.platform}
+                dockerImage={this.state.runToolInfo.payload.dockerImage}
               />
           }
           {

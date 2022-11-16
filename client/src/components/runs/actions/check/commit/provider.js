@@ -14,26 +14,45 @@
  *  limitations under the License.
  */
 
+import React from 'react';
 import PropTypes from 'prop-types';
 import commitCheck from './check';
 import {WarningMessage} from './warning';
 import generateProvider from '../common';
 
-const CommitCheckProvider = generateProvider({
+const {
+  CheckProvider,
+  Warning,
+  store,
+  inject,
+  getCheckInfo,
+  getCheckResult
+} = generateProvider({
   check: commitCheck,
   warning: WarningMessage
 });
+
+function CommitCheckProvider ({active, children, runId}) {
+  return (
+    <CheckProvider active={active} objectId={runId}>
+      {children}
+    </CheckProvider>
+  );
+}
 
 CommitCheckProvider.propTypes = {
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   children: PropTypes.node,
   active: PropTypes.bool
 };
-
 CommitCheckProvider.defaultProps = {
   active: true
 };
-
+CommitCheckProvider.inject = inject;
+CommitCheckProvider.store = store;
+CommitCheckProvider.getCheckInfo = getCheckInfo;
+CommitCheckProvider.getCheckResult = getCheckResult;
+CommitCheckProvider.Warning = Warning;
 CommitCheckProvider.Warning.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,

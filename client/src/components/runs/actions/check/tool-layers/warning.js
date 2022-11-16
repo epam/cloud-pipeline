@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import checkLayers from './check';
+import checkToolLayers from './check';
 import RunOperationWarning from '../common/warning';
 
 const WarningMessage = (opts) => {
@@ -24,36 +24,44 @@ const WarningMessage = (opts) => {
     allowed,
     current
   } = opts;
-  if (allowed && current) {
-    return (
-      <span>
-        {/* eslint-disable-next-line max-len */}
-        <b>Maximum number of layers exceeded</b>: {current} layer{current === 1 ? '' : 's'}, {allowed} maximum.
-        Operation disabled.
-      </span>
-    );
+  let extra;
+  if (allowed !== undefined && current !== undefined) {
+    extra = `: ${current} layer${current === 1 ? '' : 's'}, ${allowed} maximum.`;
   }
-  return 'Maximum number of layers exceeded. Operation disabled.';
+  return (
+    <span>
+      {/* eslint-disable-next-line max-len */}
+      <b>Maximum number of tool layers exceeded{extra ? '' : '.'}</b>{extra}
+      {' '}
+      You will not be able to <b>pause</b> or <b>commit</b> this job
+    </span>
+  );
 };
 
-function LayersCheckWarning (props) {
+function ToolLayersCheckWarning (props) {
   return (
     <RunOperationWarning
       {...props}
-      objectId={props.runId}
-      check={checkLayers}
+      objectId={props.toolId}
+      check={checkToolLayers}
       warning={WarningMessage}
     />
   );
 }
 
-LayersCheckWarning.propTypes = {
+ToolLayersCheckWarning.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  toolId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  skip: PropTypes.bool,
   type: PropTypes.string,
   showIcon: PropTypes.bool
 };
 
+ToolLayersCheckWarning.defaultProps = {
+  type: 'warning',
+  skip: false
+};
+
 export {WarningMessage};
-export default LayersCheckWarning;
+export default ToolLayersCheckWarning;
