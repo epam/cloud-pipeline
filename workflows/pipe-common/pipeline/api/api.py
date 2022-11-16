@@ -244,6 +244,7 @@ class PipelineAPI:
     DATA_STORAGE_ITEM_TAGS_BATCH_INSERT_URL = '/datastorage/{id}/tags/batch/insert'
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL = '/datastorage/{id}/tags/batch/delete'
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
+    DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
 
     # Pipeline API default header
 
@@ -1165,6 +1166,13 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to search datastorage items by tag: request - '{}'.",
                                "Error message: {}".format(request, str(e.message)))
+
+    def load_datastorage(self, storage_id):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LOAD_URL.format(id=storage_id), http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage by id: '{}'.",
+                               "Error message: {}".format(storage_id, str(e.message)))
 
     def load_datastorage_item_with_tags(self, storage_id, path, show_versions=False):
         try:
