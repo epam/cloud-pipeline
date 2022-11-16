@@ -545,8 +545,13 @@ class GitServer(object):
             if 'id' not in key or 'title' not in key or 'key' not in key:
                 return None, None
             if key['title'] == self.__config__.git_ssh_title:
-                return key['id'], key['key']
+                return key['id'], self.get_ssh_key_value(key['key'])
         return None, None
+
+    def get_ssh_key_value(self, key):
+        if self.__gitlab_api_version__ == 'v3':
+            return key
+        return ' '.join(key.split(' ')[:2]).strip()
 
     def add_user_ssh_key(self, git_user, public_key):
         print 'Creating ssh public key for user {} ({}) in git'.format(git_user.name, git_user.email)
