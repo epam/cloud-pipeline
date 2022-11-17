@@ -25,19 +25,26 @@ Wetty.prototype.onTerminalResize = function(col, row) {
 };
 
 var theme = 'default';
+var generalPreferences = {
+  "ctrl-c-copy": true,
+  "ctrl-v-paste": true,
+  "use-default-window-copy": true
+};
 var themes = {
-    light: {
+    light: Object.assign(
+      generalPreferences, {
         "background-color": "#fafafa",
         "foreground-color": "#333333",
         "cursor-color": "rgba(50, 50, 50, 0.5)",
         "color-palette-overrides": { 51: 'rgb(0, 140, 140)'}
-    },
-    default: {
+    }),
+    default: Object.assign(
+      generalPreferences, {
         "background-color": "rgb(16, 16, 16)",
         "foreground-color": "rgb(240, 240, 240)",
         "cursor-color": "rgba(255, 0, 0, 0.5)",
         "color-palette-overrides": null
-    }
+    })
 };
 
 function initializeTermThemes() {
@@ -93,9 +100,6 @@ socket.on('connect', function() {
 
         term.setCursorPosition(0, 0);
         term.setCursorVisible(true);
-        term.prefs_.set('ctrl-c-copy', true);
-        term.prefs_.set('ctrl-v-paste', true);
-        term.prefs_.set('use-default-window-copy', true);
 
         term.runCommandClass(Wetty, document.location.hash.substr(1));
         socket.emit('resize', {
