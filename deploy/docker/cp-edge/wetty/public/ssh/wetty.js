@@ -52,7 +52,12 @@ function initializeTermThemes() {
         term.setProfile('default');
         term.prefs_.importFromJson(themes.default);
         term.setProfile('light');
-        term.prefs_.importFromJson(themes.light);
+        term.prefs_.importFromJson({
+          "background-color": "rgb(16, 16, 16)",
+          "foreground-color": "rgb(240, 240, 240)",
+          "cursor-color": "rgba(255, 0, 0, 0.5)",
+          "color-palette-overrides": null
+      });
         term.setProfile('default');
     }
 }
@@ -81,6 +86,21 @@ function toggleTheme(event) {
     if (terminalDiv) {
         terminalDiv.focus();
     }
+}
+
+// in FF 64+ hterm generates nested iframes, and outer iframe button overlaps desired one. https://bugs.chromium.org/p/chromium/issues/detail?id=918352
+// in such case - we hide not-working outer iframe settings button 
+function fixMozillaThemeSwitch () {
+  if ('mozInnerScreenX' in window)  {  // detect a FF only property
+    try {
+      const outerIframe = document.getElementsByTagName('iframe')[0];
+      const innerIframes = outerIframe.contentDocument.getElementsByTagName('iframe');
+      if (innerIframes.length > 0) {
+        const settingsBtn = document.getElementById('settings');
+        settingsBtn.style.display = "none";
+      }
+    } catch (e) {}
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -113,6 +133,7 @@ socket.on('connect', function() {
             buf = '';
         }
         setTerminalTheme();
+        setTimeout(fixMozillaThemeSwitch, 0)
     });
 });
 
