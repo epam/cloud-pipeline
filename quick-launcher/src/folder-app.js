@@ -130,7 +130,7 @@ function FolderApp ({location}) {
                       key={application.id}
                       application={application}
                       onEdit={
-                        applicationIsEditable(application)
+                        applicationIsEditable(application) && !settings?.disablePublishingApps
                           ? setApplication
                           : undefined
                       }
@@ -189,7 +189,7 @@ function FolderApp ({location}) {
               )
             }
             {
-              canPublishApps && !application && (
+              canPublishApps && !application && !settings?.disablePublishingApps && (
                 <div
                   className="link"
                   onClick={onPublishClick}

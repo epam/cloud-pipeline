@@ -183,7 +183,8 @@ const defaultSettings = {
   jobContainsSensitiveStoragesWarning: undefined,
   persistSessionStateParameterName: 'CP_CAP_PERSIST_SESSION_STATE',
   customToolEndpointsEnabled: true, // true / false / { [ports]: {[count]: number, [from]: number, [to]: number} }
-  endpointName: undefined
+  endpointName: undefined,
+  disablePublishingApps: false
 };
 
 function parseUrl(url, verbose = false) {
