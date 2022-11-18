@@ -59,7 +59,7 @@ class HcsFileEvalProcessor:
             if not root_keyword_file:
                 self.log_processing_info("Evaluation keyword file is missing '%s'" % root_keyword_file)
 
-            self.build_evaluation_description(root_xml_file, evaluation_path, dir_name)
+            self.build_evaluation_description(root_xml_file, evaluation_path)
 
             evaluations_map = self.build_evaluations_spec(root_xml_file, root_keyword_file)
             if evaluations_map:
@@ -230,11 +230,11 @@ class HcsFileEvalProcessor:
             self.log_processing_info("No analysis information found in %s" % xml_path)
         return None
 
-    def build_evaluation_description(self, root_xml_file, evaluation_path, evaluation_uuid):
+    def build_evaluation_description(self, root_xml_file, evaluation_path):
         try:
             analysis_description = self.get_evaluation_description(root_xml_file)
             if analysis_description:
-                with open(os.path.join(evaluation_path, "%s.aas" % evaluation_uuid), "w") as file_stream:
+                with open(os.path.join(evaluation_path, "AnalysisFile.aas"), "w") as file_stream:
                     file_stream.write(analysis_description.encode('utf-8'))
             else:
                 self.log_processing_info("No evaluation description can be constructed")
