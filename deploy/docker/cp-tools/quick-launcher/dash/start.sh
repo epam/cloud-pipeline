@@ -18,30 +18,19 @@ if [ -z "$OWNER" ]; then
     exit 1
 fi
 
+if [ -z "$FOLDER_APPLICATION_PATH" ]; then
+    echo "[ERROR] FOLDER_APPLICATION_PATH is not defined. Exiting"
+    exit 1
+fi
+
 if [ -z "$APPLICATION_NAME" ]; then
-    if [ -z "$FOLDER_APPLICATION_PATH" ]; then
-      echo "[ERROR] Dash application name is not defined. Exiting"
-      exit 1
-    fi
     export APPLICATION_NAME=$(basename $(dirname $FOLDER_APPLICATION_PATH))
 fi
 
-if [ -z "$DEFAULT_STORAGE_USER" ]; then
-    echo "[WARN] Dash application owner name is not defined. Run owner will be used."
-fi
-
-DEFAULT_STORAGE_USER="${DEFAULT_STORAGE_USER:-$OWNER}"
-export APP_PATH="/cloud-home/${DEFAULT_STORAGE_USER}/DashApps/${APPLICATION_NAME}"
-
-if [ ! -d "$APP_PATH" ]; then
-    echo "[ERROR] Dash application ($APP_PATH) is not mounted to the instance"
-    exit 1
-fi
-
-DASH_APP_ENTRYPOINT="${DASH_APP_ENTRYPOINT:-app.py}"
-if [ ! -f "$APP_PATH/$DASH_APP_ENTRYPOINT" ]; then
-    echo "[ERROR] Dash application file ($APP_PATH/$DASH_APP_ENTRYPOINT) is not found in the instance"
-    exit 1
+export DEFAULT_STORAGE_USER=$(echo "$FOLDER_APPLICATION_PATH" | cut -d "/" -f1)
+if [ -z "$DEFAULT_STORAGE_USER" ] || [ "$DEFAULT_STORAGE_USER" == null ]; then
+    echo "[WARN] Dash application owner name was not determined from 'FOLDER_APPLICATION_PATH': $FOLDER_APPLICATION_PATH. Run owner will be used."
+    export DEFAULT_STORAGE_USER=$OWNER
 fi
 
 user_default_storage_id=$(curl -s -k \
@@ -83,32 +72,55 @@ if [ "$ANACONDA_SYS_LIB" ]; then
                             | jq -r '.payload.mountPoint')
     if [ "$conda_sys_lib_mountpoint" ] && [ "$conda_sys_lib_mountpoint" != null ]; then
         if [ ! -d "$conda_sys_lib_mountpoint" ]; then
-            echo "[ERROR] ANACONDA_SYS_LIB ($ANACONDA_SYS_LIB) is not mounted to the instance at $conda_sys_lib_mountpoint"
+            echo "[WARN] ANACONDA_SYS_LIB ($ANACONDA_SYS_LIB) is not mounted to the instance at $conda_sys_lib_mountpoint"
         fi
     else
-        echo "[ERROR] ANACONDA_SYS_LIB ($ANACONDA_SYS_LIB) can not be found"
+        echo "[WARN] ANACONDA_SYS_LIB ($ANACONDA_SYS_LIB) can not be found"
     fi
 else
-    echo "[ERROR] ANACONDA_SYS_LIB is not set, no external library is mounted"
+    echo "[WARN] ANACONDA_SYS_LIB is not set, no external library is mounted"
+fi
+if [ "$ANACONDA_SYS_LIB_PREFIX" ] && [ "$ANACONDA_SYS_LIB_PREFIX" != null ] && [ "$conda_sys_lib_mountpoint" != null ]; then
+    conda_sys_lib_mountpoint="$conda_sys_lib_mountpoint/${ANACONDA_SYS_LIB_PREFIX#/}"
 fi
 
-export ANACONDA_HOME=${conda_sys_lib_mountpoint:-/opt/local/anaconda}
-if [ ! -f "$ANACONDA_HOME/etc/profile.d/conda.sh" ]; then
-    echo "[ERROR] Conda environment was not found in the instance's $ANACONDA_HOME path"
+if [ "$FOLDER_APPLICATION_STORAGE" ]; then
+    folder_app_storage_mountpoint=$(curl -s -k \
+                                -X GET \
+                                -H "Authorization: Bearer $API_TOKEN" \
+                                "$API/datastorage/$FOLDER_APPLICATION_STORAGE/load" \
+                            | jq -r '.payload.mountPoint')
+    if [ "$folder_app_storage_mountpoint" ] && [ "$folder_app_storage_mountpoint" != null ]; then
+        if [ ! -d "$folder_app_storage_mountpoint" ]; then
+            echo "[WARN] FOLDER_APPLICATION_STORAGE ($FOLDER_APPLICATION_STORAGE) is not mounted to the instance at $folder_app_storage_mountpoint"
+        fi
+    else
+        echo "[WARN] FOLDER_APPLICATION_STORAGE ($FOLDER_APPLICATION_STORAGE) can not be found"
+    fi
+else
+    echo "[WARN] FOLDER_APPLICATION_STORAGE is not set"
+fi
+export FOLDER_STORAGE_MOUNT_POINT=${folder_app_storage_mountpoint%/}
+if [ "$FOLDER_APPLICATION_PATH" ]; then
+    export APP_PATH=$FOLDER_STORAGE_MOUNT_POINT/$(dirname $FOLDER_APPLICATION_PATH)
+    if [ ! -d "$APP_PATH" ]; then
+        echo "[ERROR] Dash application ($APP_PATH) is not mounted to the instance. Check FOLDER_APPLICATION_PATH env ($FOLDER_APPLICATION_PATH)"
+        exit 1
+    fi
+fi
+
+DASH_APP_ENTRYPOINT="${DASH_APP_ENTRYPOINT:-app.py}"
+if [ ! -f "$APP_PATH/$DASH_APP_ENTRYPOINT" ]; then
+    echo "[ERROR] Dash application file ($APP_PATH/$DASH_APP_ENTRYPOINT) is not found in the instance"
     exit 1
 fi
 
-if [ -z "$APP_ENVIRONMENT" ]; then
-    if [ -f "$APP_PATH/gateway.spec" ]; then
-        APP_ENVIRONMENT=$( cat "$APP_PATH/gateway.spec" | jq -r '.app_environment' )
-    fi
-    if [ -z "$APP_ENVIRONMENT" ]; then
-        echo "[WARN] Dash application environment (anaconda env) is not defined. Default 'base' env will be used."
-        export APP_ENVIRONMENT="base"
-    fi
+if [ -z "$RUN_PRETTY_URL" ]; then
+    pipeline_name=$(hostname | awk '{print tolower($0)}')
+    base_pathname="$pipeline_name-$DASH_PORT-0"
+else
+    base_pathname=$(echo $RUN_PRETTY_URL | cut -d';' -f 2)
 fi
-
-base_pathname=$(echo $RUN_PRETTY_URL | cut -d';' -f 2)
 export DASH_URL_BASE_PATHNAME=${DASH_URL_BASE_PATHNAME:-"/$base_pathname/"}
 
 # Start activity tracker
@@ -117,12 +129,52 @@ if [ "$PROCESS_ACTIVITY_TRACKING_ENABLED" == "true" ]; then
     nohup bash /activity-tracker.sh >> /var/log/activity-tracker.log 2>&1 &
 fi
 
+if [ -z "$APP_ENVIRONMENT" ]; then
+    if [ -f "$APP_PATH/gateway.spec" ]; then
+        APP_ENVIRONMENT=$( cat "$APP_PATH/gateway.spec" | jq -r '.app_environment' )
+    fi
+    if [ -d "$APP_PATH/.conda/envs" ]; then
+        export ENV_PATH=$(find "$APP_PATH/.conda/envs" -maxdepth 1 -type d | tail -n1)
+        export APP_ENVIRONMENT=$(basename $ENV_PATH)
+    fi
+    if [ -z "$APP_ENVIRONMENT" ] || [ "$APP_ENVIRONMENT" == null ]; then
+        echo "[WARN] Dash application environment (anaconda env) is not defined. Default 'base' env will be used."
+        export APP_ENVIRONMENT="base"
+    fi
+fi
+
+DEFAULT_ANACONDA_HOME="/opt/local/anaconda"
+if [ -d "$APP_PATH/.conda/envs" ]; then
+    export ANACONDA_HOME="$APP_PATH/.conda/envs/$APP_ENVIRONMENT"
+elif [ "$conda_sys_lib_mountpoint" ] && [ "$conda_sys_lib_mountpoint" != null ]; then
+    export ANACONDA_HOME=${conda_sys_lib_mountpoint}
+elif [ -d "$FOLDER_STORAGE_MOUNT_POINT/$DEFAULT_STORAGE_USER/.conda/envs" ]; then
+    export ANACONDA_HOME="$FOLDER_STORAGE_MOUNT_POINT/$DEFAULT_STORAGE_USER/.conda/envs/$APP_ENVIRONMENT"
+else
+    export ANACONDA_HOME=${ANACONDA_HOME:-$DEFAULT_ANACONDA_HOME}
+fi
+if [ ! -d "$ANACONDA_HOME" ]; then
+    echo "[ERROR] Conda environment was not found in the instance's $ANACONDA_HOME path"
+    exit 1
+fi
+if [ -d "$APP_PATH/.conda/envs" ] && [ -d "${ANACONDA_HOME}" ]; then
+    export CONDA_ENVS_PATH="$APP_PATH/.conda/envs"
+    source $DEFAULT_ANACONDA_HOME/etc/profile.d/conda.sh
+    conda activate ${ANACONDA_HOME}
+elif [ -d "$FOLDER_STORAGE_MOUNT_POINT/$DEFAULT_STORAGE_USER/.conda/envs/" ] && [ -d "${ANACONDA_HOME}" ]; then
+    export CONDA_ENVS_PATH="$FOLDER_STORAGE_MOUNT_POINT/$DEFAULT_STORAGE_USER/.conda/envs"
+    source $DEFAULT_ANACONDA_HOME/etc/profile.d/conda.sh
+    conda activate ${ANACONDA_HOME}
+else
+    source $ANACONDA_HOME/etc/profile.d/conda.sh
+    conda activate ${APP_ENVIRONMENT}
+fi
+echo "[INFO] ANACONDA_HOME is $ANACONDA_HOME. APP_ENVIRONMENT is $APP_ENVIRONMENT."
+
 DASH_WSGI_APP="${DASH_WSGI_APP:-app:server}"
 DASH_LOG_LEVEL="${DASH_LOG_LEVEL:-debug}"
-source $ANACONDA_HOME/etc/profile.d/conda.sh
-conda activate ${APP_ENVIRONMENT}
 cd $APP_PATH
-nohup gunicorn  -b 0.0.0.0:${DASH_PORT} \
+nohup $ANACONDA_HOME/bin/gunicorn -b 0.0.0.0:${DASH_PORT} \
                 -u $OWNER \
                 -w $worker_processes "$DASH_WSGI_APP" \
                 --log-level $DASH_LOG_LEVEL >> $LOG_DIR_PATH/gunicorn_${RUN_ID}.log 2>&1 &
