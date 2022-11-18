@@ -364,7 +364,8 @@ class CellProfilerJobResults extends React.PureComponent {
       status,
       outputFolder: output,
       result,
-      input
+      input,
+      analysisFile
     } = job;
     if (!/^(success)$/i.test(status) || (!output && !result)) {
       return null;
@@ -394,6 +395,8 @@ class CellProfilerJobResults extends React.PureComponent {
         input={fileName}
         analysisDate={job.startDate}
         analysisName={job.alias || job.pipelineName}
+        analysisStorageId={analysisFile ? analysisFile.storageId : undefined}
+        analysisPath={analysisFile ? analysisFile.path : undefined}
       />
     );
   };

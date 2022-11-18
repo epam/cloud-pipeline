@@ -36,11 +36,6 @@ function escapeRegExp (string, characters = ESCAPE_CHARACTERS) {
   return result;
 }
 
-const PLACEHOLDERS_REG_EXP = new RegExp(
-  `\\{(${EVALUATION_PLACEHOLDER}|${OWNER_PLACEHOLDER})\\}`,
-  'ig'
-);
-
 /**
  * @typedef {Object} HCSExternalEvaluationsReplacer
  * @property {string} [fileName]
@@ -110,7 +105,11 @@ async function parsePathPart (part, replacer) {
       fileNameWithExtension
     );
   }
-  if (PLACEHOLDERS_REG_EXP.test(result)) {
+  const placeholdersRegExp = new RegExp(
+    `\\{(${EVALUATION_PLACEHOLDER}|${OWNER_PLACEHOLDER})\\}`,
+    'ig'
+  );
+  if (placeholdersRegExp.test(result)) {
     let escaped = escapeRegExp(result, ESCAPE_CHARACTERS.filter(o => !['{', '}'].includes(o)));
     escaped = escaped.replace(EVALUATION_REG_EXP, '(.+)');
     escaped = escaped.replace(OWNER_REG_EXP, '(.+)');
@@ -247,7 +246,7 @@ async function buildReplacer (hcsFilePath) {
  * @param {HCSExternalEvaluationPathComponent} pathComponent
  * @returns {*}
  */
-function extractInfo (path, pathComponent) {
+function extractInfo (info, path, pathComponent) {
   if (!path || !pathComponent) {
     return undefined;
   }
@@ -262,17 +261,17 @@ function extractInfo (path, pathComponent) {
   if (mask.test(path)) {
     const [, ...substitutions] = mask.exec(path);
     const infoKeys = rawMask.match(/\{[^}]+\}/ig).map(o => o.slice(1, -1));
-    const info = {};
+    const mergedInfo = {...(info || {})};
     for (let k = 0; k < infoKeys.length; k++) {
       const substitution = substitutions[k];
       const key = infoKeys[k];
-      if (!info[key] || info[key] === substitution) {
-        info[key] = substitution;
+      if (!mergedInfo[key] || mergedInfo[key] === substitution) {
+        mergedInfo[key] = substitution;
       } else {
         return undefined;
       }
     }
-    return info;
+    return mergedInfo;
   }
   return undefined;
 }
@@ -359,13 +358,10 @@ async function iterateContents (root, pathComponent, session = {}) {
     return contents
       .map((item) => ({
         item,
-        info: extractInfo(item.name, pathComponent)
+        info: extractInfo(info, item.name, pathComponent),
+        path: `${rootPath}/${item.name}`
       }))
-      .filter(o => !!o.info)
-      .map(o => ({
-        path: `${rootPath}/${o.item.name}`,
-        info: {...info, ...o.info}
-      }));
+      .filter(o => !!o.info);
   }
   return [];
 }
@@ -448,6 +444,7 @@ function clearIterationSession (session) {
  * @property {ExternalJobFilePath} input
  * @property {ExternalJobFilePath} spec
  * @property {ExternalJobFilePath} result
+ * @property {ExternalJobFilePath} [analysisFile]
  * @property {string} evaluation
  * @property {string} owner
  * @property {string} startDate
@@ -470,9 +467,15 @@ export function isExternalJobIdentifier (jobId) {
  * @param {ExternalJobFilePath} input
  * @param {ExternalJobFilePath} spec
  * @param {ExternalJobFilePath} result
+ * @param {ExternalJobFilePath} [analysisFile]
  * @returns {string}
  */
-function buildExternalJobIdentifier (input, spec, result) {
+function buildExternalJobIdentifier (
+  input,
+  spec,
+  result,
+  analysisFile
+) {
   if (!spec || !result || !input) {
     return undefined;
   }
@@ -482,13 +485,23 @@ function buildExternalJobIdentifier (input, spec, result) {
     spec.storageId,
     spec.path,
     result.storageId,
-    result.path
-  ]);
+    result.path,
+    analysisFile ? analysisFile.storageId : undefined,
+    analysisFile ? analysisFile.path : undefined
+  ].filter(Boolean));
 }
 
 /**
+ * @typedef {Object} ParseExternalJobIdentifierResult
+ * @property {ExternalJobFilePath} input
+ * @property {ExternalJobFilePath} spec
+ * @property {ExternalJobFilePath} result
+ * @property {ExternalJobFilePath} [analysisFile]
+ */
+
+/**
  * @param {string} identifier
- * @returns {{input: ExternalJobFilePath, spec: ExternalJobFilePath, result: ExternalJobFilePath}}
+ * @returns {ParseExternalJobIdentifierResult}
  */
 function parseExternalJobIdentifier (identifier) {
   if (!identifier) {
@@ -501,7 +514,9 @@ function parseExternalJobIdentifier (identifier) {
       specStorageId,
       specPath,
       resultsStorageId,
-      resultsPath
+      resultsPath,
+      analysisStorageId,
+      analysisPath
     ] = JSON.parse(identifier);
     return {
       input: {
@@ -515,7 +530,10 @@ function parseExternalJobIdentifier (identifier) {
       result: {
         storageId: resultsStorageId,
         path: resultsPath
-      }
+      },
+      analysisFile: analysisStorageId && analysisPath
+        ? {storageId: analysisStorageId, path: analysisPath}
+        : undefined
     };
   } catch (_) {
     return undefined;
@@ -565,13 +583,16 @@ export async function getExternalEvaluations (hcsFileName) {
   } = replacer;
   const {
     specPath,
-    resultsPath
+    resultsPath,
+    analysisPath
   } = await getExternalEvaluationsSettings();
   const specsPathParsed = await parse(specPath, replacer);
   const resultsPathParsed = await parse(resultsPath, replacer);
+  const analysisPathParsed = await parse(analysisPath, replacer);
   const session = createIterationSession();
   const specs = await getEvaluationsByComponents(specsPathParsed, session);
   const results = await getEvaluationsByComponents(resultsPathParsed, session);
+  const analysisFiles = await getEvaluationsByComponents(analysisPathParsed, session);
   const inputStorage = await getObjectStorageFromSession(fullPath, session);
   const input = inputStorage
     ? {storageId: inputStorage.id, path: inputStorage.getRelativePath(fullPath)}
@@ -584,14 +605,21 @@ export async function getExternalEvaluations (hcsFileName) {
         path
       } = aSpec;
       const result = results.find(r => r.evaluation === evaluation);
+      const analysisFile = analysisFiles.find(r => r.evaluation === evaluation);
       return {
         evaluation,
         owner,
         input,
         spec: path,
         result: result ? result.path : undefined,
+        analysisFile: analysisFile ? analysisFile.path : undefined,
         name: fileName,
-        id: buildExternalJobIdentifier(input, path, result ? result.path : undefined)
+        id: buildExternalJobIdentifier(
+          input,
+          path,
+          result ? result.path : undefined,
+          analysisFile ? analysisFile.path : undefined
+        )
       };
     })
     .filter(o => o.spec && o.result);
@@ -614,7 +642,8 @@ export async function getExternalJobInfo (jobId, session) {
     const {
       input,
       spec,
-      result
+      result,
+      analysisFile
     } = parseExternalJobIdentifier(jobId);
     const iterationSession = session || createIterationSession();
     const output = result
@@ -667,6 +696,7 @@ export async function getExternalJobInfo (jobId, session) {
       other: true,
       input,
       result,
+      analysisFile,
       outputFolder: output,
       startDate: date,
       owner,

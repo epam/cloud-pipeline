@@ -237,12 +237,14 @@ export async function getExternalEvaluationsSettings (refresh = false) {
   } = batch;
   const {
     specPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/spec.json',
-    resultsPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/Results.csv'
+    resultsPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/Results.csv',
+    analysisPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/AnalysisFile.aas'
   } = otherEvaluations;
   return {
     hcsFilesFolder,
     specPath,
-    resultsPath
+    resultsPath,
+    analysisPath
   };
 }
 
