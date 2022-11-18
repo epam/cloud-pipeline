@@ -49,7 +49,6 @@ export default function processString(string, options) {
       const placeholder = placeholders.find(p => p.key === key);
       if (placeholder) {
         const value = applyModifiers(placeholder.value, mods);
-        console.log(placeholder.value, value, mods);
         result = result.concat(value);
       } else {
         result = result.concat(e[0]);

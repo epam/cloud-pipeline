@@ -121,6 +121,10 @@
   background-color: rgba(0, 0, 0, 0.05)!important;
 }
 
+.app.app-folder.dark.error {
+  background-color: rgba(0, 0, 0, 0.25)!important;
+}
+
 .app.app-folder .header .name {
   flex: 1;
   font-size: smaller;
@@ -147,6 +151,10 @@
 
 .app.error .layout {
   opacity: 0.25;
+}
+
+.app.dark.error .layout {
+  opacity: 0.5;
 }
 
 .app.app-folder .layout .layout-column {
