@@ -17,6 +17,7 @@ import json
 import os
 import pandas
 from utils import HcsParsingUtils, log_run_info
+from HTMLParser import HTMLParser
 
 
 ID = 'Id'
@@ -57,6 +58,8 @@ class HcsFileEvalProcessor:
                 self.log_processing_info("Evaluation xml file is missing '%s'" % root_xml_file)
             if not root_keyword_file:
                 self.log_processing_info("Evaluation keyword file is missing '%s'" % root_keyword_file)
+
+            self.build_evaluation_description(root_xml_file, evaluation_path, dir_name)
 
             evaluations_map = self.build_evaluations_spec(root_xml_file, root_keyword_file)
             if evaluations_map:
@@ -212,3 +215,28 @@ class HcsFileEvalProcessor:
             if file_name.endswith(".kw.txt"):
                 keyword_file = os.path.join(folder, file_name)
         return xml_file, keyword_file
+
+    def get_evaluation_description(self, xml_path):
+        if not xml_path:
+            return None
+        root = ET.parse(xml_path).getroot()
+        schema = HcsParsingUtils.extract_xml_schema(root)
+        analysis_encoded_element = root.find(schema + 'AnalysisEncoded')
+        if analysis_encoded_element is not None:
+            analysis_encoded = analysis_encoded_element.text
+            if analysis_encoded:
+                return HTMLParser().unescape(analysis_encoded)
+        else:
+            self.log_processing_info("No analysis information found in %s" % xml_path)
+        return None
+
+    def build_evaluation_description(self, root_xml_file, evaluation_path, evaluation_uuid):
+        try:
+            analysis_description = self.get_evaluation_description(root_xml_file)
+            if analysis_description:
+                with open(os.path.join(evaluation_path, "%s.aas" % evaluation_uuid), "w") as file_stream:
+                    file_stream.write(analysis_description.encode('utf-8'))
+            else:
+                self.log_processing_info("No evaluation description can be constructed")
+        except Exception as e:
+            self.log_processing_info(e.message)
