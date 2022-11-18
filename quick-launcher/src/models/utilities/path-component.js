@@ -1,4 +1,5 @@
 import {escapeRegExp} from './escape-reg-exp';
+import { applyModifiers } from "../process-string";
 
 export function pathComponentHasPlaceholder (pathComponent) {
   return /.*\[[^\[\]]+\].*/.test(pathComponent);
@@ -33,7 +34,8 @@ export default function PathComponent(configuration) {
       const e = this.mask.exec(pathComponent);
       if (e && e.length === this.groups.length + 1) {
         for (let g = 0; g < this.groups.length; g++) {
-          info[this.groups[g]] = e[g + 1];
+          const [groupName, modifiers] = this.groups[g].split(':');
+          info[groupName] = applyModifiers(e[g + 1], modifiers);
         }
         return info;
       }

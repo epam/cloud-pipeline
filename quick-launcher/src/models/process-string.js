@@ -1,4 +1,4 @@
-const modifiers = {
+const MODIFIERS = {
   'uppercased': (value) => (value || '').toUpperCase(),
   'uppercase': (value) => (value || '').toUpperCase(),
   'upper': (value) => (value || '').toUpperCase(),
@@ -7,6 +7,32 @@ const modifiers = {
   'lower': (value) => (value || '').toLowerCase(),
   'before@': (value) => (value || '').split('@')[0]
 };
+
+function extractModifiers(modifiers) {
+  if (typeof modifiers === 'string') {
+    return modifiers.split(/[;,]/g)
+      .map(o => o.trim().toLowerCase());
+  }
+  if (modifiers && Array.isArray(modifiers)) {
+    return modifiers.map(o => o.trim().toLowerCase());
+  }
+  return [];
+}
+
+export function applyModifiers(value, modifiers) {
+  if (!value) {
+    return value;
+  }
+  const mods = extractModifiers(modifiers);
+  let resultedValue = value.slice();
+  for (const modifier of mods) {
+    const fn = MODIFIERS[modifier];
+    if (typeof fn === 'function') {
+      resultedValue = fn(resultedValue);
+    }
+  }
+  return resultedValue;
+}
 
 export default function processString(string, options) {
   let result = '';
@@ -22,16 +48,8 @@ export default function processString(string, options) {
       const key = keyRaw.toLowerCase();
       const placeholder = placeholders.find(p => p.key === key);
       if (placeholder) {
-        const appliedModifiers = (mods || '')
-          .split(/[,;]/g)
-          .map(mod => mod.trim().toLowerCase())
-        let value = placeholder.value;
-        for (const modifier of appliedModifiers) {
-          const fn = modifiers[modifier];
-          if (typeof fn === 'function') {
-            value = fn(value);
-          }
-        }
+        const value = applyModifiers(placeholder.value, mods);
+        console.log(placeholder.value, value, mods);
         result = result.concat(value);
       } else {
         result = result.concat(e[0]);
