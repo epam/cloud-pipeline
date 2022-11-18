@@ -119,6 +119,20 @@ class FacetedSearch extends React.Component {
         preferences.sharedStoragesSystemDirectory && preferences.dataSharingEnabled;
   }
 
+  @computed
+  get nameTag () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      const tag = preferences.displayNameTag;
+      const isActualTag = !!this.extraColumns
+        .find(({key}) => tag && key === tag);
+      return isActualTag
+        ? tag
+        : undefined;
+    }
+    return undefined;
+  }
+
   get documentTypeFilter () {
     const {
       facetsLoaded,
@@ -471,6 +485,10 @@ class FacetedSearch extends React.Component {
                     }
                   }
                 }
+                documents = documents.map(document => ({
+                  ...document,
+                  nameOverride: document[this.nameTag]
+                }));
                 if (actualFacetsToken !== facetsToken) {
                   state.facetsCount = facetsCount;
                   state.facetsToken = facetsToken;

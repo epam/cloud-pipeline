@@ -140,6 +140,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get displayNameTag () {
+    return this.getPreferenceValue('faceted.filter.display.name.tag');
+  }
+
+  @computed
   get metadataSystemKeys () {
     const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
     if (value) {
