@@ -29,12 +29,20 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Condition.appear;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.refresh;
-import static com.epam.pipeline.autotests.ao.Primitive.*;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_SELECTION;
+import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
+import static com.epam.pipeline.autotests.ao.Primitive.EDIT_STORAGE;
+import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
+import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_ALL;
+import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL;
+import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 
@@ -392,8 +400,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     }
 
     private void clickCancelButtonIfItIsDisplayed() {
-        SelenideElement cancel = ($(button("Cancel")).isDisplayed()) ? $(button("Cancel"))
-                : $(button("CANCEL"));
+        SelenideElement cancel = $(byId("edit-storage-dialog-cancel-button"));
         if(cancel.isDisplayed()){
             cancel.click();
         }
