@@ -350,10 +350,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO pause(final String runId, final String pipelineName) {
         $("#run-" + runId + "-pause-button").shouldBe(visible).click();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(format("Do you want to pause %s", pipelineName))
-                .sleep(1, SECONDS)
-                .click(button("PAUSE"));
+        $(byClassName("ant-modal-body")).shouldBe(visible);
+        ensure(byClassName("ause-confirmation__title"),
+               matchText(format("Do you want to pause%s", pipelineName)))
+            .sleep(1, SECONDS)
+            .click(button("PAUSE"));
         return this;
     }
 
