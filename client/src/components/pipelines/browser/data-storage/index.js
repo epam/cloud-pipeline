@@ -2283,7 +2283,6 @@ export default class DataStorage extends React.Component {
                     : true
                 )
               }
-              hideMetadataTags={/^nfs$/i.test(type)}
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
               metadataRenderFn={
