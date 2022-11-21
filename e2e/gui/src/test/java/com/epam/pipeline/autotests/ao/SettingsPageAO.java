@@ -1401,7 +1401,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                      .perform();
             sleep(4, SECONDS);
             if(get(SAVE).isEnabled()) {
-                sleep(2, SECONDS);
+                sleep(10, SECONDS);
                 save();
             }
             return this;
