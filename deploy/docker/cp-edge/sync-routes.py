@@ -55,6 +55,7 @@ API_GET_DEFAULT_EDGE_REGION_PREF = 'preferences/default.edge.region'
 NUMBER_OF_RETRIES = 10
 SECS_TO_WAIT_BEFORE_RETRY = 15
 STUB_LOCATION_CONFIG_EXTENSION = '.stub.loc.conf'
+STUB_CUSTOM_DOMAIN_EXTENSION = '.stub.conf'
 
 EDGE_SVC_ROLE_LABEL = 'cloud-pipeline/role'
 EDGE_SVC_ROLE_LABEL_VALUE = 'EDGE'
@@ -742,12 +743,12 @@ def create_service_location(service_spec, added_route, service_url_dict):
                         for nginx_sensitive_route_definition in nginx_sensitive_route_definitions:
                                 added_route_file.write(nginx_sensitive_route_definition)
 
-        path_to_route = check_route(path_to_route, service_location, service_spec)
-
         if has_custom_domain:
                 do_log('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
                 add_custom_domain(service_hostname, path_to_route, is_external_app=service_spec['external_app'])
-                
+
+        check_route(path_to_route, service_location, service_spec, has_custom_domain, service_hostname)
+
         service_url = SVC_URL_TMPL.format(external_ip=service_hostname,
                                           edge_location=service_spec["edge_location"] if service_spec[
                                                   "edge_location"] else "",
@@ -790,7 +791,7 @@ def find_preference(api_preference_query, preference_name):
         return None
 
 
-def write_stub_location_configuration(path_to_route, service_location, service_spec):
+def write_stub_location_configuration(path_to_route, service_location, service_spec, has_custom_domain):
         route_location = service_location if service_location == '/' else service_location[:-1]
         nginx_route_definition = nginx_loc_module_stub_template_contents \
                 .replace('{edge_route_location}', route_location) \
@@ -798,27 +799,35 @@ def write_stub_location_configuration(path_to_route, service_location, service_s
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"])
 
-        path_to_stub = path_to_route.replace(".loc.conf", STUB_LOCATION_CONFIG_EXTENSION)
+        path_to_route_extension = ".conf" if has_custom_domain else ".loc.conf"
+        stub_extension = STUB_CUSTOM_DOMAIN_EXTENSION if has_custom_domain else STUB_LOCATION_CONFIG_EXTENSION
+
+        path_to_stub = path_to_route.replace(path_to_route_extension, stub_extension)
         with open(path_to_stub, "w") as stub_file:
                 stub_file.write(nginx_route_definition)
         do_log('Creating stub route: ' + path_to_stub)
         return path_to_stub
 
 
-def check_route(path_to_route, service_location, service_spec):
+def check_route(path_to_route, service_location, service_spec, has_custom_domain, service_hostname):
         test_config_command = "nginx -c %s -t" % nginx_root_config_path
 
         try:
                 check_output(test_config_command, shell=True)
-                return path_to_route
         except CalledProcessError as e:
-                error_message = e.output
-                error_code = e.returncode
-                do_log("Nginx configuration test failed with exit code '%s': %s" % (error_code, error_message))
-                path_to_stub = write_stub_location_configuration(path_to_route, service_location, service_spec)
-                os.remove(path_to_route)
+                do_log("Nginx configuration test failed with exit code '%s'" % e.returncode)
+                path_to_stub = write_stub_location_configuration(path_to_route,
+                                                                 service_location,
+                                                                 service_spec,
+                                                                 has_custom_domain)
                 do_log('Deleting invalid route: ' + path_to_route)
-                return path_to_stub
+                os.remove(path_to_route)
+                if has_custom_domain:
+                        do_log('Deleting invalid custom domain route: ' + path_to_route)
+                        remove_custom_domain_all(path_to_route)
+                        do_log('Adding {} route stub to the server block {}'.format(path_to_stub, service_hostname))
+                        add_custom_domain(service_hostname, path_to_stub, is_external_app=service_spec['external_app'])
+
 
 do_log('============ Started iteration ============')
 
@@ -902,10 +911,14 @@ routes_kube = set([x for x in services_list])
 nginx_modules_list = {}
 for x in os.listdir(nginx_sites_path):
         location_config_path = os.path.join(nginx_sites_path, x)
-        if '.loc.conf' in x and os.path.isfile(location_config_path):
+        if '.conf' in x and os.path.isfile(location_config_path):
                 if location_config_path.endswith(STUB_LOCATION_CONFIG_EXTENSION):
                         os.remove(location_config_path)
                         do_log('Deleting stub route: ' + location_config_path)
+                        continue
+                if location_config_path.endswith(STUB_CUSTOM_DOMAIN_EXTENSION):
+                        os.remove(location_config_path)
+                        do_log('Deleting custom domain stub route: ' + location_config_path)
                         remove_custom_domain_all(location_config_path)
                         continue
                 nginx_modules_list[x.replace('.conf', '')] = x
