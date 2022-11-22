@@ -308,7 +308,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO validateException(final String exception) {
-        $(byClassName("ant-alert-error")).shouldHave(text(exception));
+        $(byClassName("ant-alert-message")).shouldHave(text(exception));
         return this;
     }
 
