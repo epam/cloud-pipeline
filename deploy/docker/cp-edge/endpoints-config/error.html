@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cloud Pipeline - Error occured...</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #fff;
+        height: 100vh;
+        width: 100vw;
+        padding: 25px;
+        font-family: sans-serif;
+        color: rgba(0, 0, 0, .65);
+        font-size: 12px;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 25px;
+        width: 100%;
+        height: 100%;
+        background-color: #efefef;
+        border: 1px dashed #ccc;
+        border-radius: 10px;
+      }
+      .exclamation-icon {
+        display: inline-block;
+        position: relative;
+        width: 25px;
+        height: 25px;
+        margin: 0 10px;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, .65);
+      }
+      .exclamation-icon::before {
+        content: "!";
+        font-size: large;
+        display: block;
+        color: #fff;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: larger;
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+        <div class="row" style="font-size: large;">
+          <span class="exclamation-icon"></span>
+          <span>
+            An error occurred in the tool endpoints settings.
+          </span>
+        </div>
+        <p class="row">
+          Please fix the endpoint configuration and restart run. 
+        <p class="row">
+          In case of any questions please contact administrator or mail to
+          <a style="margin-left: 5px" href="mailto:${CP_ERROR_SUPPORT_EMAIL}?Subject=${CP_ERROR_PLATFORM_NAME} tool endpoint settings request">
+            ${CP_ERROR_PLATFORM_NAME} support team
+          </a>
+          .
+        </p>
+    </div>
+  </body>
+</html>
