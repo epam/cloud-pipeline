@@ -176,5 +176,17 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--searchDatastorageObjectsByTagInSpecificStoragesQuery-->
+                <![CDATA[
+                    SELECT *
+                    FROM pipeline.datastorage_tag t
+                    WHERE t.tag_key = :TAG_KEY
+                    AND (:TAG_VALUE::text IS NULL OR t.tag_value = :TAG_VALUE)
+                    AND (array_length(:DATASTORAGE_ROOT_ID, 1) IS NULL OR t.datastorage_root_id = ANY (:DATASTORAGE_ROOT_ID))
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>

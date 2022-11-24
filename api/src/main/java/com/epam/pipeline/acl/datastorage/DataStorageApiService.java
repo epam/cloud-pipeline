@@ -41,6 +41,8 @@ import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
@@ -379,5 +381,11 @@ public class DataStorageApiService {
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
     public DataStorageItemType getItemTypeOwner(final Long id, final String path, final String version) {
         return dataStorageManager.getItemType(id, path, version);
+    }
+
+    @PostFilter(AclExpressions.FILTER_TAG_SEARCH_RESULT_BY_STORAGE_ID)
+    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
+            final DataStorageObjectSearchByTagRequest request) {
+        return dataStorageManager.searchDataStorageItemByTag(request);
     }
 }

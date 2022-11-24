@@ -16,23 +16,13 @@
 
 package com.epam.pipeline.entity.datastorage.tag;
 
-import lombok.AllArgsConstructor;
 import lombok.Value;
-import lombok.experimental.Wither;
 
-import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Value
-@Wither
-@AllArgsConstructor
-public class DataStorageTag {
-    
-    DataStorageObject object;
-    String key;
-    String value;
-    LocalDateTime createdDate;
-
-    public DataStorageTag(final DataStorageObject object, final String key, final String value) {
-        this(object, key, value, null);
-    }
+public class DataStorageObjectSearchByTagRequest {
+    List<Long> datastorageIds;
+    Map<String, String> tags;
 }

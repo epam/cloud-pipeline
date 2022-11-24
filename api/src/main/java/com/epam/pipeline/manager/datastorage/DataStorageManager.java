@@ -50,6 +50,8 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -757,6 +759,11 @@ public class DataStorageManager implements SecuredEntityManager {
                             item.setTags(tagProviderManager.loadFileTags(dataStorage, path, version)));
         }
         return dataStorageFile;
+    }
+
+    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
+            final DataStorageObjectSearchByTagRequest request) {
+        return tagProviderManager.search(request);
     }
 
     @Transactional
