@@ -63,6 +63,8 @@ EDGE_SVC_HOST_LABEL = 'cloud-pipeline/external-host'
 EDGE_SVC_PORT_LABEL = 'cloud-pipeline/external-port'
 EDGE_SVC_REGION_LABEL = 'cloud-pipeline/region'
 
+DEFAULT_PROXY_HTTP_VERSION_HEADER = 'proxy_http_version 1.1;'
+
 nginx_custom_domain_config_ext = '.srv.conf'
 nginx_custom_domain_loc_suffix = 'CP_EDGE_CUSTOM_DOMAIN'
 nginx_custom_domain_loc_tmpl = 'include {}; # ' + nginx_custom_domain_loc_suffix
@@ -706,6 +708,10 @@ def create_service_location(service_spec, added_route, service_url_dict):
         # Replace the duplicated forward slashes with a single instance to workaround possible issue when the location is set to "/path//"
         service_location = re.sub('/+', '/', service_location)
 
+        additional_spec = service_spec["additional"]
+        if DEFAULT_PROXY_HTTP_VERSION_HEADER not in additional_spec:
+                additional_spec = additional_spec + DEFAULT_PROXY_HTTP_VERSION_HEADER
+
         nginx_route_definition = nginx_loc_module_template_contents \
                 .replace('{edge_route_location}', service_location) \
                 .replace('{edge_route_target}', service_spec["edge_target"]) \
@@ -714,7 +720,7 @@ def create_service_location(service_spec, added_route, service_url_dict):
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
-                .replace('{additional}', service_spec["additional"])
+                .replace('{additional}', additional_spec)
         nginx_sensitive_route_definitions = []
         if service_spec["sensitive"]:
                 for sensitive_route in sensitive_routes:
@@ -730,7 +736,7 @@ def create_service_location(service_spec, added_route, service_url_dict):
                                 .replace('{run_id}', service_spec["run_id"]) \
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
-                                .replace('{additional}', service_spec["additional"])
+                                .replace('{additional}', additional_spec)
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
         path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
         if service_spec["sensitive"]:
