@@ -49,9 +49,11 @@ public class DataStorageTagProviderManager {
         final String authorizedUser = authManager.getAuthorizedUser();
         final String absolutePath = storage.resolveAbsolutePath(path);
         final Map<String, String> defaultTags = Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, authorizedUser);
-        tagManager.insert(storage.getRootId(), new DataStorageObject(absolutePath, null), defaultTags);
+        // Upsert instead of insert here to safe previous tags if any,
+        // in case we don't create a new file but update it with new content
+        tagManager.upsert(storage.getRootId(), new DataStorageObject(absolutePath, null), defaultTags);
         if (storage.isVersioningEnabled()) {
-            tagManager.insert(storage.getRootId(), new DataStorageObject(absolutePath, version), defaultTags);
+            tagManager.upsert(storage.getRootId(), new DataStorageObject(absolutePath, version), defaultTags);
         }
     }
 
