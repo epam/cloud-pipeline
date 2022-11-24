@@ -67,6 +67,7 @@ spec:
               readOnly: true
             - mountPath: /etc/nginx/static
               name: edge-static
+              readOnly: true
             - mountPath: /opt/share-srv/pki
               name: share-pki
               readOnly: true
