@@ -196,17 +196,18 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public DataStorageListing getItems(NFSDataStorage dataStorage, String path, Boolean showVersion,
-                                       Integer pageSize, String marker) {
+    public DataStorageListing getItems(final NFSDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker) {
         File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
         File dir = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
 
         long offset = StringUtils.isNumeric(marker) ? Long.parseLong(marker) : 1;
         try (Stream<Path> dirStream = Files.walk(dir.toPath(), 1)) {
+            final int effectivePageSize = Optional.ofNullable(pageSize).orElse(Integer.MAX_VALUE);
             List<AbstractDataStorageItem> dataStorageItems = dirStream
                 .sorted()
                 .skip(offset) // First element is a directory itself
-                .limit(pageSize)
+                .limit(effectivePageSize)
                 .map(p -> {
                     File file = p.toFile();
 
@@ -232,7 +233,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
             DataStorageListing listing = new DataStorageListing();
             listing.setResults(dataStorageItems);
 
-            Long nextOffset = offset + pageSize;
+            Long nextOffset = offset + effectivePageSize;
             try (Stream<Path> nextStream = Files.walk(dir.toPath(), 1)) {
                 if (nextStream.skip(nextOffset).findFirst().isPresent()) {
                     listing.setNextPageMarker(nextOffset.toString());
