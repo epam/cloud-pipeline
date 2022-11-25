@@ -779,22 +779,21 @@ public class DataStorageManager implements SecuredEntityManager {
             final Map<Long, List<AbstractDataStorage>> storagesByRootId = dataStorageDao.loadDataStoragesByRootIds(
                     rootSearchResult.keySet()
             ).stream().filter(
-                    ds -> CollectionUtils.isEmpty(storageIdsToFilter) || storageIdsToFilter.contains(ds.getId())
+                ds -> CollectionUtils.isEmpty(storageIdsToFilter) || storageIdsToFilter.contains(ds.getId())
             ).collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
 
             rootSearchResult.forEach((rootId, rootStorageTags) ->
                 rootStorageTags.forEach(dataStorageTag -> {
                     final List<AbstractDataStorage> storages = storagesByRootId.get(rootId);
                     storages.stream().filter(
-                            dataStorage -> dataStorageTag.getObject().getPath().startsWith(dataStorage.getPrefix())
-                    ).findFirst()
-                    .ifPresent(dataStorage -> {
+                        dataStorage -> dataStorageTag.getObject().getPath().startsWith(dataStorage.getPrefix())
+                    ).findFirst().ifPresent(dataStorage -> {
                         final DataStorageTag storageObjectTag = new DataStorageTag(
-                                new DataStorageObject(
-                                        dataStorage.resolveRelativePath(dataStorageTag.getObject().getPath()),
-                                        dataStorageTag.getObject().getVersion()
-                                ),
-                                dataStorageTag.getKey(), dataStorageTag.getValue()
+                            new DataStorageObject(
+                                    dataStorage.resolveRelativePath(dataStorageTag.getObject().getPath()),
+                                    dataStorageTag.getObject().getVersion()
+                            ),
+                            dataStorageTag.getKey(), dataStorageTag.getValue()
                         );
                         results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageObjectTag);
                     });
