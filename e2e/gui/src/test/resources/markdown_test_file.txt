@@ -15,8 +15,18 @@ can be used as a base image for custom ~~environments~~.
 ## Running Jupyter notebook
 
 >To run this tool perform the following steps:
-1. Click _Run_ button in the top-right corner agree on a tool launch
-2. Wait for the container to be initialized (`InitializeEnvironment` task shall be marked as finished)
-3. Click `Endpoint` link to navigate to the Jupyter Notebook Web GUI
+
+1 Click _Run_ button in the top-right corner agree on a tool launch
+2 Wait for the container to be initialized (`InitializeEnvironment` task shall be marked as finished)
+3 Click `Endpoint` link to navigate to the Jupyter Notebook Web GUI
 
 This site was built using [GitHub Pages](https://pages.github.com/).
+
+|header1|header2|
+|---|---|
+|val1|val2|
+
+test
+2. Line 1
+1. Line 2
+1. Line 3

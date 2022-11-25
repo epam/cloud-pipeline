@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
-import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -54,6 +53,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
+import static com.epam.pipeline.autotests.ao.Template.SHELL;
 import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.Boolean.parseBoolean;
@@ -368,8 +368,10 @@ public class ToolsParametersTest
                             .getDescriptionHtml();
                 });
         checkMarkdown(markdownMapping, toolDescription, descriptionHtml);
+        checkTableMarkdown(toolDescription, descriptionHtml);
+        checkListMarkdown(toolDescription, descriptionHtml);
         String[] pipeReadMeHtml = library()
-                .createPipeline(Template.SHELL, pipeline)
+                .createPipeline(SHELL, pipeline)
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .documentsTab()
@@ -399,6 +401,46 @@ public class ToolsParametersTest
                             format("The %s markdown is parsed incorrect as %s", input[i], description));
                 return;
                 }
+            }
+        });
+    }
+
+    private void checkTableMarkdown(final String[] input, final String[] output) {
+        String description = String.join("", output);
+        String [] key = {"\\|(.+)\\|(.+)\\|", "\\|-{3,}\\|-{3,}\\|"};
+        String out = "<table><thead><tr><th>%s</th><th>%s</th></tr></thead><tbody><tr><td>%s</td><td>%s</td></tr></tbody></table>";
+        IntStream.range(0, input.length-2).forEach(i -> {
+            if (input[i].matches(key[0]) &&
+                    input[i + 1].matches(key[1]) &&
+                    input[i + 2].matches(key[0])) {
+                Matcher matcher1 = Pattern.compile(key[0]).matcher(input[i]);
+                assertTrue(matcher1.find());
+                Matcher matcher2 = Pattern.compile(key[0]).matcher(input[i + 2]);
+                assertTrue(matcher2.find());
+                assertTrue(description.contains(format(out, matcher1.group(1), matcher1.group(2), matcher2.group(1), matcher2.group(2))),
+                        format("The %s markdown is parsed incorrect as %s", input[i], description));
+                return;
+            }
+        });
+    }
+
+    private void checkListMarkdown(final String[] input, final String[] output) {
+        String description = String.join("", output);
+        String key = "(\\d)\\.\\s(.+)";
+        String out = "<ol start=\"%s\"><li>%s</li><li>%s</li><li>%s</li></ol>";
+        IntStream.range(0, input.length-2).forEach(i -> {
+            if (input[i].matches(key) &&
+                    input[i + 1].matches(key) &&
+                    input[i + 2].matches(key)) {
+                Matcher matcher1 = Pattern.compile(key).matcher(input[i]);
+                assertTrue(matcher1.find());
+                Matcher matcher2 = Pattern.compile(key).matcher(input[i + 1]);
+                assertTrue(matcher2.find());
+                Matcher matcher3 = Pattern.compile(key).matcher(input[i + 2]);
+                assertTrue(matcher3.find());
+                assertTrue(description.contains(format(out, matcher1.group(1), matcher1.group(2), matcher2.group(2), matcher3.group(2))),
+                        format("The %s markdown is parsed incorrect as %s", input[i], description));
+                return;
             }
         });
     }
