@@ -17,7 +17,6 @@
 package com.epam.pipeline.dao.datastorage.tags;
 
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
-import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.RequiredArgsConstructor;
@@ -169,10 +168,10 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
     }
 
     @SneakyThrows
-    public Map<Long, List<DataStorageTag>> search(final DataStorageObjectSearchByTagRequest request) {
-        Assert.state(request.getTags().size() == 1,
+    public Map<Long, List<DataStorageTag>> search(final List<Long> rootStorageIds, final Map<String, String> tags) {
+        Assert.state(tags.size() == 1,
                 "Please specify exactly one tag to be search by!");
-        final Map.Entry<String, String> tagToSearch = request.getTags().entrySet().stream()
+        final Map.Entry<String, String> tagToSearch = tags.entrySet().stream()
                 .findFirst().orElseThrow(() -> new IllegalStateException("Tag should be present!"));
         final MapSqlParameterSource sqlParameterSource = new MapSqlParameterSource();
         sqlParameterSource.addValue(Parameters.TAG_KEY.name(), tagToSearch.getKey());
@@ -181,7 +180,7 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
                 StringUtils.isNotBlank(tagToSearch.getValue()) ? tagToSearch.getValue() : null
         );
         final Array datastorageIdsArray = getConnection().createArrayOf(
-                "bigint", CollectionUtils.emptyIfNull(request.getDatastorageIds()).toArray()
+                "bigint", CollectionUtils.emptyIfNull(rootStorageIds).toArray()
         );
         sqlParameterSource.addValue(Parameters.DATASTORAGE_ROOT_ID.name(), datastorageIdsArray);
         return getNamedParameterJdbcTemplate().query(

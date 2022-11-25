@@ -2,7 +2,6 @@ package com.epam.pipeline.manager.datastorage.tag;
 
 import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
-import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -77,7 +76,7 @@ public class DataStorageTagManager {
         tagDao.batchDeleteAll(root, Collections.singletonList(path));   
     }
 
-    public Map<Long, List<DataStorageTag>> search(final DataStorageObjectSearchByTagRequest request) {
-        return tagDao.search(request);
+    public Map<Long, List<DataStorageTag>> search(final List<Long> rootStorageIds, final Map<String, String> tags) {
+        return tagDao.search(rootStorageIds, tags);
     }
 }
