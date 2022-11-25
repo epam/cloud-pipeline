@@ -63,6 +63,8 @@ EDGE_SVC_HOST_LABEL = 'cloud-pipeline/external-host'
 EDGE_SVC_PORT_LABEL = 'cloud-pipeline/external-port'
 EDGE_SVC_REGION_LABEL = 'cloud-pipeline/region'
 
+DEFAULT_LOCATION_ATTRIBUTES = ['proxy_http_version 1.1;']
+
 nginx_custom_domain_config_ext = '.srv.conf'
 nginx_custom_domain_loc_suffix = 'CP_EDGE_CUSTOM_DOMAIN'
 nginx_custom_domain_loc_tmpl = 'include {}; # ' + nginx_custom_domain_loc_suffix
@@ -573,9 +575,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 edge_location_id = '{}.loc'.format(edge_location)
 
                                         if EDGE_INSTANCE_IP in additional:
-                                                additional = additional.replace(EDGE_INSTANCE_IP, "") \
-                                                             + 'proxy_set_header Upgrade $http_upgrade;' \
-                                                               'proxy_set_header Connection "upgrade";'
+                                                additional = additional.replace(EDGE_INSTANCE_IP, "")
                                                 target_ip = instance_ip
                                         else:
                                                 target_ip = pod_ip
@@ -596,6 +596,10 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         if EDGE_EXTERNAL_APP in additional:
                                                 additional = additional.replace(EDGE_EXTERNAL_APP, "")
                                                 is_external_app = True
+
+                                        for default_attribute in DEFAULT_LOCATION_ATTRIBUTES:
+                                                if default_attribute not in additional:
+                                                        additional = additional + default_attribute
 
 
                                         service_list[edge_location_id] = {"pod_id": pod_id,
