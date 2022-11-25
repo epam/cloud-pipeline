@@ -65,9 +65,6 @@ spec:
             - mountPath: /etc/nginx/ext/external-apps
               name: edge-external-apps
               readOnly: true
-            - mountPath: /etc/nginx/static
-              name: edge-static
-              readOnly: true
             - mountPath: /opt/share-srv/pki
               name: share-pki
               readOnly: true
@@ -100,9 +97,6 @@ spec:
         - name: edge-external-apps
           hostPath:
             path: /opt/edge/external-apps
-        - name: edge-static
-          hostPath:
-            path: /opt/edge/static
         - name: share-pki
           hostPath:
             path: /opt/share-srv/pki
