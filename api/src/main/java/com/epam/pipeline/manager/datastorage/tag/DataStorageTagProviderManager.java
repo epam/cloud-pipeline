@@ -6,11 +6,9 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
-import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyBatchRequest;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagCopyRequest;
-import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -18,6 +16,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -65,13 +64,13 @@ public class DataStorageTagProviderManager {
         return mapFrom(tagManager.load(storage.getRootId(), object));
     }
 
-    public List<DataStorageTagSearchResult> search(final DataStorageObjectSearchByTagRequest request) {
-        Assert.notNull(request.getTags(), "Please specify at least a tag key to search by!");
-        Assert.state(!request.getTags().isEmpty(), "Please specify at least a tag key to search by!");
-        return tagManager.search(request).entrySet()
-                .stream()
-                .map(e -> new DataStorageTagSearchResult(e.getKey(), e.getValue()))
-                .collect(Collectors.toList());
+    public Map<Long, List<DataStorageTag>> search(final List<AbstractDataStorage> storages,
+                                                  final Map<String, String> tags) {
+        Assert.notNull(tags, "Please specify at least a tag key to search by!");
+        Assert.state(!tags.isEmpty(), "Please specify at least a tag key to search by!");
+        final List<Long> dataStorageRootIds = CollectionUtils.emptyIfNull(storages).stream()
+                .map(AbstractDataStorage::getRootId).collect(Collectors.toList());
+        return tagManager.search(dataStorageRootIds, tags);
     }
 
     public Map<String, String> updateFileTags(final AbstractDataStorage storage,

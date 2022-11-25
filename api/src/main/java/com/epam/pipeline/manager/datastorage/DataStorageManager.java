@@ -50,7 +50,9 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -116,6 +118,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -763,7 +766,46 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
             final DataStorageObjectSearchByTagRequest request) {
-        return tagProviderManager.search(request);
+        final Set<Long> storageIdsToFilter = new HashSet<>(CollectionUtils.emptyIfNull(request.getDatastorageIds()));
+        final List<AbstractDataStorage> storagesToSearch = CollectionUtils.isNotEmpty(request.getDatastorageIds())
+                ? getDatastoragesByIds(request.getDatastorageIds())
+                : Collections.emptyList();
+        final Map<Long, List<DataStorageTag>> rootSearchResult =
+                tagProviderManager.search(storagesToSearch, request.getTags());
+        if (MapUtils.isNotEmpty(rootSearchResult)) {
+            // by tagProviderManager.search we found tags for datastorage_root, and now we need to map it on
+            // actual datastorages
+            final Map<Long, List<DataStorageTag>> results = new HashMap<>();
+            final Map<Long, List<AbstractDataStorage>> storagesByRootId = dataStorageDao.loadDataStoragesByRootIds(
+                    rootSearchResult.keySet()
+            ).stream().filter(
+                    ds -> CollectionUtils.isEmpty(storageIdsToFilter) || storageIdsToFilter.contains(ds.getId())
+            ).collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
+
+            rootSearchResult.forEach((rootId, rootStorageTags) ->
+                rootStorageTags.forEach(dataStorageTag -> {
+                    final List<AbstractDataStorage> storages = storagesByRootId.get(rootId);
+                    storages.stream().filter(
+                            dataStorage -> dataStorageTag.getObject().getPath().startsWith(dataStorage.getPrefix())
+                    ).findFirst()
+                    .ifPresent(dataStorage -> {
+                        final DataStorageTag storageObjectTag = new DataStorageTag(
+                                new DataStorageObject(
+                                        dataStorage.resolveRelativePath(dataStorageTag.getObject().getPath()),
+                                        dataStorageTag.getObject().getVersion()
+                                ),
+                                dataStorageTag.getKey(), dataStorageTag.getValue()
+                        );
+                        results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageObjectTag);
+                    });
+                })
+            );
+
+            return results.entrySet().stream()
+                    .map(e -> new DataStorageTagSearchResult(e.getKey(), e.getValue())).collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     @Transactional
