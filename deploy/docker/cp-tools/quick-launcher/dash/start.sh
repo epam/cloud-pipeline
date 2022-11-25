@@ -179,6 +179,30 @@ nohup $ANACONDA_HOME/bin/gunicorn -b 0.0.0.0:${DASH_PORT} \
                 -w $worker_processes "$DASH_WSGI_APP" \
                 --log-level $DASH_LOG_LEVEL >> $LOG_DIR_PATH/gunicorn_${RUN_ID}.log 2>&1 &
 
-pipe_log_success "Gateway App has been started" "InitializeApp"
+pipe_log_info "Waiting for the Gateway App to start" "InitializeApp"
+
+# Wait for 5 min, by default
+DASH_STARTUP_TIMEOUT=${DASH_STARTUP_TIMEOUT:-3}
+DASH_STARTUP_ATTEPTS=${DASH_STARTUP_ATTEPTS:-100}
+DASH_STARTUP_CURRENT_ATTEMPT=1
+DASH_STARTED=1
+while (( $DASH_STARTUP_CURRENT_ATTEMPT < $DASH_STARTUP_ATTEPTS )); do
+    DASH_STARTUP_CURRENT_ATTEMPT=$((DASH_STARTUP_CURRENT_ATTEMPT+1))
+    curl --silent \
+        --connect-timeout $DASH_STARTUP_TIMEOUT \
+        --max-time $DASH_STARTUP_TIMEOUT \
+        "http://127.0.0.1:$DASH_PORT"
+    if [ $? -eq 0 ]; then
+        pipe_log_success "Gateway App has been started" "InitializeApp"
+        DASH_STARTED=0
+        break
+    fi
+    sleep $DASH_STARTUP_TIMEOUT
+done
+
+if [ $DASH_STARTED -ne 0 ]; then
+    pipe_log_fail "Gateway App timed out while waiting for the startup" "InitializeApp"
+    exit 1
+fi
 
 sleep infinity
