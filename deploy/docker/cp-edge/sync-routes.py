@@ -63,7 +63,7 @@ EDGE_SVC_HOST_LABEL = 'cloud-pipeline/external-host'
 EDGE_SVC_PORT_LABEL = 'cloud-pipeline/external-port'
 EDGE_SVC_REGION_LABEL = 'cloud-pipeline/region'
 
-DEFAULT_PROXY_HTTP_VERSION_HEADER = 'proxy_http_version 1.1;'
+DEFAULT_LOCATION_ATTRIBUTES = ['proxy_http_version 1.1;']
 
 nginx_custom_domain_config_ext = '.srv.conf'
 nginx_custom_domain_loc_suffix = 'CP_EDGE_CUSTOM_DOMAIN'
@@ -575,9 +575,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 edge_location_id = '{}.loc'.format(edge_location)
 
                                         if EDGE_INSTANCE_IP in additional:
-                                                additional = additional.replace(EDGE_INSTANCE_IP, "") \
-                                                             + 'proxy_set_header Upgrade $http_upgrade;' \
-                                                               'proxy_set_header Connection "upgrade";'
+                                                additional = additional.replace(EDGE_INSTANCE_IP, "")
                                                 target_ip = instance_ip
                                         else:
                                                 target_ip = pod_ip
@@ -598,6 +596,10 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         if EDGE_EXTERNAL_APP in additional:
                                                 additional = additional.replace(EDGE_EXTERNAL_APP, "")
                                                 is_external_app = True
+
+                                        for default_attribute in DEFAULT_LOCATION_ATTRIBUTES:
+                                                if default_attribute not in additional:
+                                                        additional = additional + default_attribute
 
 
                                         service_list[edge_location_id] = {"pod_id": pod_id,
@@ -708,10 +710,6 @@ def create_service_location(service_spec, added_route, service_url_dict):
         # Replace the duplicated forward slashes with a single instance to workaround possible issue when the location is set to "/path//"
         service_location = re.sub('/+', '/', service_location)
 
-        additional_spec = service_spec["additional"]
-        if DEFAULT_PROXY_HTTP_VERSION_HEADER not in additional_spec:
-                additional_spec = additional_spec + DEFAULT_PROXY_HTTP_VERSION_HEADER
-
         nginx_route_definition = nginx_loc_module_template_contents \
                 .replace('{edge_route_location}', service_location) \
                 .replace('{edge_route_target}', service_spec["edge_target"]) \
@@ -720,7 +718,7 @@ def create_service_location(service_spec, added_route, service_url_dict):
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
-                .replace('{additional}', additional_spec)
+                .replace('{additional}', service_spec["additional"])
         nginx_sensitive_route_definitions = []
         if service_spec["sensitive"]:
                 for sensitive_route in sensitive_routes:
@@ -736,7 +734,7 @@ def create_service_location(service_spec, added_route, service_url_dict):
                                 .replace('{run_id}', service_spec["run_id"]) \
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
-                                .replace('{additional}', additional_spec)
+                                .replace('{additional}', service_spec["additional"])
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
         path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
         if service_spec["sensitive"]:
