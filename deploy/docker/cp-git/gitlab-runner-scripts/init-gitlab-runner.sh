@@ -28,26 +28,26 @@ function is_jq_null() {
 }
 
 function register_runner() {
-  gitlab-runner register \
-            --url "$_CP_GITLAB_URL" \
-            --registration-token "$CP_GITLAB_REGISTRATION_TOKEN" \
-            --name "$CP_GITLAB_RUNNER_NAME" \
-            --executor custom \
-            --builds-dir "${CP_GITLAB_RUNNER_BUILDS_DIR}" \
-            --cache-dir "${CP_GITLAB_RUNNER_CACHE_DIR}" \
-            --custom-prepare-exec "/gitlab-runner-scripts/prepare.sh" \
-            --custom-run-exec "/gitlab-runner-scripts/run.sh" \
-            --custom-cleanup-exec "/gitlab-runner-scripts/cleanup.sh" \
-            --tls-ca-file="$CP_GITLAB_RUNNER_CA_CERT_PATH" \
-            --non-interactive \
-            --locked=false
+    gitlab-runner register \
+              --url "$_CP_GITLAB_URL" \
+              --registration-token "$CP_GITLAB_REGISTRATION_TOKEN" \
+              --name "$CP_GITLAB_RUNNER_NAME" \
+              --executor custom \
+              --builds-dir "${CP_GITLAB_RUNNER_BUILDS_DIR}" \
+              --cache-dir "${CP_GITLAB_RUNNER_CACHE_DIR}" \
+              --custom-prepare-exec "/gitlab-runner-scripts/prepare.sh" \
+              --custom-run-exec "/gitlab-runner-scripts/run.sh" \
+              --custom-cleanup-exec "/gitlab-runner-scripts/cleanup.sh" \
+              --tls-ca-file="$CP_GITLAB_RUNNER_CA_CERT_PATH" \
+              --non-interactive \
+              --locked=false
 
-        if [ $? -ne 0 ]; then
-            echo "[ERROR] Runner registration failed, exiting"
-            exit 1
-        fi
+    if [ $? -ne 0 ]; then
+        echo "[ERROR] Runner registration failed, exiting"
+        exit 1
+    fi
 
-        echo "[OK] '$CP_GITLAB_RUNNER_NAME' runner has been registered"
+    echo "[OK] '$CP_GITLAB_RUNNER_NAME' runner has been registered"
 }
 
 if [ -z "$CP_GITLAB_INTERNAL_HOST" ] || [ -z "$CP_GITLAB_INTERNAL_PORT" ]; then
