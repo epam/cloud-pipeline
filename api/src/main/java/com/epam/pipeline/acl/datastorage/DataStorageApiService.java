@@ -383,7 +383,7 @@ public class DataStorageApiService {
         return dataStorageManager.getItemType(id, path, version);
     }
 
-    @PostFilter(AclExpressions.FILTER_TAG_SEARCH_RESULT_BY_STORAGE_ID)
+    @PostFilter(AclExpressions.ADMIN_OR_GENERAL_USER)
     public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
             final DataStorageObjectSearchByTagRequest request) {
         return dataStorageManager.searchDataStorageItemByTag(request);

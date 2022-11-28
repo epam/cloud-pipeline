@@ -146,6 +146,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
     public static final String DAV_MOUNT_TAG = "dav-mount";
     private static final String SHARED_STORAGE_SUFFIX = "share";
+    private static final String READ_PERMISSION = "READ";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -571,7 +572,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private List<String> adjustPermissions(final List<String> permissions) {
         return Optional.ofNullable(permissions)
                 .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> Collections.singletonList("READ"));
+                .orElseGet(() -> Collections.singletonList(READ_PERMISSION));
     }
 
     private Duration resolveDuration(final long hours) {
@@ -778,15 +779,18 @@ public class DataStorageManager implements SecuredEntityManager {
             final Map<Long, List<DataStorageTag>> results = new HashMap<>();
             final Map<Long, List<AbstractDataStorage>> storagesByRootId = dataStorageDao.loadDataStoragesByRootIds(
                     rootSearchResult.keySet()
-            ).stream().filter(
-                ds -> CollectionUtils.isEmpty(storageIdsToFilter) || storageIdsToFilter.contains(ds.getId())
-            ).collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
+            ).stream()
+                    .filter(dataStorage -> permissionManager.storagePermission(dataStorage, READ_PERMISSION))
+                    .filter(
+                            ds -> CollectionUtils.isEmpty(storageIdsToFilter) || storageIdsToFilter.contains(ds.getId())
+                    ).collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
 
             rootSearchResult.forEach((rootId, rootStorageTags) ->
                 rootStorageTags.forEach(dataStorageTag -> {
-                    final List<AbstractDataStorage> storages = storagesByRootId.get(rootId);
+                    final List<AbstractDataStorage> storages = storagesByRootId
+                            .getOrDefault(rootId, Collections.emptyList());
                     storages.stream().filter(
-                            dataStorage -> dataStorageTag.getObject().getPath().startsWith(dataStorage.getPrefix())
+                        dataStorage -> dataStorageTag.getObject().getPath().startsWith(dataStorage.getPrefix())
                     ).max(Comparator.comparingInt(s -> s.getPrefix().length())).ifPresent(dataStorage -> {
                         final DataStorageTag storageObjectTag = new DataStorageTag(
                             new DataStorageObject(
