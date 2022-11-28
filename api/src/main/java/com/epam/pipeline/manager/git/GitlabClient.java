@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.git.GitGroupRequest;
 import com.epam.pipeline.entity.git.GitHookRequest;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectRequest;
+import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
@@ -433,6 +434,10 @@ public class GitlabClient {
             }
         }
         return gitlabUser;
+    }
+
+    public GitProjectStorage getProjectStorage(final String project) throws GitClientException {
+        return execute(gitLabApi.getProjectStorage(makeProjectId(namespace, project)));
     }
 
     private GitProject createRepo(String repoName, String description) throws GitClientException {
