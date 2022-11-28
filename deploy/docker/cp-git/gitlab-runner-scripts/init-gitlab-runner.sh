@@ -27,6 +27,29 @@ function is_jq_null() {
     fi
 }
 
+function register_runner() {
+    gitlab-runner register \
+              --url "$_CP_GITLAB_URL" \
+              --registration-token "$CP_GITLAB_REGISTRATION_TOKEN" \
+              --name "$CP_GITLAB_RUNNER_NAME" \
+              --executor custom \
+              --builds-dir "${CP_GITLAB_RUNNER_BUILDS_DIR}" \
+              --cache-dir "${CP_GITLAB_RUNNER_CACHE_DIR}" \
+              --custom-prepare-exec "/gitlab-runner-scripts/prepare.sh" \
+              --custom-run-exec "/gitlab-runner-scripts/run.sh" \
+              --custom-cleanup-exec "/gitlab-runner-scripts/cleanup.sh" \
+              --tls-ca-file="$CP_GITLAB_RUNNER_CA_CERT_PATH" \
+              --non-interactive \
+              --locked=false
+
+    if [ $? -ne 0 ]; then
+        echo "[ERROR] Runner registration failed, exiting"
+        exit 1
+    fi
+
+    echo "[OK] '$CP_GITLAB_RUNNER_NAME' runner has been registered"
+}
+
 if [ -z "$CP_GITLAB_INTERNAL_HOST" ] || [ -z "$CP_GITLAB_INTERNAL_PORT" ]; then
     echo "[ERROR] Can't build a gitlab URL. \$CP_GITLAB_INTERNAL_HOST or \$CP_GITLAB_INTERNAL_PORT is not specified"
     exit 1
@@ -108,29 +131,23 @@ fi
 _CP_GITLAB_RUNNER_FOUND=$(echo $_CP_GITLAB_RUNNERS_JSON | jq -r ".[] | select(.description==\"$CP_GITLAB_RUNNER_NAME\")")
 if is_jq_null "$_CP_GITLAB_RUNNER_FOUND"; then
     echo "[INFO] '$CP_GITLAB_RUNNER_NAME' runner is not registered yet, proceeding with the registration"
-
-    gitlab-runner register \
-        --url "$_CP_GITLAB_URL" \
-        --registration-token "$CP_GITLAB_REGISTRATION_TOKEN" \
-        --name "$CP_GITLAB_RUNNER_NAME" \
-        --executor custom \
-        --builds-dir "${CP_GITLAB_RUNNER_BUILDS_DIR}" \
-        --cache-dir "${CP_GITLAB_RUNNER_CACHE_DIR}" \
-        --custom-prepare-exec "/gitlab-runner-scripts/prepare.sh" \
-        --custom-run-exec "/gitlab-runner-scripts/run.sh" \
-        --custom-cleanup-exec "/gitlab-runner-scripts/cleanup.sh" \
-        --tls-ca-file="$CP_GITLAB_RUNNER_CA_CERT_PATH" \
-        --non-interactive \
-        --locked=false
-
-    if [ $? -ne 0 ]; then
-        echo "[ERROR] Runner registration failed, exiting"
-        exit 1
-    fi
-
-    echo "[OK] '$CP_GITLAB_RUNNER_NAME' runner has been registered"
+    register_runner
 else
     echo "[OK] '$CP_GITLAB_RUNNER_NAME' runner is already registered"
+
+    _CP_GITLAB_RUNNER_STATUS=$(echo $_CP_GITLAB_RUNNER_FOUND | jq -r ".status")
+    if [ "$_CP_GITLAB_RUNNER_STATUS" = "stale" ]; then
+        echo "[OK] Deleting stale runner '$CP_GITLAB_RUNNER_NAME'."
+        _CP_GITLAB_RUNNER_ID=$(echo $_CP_GITLAB_RUNNER_FOUND | jq -r ".id")
+        curl -sk --fail -X DELETE ${_CP_GITLAB_URL}/api/v4/runners/${_CP_GITLAB_RUNNER_ID} \
+            -H "PRIVATE-TOKEN: $_CP_GITLAB_ADMIN_TOKEN"
+        if [ $? -ne 0 ]; then
+            echo "[ERROR] Runner deletion failed, exiting"
+            exit 1
+        fi
+
+        register_runner
+    fi
 fi
 
 sed -i "/^concurrent/d" /etc/gitlab-runner/config.toml && \
