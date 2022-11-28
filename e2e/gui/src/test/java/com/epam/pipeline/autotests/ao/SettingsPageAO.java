@@ -49,6 +49,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconCl
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.*;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
@@ -1467,6 +1468,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             private ClusterTabAO setClusterValue(final String clusterPref, final String value) {
                 By clusterVariable = getByField(clusterPref);
                 setByVariable(value, clusterVariable);
+                while(!$(clusterVariable).has(text(value))) {
+                    sleep(500, MILLISECONDS);
+                }
                 return this;
             }
 
