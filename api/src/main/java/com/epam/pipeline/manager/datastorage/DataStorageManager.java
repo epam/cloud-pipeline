@@ -786,8 +786,8 @@ public class DataStorageManager implements SecuredEntityManager {
                 rootStorageTags.forEach(dataStorageTag -> {
                     final List<AbstractDataStorage> storages = storagesByRootId.get(rootId);
                     storages.stream().filter(
-                        dataStorage -> dataStorageTag.getObject().getPath().startsWith(dataStorage.getPrefix())
-                    ).findFirst().ifPresent(dataStorage -> {
+                            dataStorage -> dataStorageTag.getObject().getPath().startsWith(dataStorage.getPrefix())
+                    ).max(Comparator.comparingInt(s -> s.getPrefix().length())).ifPresent(dataStorage -> {
                         final DataStorageTag storageObjectTag = new DataStorageTag(
                             new DataStorageObject(
                                     dataStorage.resolveRelativePath(dataStorageTag.getObject().getPath()),
