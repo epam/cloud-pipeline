@@ -510,3 +510,23 @@
   border-radius: 5px;
   display: inline-block;
 }
+
+.application-type-card {
+  margin-right: 10px;
+  border-radius: 5px;
+  padding: 6px;
+  min-width: 50px;
+  line-height: 1;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: smaller;
+}
+
+.application-type-card.selected {
+  color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(0, 0, 0, 0.4);
+}

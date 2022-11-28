@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import useAdvancedUser from './components/utilities/use-advanced-user';
 import {useSettings, SettingsContext} from './components/use-settings';
@@ -49,6 +49,14 @@ function FolderApp ({location}) {
     pending,
     reload
   } = useFolderApplications(options);
+  const applicationTypes = useMemo(
+    () => [...new Set((applications || []).map((o) => o.appType))].filter(Boolean).sort(),
+    [applications]
+  );
+  const [filterAppType, setFilterAppType] = useState(undefined);
+  const onChangeFilterAppType = useCallback((newFilterAppType) => {
+    setFilterAppType((current) => (current === newFilterAppType ? undefined : newFilterAppType));
+  }, [setFilterAppType]);
   const availableApplications = (applications || [])
     .filter(app => applicationAvailable(app.info, authenticatedUser, settings));
   const [application, setApplication] = useState(undefined);
@@ -111,7 +119,9 @@ function FolderApp ({location}) {
       </div>
     )
   } else {
-    const filtered = availableApplications.filter(filterAppFn(filter));
+    const filtered = availableApplications
+      .filter(filterAppFn(filter))
+      .filter((app) => filterAppType === undefined || app.appType === filterAppType);
     const groups = [...new Set(filtered.map(o => o.appType))];
     applicationsContent = (
       <div>
@@ -189,10 +199,30 @@ function FolderApp ({location}) {
               )
             }
             {
+              applicationTypes.length > 1 && applicationTypes.map((appType) => (
+                <span
+                  className={
+                    classNames(
+                      'application-type-card',
+                      {
+                        selected: filterAppType === appType,
+                      }
+                    )
+                  }
+                  onClick={() => onChangeFilterAppType(appType)}
+                >
+                  {appType}
+                </span>
+              ))
+            }
+            {
               canPublishApps && !application && !settings?.disablePublishingApps && (
                 <div
                   className="link"
                   onClick={onPublishClick}
+                  style={
+                    applicationTypes.length > 1 ? { marginLeft: 10 } : {}
+                  }
                 >
                   NEW APP
                 </div>
