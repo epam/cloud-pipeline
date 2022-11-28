@@ -89,6 +89,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private static final Set<PosixFilePermission> PERMISSIONS = Arrays.stream(PosixFilePermission.values())
                                                                       .filter(p -> !p.name().startsWith("OTHERS"))
                                                                       .collect(Collectors.toSet());
+    private static final int DEFAULT_PAGE_SIZE = 1000;
 
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
@@ -211,7 +212,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
         long offset = StringUtils.isNumeric(marker) ? Long.parseLong(marker) : 1;
         try (Stream<Path> dirStream = Files.walk(startingPath.toPath(), 1)) {
-            final int effectivePageSize = Optional.ofNullable(pageSize).orElse(Integer.MAX_VALUE);
+            final int effectivePageSize = Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE);
             List<AbstractDataStorageItem> dataStorageItems = dirStream
                 .sorted()
                 .skip(offset) // First element is a directory itself
