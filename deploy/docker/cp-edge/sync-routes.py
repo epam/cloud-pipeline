@@ -791,8 +791,9 @@ def find_preference(api_preference_query, preference_name):
 
 
 def write_stub_location_configuration(path_to_route, service_location, service_spec, has_custom_domain):
+        route_location = service_location if service_location == '/' else service_location[:-1]
         nginx_route_definition = nginx_loc_module_stub_template_contents \
-                .replace('{edge_route_location}', service_location) \
+                .replace('{edge_route_location}', route_location) \
                 .replace('{edge_route_owner}', service_spec["pod_owner"]) \
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"])
