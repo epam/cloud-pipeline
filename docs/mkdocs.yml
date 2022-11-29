@@ -137,3 +137,7 @@ nav:
     - AWS: 'installation/prerequisites/aws.md'
     - Azure: 'installation/prerequisites/azure.md'
     - GCP: 'installation/prerequisites/gcp.md'
+  - Management:
+    - Environments sync: 'installation/management/environments_sync.md'
+  - Change Kubernetes certificates: 'installation/change_kube_certificates.md'
+  - Support Windows runs: 'installation/support_windows_runs.md'

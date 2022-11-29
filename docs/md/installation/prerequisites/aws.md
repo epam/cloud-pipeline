@@ -14,30 +14,28 @@ A new VPC in the `<region-id>` region with the default configuration
 
 * A routable subnet with /26 CIDR or a subnet with the Elastic IPs allowed. It will be used to deploy user-facing services
 * Non routable subnets with any CIDR range (e.g. /16) in each of the available Availability Zones. These subnets will be used to launch the worker nodes. E.g. for us-east-1 region, the following subnets/CIDRs can be created:
-  * us-east-1a: 10.0.0.0/23
-  * us-east-1b: 10.0.2.0/23
-  * us-east-1c: 10.0.4.0/23
-  * us-east-1d: 10.0.6.0/23
-  * us-east-1e: 10.0.8.0/23
-  * us-east-1f: 10.0.10.0/23
+    * us-east-1a: 10.0.0.0/23
+    * us-east-1b: 10.0.2.0/23
+    * us-east-1c: 10.0.4.0/23
+    * us-east-1d: 10.0.6.0/23
+    * us-east-1e: 10.0.8.0/23
+    * us-east-1f: 10.0.10.0/23
 
 ## Security Groups
 
 * CP-Cluster-Internal:
-  * Traffic type: ALL
-  * Ports: ALL
-  * Inbound: from <CP-Cluster-Internal>
-  * Outbound: to <CP-Cluster-Internal>
-
+    * Traffic type: ALL
+    * Ports: ALL
+    * Inbound: from <CP-Cluster-Internal>
+    * Outbound: to <CP-Cluster-Internal>
 * CP-HTTPS-Access:
-  * Traffic type: HTTPS
-  * Port: 443
-  * Inbound: from `Internal networks or 0.0.0.0 (for the Elastic IPs usage)`
-
+    * Traffic type: HTTPS
+    * Port: 443
+    * Inbound: from `Internal networks or 0.0.0.0 (for the Elastic IPs usage)`
 * CP-Internet-Access:
-  * Traffic type: Any
-  * Port: 3128
-  * Outbound: to `Egress HTTP proxy, if applicable`
+    * Traffic type: Any
+    * Port: 3128
+    * Outbound: to `Egress HTTP proxy, if applicable`
 
 ## AMI
 
@@ -60,7 +58,7 @@ A new SSH key named `CP-SSH-Key`
 
 * Name: **CP-Service-Policy**
 
-```
+``` json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -184,7 +182,7 @@ A new SSH key named `CP-SSH-Key`
 
 * Name: **CP-KMS-Assume-Policy**
 
-```
+``` json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -207,7 +205,7 @@ A new SSH key named `CP-SSH-Key`
 
 * Name: **CP-S3viaSTS-Policy**
 
-```
+``` json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -241,13 +239,12 @@ A new SSH key named `CP-SSH-Key`
 ### Roles
 
 * **AWSServiceRoleForEC2Spot**: policies according to the AWS Documentation [Manually create the AWSServiceRoleForEC2Spot service-linked role](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#service-linked-roles-spot-instance-requests)
-
 * **CP-Service**: CP-Service-Policy and CP-KMS-Assume-Policy
+* **CP-S3viaSTS**:
+    * Policies: CP-S3viaSTS-Policy and CP-KMS-Assume-Policy
+    * Trust relationship:
 
-* **CP-S3viaSTS**: 
-  * Policies: CP-S3viaSTS-Policy and CP-KMS-Assume-Policy
-  * Trust relationship:
-```
+``` json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -265,6 +262,7 @@ A new SSH key named `CP-SSH-Key`
 ## KMS
 
 The following AWS KMS key shall be created:
+
 * Region: `<region-id>`
 * Name: CP-KMS-`<region-id>`
 * Description: Cloud Pipeline KMS encryption key
@@ -272,7 +270,7 @@ The following AWS KMS key shall be created:
 
 The following policy shall be attached to the key:
 
-```
+``` json
 {
     "Id": "CP-KMS-Key-Policy",
     "Version": "2012-10-17",
