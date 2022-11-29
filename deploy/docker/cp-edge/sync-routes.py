@@ -63,8 +63,6 @@ EDGE_SVC_HOST_LABEL = 'cloud-pipeline/external-host'
 EDGE_SVC_PORT_LABEL = 'cloud-pipeline/external-port'
 EDGE_SVC_REGION_LABEL = 'cloud-pipeline/region'
 
-DEFAULT_LOCATION_ATTRIBUTES = ['proxy_http_version 1.1;']
-
 nginx_custom_domain_config_ext = '.srv.conf'
 nginx_custom_domain_loc_suffix = 'CP_EDGE_CUSTOM_DOMAIN'
 nginx_custom_domain_loc_tmpl = 'include {}; # ' + nginx_custom_domain_loc_suffix
@@ -79,6 +77,7 @@ nginx_sensitive_loc_module_template = '/etc/nginx/endpoints-config/sensitive.tem
 nginx_loc_module_stub_template = '/etc/nginx/endpoints-config/route.template.stub.loc.conf'
 nginx_sensitive_routes_config_path = '/etc/nginx/endpoints-config/sensitive.routes.json'
 nginx_system_endpoints_config_path = '/etc/nginx/endpoints-config/system_endpoints.json'
+nginx_default_location_attributes_path = '/etc/nginx/endpoints-config/default_location_attributes.json'
 edge_service_port = 31000
 edge_service_external_ip = ''
 pki_search_path = '/opt/edge/pki/'
@@ -87,6 +86,16 @@ pki_search_suffix_key = '-private-key.pem'
 pki_default_cert = '/opt/edge/pki/ssl-public-cert.pem'
 pki_default_cert_key = '/opt/edge/pki/ssl-private-key.pem'
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+
+DEFAULT_LOCATION_ATTRIBUTES = []
+if os.path.exists(nginx_default_location_attributes_path):
+        try:
+                with open(nginx_default_location_attributes_path) as location_attributes_fd:
+                        DEFAULT_LOCATION_ATTRIBUTES = json.load(location_attributes_fd)
+        except Exception as loc_attr_read_exception:
+                print('An error occured while reading default location attributes: {}'.format(loc_attr_read_exception))
+else:
+        print('Default location attributes config was not found at {}'.format(nginx_default_location_attributes_path))
 
 urllib3.disable_warnings()
 api_url = os.environ.get('API')
@@ -598,8 +607,10 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 is_external_app = True
 
                                         for default_attribute in DEFAULT_LOCATION_ATTRIBUTES:
-                                                if default_attribute not in additional:
-                                                        additional = additional + default_attribute
+                                                if 'search_pattern' not in default_attribute or 'value' not in default_attribute:
+                                                        continue
+                                                if default_attribute['search_pattern'].lower() not in additional.lower():
+                                                        additional = additional + default_attribute['value']
 
 
                                         service_list[edge_location_id] = {"pod_id": pod_id,
