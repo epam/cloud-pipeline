@@ -1,0 +1,14 @@
+[
+    {
+        "search_pattern": "proxy_http_version 1.1;",
+        "value": "proxy_http_version 1.1;"
+    },
+    {
+        "search_pattern": "proxy_set_header Upgrade",
+        "value": "proxy_set_header Upgrade $http_upgrade;"
+    },
+    {
+        "search_pattern": "proxy_set_header Connection",
+        "value": "proxy_set_header Connection \"upgrade\";"
+    }
+]
