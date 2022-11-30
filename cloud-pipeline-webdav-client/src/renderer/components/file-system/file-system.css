@@ -1,0 +1,30 @@
+.file-system-tab-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 2px solid transparent;
+}
+
+.file-system-tab-container.active {
+  border: 2px solid rgba(24, 144, 255, 0.8);
+}
+
+.file-system-tab-container.drop-target {
+  border: 2px solid rgba(24, 144, 255, 1);
+}
+
+.file-system-tab-header {
+  min-height: 28px;
+  line-height: 28px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.file-system-tab-header .ant-btn {
+  margin: 1px;
+}

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CP_NODE_DOCKER="node:14.9.0-stretch"
+CP_NODE_DOCKER="node:14.17.5-stretch"
 docker pull $CP_NODE_DOCKER
 if [ $? -ne 0 ]; then
     echo "Unable to pull $CP_NODE_DOCKER image"
@@ -35,7 +35,7 @@ npm run package:linux
 
 if [ $? -ne 0 ]; then
     echo "Unable to build UI for Linux"
-    cp /tmp/version.bkp \$version_file 
+    cp /tmp/version.bkp \$version_file
     exit 1
 fi
 
@@ -44,7 +44,7 @@ tar -zcf /cloud-data/out/cloud-data-linux.tar.gz \
         cloud-data-linux-x64
 
 chmod -R 777 /cloud-data/out
-cp /tmp/version.bkp \$version_file 
+cp /tmp/version.bkp \$version_file
 
 EOL
 
