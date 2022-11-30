@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,6 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.util.TestUtils;
-import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
@@ -204,7 +203,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         configuration.setCloudRegionId(defaultAwsRegion.getId());
 
         price = new InstancePrice(
-                configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR, 
+                configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR,
                 COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
@@ -220,7 +219,6 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         when(instanceOfferManager
                 .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
-        when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(BehaviorSubject.create());
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
                 .thenReturn(price);
         when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString(), anyString()))

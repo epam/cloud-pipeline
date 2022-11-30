@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
@@ -62,7 +63,6 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
-import io.reactivex.Observable;
 
 /**
  * A service component for monitoring resource usage.
@@ -82,23 +82,15 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     public static final String TRUE_VALUE_STRING = "true";
 
-    private final InstanceOfferManager instanceOfferManager;
     private final ResourceMonitoringManagerCore core;
 
     @Autowired
-    public ResourceMonitoringManager(final InstanceOfferManager instanceOfferManager,
-                                     final ResourceMonitoringManagerCore core) {
-        this.instanceOfferManager = instanceOfferManager;
+    public ResourceMonitoringManager(final ResourceMonitoringManagerCore core) {
         this.core = core;
     }
 
     @PostConstruct
     public void init() {
-        Observable<List<InstanceType>> instanceTypesObservable = instanceOfferManager.getAllInstanceTypesObservable();
-        instanceTypesObservable
-                .subscribe(instanceTypes -> core.updateInstanceMap(
-                        instanceTypes.stream().collect(
-                                Collectors.toMap(InstanceType::getName, t -> t, (t1, t2) -> t1))));
         scheduleFixedDelaySecured(core::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
                 "Resource Usage Monitoring");
     }
@@ -122,6 +114,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private final MessageHelper messageHelper;
         private final PreferenceManager preferenceManager;
         private Map<String, InstanceType> instanceTypeMap = new HashMap<>();
+        private final InstanceOfferManager instanceOfferManager;
 
         @Autowired
         ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
@@ -129,13 +122,15 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                       final NotificationManager notificationManager,
                                       final MonitoringESDao monitoringDao,
                                       final MessageHelper messageHelper,
-                                      final PreferenceManager preferenceManager) {
+                                      final PreferenceManager preferenceManager,
+                                      final InstanceOfferManager instanceOfferManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
             this.messageHelper = messageHelper;
             this.notificationManager = notificationManager;
             this.monitoringDao = monitoringDao;
             this.preferenceManager = preferenceManager;
+            this.instanceOfferManager = instanceOfferManager;
         }
 
         @Scheduled(cron = "0 0 0 ? * *")
@@ -299,9 +294,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         private void processRuns(Map<String, PipelineRun> running, Map<String, Double> cpuMetrics,
                                  double idleCpuLevel, int actionTimeout, IdleRunAction action) {
-            List<PipelineRun> runsToUpdateNotificationTime = new ArrayList<>(running.size());
-            List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
+            final List<PipelineRun> runsToUpdateNotificationTime = new ArrayList<>(running.size());
+            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
             final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
+            final Map<String, InstanceType> instanceTypeMap = instanceOfferManager.getAllInstanceTypes().stream()
+                    .collect(Collectors.toMap(InstanceType::getName,
+                    Function.identity(), (t1, t2) -> t1));
             for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
                 PipelineRun run = entry.getValue();
                 Double metric = cpuMetrics.get(entry.getKey());
@@ -417,11 +415,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             pipelineRunDockerOperationManager.pauseRun(run.getId(), true);
             notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
                     NotificationType.IDLE_RUN_PAUSED);
-        }
-
-        public void updateInstanceMap(Map<String, InstanceType> types) {
-            instanceTypeMap.clear();
-            instanceTypeMap.putAll(types);
         }
 
         private void processLongPausedRuns() {
