@@ -53,7 +53,6 @@ export default function ApplicationCard(
           application.icon && (
             <img
               src={application.icon}
-              alt={application.name}
               className="icon"
             />
           )
@@ -62,7 +61,6 @@ export default function ApplicationCard(
           !application.icon && application.iconData && (
             <img
               src={application.iconData}
-              alt={application.name}
               className="icon"
             />
           )
@@ -82,15 +80,15 @@ export default function ApplicationCard(
         {application.description}
       </div>
       <ApplicationSettings
-          className="app-settings"
-          application={application}
-          options={options}
-          appendDefault={appendDefault}
-          getSettingValue={getSettingValue}
-          getSettingDependencyValues={getSettingDependencyValues}
-          onChange={onChange}
-          onDependencyChange={onDependencyChange}
-          extendedOptions={extendedOptions}
+        className="app-settings"
+        application={application}
+        options={options}
+        appendDefault={appendDefault}
+        getSettingValue={getSettingValue}
+        getSettingDependencyValues={getSettingDependencyValues}
+        onChange={onChange}
+        onDependencyChange={onDependencyChange}
+        extendedOptions={extendedOptions}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import combineUrl from './combine-url';
 import getFetchOptions from './get-fetch-options';
+import { userInfoFromToken } from './bearer-token';
 
 function getSettings() {
   return new Promise((resolve, reject) => {
@@ -354,8 +355,33 @@ function impersonateAsAnonymous(settings) {
       .then(() => resolve(initial))
       .catch(reject);
   });
+  const testAnonymous = () => new Promise((resolve) => {
+    if (userInfoFromToken) {
+      const {
+        roles = []
+      } = userInfoFromToken;
+      if (
+        settings &&
+        settings.anonymousAccess &&
+        settings.anonymousAccess.token &&
+        roles.length === 1 &&
+        roles[0].name === settings.anonymousAccess.role
+      ) {
+        console.log('DETECTED ANONYMOUS USER (from bearer cookie):', userInfoFromToken);
+        resolve(userInfoFromToken);
+        return;
+      }
+    }
+    resolve(undefined);
+  });
   return new Promise((resolve) => {
-    whoAmIRawCall(settings)
+    testAnonymous()
+      .then((anonymousUser) => {
+        if (anonymousUser) {
+          return Promise.resolve({payload: anonymousUser});
+        }
+        return whoAmIRawCall(settings);
+      })
       .then(ownerInfo => {
         const {
           roles = []

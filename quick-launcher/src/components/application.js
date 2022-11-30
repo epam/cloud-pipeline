@@ -1,4 +1,4 @@
-import React, {useCallback, useContext, useEffect, useState} from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import LoadingIndicator from './shared/loading-indicator';
 import {ApplicationsContext, UserContext} from './use-applications';
 import {SettingsContext} from './use-settings';
@@ -10,8 +10,9 @@ import fetchSettings from '../models/base/settings';
 import combineUrl from '../models/base/combine-url';
 import processString from '../models/process-string';
 import {StopRunsError} from '../models/find-user-run';
-import './components.css';
 import { getApplicationTypeSettings } from "../models/folder-application-types";
+import useApplicationIcon from "./utilities/use-application-icon";
+import './components.css';
 
 function stopJobs (runs = []) {
   const wrapStopRun = run => new Promise((resolve, reject) => {
@@ -165,12 +166,43 @@ function useStopLaunch (applicationId, userName) {
   }, [applicationId, userName]);
 }
 
+function useApplicationIconURL(application) {
+  const {
+    storage,
+    icon,
+    iconData,
+    iconFile
+  } = application || {};
+  const {
+    icon: appIcon,
+    pending: appIconPending
+  } = useApplicationIcon(storage, iconFile ? iconFile.path : undefined);
+  return useMemo(() => {
+    if (appIconPending) {
+      return undefined;
+    }
+    if (iconData) {
+      return iconData;
+    }
+    if (appIcon) {
+      return appIcon;
+    }
+    return icon;
+  }, [
+    icon,
+    iconData,
+    appIcon,
+    appIconPending,
+  ]);
+}
+
 export default function Application ({id: applicationId, name: appName, launchOptions, goBack}) {
   const applications = useContext(ApplicationsContext);
   const user = useContext(UserContext);
   const [application] = (applications || []).filter(a => a.id === applicationId);
   const [stopping, setStopping] = useState(false);
   const [error, setError] = useState(undefined);
+  const applicationIcon = useApplicationIconURL(application);
   const {
     url,
     launchError,
@@ -324,19 +356,9 @@ export default function Application ({id: applicationId, name: appName, launchOp
     <div className="app-info">
       <div className="header">
         {
-          application.icon && (
+          applicationIcon && (
             <img
-              src={application.icon}
-              alt={appName || application.name}
-              className="icon"
-            />
-          )
-        }
-        {
-          !application.icon && application.iconData && (
-            <img
-              src={application.iconData}
-              alt={appName || application.name}
+              src={applicationIcon}
               className="icon"
             />
           )

@@ -22,6 +22,7 @@ function wrapDownloadPromise (promise) {
 
 export default function useApplicationIcon (storage, path) {
   const [icon, setIcon] = useState(undefined);
+  const [pending, setPending] = useState(true);
   useEffect(() => {
     if (storage && path) {
       const key = `${storage}/${path}`;
@@ -32,9 +33,14 @@ export default function useApplicationIcon (storage, path) {
         );
       }
       const promise = cache.get(key);
-      promise.then(setIcon);
+      setPending(true);
+      promise
+        .then(setIcon)
+        .then(() => setPending(false));
+    } else {
+      setPending(false);
     }
-  }, [storage, path, setIcon]);
+  }, [storage, path, setIcon, setPending]);
   const clearCache = useCallback(() => {
     if (storage && path) {
       const key = `${storage}/${path}`;
@@ -43,5 +49,9 @@ export default function useApplicationIcon (storage, path) {
       }
     }
   }, [storage, path]);
-  return {icon, clearCache};
+  return {
+    pending,
+    icon,
+    clearCache,
+  };
 }

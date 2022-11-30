@@ -1,13 +1,4 @@
-const cookies = (document.cookie || '')
-  .split(';')
-  .map(o => o.trim())
-  .map(o => {
-    const [key, value] = o.split('=');
-    return {key, value};
-  });
-
-const [tokenCookie] = cookies.filter(c => /^bearer$/i.test(c.key));
-const token = tokenCookie ? tokenCookie.value : undefined;
+import { token } from './bearer-token';
 
 const AUTH_HEADERS = Object.assign(
   {},
