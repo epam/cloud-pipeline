@@ -222,11 +222,15 @@ def get_networks_config(ec2, aws_region, instance_type):
 def get_instance_images_config(aws_region):
     return get_cloud_config_section(aws_region, "amis")
 
-def get_security_groups(aws_region):
+
+def get_security_groups(aws_region, security_groups):
+    if security_groups:
+        return security_groups.split(",")
     config = get_cloud_config_section(aws_region, "security_group_ids")
     if not config:
         raise RuntimeError('Security group setting is required to run an instance')
     return config
+
 
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
@@ -379,22 +383,23 @@ def run_id_filter(run_id):
 
 def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type,
                  is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_client, pre_pull_images,
-                 instance_additional_spec, availability_zone, network_interface, is_dedicated):
+                 instance_additional_spec, availability_zone, security_groups, network_interface, is_dedicated):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
-                                            user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, network_interface, is_dedicated)
+                                            user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, network_interface, is_dedicated)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
-                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, network_interface, is_dedicated)
+                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, network_interface, is_dedicated)
     return ins_id, ins_ip
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, pool_id, user_data_script, num_rep, time_rep, swap_size,
-                           kube_client, instance_additional_spec, availability_zone, network_interface, is_dedicated):
+                           kube_client, instance_additional_spec, availability_zone, security_groups,
+                           network_interface, is_dedicated):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     additional_args = instance_additional_spec if instance_additional_spec else {}
@@ -424,10 +429,13 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             az_name = allowed_networks.items()[az_num][0]
             subnet_id = allowed_networks.items()[az_num][1]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
-        additional_args.update({ 'SubnetId': subnet_id, 'SecurityGroupIds': get_security_groups(aws_region)})
+        additional_args.update({
+            'SubnetId': subnet_id,
+            'SecurityGroupIds': get_security_groups(aws_region, security_groups)
+        })
     else:
         pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
-        additional_args.update({ 'SecurityGroupIds': get_security_groups(aws_region)})
+        additional_args.update({'SecurityGroupIds': get_security_groups(aws_region, security_groups)})
     response = {}
 
     if is_dedicated:
@@ -1005,7 +1013,7 @@ def exit_if_spot_unavailable(run_id, last_status):
 
 def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size, kube_client,
-                       instance_additional_spec, availability_zone, network_interface, is_dedicated):
+                       instance_additional_spec, availability_zone, security_groups, network_interface, is_dedicated):
     pipe_log('Creating spot request')
 
     pipe_log('- Checking spot prices for current region...')
@@ -1048,11 +1056,11 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
         subnet_id = allowed_networks[cheapest_zone]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, cheapest_zone))
         specifications['SubnetId'] = subnet_id
-        specifications['SecurityGroupIds'] = get_security_groups(aws_region)
+        specifications['SecurityGroupIds'] = get_security_groups(aws_region, security_groups)
         specifications['Placement'] = { 'AvailabilityZone': cheapest_zone }
     else:
         pipe_log('- Networks list NOT found or cheapest zone can not be determined, default subnet in a random AZ will be used')
-        specifications['SecurityGroupIds'] = get_security_groups(aws_region)
+        specifications['SecurityGroupIds'] = get_security_groups(aws_region, security_groups)
 
     if instance_additional_spec:
         specifications.update(instance_additional_spec)
@@ -1315,6 +1323,7 @@ def main():
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--availability_zone", type=str, required=False)
     parser.add_argument("--network_interface", type=str, required=False)
+    parser.add_argument("--security_groups", type=str, required=False)
     parser.add_argument("--dedicated", type=bool, required=False)
     parser.add_argument("--label", type=str, default=[], required=False, action='append')
     parser.add_argument("--image", type=str, default=[], required=False, action='append')
@@ -1343,6 +1352,7 @@ def main():
     region_id = args.region_id
     availability_zone = args.availability_zone
     network_interface = args.network_interface
+    security_groups = args.security_groups
     is_dedicated = args.dedicated if args.dedicated else False
     pre_pull_images = args.image
     additional_labels = map_labels_to_dict(args.label)
@@ -1432,7 +1442,7 @@ def main():
             api_user = os.environ["API_USER"]
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api, pre_pull_images, instance_additional_spec,
-                                          availability_zone, network_interface, is_dedicated)
+                                          availability_zone, security_groups, network_interface, is_dedicated)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
