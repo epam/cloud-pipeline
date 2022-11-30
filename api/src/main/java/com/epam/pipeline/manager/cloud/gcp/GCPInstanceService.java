@@ -89,17 +89,20 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
-
-        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
+    public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance,
+                                   final Map<String, String> runtimeParameters) {
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap(),
+                runtimeParameters);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptGCPEnvVars(region));
     }
 
     @Override
     public RunInstance scaleUpPoolNode(final GCPRegion region, final String nodeId, final NodePool node) {
         final RunInstance instance = node.toRunInstance();
-        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(node));
-        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptGCPEnvVars(region));
+        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(node),
+                Collections.emptyMap());
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command,
+                buildScriptGCPEnvVars(region));
     }
 
     @Override
@@ -270,9 +273,9 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     private String buildNodeUpCommand(final GCPRegion region, final String nodeLabel, final RunInstance instance,
-                                      final Map<String, String> labels) {
+                                      final Map<String, String> labels, final Map<String, String> runtimeParameters) {
         return commandService
-            .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
+            .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), runtimeParameters)
             .sshKey(region.getSshPublicKeyPath())
             .isSpot(Optional.ofNullable(instance.getSpot())
                         .orElse(false))

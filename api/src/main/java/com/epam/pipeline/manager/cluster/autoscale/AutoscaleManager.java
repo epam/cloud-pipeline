@@ -95,10 +95,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
     @Component
     static class AutoscaleManagerCore {
-
-        private static final String TARGET_AZ_PARAMETER_NAME = "CP_CAP_TARGET_AVAILABILITY_ZONE";
-        private static final String TARGET_NETWORK_INTERFACE_PARAMETER_NAME = "CP_CAP_TARGET_NETWORK_INTERFACE";
-        private static final String DEDICATED_INSTANCE_PARAMETER_NAME = "CP_CAP_DEDICATED_INSTANCE";
+        private static final String BOOLEAN_RUN_PARAMETER_TYPE = "boolean";
 
         private final PipelineRunManager pipelineRunManager;
         private final ParallelExecutorService executorService;
@@ -485,7 +482,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 Instant start = Instant.now();
                 //save required instance
                 pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
-                RunInstance instance = cloudFacade.scaleUpNode(longId, requiredInstance.getInstance());
+                RunInstance instance = cloudFacade
+                        .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters());
                 //save instance ID and IP
                 pipelineRunManager.updateRunInstance(longId, instance);
                 autoscalerService.registerDisks(longId, instance);
@@ -557,28 +555,37 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             final InstanceRequest instanceRequest = new InstanceRequest();
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
-            setAvailabilityZoneIfSpecified(instanceRequest, run);
-            setNetworkInterfaceIfSpecified(instanceRequest, run);
-            setDedicatedFlagIfSpecified(instanceRequest, run);
+            instanceRequest.setRuntimeParameters(buildRuntimeParameters(run));
             return instanceRequest;
         }
 
-        private void setAvailabilityZoneIfSpecified(final InstanceRequest requiredInstance, final PipelineRun run) {
-            run.getParameterValue(TARGET_AZ_PARAMETER_NAME)
-                .filter(StringUtils::isNotBlank)
-                .ifPresent(availabilityZone -> requiredInstance.getInstance().setAvailabilityZone(availabilityZone));
+        private Map<String, String> buildRuntimeParameters(final PipelineRun run) {
+            final Map<String, String> parametersMapping = preferenceManager
+                    .getPreference(SystemPreferences.CLUSTER_RUN_PARAMETERS_MAPPING);
+            final Map<String, String> runtimeParameters = new HashMap<>();
+            MapUtils.emptyIfNull(parametersMapping).forEach((runParameterName, argumentName) ->
+                run.getParameter(runParameterName)
+                        .filter(parameter -> StringUtils.isNotBlank(parameter.getValue()))
+                        .flatMap(parameter -> Optional.ofNullable(getRuntimeParameterValue(parameter)))
+                        .filter(StringUtils::isNotBlank)
+                        .ifPresent(parameterValue -> runtimeParameters.put(argumentName, parameterValue))
+            );
+            return runtimeParameters;
         }
 
-        private void setNetworkInterfaceIfSpecified(final InstanceRequest requiredInstance, final PipelineRun run) {
-            run.getParameterValue(TARGET_NETWORK_INTERFACE_PARAMETER_NAME)
-                    .filter(StringUtils::isNotBlank)
-                    .ifPresent(ni -> requiredInstance.getInstance().setNetworkInterfaceId(ni));
+        private String getRuntimeParameterValue(final PipelineRunParameter parameter) {
+            if (!runtimeParameterIsFlag(parameter.getType())) {
+                return parameter.getValue();
+            }
+            return runtimeParameterIsEnabledFlag(parameter.getValue()) ? "True" : null;
         }
 
-        private void setDedicatedFlagIfSpecified(final InstanceRequest requiredInstance, final PipelineRun run) {
-            run.getParameterValue(DEDICATED_INSTANCE_PARAMETER_NAME)
-                    .filter(Boolean.TRUE.toString()::equalsIgnoreCase)
-                    .ifPresent(ni -> requiredInstance.getInstance().setDedicated(true));
+        private boolean runtimeParameterIsFlag(final String type) {
+            return StringUtils.isNotBlank(type) && type.equalsIgnoreCase(BOOLEAN_RUN_PARAMETER_TYPE);
+        }
+
+        private boolean runtimeParameterIsEnabledFlag(final String parameterValue) {
+            return Boolean.TRUE.toString().equalsIgnoreCase(parameterValue);
         }
 
         private int getPoolNodeUpTasksCount() {

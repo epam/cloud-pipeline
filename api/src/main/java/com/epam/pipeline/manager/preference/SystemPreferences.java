@@ -503,7 +503,10 @@ public class SystemPreferences {
             "instance.dns.hosted.zone.base", null, CLUSTER_GROUP, pass);
     public static final StringPreference DEFAULT_EDGE_REGION = new StringPreference(
             "default.edge.region", "eu-central", CLUSTER_GROUP, pass);
-
+    public static final ObjectPreference<Map<String, String>> CLUSTER_RUN_PARAMETERS_MAPPING =
+            new ObjectPreference<>("cluster.run.parameters.mapping", null,
+                    new TypeReference<Map<String, String>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",

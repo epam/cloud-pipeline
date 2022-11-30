@@ -177,6 +177,14 @@ public class PipelineRun extends AbstractSecuredEntity {
                 .findFirst();
     }
 
+    @JsonIgnore
+    public Optional<PipelineRunParameter> getParameter(final String parameterName) {
+        return ListUtils.emptyIfNull(pipelineRunParameters)
+                .stream()
+                .filter(param -> parameterName.equals(param.getName()) && param.getValue() != null)
+                .findFirst();
+    }
+
     public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {
         params = parameters
                 .entrySet().stream()
