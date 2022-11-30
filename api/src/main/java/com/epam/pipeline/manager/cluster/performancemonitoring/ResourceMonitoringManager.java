@@ -65,6 +65,8 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 
+import javax.annotation.PostConstruct;
+
 /**
  * A service component for monitoring resource usage.
  * Polls cpu usage of running pipelines statistics from Kubernetes on a configured schedule.
@@ -88,6 +90,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     @Autowired
     public ResourceMonitoringManager(final ResourceMonitoringManagerCore core) {
         this.core = core;
+    }
+
+    @PostConstruct
+    public void init() {
+        scheduleFixedDelaySecured(core::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
+                "Resource Usage Monitoring");
     }
 
     public void monitorResourceUsage() {
