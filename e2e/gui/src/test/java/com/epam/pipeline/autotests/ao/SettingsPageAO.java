@@ -131,6 +131,7 @@ import static com.epam.pipeline.autotests.utils.Utils.clearTextField;
 import static com.epam.pipeline.autotests.utils.Utils.clickAndSendKeysWithSlashes;
 import static com.epam.pipeline.autotests.utils.Utils.selectAllAndClearTextField;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
@@ -1483,7 +1484,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                      .perform();
             sleep(4, SECONDS);
             if(get(SAVE).isEnabled()) {
-                sleep(10, SECONDS);
                 save();
             }
             return this;
@@ -1549,9 +1549,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             private ClusterTabAO setClusterValue(final String clusterPref, final String value) {
                 By clusterVariable = getByField(clusterPref);
                 setByVariable(value, clusterVariable);
-//                while(!$(clusterVariable).attr("value").equals(value)) {
-//                    sleep(500, MILLISECONDS);
-//                }
+                while(!$(clusterVariable).attr("value").equals(value)) {
+                    sleep(500, MILLISECONDS);
+                }
                 return this;
             }
 
