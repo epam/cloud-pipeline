@@ -1,0 +1,52 @@
+.column,
+.element {
+  line-height: 28px;
+  height: 28px;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.element {
+  z-index: 1;
+}
+
+.column {
+  pointer-events: none;
+}
+
+.directory-contents:not(.drop-target) .element.even {
+  background-color: #f0f0f0;
+}
+
+.element.hovered {
+  background-color: rgba(34, 130, 191, 0.05);
+}
+
+.element.selected {
+  background-color: rgba(34, 130, 191, 0.15) !important;
+}
+
+.element.drop-target {
+  background-color: rgba(34, 130, 191, 0.25) !important;
+}
+
+.icon {
+  margin: 0 4px;
+}
+
+.column.hovered {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.column.selected,
+.column.drop-target {
+  font-weight: bold;
+}
+
+.element-size,
+.element-changed {
+  font-size: smaller;
+}

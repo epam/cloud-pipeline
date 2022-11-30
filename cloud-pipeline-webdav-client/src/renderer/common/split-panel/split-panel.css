@@ -1,0 +1,23 @@
+.split-panel {
+  position: relative;
+}
+
+.split-panel-grid {
+  display: grid;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.split-panel-consumer {
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.split-panel .panel {
+  position: relative;
+}
+
+.split-panel .resizer.resizable {
+  cursor: col-resize;
+}
