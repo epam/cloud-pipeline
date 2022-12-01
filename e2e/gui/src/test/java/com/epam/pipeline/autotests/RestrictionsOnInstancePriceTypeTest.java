@@ -38,6 +38,7 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
@@ -180,6 +181,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                         configuration
                                 .expandTabs(execEnvironmentTab)
                                 .setValue(DISK, customDisk)
+                                .sleep(1, SECONDS)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .selectDockerImage(dockerImage ->
                                         dockerImage
@@ -350,8 +352,10 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                     .ok()
                                                     .also(confirmConfigurationChange())
                                     )
+                                    .ensure(byClassName("ant-modal-body"), not(visible))
+                                    .sleep(2, SECONDS)
                                     .setValue(DISK, customDisk)
-                                    .sleep(3, SECONDS)
+                                    .sleep(2, SECONDS)
                                     .click(SAVE)
                                     .ensureDisable(SAVE)
                                     .ensure(byText("Estimated price per hour:"), visible))
