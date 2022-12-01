@@ -100,8 +100,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public RunInstance scaleUpNode(final AzureRegion region,
                                    final Long runId,
-                                   final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
+                                   final RunInstance instance,
+                                   final Map<String, String> runtimeParameters) {
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap(),
+                runtimeParameters);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptAzureEnvVars(region));
     }
 
@@ -110,8 +112,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                        final String nodeId,
                                        final NodePool nodePool) {
         final RunInstance instance = nodePool.toRunInstance();
-        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(nodePool));
-        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptAzureEnvVars(region));
+        final String command = buildNodeUpCommand(region, nodeId, instance, getPoolLabels(nodePool),
+                Collections.emptyMap());
+        return instanceService.runNodeUpScript(cmdExecutor, null, instance, command,
+                buildScriptAzureEnvVars(region));
     }
 
     @Override
@@ -285,12 +289,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     private String buildNodeUpCommand(final AzureRegion region, final String nodeLabel, final RunInstance instance,
-                                      final Map<String, String> labels) {
-
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
-                        .sshKey(region.getSshPublicKeyPath())
-                        .additionalLabels(labels);
+                                      final Map<String, String> labels, final Map<String, String> runtimeParameters) {
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder = commandService
+                .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), runtimeParameters)
+                .sshKey(region.getSshPublicKeyPath())
+                .additionalLabels(labels);
 
         final Boolean clusterSpotStrategy = instance.getSpot() == null
                 ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)

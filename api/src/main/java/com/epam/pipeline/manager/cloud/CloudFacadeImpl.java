@@ -85,9 +85,11 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public RunInstance scaleUpNode(final Long runId, final RunInstance instance) {
+    public RunInstance scaleUpNode(final Long runId, final RunInstance instance,
+                                   final Map<String, String> runtimeParameters) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
-        final RunInstance scaledUpInstance = getInstanceService(region).scaleUpNode(region, runId, instance);
+        final RunInstance scaledUpInstance = getInstanceService(region)
+                .scaleUpNode(region, runId, instance, runtimeParameters);
         kubernetesManager.createNodeService(scaledUpInstance);
         return scaledUpInstance;
     }
