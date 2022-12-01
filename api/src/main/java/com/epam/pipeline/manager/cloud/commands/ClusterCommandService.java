@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.util.Map;
 
 @Service
 public class ClusterCommandService {
@@ -37,15 +38,17 @@ public class ClusterCommandService {
                                                                  final AbstractCloudRegion region,
                                                                  final Long runId,
                                                                  final RunInstance instance,
-                                                                 final String cloud) {
-        return buildNodeUpCommand(nodeUpScript, region, String.valueOf(runId), instance, cloud);
+                                                                 final String cloud,
+                                                                 final Map<String, String> runtimeParameters) {
+        return buildNodeUpCommand(nodeUpScript, region, String.valueOf(runId), instance, cloud, runtimeParameters);
     }
 
     public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommand(final String nodeUpScript,
                                                                  final AbstractCloudRegion region,
                                                                  final String nodeLabel,
                                                                  final RunInstance instance,
-                                                                 final String cloud) {
+                                                                 final String cloud,
+                                                                 final Map<String, String> runtimeParameters) {
         return NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
@@ -56,8 +59,8 @@ public class ClusterCommandService {
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
                 .cloud(cloud)
-                .availabilityZone(instance.getAvailabilityZone())
-                .networkInterface(instance.getNetworkInterfaceId())
+                .runtimeParameters(runtimeParameters)
+                .prePulledImages(instance.getPrePulledDockerImages())
                 .region(region.getRegionCode());
     }
 

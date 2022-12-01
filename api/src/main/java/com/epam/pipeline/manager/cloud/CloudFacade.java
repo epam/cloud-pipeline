@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface CloudFacade {
-    RunInstance scaleUpNode(Long runId, RunInstance instance);
+    RunInstance scaleUpNode(Long runId, RunInstance instance, Map<String, String> runtimeParameters);
 
     RunInstance scaleUpPoolNode(String nodeId, NodePool node);
 

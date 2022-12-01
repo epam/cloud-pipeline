@@ -104,8 +104,9 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public RunInstance scaleUpNode(final AzureRegion region,
                                    final Long runId,
-                                   final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, runId, instance);
+                                   final RunInstance instance,
+                                   final Map<String, String> runtimeParameters) {
+        final String command = buildNodeUpCommand(region, runId, instance, runtimeParameters);
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
@@ -276,7 +277,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         return envVars;
     }
 
-    private String buildNodeUpCommand(final AzureRegion region, final Long runId, final RunInstance instance) {
+    private String buildNodeUpCommand(final AzureRegion region, final Long runId, final RunInstance instance,
+                                      final Map<String, String> runtimeParameters) {
 
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
@@ -288,6 +290,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
+                .runtimeParameters(runtimeParameters)
                 .region(region.getRegionCode());
 
         final Boolean clusterSpotStrategy = instance.getSpot() == null

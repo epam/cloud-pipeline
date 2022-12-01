@@ -84,9 +84,10 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public RunInstance scaleUpNode(final Long runId, final RunInstance instance) {
+    public RunInstance scaleUpNode(final Long runId, final RunInstance instance,
+                                   final Map<String, String> runtimeParameters) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
-        return getInstanceService(region).scaleUpNode(region, runId, instance);
+        return getInstanceService(region).scaleUpNode(region, runId, instance, runtimeParameters);
     }
 
     @Override

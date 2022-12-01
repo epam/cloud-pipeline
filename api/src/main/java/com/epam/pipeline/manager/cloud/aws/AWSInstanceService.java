@@ -112,8 +112,10 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public RunInstance scaleUpNode(final AwsRegion region,
                                    final Long runId,
-                                   final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
+                                   final RunInstance instance,
+                                   final Map<String, String> runtimeParameters) {
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance,
+                Collections.emptyMap(), runtimeParameters);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptEnvVars(region));
     }
 
@@ -124,7 +126,8 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         final RunInstance instance = node.toRunInstance();
         final Map<String, String> labels = Collections.singletonMap(
                 KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(node.getId()));
-        final String command = buildNodeUpCommand(region, nodeIdLabel, instance, labels);
+        final String command = buildNodeUpCommand(region, nodeIdLabel, instance, labels,
+                Collections.emptyMap());
         return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptEnvVars(region));
     }
 
@@ -315,10 +318,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     private String buildNodeUpCommand(final AwsRegion region,
                                       final String nodeLabel,
                                       final RunInstance instance,
-                                      final Map<String, String> labels) {
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
-                               .sshKey(region.getSshKeyName());
+                                      final Map<String, String> labels,
+                                      final Map<String, String> runtimeParameters) {
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder = commandService
+                .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), runtimeParameters)
+                .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());

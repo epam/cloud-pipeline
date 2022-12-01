@@ -87,10 +87,12 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
+    public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance,
+                                   final Map<String, String> runtimeParameters) {
 
         final String command = commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance,
-                getProviderName()).sshKey(region.getSshPublicKeyPath())
+                getProviderName(), runtimeParameters)
+                .sshKey(region.getSshPublicKeyPath())
                 .isSpot(Optional.ofNullable(instance.getSpot())
                         .orElse(false))
                 .bidPrice(StringUtils.EMPTY)
