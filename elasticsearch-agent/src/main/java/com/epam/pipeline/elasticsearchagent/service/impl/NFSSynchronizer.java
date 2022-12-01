@@ -256,11 +256,11 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                 dataStorage.getId(),
                 new DataStorageTagLoadBatchRequest(
                         files.stream()
-                                .map(DataStorageFile::getPath)
+                                .map(file -> dataStorage.resolveAbsolutePath(file.getPath()))
                                 .map(DataStorageTagLoadRequest::new)
                                 .collect(Collectors.toList())));
         return files.stream()
-                .peek(file -> file.setTags(tags.get(file.getPath())));
+                .peek(file -> file.setTags(tags.get(dataStorage.resolveAbsolutePath(file.getPath()))));
     }
 
     protected IndexRequest createIndexRequest(final DataStorageFile file,
