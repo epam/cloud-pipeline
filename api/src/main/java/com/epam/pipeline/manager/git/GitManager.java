@@ -101,6 +101,7 @@ public class GitManager {
     private static final String ANY_SUB_PATH = "*";
     private static final String ROOT_PATH = "/";
     public static final String REVERT_MESSAGE = "Revert %s to commit %s";
+    private static final String GIT_REPO_EXTENSION = ".git";
 
     private CmdExecutor cmdExecutor = new CmdExecutor();
 
@@ -774,9 +775,9 @@ public class GitManager {
         if (hashedRepositoriesSupported) {
             final GitProjectStorage projectStorage = getDefaultGitlabClient().getProjectStorage(project);
             if (Objects.nonNull(projectStorage)) {
-                return projectStorage.getDiskPath();
+                return projectStorage.getDiskPath() + GIT_REPO_EXTENSION;
             }
         }
-        return Paths.get(namespace, project + ".git").toString();
+        return Paths.get(namespace, project + GIT_REPO_EXTENSION).toString();
     }
 }
