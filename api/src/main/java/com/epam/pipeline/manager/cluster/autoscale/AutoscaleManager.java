@@ -23,6 +23,8 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
+import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameterType;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -95,8 +97,6 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
     @Component
     static class AutoscaleManagerCore {
-        private static final String BOOLEAN_RUN_PARAMETER_TYPE = "boolean";
-
         private final PipelineRunManager pipelineRunManager;
         private final ParallelExecutorService executorService;
         private final AutoscalerService autoscalerService;
@@ -560,32 +560,29 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private Map<String, String> buildRuntimeParameters(final PipelineRun run) {
-            final Map<String, String> parametersMapping = preferenceManager
+            final Map<String, RuntimeParameter> parametersMapping = preferenceManager
                     .getPreference(SystemPreferences.CLUSTER_RUN_PARAMETERS_MAPPING);
             final Map<String, String> runtimeParameters = new HashMap<>();
-            MapUtils.emptyIfNull(parametersMapping).forEach((runParameterName, argumentName) ->
-                run.getParameter(runParameterName)
-                        .filter(parameter -> StringUtils.isNotBlank(parameter.getValue()))
-                        .flatMap(parameter -> Optional.ofNullable(getRuntimeParameterValue(parameter)))
+            MapUtils.emptyIfNull(parametersMapping).forEach((runParameterName, parameter) ->
+                run.getParameterValue(runParameterName)
                         .filter(StringUtils::isNotBlank)
-                        .ifPresent(parameterValue -> runtimeParameters.put(argumentName, parameterValue))
+                        .flatMap(parameterValue ->
+                                Optional.ofNullable(getRuntimeParameterValue(parameter, parameterValue)))
+                        .filter(StringUtils::isNotBlank)
+                        .ifPresent(parameterValue -> runtimeParameters.put(parameter.getArgumentName(), parameterValue))
             );
             return runtimeParameters;
         }
 
-        private String getRuntimeParameterValue(final PipelineRunParameter parameter) {
-            if (!runtimeParameterIsFlag(parameter.getType())) {
-                return parameter.getValue();
+        private String getRuntimeParameterValue(final RuntimeParameter parameter, final String parameterValue) {
+            if (runtimeParameterIsFlag(parameter.getType())) {
+                return Boolean.TRUE.toString().equalsIgnoreCase(parameterValue) ? "True" : null;
             }
-            return runtimeParameterIsEnabledFlag(parameter.getValue()) ? "True" : null;
+            return parameterValue;
         }
 
-        private boolean runtimeParameterIsFlag(final String type) {
-            return StringUtils.isNotBlank(type) && type.equalsIgnoreCase(BOOLEAN_RUN_PARAMETER_TYPE);
-        }
-
-        private boolean runtimeParameterIsEnabledFlag(final String parameterValue) {
-            return Boolean.TRUE.toString().equalsIgnoreCase(parameterValue);
+        private boolean runtimeParameterIsFlag(final RuntimeParameterType type) {
+            return Objects.nonNull(type) && type == RuntimeParameterType.BOOLEAN;
         }
 
         private int getPoolNodeUpTasksCount() {
