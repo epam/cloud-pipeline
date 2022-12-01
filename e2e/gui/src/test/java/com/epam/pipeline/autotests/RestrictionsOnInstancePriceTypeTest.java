@@ -693,8 +693,9 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .switchToCluster()
-                .setClusterAllowedStringPreference(pref, value)
+                .setPreference(pref, value, true)
+//                .switchToCluster()
+//                .setClusterAllowedStringPreference(pref, value)
                 .saveIfNeeded();
     }
 
