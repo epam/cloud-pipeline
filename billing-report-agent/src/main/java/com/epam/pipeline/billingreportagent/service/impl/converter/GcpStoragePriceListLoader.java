@@ -48,11 +48,10 @@ public class GcpStoragePriceListLoader implements StoragePriceListLoader{
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() throws IOException, GeneralSecurityException {
-        final String accessToken = GoogleCredential.getApplicationDefault().getAccessToken();
         final Cloudbilling cloudbilling = new Cloudbilling(GoogleNetHttpTransport.newTrustedTransport(),
-                                                           JacksonFactory.getDefaultInstance(),
-                                                           null);
-        final ListServicesResponse services = cloudbilling.services().list().setAccessToken(accessToken).execute();
+                JacksonFactory.getDefaultInstance(),
+                GoogleCredential.getApplicationDefault());
+        final ListServicesResponse services = cloudbilling.services().list().execute();
         final Service cloudStorageService = services.getServices().stream()
             .filter(service -> service.getDisplayName().equals(GCP_STORAGE_SERVICES_FAMILY))
             .findAny()
@@ -61,7 +60,6 @@ public class GcpStoragePriceListLoader implements StoragePriceListLoader{
         final ListSkusResponse skuResponse = cloudbilling.services()
             .skus()
             .list(cloudStorageService.getName())
-            .setAccessToken(accessToken)
             .execute();
 
         return skuResponse.getSkus().stream()
