@@ -51,6 +51,7 @@ public class StoragePricingService {
                 defaultPriceGb = calculateDefaultPriceGb();
             }
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             throw new IllegalStateException(String.format("Can't instantiate %s storage price list!",
                                                           priceListLoader.getProvider().name()));
         }
