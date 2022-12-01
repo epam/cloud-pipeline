@@ -685,6 +685,9 @@ public class SystemPreferences {
             "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
             FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
+    public static final StringPreference FACETED_FILTER_DISPLAY_NAME_TAG = new StringPreference(
+            "faceted.filter.display.name.tag", null, FACETED_FILTER_GROUP, pass, true);
+
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
                                                                   BASE_URLS_GROUP, PreferenceValidators.isValidUrl);
