@@ -67,7 +67,7 @@ public class GcpStoragePriceListLoader implements StoragePriceListLoader{
             .map(this::convertSku)
             .map(Map::entrySet)
             .flatMap(Set::stream)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (k1, k2) -> k1));
     }
 
     private Map<String, StoragePricing> convertSku(final Sku sku) {
