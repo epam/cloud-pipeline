@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.resource;
 import com.epam.pipeline.acl.resource.StaticResourceApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.sharing.Modification;
 import com.epam.pipeline.exception.InvalidPathException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -27,6 +28,7 @@ import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.poi.util.ReplacingInputStream;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,10 +37,12 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.FileNameMap;
 import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -61,7 +65,7 @@ public class StaticResourcesController extends AbstractRestController {
             final String fileName = FilenameUtils.getName(content.getName());
             final MediaType mediaType = getMediaType(fileName);
 
-            writeStreamToResponse(response, content.getContent(), fileName, mediaType,
+            writeStreamToResponse(response, getCustomContent(content.getContent()), fileName, mediaType,
                     !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(fileName));
         } catch (InvalidPathException e) {
             response.setHeader("Location", request.getRequestURI() + ProviderUtils.DELIMITER);
@@ -71,12 +75,28 @@ public class StaticResourcesController extends AbstractRestController {
 
     private Map<String, String> getCustomHeaders(final String fileName) {
         final Map<String, Map<String, String>> headers = preferenceManager.getPreference(
-                SystemPreferences.DATA_SHARING_STATIC_HEADERS);
+                SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS).getHeaders();
         final String extension = FilenameUtils.getExtension(fileName);
         if (MapUtils.isEmpty(headers) || !headers.containsKey(extension)) {
             return Collections.emptyMap();
         }
         return headers.get(extension);
+    }
+
+    private InputStream getCustomContent(final InputStream content) {
+        final List<Modification> modifications = preferenceManager.getPreference(
+                SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS).getModifications();
+        return replace(content, modifications, 0);
+    }
+
+    private InputStream replace(InputStream content, List<Modification> modifications, int n) {
+        if (n == modifications.size()) {
+            return content;
+        } else {
+            Modification modification = modifications.get(n);
+            return replace(new ReplacingInputStream(content,
+                    modification.getPattern(), modification.getReplacement()), modifications, n+1);
+        }
     }
 
     private MediaType getMediaType(final String fileName) {
