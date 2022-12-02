@@ -53,6 +53,7 @@ import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
+import {applyUserCapabilities} from '../../../pipelines/launch/form/utilities/run-capabilities';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -239,6 +240,11 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo.runNameAlias) {
       payload.runNameAlias = this.state.runToolInfo.runNameAlias;
     }
+    payload.params = await applyUserCapabilities(
+      payload.params || {},
+      this.props.preferences,
+      this.state.runToolInfo.tool.platform
+    );
     if (await run(this)(payload, false)) {
       this.setState({
         runToolInfo: null

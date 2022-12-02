@@ -103,6 +103,7 @@ import RunCapabilities, {
   addCapability,
   applyCapabilities,
   getEnabledCapabilities,
+  getUserCapabilities,
   isCustomCapability,
   RUN_CAPABILITIES
 } from './utilities/run-capabilities';
@@ -328,6 +329,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     autoPause: true,
     showLaunchCommands: false,
     runCapabilities: [],
+    userRunCapabilities: [],
+    userRunCapabilitiesPending: true,
     useResolvedParameters: false,
     notifications: [],
     runNameAlias: undefined
@@ -491,6 +494,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       hasFeedback
     >
       <RunCapabilities
+        disabled={this.state.userRunCapabilitiesPending}
         values={this.state.runCapabilities}
         onChange={this.onRunCapabilitiesSelect}
         dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
@@ -877,7 +881,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
-    const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
+    let runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
+    if (
+      !this.props.editConfigurationMode
+    ) {
+      runCapabilities = [...new Set([
+        ...(runCapabilities || []),
+        ...(this.state.userRunCapabilities || [])
+      ])];
+    }
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -5333,7 +5345,32 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         prevState.fireCloudMethodConfigurationSnapshot);
   };
 
+  fetchUserRunCapabilities = () => {
+    this.setState({
+      userRunCapabilitiesPending: true
+    }, () => {
+      getUserCapabilities()
+        .then((userRunCapabilities = []) => {
+          let {runCapabilities} = this.state;
+          if (
+            !this.props.editConfigurationMode
+          ) {
+            runCapabilities = [...new Set([
+              ...(runCapabilities || []),
+              ...userRunCapabilities
+            ])];
+          }
+          this.setState({
+            userRunCapabilities,
+            runCapabilities,
+            userRunCapabilitiesPending: false
+          });
+        });
+    });
+  };
+
   componentDidMount () {
+    this.fetchUserRunCapabilities();
     this.reset(true);
     this.evaluateEstimatedPrice({});
     if (this.props.parameters && this.props.parameters.docker_image) {
