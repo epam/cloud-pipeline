@@ -595,7 +595,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
         return false;
       }
       if (refresh) {
-        this.props.metadata.fetch();
+        await this.props.metadata.fetch();
       }
       return true;
     }

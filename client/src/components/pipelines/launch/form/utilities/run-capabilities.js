@@ -20,6 +20,7 @@ import {
 } from './parameters';
 import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
+import {mergeUserRoleAttributes} from '../../../../../utils/attributes/merge-user-role-attributes';
 import styles from './run-capabilities.css';
 
 export const RUN_CAPABILITIES = {
@@ -255,6 +256,9 @@ class RunCapabilities extends React.Component {
     const filteredValues = (values || [])
       .filter(value => capabilities.find(o => o.value === value));
     const toggleValue = (value) => {
+      if (disabled) {
+        return;
+      }
       const selected = [...filteredValues];
       const index = selected.indexOf(value);
       if (index >= 0) {
@@ -265,6 +269,9 @@ class RunCapabilities extends React.Component {
       this.onSelectionChanged(selected);
     };
     const onCapabilityClick = ({domEvent, key}) => {
+      if (disabled) {
+        return;
+      }
       domEvent.stopPropagation();
       domEvent.preventDefault();
       toggleValue(key);
@@ -390,6 +397,10 @@ export class RunCapabilitiesMetadataPreference extends React.Component {
     onChange: PropTypes.func
   };
 
+  state = {
+    disabled: false
+  };
+
   get values () {
     const {metadata = {}} = this.props;
     const {value} = metadata;
@@ -401,11 +412,26 @@ export class RunCapabilitiesMetadataPreference extends React.Component {
 
   onChange = (values = []) => {
     const {onChange} = this.props;
-    onChange && onChange(values.join(','));
+    if (typeof onChange !== 'function') {
+      return;
+    }
+    this.setState({
+      disabled: true
+    }, () => {
+      const result = onChange(values.join(','));
+      if (result && typeof result.then === 'function') {
+        result
+          .catch(() => {})
+          .then(() => this.setState({disabled: false}));
+      } else {
+        this.setState({disabled: false});
+      }
+    });
   };
 
   render () {
     const {readOnly} = this.props;
+    const {disabled} = this.state;
     return (
       <div className={styles.runCapabilitiesMetadataContainer}>
         <div
@@ -415,7 +441,7 @@ export class RunCapabilitiesMetadataPreference extends React.Component {
           Run capabilities:
         </div>
         <RunCapabilities
-          disabled={readOnly}
+          disabled={readOnly || disabled}
           values={this.values}
           onChange={this.onChange}
           className={styles.runCapabilitiesMetadataInput}
@@ -514,6 +540,27 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
       dependencies.forEach(dependency => enable(dependency));
     });
   return parameters;
+}
+
+/**
+ * @returns {Promise<string[]>}
+ */
+export async function getUserCapabilities () {
+  const capabilities = await mergeUserRoleAttributes(CP_CAP_RUN_CAPABILITIES);
+  return (capabilities || '')
+    .split(/[,;]/)
+    .map((o) => o.trim())
+    .filter((o) => o.length);
+}
+
+export async function applyUserCapabilities (parameters, preferences, platform) {
+  const userCapabilities = await getUserCapabilities();
+  return applyCapabilities(
+    {...(parameters || {})},
+    userCapabilities,
+    preferences,
+    platform
+  );
 }
 
 export function applyCustomCapabilitiesParameters (parameters, preferences) {
