@@ -54,6 +54,7 @@ import InstanceTypesManagementForm from '../InstanceTypesManagementForm';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import UserName from '../../../special/UserName';
 import ShareWithForm from '../../../runs/logs/forms/ShareWithForm';
+import {CP_CAP_RUN_CAPABILITIES} from '../../../pipelines/launch/form/utilities/parameters';
 import styles from './EditUserRolesDialog.css';
 
 @roleModel.authenticationInfo
@@ -974,6 +975,7 @@ export default class EditUserRolesDialog extends React.Component {
             applyChanges={ApplyChanges.callback}
             onChange={this.onChangeMetadata}
             value={metadata}
+            extraKeys={[CP_CAP_RUN_CAPABILITIES]}
           />
           <div
             key="INSTANCE_MANAGEMENT"

@@ -86,6 +86,7 @@ import PlatformIcon from './platform-icon';
 import HiddenObjects from '../../utils/hidden-objects';
 import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
 import Markdown from '../special/markdown';
+import {applyUserCapabilities} from '../pipelines/launch/form/utilities/run-capabilities';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
@@ -1497,6 +1498,11 @@ export default class Tool extends localization.LocalizedReactComponent {
     ]);
     const info = this.getVersionRunningInformation(version || this.defaultTag);
     const platform = this.defaultVersionPlatform;
+    payload.params = await applyUserCapabilities(
+      payload.params || {},
+      this.props.preferences,
+      platform
+    );
     if (await run(this)(
       payload,
       true,
