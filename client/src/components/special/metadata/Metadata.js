@@ -43,6 +43,10 @@ import ItemsTable, {isJson} from './items-table';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel';
 import localization from '../../../utils/localization';
+import {
+  RunCapabilitiesMetadataPreference,
+  METADATA_KEY as RUN_CAPABILITIES
+} from '../../pipelines/launch/form/utilities/run-capabilities';
 import UserName from '../../special/UserName';
 import FSNotifications from './special/fs-notifications';
 import LimitMountsUserPreference from './special/limit-mounts';
@@ -69,7 +73,8 @@ const SpecialTags = {
   [FSNotifications.metatadaKey]: FSNotifications,
   [LimitMountsUserPreference.metatadaKey]: LimitMountsUserPreference,
   [RequestDavAccess.metatadaKey]: RequestDavAccess,
-  [SshThemeSelect.metadataKey]: SshThemeSelect
+  [SshThemeSelect.metadataKey]: SshThemeSelect,
+  [RUN_CAPABILITIES]: RunCapabilitiesMetadataPreference
 };
 
 const metadataLoad = (params, metadataCache, dataStorageCache) => {

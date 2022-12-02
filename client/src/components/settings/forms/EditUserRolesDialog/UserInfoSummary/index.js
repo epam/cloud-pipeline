@@ -409,7 +409,7 @@ export default class UserInfoSummary extends React.Component {
     const nexNavigationDisabled = moment(period).add(1, 'M')
       .isSameOrAfter(moment(getCurrentDate()));
     return (
-      <p className={styles.title}>
+      <div className={styles.title}>
         <Button
           onClick={this.changePeriod(-1)}
           size="small"
@@ -429,7 +429,7 @@ export default class UserInfoSummary extends React.Component {
         >
           <Icon type="right" />
         </Button>
-      </p>
+      </div>
     );
   };
 

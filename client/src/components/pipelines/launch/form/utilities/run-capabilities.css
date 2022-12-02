@@ -44,3 +44,13 @@
   font-size: x-small;
   cursor: pointer;
 }
+
+.run-capabilities-metadata-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.run-capabilities-metadata-input {
+  flex: 1 1 0%;
+}

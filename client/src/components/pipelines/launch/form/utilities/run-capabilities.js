@@ -15,7 +15,8 @@ import {
   CP_DISABLE_HYPER_THREADING,
   CP_CAP_DCV,
   CP_CAP_DCV_WEB,
-  CP_CAP_DCV_DESKTOP
+  CP_CAP_DCV_DESKTOP,
+  CP_CAP_RUN_CAPABILITIES
 } from './parameters';
 import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
@@ -382,6 +383,49 @@ class RunCapabilities extends React.Component {
   }
 }
 
+export class RunCapabilitiesMetadataPreference extends React.Component {
+  static propTypes = {
+    readOnly: PropTypes.bool,
+    metadata: PropTypes.shape({value: PropTypes.string}),
+    onChange: PropTypes.func
+  };
+
+  get values () {
+    const {metadata = {}} = this.props;
+    const {value} = metadata;
+    if (value && typeof value === 'string') {
+      return value.split(',');
+    }
+    return [];
+  }
+
+  onChange = (values = []) => {
+    const {onChange} = this.props;
+    onChange && onChange(values.join(','));
+  };
+
+  render () {
+    const {readOnly} = this.props;
+    return (
+      <div className={styles.runCapabilitiesMetadataContainer}>
+        <div
+          className="cp-text"
+          style={{fontWeight: 'bold', marginRight: 5}}
+        >
+          Run capabilities:
+        </div>
+        <RunCapabilities
+          disabled={readOnly}
+          values={this.values}
+          onChange={this.onChange}
+          className={styles.runCapabilitiesMetadataInput}
+          style={{minHeight: '28px', lineHeight: '28px'}}
+        />
+      </div>
+    );
+  }
+}
+
 export function isCapability (parameterName, preferences) {
   if (Object.values(RUN_CAPABILITIES_PARAMETERS).includes(parameterName)) {
     return true;
@@ -616,4 +660,5 @@ CapabilitiesDisclaimer.propTypes = {
 };
 
 export {CapabilitiesDisclaimer};
+export {CP_CAP_RUN_CAPABILITIES as METADATA_KEY};
 export default RunCapabilities;
