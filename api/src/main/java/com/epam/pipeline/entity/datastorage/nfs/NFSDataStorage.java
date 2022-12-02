@@ -59,6 +59,7 @@ public class NFSDataStorage extends AbstractDataStorage {
         return false;
     }
 
+    // TODO: related to storage object tagging, see https://github.com/epam/cloud-pipeline/issues/2943
     @Override
     public String getRoot() {
         return NFSHelper.getNfsRootPath(getPath());

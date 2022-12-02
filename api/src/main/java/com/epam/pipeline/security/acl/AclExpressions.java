@@ -83,9 +83,6 @@ public final class AclExpressions {
     public static final String STORAGE_PATHS_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.hasDataStoragePathsPermission(returnObject, 'READ')";
 
-    public static final String FILTER_TAG_SEARCH_RESULT_BY_STORAGE_ID = ADMIN_ONLY + OR +
-            "@storagePermissionManager.checkTagSearchResultPermission(filterObject, 'READ')";
-
     public static final String RUN_COMMIT_EXECUTE =
         "hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
             + " AND hasPermission(#registryId, 'com.epam.pipeline.entity.pipeline.DockerRegistry', 'WRITE'))";

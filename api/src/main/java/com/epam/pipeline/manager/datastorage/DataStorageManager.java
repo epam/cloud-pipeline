@@ -146,6 +146,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
     public static final String DAV_MOUNT_TAG = "dav-mount";
     private static final String SHARED_STORAGE_SUFFIX = "share";
+    private static final String READ_PERMISSION = "READ";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -571,7 +572,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private List<String> adjustPermissions(final List<String> permissions) {
         return Optional.ofNullable(permissions)
                 .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> Collections.singletonList("READ"));
+                .orElseGet(() -> Collections.singletonList(READ_PERMISSION));
     }
 
     private Duration resolveDuration(final long hours) {
@@ -764,44 +765,42 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageFile;
     }
 
-    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
-            final DataStorageObjectSearchByTagRequest request) {
-        final Set<Long> storageIdsToFilter = new HashSet<>(CollectionUtils.emptyIfNull(request.getDatastorageIds()));
-        final List<AbstractDataStorage> storagesToSearch = CollectionUtils.isNotEmpty(request.getDatastorageIds())
-                ? getDatastoragesByIds(request.getDatastorageIds())
-                : Collections.emptyList();
-        final Map<Long, List<DataStorageTag>> rootSearchResult =
-                tagProviderManager.search(storagesToSearch, request.getTags());
-        if (MapUtils.isNotEmpty(rootSearchResult)) {
+    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(final DataStorageObjectSearchByTagRequest req) {
+        final Set<Long> requestedStorageIds = new HashSet<>(CollectionUtils.emptyIfNull(req.getDatastorageIds()));
+        final Map<Long, List<DataStorageTag>> searchTagsResult =
+                tagProviderManager.search(getDatastoragesByIds(req.getDatastorageIds()), req.getTags());
+
+        if (MapUtils.isNotEmpty(searchTagsResult)) {
             // by tagProviderManager.search we found tags for datastorage_root, and now we need to map it on
-            // actual datastorages
+            // actual storages
+            final Map<Long, List<AbstractDataStorage>> storagesByRootId = dataStorageDao
+                .loadDataStoragesByRootIds(searchTagsResult.keySet()).stream()
+                .filter(dataStorage -> checkStoragePermissions(dataStorage, READ_PERMISSION))
+                .filter(ds -> CollectionUtils.isEmpty(requestedStorageIds) || requestedStorageIds.contains(ds.getId()))
+                .collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
+
             final Map<Long, List<DataStorageTag>> results = new HashMap<>();
-            final Map<Long, List<AbstractDataStorage>> storagesByRootId = dataStorageDao.loadDataStoragesByRootIds(
-                    rootSearchResult.keySet()
-            ).stream().filter(
-                ds -> CollectionUtils.isEmpty(storageIdsToFilter) || storageIdsToFilter.contains(ds.getId())
-            ).collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
-
-            rootSearchResult.forEach((rootId, rootStorageTags) ->
-                rootStorageTags.forEach(dataStorageTag -> {
-                    final List<AbstractDataStorage> storages = storagesByRootId.get(rootId);
-                    storages.stream().filter(
-                        dataStorage -> dataStorageTag.getObject().getPath().startsWith(dataStorage.getPrefix())
-                    ).findFirst().ifPresent(dataStorage -> {
-                        final DataStorageTag storageObjectTag = new DataStorageTag(
-                            new DataStorageObject(
-                                    dataStorage.resolveRelativePath(dataStorageTag.getObject().getPath()),
-                                    dataStorageTag.getObject().getVersion()
-                            ),
-                            dataStorageTag.getKey(), dataStorageTag.getValue()
-                        );
-                        results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageObjectTag);
-                    });
-                })
+            searchTagsResult.forEach(
+                (rootId, tags) -> tags.forEach(
+                    rootTag -> storagesByRootId.getOrDefault(rootId, Collections.emptyList())
+                        .stream()
+                        .filter(dataStorage -> rootTag.getObject().getPath().startsWith(dataStorage.getPrefix()))
+                        .max(Comparator.comparingInt(s -> s.getPrefix().length()))
+                        .ifPresent(dataStorage -> {
+                            final DataStorageTag storageTag = new DataStorageTag(
+                                new DataStorageObject(
+                                        dataStorage.resolveRelativePath(rootTag.getObject().getPath()),
+                                        rootTag.getObject().getVersion()
+                                ),
+                                rootTag.getKey(), rootTag.getValue()
+                            );
+                            results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageTag);
+                        })
+                )
             );
-
             return results.entrySet().stream()
-                    .map(e -> new DataStorageTagSearchResult(e.getKey(), e.getValue())).collect(Collectors.toList());
+                    .map(e -> new DataStorageTagSearchResult(e.getKey(), e.getValue()))
+                    .collect(Collectors.toList());
         } else {
             return Collections.emptyList();
         }
@@ -952,6 +951,10 @@ public class DataStorageManager implements SecuredEntityManager {
             default:
                 return false;
         }
+    }
+
+    private boolean checkStoragePermissions(final AbstractDataStorage dataStorage, final String permission) {
+        return permissionManager.storagePermission(dataStorage, permission);
     }
 
     private Long getCloudRegionId(final AbstractDataStorage dataStorage) {

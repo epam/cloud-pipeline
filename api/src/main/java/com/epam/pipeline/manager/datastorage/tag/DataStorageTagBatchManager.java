@@ -44,6 +44,17 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Performs batch operations with storage objects to insert, update, list and delete tags for these objects.
+ *
+ * @implNote All these operations expects from client to provide full paths of the storage object
+ *           (full path is a path from datastorage_root of storage and not from storage itself) with in BatchRequests
+ *           for example:
+ *           @see DataStorageTagBatchManager#upsert(Long, DataStorageTagUpsertBatchRequest) and
+ *           @see DataStorageTagDao to get more information on actual logic
+ *  TODO: Maybe it is good idea to expand API to allow to specify flag 'relative' on BatchRequest level,
+ *  TODO: to be able to automatically performs such resolving of paths on server side rather that client side
+ * */
 @Service
 @RequiredArgsConstructor
 public class DataStorageTagBatchManager {
