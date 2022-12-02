@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
@@ -136,7 +137,9 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
-        $(".ant-table-tbody").findAll("tr")
+        $(".ant-table-tbody")
+                .waitUntil(visible, C.DEFAULT_TIMEOUT)
+                .findAll("tr")
                 .shouldHaveSize(3)
                 .get(0).shouldHave(text(folderName));
         return this;
