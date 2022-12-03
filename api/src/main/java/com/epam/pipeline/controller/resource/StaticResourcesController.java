@@ -26,6 +26,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.util.ReplacingInputStream;
@@ -86,7 +87,7 @@ public class StaticResourcesController extends AbstractRestController {
     private InputStream getCustomContent(final InputStream content) {
         final List<Modification> modifications = preferenceManager.getPreference(
                 SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS).getModifications();
-        return replace(content, modifications, 0);
+        return CollectionUtils.isNotEmpty(modifications) ? replace(content, modifications, 0) : content;
     }
 
     private InputStream replace(InputStream content, List<Modification> modifications, int n) {
