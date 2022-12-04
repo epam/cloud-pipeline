@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">4</div>
+<div class="counter">3</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">3</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h32m13.35s</div>
+<div class="counter">1h38m45.84s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">77%</div>
+<div class="percent">85%</div>
 <p>successful</p>
 </div>
 </td>
@@ -78,8 +78,8 @@
 <span class="code">
 <pre>ListSizeMismatch : expected: = 1, actual: 0, collection: By.id: search-results/.earch__search-result-item
 Elements: []
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1669950686934.69.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1669950686934.69.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1670161648751.46.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1670161648751.46.html
 Timeout: 6 s.
 	at com.codeborne.selenide.collections.ListSize.fail(ListSize.java:24)
 	at com.codeborne.selenide.ElementsCollection.waitUntil(ElementsCollection.java:98)
@@ -110,8 +110,8 @@ Timeout: 6 s.
 <span class="code">
 <pre>Element should be visible {By.id: search-results}
 Element: '&lt;div class=&quot;earch__search-results&quot; id=&quot;search-results&quot; displayed:false&gt;&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1669950850322.70.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1669950850322.70.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1670161812239.47.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1670161812239.47.html
 Timeout: 150 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -145,8 +145,8 @@ Timeout: 150 s.
 <span class="code">
 <pre>Element should be visible {By.id: search-results}
 Element: '&lt;div class=&quot;earch__search-results&quot; id=&quot;search-results&quot; displayed:false&gt;&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1669954758562.78.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1669954758562.78.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1670166418770.52.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1670166418770.52.html
 Timeout: 150 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -174,68 +174,6 @@ Timeout: 150 s.
 </pre>
 </span>
 </div>
-<div class="test">
-<a name="searchForPipeline - EPMCMBIBPC-2658"></a>
-<h3 class="failures">searchForPipeline - EPMCMBIBPC-2658</h3>
-<span class="code">
-<pre>Element not found {By.id: navigation-button-library}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1669951670972.71.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1669951670972.71.html
-Timeout: 150 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item selected&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.NavigationMenuAO.library(NavigationMenuAO.java:39)
-	at com.epam.pipeline.autotests.mixins.Navigation.library(Navigation.java:51)
-	at com.epam.pipeline.autotests.GlobalSearchTest.searchForPipeline(GlobalSearchTest.java:188)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item selected&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '372ed14e4848', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: c34664d117990a2afc4abd55a3d9c624
-	at sun.reflect.GeneratedConstructorAccessor24.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 18 more
-</pre>
-</span>
-</div>
 </div>
 <div id="tab1" class="tab">
 <h2>Tests</h2>
@@ -249,107 +187,107 @@ Session ID: c34664d117990a2afc4abd55a3d9c624
 </thead>
 <tr>
 <td class="failures">folderSearch - EPMCMBIBPC-2654</td>
-<td>47.556s</td>
+<td>20.489s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">folderSearchByEnterKey - EPMCMBIBPC-2655</td>
-<td>2m41.92s</td>
+<td>2m42.06s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">identicalNamesSearch - EPMCMBIBPC-2671</td>
-<td>9m28.88s</td>
+<td>9m30.49s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">issueSearch - EPMCMBIBPC-2670</td>
-<td>9m34.26s</td>
+<td>9m34.30s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">negativeFolderSearch - EPMCMBIBPC-2656</td>
-<td>13.956s</td>
+<td>14.816s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchAfterDeleting - EPMCMBIBPC-2676</td>
-<td>7m27.00s</td>
+<td>7m28.23s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForCompletedToolRun - EPMCMBIBPC-2669</td>
-<td>9m41.11s</td>
+<td>9m42.92s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForDetachConfigByConfiguration - EPMCMBIBPC-2673</td>
-<td>20.769s</td>
+<td>20.121s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForDetachConfigByName - EPMCMBIBPC-2672</td>
-<td>20.486s</td>
+<td>19.446s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">searchForFilesAndFoldersInStorage - EPMCMBIBPC-2666</td>
-<td>5m9.55s</td>
+<td>5m9.66s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="failures">searchForPipeline - EPMCMBIBPC-2658</td>
-<td>3m2.02s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
-<td class="skipped">searchForPipelineRun</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">searchForPipelineRunByID</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="success">searchForPipelineRunOverStoragePath - EPMCMBIBPC-2664</td>
-<td>16m34.78s</td>
+<td class="success">searchForPipeline - EPMCMBIBPC-2658</td>
+<td>3m9.78s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">searchForPipelineWithRuns</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">searchForPipelineRun - EPMCMBIBPC-2663</td>
+<td>22.101s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">searchForPipelineRunByID - EPMCMBIBPC-2665</td>
+<td>14.878s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">searchForPipelineRunOverStoragePath - EPMCMBIBPC-2664</td>
+<td>12m2.94s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">searchForPipelineWithRuns - EPMCMBIBPC-2662</td>
+<td>10m58.74s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForStorage - EPMCMBIBPC-2660</td>
-<td>26.711s</td>
+<td>27.154s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForStorageWithChangedName - EPMCMBIBPC-2661</td>
-<td>9m34.01s</td>
+<td>9m34.10s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForTool - EPMCMBIBPC-2667</td>
-<td>24.006s</td>
+<td>23.366s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchForToolRun - EPMCMBIBPC-2668</td>
-<td>8m46.65s</td>
+<td>8m30.55s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchResultCancel - EPMCMBIBPC-2657</td>
-<td>16.657s</td>
+<td>17.270s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">searchWithSpecialExpressions - EPMCMBIBPC-2675</td>
-<td>7m23.02s</td>
+<td>7m22.44s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -357,10 +295,12 @@ Session ID: c34664d117990a2afc4abd55a3d9c624
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 34720 from [34720]
-Returns latest run with runId 34721 from [34720, 34721]
-Returns latest run with runId 34721 from [34720, 34721]
-Returns latest run with runId 34721 from [34720, 34721]
+<pre>Returns latest run with runId 34886 from [34886]
+Returns latest run with runId 34887 from [34886, 34887]
+Returns latest run with runId 34888 from [34886, 34887, 34888]
+Returns latest run with runId 34890 from [34886, 34887, 34888, 34889, 34890]
+Returns latest run with runId 34890 from [34886, 34887, 34888, 34889, 34890]
+Returns latest run with runId 34890 from [34886, 34887, 34888, 34889, 34890]
 </pre>
 </span>
 </div>
@@ -372,7 +312,7 @@ Returns latest run with runId 34721 from [34720, 34721]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 2, 2022 11:52:27 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 4, 2022 10:24:49 PM</p>
 </div>
 </div>
 </body>
