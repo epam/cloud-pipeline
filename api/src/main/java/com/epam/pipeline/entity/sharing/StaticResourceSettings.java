@@ -14,15 +14,12 @@
  */
 package com.epam.pipeline.entity.sharing;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
 
 @Data
-@JsonTypeName("html")
 public class StaticResourceSettings {
-    public Map<String, Map<String, String>> headers;
+    public Map<String, String> headers;
     public List<Modification> modifications;
 }

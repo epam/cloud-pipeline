@@ -717,10 +717,10 @@ public class SystemPreferences {
             new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
                     new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
                     isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
-    public static final ObjectPreference<StaticResourceSettings> DATA_SHARING_STATIC_RESOURCE_SETTINGS =
+    public static final ObjectPreference<Map<String, StaticResourceSettings>> DATA_SHARING_STATIC_RESOURCE_SETTINGS =
             new ObjectPreference<>("data.sharing.static.resource.settings", null,
-                    new TypeReference<StaticResourceSettings>() {}, DATA_SHARING_GROUP,
-                    isNullOrValidJson(new TypeReference<StaticResourceSettings>() {}));
+                    new TypeReference<Map<String, StaticResourceSettings>>() {}, DATA_SHARING_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, StaticResourceSettings>>() {}));
     public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
             new StringPreference("data.sharing.static.resource.template.path", "classpath:views/folder.vm",
                     DATA_SHARING_GROUP, pass);

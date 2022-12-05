@@ -20,6 +20,7 @@ import com.epam.pipeline.acl.resource.StaticResourceApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.sharing.Modification;
+import com.epam.pipeline.entity.sharing.StaticResourceSettings;
 import com.epam.pipeline.exception.InvalidPathException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -65,28 +66,31 @@ public class StaticResourcesController extends AbstractRestController {
                     request.getPathInfo().replaceFirst(STATIC_RESOURCES, ""));
             final String fileName = FilenameUtils.getName(content.getName());
             final MediaType mediaType = getMediaType(fileName);
+            final StaticResourceSettings settings = getStaticResourceSettings(fileName);
 
-            writeStreamToResponse(response, getCustomContent(content.getContent()), fileName, mediaType,
-                    !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(fileName));
+            writeStreamToResponse(response, getCustomContent(content.getContent(), settings), fileName, mediaType,
+                    !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(settings));
         } catch (InvalidPathException e) {
             response.setHeader("Location", request.getRequestURI() + ProviderUtils.DELIMITER);
             response.setStatus(HttpStatus.FOUND.value());
         }
     }
 
-    private Map<String, String> getCustomHeaders(final String fileName) {
-        final Map<String, Map<String, String>> headers = preferenceManager.getPreference(
-                SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS).getHeaders();
+    private StaticResourceSettings getStaticResourceSettings(final String fileName) {
+        final Map<String, StaticResourceSettings> settings = preferenceManager.getPreference(
+                SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS);
         final String extension = FilenameUtils.getExtension(fileName);
-        if (MapUtils.isEmpty(headers) || !headers.containsKey(extension)) {
-            return Collections.emptyMap();
-        }
-        return headers.get(extension);
+        return (MapUtils.isEmpty(settings) || !settings.containsKey(extension)) ? null : settings.get(extension);
     }
 
-    private InputStream getCustomContent(final InputStream content) {
-        final List<Modification> modifications = preferenceManager.getPreference(
-                SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS).getModifications();
+    private Map<String, String> getCustomHeaders(final StaticResourceSettings settings) {
+        return settings == null ? Collections.emptyMap() : settings.getHeaders();
+    }
+
+    private InputStream getCustomContent(final InputStream content,
+                                         final StaticResourceSettings settings) {
+        final List<Modification> modifications = settings == null ? Collections.emptyList() :
+                settings.getModifications();
         return CollectionUtils.isNotEmpty(modifications) ? replace(content, modifications, 0) : content;
     }
 
