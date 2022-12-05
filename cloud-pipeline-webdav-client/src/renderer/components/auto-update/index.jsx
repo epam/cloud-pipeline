@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { CloseOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import useAutoUpdate from './use-auto-update';
 import './auto-update.css';
 
@@ -54,9 +55,13 @@ function AutoUpdate(
               <b>{appName}</b>
               {' is available. '}
               {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-              <a onClick={update}>
+              <Button
+                type="link"
+                onClick={update}
+                style={{ padding: 4 }}
+              >
                 Install updates
-              </a>
+              </Button>
             </div>
           )
         }
