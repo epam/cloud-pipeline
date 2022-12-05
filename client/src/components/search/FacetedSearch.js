@@ -123,12 +123,7 @@ class FacetedSearch extends React.Component {
   get nameTag () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
-      const tag = preferences.displayNameTag;
-      const isActualTag = !!this.extraColumns
-        .find(({key}) => tag && key === tag);
-      return isActualTag
-        ? tag
-        : undefined;
+      return preferences.displayNameTag;
     }
     return undefined;
   }
@@ -431,6 +426,7 @@ class FacetedSearch extends React.Component {
                 metadataFields: facets
                   .map(f => f.name)
                   .filter(facet => facet !== DocumentTypeFilterName)
+                  .concat(this.nameTag ? [this.nameTag] : [])
               },
               scrollingParameters: continuousOptions,
               abortSignal: this.abortSignal
