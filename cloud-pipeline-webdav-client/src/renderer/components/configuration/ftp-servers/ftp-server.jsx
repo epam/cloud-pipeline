@@ -37,6 +37,8 @@ function FTPServer(
     aServer,
     onChangeProperty,
     onRemove,
+    user,
+    password,
   },
 ) {
   const pending = useDiagnosing();
@@ -46,7 +48,22 @@ function FTPServer(
     diagnosed,
     logs,
   } = useFTPDiagnostics();
-  const onDiagnose = useCallback(() => diagnose(aServer), [aServer, diagnose]);
+  const onDiagnose = useCallback(
+    () => {
+      const payload = {
+        ...aServer,
+      };
+      if (aServer.useDefaultUser) {
+        payload.user = user;
+        payload.password = password;
+      }
+      diagnose(payload);
+    }, [
+      aServer,
+      diagnose,
+      user,
+      password,
+    ]);
   return (
     <>
       <StringProperty
@@ -125,6 +142,8 @@ FTPServer.propTypes = {
     useDefaultUser: PropTypes.bool,
     enableLogs: PropTypes.bool,
   }).isRequired,
+  user: PropTypes.string,
+  password: PropTypes.string,
   onChangeProperty: PropTypes.func,
   onRemove: PropTypes.func,
 };
@@ -132,6 +151,8 @@ FTPServer.propTypes = {
 FTPServer.defaultProps = {
   onChangeProperty: undefined,
   onRemove: undefined,
+  user: undefined,
+  password: undefined,
 };
 
 export default FTPServer;

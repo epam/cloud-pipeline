@@ -69,6 +69,8 @@ function FTPServers(
               aServer={aServer}
               onChangeProperty={onChangeServerProperty(aServer, index)}
               onRemove={onRemoveServer(index)}
+              user={configuration?.user}
+              password={configuration?.password}
             />
           </React.Fragment>
         ))

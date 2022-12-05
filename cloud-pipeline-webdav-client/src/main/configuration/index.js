@@ -96,10 +96,7 @@ class Configuration extends TokenExpirationChecker {
   }
 
   get ftpServers() {
-    return (this.config?.ftp || []).map((anFtpServer) => ({
-      ...anFtpServer,
-      useDefaultUser: !anFtpServer.user,
-    }));
+    return (this.config?.ftp || []);
   }
 
   get logsEnabled() {
@@ -287,7 +284,12 @@ class Configuration extends TokenExpirationChecker {
           enableLogs,
         } = anFtpServer;
         if (useDefaultUser) {
-          return { url, protocol, enableLogs };
+          return {
+            url,
+            protocol,
+            useDefaultUser,
+            enableLogs,
+          };
         }
         return {
           url,
@@ -295,6 +297,7 @@ class Configuration extends TokenExpirationChecker {
           user,
           password: ftpPassword,
           enableLogs,
+          useDefaultUser: false
         };
       }),
       adapters,

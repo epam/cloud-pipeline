@@ -121,7 +121,7 @@ function Configuration(
             )}
           >
             <Button
-              disabled={!configuration?.server || diagnosing}
+              disabled={!configuration?.server || !configuration?.password || diagnosing}
               onClick={testWebdav}
             >
               TEST

@@ -88,8 +88,12 @@ class FileSystemAdapters extends EventEmitter {
               identifier: anFtpServer.url,
               url: anFtpServer.url,
               protocol: anFtpServer.protocol,
-              user: anFtpServer.user || this.configuration.username,
-              password: anFtpServer.user ? anFtpServer.password : this.configuration.password,
+              user: anFtpServer.useDefaultUser
+                ? this.configuration.username
+                : anFtpServer.user,
+              password: anFtpServer.useDefaultUser
+                ? this.configuration.password
+                : anFtpServer.password,
               enableLogs: anFtpServer.enableLogs,
               ignoreCertificateErrors: this.configuration.ignoreCertificateErrors,
             })),

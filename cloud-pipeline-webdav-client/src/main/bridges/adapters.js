@@ -179,6 +179,11 @@ module.exports = function build(bridgeOptions) {
     }
     logger.log('[Diagnostics] Diagnosing', type, '; file:', logsFile);
     logger.log('[Diagnostics] Diagnose options:', JSON.stringify(options));
+    const stopSafely = async () => {
+      try {
+        await netLog.stopLogging();
+      } catch (_) { /* empty */ }
+    };
     try {
       const adapter = initializeDiagnosable(options);
       await netLog.startLogging(logsFile);
@@ -198,7 +203,7 @@ module.exports = function build(bridgeOptions) {
         logs: logsFile,
       });
     } finally {
-      await netLog.stopLogging();
+      await stopSafely();
       logger.log('[Diagnostics] Diagnosing', type, ' done');
     }
   }

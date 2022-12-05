@@ -24,12 +24,6 @@ class WebBasedAdapter extends FileSystemAdapter {
     if (!options?.url) {
       throw new FileSystemAdapterInitializeError(`${this.type || ''} url not specified`);
     }
-    if (!options?.user) {
-      throw new FileSystemAdapterInitializeError(`${this.type || ''} user not specified`);
-    }
-    if (!options?.password) {
-      throw new FileSystemAdapterInitializeError(`${this.type || ''} password not specified`);
-    }
     this.url = options?.url;
     this.user = options?.user;
     this.password = options.password;
