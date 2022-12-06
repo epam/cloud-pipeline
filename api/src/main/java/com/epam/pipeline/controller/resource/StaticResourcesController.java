@@ -28,7 +28,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.util.ReplacingInputStream;
 import org.springframework.http.HttpStatus;
@@ -46,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -80,21 +80,21 @@ public class StaticResourcesController extends AbstractRestController {
         final Map<String, StaticResourceSettings> settings = preferenceManager.getPreference(
                 SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS);
         final String extension = FilenameUtils.getExtension(fileName);
-        return (MapUtils.isEmpty(settings) || !settings.containsKey(extension)) ? null : settings.get(extension);
+        return settings.getOrDefault(extension, null);
     }
 
     private Map<String, String> getCustomHeaders(final StaticResourceSettings settings) {
-        return settings == null ? Collections.emptyMap() : settings.getHeaders();
+        return Optional.ofNullable(settings.getHeaders()).orElse(Collections.emptyMap());
     }
 
     private InputStream getCustomContent(final InputStream content,
                                          final StaticResourceSettings settings) {
-        final List<Modification> modifications = settings == null ? Collections.emptyList() :
-                settings.getModifications();
+        final List<Modification> modifications = Optional.ofNullable(settings.getModifications())
+                .orElse(Collections.emptyList());
         return CollectionUtils.isNotEmpty(modifications) ? replace(content, modifications, 0) : content;
     }
 
-    private InputStream replace(InputStream content, List<Modification> modifications, int n) {
+    private InputStream replace(final InputStream content, final List<Modification> modifications, final int n) {
         if (n == modifications.size()) {
             return content;
         } else {
