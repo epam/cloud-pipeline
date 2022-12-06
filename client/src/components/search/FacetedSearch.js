@@ -39,6 +39,7 @@ import {
 import SearchResults, {DEFAULT_PAGE_SIZE} from './faceted-search/search-results';
 import {
   DocumentColumns,
+  getDefaultColumns,
   DefaultSorting,
   ExcludedSortingKeys,
   parseExtraColumns,
@@ -230,7 +231,7 @@ class FacetedSearch extends React.Component {
 
   get columns () {
     const documentTypes = this.documentTypes;
-    const all = [...DocumentColumns, ...this.extraColumns];
+    const all = getDefaultColumns(this.extraColumns);
     if (!documentTypes || !documentTypes.length) {
       return all;
     } else {
