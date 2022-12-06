@@ -75,7 +75,7 @@ class FTPAdapter extends WebBasedAdapter {
       `  url:                ${this.url}`,
       `  port:               ${this.port}`,
       `  protocol:           ${this.protocol}`,
-      `  user:               ${this.user}`,
+      `  user:               ${this.user || '<empty>'}`,
       `  password:           ${this.password ? '***' : '<empty>'}`,
       `  ignore cert errors: ${!!this.ignoreCertificateErrors}`,
       `  enable logs:        ${!!this.enableLogs}`,

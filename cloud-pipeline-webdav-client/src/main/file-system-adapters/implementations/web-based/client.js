@@ -5,6 +5,7 @@ const defaultLogger = require('../../../common/logger');
 class WebBasedClient extends EventEmitter {
   async initialize(url) {
     this.url = url;
+    this.logTitle = url;
   }
   /**
    * @param {string} directory
@@ -73,19 +74,19 @@ class WebBasedClient extends EventEmitter {
   }
 
   log(...message) {
-    defaultLogger.log(`[${this.url}]`, ...message);
+    defaultLogger.log(`[${this.logTitle}]`, ...message);
   }
 
   info(...message) {
-    defaultLogger.info(`[${this.url}]`, ...message);
+    defaultLogger.info(`[${this.logTitle}]`, ...message);
   }
 
   warn(...message) {
-    defaultLogger.warn(`[${this.url}]`, ...message);
+    defaultLogger.warn(`[${this.logTitle}]`, ...message);
   }
 
   error(...message) {
-    defaultLogger.error(`[${this.url}]`, ...message);
+    defaultLogger.error(`[${this.logTitle}]`, ...message);
   }
 
   /**

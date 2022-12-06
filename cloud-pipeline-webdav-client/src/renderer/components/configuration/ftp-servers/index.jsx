@@ -5,15 +5,10 @@ import Divider from '../divider';
 import FTPServer from './ftp-server';
 import '../configuration.css';
 
-const Protocols = {
-  ftp: 'FTP',
-  sftp: 'SFTP',
-};
-
 function useFTPServers(configuration, onChangeProperty) {
   const servers = configuration?.ftp;
   const onAddFTPServer = useCallback(() => {
-    onChangeProperty('ftp', [...(servers || []), { protocol: Protocols.ftp, useDefaultUser: true }]);
+    onChangeProperty('ftp', [...(servers || []), { protocol: 'ftp', useDefaultUser: true }]);
   }, [servers, onChangeProperty]);
   const onChangeFTPServer = useCallback((index, ftpServer) => {
     const ftpServers = (servers || []).slice();

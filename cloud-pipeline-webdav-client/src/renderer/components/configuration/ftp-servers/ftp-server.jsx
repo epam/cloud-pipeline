@@ -48,22 +48,21 @@ function FTPServer(
     diagnosed,
     logs,
   } = useFTPDiagnostics();
-  const onDiagnose = useCallback(
-    () => {
-      const payload = {
-        ...aServer,
-      };
-      if (aServer.useDefaultUser) {
-        payload.user = user;
-        payload.password = password;
-      }
-      diagnose(payload);
-    }, [
-      aServer,
-      diagnose,
-      user,
-      password,
-    ]);
+  const onDiagnose = useCallback(() => {
+    const payload = {
+      ...aServer,
+    };
+    if (aServer.useDefaultUser) {
+      payload.user = user;
+      payload.password = password;
+    }
+    diagnose(payload);
+  }, [
+    aServer,
+    diagnose,
+    user,
+    password,
+  ]);
   return (
     <>
       <StringProperty
@@ -101,6 +100,7 @@ function FTPServer(
         property="User"
         value={aServer.user}
         onChange={onChangeProperty('user')}
+        placeholder="anonymous"
       >
         <BooleanProperty
           value={aServer?.useDefaultUser}
@@ -110,7 +110,7 @@ function FTPServer(
       </StringProperty>
       <StringProperty
         property="Password"
-        disabled={aServer?.useDefaultUser}
+        disabled={aServer?.useDefaultUser || !aServer?.user}
         value={aServer?.password}
         onChange={onChangeProperty('password')}
         secure
@@ -126,7 +126,7 @@ function FTPServer(
       }
       <BooleanProperty
         onChange={onChangeProperty('enableLogs')}
-        property="Logging enabled"
+        property="Enable protocol logging"
         value={aServer?.enableLogs}
       />
     </>

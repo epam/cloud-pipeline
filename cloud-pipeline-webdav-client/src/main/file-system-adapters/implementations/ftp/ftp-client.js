@@ -8,6 +8,7 @@ const correctDirectoryPath = require('../../utils/correct-path');
 const Protocols = require('./protocols');
 const { getReadableStream } = require('../../utils/streams');
 const displayDate = require('../../../common/display-date');
+const makeDelayedLog = require('../../utils/delayed-log');
 
 /**
  * @typedef {Object} FTPClientOptions
@@ -52,7 +53,7 @@ class FTPClient extends WebBasedClient {
     const secureOptions = {
       rejectUnauthorized: !ignoreCertificateErrors,
     };
-    switch (protocol) {
+    switch (Protocols.parse(protocol)) {
       case Protocols.ftp:
         secure = false;
         break;
@@ -115,7 +116,7 @@ class FTPClient extends WebBasedClient {
     } catch (_) { /* empty */ }
     this.log(`  modify time : ${modifyTime ? displayDate(moment(modifyTime)) : '<empty>'}`);
     const isDirectory = await this.isDirectory(element);
-    this.log(`  is directory: ${!!isDirectory}`);
+    this.log(`  type        : ${isDirectory ? 'directory' : 'file'}`);
     return {
       size,
       type: isDirectory ? 'directory' : 'file',
@@ -130,34 +131,75 @@ class FTPClient extends WebBasedClient {
     this.info(`Creating directory "${directory}" done`);
   }
 
-  // eslint-disable-next-line no-unused-vars
-  async createReadStream(file, options = {}) {
-    await this.reconnectIfRequired();
+  createStreamHelpers(progressTitle, bytesMsg = 'received') {
+    const stream = new PassThrough();
     const passThrough = new PassThrough();
-    this.log(`Creating read stream for "${file}"`);
+    const { flush, log } = makeDelayedLog(this.log.bind(this));
     let total = 0;
     passThrough
       .on('data', (bytes) => {
         total += bytes.length;
-        this.log(`Creating read stream for "${file}":`, total, 'bytes received');
+        log(`${progressTitle}:`, total, `bytes ${bytesMsg}`);
       });
-    this.client.downloadTo(passThrough, file);
-    return passThrough;
+    const onFulfilled = () => {
+      stream.end();
+      flush();
+    };
+    const onRejected = (error) => {
+      flush();
+      let emitError = error;
+      if (/forgot to user 'await' or '\.then\(\)'/i.test(error.message)) {
+        emitError = new Error('Cannot perform operation while previous is in progress');
+      }
+      this.error(`${progressTitle}: rejected with error:`, emitError.message);
+      if (emitError !== error) {
+        this.error(' * original error:', error.message);
+      }
+      stream.emit('error', emitError);
+    };
+    passThrough.pipe(stream, { end: false });
+    return {
+      stream,
+      passThrough,
+      onFulfilled,
+      onRejected,
+    };
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  async createReadStream(file, options = {}) {
+    await this.reconnectIfRequired();
+    const {
+      stream,
+      passThrough,
+      onFulfilled,
+      onRejected,
+    } = this.createStreamHelpers(`downloading ${file}`);
+    this.client.downloadTo(passThrough, file)
+      .then(
+        onFulfilled,
+        onRejected,
+      )
+      .catch((error) => this.error(`download ${file} error:`, error.message));
+    return stream;
   }
 
   // eslint-disable-next-line no-unused-vars
   async createWriteStream(file, options) {
     await this.reconnectIfRequired();
-    const passThrough = new PassThrough();
-    this.log(`Creating write stream for "${file}"`);
-    let total = 0;
-    passThrough
-      .on('data', (bytes) => {
-        total += bytes.length;
-        this.log(`Creating write stream for "${file}":`, total, 'bytes received');
-      });
-    this.client.uploadFrom(passThrough, file);
-    return passThrough;
+    const {
+      stream,
+      passThrough,
+      onFulfilled,
+      onRejected,
+    } = this.createStreamHelpers(`uploading ${file}`, 'sent');
+    this.client.uploadFrom(passThrough, file)
+      .then(
+        onFulfilled,
+        onRejected,
+      )
+      .catch((error) => this.error(`upload ${file} error:`, error.message));
+    return stream;
   }
 
   /**

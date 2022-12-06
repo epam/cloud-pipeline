@@ -7,6 +7,8 @@ const WebBasedClient = require('../web-based/client');
 const correctDirectoryPath = require('../../utils/correct-path');
 const { getReadableStream } = require('../../utils/streams');
 const WebDAVError = require('./webdav-error');
+const makeDelayedLog = require('../../utils/delayed-log');
+const displayDate = require('../../../common/display-date');
 
 const DISCLAIMER = 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you';
 
@@ -26,6 +28,8 @@ class WebDAVClientImpl extends WebBasedClient {
     await super.initialize(url);
     this.httpsAgent = new https.Agent({ rejectUnauthorized: !ignoreCertificateErrors });
     this.url = url;
+    const urlParsed = new URL(url);
+    this.logTitle = `WebDAV ${urlParsed.hostname}`;
     this.headers = {
       Authorization: `Basic ${toBase64(`${user}:${password}`)}`,
     };
@@ -47,7 +51,9 @@ class WebDAVClientImpl extends WebBasedClient {
   async getDirectoryContents(directory) {
     const isRoot = /^(|\/)$/.test(directory);
     try {
+      this.log(`Fetching "${directory}"...`);
       const contents = await this.client.getDirectoryContents(directory);
+      this.info(`Fetching "${directory}":`, contents.length, 'elements');
       /**
        * @param {*} anItem
        * @returns {FSItem}
@@ -63,7 +69,9 @@ class WebDAVClientImpl extends WebBasedClient {
         isObjectStorage: false,
         removable: !isRoot,
       });
-      return contents.map(mapFilteredItem);
+      const results = contents.map(mapFilteredItem);
+      this.logDirectoryContents(results);
+      return results;
     } catch (error) {
       throw new WebDAVError(
         error,
@@ -75,7 +83,9 @@ class WebDAVClientImpl extends WebBasedClient {
 
   async createDirectory(directory) {
     try {
-      return this.client.createDirectory(directory, { recursive: true });
+      this.log(`Creating directory "${directory}"...`);
+      await this.client.createDirectory(directory, { recursive: true });
+      this.info(`Creating directory "${directory}" done`);
     } catch (error) {
       throw new WebDAVError(error, directory);
     }
@@ -183,7 +193,8 @@ class WebDAVClientImpl extends WebBasedClient {
     }
     remoteUrl = remoteUrl.concat(element);
     const readable = getReadableStream(data);
-    return new Promise((resolve, reject) => {
+    const { flush, log } = makeDelayedLog(this.log.bind(this));
+    const promise = new Promise((resolve, reject) => {
       const clientRequest = https.request(
         remoteUrl,
         {
@@ -213,6 +224,7 @@ class WebDAVClientImpl extends WebBasedClient {
         readable
           .on('data', (chunk) => {
             transferred += chunk.length;
+            log(`uploading ${element}: ${transferred} bytes sent`);
             progressCallback(transferred, size);
           });
       }
@@ -229,15 +241,23 @@ class WebDAVClientImpl extends WebBasedClient {
           .then(() => reject(new Error('Aborted')));
       }
     });
+    promise
+      .catch(() => {})
+      .then(() => flush());
+    return promise;
   }
 
   async statistics(element) {
     try {
+      this.log(`Fetching ${element} statistics:`);
       const {
         size,
         lastmod,
         type,
       } = await this.client.stat(element);
+      this.log(`  size        : ${size}`);
+      this.log(`  modify time : ${lastmod ? displayDate(moment(lastmod)) : '<empty>'}`);
+      this.log(`  type        : ${type}`);
       return {
         size,
         changed: lastmod ? moment(lastmod) : undefined,
@@ -253,6 +273,7 @@ class WebDAVClientImpl extends WebBasedClient {
       if (!directory) {
         return Promise.resolve();
       }
+      this.info(`Removing directory "${directory}"`);
       return this.client.deleteFile(correctDirectoryPath(directory));
     } catch (error) {
       throw new WebDAVError(error, directory);
@@ -268,6 +289,7 @@ class WebDAVClientImpl extends WebBasedClient {
       if (filePathCorrected.endsWith('/')) {
         filePathCorrected = filePathCorrected.slice(0, -1);
       }
+      this.info(`Removing file "${filePathCorrected}"`);
       return this.client.deleteFile(filePathCorrected);
     } catch (error) {
       throw new WebDAVError(error, file);

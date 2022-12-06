@@ -297,12 +297,13 @@ class Configuration extends TokenExpirationChecker {
           user,
           password: ftpPassword,
           enableLogs,
-          useDefaultUser: false
+          useDefaultUser: false,
         };
       }),
       adapters,
       logsEnabled,
     };
+    printConfiguration(this.config, 'Configuration saved:');
     if (this.userConfigPath) {
       fs.writeFileSync(this.userConfigPath, Buffer.from(JSON.stringify(this.config, undefined, ' ')));
     }
