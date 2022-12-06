@@ -15,16 +15,10 @@ module.exports = {
     if (/^sftp$/i.test(aProtocol)) {
       return sftp;
     }
-    if (
-      /(^|\s)ftp(\s|$)/i.test(aProtocol)
-      && /(^|\s)implicit(\s|$)/i.test(aProtocol)
-    ) {
+    if (/^ftp-ssl implicit$/i.test(aProtocol)) {
       return ftps;
     }
-    if (
-      /(^|\s)ftp(\s|$)/i.test(aProtocol)
-      && /(^|\s)explicit(\s|$)/i.test(aProtocol)
-    ) {
+    if (/^ftp-ssl explicit$/i.test(aProtocol)) {
       return ftpes;
     }
     if (/^ftpes$/i.test(aProtocol)) {
