@@ -42,6 +42,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
+import com.epam.pipeline.entity.sharing.StaticResourceSettings;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -719,10 +720,10 @@ public class SystemPreferences {
             new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
                     new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
                     isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
-    public static final ObjectPreference<Map<String, Map<String, String>>> DATA_SHARING_STATIC_HEADERS =
-            new ObjectPreference<>("data.sharing.static.resource.headers", null,
-                    new TypeReference<Map<String, Map<String, String>>>() {}, DATA_SHARING_GROUP,
-                    isNullOrValidJson(new TypeReference<Map<String, Map<String, String>>>() {}));
+    public static final ObjectPreference<Map<String, StaticResourceSettings>> DATA_SHARING_STATIC_RESOURCE_SETTINGS =
+            new ObjectPreference<>("data.sharing.static.resource.settings", null,
+                    new TypeReference<Map<String, StaticResourceSettings>>() {}, DATA_SHARING_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, StaticResourceSettings>>() {}));
     public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
             new StringPreference("data.sharing.static.resource.template.path", "classpath:views/folder.vm",
                     DATA_SHARING_GROUP, pass);
