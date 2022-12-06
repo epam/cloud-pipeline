@@ -947,7 +947,7 @@ public class SystemPreferences {
             20, SEARCH_GROUP, pass);
 
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
-        "search.storage.elements.hide.mask",
+        "search.storage.elements.settings",
         Collections.emptyList(),
         new TypeReference<List<StorageFileSearchMask>>() {},
         SEARCH_GROUP,

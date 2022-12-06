@@ -22,6 +22,7 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -70,7 +71,7 @@ public class CloudPipelineAPIClient {
 
     public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") String cloudPipelineHostUrl,
                                   @Value("${cloud.pipeline.token}") String cloudPipelineToken,
-                                  @Value("${sync.search.files.hidden.masks.preference.key}") String preferenceName,
+                                  @Value("${sync.search.files.elements.settings.preference.key}") String preferenceName,
                                   CloudPipelineApiExecutor cloudPipelineApiExecutor) {
         this.cloudPipelineAPI =
                 new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
@@ -97,6 +98,10 @@ public class CloudPipelineAPIClient {
 
     public List<DataStorageTag> loadDataStorageTags(final Long id, final DataStorageTagLoadBatchRequest request) {
         return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadDataStorageObjectTags(id, request)));
+    }
+
+    public DataStorageDownloadFileUrl generateDownloadUrl(final Long id, final String path) {
+        return executor.execute(cloudPipelineAPI.generateDownloadUrl(id, path));
     }
 
     public Map<String, Map<String, String>> loadDataStorageTagsMap(final Long id,
