@@ -246,6 +246,7 @@ class PipelineAPI:
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
     DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
+    GRANT_PERMISSIONS_URL = "/grant"
 
     # Pipeline API default header
 
@@ -1266,7 +1267,7 @@ class PipelineAPI:
         try:
             return self._request(endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="get")
         except Exception as e:
-            raise RuntimeError("Failed to load categorical attributes dictionary".format(str(e.message)))
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
 
     def upsert_categorical_attribute(self, attribute):
         try:
@@ -1274,4 +1275,12 @@ class PipelineAPI:
                 endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="post", data=attribute
             )
         except Exception as e:
-            raise RuntimeError("Failed to load categorical attributes dictionary".format(str(e.message)))
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+
+    def grant_permissions(self, permissions_object):
+        try:
+            return self._request(
+                endpoint=self.GRANT_PERMISSIONS_URL, http_method="post", data=permissions_object
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
