@@ -568,7 +568,8 @@ public class SamplesMetadataTest
     public void selectMetadataPopup() {
         library()
                 .cd(project)
-                .configuration(configuration, profile -> profile.click(run(), MetadataSelection::new))
+                .configuration(configuration, profile ->
+                        profile.sleep(3, SECONDS).click(run(), MetadataSelection::new))
                 .ensure(byText(project), visible)
                 .ensure(byText(metadataFolder), visible)
                 .ensure(MetadataSelection.header, text(project))
