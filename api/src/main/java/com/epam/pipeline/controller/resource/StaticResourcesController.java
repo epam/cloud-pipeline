@@ -79,8 +79,11 @@ public class StaticResourcesController extends AbstractRestController {
     private StaticResourceSettings getStaticResourceSettings(final String fileName) {
         final Map<String, StaticResourceSettings> settings = preferenceManager.getPreference(
                 SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS);
+        if (settings == null) {
+            return new StaticResourceSettings();
+        }
         final String extension = FilenameUtils.getExtension(fileName);
-        return settings.getOrDefault(extension, null);
+        return settings.getOrDefault(extension, new StaticResourceSettings());
     }
 
     private Map<String, String> getCustomHeaders(final StaticResourceSettings settings) {
