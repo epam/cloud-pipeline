@@ -1271,7 +1271,7 @@ class PipelineAPI:
     def upsert_categorical_attribute(self, attribute):
         try:
             return self._request(
-                endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="post", data=json.dumps(attribute)
+                endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="post", data=attribute
             )
         except Exception as e:
             raise RuntimeError("Failed to load categorical attributes dictionary".format(str(e.message)))
