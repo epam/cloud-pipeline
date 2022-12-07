@@ -15,8 +15,57 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.*;
-import com.epam.pipeline.autotests.utils.*;
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
+import static com.codeborne.selenide.CollectionCondition.sizeLessThanOrEqual;
+import static com.codeborne.selenide.Condition.disabled;
+import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.value;
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byXpath;
+import static com.codeborne.selenide.Selectors.withText;
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Selenide.refresh;
+import static com.epam.pipeline.autotests.ao.Configuration.*;
+import static com.epam.pipeline.autotests.ao.DetachedConfigurationCreationPopup.templatesList;
+import com.epam.pipeline.autotests.ao.MetadataKeyAO;
+import static com.epam.pipeline.autotests.ao.MetadataKeyAO.numberOfSamples;
+import static com.epam.pipeline.autotests.ao.MetadataKeyAO.samplesForKey;
+import static com.epam.pipeline.autotests.ao.MetadataSamplesAO.columnHeader;
+import static com.epam.pipeline.autotests.ao.MetadataSamplesAO.decreaseOrderIcon;
+import static com.epam.pipeline.autotests.ao.MetadataSamplesAO.hideMetadata;
+import static com.epam.pipeline.autotests.ao.MetadataSamplesAO.increaseOrderIcon;
+import static com.epam.pipeline.autotests.ao.MetadataSamplesAO.rows;
+import static com.epam.pipeline.autotests.ao.MetadataSamplesAO.searchMetadata;
+import com.epam.pipeline.autotests.ao.MetadataSectionAO;
+import com.epam.pipeline.autotests.ao.MetadataSelection;
+import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
+import static com.epam.pipeline.autotests.ao.Primitive.ADDRESS_BAR;
+import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
+import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
+import static com.epam.pipeline.autotests.ao.Profile.activeProfileTab;
+import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
+import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
+import static com.epam.pipeline.autotests.ao.Profile.parametersTab;
+import static com.epam.pipeline.autotests.ao.RunsMenuAO.runOf;
+import com.epam.pipeline.autotests.ao.StorageContentAO;
+import com.epam.pipeline.autotests.ao.Template;
+import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.Conditions.*;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.in;
+import com.epam.pipeline.autotests.utils.SelenideElements;
+import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.getFile;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -26,33 +75,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-
-import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
-import static com.codeborne.selenide.CollectionCondition.sizeLessThanOrEqual;
-import static com.codeborne.selenide.Condition.*;
-import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selectors.byXpath;
-import static com.codeborne.selenide.Selectors.withText;
-import static com.codeborne.selenide.Selenide.*;
-import static com.epam.pipeline.autotests.ao.Configuration.*;
-import static com.epam.pipeline.autotests.ao.Configuration.name;
-import static com.epam.pipeline.autotests.ao.Configuration.title;
-import static com.epam.pipeline.autotests.ao.DetachedConfigurationCreationPopup.templatesList;
-import static com.epam.pipeline.autotests.ao.MetadataKeyAO.numberOfSamples;
-import static com.epam.pipeline.autotests.ao.MetadataKeyAO.samplesForKey;
-import static com.epam.pipeline.autotests.ao.MetadataSamplesAO.*;
-import static com.epam.pipeline.autotests.ao.Primitive.*;
-import static com.epam.pipeline.autotests.ao.Profile.*;
-import static com.epam.pipeline.autotests.ao.RunsMenuAO.runOf;
-import static com.epam.pipeline.autotests.utils.Conditions.*;
-import static com.epam.pipeline.autotests.utils.Conditions.contains;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
-import static com.epam.pipeline.autotests.utils.Utils.getFile;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SamplesMetadataTest
         extends AbstractSeveralPipelineRunningTest {
@@ -556,9 +578,9 @@ public class SamplesMetadataTest
                 .ensure(MetadataSelection.cancel, visible)
                 .ensure(MetadataSelection.ok, visible)
                 .cd(metadataFolder)
-                .ensure(byText("SampleSet"), visible)
-                .ensure(byText("Sample"), visible)
-                .cd("Sample")
+                .ensure(byText("SampleSet [2]"), visible)
+                .ensure(byText(sampleFolder), visible)
+                .cd(sampleFolder)
                 .also(ensureSamplesCountIs(subfolder1Files.length / 2 + subfolder2Files.length / 2));
     }
 
