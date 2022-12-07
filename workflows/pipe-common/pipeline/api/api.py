@@ -245,6 +245,7 @@ class PipelineAPI:
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL = '/datastorage/{id}/tags/batch/delete'
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
     DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
+    CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
 
     # Pipeline API default header
 
@@ -1260,3 +1261,17 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError(
                 "Failed get size for paths: '{}'. Error message: {}".format(','.join(paths), str(e.message)))
+
+    def load_categorical_attributes_dictionary(self):
+        try:
+            return self._request(endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load categorical attributes dictionary".format(str(e.message)))
+
+    def upsert_categorical_attribute(self, attribute):
+        try:
+            return self._request(
+                endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="post", data=attribute
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load categorical attributes dictionary".format(str(e.message)))
