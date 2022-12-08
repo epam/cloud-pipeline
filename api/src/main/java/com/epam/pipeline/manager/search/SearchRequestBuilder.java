@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -499,16 +500,13 @@ public class SearchRequestBuilder {
             return;
         }
         final String pathPrefix = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PREFIX_FILTER_FIELD);
-        // add wildcards queries
         globs.stream()
                 .filter(StringUtils::isNotBlank)
-                .filter(glob -> glob.contains(INDEX_WILDCARD_PREFIX))
-                .forEach(glob -> queryBuilder.must(QueryBuilders.wildcardQuery(pathPrefix, glob)));
-        // add exact match query
-        globs.stream()
-                .filter(StringUtils::isNotBlank)
-                .filter(glob-> !glob.contains(INDEX_WILDCARD_PREFIX))
-                .forEach(glob -> queryBuilder.must(QueryBuilders.matchQuery(pathPrefix, glob)));
+                .map(ProviderUtils::withoutLeadingDelimiter)
+                .forEach(glob -> queryBuilder.must(glob.contains(INDEX_WILDCARD_PREFIX)
+                            ? QueryBuilders.wildcardQuery(pathPrefix, glob)
+                            : QueryBuilders.matchQuery(pathPrefix, glob))
+                );
     }
 
     private void addStorageFilter(final BoolQueryBuilder queryBuilder, final String storageIdentifier) {
