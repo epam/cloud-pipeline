@@ -159,7 +159,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                     .map(path -> convertToStorageFile(path, mountFolder));
             processFilesTagsInChunks(dataStorage, files)
                     .map(file -> createIndexRequest(file, indexName, dataStorage, permissionsContainer,
-                            findFileContent(dataStorage.getName(), file.getName(), mountFolder.toString())))
+                            findFileContent(dataStorage.getName(), file.getPath(), mountFolder.toString())))
                     .forEach(walker::add);
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred during creating document.", e);
