@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.utils.FileContentUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -132,7 +133,8 @@ public class StorageFileMapper {
 
     private Map<String, Set<String>> getSearchMasks(final List<StorageFileSearchMask> storageSearchMasks,
                                                     final Function<StorageFileSearchMask, Set<String>> getMask) {
-        return storageSearchMasks.stream()
+        return ListUtils.emptyIfNull(storageSearchMasks).stream()
+                .filter(mask -> CollectionUtils.isNotEmpty(getMask.apply(mask)))
                 .collect(Collectors.toMap(StorageFileSearchMask::getStorageName, getMask, SetUtils::union));
     }
 
