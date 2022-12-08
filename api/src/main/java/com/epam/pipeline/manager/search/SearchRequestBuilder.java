@@ -504,9 +504,8 @@ public class SearchRequestBuilder {
                 .filter(StringUtils::isNotBlank)
                 .map(ProviderUtils::withoutLeadingDelimiter)
                 .forEach(glob -> queryBuilder.must(glob.contains(INDEX_WILDCARD_PREFIX)
-                            ? QueryBuilders.wildcardQuery(pathPrefix, glob)
-                            : QueryBuilders.matchQuery(pathPrefix, glob))
-                );
+                        ? QueryBuilders.wildcardQuery(pathPrefix, glob)
+                        : QueryBuilders.matchQuery(pathPrefix, glob)));
     }
 
     private void addStorageFilter(final BoolQueryBuilder queryBuilder, final String storageIdentifier) {
