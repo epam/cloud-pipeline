@@ -48,6 +48,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
@@ -100,6 +101,8 @@ public class SearchRequestBuilder {
     private static final String ES_KEYWORD_TYPE = "keyword";
     private static final String ES_DATE_TYPE = "date";
     private static final String ES_LONG_TYPE = "long";
+    private static final String ES_STORAGE_ID_FIELD = "storage_id";
+    private static final String ES_STORAGE_NAME_FIELD = "storage_name";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -111,7 +114,7 @@ public class SearchRequestBuilder {
                                       final String aggregation,
                                       final Set<String> metadataSourceFields) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(getQuery(searchRequest.getQuery()))
+                .query(getQuery(searchRequest))
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
 
@@ -377,8 +380,10 @@ public class SearchRequestBuilder {
                 .preTags("<highlight>"));
     }
 
-    private QueryBuilder getQuery(final String query) {
-        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(query));
+    private QueryBuilder getQuery(final ElasticSearchRequest queryRequest) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(queryRequest.getQuery()));
+        addStorageFilter(queryBuilder, queryRequest.getObjectIdentifier());
+        addGlobsFilterToQuery(queryBuilder, queryRequest.getFilterGlobs());
         return prepareAclFiltersOrAdmin(queryBuilder);
     }
 
@@ -487,5 +492,32 @@ public class SearchRequestBuilder {
 
     private String buildKeywordName(final String fieldName) {
         return String.format("%s.keyword", fieldName);
+    }
+
+    private void addGlobsFilterToQuery(final BoolQueryBuilder queryBuilder, final Set<String> globs) {
+        if (CollectionUtils.isEmpty(globs)) {
+            return;
+        }
+        final String pathPrefix = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PREFIX_FILTER_FIELD);
+        // add wildcards queries
+        globs.stream()
+                .filter(StringUtils::isNotBlank)
+                .filter(glob -> glob.contains(INDEX_WILDCARD_PREFIX))
+                .forEach(glob -> queryBuilder.must(QueryBuilders.wildcardQuery(pathPrefix, glob)));
+        // add exact match query
+        globs.stream()
+                .filter(StringUtils::isNotBlank)
+                .filter(glob-> !glob.contains(INDEX_WILDCARD_PREFIX))
+                .forEach(glob -> queryBuilder.must(QueryBuilders.matchQuery(pathPrefix, glob)));
+    }
+
+    private void addStorageFilter(final BoolQueryBuilder queryBuilder, final String storageIdentifier) {
+        if (StringUtils.isBlank(storageIdentifier)) {
+            return;
+        }
+        final MatchQueryBuilder storageIdentifierQuery = NumberUtils.isDigits(storageIdentifier)
+                ? QueryBuilders.matchQuery(ES_STORAGE_ID_FIELD, storageIdentifier)
+                : QueryBuilders.matchQuery(ES_STORAGE_NAME_FIELD, storageIdentifier);
+        queryBuilder.must(storageIdentifierQuery);
     }
 }
