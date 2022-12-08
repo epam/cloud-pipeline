@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchExportVO;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchDocument;
+import com.epam.pipeline.exception.search.SearchException;
 import com.opencsv.CSVWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
@@ -55,22 +57,30 @@ public class SearchResultExportManager {
             Constants.EXPORT_DATE_TIME_FORMAT);
     private static final DateTimeFormatter ISO_DATE_FORMATTER = DateTimeFormatter.ofPattern(
             Constants.FMT_ISO_LOCAL_DATE);
+    private static final char DELIMITER = ',';
 
     public byte[] export(final FacetedSearchExportRequest searchExportRequest, final FacetedSearchResult searchResult) {
-        final StringWriter writer = new StringWriter();
-        final CSVWriter csvWriter = new CSVWriter(writer);
+        final FacetedSearchExportVO facetedSearchExportVO = Optional.ofNullable(
+                searchExportRequest.getFacetedSearchExportVO())
+                .orElseGet(FacetedSearchExportVO::new);
+        final Character delimiter = Optional.ofNullable(facetedSearchExportVO.getDelimiter())
+                .map(del -> del.charAt(0))
+                .orElse(DELIMITER);
+        try (StringWriter writer = new StringWriter(); CSVWriter csvWriter = new CSVWriter(writer, delimiter)) {
 
-        final String[] header = buildCsvHeader(searchExportRequest.getFacetedSearchRequest().getMetadataFields(),
-                searchExportRequest.getFacetedSearchExportVO());
-        csvWriter.writeNext(header, false);
-
-        CollectionUtils.emptyIfNull(searchResult.getDocuments()).stream()
-                .map(searchDocument -> createItem(searchDocument,
-                        searchExportRequest.getFacetedSearchExportVO(),
-                        searchExportRequest.getFacetedSearchRequest().getMetadataFields())
-                )
-                .forEach(item -> csvWriter.writeNext(item, false));
-        return writer.toString().getBytes(Charset.defaultCharset());
+            final String[] header = buildCsvHeader(searchExportRequest.getFacetedSearchRequest().getMetadataFields(),
+                    facetedSearchExportVO);
+            csvWriter.writeNext(header, false);
+            CollectionUtils.emptyIfNull(searchResult.getDocuments()).stream()
+                    .map(searchDocument -> createItem(searchDocument, facetedSearchExportVO,
+                            searchExportRequest.getFacetedSearchRequest().getMetadataFields())
+                    )
+                    .forEach(item -> csvWriter.writeNext(item, false));
+            return writer.toString().getBytes(Charset.defaultCharset());
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new SearchException(e.getMessage(), e);
+        }
     }
 
     private String[] createItem(final SearchDocument searchDocument,

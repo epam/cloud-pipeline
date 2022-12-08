@@ -73,7 +73,7 @@ public class SearchController extends AbstractRestController {
         return Result.success(searchManager.facetedSearch(searchRequest));
     }
 
-    @PostMapping(value = "/search/export")
+    @PostMapping(value = "/search/facet/export")
     @ResponseBody
     @ApiOperation(
             value = "Export faceted search result as a csv file.",
@@ -82,9 +82,9 @@ public class SearchController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public void export(@RequestBody final FacetedSearchExportRequest searchExportRequest,
                        final HttpServletResponse response) throws IOException {
-        final String csvFileName = StringUtils.isNotBlank(searchExportRequest.getCsvFileName())
+        final String reportFileName = StringUtils.isNotBlank(searchExportRequest.getCsvFileName())
                 ? searchExportRequest.getCsvFileName()
                 : String.format("facet_report_%s.csv", LocalDateTime.now());
-        writeFileToResponse(response, searchManager.export(searchExportRequest), csvFileName);
+        writeFileToResponse(response, searchManager.export(searchExportRequest), reportFileName);
     }
 }

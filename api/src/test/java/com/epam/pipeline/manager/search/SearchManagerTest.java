@@ -53,7 +53,7 @@ public class SearchManagerTest extends AbstractSpringTest {
     @Before
     public void setUpPreferenceManager() {
         ReflectionTestUtils.setField(searchManager, "preferenceManager", preferenceManager);
-        when(preferenceManager.getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE)).thenReturn(PAGE_SIZE);
+        when(preferenceManager.getPreference(SystemPreferences.FACETED_FILTER_EXPORT_PAGE_SIZE)).thenReturn(PAGE_SIZE);
     }
 
     @Test
@@ -83,7 +83,7 @@ public class SearchManagerTest extends AbstractSpringTest {
         final String[] exportedCsv = new String(searchManager.export(facetedSearchExportRequest))
                 .split("\n");
         verify(searchManager).facetedSearch(facetedSearchRequest);
-        verify(preferenceManager, atLeast(1)).getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE);
+        verify(preferenceManager, atLeast(1)).getPreference(SystemPreferences.FACETED_FILTER_EXPORT_PAGE_SIZE);
         Assert.assertNotNull(exportedCsv);
         Assert.assertEquals(3, exportedCsv.length);
         Assert.assertEquals(HEADER_WITH_ATTRIBUTE, exportedCsv[0]);
@@ -92,7 +92,7 @@ public class SearchManagerTest extends AbstractSpringTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailToExportWithoutPageSize() {
-        when(preferenceManager.getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE)).thenReturn(null);
+        when(preferenceManager.getPreference(SystemPreferences.FACETED_FILTER_EXPORT_PAGE_SIZE)).thenReturn(null);
         final FacetedSearchExportRequest facetedSearchExportRequest = SearchCreatorUtils
                 .getFacetedSearchExportRequest(EXPORT_FILE_NAME, SPECIES);
         facetedSearchExportRequest.getFacetedSearchRequest().setPageSize(null);

@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 public class SearchControllerTest extends AbstractControllerTest {
 
     private static final String SEARCH_URL = SERVLET_PATH + "/search";
-    private static final String EXPORT_URL = SERVLET_PATH + "/search/export";
+    private static final String EXPORT_URL = SERVLET_PATH + "/search/facet/export";
     private static final String EXPORT_FILE_NAME = "test_search_export.csv";
     private static final byte[] EXPORT_TEST_ARRAY = {1, 1, 1};
     private final SearchResult searchResult = getSearchResult();

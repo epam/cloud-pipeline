@@ -694,6 +694,9 @@ public class SystemPreferences {
     public static final StringPreference FACETED_FILTER_DISPLAY_NAME_TAG = new StringPreference(
             "faceted.filter.display.name.tag", null, FACETED_FILTER_GROUP, pass, true);
 
+    public static final IntPreference FACETED_FILTER_EXPORT_PAGE_SIZE = new IntPreference(
+            "faceted.filter.export.page.size", 5000, SEARCH_GROUP, isGreaterThan(0));
+
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
                                                                   BASE_URLS_GROUP, PreferenceValidators.isValidUrl);
@@ -946,9 +949,6 @@ public class SystemPreferences {
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
             20, SEARCH_GROUP, pass);
-
-    public static final IntPreference SEARCH_EXPORT_PAGE_SIZE = new IntPreference("search.export.page.size",
-            5000, SEARCH_GROUP, isGreaterThan(0));
 
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
         "search.storage.elements.settings",
