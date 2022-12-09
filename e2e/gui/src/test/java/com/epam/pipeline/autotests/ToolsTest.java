@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,51 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import com.codeborne.selenide.Condition;
-import com.epam.pipeline.autotests.ao.*;
+import static com.codeborne.selenide.Condition.disabled;
+import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.focused;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.value;
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.withText;
+import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Selenide.refresh;
+import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import com.epam.pipeline.autotests.ao.Primitive;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
+import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
+import static com.epam.pipeline.autotests.ao.Profile.parametersTab;
+import com.epam.pipeline.autotests.ao.Registry;
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
+import com.epam.pipeline.autotests.ao.ToolDescription;
+import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
+import com.epam.pipeline.autotests.ao.ToolGroup;
+import static com.epam.pipeline.autotests.ao.ToolGroup.tool;
+import static com.epam.pipeline.autotests.ao.ToolGroup.toolsNames;
+import com.epam.pipeline.autotests.ao.ToolGroupDeletionPopup;
+import com.epam.pipeline.autotests.ao.ToolSettings;
+import static com.epam.pipeline.autotests.ao.ToolSettings.label;
+import com.epam.pipeline.autotests.ao.ToolTab;
+import static com.epam.pipeline.autotests.ao.ToolVersions.tags;
+import static com.epam.pipeline.autotests.ao.ToolVersions.tagsHave;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.Conditions.valueContains;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -30,29 +68,6 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
-import static com.codeborne.selenide.Condition.*;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selectors.withText;
-import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
-import static com.epam.pipeline.autotests.ao.Primitive.*;
-import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
-import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
-import static com.epam.pipeline.autotests.ao.Profile.parametersTab;
-import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
-import static com.epam.pipeline.autotests.ao.ToolGroup.tool;
-import static com.epam.pipeline.autotests.ao.ToolGroup.toolsNames;
-import static com.epam.pipeline.autotests.ao.ToolSettings.label;
-import static com.epam.pipeline.autotests.ao.ToolVersions.tags;
-import static com.epam.pipeline.autotests.ao.ToolVersions.tagsHave;
-import static com.epam.pipeline.autotests.utils.Conditions.valueContains;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
-import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ToolsTest
         extends AbstractSinglePipelineRunningTest
@@ -506,9 +521,13 @@ public class ToolsTest
     }
 
     public Consumer<ToolGroupDeletionPopup> confirmGroupDeletion(final String groupName) {
-        return confirmation -> confirmation.ensureGroupNameIs(groupName)
-                        .sleep(1, SECONDS)
-                        .ok();
+        return confirmation -> {
+            confirmation.ensureGroupNameIs(groupName).sleep(1, SECONDS);
+            if (confirmation.context().find(byText("Delete child tools")).exists()) {
+                confirmation.click(byText("Delete child tools"));
+            }
+            confirmation.ok();
+        };
     }
 
     private String personalGroupActualName(final String login) {
