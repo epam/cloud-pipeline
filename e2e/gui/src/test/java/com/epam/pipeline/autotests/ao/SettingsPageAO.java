@@ -16,53 +16,20 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
-import static com.codeborne.selenide.Condition.attribute;
-import static com.codeborne.selenide.Condition.cssClass;
-import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.exactText;
-import static com.codeborne.selenide.Condition.exist;
-import static com.codeborne.selenide.Condition.matchesText;
-import static com.codeborne.selenide.Condition.not;
-import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.value;
-import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byAttribute;
-import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byCssSelector;
-import static com.codeborne.selenide.Selectors.byId;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selectors.byTitle;
-import static com.codeborne.selenide.Selectors.byXpath;
-import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.$$;
-import static com.codeborne.selenide.Selenide.actions;
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.ao.Primitive.*;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.clearTextField;
-import static com.epam.pipeline.autotests.utils.Utils.clickAndSendKeysWithSlashes;
-import static com.epam.pipeline.autotests.utils.Utils.selectAllAndClearTextField;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import static org.openqa.selenium.By.className;
-import static org.openqa.selenium.By.tagName;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
-import static org.testng.Assert.assertTrue;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -72,6 +39,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.UnaryOperator;
+
+import static com.codeborne.selenide.Condition.*;
+import static com.codeborne.selenide.Selectors.*;
+import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.actions;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
+import static com.epam.pipeline.autotests.utils.Utils.*;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
+import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertTrue;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO>,
         Authorization {
@@ -302,15 +285,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup>{
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                    entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
-                    entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
-                    entry(BODY, context().find(By.className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
-                    entry(BODY_FIELD, context().find(By.className("edit-notification-form-body-container")).find(byId("body"))),
-                    entry(SEVERITY, context().find(By.className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
-                    entry(SEVERITY_COMBOBOX, context().find(By.className("edit-notification-form-severity-container")).find(By.className("ant-select-selection-selected-value"))),
-                    entry(STATE, context().find(By.className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
-                    entry(STATE_CHECKBOX, context().find(By.className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
-                    entry(ACTIVE_LABEL, context().find(By.className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
+                    entry(TITLE, context().find(className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
+                    entry(TITLE_FIELD, context().find(className("edit-notification-form-title-container")).find(className("ant-input-lg"))),
+                    entry(BODY, context().find(className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
+                    entry(BODY_FIELD, context().find(className("edit-notification-form-body-container")).find(byId("body"))),
+                    entry(SEVERITY, context().find(className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
+                    entry(SEVERITY_COMBOBOX, context().find(className("edit-notification-form-severity-container")).find(className("ant-select-selection-selected-value"))),
+                    entry(STATE, context().find(className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
+                    entry(STATE_CHECKBOX, context().find(className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
+                    entry(ACTIVE_LABEL, context().find(className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
                     entry(CANCEL, context().find(byId("edit-notification-form-cancel-button"))),
                     entry(CREATE, context().find(byId("edit-notification-form-create-button")))
             );
@@ -396,15 +379,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public class EditNotificationPopup extends CreateNotificationPopup {
 
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                    entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
-                    entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
-                    entry(BODY, context().find(By.className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
-                    entry(BODY_FIELD, context().find(By.className("edit-notification-form-body-container")).find(byId("body"))),
-                    entry(SEVERITY, context().find(By.className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
-                    entry(SEVERITY_COMBOBOX, context().find(By.className("edit-notification-form-severity-container")).find(By.className("ant-select-selection-selected-value"))),
-                    entry(STATE, context().find(By.className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
-                    entry(STATE_CHECKBOX, context().find(By.className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
-                    entry(ACTIVE_LABEL, context().find(By.className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
+                    entry(TITLE, context().find(className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
+                    entry(TITLE_FIELD, context().find(className("edit-notification-form-title-container")).find(className("ant-input-lg"))),
+                    entry(BODY, context().find(className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
+                    entry(BODY_FIELD, context().find(className("edit-notification-form-body-container")).find(byId("body"))),
+                    entry(SEVERITY, context().find(className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
+                    entry(SEVERITY_COMBOBOX, context().find(className("edit-notification-form-severity-container")).find(className("ant-select-selection-selected-value"))),
+                    entry(STATE, context().find(className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
+                    entry(STATE_CHECKBOX, context().find(className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
+                    entry(ACTIVE_LABEL, context().find(className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
                     entry(CANCEL, context().find(byId("edit-notification-form-cancel-button"))),
                     entry(SAVE, context().find(byId("edit-notification-form-save-button")))
             );
@@ -762,10 +745,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                 public class EditUserPopup extends PopupAO<EditUserPopup, UsersTabAO> implements AccessObject<EditUserPopup> {
                     private final SelenideElement element = context().find(byText("Add role or group:"))
-                            .closest(".ant-row-flex").find(By.className("ant-select-allow-clear"));
+                            .closest(".ant-row-flex").find(className("ant-select-allow-clear"));
                     public final Map<Primitive, SelenideElement> elements = initialiseElements(
                             entry(SEARCH, element),
-                            entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
+                            entry(SEARCH_INPUT, element.find(className("ant-select-search__field"))),
                             entry(ADD_KEY, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form"))),
                             entry(BLOCK, context().$(button("BLOCK"))),

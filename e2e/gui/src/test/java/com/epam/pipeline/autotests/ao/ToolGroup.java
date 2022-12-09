@@ -15,33 +15,26 @@
  */
 package com.epam.pipeline.autotests.ao;
 
-import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selenide.$;
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.ao.Primitive.BACK_TO_GROUP;
-import static com.epam.pipeline.autotests.ao.Primitive.CREATE_PERSONAL_GROUP;
-import static com.epam.pipeline.autotests.ao.Primitive.CREATE_PERSONAL_GROUP_FROM_SETTINGS;
-import static com.epam.pipeline.autotests.ao.Primitive.DELETE_GROUP;
-import static com.epam.pipeline.autotests.ao.Primitive.EDIT_GROUP;
-import static com.epam.pipeline.autotests.ao.Primitive.ENABLE_TOOL;
-import static com.epam.pipeline.autotests.ao.Primitive.GROUP_SETTINGS;
-import static com.epam.pipeline.autotests.ao.Primitive.SEARCH;
-import static com.epam.pipeline.autotests.ao.Primitive.SETTINGS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import org.openqa.selenium.By;
-import static org.openqa.selenium.By.className;
-import org.openqa.selenium.Keys;
 
-import java.awt.*;
+import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+
+import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 
 public class ToolGroup implements AccessObject<ToolGroup> {
 
