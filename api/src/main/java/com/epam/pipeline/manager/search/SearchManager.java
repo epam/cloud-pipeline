@@ -120,10 +120,10 @@ public class SearchManager {
         Assert.notNull(request.getFacetedSearchRequest(), "Faceted search request is required");
         if (Objects.isNull(request.getFacetedSearchRequest().getPageSize())) {
             final Integer searchExportPageSize = Optional.ofNullable(
-                    preferenceManager.getPreference(SystemPreferences.FACETED_FILTER_EXPORT_PAGE_SIZE))
+                    preferenceManager.getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE))
                     .orElseThrow(() -> new IllegalArgumentException(
                             String.format("System preference %s or page size are not provided",
-                                    SystemPreferences.FACETED_FILTER_EXPORT_PAGE_SIZE.getKey())));
+                                    SystemPreferences.SEARCH_EXPORT_PAGE_SIZE.getKey())));
             request.getFacetedSearchRequest().setPageSize(searchExportPageSize);
         }
         final FacetedSearchResult facetedSearchResult = facetedSearch(request.getFacetedSearchRequest());

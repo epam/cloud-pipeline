@@ -47,7 +47,7 @@ public final class SearchCreatorUtils {
     public static final String SPECIES = "Species";
     public static final String HUMAN = "human";
     public static final String MOUSE = "mouse";
-    public static final String HEADER_WITH_ATTRIBUTE = "Name,Changed,Size (byte(s)),Species,Owner,Path";
+    public static final String HEADER_WITH_ATTRIBUTE = "Name,Changed,Size,Species,Owner,Path";
 
     private static final SearchDocumentType SEARCH_DOCUMENT_TYPE = SearchDocumentType.AZ_BLOB_FILE;
 
