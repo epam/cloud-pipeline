@@ -152,7 +152,7 @@ public class SearchResultExportManager {
         switch (field) {
             case NAME: return "Name";
             case LAST_MODIFIED: return "Changed";
-            case SIZE: return "Size (byte(s))";
+            case SIZE: return "Size";
             case OWNER: return "Owner";
             case PATH: return "Path";
             default: throw new IllegalArgumentException(format("%s search source field is not supported", field));
