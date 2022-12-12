@@ -33,6 +33,11 @@ from xml.etree import ElementTree
 
 from pipeline import PipelineAPI, Logger as CloudPipelineLogger
 
+try:
+    from queue import Queue, Empty as QueueEmptyError
+except ImportError:
+    from Queue import Queue, Empty as QueueEmptyError
+
 
 def synchronized(func):
     @functools.wraps(func)
@@ -613,7 +618,8 @@ class Clock:
 class GridEngineScaleUpOrchestrator:
     _POLL_DELAY = 10
 
-    def __init__(self, scale_up_handler, grid_engine, host_storage, instance_selector, price_type, batch_size,
+    def __init__(self, scale_up_handler, grid_engine, host_storage, instance_selector, worker_recorder,
+                 price_type, batch_size,
                  polling_delay=_POLL_DELAY, clock=Clock()):
         """
         Grid engine scale up orchestrator.
@@ -626,6 +632,7 @@ class GridEngineScaleUpOrchestrator:
         :param grid_engine: Grid engine client.
         :param host_storage: Additional hosts storage.
         :param instance_selector: Additional instances selector.
+        :param worker_recorder: Additional hosts recorder.
         :param price_type: Additional nodes price type.
         :param batch_size: Scaling up batch size.
         :param polling_delay: Polling delay - in seconds.
@@ -634,6 +641,7 @@ class GridEngineScaleUpOrchestrator:
         self.grid_engine = grid_engine
         self.host_storage = host_storage
         self.instance_selector = instance_selector
+        self.worker_recorder = worker_recorder
         self.price_type = price_type
         self.batch_size = batch_size
         self.polling_delay = polling_delay
@@ -645,9 +653,10 @@ class GridEngineScaleUpOrchestrator:
         number_of_threads = len(instance_demands)
         Logger.info('Scaling up %s additional workers...' % number_of_threads)
         threads = []
+        run_id_queue = Queue()
         for instance_demand in instance_demands:
             thread = threading.Thread(target=self.scale_up_handler.scale_up,
-                                      args=(instance_demand.instance, instance_demand.owner))
+                                      args=(instance_demand.instance, instance_demand.owner, run_id_queue))
             thread.setDaemon(True)
             thread.start()
             threads.append(thread)
@@ -661,6 +670,13 @@ class GridEngineScaleUpOrchestrator:
             Logger.info('Only %s/%s additional workers have been scaled up.'
                         % (number_of_finished_threads, number_of_threads))
             self._update_last_activity_for_currently_running_jobs()
+        Logger.info('Recording details of %s additional workers...' % number_of_threads)
+        while True:
+            try:
+                self.worker_recorder.record(run_id_queue.get(timeout=0))
+            except QueueEmptyError:
+                break
+        Logger.info('Additional workers details recording has finished.')
 
     def _update_last_activity_for_currently_running_jobs(self):
         jobs = self.grid_engine.get_jobs()
@@ -726,7 +742,7 @@ class GridEngineScaleUpHandler:
         self.instance_launch_params = instance_launch_params or {}
         self.clock = clock
 
-    def scale_up(self, instance, owner):
+    def scale_up(self, instance, owner, run_id_queue):
         """
         Scales up an additional worker.
 
@@ -740,6 +756,7 @@ class GridEngineScaleUpHandler:
         try:
             Logger.info('Scaling up additional worker (%s)...' % instance.name)
             run_id = self._launch_additional_worker(instance.name, owner)
+            run_id_queue.put(run_id)
             host = self._retrieve_pod_name(run_id)
             self.host_storage.add_host(host)
             pod = self._await_pod_initialization(run_id)
@@ -1399,6 +1416,25 @@ class GridEngineInstanceSelector:
         return owner_cpus_counter.most_common()[0][0]
 
 
+class CpuCountInstanceSelector(GridEngineInstanceSelector):
+
+    def __init__(self, instance_provider, free_cores):
+        """
+        CPU count instance selector.
+
+        CPU count is a number of CPUs on an instance.
+        An instance with most CPUs will be selected first.
+
+        :param instance_provider: Cloud Pipeline instance provider.
+        """
+        self.instance_selector = NaiveCpuCapacityInstanceSelector(ReverseInstanceProvider(instance_provider),
+                                                                  free_cores)
+
+    def select(self, demands, price_type):
+        Logger.info('Selecting instances using cpu count strategy...')
+        return self.instance_selector.select(demands, price_type)
+
+
 class BackwardCompatibleInstanceSelector(GridEngineInstanceSelector):
 
     def __init__(self, instance_provider, free_cores, batch_size):
@@ -1520,7 +1556,132 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
         return remaining_demands, fulfilled_demands
 
 
-class CloudPipelineInstanceProvider:
+class GridEngineWorkerRecord:
+
+    def __init__(self, id, name, instance_type, started, stopped, has_insufficient_instance_capacity):
+        self.id = id
+        self.name = name
+        self.instance_type = instance_type
+        self.started = started
+        self.stopped = stopped
+        self.has_insufficient_instance_capacity = has_insufficient_instance_capacity
+
+
+class GridEngineWorkerRecorder:
+
+    def record(self, run_id):
+        pass
+
+    def get(self):
+        pass
+
+
+class DoNothingWorkerRecorder(GridEngineWorkerRecorder):
+
+    def __init__(self):
+        pass
+
+
+class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
+
+    def __init__(self, api):
+        self._api = api
+        self._records = []
+        self._records_number = 100
+        self._datetime_format = '%Y-%m-%d %H:%M:%S.%f'
+
+    def record(self, run_id):
+        try:
+            Logger.info('Recording details of additional worker #%s...' % run_id)
+            run = self._api.load_run(run_id)
+            initialize_node_tasks = self._api.load_task(run_id, 'InitializeNode')
+            run_name = run.get('podId')
+            run_started = self._to_datetime(run.get('startDate'))
+            run_stopped = self._to_datetime(run.get('endDate'))
+            instance_type = run.get('instance', {}).get('nodeType')
+            has_insufficient_instance_capacity = self._has_insufficient_instance_capacity(run, initialize_node_tasks)
+            record = GridEngineWorkerRecord(id=run_id, name=run_name, instance_type=instance_type,
+                                            started=run_started, stopped=run_stopped,
+                                            has_insufficient_instance_capacity=has_insufficient_instance_capacity)
+            self._records.append(record)
+            self._records = self._records[-self._records_number:]
+        except KeyboardInterrupt:
+            pass
+        except Exception as e:
+            Logger.warn('Recording details of additional worker #%s has failed due to %s.' % (run_id, str(e)),
+                        crucial=True)
+            Logger.warn(traceback.format_exc())
+
+    def _to_datetime(self, run_started):
+        if not run_started:
+            return None
+        return datetime.strptime(run_started, self._datetime_format)
+
+    def _has_insufficient_instance_capacity(self, run, initialize_node_tasks):
+        if initialize_node_tasks:
+            initialize_node_task = initialize_node_tasks[-1]
+            if initialize_node_task.get('status') == 'FAILURE' \
+                    and 'InsufficientInstanceCapacity' in initialize_node_task.get('logText', ''):
+                Logger.warn('Insufficient instance capacity detected for %s instance type'
+                            % run.get('instance', {}).get('nodeType'))
+                return True
+        return False
+
+    def get(self):
+        return list(self._records)
+
+
+class GridEngineInstanceProvider:
+
+    def get_allowed_instances(self, price_type):
+        pass
+
+
+class ReverseInstanceProvider(GridEngineInstanceProvider):
+
+    def __init__(self, inner):
+        self._inner = inner
+
+    def get_allowed_instances(self, price_type):
+        return list(reversed(self._inner.get_allowed_instances(price_type)))
+
+
+class AvailableInstanceProvider(GridEngineInstanceProvider):
+
+    def __init__(self, inner, worker_recorder, unavailability_delay, clock):
+        self._inner = inner
+        self._worker_recorder = worker_recorder
+        self._unavailability_delay = timedelta(seconds=unavailability_delay)
+        self._clock = clock
+
+    def get_allowed_instances(self, price_type):
+        allowed_instances = self._inner.get_allowed_instances(price_type)
+        available_instances = list(self._get_available(allowed_instances))
+        if available_instances:
+            return available_instances
+        Logger.warn('There are no available instance types. Trying to use all allowed instance types...')
+        return allowed_instances
+
+    def _get_available(self, instances):
+        for instance in instances:
+            if self._is_available(instance.name):
+                yield instance
+            else:
+                Logger.warn('Circuit breaking %s instance type because it is unavailable...' % instance.name)
+
+    def _is_available(self, instance_name):
+        now = self._clock.now()
+        unavailability_expiration = now - self._unavailability_delay
+        unavailability = None
+        for record in self._worker_recorder.get():
+            if record.instance_type != instance_name:
+                continue
+            if record.has_insufficient_instance_capacity:
+                unavailability = record.stopped
+        return not unavailability or unavailability - unavailability_expiration <= timedelta(seconds=0)
+
+
+class CloudPipelineInstanceProvider(GridEngineInstanceProvider):
 
     def __init__(self, pipe, cloud_provider, region_id, instance_type, instance_family,
                  hybrid_autoscale, hybrid_instance_cores, free_cores):
@@ -1532,9 +1693,6 @@ class CloudPipelineInstanceProvider:
         self.hybrid_autoscale = hybrid_autoscale
         self.hybrid_instance_cores = hybrid_instance_cores
         self.free_cores = free_cores
-
-    def get_max_allowed(self, price_type):
-        return self.get_allowed_instances(price_type).pop()
 
     def get_allowed_instances(self, price_type):
         if self.hybrid_autoscale and self.instance_family:
@@ -1784,42 +1942,59 @@ if __name__ == '__main__':
                                 CloudPipelineInstanceProvider.get_family_from_type(cloud_provider, instance_type))
     queue_static = os.getenv('CP_CAP_SGE_QUEUE_STATIC', 'false').strip().lower() == 'true'
     queue_default = os.getenv('CP_CAP_SGE_QUEUE_DEFAULT', 'false').strip().lower() == 'true'
-    queue = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
+    queue_name = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
     hostlist = os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts')
     log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK',
-                              'GridEngineAutoscaling-%s' % (queue if not queue.endswith('.q') else queue[:-2]))
+                              'GridEngineAutoscaling-%s' % (queue_name if not queue_name.endswith('.q') else queue_name[:-2]))
     owner_param_name = os.getenv('CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME', 'CP_CAP_AUTOSCALE_OWNER')
     idle_timeout = int(os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', 30))
     scale_up_strategy = os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_STRATEGY', 'default')
     scale_up_batch_size = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_BATCH_SIZE', 1))
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
+    instance_unavailability_delay = int(os.getenv('CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_DELAY', 0))
 
-    Logger.init(log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue),
+    Logger.init(log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue_name),
                 task=log_task, verbose=log_verbose)
 
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
-    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(logging_directory, '.autoscaler.%s.pipe.log' % queue))
+    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(logging_directory, '.autoscaler.%s.pipe.log' % queue_name))
     api = CloudPipelineAPI(pipe=pipe)
 
-    instance_launch_params = fetch_instance_launch_params(api, master_run_id, queue, hostlist)
+    instance_launch_params = fetch_instance_launch_params(api, master_run_id, queue_name, hostlist)
+
+    clock = Clock()
+    cmd_executor = CmdExecutor()
 
     instance_provider = CloudPipelineInstanceProvider(cloud_provider=cloud_provider, region_id=region_id,
                                                       instance_family=instance_family, instance_type=instance_type,
                                                       pipe=pipe, hybrid_autoscale=hybrid_autoscale,
                                                       hybrid_instance_cores=hybrid_instance_cores,
                                                       free_cores=free_cores)
+    if hybrid_autoscale and instance_unavailability_delay > 0:
+        worker_recorder = CloudPipelineWorkerRecorder(api=api)
+        instance_provider = AvailableInstanceProvider(inner=instance_provider,
+                                                      worker_recorder=worker_recorder,
+                                                      unavailability_delay=instance_unavailability_delay,
+                                                      clock=clock)
+    else:
+        worker_recorder = DoNothingWorkerRecorder()
+
     if scale_up_strategy == 'cpu-capacity':
         instance_selector = CpuCapacityInstanceSelector(instance_provider=instance_provider,
                                                         free_cores=free_cores)
     elif scale_up_strategy == 'naive-cpu-capacity':
         instance_selector = NaiveCpuCapacityInstanceSelector(instance_provider=instance_provider,
                                                              free_cores=free_cores)
+    elif scale_up_strategy == 'cpu-count':
+        instance_selector = CpuCountInstanceSelector(instance_provider=instance_provider,
+                                                     free_cores=free_cores)
+
     else:
         instance_selector = BackwardCompatibleInstanceSelector(instance_provider=instance_provider,
                                                                free_cores=free_cores,
                                                                batch_size=scale_up_batch_size)
 
-    max_instance_cores = instance_provider.get_max_allowed(price_type).cpu - free_cores
+    max_instance_cores = instance_provider.get_allowed_instances(price_type).pop().cpu - free_cores
     max_cluster_cores = max_instance_cores * additional_hosts
     if queue_static:
         max_cluster_cores += master_cores + (instance_cores - free_cores) * static_hosts
@@ -1839,6 +2014,7 @@ if __name__ == '__main__':
                 'Instance cores: {instance_cores}\n'
                 'Instance free cores: {free_cores}\n'
                 'Instance parameters: {instance_parameters}\n'
+                'Instance unavailability delay: {instance_unavailability_delay}\n'
                 'Max instance cores: {max_instance_cores}\n'
                 'Max cluster cores: {max_cluster_cores}\n'
                 'Max additional hosts: {additional_hosts}\n'
@@ -1869,12 +2045,13 @@ if __name__ == '__main__':
                         instance_cores=instance_cores,
                         free_cores=free_cores,
                         instance_parameters=instance_launch_params,
+                        instance_unavailability_delay=instance_unavailability_delay,
                         max_instance_cores=max_instance_cores,
                         max_cluster_cores=max_cluster_cores,
                         additional_hosts=additional_hosts,
                         queue_static=queue_static,
                         queue_default=queue_default,
-                        queue=queue,
+                        queue=queue_name,
                         hostlist=hostlist,
                         hybrid_autoscale=hybrid_autoscale,
                         hybrid_instance_cores=hybrid_instance_cores,
@@ -1885,14 +2062,12 @@ if __name__ == '__main__':
                         working_directory=working_directory,
                         default_hostfile=default_hostfile))
 
-    cmd_executor = CmdExecutor()
-    scaling_operations_clock = Clock()
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
-                             max_cluster_cores=max_cluster_cores, queue=queue, hostlist=hostlist,
+                             max_cluster_cores=max_cluster_cores, queue=queue_name, hostlist=hostlist,
                              queue_default=queue_default)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
-                                         storage_file=os.path.join(working_directory, '.autoscaler.%s.storage' % queue),
-                                         clock=scaling_operations_clock)
+                                         storage_file=os.path.join(working_directory, '.autoscaler.%s.storage' % queue_name),
+                                         clock=clock)
     host_storage = ThreadSafeHostStorage(host_storage)
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
@@ -1904,20 +2079,21 @@ if __name__ == '__main__':
                                                 instance_disk=instance_disk, instance_image=instance_image,
                                                 cmd_template=cmd_template,
                                                 price_type=price_type, region_id=region_id,
-                                                queue=queue, hostlist=hostlist,
+                                                queue=queue_name, hostlist=hostlist,
                                                 owner_param_name=owner_param_name,
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_family=instance_family,
                                                 instance_launch_params=instance_launch_params,
-                                                clock=scaling_operations_clock)
+                                                clock=clock)
     scale_up_orchestrator = GridEngineScaleUpOrchestrator(scale_up_handler=scale_up_handler, grid_engine=grid_engine,
                                                           host_storage=host_storage,
                                                           instance_selector=instance_selector,
+                                                          worker_recorder=worker_recorder,
                                                           price_type=price_type,
                                                           batch_size=scale_up_batch_size,
                                                           polling_delay=scale_up_polling_delay,
-                                                          clock=scaling_operations_clock)
+                                                          clock=clock)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
@@ -1926,7 +2102,7 @@ if __name__ == '__main__':
                                       scale_up_orchestrator=scale_up_orchestrator, scale_down_handler=scale_down_handler,
                                       host_storage=host_storage, scale_up_timeout=scale_up_timeout,
                                       scale_down_timeout=scale_down_timeout, max_additional_hosts=additional_hosts,
-                                      idle_timeout=idle_timeout, clock=scaling_operations_clock)
+                                      idle_timeout=idle_timeout, clock=clock)
     daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
                                          polling_timeout=10)
     daemon.start()
