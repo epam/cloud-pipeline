@@ -1508,6 +1508,7 @@ export default class EditToolForm extends React.Component {
               }
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
+                instanceTypes={this.allowedInstanceTypes}
                 launchCluster={this.state.launchCluster}
                 cloudRegionProvider={this.getCloudProvider()}
                 autoScaledPriceType={this.state.autoScaledPriceType}
