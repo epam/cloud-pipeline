@@ -60,7 +60,7 @@ public class VMMonitorTest {
         doReturn(CloudProvider.AWS).when(mockService).provider();
         vm = VirtualMachine.builder().tags(vmTags).build();
         monitor = new VMMonitor(mockApiClient, notifier, Collections.singletonList(mockService),
-                RUN_ID_LABEL, RUN_ID_LABEL, POOL_ID_LABEL, VM_MAX_LIVE_MINUTES);
+                RUN_ID_LABEL, RUN_ID_LABEL, POOL_ID_LABEL, VM_MAX_LIVE_MINUTES, VM_MAX_LIVE_MINUTES);
 
     }
 

@@ -1,0 +1,72 @@
+<!--
+  ~ Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+        table,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+<p>Dear user,</p>
+<p>*** This is a system generated email, do not reply to this email ***</p>
+<p>Looks like there are some Virtual Machines that are still running after associated run was completed.</p>
+<p>
+<table>
+    <tr>
+        <td><b>Instance ID</b></td>
+        <td><b>Creation date</b></td>
+        <td><b>Instance type</b></td>
+        <td><b>Private IP</b></td>
+        <td><b>Matching runs/pool</b></td>
+        <td><b>Provider</b></td>
+        <td><b>Action proposed</b></td>
+    </tr>
+    #foreach( $summary in $templateParameters["expiredNodes"] )
+    <tr>
+        <td>$summary.vm.instanceId</td>
+        <td>$summary.vm.created</td>
+        <td>$summary.vm.instanceType</td>
+        <td>$summary.vm.privateIp</td>
+        <td>
+            #foreach( $run in $summary.matchingRuns )
+            #set( $runId = $run.id )
+            #set( $runStatus =  $run.status )
+            Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$runId">$runId</a> [ #if( $runStatus )$runStatus.name#{else}UNKNOWN#end ] <br>
+            #end
+        </td>
+        <td>$summary.vm.cloudProvider</td>
+        <td>Node <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster/$summary.nodeName"/info>$summary.nodeName</a></td>
+        <td>Delete instance in the <b>$summary.vm.cloudProvider</b> console</td>
+    </tr>
+    #end
+</table>
+</p>
+<p>Please verify the state of those Virtual Machines and nodes and terminate the ones not needed anymore from the $templateParameters["fullPlatformName"] GUI.</p>
+<p>Best regards,</p>
+<p>$templateParameters["fullPlatformName"] Platform</p>
+</body>
+
+</html>

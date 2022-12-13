@@ -20,6 +20,7 @@ package com.epam.pipeline.vmmonitor.service.vm;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.vmmonitor.model.vm.ExpiredNodeSummary;
 import com.epam.pipeline.vmmonitor.model.vm.MissingLabelsSummary;
 import com.epam.pipeline.vmmonitor.model.vm.MissingNodeSummary;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
@@ -44,28 +45,38 @@ public class VMNotifier {
     private final String missingNodeTemplatePath;
     private final String missingLabelsSubject;
     private final String missingLabelsTemplatePath;
+    private final String expiredNodeTemplatePath;
+    private final String expiredNodeSubject;
     private final Queue<MissingNodeSummary> missingNodes;
     private final Queue<MissingLabelsSummary> missingLabelsSummaries;
+    private final Queue<ExpiredNodeSummary> expiredNodes;
 
     public VMNotifier(
             final VMNotificationService notificationService,
             @Value("${notification.missing-node.subject}") final String missingNodeSubject,
             @Value("${notification.missing-node.template}") final String missingNodeTemplatePath,
             @Value("${notification.missing-labels.subject}") final String missingLabelsSubject,
-            @Value("${notification.missing-labels.template}") final String missingLabelsTemplatePath) {
+            @Value("${notification.missing-labels.template}") final String missingLabelsTemplatePath,
+            @Value("${notification.expired-node.subject}") final String expiredNodeTemplatePath,
+            @Value("${notification.expired-nodes.template}") final String expiredNodeSubject) {
         this.notificationService = notificationService;
         this.missingNodeSubject = missingNodeSubject;
         this.missingNodeTemplatePath = missingNodeTemplatePath;
         this.missingLabelsSubject = missingLabelsSubject;
         this.missingLabelsTemplatePath = missingLabelsTemplatePath;
+        this.expiredNodeTemplatePath = expiredNodeTemplatePath;
+        this.expiredNodeSubject = expiredNodeSubject;
         this.missingNodes = new LinkedList<>();
         this.missingLabelsSummaries = new LinkedList<>();
+        this.expiredNodes = new LinkedList<>();
     }
 
     public void sendNotifications() {
         notifyOnQueuedElements(missingNodeSubject, missingNodeTemplatePath, missingNodes, "nodes", "missingNodes");
         notifyOnQueuedElements(missingLabelsSubject, missingLabelsTemplatePath, missingLabelsSummaries, "labels",
                                "missingLabelsSummaries");
+        notifyOnQueuedElements(expiredNodeSubject, expiredNodeTemplatePath, expiredNodes, "expired nodes",
+                "expiredNodes");
     }
 
     public void queueMissingNodeNotification(final VirtualMachine vm, final List<PipelineRun> matchingRuns,
@@ -78,6 +89,11 @@ public class VMNotifier {
                                                final Long poolId) {
         missingLabelsSummaries.add(new MissingLabelsSummary(node.getName(), labels, vm.getInstanceType(),
                                                             node.getCreationTimestamp(), runStatus, poolId));
+    }
+
+    public void queueExpiredNodeNotification(final VirtualMachine vm, final List<PipelineRun> matchingRuns,
+                                             final String nodeName) {
+        expiredNodes.add(new ExpiredNodeSummary(vm, matchingRuns, nodeName));
     }
 
     private void notifyOnQueuedElements(final String emailSubject, final String emailTemplatePath,
