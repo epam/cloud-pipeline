@@ -36,7 +36,7 @@ class MoveOperation extends CopyOperation {
   async after() {
     await super.after();
     return this.iterate(
-      this.removeItem.bind(this),
+      this.retry.bind(this, this.removeItem.bind(this)),
       this.elements,
       { stage: Operation.Stages.after },
     );

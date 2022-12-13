@@ -1,13 +1,14 @@
+const EventEmitter = require('events');
 const logger = require('../common/logger');
 
 /**
  * @typedef {Object} OperationOptions
  * @property {FileSystemAdapters} adapters
  * @property {function(string?):Promise<boolean>} [abortConfirmation]
- * @property {function:void} [callback]
+ * @property {function(string?):Promise<boolean>} [retryConfirmation]
  */
 
-class Operation {
+class Operation extends EventEmitter {
   static LOG_LEVEL = {
     log: 0,
     info: 1,
@@ -35,6 +36,7 @@ class Operation {
     pending: 'pending',
     error: 'error',
     done: 'done',
+    aborting: 'aborting',
     aborted: 'aborted',
   };
 
@@ -49,11 +51,12 @@ class Operation {
    * @param {OperationOptions} options
    */
   constructor(options = {}) {
+    super();
     const {
       // eslint-disable-next-line no-unused-vars
       abortConfirmation = ((o) => Promise.resolve(true)),
       // eslint-disable-next-line no-unused-vars
-      callback = ((o) => {}),
+      retryConfirmation = ((o) => Promise.resolve(false)),
       adapters,
     } = options || {};
     this.adapters = adapters;
@@ -61,11 +64,8 @@ class Operation {
       throw new Error('Operation should be initialized with file system adapters');
     }
     this.abortConfirmation = abortConfirmation;
-    this.waitForAborted = new Promise((resolve) => {
-      this.waitForAbortedResolve = resolve;
-    });
+    this.retryConfirmation = retryConfirmation;
     this.stageDuration = { ...this.constructor.StageDuration };
-    this.report = callback;
     /**
      * Operation identifier
      * @type {number}
@@ -75,8 +75,13 @@ class Operation {
     this.fatalError = undefined;
     this.statusValue = Operation.Status.waiting;
     this.abortRequest = undefined;
+    this.abortConfirmed = false;
     this.progressValue = 0;
     this.operationErrors = [];
+  }
+
+  report() {
+    this.emit('stateChanged', this);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -100,18 +105,21 @@ class Operation {
   set progress(value) {
     if (this.progressValue !== value && !Number.isNaN(Number(value))) {
       this.progressValue = value;
-      this.report(this);
+      this.report();
     }
   }
 
   get status() {
+    if (this.statusValue !== Operation.Status.aborted && this.abortConfirmed) {
+      return Operation.Status.aborting;
+    }
     return this.statusValue;
   }
 
   set status(value) {
     if (this.statusValue !== value) {
       this.statusValue = value;
-      this.report(this);
+      this.report();
     }
   }
 
@@ -124,32 +132,32 @@ class Operation {
 
   log = (...message) => {
     this.operationStatus = message.join(' ');
-    this.report(this);
+    this.report();
   };
 
   info = (...message) => {
     logger.info(`[${this.name}]`, ...message);
     this.operationStatus = message.join(' ');
-    this.report(this);
+    this.report();
   };
 
   warn = (...message) => {
     logger.warn(`[${this.name}]`, ...message);
     this.operationStatus = message.join(' ');
-    this.report(this);
+    this.report();
   };
 
   error = (...message) => {
     logger.error(`[${this.name}]`, ...message);
     this.operationStatus = message.join(' ');
-    this.report(this);
+    this.report();
   };
 
   fatal = (...message) => {
     logger.error(`[${this.name}]`, ...message);
     this.fatalError = message.join(' ');
     this.operationStatus = message.join(' ');
-    this.report(this);
+    this.report();
   };
 
   /**
@@ -226,6 +234,54 @@ class Operation {
     }
   };
 
+  // eslint-disable-next-line class-methods-use-this,no-empty-function
+  async cancelCurrentAdapterTasks() {
+  }
+
+  /**
+   * Perform operation once (do not repeat it on operation retry)
+   * @param {string} identifier
+   * @param {function:Promise<*>} fn
+   * @returns {Promise<*>}
+   */
+  async doOnce(identifier, fn) {
+    if (!this.onceOperations) {
+      this.onceOperations = new Map();
+    }
+    if (!this.onceOperations.has(identifier)) {
+      this.onceOperations.set(identifier, fn());
+    }
+    return this.onceOperations.get(identifier);
+  }
+
+  /**
+   * @param {function(*):Promise<any>} fn
+   * @param {*} options
+   * @returns {Promise<*>}
+   */
+  async retry(fn, ...options) {
+    let retry = false;
+    try {
+      return await fn(...options);
+    } catch (error) {
+      if (await this.isAborted()) {
+        throw error;
+      }
+      logger.log('Error occurred:', error.message, '. Asking user for retry...');
+      retry = await this.retryConfirmation(error.message);
+      logger.log(`Asking user for retry; decision: ${retry ? 'retry' : 'abort'}`);
+      if (!retry) {
+        throw error;
+      }
+    }
+    if (retry) {
+      await this.cancelCurrentAdapterTasks();
+      logger.log('Retrying...');
+      return this.retry(fn, ...options);
+    }
+    return undefined;
+  }
+
   /**
    * @param {function(*, function):Promise<*>} iteratorFn
    * @param {*[]} elements
@@ -277,10 +333,12 @@ class Operation {
         this.abortConfirmation(this.operationName)
           .then((confirmed) => {
             resolve(confirmed);
+            this.abortConfirmed = confirmed;
+            this.report();
             if (!confirmed) {
               this.abortRequest = undefined;
-            } else if (typeof this.waitForAbortedResolve === 'function') {
-              this.waitForAbortedResolve();
+            } else {
+              this.emit('abort');
             }
           });
       });
@@ -321,6 +379,10 @@ class Operation {
    */
   // eslint-disable-next-line class-methods-use-this
   async cleanUp() {
+    if (this.onceOperations) {
+      this.onceOperations.clear();
+      this.onceOperations = undefined;
+    }
     return Promise.resolve();
   }
 

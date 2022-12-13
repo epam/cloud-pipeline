@@ -23,6 +23,12 @@ class WebBasedInterface extends FileSystemInterface {
     this.client = undefined;
   }
 
+  async cancelCurrentTask() {
+    if (this.client) {
+      await this.client.cancelCurrentTask();
+    }
+  }
+
   async isDirectory(element = '/') {
     if (!this.client) {
       throw new FileSystemAdapterInitializeError(`"${this.type}" interface not initialized`);

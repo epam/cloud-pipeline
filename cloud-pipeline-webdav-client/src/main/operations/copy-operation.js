@@ -192,7 +192,7 @@ class CopyOperation extends Operation {
   async before() {
     await this.createInterfaces();
     const list = await this.iterate(
-      this.getRelativeList.bind(this),
+      this.retry.bind(this, this.getRelativeList.bind(this)),
       this.elements,
       {
         stage: Operation.Stages.before,
@@ -241,14 +241,20 @@ class CopyOperation extends Operation {
       return;
     }
     this.info(`Copying file "${name}"`);
-    const exists = await this.destinationAdapterInterface.exists(to);
-    if (exists && typeof this.overwriteExistingCallback === 'function') {
-      const overwrite = await this.overwriteExistingCallback(to);
-      if (!overwrite) {
-        this.info(`"${to}" already exists. Wouldn't be overridden`);
-        return;
+    const cancel = await this.doOnce(to, async () => {
+      const exists = await this.destinationAdapterInterface.exists(to);
+      if (exists && typeof this.overwriteExistingCallback === 'function') {
+        const overwrite = await this.overwriteExistingCallback(to);
+        if (!overwrite) {
+          this.info(`"${to}" already exists. Wouldn't be overridden`);
+          return true;
+        }
+        this.info(`"${to}" already exists. Will be overridden`);
       }
-      this.info(`"${to}" already exists. Will be overridden`);
+      return false;
+    });
+    if (cancel) {
+      return;
     }
     /**
      * @param {number} transferred
@@ -281,14 +287,25 @@ class CopyOperation extends Operation {
       {
         size: aFile.size,
         progressCallback: callback,
-        isAborted: this.waitForAborted,
+        abortSignal: this,
       },
     );
   }
 
+  async cancelCurrentAdapterTasks() {
+    await Promise.all([
+      this.sourceAdapterInterface
+        ? this.sourceAdapterInterface.cancelCurrentTask()
+        : Promise.resolve(),
+      this.destinationAdapterInterface
+        ? this.destinationAdapterInterface.cancelCurrentTask()
+        : Promise.resolve(),
+    ]);
+  }
+
   async invoke() {
     return this.iterate(
-      this.invokeElement.bind(this),
+      this.retry.bind(this, this.invokeElement.bind(this)),
       (this.list || []).slice(),
       {
         stage: Operation.Stages.invoke,

@@ -9,6 +9,7 @@ const Protocols = require('./protocols');
 const { getReadableStream } = require('../../utils/streams');
 const displayDate = require('../../../common/display-date');
 const makeDelayedLog = require('../../utils/delayed-log');
+const AbortablePromise = require('../../utils/abortable-promise');
 
 /**
  * @typedef {Object} FTPClientOptions
@@ -85,6 +86,15 @@ class FTPClient extends WebBasedClient {
     }
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  async cancelCurrentTask() {
+    if (this.client) {
+      try {
+        this.client.close();
+      } catch (_) { /* empty */ }
+    }
+  }
+
   async getDirectoryContents(directory) {
     await this.reconnectIfRequired();
     this.log(`Fetching "${directory}"...`);
@@ -148,7 +158,7 @@ class FTPClient extends WebBasedClient {
     const onRejected = (error) => {
       flush();
       let emitError = error;
-      if (/forgot to user 'await' or '\.then\(\)'/i.test(error.message)) {
+      if (/forgot to use 'await' or '\.then\(\)'/i.test(error.message)) {
         emitError = new Error('Cannot perform operation while previous is in progress');
       }
       this.error(`${progressTitle}: rejected with error:`, emitError.message);
@@ -211,7 +221,7 @@ class FTPClient extends WebBasedClient {
     const {
       size,
       progressCallback,
-      isAborted,
+      abortSignal,
     } = options;
     const readableStream = getReadableStream(data);
     if (!readableStream) {
@@ -226,20 +236,27 @@ class FTPClient extends WebBasedClient {
         progressCallback(info.bytesOverall, size);
       }
     });
-    return new Promise((resolve, reject) => {
-      isAborted
-        .then(() => {
-          this.client.ftp.closeWithError(new Error('Aborted'));
-          readableStream.destroy();
-        })
-        .catch(() => {});
-      this.client.uploadFrom(readableStream, element)
-        .then(() => {
-          this.client.trackProgress();
-        })
-        .then(() => resolve())
-        .catch(reject);
-    });
+    return AbortablePromise(
+      abortSignal,
+      () => {
+        this.client.ftp.closeWithError(new Error('Aborted'));
+        this.client.trackProgress();
+        readableStream.destroy();
+      },
+      (resolve, reject) => {
+        readableStream
+          .on('error', (error) => {
+            this.error('source stream error:', error.message);
+            reject(error);
+          });
+        this.client.uploadFrom(readableStream, element)
+          .then(() => {
+            this.client.trackProgress();
+          })
+          .then(resolve)
+          .catch(reject);
+      },
+    );
   }
 
   async removeDirectory(directory) {

@@ -8,6 +8,7 @@ module.exports = function makeDelayedLog(log, timeout = 1000) {
     timer = undefined;
     if (lastMessage && typeof log === 'function') {
       log(...lastMessage);
+      lastMessage = undefined;
     }
   }
 

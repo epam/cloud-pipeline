@@ -65,10 +65,18 @@ class RemoveOperation extends Operation {
 
   async invoke() {
     await this.iterate(
-      this.removeElement.bind(this),
+      this.retry.bind(this, this.removeElement.bind(this)),
       this.elements.slice(),
       { stage: Operation.Stages.invoke },
     );
+  }
+
+  async cancelCurrentAdapterTasks() {
+    await Promise.all([
+      this.adapterInterface
+        ? this.adapterInterface.cancelCurrentTask()
+        : Promise.resolve(),
+    ]);
   }
 }
 

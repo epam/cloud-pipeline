@@ -61,6 +61,14 @@ class CreateDirectoryOperation extends Operation {
     await this.adapterInterface.createDirectory(directoryPath);
     this.info(`Directory "${this.directory}" created`);
   }
+
+  async cancelCurrentAdapterTasks() {
+    await Promise.all([
+      this.adapterInterface
+        ? this.adapterInterface.cancelCurrentTask()
+        : Promise.resolve(),
+    ]);
+  }
 }
 
 module.exports = CreateDirectoryOperation;

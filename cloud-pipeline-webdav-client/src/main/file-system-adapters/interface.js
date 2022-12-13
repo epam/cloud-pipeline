@@ -6,6 +6,7 @@ const {
   releaseStream,
   getReadableStream,
 } = require('./utils/streams');
+const AbortablePromise = require('./utils/abortable-promise');
 
 class FileSystemInterface extends EventEmitter {
   /**
@@ -50,6 +51,9 @@ class FileSystemInterface extends EventEmitter {
     if (!this.adapter) {
       throw new Error(`Adapter not specified for "${this.type || 'unknown'}" interface`);
     }
+  }
+
+  async cancelCurrentTask() {
   }
 
   async destroy() {
@@ -154,7 +158,7 @@ class FileSystemInterface extends EventEmitter {
    * @property {number} [size]
    * @property {boolean} [overwrite=true]
    * @property {function} [progressCallback]
-   * @property {Promise<boolean>} [isAborted]
+   * @property {EventEmitter} [abortSignal]
    */
 
   /**
@@ -171,7 +175,7 @@ class FileSystemInterface extends EventEmitter {
     const {
       size,
       progressCallback,
-      isAborted,
+      abortSignal,
     } = options;
     if (typeof progressCallback === 'function' && size) {
       let transferred = 0;
@@ -181,24 +185,24 @@ class FileSystemInterface extends EventEmitter {
           progressCallback(transferred, size);
         });
     }
-    return new Promise((resolve, reject) => {
-      if (isAborted) {
-        isAborted
-          .then(() => {
-            readableStream.destroy();
-          })
-          .then(() => {
-            writeStream.end();
-            writeStream.destroy();
-          })
-          .catch(() => {})
-          .then(() => reject(new Error('Aborted')));
-      }
-      readableStream
-        .pipe(writeStream)
-        .on('error', reject)
-        .on('finish', resolve);
-    });
+    return AbortablePromise(
+      abortSignal,
+      () => {
+        readableStream.destroy();
+        writeStream.end();
+        writeStream.destroy();
+      },
+      (resolve, reject) => {
+        readableStream
+          .on('error', reject);
+        writeStream
+          .on('error', reject);
+        readableStream
+          .pipe(writeStream)
+          .on('error', reject)
+          .on('finish', resolve);
+      },
+    );
   }
 
   /**

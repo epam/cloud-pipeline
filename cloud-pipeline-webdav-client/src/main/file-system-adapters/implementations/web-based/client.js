@@ -7,11 +7,14 @@ class WebBasedClient extends EventEmitter {
     this.url = url;
     this.logTitle = url;
   }
+
+  async cancelCurrentTask() {
+  }
+
   /**
    * @param {string} directory
    * @returns {Promise<FSItem[]>}
    */
-
   async getDirectoryContents(directory) {
     return [];
   }

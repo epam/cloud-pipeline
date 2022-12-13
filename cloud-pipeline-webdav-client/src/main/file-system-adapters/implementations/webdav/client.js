@@ -9,10 +9,13 @@ const { getReadableStream } = require('../../utils/streams');
 const WebDAVError = require('./webdav-error');
 const makeDelayedLog = require('../../utils/delayed-log');
 const displayDate = require('../../../common/display-date');
+const AbortablePromise = require('../../utils/abortable-promise');
 
 const DISCLAIMER = 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you';
 
 const PROGRESS_ENABLED = false;
+
+const TIMEOUT_MS = 30 * 1000; // 30 sec
 
 function toBase64(string) {
   return Buffer.from(string).toString('base64');
@@ -26,7 +29,10 @@ class WebDAVClientImpl extends WebBasedClient {
 
   async initialize(url, user, password, ignoreCertificateErrors) {
     await super.initialize(url);
-    this.httpsAgent = new https.Agent({ rejectUnauthorized: !ignoreCertificateErrors });
+    this.httpsAgent = new https.Agent({
+      rejectUnauthorized: !ignoreCertificateErrors,
+      timeout: TIMEOUT_MS,
+    });
     this.url = url;
     const urlParsed = new URL(url);
     this.logTitle = `WebDAV ${urlParsed.hostname}`;
@@ -94,7 +100,63 @@ class WebDAVClientImpl extends WebBasedClient {
   // eslint-disable-next-line no-unused-vars
   async createReadStream(file, options = {}) {
     try {
-      return this.client.createReadStream(file);
+      const passThrough = new PassThrough();
+      // ---
+      const headers = {
+        ...this.headers,
+        Accept: 'text/plain,application/xml',
+        'Content-Type': 'application/octet-stream',
+      };
+      let remoteUrl = this.url;
+      if (remoteUrl.endsWith('/')) {
+        remoteUrl = remoteUrl.slice(0, -1);
+      }
+      if (!file.startsWith('/')) {
+        remoteUrl = remoteUrl.concat('/');
+      }
+      remoteUrl = remoteUrl.concat(file);
+      const { flush, log } = makeDelayedLog(this.log.bind(this));
+      let transferred = 0;
+      passThrough.on('data', (bytes) => {
+        transferred += bytes.length;
+        log(`downloading ${file}: ${transferred} bytes received`);
+      });
+      const clientRequest = https.request(
+        remoteUrl,
+        {
+          method: 'GET',
+          agent: this.httpsAgent,
+          headers,
+          timeout: TIMEOUT_MS,
+        },
+        (response) => {
+          response.pipe(passThrough);
+          response.on('error', (error) => {
+            this.error('response error', error.message);
+            passThrough.emit('error', new WebDAVError(error, file));
+            flush();
+          });
+          response.on('end', () => flush());
+          response.on('finish', () => flush());
+        },
+      );
+      clientRequest.on('error', (error) => {
+        this.error('request error', error.message);
+        if (error.code && /EHOSTUNREACH/i.test(error.code)) {
+          passThrough.emit('error', new WebDAVError({ message: 'Host unreachable' }, file));
+        } else if (error.code && /EPIPE/i.test(error.code)) {
+          passThrough.emit('error', new WebDAVError({ message: 'Connection closed' }, file));
+        } else {
+          passThrough.emit('error', error);
+        }
+        flush();
+      });
+      clientRequest.on('timeout', () => {
+        passThrough.emit('error', new WebDAVError({ message: 'Request timed out' }, file));
+      });
+      clientRequest.end();
+      // ---
+      return passThrough;
     } catch (error) {
       throw new WebDAVError(error, file);
     }
@@ -174,7 +236,7 @@ class WebDAVClientImpl extends WebBasedClient {
       size,
       overwrite = true,
       progressCallback,
-      isAborted,
+      abortSignal,
     } = options;
     const headers = {
       ...this.headers,
@@ -194,55 +256,82 @@ class WebDAVClientImpl extends WebBasedClient {
     remoteUrl = remoteUrl.concat(element);
     const readable = getReadableStream(data);
     const { flush, log } = makeDelayedLog(this.log.bind(this));
-    const promise = new Promise((resolve, reject) => {
-      const clientRequest = https.request(
-        remoteUrl,
-        {
-          method: 'PUT',
-          agent: this.httpsAgent,
-          headers,
-        },
-        (response) => {
-          response.on('data', () => {});
-          response.on('end', () => {
-            if (response.statusCode >= 400) {
-              const error = {
-                status: response.statusCode,
-                statusText: response.statusMessage,
-              };
+    let clientRequest;
+    let aborted = false;
+    let done = false;
+    const promise = AbortablePromise(
+      abortSignal,
+      () => {
+        aborted = true;
+        if (clientRequest) {
+          clientRequest.destroy();
+        }
+        readable.destroy();
+      },
+      (resolve, reject) => {
+        clientRequest = https.request(
+          remoteUrl,
+          {
+            method: 'PUT',
+            agent: this.httpsAgent,
+            headers,
+            timeout: TIMEOUT_MS,
+          },
+          (response) => {
+            response.on('data', () => {});
+            response.on('end', () => {
+              if (response.statusCode >= 400) {
+                const error = {
+                  status: response.statusCode,
+                  statusText: response.statusMessage,
+                };
+                reject(new WebDAVError(error, element));
+              } else {
+                resolve();
+              }
+            });
+            response.on('error', (error) => {
+              this.error('response error', error.message);
               reject(new WebDAVError(error, element));
-            } else {
-              resolve();
-            }
-          });
-          response.on('error', reject);
-        },
-      );
-      clientRequest.on('error', reject);
-      if (typeof progressCallback === 'function' && size) {
-        let transferred = 0;
-        readable
-          .on('data', (chunk) => {
-            transferred += chunk.length;
-            log(`uploading ${element}: ${transferred} bytes sent`);
-            progressCallback(transferred, size);
-          });
-      }
-      readable.pipe(clientRequest);
-      if (isAborted) {
-        isAborted
-          .then(() => {
-            clientRequest.destroy();
-          })
-          .then(() => {
-            readable.destroy();
-          })
-          .catch(() => {})
-          .then(() => reject(new Error('Aborted')));
-      }
-    });
+            });
+          },
+        );
+        clientRequest.on('timeout', () => {
+          reject(new WebDAVError({ message: 'Request timed out' }, element));
+        });
+        clientRequest.on('error', (error) => {
+          this.error('request error', error.message);
+          if (error.code && /EHOSTUNREACH/i.test(error.code)) {
+            reject(new WebDAVError({ message: 'Host unreachable' }, element));
+          } else if (error.code && /EPIPE/i.test(error.code)) {
+            reject(new WebDAVError({ message: 'Connection closed' }, element));
+          } else {
+            reject(error);
+          }
+        });
+        if (typeof progressCallback === 'function' && size) {
+          let transferred = 0;
+          readable
+            .on('data', (chunk) => {
+              if (!aborted && !done) {
+                transferred += chunk.length;
+                log(`uploading ${element}: ${transferred} bytes sent`);
+                progressCallback(transferred, size);
+              }
+            });
+        }
+        readable.on('error', (error) => {
+          this.error('source stream error:', error.message);
+          reject(error);
+        });
+        readable.pipe(clientRequest);
+      },
+    );
     promise
       .catch(() => {})
+      .then(() => {
+        done = true;
+      })
       .then(() => flush());
     return promise;
   }

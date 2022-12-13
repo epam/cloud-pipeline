@@ -69,6 +69,24 @@ function createAbortConfirmation(dialog) {
   };
 }
 
+/**
+ * @param {Dialog} dialog
+ * @returns {function(): Promise<boolean>}
+ */
+function createRetryConfirmation(dialog) {
+  if (!dialog || typeof dialog.confirm !== 'function') {
+    return () => Promise.resolve(false);
+  }
+  return async (error) => {
+    const { result } = await dialog.confirm({
+      message: `Error occurred: ${error}. Retry?`,
+      ok: 'Retry',
+      cancel: 'Abort',
+    });
+    return result;
+  };
+}
+
 class Operations {
   /**
    * @param {FileSystemAdapters} adapters
@@ -122,6 +140,8 @@ class Operations {
   submitOperation(operation) {
     if (operation) {
       this.operations.push(operation);
+      operation
+        .on('stateChanged', this.report.bind(this, operation));
       operation
         .submit()
         .then(() => {
@@ -186,8 +206,8 @@ class Operations {
       source: sourceInterface,
       sourcePath,
       directory: folder,
-      callback: this.report.bind(this),
       abortConfirmation: createAbortConfirmation(this.dialog),
+      retryConfirmation: createRetryConfirmation(this.dialog),
     }));
   }
 
@@ -219,8 +239,8 @@ class Operations {
         adapters: this.adapters,
         source,
         elements: sourceElements,
-        callback: this.report.bind(this),
         abortConfirmation: createAbortConfirmation(this.dialog),
+        retryConfirmation: createRetryConfirmation(this.dialog),
       }));
     }
     return undefined;
@@ -245,8 +265,8 @@ class Operations {
       elements: sourceElements,
       destination,
       destinationPath,
-      callback: this.report.bind(this),
       abortConfirmation: createAbortConfirmation(this.dialog),
+      retryConfirmation: createRetryConfirmation(this.dialog),
       overwriteExistingCallback: createOverrideConfirmation(this.dialog),
     }));
   }
@@ -270,8 +290,8 @@ class Operations {
       elements: sourceElements,
       destination,
       destinationPath,
-      callback: this.report.bind(this),
       abortConfirmation: createAbortConfirmation(this.dialog),
+      retryConfirmation: createRetryConfirmation(this.dialog),
       overwriteExistingCallback: createOverrideConfirmation(this.dialog),
     }));
   }

@@ -50,6 +50,7 @@ function Operation(
       onClose(operation);
     }
   }, [onClose, operation]);
+  const inProgress = !/^(aborting|error|aborted|done)$/i.test(operation?.status);
   const finished = /^(error|aborted|done)$/i.test(operation?.status);
   return (
     <div
@@ -79,7 +80,7 @@ function Operation(
         {operation?.description || '\u00A0'}
       </span>
       {
-        !finished && (
+        inProgress && (
           <CloseCircleFilled
             className="close"
             onClick={abortCallback}
