@@ -34,7 +34,8 @@ import FacetedFilter, {DocumentTypeFilter, DocumentTypeFilterName} from './facet
 import {
   PresentationModes,
   SelectionPreview,
-  TogglePresentationMode
+  TogglePresentationMode,
+  ExportButton
 } from './faceted-search/controls';
 import SearchResults, {DEFAULT_PAGE_SIZE} from './faceted-search/search-results';
 import {
@@ -895,7 +896,9 @@ class FacetedSearch extends React.Component {
       query,
       showSelectionPreview,
       selectedItems = [],
-      userDocumentTypes = []
+      userDocumentTypes = [],
+      sortingOrder = [],
+      facets = []
     } = this.state;
     if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
       return (
@@ -955,6 +958,21 @@ class FacetedSearch extends React.Component {
             <Icon type="search" />
             Search
           </Button>
+          <ExportButton
+            className={styles.find}
+            size="large"
+            type="primary"
+            columns={this.columns}
+            query={query}
+            filters={{
+              ...(activeFilters || {}),
+              ...(
+                userDocumentTypes.length > 0 ? {[DocumentTypeFilterName]: userDocumentTypes} : {}
+              )
+            }}
+            sorting={sortingOrder}
+            facets={facets}
+          />
         </div>
         {
           userDocumentTypes.length === 0 && (

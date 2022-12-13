@@ -277,5 +277,13 @@ export {
   DocumentColumns,
   fetchAndParseExtraColumns,
   getDefaultColumns,
-  parseExtraColumns
+  parseExtraColumns,
+  Name,
+  Changed,
+  Size,
+  Owner,
+  Path,
+  Description,
+  Started,
+  Finished
 };
