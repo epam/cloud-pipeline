@@ -56,10 +56,12 @@ class CreateDirectoryOperation extends Operation {
     if (!this.directory) {
       throw new Error('Directory name not specified');
     }
-    this.info(`Creating directory "${this.directory}"...`);
-    const directoryPath = this.adapterInterface.joinPath(this.sourcePath, this.directory, true);
-    await this.adapterInterface.createDirectory(directoryPath);
-    this.info(`Directory "${this.directory}" created`);
+    await this.retry(async () => {
+      this.info(`Creating directory "${this.directory}"...`);
+      const directoryPath = this.adapterInterface.joinPath(this.sourcePath, this.directory, true);
+      await this.adapterInterface.createDirectory(directoryPath);
+      this.info(`Directory "${this.directory}" created`);
+    });
   }
 
   async cancelCurrentAdapterTasks() {

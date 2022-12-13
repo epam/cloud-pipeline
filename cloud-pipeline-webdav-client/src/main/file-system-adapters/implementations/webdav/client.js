@@ -130,14 +130,29 @@ class WebDAVClientImpl extends WebBasedClient {
           timeout: TIMEOUT_MS,
         },
         (response) => {
-          response.pipe(passThrough);
-          response.on('error', (error) => {
-            this.error('response error', error.message);
-            passThrough.emit('error', new WebDAVError(error, file));
+          if (response.statusCode >= 400) {
+            this.error('response error', response.statusCode, response.statusMessage);
+            passThrough.emit(
+              'error',
+              new WebDAVError(
+                {
+                  status: response.statusCode,
+                  statusText: `error reading file (${response.statusCode} ${response.statusMessage})`,
+                },
+                file,
+              ),
+            );
             flush();
-          });
-          response.on('end', () => flush());
-          response.on('finish', () => flush());
+          } else {
+            response.pipe(passThrough);
+            response.on('error', (error) => {
+              this.error('response error', error.message);
+              passThrough.emit('error', new WebDAVError(error, file));
+              flush();
+            });
+            response.on('end', () => flush());
+            response.on('finish', () => flush());
+          }
         },
       );
       clientRequest.on('error', (error) => {
@@ -360,10 +375,10 @@ class WebDAVClientImpl extends WebBasedClient {
   async removeDirectory(directory) {
     try {
       if (!directory) {
-        return Promise.resolve();
+        return;
       }
       this.info(`Removing directory "${directory}"`);
-      return this.client.deleteFile(correctDirectoryPath(directory));
+      await this.client.deleteFile(correctDirectoryPath(directory));
     } catch (error) {
       throw new WebDAVError(error, directory);
     }
@@ -372,14 +387,14 @@ class WebDAVClientImpl extends WebBasedClient {
   async removeFile(file) {
     try {
       if (!file) {
-        return Promise.resolve();
+        return;
       }
       let filePathCorrected = file;
       if (filePathCorrected.endsWith('/')) {
         filePathCorrected = filePathCorrected.slice(0, -1);
       }
       this.info(`Removing file "${filePathCorrected}"`);
-      return this.client.deleteFile(filePathCorrected);
+      await this.client.deleteFile(filePathCorrected);
     } catch (error) {
       throw new WebDAVError(error, file);
     }
