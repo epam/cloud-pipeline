@@ -260,8 +260,9 @@ function applyParametersArray (configuration, parametersArray) {
             name: parameter.parameter,
             value: parameter.value
           });
+        } else {
+          param.value = parameter.value;
         }
-        param.value = parameter.value;
       }
     };
     applyParameter(gpu);
