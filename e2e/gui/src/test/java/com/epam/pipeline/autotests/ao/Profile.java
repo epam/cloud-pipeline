@@ -184,6 +184,7 @@ public class Profile implements AccessObject<Profile> {
             sleep(3, SECONDS);
             attempt++;
         }
+        ensureDisable(SAVE);
         return this;
     }
 

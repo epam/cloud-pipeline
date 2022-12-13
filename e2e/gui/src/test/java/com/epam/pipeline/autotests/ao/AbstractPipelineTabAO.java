@@ -116,7 +116,6 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
 
     public PipelineRunFormAO runPipeline() {
         sleep(2, SECONDS);
-//        ensure(RUN, not(disabled));
         get(RUN).waitUntil(not(disabled), C.DEFAULT_TIMEOUT);
         sleep(2, SECONDS);
         click(RUN);

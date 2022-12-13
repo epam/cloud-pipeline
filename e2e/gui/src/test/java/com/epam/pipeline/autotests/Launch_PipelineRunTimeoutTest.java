@@ -22,9 +22,6 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
-import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Condition.not;
-import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineRunningTest {
