@@ -57,8 +57,8 @@ public class VMNotifier {
             @Value("${notification.missing-node.template}") final String missingNodeTemplatePath,
             @Value("${notification.missing-labels.subject}") final String missingLabelsSubject,
             @Value("${notification.missing-labels.template}") final String missingLabelsTemplatePath,
-            @Value("${notification.expired-node.subject}") final String expiredNodeTemplatePath,
-            @Value("${notification.expired-nodes.template}") final String expiredNodeSubject) {
+            @Value("${notification.expired-node.subject}") final String expiredNodeSubject,
+            @Value("${notification.expired-node.template}") final String expiredNodeTemplatePath) {
         this.notificationService = notificationService;
         this.missingNodeSubject = missingNodeSubject;
         this.missingNodeTemplatePath = missingNodeTemplatePath;
