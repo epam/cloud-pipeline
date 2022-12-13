@@ -261,6 +261,13 @@ const DocumentColumns = [
 
 const mainColumns = [Name, Description, Changed, Size];
 const detailsColumns = [Owner, Path];
+const exportVOColumns = {
+  [Name.key]: 'includeName',
+  [Changed.key]: 'includeChanged',
+  [Size.key]: 'includeSize',
+  [Owner.key]: 'includeOwner',
+  [Path.key]: 'includePath'
+};
 const otherColumns = DocumentColumns
   .filter((aColumn) => !mainColumns.includes(aColumn) && !detailsColumns.includes(aColumn));
 
@@ -275,6 +282,7 @@ function getDefaultColumns (extraColumns = []) {
 
 export {
   DocumentColumns,
+  exportVOColumns,
   fetchAndParseExtraColumns,
   getDefaultColumns,
   parseExtraColumns

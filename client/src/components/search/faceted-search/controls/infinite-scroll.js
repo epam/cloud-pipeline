@@ -21,7 +21,7 @@ import classNames from 'classnames';
 import styles from './controls.css';
 
 const DEFAULT_PAGE_SIZE = 50;
-const SCROLL_BLOCK_DELAY = 100;
+const SCROLL_BLOCK_DELAY = 500;
 
 const MORE_PLACEHOLDER_HEIGHT = 38;
 const MORE_TRIGGER_HEIGHT = MORE_PLACEHOLDER_HEIGHT / 2.0;

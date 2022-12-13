@@ -24,17 +24,20 @@ import {
   Icon,
   Input,
   Dropdown,
-  Menu
+  Menu,
+  message
 } from 'antd';
 import RcMenu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
 import classNames from 'classnames';
+import FileSaver from 'file-saver';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
 import FacetedFilter, {DocumentTypeFilter, DocumentTypeFilterName} from './faceted-search/filter';
 import {
   PresentationModes,
   SelectionPreview,
-  TogglePresentationMode
+  TogglePresentationMode,
+  ExportSearchResultsDialog
 } from './faceted-search/controls';
 import SearchResults, {DEFAULT_PAGE_SIZE} from './faceted-search/search-results';
 import {
@@ -51,13 +54,34 @@ import {
   fetchFacets,
   FacetModeStorage,
   toggleSortingByField,
-  removeSortingByField
+  removeSortingByField,
+  getSortingPayload
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
 import SharedItemInfo from '../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import {SearchItemTypes} from '../../models/search';
+import FacetedSearchExport, {mapColumnKeysToPayload}
+  from '../../models/search/faceted-search-export';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
+
+function checkBlob (blob) {
+  return new Promise(resolve => {
+    const fr = new FileReader();
+    fr.onload = function () {
+      try {
+        const {status, message} = JSON.parse(this.result);
+        if (/^error$/i.test(status)) {
+          resolve(message || 'Error exporting search results');
+        } else {
+          resolve(null);
+        }
+      } catch (_) {}
+      resolve(null);
+    };
+    fr.readAsText(blob);
+  });
+}
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
 @inject((stores, props) => {
@@ -74,6 +98,8 @@ class FacetedSearch extends React.Component {
   state = {
     activeFilters: {},
     extraColumnsConfiguration: [],
+    exportResultsDialogVisible: false,
+    exportSearchResultsPending: false,
     sortingOrder: DefaultSorting,
     userDocumentTypes: [],
     continuousOptions: {},
@@ -98,6 +124,7 @@ class FacetedSearch extends React.Component {
   }
 
   abortController;
+  scrollingParameters;
 
   componentDidMount () {
     const {facetedFilters} = this.props;
@@ -385,6 +412,7 @@ class FacetedSearch extends React.Component {
             });
             return;
           }
+          this.scrollingParameters = continuousOptions;
           const userDocumentTypesFilter = userDocumentTypes.length > 0
             ? {[DocumentTypeFilterName]: userDocumentTypes}
             : {};
@@ -506,6 +534,65 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  doSearchExport = (keys) => {
+    const {
+      activeFilters,
+      sortingOrder,
+      userDocumentTypes = [],
+      query,
+      pageSize,
+      facets
+    } = this.state;
+    const userDocumentTypesFilter = userDocumentTypes.length > 0
+      ? {[DocumentTypeFilterName]: userDocumentTypes}
+      : {};
+    const mergedFilters = {
+      ...(activeFilters || {}),
+      ...userDocumentTypesFilter
+    };
+    const {facetedSearchExportVO, metadataKeys} = mapColumnKeysToPayload(keys);
+    const payload = {
+      csvFileName: 'export.csv',
+      facetedSearchExportVO: {
+        ...facetedSearchExportVO,
+        delimiter: ','
+      },
+      facetedSearchRequest: {
+        query: query || '*',
+        filters: mergedFilters,
+        sorts: getSortingPayload(sortingOrder),
+        metadataFields: metadataKeys,
+        facets: facets.map(f => f.name),
+        pageSize,
+        highlight: false,
+        ...(this.scrollingParameters && {
+          scrollingParameters: this.scrollingParameters
+        })
+      }
+    };
+    const request = new FacetedSearchExport();
+    this.setState({exportSearchResultsPending: true}, async () => {
+      const hide = message.loading('Downloading search results...', -1);
+      await request.send(payload);
+      if (request.value instanceof Blob) {
+        const error = await checkBlob(request.value);
+        if (error) {
+          message.error(error, 5);
+        } else {
+          FileSaver.saveAs(request.value, 'Search_results.csv');
+        }
+      } else if (request.error) {
+        message.error(request.error, 5);
+      } else {
+        message.error('Error downloading search results', 5);
+      }
+      this.setState({exportSearchResultsPending: false}, () => {
+        hide();
+        this.closeExportResultsDialog();
+      });
+    });
+  };
+
   loadFacets = (abortSignal) => {
     const {facetsLoaded, sortingOrder = []} = this.state;
     if (facetsLoaded) {
@@ -589,6 +676,14 @@ class FacetedSearch extends React.Component {
 
   onChangeQuery = () => {
     this.doSearch();
+  };
+
+  openExportResultsDialog = () => {
+    this.setState({exportResultsDialogVisible: true});
+  };
+
+  closeExportResultsDialog = () => {
+    this.setState({exportResultsDialogVisible: false});
   };
 
   onLoadNextPage = (document, forward = true) => {
@@ -890,6 +985,8 @@ class FacetedSearch extends React.Component {
     const {systemDictionaries} = this.props;
     const {
       activeFilters,
+      exportResultsDialogVisible,
+      exportSearchResultsPending,
       facetsLoaded,
       presentationMode,
       query,
@@ -954,6 +1051,15 @@ class FacetedSearch extends React.Component {
           >
             <Icon type="search" />
             Search
+          </Button>
+          <Button
+            className={styles.find}
+            size="large"
+            type="primary"
+            onClick={this.openExportResultsDialog}
+          >
+            <Icon type="download" />
+            Export
           </Button>
         </div>
         {
@@ -1050,6 +1156,13 @@ class FacetedSearch extends React.Component {
           visible={this.state.shareDialogVisible}
           shareItems={this.state.itemsToShare}
           close={this.closeShareItemDialog}
+        />
+        <ExportSearchResultsDialog
+          visible={exportResultsDialogVisible}
+          pending={exportSearchResultsPending}
+          columns={this.columns}
+          onOk={this.doSearchExport}
+          onCancel={this.closeExportResultsDialog}
         />
       </div>
     );

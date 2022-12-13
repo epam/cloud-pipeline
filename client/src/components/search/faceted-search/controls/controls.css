@@ -106,3 +106,21 @@
   justify-content: flex-start;
   color: red;
 }
+
+.export-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.export-container .controls {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.export-container .checkbox-group {
+  display: flex;
+  flex-direction: column;
+  max-height: 50vh;
+  overflow: auto;
+  padding: 5px 0;
+}
