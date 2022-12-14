@@ -2,7 +2,7 @@
 window.addEventListener('DOMContentLoaded', () => {
   let container;
   let documents = [];
-  const SEARCH_URL = '$API_URL';
+  const SEARCH_URL = '${API_SEARCH_METHOD}';
   const PAGE_SIZE = 50;
   const CSS_TEXT = `
     .cp-container,
