@@ -42,6 +42,7 @@
         <td><b>Private IP</b></td>
         <td><b>Matching runs/pool</b></td>
         <td><b>Provider</b></td>
+        <td><b>Cluster node</b></td>
         <td><b>Action proposed</b></td>
     </tr>
     #foreach( $summary in $templateParameters["expiredNodes"] )
@@ -54,12 +55,12 @@
             #foreach( $run in $summary.matchingRuns )
             #set( $runId = $run.id )
             #set( $runStatus =  $run.status )
-            Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$runId">$runId</a> [ #if( $runStatus )$runStatus.name#{else}UNKNOWN#end ] <br>
+            Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$runId">$runId</a><br>
             #end
         </td>
         <td>$summary.vm.cloudProvider</td>
         <td>Node <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster/$summary.nodeName"/info>$summary.nodeName</a></td>
-        <td>Delete instance in the <b>$summary.vm.cloudProvider</b> console</td>
+        <td>Delete instance from $templateParameters["fullPlatformName"] GUI</td>
     </tr>
     #end
 </table>

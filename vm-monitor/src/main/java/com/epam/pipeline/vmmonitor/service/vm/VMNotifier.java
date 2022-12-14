@@ -99,7 +99,7 @@ public class VMNotifier {
     private void notifyOnQueuedElements(final String emailSubject, final String emailTemplatePath,
                                         final Queue<?> queue, final String queueName, final String parameterName) {
         if (CollectionUtils.isNotEmpty(queue)) {
-            log.debug("Sending notification on {} missing {}}", queue.size(), queueName);
+            log.debug("Sending notification on {} missing {}", queue.size(), queueName);
             final Map<String, Object> parameters = Collections.singletonMap(parameterName, queue);
             notificationService.sendMessage(parameters, emailSubject, emailTemplatePath);
             queue.clear();
