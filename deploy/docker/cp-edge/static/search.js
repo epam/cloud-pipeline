@@ -2,7 +2,7 @@
 window.addEventListener('DOMContentLoaded', () => {
   let container;
   let documents = [];
-  const SEARCH_URL = 'https://aws.cloud-pipeline.com/pipeline/restapi/search';
+  const SEARCH_URL = '/pipeline/restapi/search';
   const PAGE_SIZE = 50;
   const CSS_TEXT = `
     .cp-container,
