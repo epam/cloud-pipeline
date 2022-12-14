@@ -2365,31 +2365,14 @@ export default `
 }
 @THEME .cp-search-faceted-button {
   color: @application-color;
-  background-color: @panel-background-color;
-  border: 1px solid @input-border;
 }
-@THEME .cp-search-faceted-button:hover,
-@THEME .cp-search-faceted-button:focus {
+@THEME .cp-search-faceted-button.selected,
+@THEME .cp-search-faceted-button .selected {
   color: @primary-color;
-  background-color: @panel-background-color;
-  border-color: @primary-color;
-}
-@THEME .cp-search-faceted-button.selected {
-  color: @primary-text-color;
-  background-color: @primary-color;
-  border-color: @primary-color;
-}
-@THEME .cp-search-faceted-button.selected:hover,
-@THEME .cp-search-faceted-button.selected:focus {
-  color: @primary-text-color;
-  background-color: @primary-hover-color;
-  border-color: @primary-hover-color;
 }
 @THEME .cp-search-faceted-button.disabled,
 @THEME .cp-search-faceted-button:hover.disabled {
   color: @btn-disabled-color;
-  background-color: transparent;
-  border-color: transparent;
   cursor: default;
 }
 @THEME .cp-search-type-button {

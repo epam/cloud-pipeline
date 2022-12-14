@@ -775,6 +775,34 @@ class FacetedSearch extends React.Component {
     );
   };
 
+  renderExportButton = () => {
+    const {
+      activeFilters,
+      query,
+      userDocumentTypes = [],
+      sortingOrder = [],
+      facets = []
+    } = this.state;
+    return (
+      <ExportButton
+        className={styles.find}
+        size="large"
+        type="primary"
+        columns={this.columns}
+        query={query}
+        filters={{
+          ...(activeFilters || {}),
+          ...(userDocumentTypes.length > 0
+            ? {[DocumentTypeFilterName]: userDocumentTypes}
+            : {}
+          )
+        }}
+        sorting={sortingOrder}
+        facets={facets}
+      />
+    );
+  };
+
   renderSortingControls = () => {
     const {
       sortingOrder,
@@ -939,6 +967,12 @@ class FacetedSearch extends React.Component {
             onChange={this.onQueryChange}
             onPressEnter={this.onChangeQuery}
           />
+          <DocumentTypeFilter
+            values={this.documentTypeFilter.values}
+            selection={(activeFilters || {})[DocumentTypeFilterName]}
+            onChange={this.onChangeFilter(DocumentTypeFilterName)}
+            onClearFilters={this.onClearFilters}
+          />
           {
             userDocumentTypes.length > 0 && (
               <TogglePresentationMode
@@ -958,33 +992,13 @@ class FacetedSearch extends React.Component {
             <Icon type="search" />
             Search
           </Button>
-          <ExportButton
-            className={styles.find}
-            size="large"
-            type="primary"
-            columns={this.columns}
-            query={query}
-            filters={{
-              ...(activeFilters || {}),
-              ...(
-                userDocumentTypes.length > 0 ? {[DocumentTypeFilterName]: userDocumentTypes} : {}
-              )
-            }}
-            sorting={sortingOrder}
-            facets={facets}
-          />
         </div>
         {
           userDocumentTypes.length === 0 && (
             <div
               className={classNames(styles.actions, 'cp-search-actions')}
             >
-              <DocumentTypeFilter
-                values={this.documentTypeFilter.values}
-                selection={(activeFilters || {})[DocumentTypeFilterName]}
-                onChange={this.onChangeFilter(DocumentTypeFilterName)}
-                onClearFilters={this.onClearFilters}
-              />
+              {this.renderExportButton()}
               <TogglePresentationMode
                 className={styles.togglePresentationMode}
                 onChange={this.onChangePresentationMode}
@@ -997,8 +1011,9 @@ class FacetedSearch extends React.Component {
         {
           userDocumentTypes.length > 0 && (
             <div
-              className={styles.actions}
+              className={classNames(styles.actions, 'cp-search-actions')}
             >
+              {this.renderExportButton()}
               {this.renderSortingControls()}
             </div>
           )
