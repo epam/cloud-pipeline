@@ -514,7 +514,7 @@ public class SearchRequestBuilder {
         }
         final MatchQueryBuilder storageIdentifierQuery = NumberUtils.isDigits(storageIdentifier)
                 ? QueryBuilders.matchQuery(ES_STORAGE_ID_FIELD, storageIdentifier)
-                : QueryBuilders.matchQuery(ES_STORAGE_NAME_FIELD, storageIdentifier);
+                : QueryBuilders.matchQuery(buildKeywordName(ES_STORAGE_NAME_FIELD), storageIdentifier);
         queryBuilder.must(storageIdentifierQuery);
     }
 }

@@ -958,7 +958,7 @@ public class SystemPreferences {
         isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
 
     public static final StringPreference SEARCH_ELASTIC_PREFIX_FILTER_FIELD = new StringPreference(
-            "search.elastic.prefix.filter.field", "find_prefix", SEARCH_GROUP, pass);
+            "search.elastic.prefix.filter.field", "id", SEARCH_GROUP, pass);
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
