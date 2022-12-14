@@ -42,10 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -125,6 +122,12 @@ public class SearchManager {
                             String.format("System preference %s or page size are not provided",
                                     SystemPreferences.SEARCH_EXPORT_PAGE_SIZE.getKey())));
             request.getFacetedSearchRequest().setPageSize(searchExportPageSize);
+        }
+        final String searchResultDisplayNameTag = preferenceManager.getPreference(
+                SystemPreferences.FACETED_FILTER_DISPLAY_NAME_TAG);
+        if (StringUtils.isNotBlank(searchResultDisplayNameTag)) {
+            Optional.ofNullable(request.getFacetedSearchRequest().getMetadataFields())
+                    .orElseGet(ArrayList::new).add(searchResultDisplayNameTag);
         }
         final FacetedSearchResult facetedSearchResult = facetedSearch(request.getFacetedSearchRequest());
         return searchExportManager.export(request, facetedSearchResult);
