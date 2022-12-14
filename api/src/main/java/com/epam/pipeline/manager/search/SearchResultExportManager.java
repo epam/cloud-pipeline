@@ -21,6 +21,8 @@ import com.epam.pipeline.controller.vo.search.FacetedSearchExportVO;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchDocument;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.opencsv.CSVWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,23 +61,30 @@ public class SearchResultExportManager {
             Constants.FMT_ISO_LOCAL_DATE);
     private static final char DELIMITER = ',';
 
+    private final PreferenceManager preferenceManager;
+
     public byte[] export(final FacetedSearchExportRequest searchExportRequest, final FacetedSearchResult searchResult) {
         final FacetedSearchExportVO facetedSearchExportVO = Optional.ofNullable(
                 searchExportRequest.getFacetedSearchExportVO())
                 .orElseGet(FacetedSearchExportVO::new);
+
         final Character delimiter = Optional.ofNullable(facetedSearchExportVO.getDelimiter())
                 .map(del -> del.charAt(0))
                 .orElse(DELIMITER);
-        try (StringWriter writer = new StringWriter(); CSVWriter csvWriter = new CSVWriter(writer, delimiter)) {
 
+        final String searchResultDisplayNameTag = preferenceManager.getPreference(
+                SystemPreferences.FACETED_FILTER_DISPLAY_NAME_TAG);
+
+        try (StringWriter writer = new StringWriter(); CSVWriter csvWriter = new CSVWriter(writer, delimiter)) {
             final String[] header = buildCsvHeader(searchExportRequest.getFacetedSearchRequest().getMetadataFields(),
                     facetedSearchExportVO);
             csvWriter.writeNext(header, false);
             CollectionUtils.emptyIfNull(searchResult.getDocuments()).stream()
-                    .map(searchDocument -> createItem(searchDocument, facetedSearchExportVO,
-                            searchExportRequest.getFacetedSearchRequest().getMetadataFields())
-                    )
-                    .forEach(item -> csvWriter.writeNext(item, false));
+                    .map(searchDocument -> createItem(
+                            searchDocument, facetedSearchExportVO,
+                            searchExportRequest.getFacetedSearchRequest().getMetadataFields(),
+                            searchResultDisplayNameTag)
+                    ).forEach(item -> csvWriter.writeNext(item, false));
             return writer.toString().getBytes(Charset.defaultCharset());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -83,14 +92,18 @@ public class SearchResultExportManager {
         }
     }
 
-    private String[] createItem(final SearchDocument searchDocument,
-                                final FacetedSearchExportVO facetedSearchExportVO,
-                                final List<String> metadataFields) {
+    private String[] createItem(final SearchDocument searchDocument, final FacetedSearchExportVO facetedSearchExportVO,
+                                final List<String> metadataFields, final String searchResultDisplayNameTag) {
         final List<String> result = new ArrayList<>();
-        if (facetedSearchExportVO.isIncludeName()) {
-            result.add(getItem(searchDocument.getName()));
-        }
         final Map<String, String> attributes = MapUtils.emptyIfNull(searchDocument.getAttributes());
+        if (facetedSearchExportVO.isIncludeName()) {
+            final String fileName = getItem(searchDocument.getName());
+            result.add(
+                    StringUtils.isNotBlank(searchResultDisplayNameTag)
+                            ? getItem(attributes.getOrDefault(searchResultDisplayNameTag, fileName))
+                            : fileName
+            );
+        }
         if (facetedSearchExportVO.isIncludeChanged()) {
             final String changedData = Optional.ofNullable(attributes.get(LAST_MODIFIED.getFieldName()))
                     .map(field -> Optional.of(LocalDateTime.parse(getItem(field), ISO_DATE_FORMATTER))
