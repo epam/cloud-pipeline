@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.run;
 
 import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
@@ -39,10 +40,11 @@ import java.util.List;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.configuration.ConfigurationCreatorUtils.getRunConfiguration;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipeline;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRunScheduleVO;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getRunSchedule;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
@@ -58,7 +60,7 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
     private final List<PipelineRunScheduleVO> pipelineRunScheduleVOList =
             Collections.singletonList(pipelineRunScheduleVO);
     private final PipelineRun pipelineRun = getPipelineRun(ID, ANOTHER_SIMPLE_USER);
-    private final PipelineRun parentPipelineRun = getPipelineRun(ID_2, ANOTHER_SIMPLE_USER);
+    private final Pipeline parentPipeline = getPipeline(ID_2, ANOTHER_SIMPLE_USER);
     private final RunConfiguration runConfiguration = getRunConfiguration(ID, ANOTHER_SIMPLE_USER);
 
     @Autowired
@@ -361,15 +363,15 @@ public class RunScheduleApiServiceTest extends AbstractAclTest {
 
     private void mockPipelineRunPermission(final Permission permission) {
         doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun, permission);
+        doReturn(parentPipeline).when(mockPipelineRunManager).loadRunParent(pipelineRun);
+        initAclEntity(parentPipeline, permission);
         mockSecurityContext();
     }
 
     private void mockPipelineRunWithoutPermission() {
         doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
-        doReturn(parentPipelineRun).when(mockPipelineRunManager).loadRunParent(pipelineRun);
-        initAclEntity(parentPipelineRun);
+        doReturn(parentPipeline).when(mockPipelineRunManager).loadRunParent(pipelineRun);
+        initAclEntity(parentPipeline);
         mockSecurityContext();
     }
 

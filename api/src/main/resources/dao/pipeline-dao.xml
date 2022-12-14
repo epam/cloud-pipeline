@@ -37,7 +37,8 @@
                         pipeline_type,
                         config,
                         locked,
-                        branch)
+                        branch,
+                        visibility)
                     VALUES (
                         :PIPELINE_ID,
                         :PIPELINE_NAME,
@@ -52,7 +53,8 @@
                         :PIPELINE_TYPE,
                         :CONFIG,
                         :PIPELINE_LOCKED,
-                        :BRANCH)
+                        :BRANCH,
+                        :VISIBILITY)
                 ]]>
             </value>
         </property>
@@ -68,7 +70,8 @@
                         repository = :REPOSITORY,
                         repository_ssh = :REPOSITORY_SSH,
                         config = :CONFIG,
-                        branch = :BRANCH
+                        branch = :BRANCH,
+                        visibility = :VISIBILITY
                     WHERE
                         pipeline_id = :PIPELINE_ID
                 ]]>
@@ -91,7 +94,8 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility
                     FROM
                         pipeline.pipeline
                     ORDER BY pipeline_id
@@ -122,7 +126,8 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -147,7 +152,8 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -172,7 +178,8 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -197,7 +204,8 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -232,6 +240,7 @@
                             p.config,
                             p.locked AS pipeline_locked,
                             p.branch,
+                            p.visibility,
 		                    p.owner,
 		                    c.folder_id,
                             c.parent_id AS parent_folder_id
@@ -256,6 +265,7 @@
                             null AS config,
                             null AS pipeline_locked,
                             null AS branch,
+                            null AS visibility,
 		                    null AS owner,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
@@ -282,6 +292,7 @@
                             p.config,
                             p.locked AS pipeline_locked,
                             p.branch,
+                            p.visibility,
 		                    p.owner,
 		                    c.folder_id,
                             c.parent_id AS parent_folder_id
@@ -302,6 +313,7 @@
                             null AS config,
                             null AS pipeline_locked,
                             null AS branch,
+                            null AS visibility,
 		                    null AS owner,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id

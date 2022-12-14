@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -62,7 +63,6 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreferen
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
-import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
