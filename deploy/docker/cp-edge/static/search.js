@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 
 let API = '${API_EXTERNAL}';
 if (API.endsWith('/')) {
@@ -23,7 +38,7 @@ window.addEventListener('DOMContentLoaded', () => {
       top: 10px;
       right: 10px;
       width: 50px;
-      padding: 10px 15px;
+      padding: 0;
       border: 1px solid #bfbfbf;
       border-radius: 4px;
       background: white;
@@ -35,6 +50,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     .cp-container.expanded {
       width: 50vw;
+      padding: 10px 15px;
     }
     .cp-search-controls {
       display: flex;
@@ -44,12 +60,14 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     .cp-expand-btn:before {
       display: flex;
+      padding: 10px 15px;
       content: url("data:image/svg+xml; utf8, %3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024' width='20' height='20'%3E%3Cpath fill='rgba(0,0,0,0.65)' d='M909.6 854.5L649.9 594.8C690.2 542.7 712 479 712 412c0-80.2-31.3-155.4-87.9-212.1-56.6-56.7-132-87.9-212.1-87.9s-155.5 31.3-212.1 87.9C143.2 256.5 112 331.8 112 412c0 80.1 31.3 155.5 87.9 212.1C256.5 680.8 331.8 712 412 712c67 0 130.6-21.8 182.7-62l259.7 259.6a8.2 8.2 0 0 0 11.6 0l43.6-43.5a8.2 8.2 0 0 0 0-11.6zM570.4 570.4C528 612.7 471.8 636 412 636s-116-23.3-158.4-65.6C211.3 528 188 471.8 188 412s23.3-116.1 65.6-158.4C296 211.3 352.2 188 412 188s116.1 23.2 158.4 65.6S636 352.2 636 412s-23.3 116.1-65.6 158.4z'/%3E%3C/svg%3E");
       width: 20px;
       height: 20px;
       cursor: pointer;
     }
     .cp-container.expanded .cp-expand-btn:before {
+      padding: 4px;
       content: url("data:image/svg+xml; utf8, %3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024' width='20' height='20'%3E%3Cpath fill='rgba(0,0,0,0.65)' d='M563.8 512l262.5-312.9c4.4-5.2.7-13.1-6.1-13.1h-79.8c-4.7 0-9.2 2.1-12.3 5.7L511.6 449.8 295.1 191.7c-3-3.6-7.5-5.7-12.3-5.7H203c-6.8 0-10.5 7.9-6.1 13.1L459.4 512 196.9 824.9A7.95 7.95 0 0 0 203 838h79.8c4.7 0 9.2-2.1 12.3-5.7l216.5-258.1 216.5 258.1c3 3.6 7.5 5.7 12.3 5.7h79.8c6.8 0 10.5-7.9 6.1-13.1L563.8 512z'/%3E%3C/svg%3E");
     }
     .cp-container.expanded .cp-expand-btn {
@@ -411,14 +429,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const searchInput = container.querySelector('.cp-search-input');
     searchInput.value = '';
   }
-  
-  function toggleSearchOverlay () {
-    if (container.classList.contains('expanded')) {
-      clearSearchResults();
-      clearSearchInput();
-      hideLoadMore();
-    }
-    container.classList.toggle('expanded');
+
+  function openSearchOverlay () {
+    const searchInput = container.querySelector('.cp-search-input');
+    container.classList.add('expanded');
+    searchInput.focus();
+  }
+
+  function closeSearchOverlay () {
+    clearSearchResults();
+    clearSearchInput();
+    hideLoadMore();
+    container.classList.remove('expanded');
   }
   
   function initializeSearch () {
@@ -454,16 +476,17 @@ window.addEventListener('DOMContentLoaded', () => {
       const searchButton = container.querySelector('.cp-search-btn');
       const expandButton = container.querySelector('.cp-expand-btn');
       const loadMoreButton = container.querySelector('.cp-load-more-btn');
+      window.addEventListener('keydown', (event) => {
+        if (event && event.key === 'Escape') {
+          closeSearchOverlay();
+        }
+      });
       searchButton.addEventListener('click', (event) => {
         handleSearch(event, searchInput.value)
       });
       searchInput.addEventListener('keydown', (event) => {
         if (event && event.key === 'Enter') {
           handleSearch(event, searchInput.value);
-        }
-        if (event && event.key === 'Escape') {
-          clearSearchResults();
-          clearSearchInput();
         }
       });
       searchInput.addEventListener('input', event => {
@@ -472,7 +495,11 @@ window.addEventListener('DOMContentLoaded', () => {
           ? searchButton.removeAttribute("disabled")
           : searchButton.setAttribute("disabled", "");
       });
-      expandButton.addEventListener('click', toggleSearchOverlay);
+      expandButton.addEventListener('click', () => {
+        container.classList.contains('expanded')
+          ? closeSearchOverlay()
+          : openSearchOverlay()
+      });
       loadMoreButton.addEventListener('click', (event) => {
         event && event.preventDefault();
         if (!event.currentTarget.classList.contains('cp-pending')) {
