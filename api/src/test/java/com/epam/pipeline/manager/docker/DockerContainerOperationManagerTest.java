@@ -62,6 +62,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -80,6 +81,7 @@ public class DockerContainerOperationManagerTest {
     private static final Long RUN_ID = 2L;
     private static final int CANNOT_EXECUTE_EXIT_CODE = 126;
     private static final int PAUSE_TIMEOUT = 86400;
+    public static final int DEFAULT_SSH_PORT = 22;
 
     @InjectMocks
     @Spy
@@ -155,7 +157,8 @@ public class DockerContainerOperationManagerTest {
         when(nodesManager.terminateNode(NODE_NAME)).thenReturn(new NodeInstance());
         when(authManager.issueTokenForCurrentUser().getToken()).thenReturn(TEST_TAG);
         final Process sshConnection = Mockito.mock(Process.class);
-        doReturn(sshConnection).when(operationManager).submitCommandViaSSH(anyString(), anyString());
+        doReturn(sshConnection).when(operationManager).submitCommandViaSSH(anyString(), anyString(),
+                eq(DEFAULT_SSH_PORT));
         when(sshConnection.exitValue()).thenReturn(0);
         when(cloudFacade.getInstanceState(anyLong())).thenReturn(CloudInstanceState.RUNNING);
         doReturn(PAUSE_TIMEOUT).when(preferenceManager).getPreference(SystemPreferences.PAUSE_TIMEOUT);
@@ -166,7 +169,8 @@ public class DockerContainerOperationManagerTest {
         assertRunStateAfterPause(idledRun, TEST_TAG);
         assertRunStateAfterPause(pressuredRun, TEST_TAG);
 
-        verify(operationManager, times(2)).submitCommandViaSSH(anyString(), anyString());
+        verify(operationManager, times(2)).submitCommandViaSSH(
+                anyString(), anyString(), eq(DEFAULT_SSH_PORT));
         verifyPostPauseProcessing(2);
         verify(cloudFacade, times(2)).stopInstance(REGION_ID, NODE_ID);
     }
@@ -177,7 +181,8 @@ public class DockerContainerOperationManagerTest {
         when(nodesManager.terminateNode(NODE_NAME)).thenReturn(new NodeInstance());
         when(authManager.issueTokenForCurrentUser().getToken()).thenReturn(TEST_TAG);
         final Process sshConnection = Mockito.mock(Process.class);
-        doReturn(sshConnection).when(operationManager).submitCommandViaSSH(anyString(), anyString());
+        doReturn(sshConnection).when(operationManager).submitCommandViaSSH(
+                anyString(), anyString(), eq(DEFAULT_SSH_PORT));
         when(sshConnection.waitFor(anyLong(), any())).thenReturn(true);
         when(sshConnection.exitValue()).thenReturn(CANNOT_EXECUTE_EXIT_CODE);
         final PipelineRun run = pipelineRun();
@@ -185,7 +190,7 @@ public class DockerContainerOperationManagerTest {
 
         operationManager.pauseRun(run, false);
 
-        verify(operationManager).submitCommandViaSSH(anyString(), anyString());
+        verify(operationManager).submitCommandViaSSH(anyString(), anyString(), eq(DEFAULT_SSH_PORT));
         verifyPostPauseProcessing(0);
         verify(runManager).updatePipelineStatus(any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
@@ -219,7 +224,7 @@ public class DockerContainerOperationManagerTest {
 
         operationManager.pauseRun(run, true);
 
-        verify(operationManager, never()).submitCommandViaSSH(anyString(), anyString());
+        verify(operationManager, never()).submitCommandViaSSH(anyString(), anyString(), eq(DEFAULT_SSH_PORT));
         verify(logManager, never()).saveLog(any());
         verifyPostPauseProcessing(1);
         verify(cloudFacade, never()).stopInstance(REGION_ID, NODE_ID);
