@@ -164,9 +164,8 @@ envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
 nohup filebeat &
 
 # Prepare the static assets
-export API_SEARCH_METHOD="${API_EXTERNAL}search"
 for static_file in /etc/nginx/static/*; do
-    static_content="$(envsubst '${API_SEARCH_METHOD}' < $static_file)"
+    static_content="$(envsubst '${API_EXTERNAL}' < $static_file)"
     echo "$static_content" > "$static_file"
 done
 

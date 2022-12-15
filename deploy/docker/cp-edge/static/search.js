@@ -1,8 +1,13 @@
 
+let API = '${API_EXTERNAL}';
+if (API.endsWith('/')) {
+  API = API.slice(0, -1);
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   let container;
   let documents = [];
-  const SEARCH_URL = '${API_SEARCH_METHOD}';
+  const url = `${API}/search`;
   const PAGE_SIZE = 50;
   const CSS_TEXT = `
     .cp-container,
@@ -270,7 +275,7 @@ window.addEventListener('DOMContentLoaded', () => {
       })
     };
     startPending();
-    fetch(SEARCH_URL, options)
+    fetch(url, options)
       .then(response => response.json())
       .then(data => {
         if (data && data.status === 'ERROR') {
