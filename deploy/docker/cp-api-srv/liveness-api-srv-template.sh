@@ -20,12 +20,11 @@ function die {
 }
 
 LIVENESS_JWT_TOKEN=$CP_API_LIVENESS_JWT_TOKEN
-API_URL=$CP_REST_API_URL
 
-if [ -z "$LIVENESS_JWT_TOKEN" ] || [ -z "$API_URL" ]; then
-    echo "LIVENESS_JWT_TOKEN or API_URL was not specified. Exiting ..."
+if [ -z "$LIVENESS_JWT_TOKEN" ]; then
+    echo "LIVENESS_JWT_TOKEN was not specified. Exiting ..."
     exit 1
 fi
 
-API_HEALTH_ENDPOINT="${API_URL}app/info"
+API_HEALTH_ENDPOINT="https://127.0.0.1:8080/pipeline/restapi/app/info"
 curl --fail -k -H "Authorization: Bearer $LIVENESS_JWT_TOKEN" "$API_HEALTH_ENDPOINT" --max-time 60 > /dev/null 2>&1 || die "$API_HEALTH_ENDPOINT"

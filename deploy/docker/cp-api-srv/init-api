@@ -307,8 +307,7 @@ if [ -z "${CP_API_JWT_ADMIN}" ]; then
                              --claim group=ADMIN)
 fi
 export CP_API_LIVENESS_JWT_TOKEN=${CP_API_JWT_ADMIN}
-export CP_REST_API_URL="https://127.0.0.1:8080/pipeline/restapi/"
-envsubst '$CP_API_LIVENESS_JWT_TOKEN,$CP_REST_API_URL' < /liveness-api-srv-template.sh > /liveness-api-srv.sh
+envsubst '$CP_API_LIVENESS_JWT_TOKEN' < /liveness-api-srv-template.sh > /liveness-api-srv.sh
 chmod +x /liveness-api-srv.sh
 
 # Configure logging and launch
