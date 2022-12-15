@@ -50,6 +50,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,14 +91,18 @@ public class DockerContainerOperationManager {
     private static final String COMMIT_COMMAND_DESCRIPTION = "ssh session to commit pipeline run";
     private static final String CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION =
             "ssh session to get docker container layers count";
-    private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
-    private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
+    private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occurred during to pause pipeline run";
+    private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occurred during to resume pipeline run";
     private static final String EMPTY = "";
     private static final String RESUME_RUN_TASK = "ResumePipelineRun";
+    private static final String DELIMITER = "/";
+    private static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
+    private static final String NONE = "NONE";
+    private static final String SSH_PORT_OPTION = "-p ";
+    private static final int SSH_DEFAULT_PORT = 22;
+    private static final String CP_NODE_SSH_PORT = "CP_NODE_SSH_PORT";
+
     public static final String PAUSE_RUN_TASK = "PausePipelineRun";
-    public static final String DELIMITER = "/";
-    public static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
-    public static final String NONE = "NONE";
 
     @Autowired
     private PipelineRunManager runManager;
@@ -208,7 +213,8 @@ public class DockerContainerOperationManager {
                     .build()
                     .getCommand();
 
-            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), commitContainerCommand);
+            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), commitContainerCommand,
+                    getSshPort(run));
             boolean isFinished = sshConnection.waitFor(
                     preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT), TimeUnit.SECONDS);
             Assert.state(isFinished && sshConnection.exitValue() == 0,
@@ -238,7 +244,8 @@ public class DockerContainerOperationManager {
                     .containerId(containerId)
                     .build()
                     .getCommand();
-            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand);
+            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand,
+                    getSshPort(run));
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
                 final String result = reader.lines().collect(Collectors.joining());
                 layersCount = Long.parseLong(result);
@@ -360,12 +367,13 @@ public class DockerContainerOperationManager {
         runManager.updatePipelineStatus(run);
     }
 
-    Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {
-        String kubePipelineNodeUserName  = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
+    Process submitCommandViaSSH(String ip, String commandToExecute, int port) throws IOException {
+        String kubePipelineNodeUserName = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
         String pemKeyPath = preferenceManager.getPreference(SystemPreferences.COMMIT_DEPLOY_KEY);
 
-        String sshCommand = String.format("%s %s %s %s %s %s %s %s %s %s %s",
+        String sshCommand = String.format("%s %s %s %s %s %s %s %s %s %s %s %s",
                 SSH_COMMAND,
+                SSH_PORT_OPTION + port,
                 SSH_CMD_OPTION, STRICT_HOST_KEY_CHECKING_NO,
                 SSH_CMD_OPTION, GLOBAL_KNOWN_HOSTS_FILE,
                 SSH_CMD_OPTION, USER_KNOWN_HOSTS_FILE,
@@ -487,7 +495,7 @@ public class DockerContainerOperationManager {
         runManager.updateRunInfo(run);
         serviceUrlManager.clear(run.getId());
 
-        final Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
+        final Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand, getSshPort(run));
 
         //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
         // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branch
@@ -508,5 +516,12 @@ public class DockerContainerOperationManager {
 
     private void validateInstanceState(final CloudInstanceState state) {
         Assert.notNull(state, "Cannot determine instance state");
+    }
+
+    private int getSshPort(final PipelineRun run) {
+        return run.getParameterValue(CP_NODE_SSH_PORT)
+                .filter(NumberUtils::isDigits)
+                .map(Integer::parseInt)
+                .orElse(SSH_DEFAULT_PORT);
     }
 }
