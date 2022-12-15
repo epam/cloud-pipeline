@@ -535,5 +535,12 @@
         "description": "Specifies which subnet shall be used for an instance",
         "defaultValue": "",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_NODE_SSH_PORT",
+        "type": "int",
+        "description": "Sets SSH port, which is used by a host node of the job",
+        "defaultValue": "22",
+        "passToWorkers": false
     }
 ]

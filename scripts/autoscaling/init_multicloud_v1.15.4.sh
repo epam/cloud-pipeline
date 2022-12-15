@@ -124,6 +124,12 @@ mkdir -p $MOUNT_POINT/runs
 mkdir -p $MOUNT_POINT/reference
 rm -rf $MOUNT_POINT/lost+found
 
+ssh_node_port="@NODE_SSH_PORT@"
+if [ "$ssh_node_port" ]; then
+  sed -i "/#Port/c\Port $ssh_node_port" /etc/ssh/sshd_config
+  systemctl restart sshd
+fi
+
 systemctl stop docker
 
 _DOCKER_SYS_IMGS="/ebs/docker-system-images"
