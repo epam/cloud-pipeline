@@ -383,10 +383,11 @@ def get_specified_subnet(subnet, availability_zone):
 
 def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type,
                  is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kube_client, pre_pull_images,
-                 instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated):
+                 instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port):
+
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip,
-                                            kubeadm_token, swap_size, pre_pull_images)
+                                            kubeadm_token, swap_size, pre_pull_images, node_ssh_port)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated)
@@ -705,7 +706,7 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 
 def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip,
-                         kubeadm_token, swap_size, pre_pull_images):
+                         kubeadm_token, swap_size, pre_pull_images, node_ssh_port):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -727,7 +728,8 @@ def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube
                                             .replace('@KUBE_TOKEN@', kubeadm_token) \
                                             .replace('@API_URL@', api_url) \
                                             .replace('@API_TOKEN@', api_token) \
-                                            .replace('@FS_TYPE@', fs_type)
+                                            .replace('@FS_TYPE@', fs_type) \
+                                            .replace('@NODE_SSH_PORT@', node_ssh_port)
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
@@ -1317,6 +1319,7 @@ def main():
     parser.add_argument("--subnet_id", type=str, required=False)
     parser.add_argument("--security_groups", type=str, required=False)
     parser.add_argument("--dedicated", type=bool, required=False)
+    parser.add_argument("--node_ssh_port", type=str, default='')
     parser.add_argument("--label", type=str, default=[], required=False, action='append')
     parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
@@ -1341,6 +1344,7 @@ def main():
     security_groups = args.security_groups
     subnet = args.subnet_id
     is_dedicated = args.dedicated if args.dedicated else False
+    node_ssh_port = args.node_ssh_port
     pre_pull_images = args.image
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get(POOL_ID_KEY)
@@ -1425,7 +1429,7 @@ def main():
             api_token = os.environ["API_TOKEN"]
             ins_id, ins_ip = run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
                                         num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, api, pre_pull_images, instance_additional_spec, availability_zone,
-                                        security_groups, subnet, network_interface, is_dedicated)
+                                        security_groups, subnet, network_interface, is_dedicated, node_ssh_port)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 

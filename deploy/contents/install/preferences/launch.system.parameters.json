@@ -423,5 +423,33 @@
         "description": "Specifies the target ENI to be attached to the node for run",
         "defaultValue": "",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_DEDICATED_INSTANCE",
+        "type": "boolean",
+        "description": "Specifies if the instance should be dedicated (has a dedicated hardware)",
+        "defaultValue": "false",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_TARGET_SECURITY_GROUPS",
+        "type": "string",
+        "description": "Specifies which security groups shall be attached to the instance",
+        "defaultValue": "",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_TARGET_SUBNET_ID",
+        "type": "string",
+        "description": "Specifies which subnet shall be used for an instance",
+        "defaultValue": "",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_NODE_SSH_PORT",
+        "type": "int",
+        "description": "Sets SSH port, which is used by a host node of the job",
+        "defaultValue": "22",
+        "passToWorkers": false
     }
 ]
