@@ -14,6 +14,7 @@
 
 import datetime
 import os
+import requests
 import re
 import time
 import uuid
@@ -42,9 +43,45 @@ SENSITIVE_NETPOL_TEMPLATE_PATH = os.getenv('CP_RUN_POLICY_MANAGER_SENSITIVE_POLI
                                            '/policy-manager/sensitive-run-policy-template.yaml')
 MONITORING_PERIOD_SEC = int(os.getenv('CP_RUN_POLICY_MANAGER_POLL_PERIOD_SEC', 5))
 
-
 def log_message(message):
     print('[{}] {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), message))
+
+def cp_get(api_method):
+    access_key = os.getenv('CP_API_JWT_ADMIN')
+    api_host = os.getenv('CP_API_SRV_INTERNAL_HOST')
+    api_port = os.getenv('CP_API_SRV_INTERNAL_PORT')
+    if not access_key or not api_host or not api_port:
+        log_message('CP_API_JWT_ADMIN or API internal host/port is not set, Cloud Pipeline API call cancelled')
+        return None
+    api_url = 'https://{}:{}/pipeline/restapi/{}'.format(api_host, api_port, api_method)
+    try:
+        response = requests.get(api_url, verify=False, headers={'Authorization': 'Bearer {}'.format(access_key)}).json()
+        return response['payload']
+    except Exception as err:
+        log_message('[ERROR] An error occured while calling Cloud Pipeline API:\n{}'.format(str(creation_error)))
+        return None
+
+def get_permissive_roles_ids():
+    role_names = os.getenv('CP_RUN_POLICY_MANAGER_PERMISSIVE_ROLES', 'ROLE_ALLOW_ALL_POLICY')
+    role_names = role_names.split(',')
+    if len(role_names) == 0:
+        return []
+    
+    roles_list = cp_get('role/loadAll?loadUsers=false')
+    if not roles_list:
+        log_message('Empty response for the roles listing request')
+        return []
+
+    return [x for x in roles_list if x['name'] in role_names]
+
+def get_permissive_users():
+    users_list = set()
+    for role in get_permissive_roles_ids():
+        role_details = cp_get('role/{}'.format(role['id']))
+        if not role_details:
+            continue
+        users_list.add([x['userName'] for x in role_details['users']])
+    return list(users_list)
 
 
 def get_custom_resource_api():
@@ -168,6 +205,12 @@ def main():
     log_message('===Starting run policies monitoring===')
     while True:
         try:
+            permissive_users = []
+            try:
+                permissive_users = get_permissive_users()
+            except Exception as permissive_users_error:
+                log_message('[ERROR] Error ocurred while getting a list of permissive users:\n{}'.format(str(permissive_users_error)))
+
             active_policies = load_all_active_policies()
             sensitive_policies = []
             common_policies = []
@@ -178,8 +221,11 @@ def main():
             sensitive_pods = []
             common_pods = []
             for pod in active_pods:
+                pod_owner = pod.metadata.labels.get(OWNER_LABEL)
+                if not is_sensitive_pod(pod) and pod_owner in permissive_users:
+                    log_message('Skipping pod with {} owner'.format(pod_owner))
+                    continue
                 sensitive_pods.append(pod) if is_sensitive_pod(pod) else common_pods.append(pod)
-
             try:
                 create_missed_policies(common_pods, common_policies, False)
                 create_missed_policies(sensitive_pods, sensitive_policies, True)
