@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,12 @@ function die {
     exit 1
 }
 
-EDGE_HEALTH_ENDPOINT="http://127.0.0.1:8888/edge-health"
-WETTY_HEALTH_ENDPOINT="http://127.0.0.1:8888/wetty-health"
+LIVENESS_JWT_TOKEN=$CP_API_LIVENESS_JWT_TOKEN
 
-curl --fail "$EDGE_HEALTH_ENDPOINT" --max-time 60 > /dev/null 2>&1 || die "$EDGE_HEALTH_ENDPOINT"
-curl --fail "$WETTY_HEALTH_ENDPOINT" --max-time 60 > /dev/null 2>&1 || die "$WETTY_HEALTH_ENDPOINT"
+if [ -z "$LIVENESS_JWT_TOKEN" ]; then
+    echo "LIVENESS_JWT_TOKEN was not specified. Exiting ..."
+    exit 1
+fi
+
+API_HEALTH_ENDPOINT="https://127.0.0.1:8080/pipeline/restapi/app/info"
+curl --fail -k -H "Authorization: Bearer $LIVENESS_JWT_TOKEN" "$API_HEALTH_ENDPOINT" --max-time 60 > /dev/null 2>&1 || die "$API_HEALTH_ENDPOINT"
