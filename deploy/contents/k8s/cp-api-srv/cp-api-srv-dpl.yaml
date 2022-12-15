@@ -98,29 +98,23 @@ spec:
               mountPath: "/etc/cp_ssh"
               readOnly: true
           readinessProbe:
-            httpGet:
-              path: /pipeline/restapi/app/info
-              port: 8080
-              scheme: HTTPS
-              httpHeaders:
-                - name: Authorization
-                  value: "Bearer ${CP_API_JWT_ADMIN}"
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-api-srv.sh
             initialDelaySeconds: 180
             periodSeconds: 10
-            timeoutSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /pipeline/restapi/app/info
-              port: 8080
-              scheme: HTTPS
-              httpHeaders:
-                - name: Authorization
-                  value: "Bearer ${CP_API_JWT_ADMIN}"
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-api-srv.sh
             # 5 min delay to make sure API is up and running and drop pod after 60 seconds (4*15s) if API didn't respond
-            initialDelaySeconds: 150
+            initialDelaySeconds: 180
             periodSeconds: 15
             failureThreshold: 4
-            timeoutSeconds: 10
           lifecycle:
             preStop:
               exec:

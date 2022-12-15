@@ -128,6 +128,7 @@ ADD init-api /init-api
 ADD init-git-sync /init-git-sync
 ADD update-trust /update-trust
 ADD liveness-git-sync.sh /liveness-git-sync.sh
+ADD liveness-api-srv-template.sh /liveness-api-srv-template.sh
 
 RUN chmod +x /init* && \
     chmod +x /update-trust && \
