@@ -278,7 +278,7 @@ window.addEventListener('DOMContentLoaded', () => {
         'Content-Type': 'application/json; charset=UTF-8;'
       },
       body: JSON.stringify({
-        query: searchQuery,
+        query: `*${searchQuery}*`,
         pageSize: PAGE_SIZE,
         highlight: true,
         aggregate: true,
