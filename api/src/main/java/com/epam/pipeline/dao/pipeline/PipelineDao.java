@@ -169,7 +169,9 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(REPOSITORY_TOKEN.name(), pipeline.getRepositoryToken());
             params.addValue(REPOSITORY_TYPE.name(), pipeline.getRepositoryType());
             params.addValue(PIPELINE_LOCKED.name(), pipeline.isLocked());
-            params.addValue(VISIBILITY.name(), pipeline.getVisibility());
+            params.addValue(VISIBILITY.name(), Optional.ofNullable(pipeline.getVisibility())
+                    .map(Enum::name)
+                    .orElse(null));
             return params;
         }
 
