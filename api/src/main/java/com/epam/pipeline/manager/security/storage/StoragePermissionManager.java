@@ -102,7 +102,8 @@ public class StoragePermissionManager {
                                            final String permissionName) {
         try {
             final AbstractSecuredEntity storage = storagePathLoader.loadDataStorageByPathOrId(path);
-            return grantPermissionManager.storagePermission(storage, permissionName);
+            return grantPermissionManager.checkStorageShared(storage.getId())
+                    && grantPermissionManager.storagePermission(storage, permissionName);
         } catch (IllegalArgumentException e) {
             return false;
         }
