@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -169,6 +170,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         PIPELINE_CREATED_DATE,
         PIPELINE_REPOSITORY_TOKEN,
         PIPELINE_REPOSITORY_TYPE,
+        PIPELINE_VISIBILITY,
         PIPELINE_LOCKED,
         DATASTORAGE_ID,
         DATASTORAGE_NAME,
@@ -264,6 +266,10 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
                         pipeline.setParentFolderId(folderId);
                         pipeline.setOwner(rs.getString(OWNER.name()));
+                        String rawVisibility = rs.getString(PIPELINE_VISIBILITY.name());
+                        pipeline.setVisibility(
+                                StringUtils.isNotBlank(rawVisibility) ?
+                                        RunVisibilityPolicy.valueOf(rawVisibility) : null);
                         folder.getPipelines().add(pipeline);
                     }
                     Long dataStorageId = rs.getLong(DATASTORAGE_ID.name());
