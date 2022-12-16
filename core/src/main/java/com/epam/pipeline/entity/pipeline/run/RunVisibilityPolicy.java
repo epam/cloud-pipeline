@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.security.run;
+package com.epam.pipeline.entity.pipeline.run;
 
 /**
  * Describe how permissions for {@code PipelineRun} shall be checked.
@@ -28,5 +28,5 @@ public enum RunVisibilityPolicy {
     /**
      * Permissions on PipelineRun shall be granted only to owner and admin users.
      */
-    OWNER;
+    OWNER
 }
