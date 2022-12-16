@@ -58,7 +58,10 @@ def cp_get(api_method):
     api_url = 'https://{}:{}/pipeline/restapi/{}'.format(api_host, api_port, api_method)
     try:
         response = requests.get(api_url, verify=False, headers={'Authorization': 'Bearer {}'.format(access_key)}).json()
-        return response['payload']
+        if 'payload' in response:
+            return response['payload']
+        else:
+            return None
     except Exception as err:
         log_message('[ERROR] An error occured while calling Cloud Pipeline API:\n{}'.format(str(creation_error)))
         return None
@@ -82,7 +85,8 @@ def get_permissive_users():
         role_details = cp_get('role/{}'.format(role['id']))
         if not role_details:
             continue
-        users_list.update([x['userName'] for x in role_details['users']])
+        if 'users' in role_details:
+            users_list.update([x['userName'] for x in role_details['users']])
     return list(users_list)
 
 def permissive_checks_enabled():
