@@ -31,6 +31,8 @@ import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -150,7 +152,8 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         REPOSITORY_TOKEN,
         REPOSITORY_TYPE,
         PIPELINE_LOCKED,
-        PARENT_FOLDER_ID;
+        PARENT_FOLDER_ID,
+        VISIBILITY;
 
         static MapSqlParameterSource getParameters(Pipeline pipeline) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -166,6 +169,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(REPOSITORY_TOKEN.name(), pipeline.getRepositoryToken());
             params.addValue(REPOSITORY_TYPE.name(), pipeline.getRepositoryType());
             params.addValue(PIPELINE_LOCKED.name(), pipeline.isLocked());
+            params.addValue(VISIBILITY.name(), pipeline.getVisibility());
             return params;
         }
 
@@ -214,9 +218,13 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setRepositoryType(RepositoryType.getById(rs.getLong(REPOSITORY_TYPE.name())));
             pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
             pipeline.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
+            pipeline.setVisibility(getRunVisibility(rs.getString(VISIBILITY.name())));
             return pipeline;
         }
 
+        private static RunVisibilityPolicy getRunVisibility(final String rawVisibility) {
+            return StringUtils.isNotBlank(rawVisibility) ? RunVisibilityPolicy.valueOf(rawVisibility) : null;
+        }
     }
 
     @Required

@@ -34,7 +34,8 @@
                         owner,
                         repository_token,
                         repository_type,
-                        locked)
+                        locked,
+                        visibility)
                     VALUES (
                         :PIPELINE_ID,
                         :PIPELINE_NAME,
@@ -46,7 +47,8 @@
                         :OWNER,
                         :REPOSITORY_TOKEN,
                         :REPOSITORY_TYPE,
-                        :PIPELINE_LOCKED)
+                        :PIPELINE_LOCKED,
+                        :VISIBILITY)
                 ]]>
             </value>
         </property>
@@ -60,7 +62,8 @@
                         owner = :OWNER,
                         repository_token = :REPOSITORY_TOKEN,
                         repository = :REPOSITORY,
-                        repository_ssh = :REPOSITORY_SSH
+                        repository_ssh = :REPOSITORY_SSH,
+                        visibility = :VISIBILITY
                     WHERE
                         pipeline_id = :PIPELINE_ID
                 ]]>
@@ -80,7 +83,8 @@
                         owner,
                         repository_token,
                         repository_type,
-                        locked as pipeline_locked
+                        locked as pipeline_locked,
+                        visibility
                     FROM
                         pipeline.pipeline
                     ORDER BY pipeline_id
@@ -108,7 +112,8 @@
                         owner,
                         repository_token,
                         repository_type,
-                        locked as pipeline_locked
+                        locked as pipeline_locked,
+                        visibility
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -130,7 +135,8 @@
                         owner,
                         repository_token,
                         repository_type,
-                        locked as pipeline_locked
+                        locked as pipeline_locked,
+                        visibility
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -152,7 +158,8 @@
                         owner,
                         repository_token,
                         repository_type,
-                        locked as pipeline_locked
+                        locked as pipeline_locked,
+                        visibility
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -174,7 +181,8 @@
                         owner,
                         repository_token,
                         repository_type,
-                        locked as pipeline_locked
+                        locked as pipeline_locked,
+                        visibility
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -206,6 +214,7 @@
                             p.repository_token,
                             p.repository_type,
                             p.locked AS pipeline_locked,
+                            p.visibility,
 		                    p.owner,
 		                    c.folder_id,
                             c.parent_id AS parent_folder_id
@@ -227,6 +236,7 @@
                             null AS repository_token,
                             null AS repository_type,
                             null AS pipeline_locked,
+                            null AS visibility,
 		                    null AS owner,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
@@ -250,6 +260,7 @@
                             p.repository_token,
                             p.repository_type,
                             p.locked AS pipeline_locked,
+                            p.visibility,
 		                    p.owner,
 		                    c.folder_id,
                             c.parent_id AS parent_folder_id
@@ -267,6 +278,7 @@
                             null AS repository_token,
                             null AS repository_type,
                             null AS pipeline_locked,
+                            null AS visibility,
 		                    null AS owner,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id

@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
@@ -36,7 +37,6 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
-import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
@@ -74,6 +74,7 @@ public class RunApiServiceTest {
 
     private static final String TEST_OWNER = "OWNER";
     private static final String TEST_USER1 = "USER_1";
+    private static final String TEST_USER2 = "USER_2";
     private static final String TEST_ADMIN_NAME = "ADMIN";
     private static final String TEST_ADMIN_ROLE = "ADMIN";
     private static final String VISIBILITY_PREFERENCE_KEY = SystemPreferences.RUN_VISIBILITY_POLICY.getKey();
@@ -204,28 +205,6 @@ public class RunApiServiceTest {
 
     @Test
     @WithMockUser(username = TEST_USER1)
-    public void filterShallIncludeOwnerAndPipelinesWithInheritedVisibility() {
-        final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
-        final PipelineRun run = runAclFactory.initPipelineRunForOwner(pipeline, TEST_OWNER);
-        //we need a mutable list for ACL @PostFilter annotation
-        doReturn(new ArrayList<>(Collections.singletonList(pipeline)))
-                .when(mockPipelineManager)
-                .loadAllPipelines(eq(false));
-
-        final PagingRunFilterVO filter = new PagingRunFilterVO();
-        doReturn(new PagedResult<>(Collections.singletonList(run), 1))
-                .when(mockRunManager)
-                .searchPipelineRuns(eq(filter), eq(false));
-        final PagedResult<List<PipelineRun>> result = runApiService.searchPipelineRuns(filter, false);
-
-        assertThat(filter.getOwnershipFilter(), equalToIgnoringCase(TEST_USER1));
-        assertThat(filter.getAllowedPipelines(), contains(TEST_PIPELINE_ID));
-        assertThat(result.getTotalCount(), equalTo(1));
-        assertThat(result.getElements(), contains(run));
-    }
-
-    @Test
-    @WithMockUser(username = TEST_USER1)
     public void generateRunCmdShouldGenerateCmdIfUserHasPermissionOnPipeline() {
         final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
         final PipeRunCmdStartVO pipeRunCmdStartVO = initPipeRunCmdStartVO(pipeline, null);
@@ -275,6 +254,98 @@ public class RunApiServiceTest {
         runApiService.generateLaunchCommand(pipeRunCmdStartVO);
     }
 
+    @Test
+    @WithMockUser(username = TEST_USER1)
+    public void filterShallIncludeOwnerAndPipelinesWithInheritedVisibility() {
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
+        final PipelineRun run = runAclFactory.initPipelineRunForOwner(pipeline, TEST_OWNER);
+        //we need a mutable list for ACL @PostFilter annotation
+        doReturn(new ArrayList<>(Collections.singletonList(pipeline)))
+                .when(mockPipelineManager)
+                .loadAllPipelines(eq(false));
+
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        doReturn(new PagedResult<>(Collections.singletonList(run), 1))
+                .when(mockRunManager)
+                .searchPipelineRuns(eq(filter), eq(false));
+        final PagedResult<List<PipelineRun>> result = runApiService.searchPipelineRuns(filter, false);
+
+        assertThat(filter.getOwnershipFilter(), equalToIgnoringCase(TEST_USER1));
+        assertThat(filter.getAllowedPipelines(), contains(TEST_PIPELINE_ID));
+        assertThat(result.getTotalCount(), equalTo(1));
+        assertThat(result.getElements(), contains(run));
+    }
+
+    @Test
+    @WithMockUser(username = TEST_USER1)
+    public void shouldNotIncludePipelinesWhenPipelineOwnerVisibilityAndGlobalInherit() {
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
+        pipeline.setVisibility(RunVisibilityPolicy.OWNER);
+        final PipelineRun pipelineRun = runAclFactory.initPipelineRunForOwner(pipeline, TEST_USER1);
+        doReturn(mutableListOf(pipeline)).when(mockPipelineManager).loadAllPipelines(eq(false));
+
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        doReturn(new PagedResult<>(Collections.singletonList(pipelineRun), 1))
+                .when(mockRunManager).searchPipelineRuns(eq(filter), eq(false));
+        runApiService.searchPipelineRuns(filter, false);
+
+        assertThat(filter.getOwnershipFilter(), equalToIgnoringCase(TEST_USER1));
+        assertThat(filter.getAllowedPipelines(), empty());
+    }
+
+    @Test
+    @WithMockUser(username = TEST_USER1)
+    public void shouldIncludePipelinesWhenPipelineInheritVisibilityAndGlobalOwner() {
+        enableVisibilityPolicy(RunVisibilityPolicy.OWNER);
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
+        final PipelineRun pipelineRun = runAclFactory.initPipelineRunForOwner(pipeline, TEST_USER1);
+        pipeline.setVisibility(RunVisibilityPolicy.INHERIT);
+        doReturn(mutableListOf(pipeline)).when(mockPipelineManager).loadAllPipelines(eq(false));
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        doReturn(new PagedResult<>(Collections.singletonList(pipelineRun), 1))
+                .when(mockRunManager).searchPipelineRuns(eq(filter), eq(false));
+        runApiService.searchPipelineRuns(filter, false);
+
+        assertThat(filter.getOwnershipFilter(), equalToIgnoringCase(TEST_USER1));
+        assertThat(filter.getAllowedPipelines(), contains(pipeline.getId()));
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = TEST_USER2)
+    public void shouldNotInheritPermissionsLoadPipelineRunWithOwnerVisibilityEnabled() {
+        enableVisibilityPolicy(RunVisibilityPolicy.OWNER);
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForOwner(TEST_USER1);
+        final PipelineRun pipelineRun = runAclFactory.initPipelineRunForOwner(pipeline, TEST_USER1);
+        doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+        runApiService.loadPipelineRun(pipelineRun.getId());
+    }
+
+    @Test
+    @WithMockUser(username = TEST_USER1)
+    public void shouldLoadPipelineRunWithPipelineInheritVisibilityEnabled() {
+        enableVisibilityPolicy(RunVisibilityPolicy.OWNER);
+
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForOwner(TEST_USER1);
+        final PipelineRun pipelineRun = runAclFactory.initPipelineRunForOwner(pipeline, TEST_USER1);
+        pipeline.setVisibility(RunVisibilityPolicy.INHERIT);
+        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(pipelineRun.getId());
+        doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+        assertThat(runApiService.loadPipelineRun(pipelineRun.getId()), equalTo(pipelineRun));
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = TEST_USER2)
+    public void shouldNotInheritPermissionsLoadPipelineRunWithPipelineOwnerVisibilityEnabled() {
+        enableVisibilityPolicy(RunVisibilityPolicy.INHERIT);
+
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForOwner(TEST_USER2);
+        final PipelineRun pipelineRun = runAclFactory.initPipelineRunForOwner(pipeline, TEST_USER1);
+        pipeline.setVisibility(RunVisibilityPolicy.OWNER);
+        doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+
+        runApiService.loadPipelineRun(pipelineRun.getId());
+    }
+
     private PipeRunCmdStartVO initPipeRunCmdStartVO(final Pipeline pipeline, final Tool tool) {
         final PipelineStart pipelineStart = new PipelineStart();
         final PipeRunCmdStartVO pipeRunCmdStartVO = new PipeRunCmdStartVO();
@@ -297,5 +368,11 @@ public class RunApiServiceTest {
         doReturn(preference)
                 .when(mockPreferenceManager)
                 .search(eq(Collections.singletonList(VISIBILITY_PREFERENCE_KEY)));
+    }
+
+    private <T> ArrayList<T> mutableListOf(final T item) {
+        ArrayList<T> list = new ArrayList<>();
+        list.add(item);
+        return list;
     }
 }
