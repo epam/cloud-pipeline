@@ -15,6 +15,7 @@
 import datetime
 import os
 import requests
+import urllib3
 import re
 import time
 import uuid
@@ -47,6 +48,7 @@ def log_message(message):
     print('[{}] {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), message))
 
 def cp_get(api_method):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     access_key = os.getenv('CP_API_JWT_ADMIN')
     api_host = os.getenv('CP_API_SRV_INTERNAL_HOST')
     api_port = os.getenv('CP_API_SRV_INTERNAL_PORT')
@@ -80,9 +82,11 @@ def get_permissive_users():
         role_details = cp_get('role/{}'.format(role['id']))
         if not role_details:
             continue
-        users_list.add([x['userName'] for x in role_details['users']])
+        users_list.update([x['userName'] for x in role_details['users']])
     return list(users_list)
 
+def permissive_checks_enabled():
+    return os.getenv('CP_RUN_POLICY_MANAGER_PERMISSIVE_ENABLED', 'false') == 'true'
 
 def get_custom_resource_api():
     config.load_kube_config()
@@ -206,10 +210,11 @@ def main():
     while True:
         try:
             permissive_users = []
-            try:
-                permissive_users = get_permissive_users()
-            except Exception as permissive_users_error:
-                log_message('[ERROR] Error ocurred while getting a list of permissive users:\n{}'.format(str(permissive_users_error)))
+            if permissive_checks_enabled():
+                try:
+                    permissive_users = get_permissive_users()
+                except Exception as permissive_users_error:
+                    log_message('[ERROR] Error ocurred while getting a list of permissive users:\n{}'.format(str(permissive_users_error)))
 
             active_policies = load_all_active_policies()
             sensitive_policies = []
@@ -223,7 +228,6 @@ def main():
             for pod in active_pods:
                 pod_owner = pod.metadata.labels.get(OWNER_LABEL)
                 if not is_sensitive_pod(pod) and pod_owner in permissive_users:
-                    log_message('Skipping pod with {} owner'.format(pod_owner))
                     continue
                 sensitive_pods.append(pod) if is_sensitive_pod(pod) else common_pods.append(pod)
             try:
