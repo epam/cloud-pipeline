@@ -98,8 +98,8 @@ public class StoragePermissionManager {
         return grantPermissionManager.storagePermission(storage, permissionName);
     }
 
-    public boolean storagePermissionByPath(final String path,
-                                           final String permissionName) {
+    public boolean storagePermissionAndSharedByPath(final String path,
+                                                    final String permissionName) {
         try {
             final AbstractSecuredEntity storage = storagePathLoader.loadDataStorageByPathOrId(path);
             return grantPermissionManager.checkStorageShared(storage.getId())
