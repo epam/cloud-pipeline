@@ -73,7 +73,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       repositoryToken: PropTypes.string,
       pipelineType: PropTypes.string,
       branch: PropTypes.string,
-      configurationPath: PropTypes.string
+      configurationPath: PropTypes.string,
+      visibility: PropTypes.string
     }),
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -208,6 +209,30 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       </Form.Item>
     ));
     if (!isVersionedStorage) {
+      formItems.push((
+        <Form.Item
+          {...this.formItemLayout}
+          key="Visibility"
+          className="edit-pipeline-form-visibility-container"
+          label="Visibility"
+        >
+          {getFieldDecorator('visibility',
+            {
+              initialValue: this.props.pipeline ? this.props.pipeline.visibility : 'INHERIT'
+            })(
+            <Select
+              disabled={this.props.pending}
+            >
+              <Select.Option key="INHERIT" value="INHERIT">
+                Inherit
+              </Select.Option>
+              <Select.Option key="OWNER" value="OWNER">
+                Owner
+              </Select.Option>
+            </Select>
+          )}
+        </Form.Item>
+      ));
       if (this.state.editRepositorySettings) {
         formItems.push((
           <Form.Item
