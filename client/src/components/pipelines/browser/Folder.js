@@ -916,7 +916,7 @@ export default class Folder extends localization.LocalizedReactComponent {
   createPipelineRequest = new CreatePipeline();
 
   createPipeline = async (opts = {}) => {
-    const {name, description, repository, token} = opts;
+    const {name, description, repository, token, visibility} = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -924,7 +924,8 @@ export default class Folder extends localization.LocalizedReactComponent {
       parentFolderId: this._currentFolder.folder.id,
       templateId: this.state.pipelineTemplate ? this.state.pipelineTemplate.id : undefined,
       repository: repository,
-      repositoryToken: token
+      repositoryToken: token,
+      visibility
     });
     hide();
     if (this.createPipelineRequest.error) {
@@ -941,7 +942,11 @@ export default class Folder extends localization.LocalizedReactComponent {
 
   checkRequest = new CheckPipelineRepository();
 
-  onCreatePipeline = async ({name, description, repository, token}) => {
+  onCreatePipeline = async (opts = {}) => {
+    const {
+      repository,
+      token
+    } = opts;
     if ((token && token.length) || (repository && repository.length)) {
       const hide = message.loading('Checking repository existence...', -1);
       await this.checkRequest.send({
@@ -962,13 +967,13 @@ export default class Folder extends localization.LocalizedReactComponent {
           okText: 'OK',
           cancelText: 'Cancel',
           onOk: async () => {
-            await this.createPipeline({name, description, repository, token});
+            await this.createPipeline(opts);
           }
         });
         return;
       }
     }
-    await this.createPipeline({name, description, repository, token});
+    await this.createPipeline(opts);
   };
 
   openCloneFolderDialog = () => {
@@ -1011,13 +1016,20 @@ export default class Folder extends localization.LocalizedReactComponent {
   updatePipelineRequest = new UpdatePipeline();
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
-  editPipeline = async ({name, description, token}) => {
+  editPipeline = async (values) => {
+    const {
+      name,
+      description,
+      token,
+      visibility
+    } = values || {};
     const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.updatePipelineRequest.send({
       id: this.state.editablePipeline.id,
       name: name,
       description: description,
-      parentFolderId: this._currentFolder.folder.id
+      parentFolderId: this._currentFolder.folder.id,
+      visibility
     });
     if (this.updatePipelineRequest.error) {
       hide();

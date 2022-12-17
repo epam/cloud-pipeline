@@ -18,7 +18,17 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Modal, Form, Input, Row, Col, Spin, Tabs} from 'antd';
+import {
+  Button,
+  Modal,
+  Form,
+  Input,
+  Row,
+  Col,
+  Spin,
+  Tabs,
+  Select
+} from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
@@ -58,7 +68,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       mask: PropTypes.number,
       locked: PropTypes.bool,
       repository: PropTypes.string,
-      repositoryToken: PropTypes.string
+      repositoryToken: PropTypes.string,
+      visibility: PropTypes.string
     }),
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -172,6 +183,30 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
               type="textarea"
               autosize={{minRows: 2, maxRows: 6}}
               disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
+        )}
+      </Form.Item>
+    ));
+    formItems.push((
+      <Form.Item
+        {...this.formItemLayout}
+        key="Visibility"
+        className="edit-pipeline-form-visibility-container"
+        label="Visibility"
+      >
+        {getFieldDecorator('visibility',
+          {
+            initialValue: this.props.pipeline ? this.props.pipeline.visibility : 'INHERIT'
+          })(
+          <Select
+            disabled={this.props.pending}
+          >
+            <Select.Option key="INHERIT" value="INHERIT">
+              Inherit
+            </Select.Option>
+            <Select.Option key="OWNER" value="OWNER">
+              Owner
+            </Select.Option>
+          </Select>
         )}
       </Form.Item>
     ));

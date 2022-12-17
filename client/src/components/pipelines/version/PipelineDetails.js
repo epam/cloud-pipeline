@@ -82,7 +82,8 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           id: this.props.pipelineId,
           name: values.name,
           description: values.description,
-          parentFolderId: this.props.pipeline.value.parentFolderId
+          parentFolderId: this.props.pipeline.value.parentFolderId,
+          visibility: values.visibility
         }
       );
       if (updatePipeline.error) {
