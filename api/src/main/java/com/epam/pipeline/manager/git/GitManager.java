@@ -212,9 +212,10 @@ public class GitManager {
         return pipelineRepositoryService.getRepositoryContents(pipeline, path, version, recursive);
     }
 
-    public List<GitRepositoryEntry> getPipelineSources(Long id, String version)
-            throws GitClientException {
-        return this.getPipelineSources(id, version, srcDirectory, false);
+    public List<GitRepositoryEntry> getPipelineSources(Long id, String version) throws GitClientException {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        final String sources = findRepoPath(pipeline.getCodePath(), srcDirectory);
+        return pipelineRepositoryService.getRepositoryContents(pipeline, sources, version, false);
     }
 
     public List<GitRepositoryEntry> getPipelineSources(Long id,
@@ -226,9 +227,8 @@ public class GitManager {
         List<GitRepositoryEntry> entries;
         if (StringUtils.isNullOrEmpty(path)) {
             final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-            final String sources = RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType())
-                    ? Strings.EMPTY
-                    : srcDirectory;
+            final String sources = findRepoPath(pipeline.getCodePath(),
+                    RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) ? Strings.EMPTY : srcDirectory);
             entries = pipelineRepositoryService.getRepositoryContents(pipeline, sources, version, recursive);
             if (!RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) && appendConfigurationFileIfNeeded) {
                 final GitRepositoryEntry configurationEntry = getConfigurationFileEntry(id, version,
@@ -297,7 +297,8 @@ public class GitManager {
                                        final String folder,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
-        return pipelineRepositoryService.removeFolder(pipeline, folder, lastCommitId, commitMessage, srcDirectory);
+        return pipelineRepositoryService.removeFolder(pipeline, folder, lastCommitId, commitMessage,
+                findRepoPath(pipeline.getCodePath(), srcDirectory));
     }
 
     public GitCommitEntry modifyFile(Pipeline pipeline,
@@ -358,11 +359,10 @@ public class GitManager {
      * @return docs file list of specified pipeline version
      * @throws GitClientException if something goes wrong
      */
-    public List<GitRepositoryEntry> getPipelineDocs(Long id, String version)
-            throws GitClientException {
+    public List<GitRepositoryEntry> getPipelineDocs(Long id, String version) throws GitClientException {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-
-        return pipelineRepositoryService.getRepositoryContents(pipeline, docsDirectory, version, false);
+        final String docsPath = findRepoPath(pipeline.getDocsPath(), docsDirectory);
+        return pipelineRepositoryService.getRepositoryContents(pipeline, docsPath, version, false);
     }
 
     public File getConfigFile(Pipeline pipeline, String version) {
@@ -779,5 +779,9 @@ public class GitManager {
             }
         }
         return Paths.get(namespace, project + GIT_REPO_EXTENSION).toString();
+    }
+
+    private String findRepoPath(final String path, final String defaultPath) {
+        return StringUtils.isNullOrEmpty(path) ? defaultPath : path;
     }
 }
