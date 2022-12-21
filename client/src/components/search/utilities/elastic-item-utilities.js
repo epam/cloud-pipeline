@@ -37,7 +37,11 @@ export function filterNonMatchingItemsFn (item) {
 }
 
 export function itemSelectionAvailable (item) {
-  return item && item.type === SearchItemTypes.s3File;
+  return item && (
+    item.type === SearchItemTypes.s3File ||
+    item.type === SearchItemTypes.azFile ||
+    item.type === SearchItemTypes.gsFile
+  );
 }
 
 export function canAppendItemToSelection (item, selection = []) {

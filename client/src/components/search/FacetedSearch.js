@@ -19,23 +19,21 @@ import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
-  Badge,
   Button,
   Icon,
   Input,
   Dropdown,
   Menu
 } from 'antd';
-import RcMenu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
 import FacetedFilter, {DocumentTypeFilter, DocumentTypeFilterName} from './faceted-search/filter';
 import {
   PresentationModes,
-  SelectionPreview,
   TogglePresentationMode,
-  ExportButton
+  ExportButton,
+  SharingControl
 } from './faceted-search/controls';
 import SearchResults, {DEFAULT_PAGE_SIZE} from './faceted-search/search-results';
 import {
@@ -55,8 +53,6 @@ import {
   removeSortingByField
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
-import SharedItemInfo from '../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
-import {SearchItemTypes} from '../../models/search';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 
@@ -74,6 +70,7 @@ class FacetedSearch extends React.Component {
 
   state = {
     activeFilters: {},
+    advancedSearchMode: false,
     extraColumnsConfiguration: [],
     sortingOrder: DefaultSorting,
     userDocumentTypes: [],
@@ -92,9 +89,7 @@ class FacetedSearch extends React.Component {
     showResults: false,
     searchToken: undefined,
     facetsToken: undefined,
-    itemsToShare: [],
     selectedItems: [],
-    shareDialogVisible: false,
     showSelectionPreview: false
   }
 
@@ -367,13 +362,14 @@ class FacetedSearch extends React.Component {
       this.loadFacets()
         .then(() => {
           const {
+            advancedSearchMode,
             activeFilters,
             sortingOrder,
             userDocumentTypes = [],
             documents: currentDocuments = [],
             facets,
             facetsCount: currentFacetsCount,
-            query,
+            query: currentQuery,
             pageSize,
             searchToken: currentSearchToken,
             facetsToken: currentFacetsToken
@@ -386,6 +382,7 @@ class FacetedSearch extends React.Component {
             });
             return;
           }
+          const query = advancedSearchMode ? currentQuery : `*${currentQuery}*`;
           const userDocumentTypesFilter = userDocumentTypes.length > 0
             ? {[DocumentTypeFilterName]: userDocumentTypes}
             : {};
@@ -618,6 +615,13 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  onChangeSearchMode = () => {
+    const {advancedSearchMode} = this.state;
+    this.setState({
+      advancedSearchMode: !advancedSearchMode
+    });
+  };
+
   onQueryChange = (e) => {
     this.setState({
       query: e.target.value
@@ -659,32 +663,6 @@ class FacetedSearch extends React.Component {
     });
   };
 
-  openShareStorageItemsDialog = (itemsToShare = []) => {
-    const getItemType = (item) => {
-      if (item.type === SearchItemTypes.s3File) {
-        return 'file';
-      }
-      return item.type;
-    };
-    this.setState({
-      itemsToShare: itemsToShare.map(i => ({
-        storageId: i.parentId,
-        path: i.path,
-        name: i.name,
-        type: getItemType(i)
-      })),
-      shareDialogVisible: true,
-      showSelectionPreview: false
-    });
-  };
-
-  closeShareItemDialog = () => {
-    return this.setState({
-      itemsToShare: [],
-      shareDialogVisible: false
-    });
-  };
-
   onSelectItem = (item) => {
     const selectedItems = [...new Set([...this.state.selectedItems, item])];
 
@@ -699,80 +677,10 @@ class FacetedSearch extends React.Component {
     this.setState({selectedItems});
   };
 
-  openSelectionPreview = () => {
-    const {selectedItems = []} = this.state;
-    if (selectedItems && selectedItems.length > 0) {
-      this.setState({showSelectionPreview: true});
-    }
-  };
-
-  closeSelectionPreview = () => {
-    this.setState({showSelectionPreview: false});
-  };
-
   clearSelection = () => {
     this.setState({
-      showSelectionPreview: false,
-      itemsToShare: [],
       selectedItems: []
     });
-  };
-
-  renderDataStorageSharingControl = () => {
-    const {selectedItems} = this.state;
-    if (!this.dataStorageSharingEnabled || !selectedItems || !selectedItems.length) {
-      return null;
-    }
-    const handleMenuClick = ({key}) => {
-      if (key === 'share') {
-        this.openShareStorageItemsDialog(selectedItems);
-      } else if (key === 'clear') {
-        this.clearSelection();
-      } else if (key === 'show selection') {
-        this.openSelectionPreview();
-      }
-    };
-    const overlay = (
-      <RcMenu
-        onClick={handleMenuClick}
-        selectedKeys={[]}
-      >
-        <MenuItem
-          key="share"
-        >
-          <b>Share</b> selected
-        </MenuItem>
-        <MenuItem
-          key="show selection"
-        >
-          <b>Display</b> selected
-        </MenuItem>
-        <MenuDivider />
-        <MenuItem
-          key="clear"
-          className="cp-danger"
-        >
-          Clear selection
-        </MenuItem>
-      </RcMenu>
-    );
-    return (
-      <div style={{margin: '0 5px'}}>
-        <Badge count={(selectedItems || []).length} style={{zIndex: 999}}>
-          <Dropdown
-            overlay={overlay}
-            trigger={['click']}
-          >
-            <Button
-              size="large"
-              style={{width: 35, padding: 0}}
-            >
-              <Icon type="export" />
-            </Button>
-          </Dropdown>
-        </Badge>
-      </div>
-    );
   };
 
   renderExportButton = () => {
@@ -785,8 +693,8 @@ class FacetedSearch extends React.Component {
     } = this.state;
     return (
       <ExportButton
-        className={styles.find}
-        size="large"
+        className={styles.exportButton}
+        size="medium"
         type="primary"
         columns={this.columns}
         query={query}
@@ -872,6 +780,40 @@ class FacetedSearch extends React.Component {
     );
   };
 
+  renderControlsRow = () => {
+    const {
+      presentationMode,
+      userDocumentTypes = []
+    } = this.state;
+    if (!userDocumentTypes) {
+      return null;
+    }
+    if (userDocumentTypes.length === 0) {
+      return (
+        <div
+          className={classNames(styles.actions, 'cp-search-actions')}
+        >
+          {this.renderExportButton()}
+          <TogglePresentationMode
+            className={styles.togglePresentationMode}
+            onChange={this.onChangePresentationMode}
+            mode={presentationMode}
+            size="medium"
+          />
+          {this.renderSortingControls()}
+        </div>
+      );
+    }
+    return (
+      <div
+        className={classNames(styles.actions, 'cp-search-actions')}
+      >
+        {this.renderExportButton()}
+        {this.renderSortingControls()}
+      </div>
+    );
+  };
+
   renderSearchResults = () => {
     const {
       sortingOrder,
@@ -886,32 +828,42 @@ class FacetedSearch extends React.Component {
       facetsToken
     } = this.state;
     return (
-      <SearchResults
+      <div
         key="search-results"
-        className={classNames(styles.panel, styles.searchResults)}
-        documents={documents}
-        extraColumns={this.extraColumns}
-        onChangeSortingOrder={this.changeSortingOrder}
-        sortingOrder={sortingOrder}
-        disabled={pending}
-        loading={pending}
-        error={error}
-        pageSize={pageSize}
-        hasElementsAfter={!isLastPage}
-        hasElementsBefore={!isFirstPage}
-        resetPositionToken={facetsToken}
-        onLoadData={this.onLoadNextPage}
-        onPageSizeChanged={this.onPageSizeChanged}
-        onNavigate={this.onNavigate}
-        onSelectItem={this.onSelectItem}
-        onDeselectItem={this.onDeselectItem}
-        selectedItems={this.state.selectedItems}
-        selectionAvailable={this.dataStorageSharingEnabled}
-        showResults={showResults}
-        onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
-        mode={presentationMode}
-        columns={this.columns}
-      />
+        style={{
+          overflow: 'hidden',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        {this.renderControlsRow()}
+        <SearchResults
+          className={classNames(styles.panel, styles.searchResults)}
+          documents={documents}
+          extraColumns={this.extraColumns}
+          onChangeSortingOrder={this.changeSortingOrder}
+          sortingOrder={sortingOrder}
+          disabled={pending}
+          loading={pending}
+          error={error}
+          pageSize={pageSize}
+          hasElementsAfter={!isLastPage}
+          hasElementsBefore={!isFirstPage}
+          resetPositionToken={facetsToken}
+          onLoadData={this.onLoadNextPage}
+          onPageSizeChanged={this.onPageSizeChanged}
+          onNavigate={this.onNavigate}
+          onSelectItem={this.onSelectItem}
+          onDeselectItem={this.onDeselectItem}
+          selectedItems={this.state.selectedItems}
+          selectionAvailable={this.dataStorageSharingEnabled}
+          showResults={showResults}
+          onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
+          mode={presentationMode}
+          columns={this.columns}
+        />
+      </div>
     );
   };
 
@@ -922,11 +874,9 @@ class FacetedSearch extends React.Component {
       facetsLoaded,
       presentationMode,
       query,
-      showSelectionPreview,
       selectedItems = [],
       userDocumentTypes = [],
-      sortingOrder = [],
-      facets = []
+      advancedSearchMode
     } = this.state;
     if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
       return (
@@ -939,6 +889,27 @@ class FacetedSearch extends React.Component {
       );
     }
     const noFilters = this.filters.filter(f => f.name !== DocumentTypeFilterName).length === 0;
+    const inputSuffix = (
+      <div className={styles.suffixContainer}>
+        {query ? (
+          <Icon
+            type="close-circle"
+            className={classNames(styles.clearQuery, 'cp-search-clear-button')}
+            onClick={this.onClearQuery}
+          />
+        ) : null}
+        <span
+          className={classNames(
+            styles.searchModeButton,
+            'cp-button',
+            {'primary': advancedSearchMode}
+          )}
+          onClick={this.onChangeSearchMode}
+        >
+          Advanced
+        </span>
+      </div>
+    );
     return (
       <div
         className={
@@ -951,17 +922,7 @@ class FacetedSearch extends React.Component {
           <Input
             ref={this.initializeSearchRef}
             size="large"
-            suffix={
-              query
-                ? (
-                  <Icon
-                    type="close-circle"
-                    className={classNames(styles.clearQuery, 'cp-search-clear-button')}
-                    onClick={this.onClearQuery}
-                  />
-                )
-                : undefined
-            }
+            suffix={inputSuffix}
             className={styles.searchInput}
             value={query}
             onChange={this.onQueryChange}
@@ -982,7 +943,16 @@ class FacetedSearch extends React.Component {
               />
             )
           }
-          {this.renderDataStorageSharingControl()}
+          <SharingControl
+            visible={
+              this.dataStorageSharingEnabled &&
+              selectedItems &&
+              selectedItems.length > 0
+            }
+            items={selectedItems}
+            onClearSelection={this.clearSelection}
+            extraColumns={this.extraColumns}
+          />
           <Button
             className={styles.find}
             size="large"
@@ -993,31 +963,6 @@ class FacetedSearch extends React.Component {
             Search
           </Button>
         </div>
-        {
-          userDocumentTypes.length === 0 && (
-            <div
-              className={classNames(styles.actions, 'cp-search-actions')}
-            >
-              {this.renderExportButton()}
-              <TogglePresentationMode
-                className={styles.togglePresentationMode}
-                onChange={this.onChangePresentationMode}
-                mode={presentationMode}
-              />
-              {this.renderSortingControls()}
-            </div>
-          )
-        }
-        {
-          userDocumentTypes.length > 0 && (
-            <div
-              className={classNames(styles.actions, 'cp-search-actions')}
-            >
-              {this.renderExportButton()}
-              {this.renderSortingControls()}
-            </div>
-          )
-        }
         <div className={styles.content}>
           {!noFilters ? (
             <SplitPanel
@@ -1027,6 +972,11 @@ class FacetedSearch extends React.Component {
                   pxMinimum: 300,
                   percentMaximum: 50,
                   percentDefault: 25
+                }
+              }, {
+                key: 'search-results',
+                containerStyle: {
+                  overflow: 'hidden'
                 }
               }]}
               resizerSize={8}
@@ -1070,20 +1020,6 @@ class FacetedSearch extends React.Component {
           )
           }
         </div>
-        <SelectionPreview
-          title="Selected files"
-          visible={showSelectionPreview}
-          extraColumns={this.extraColumns}
-          items={selectedItems}
-          onClose={this.closeSelectionPreview}
-          onClear={this.clearSelection}
-          onShare={this.openShareStorageItemsDialog}
-        />
-        <SharedItemInfo
-          visible={this.state.shareDialogVisible}
-          shareItems={this.state.itemsToShare}
-          close={this.closeShareItemDialog}
-        />
       </div>
     );
   }

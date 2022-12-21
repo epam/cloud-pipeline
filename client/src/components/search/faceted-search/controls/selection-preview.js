@@ -75,11 +75,11 @@ class SelectionPreview extends React.Component {
     }
   };
 
-  onShareClicked = () => {
-    const {onShare, items = []} = this.props;
-    if (onShare) {
+  onDownloadClicked = () => {
+    const {onDownload, items = []} = this.props;
+    if (onDownload) {
       const {removedItems = []} = this.state;
-      onShare(
+      onDownload(
         items.filter(o => !removedItems
           .find(elasticItemUtilities.filterMatchingItemsFn(o))
         )
@@ -127,10 +127,10 @@ class SelectionPreview extends React.Component {
               </Button>
               <Button
                 disabled={this.actualSelection.length === 0}
-                onClick={this.onShareClicked}
+                onClick={this.onDownloadClicked}
                 type="primary"
               >
-                SHARE
+                DOWNLOAD
               </Button>
             </div>
           </div>
@@ -174,7 +174,7 @@ SelectionPreview.propTypes = {
   items: PropTypes.array,
   onClose: PropTypes.func,
   onClear: PropTypes.func,
-  onShare: PropTypes.func,
+  onDownload: PropTypes.func,
   title: PropTypes.string,
   visible: PropTypes.bool
 };
