@@ -27,9 +27,12 @@
   align-items: center;
 }
 
-.container .search,
-.container .content {
+.container .search {
   padding: 5px;
+}
+
+.container .content {
+  padding: 0 5px;
 }
 
 .search-mode-button {
@@ -93,7 +96,7 @@
 }
 
 .container .actions {
-  margin: 0 6px;
+  margin: 0 5px;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -104,7 +107,6 @@
 .container .actions .export-button {
   display: flex;
   align-self: stretch;
-  margin-left: 5px;
 }
 
 .container .actions > * {

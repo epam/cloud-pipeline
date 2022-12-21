@@ -17,7 +17,8 @@
 function parse (queryString) {
   const {
     query,
-    filters: f
+    filters: f,
+    advanced = false
   } = queryString || {};
   const filters = (f || '')
     .split(';')
@@ -30,11 +31,12 @@ function parse (queryString) {
     .reduce((r, c) => ({...r, ...c}), {});
   return {
     query,
-    filters
+    filters,
+    advanced
   };
 }
 
-function build (query, filters) {
+function build (query, filters, advanced = false) {
   const filtersKeys = Object.keys(filters || {})
     .filter(key => !!filters[key] && filters[key].length)
     .sort();
@@ -43,7 +45,8 @@ function build (query, filters) {
     .join(';');
   const parts = [
     query ? `query=${encodeURIComponent(query)}` : false,
-    filtersKeys.length > 0 ? `filters=${encodeURIComponent(filtersParts)}` : false
+    filtersKeys.length > 0 ? `filters=${encodeURIComponent(filtersParts)}` : false,
+    advanced ? `advanced=true` : false
   ]
     .filter(Boolean);
   return parts.join('&');

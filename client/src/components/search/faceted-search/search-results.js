@@ -357,9 +357,13 @@ class SearchResults extends React.Component {
   }
 
   itemSelectionAvailable = (item) => {
-    const {selectionAvailable} = this.props;
+    const {
+      dataStorageSharingEnabled,
+      preferences
+    } = this.props;
 
-    return selectionAvailable && elasticItemUtilities.itemSelectionAvailable(item);
+    return (dataStorageSharingEnabled && elasticItemUtilities.itemSharingAvailable(item)) ||
+      elasticItemUtilities.itemIsDownloadable(item, preferences);
   };
 
   onRowSelectionChange = (item, event) => {
@@ -646,7 +650,7 @@ SearchResults.propTypes = {
   onSelectItem: PropTypes.func,
   onDeselectItem: PropTypes.func,
   selectedItems: PropTypes.array,
-  selectionAvailable: PropTypes.bool,
+  dataStorageSharingEnabled: PropTypes.bool,
   pageSize: PropTypes.number,
   showResults: PropTypes.bool,
   style: PropTypes.object,

@@ -36,7 +36,7 @@ export function filterNonMatchingItemsFn (item) {
   };
 }
 
-export function itemSelectionAvailable (item) {
+export function itemSharingAvailable (item) {
   return item && (
     item.type === SearchItemTypes.s3File ||
     item.type === SearchItemTypes.azFile ||
@@ -44,8 +44,40 @@ export function itemSelectionAvailable (item) {
   );
 }
 
-export function canAppendItemToSelection (item, selection = []) {
-  return !!item &&
-    itemSelectionAvailable(item) &&
-    !selection.some(i => i.parentId !== item.parentId);
+function itemFitsMask (item, mask) {
+  if (!item) {
+    return false;
+  }
+  if (!mask) {
+    return true;
+  }
+  const {
+    path
+  } = item;
+  return mask.test(path);
+}
+
+export function itemIsDownloadable (item, preferences) {
+  if (
+    !item ||
+    (
+      item.type !== SearchItemTypes.s3File &&
+      item.type !== SearchItemTypes.azFile &&
+      item.type !== SearchItemTypes.gsFile
+    ) ||
+    !preferences ||
+    !preferences.loaded
+  ) {
+    return false;
+  }
+  const {
+    allow = [],
+    deny = []
+  } = preferences.facetedFilterDownload;
+  return (allow.length === 0 || allow.some(mask => itemFitsMask(item, mask))) &&
+    (deny.length === 0 || !deny.some(mask => itemFitsMask(item, mask)));
+}
+
+export function filterDownloadableItems (items, preferences) {
+  return (items || []).filter((item) => itemIsDownloadable(item, preferences));
 }

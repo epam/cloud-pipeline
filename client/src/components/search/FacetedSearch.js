@@ -23,7 +23,8 @@ import {
   Icon,
   Input,
   Dropdown,
-  Menu
+  Menu,
+  message
 } from 'antd';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
@@ -55,6 +56,7 @@ import {
 import {SplitPanel} from '../special/splitPanel';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
+import downloadStorageItems from '../special/download-storage-items';
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
 @inject((stores, props) => {
@@ -99,9 +101,17 @@ class FacetedSearch extends React.Component {
     const {facetedFilters} = this.props;
     this.initAbortController();
     if (facetedFilters) {
-      const {query, filters} = facetedFilters;
+      const {
+        query,
+        filters,
+        advanced = false
+      } = facetedFilters;
       this.setState(
-        {query, activeFilters: filters},
+        {
+          query,
+          activeFilters: filters,
+          advancedSearchMode: advanced
+        },
         () => this.doSearch()
       );
     } else {
@@ -355,6 +365,25 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  updateCurrentRouting = () => {
+    const {
+      query,
+      activeFilters,
+      advancedSearchMode
+    } = this.state;
+    let queryString = facetedQueryString.build(
+      query,
+      activeFilters,
+      advancedSearchMode
+    );
+    if (queryString) {
+      queryString = `?${queryString}`;
+    }
+    if (this.props.router.location.search !== queryString) {
+      this.props.router.push(`/search/advanced${queryString || ''}`);
+    }
+  };
+
   doSearch = (continuousOptions = undefined, abortPendingRequests = false) => {
     this.setState({
       pending: true
@@ -382,10 +411,9 @@ class FacetedSearch extends React.Component {
             });
             return;
           }
-          let query = currentQuery;
-          if (!advancedSearchMode && currentQuery) {
-            query = `*${currentQuery}*`;
-          }
+          const query = !advancedSearchMode && currentQuery
+            ? `*${currentQuery}*`
+            : currentQuery;
           const userDocumentTypesFilter = userDocumentTypes.length > 0
             ? {[DocumentTypeFilterName]: userDocumentTypes}
             : {};
@@ -404,13 +432,7 @@ class FacetedSearch extends React.Component {
             return;
           }
           this.setState({searchToken}, () => {
-            let queryString = facetedQueryString.build(query, activeFilters);
-            if (queryString) {
-              queryString = `?${queryString}`;
-            }
-            if (this.props.router.location.search !== queryString) {
-              this.props.router.push(`/search/advanced${queryString || ''}`);
-            }
+            this.updateCurrentRouting();
             if (this.abortController && abortPendingRequests) {
               this.abortController.abort();
               this.initAbortController();
@@ -622,6 +644,9 @@ class FacetedSearch extends React.Component {
     const {advancedSearchMode} = this.state;
     this.setState({
       advancedSearchMode: !advancedSearchMode
+    }, () => {
+      this.updateCurrentRouting();
+      this.doSearch(undefined, true);
     });
   };
 
@@ -697,7 +722,7 @@ class FacetedSearch extends React.Component {
     return (
       <ExportButton
         className={styles.exportButton}
-        size="medium"
+        size="default"
         type="primary"
         columns={this.columns}
         query={query}
@@ -801,7 +826,7 @@ class FacetedSearch extends React.Component {
             className={styles.togglePresentationMode}
             onChange={this.onChangePresentationMode}
             mode={presentationMode}
-            size="medium"
+            size="default"
           />
           {this.renderSortingControls()}
         </div>
@@ -860,7 +885,7 @@ class FacetedSearch extends React.Component {
           onSelectItem={this.onSelectItem}
           onDeselectItem={this.onDeselectItem}
           selectedItems={this.state.selectedItems}
-          selectionAvailable={this.dataStorageSharingEnabled}
+          dataStorageSharingEnabled={this.dataStorageSharingEnabled}
           showResults={showResults}
           onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
           mode={presentationMode}
@@ -868,6 +893,32 @@ class FacetedSearch extends React.Component {
         />
       </div>
     );
+  };
+
+  handleDownloadItems = async (items = []) => {
+    const {preferences} = this.props;
+    const hide = message.loading('Downloading...', 0);
+    try {
+      await preferences.fetchIfNeededOrWait();
+      const {maximum} = preferences.facetedFilterDownload;
+      if (maximum && maximum < items.length) {
+        message.info(
+          (
+            <span>
+              {/* eslint-disable-next-line max-len */}
+              It is allowed to download up to <b>{maximum}</b> file{maximum === 1 ? '' : 's'} at a time.
+            </span>
+          ),
+          5
+        );
+      } else {
+        await downloadStorageItems(items);
+      }
+    } catch (error) {
+      message.error(error.message, 5);
+    } finally {
+      hide();
+    }
   };
 
   render () {
@@ -931,34 +982,40 @@ class FacetedSearch extends React.Component {
             onChange={this.onQueryChange}
             onPressEnter={this.onChangeQuery}
           />
-          <DocumentTypeFilter
-            values={this.documentTypeFilter.values}
-            selection={(activeFilters || {})[DocumentTypeFilterName]}
-            onChange={this.onChangeFilter(DocumentTypeFilterName)}
-            onClearFilters={this.onClearFilters}
-          />
-          {
-            userDocumentTypes.length > 0 && (
-              <TogglePresentationMode
-                className={styles.togglePresentationMode}
-                onChange={this.onChangePresentationMode}
-                mode={presentationMode}
-              />
-            )
-          }
           <SharingControl
             visible={
-              this.dataStorageSharingEnabled &&
               selectedItems &&
               selectedItems.length > 0
             }
             items={selectedItems}
             onClearSelection={this.clearSelection}
             extraColumns={this.extraColumns}
+            onDownload={this.handleDownloadItems}
+            dataStorageSharingEnabled={this.dataStorageSharingEnabled}
           />
+          {
+            userDocumentTypes.length === 0 && (
+              <DocumentTypeFilter
+                values={this.documentTypeFilter.values}
+                selection={(activeFilters || {})[DocumentTypeFilterName]}
+                onChange={this.onChangeFilter(DocumentTypeFilterName)}
+                onClearFilters={this.onClearFilters}
+              />
+            )
+          }
+          {
+            userDocumentTypes.length > 0 && (
+              <TogglePresentationMode
+                className={styles.togglePresentationMode}
+                onChange={this.onChangePresentationMode}
+                mode={presentationMode}
+                size="default"
+              />
+            )
+          }
           <Button
             className={styles.find}
-            size="large"
+            size="default"
             type="primary"
             onClick={this.onChangeQuery}
           >

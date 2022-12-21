@@ -25,23 +25,15 @@ import {
 } from 'antd';
 import RcMenu, {MenuItem, SubMenu, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
-import {SearchItemTypes} from '../../../../../models/search';
 import SharedItemInfo
-  from '../../../../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
+from '../../../../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import SelectionPreview from '../selection-preview';
+import {
+  filterDownloadableItems,
+  itemSharingAvailable
+} from '../../../utilities/elastic-item-utilities';
 
-function getItemType (item) {
-  if (
-    item.type === SearchItemTypes.s3File ||
-    item.type === SearchItemTypes.azFile ||
-    item.type === SearchItemTypes.gsFile
-  ) {
-    return 'file';
-  }
-  return item.type;
-};
-
-@inject('dataStorages')
+@inject('dataStorages', 'preferences')
 @observer
 class SharingControl extends React.Component {
   state = {
@@ -67,21 +59,30 @@ class SharingControl extends React.Component {
   get items () {
     const {items} = this.props;
     return (items || []).map(item => ({
-      storageId: item.parentId,
-      path: item.path,
-      name: item.name,
-      type: getItemType(item)
+      ...item,
+      storageId: item.parentId
     }));
   }
 
+  get shareableItems () {
+    return this.items.filter(itemSharingAvailable);
+  }
+
   get groupedItems () {
-    return this.items.reduce((acc, item) => {
-      if (!acc[item.storageId]) {
-        acc[item.storageId] = [];
-      }
-      acc[item.storageId].push(item);
-      return acc;
-    }, {});
+    const storages = [...new Set(this.shareableItems.map((item) => Number(item.storageId)))]
+      .filter(id => !Number.isNaN(id));
+    return storages.map((storageId) => ({
+      storageId,
+      items: this.shareableItems.filter((item) => Number(item.storageId) === storageId)
+    }));
+  }
+
+  get downloadableItems () {
+    const {preferences} = this.props;
+    if (!preferences.loaded) {
+      return [];
+    }
+    return filterDownloadableItems(this.items, preferences);
   }
 
   openShareStorageItemsDialog = (items) => {
@@ -129,28 +130,44 @@ class SharingControl extends React.Component {
     this.setDropDownVisibility(false);
   };
 
+  onSelectionPreviewDownload = (items) => {
+    this.onDownload((items || []).map(item => ({
+      ...item,
+      storageId: item.parentId
+    })));
+  };
+
   onDownload = (items) => {
-    console.log('items to download: ', items);
+    const {
+      onDownload
+    } = this.props;
+    if (typeof onDownload === 'function') {
+      onDownload(items);
+    }
+    this.setDropDownVisibility(false);
   };
 
   handleMenuClick = ({key}) => {
     if (key.startsWith('shareGroup')) {
       const storageId = key.split('|').pop();
-      this.openShareStorageItemsDialog(this.groupedItems[storageId]);
+      const group = this.groupedItems.find((group) => group.storageId === Number(storageId));
+      if (group) {
+        this.openShareStorageItemsDialog(group.items);
+      }
     } else if (key === 'share') {
-      this.openShareStorageItemsDialog(this.items);
+      this.openShareStorageItemsDialog(this.shareableItems);
     } else if (key === 'clear') {
       this.clearSelection();
     } else if (key === 'download') {
-      this.onDownload(this.items);
+      this.onDownload(this.downloadableItems);
     } else if (key === 'show') {
       this.openSelectionPreview();
     }
   };
 
   renderMenuOverlay = () => {
-    const {items} = this.props;
-    const isMultipleStorageItems = [...new Set(items.map(item => item.parentId))].length > 1;
+    const {dataStorageSharingEnabled} = this.props;
+    const isMultipleStorageItems = this.groupedItems.length > 1;
     const getStorageName = id => {
       const storage = this.dataStorages.find(d => Number(d.id) === Number(id));
       return storage && storage.name
@@ -169,12 +186,14 @@ class SharingControl extends React.Component {
             </span>
           )}
         >
-          {Object.entries(this.groupedItems).map(([groupId, items]) => (
-            <MenuItem key={`shareGroup|${groupId}`}>
-              Share <b>{items.length}</b> item{items.length > 1 ? 's' : ''}
-              &nbsp;from <b>{getStorageName(groupId)}</b>
-            </MenuItem>
-          ))}
+          {
+            this.groupedItems.map((group) => (
+              <MenuItem key={`shareGroup|${group.storageId}`}>
+                Share <b>{group.items.length}</b> item{group.items.length > 1 ? 's' : ''}
+                &nbsp;from <b>{getStorageName(group.storageId)}</b>
+              </MenuItem>
+            ))
+          }
         </SubMenu>
       ) : (
         <MenuItem key="share">
@@ -190,10 +209,14 @@ class SharingControl extends React.Component {
         openAnimation="zoom"
         getPopupContainer={node => node.parentNode}
       >
-        {shareSubMenu}
-        <MenuItem key="download">
-          <b>Download</b> selected
-        </MenuItem>
+        {dataStorageSharingEnabled && shareSubMenu}
+        {
+          this.downloadableItems.length > 0 && (
+            <MenuItem key="download">
+              <b>Download</b> selected
+            </MenuItem>
+          )
+        }
         <MenuItem key="show">
           <b>Display</b> selected
         </MenuItem>
@@ -212,7 +235,8 @@ class SharingControl extends React.Component {
     const {
       items,
       visible,
-      extraColumns
+      extraColumns,
+      size
     } = this.props;
     const {showSelectionPreview, dropDownVisible} = this.state;
     if (!items || !visible) {
@@ -228,7 +252,7 @@ class SharingControl extends React.Component {
             onVisibleChange={this.setDropDownVisibility}
           >
             <Button
-              size="large"
+              size={size}
               style={{width: 35, padding: 0}}
             >
               <Icon type="export" />
@@ -247,7 +271,7 @@ class SharingControl extends React.Component {
           items={items}
           onClose={this.closeSelectionPreview}
           onClear={this.clearSelection}
-          onDownload={this.onDownload}
+          onDownload={this.onSelectionPreviewDownload}
         />
       </div>
     );
@@ -261,7 +285,10 @@ SharingControl.propTypes = {
     key: PropTypes.string,
     name: PropTypes.string
   })),
-  onClearSelection: PropTypes.func
+  onClearSelection: PropTypes.func,
+  size: PropTypes.string,
+  onDownload: PropTypes.func,
+  dataStorageSharingEnabled: PropTypes.bool
 };
 
 export default SharingControl;

@@ -76,7 +76,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
   };
 
   render () {
-    const {disabled} = this.props;
+    const {disabled, size} = this.props;
     const {overlayVisible} = this.state;
     const filterMenu = (
       <Menu
@@ -141,7 +141,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
         visible={overlayVisible}
       >
         <Button
-          size="large"
+          size={size}
           className={classNames(
             styles.documentFilterBtn,
             'cp-search-faceted-button'
@@ -164,7 +164,8 @@ DocumentTypeFilter.propTypes = {
   disabled: PropTypes.bool,
   onChange: PropTypes.func,
   selection: PropTypes.array,
-  values: PropTypes.array
+  values: PropTypes.array,
+  size: PropTypes.string
 };
 
 const DocumentTypeFilterName = 'doc_type';

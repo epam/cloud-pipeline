@@ -16,8 +16,10 @@
 
 import Remote from '../basic/Remote';
 import {computed} from 'mobx';
+import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
+// eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
 class PreferencesLoad extends Remote {
@@ -444,6 +446,51 @@ class PreferencesLoad extends Remote {
       return undefined;
     }
     return Number(value);
+  }
+
+  @computed
+  get facetedFilterDownload () {
+    const processMask = (mask) => {
+      if (!mask) {
+        return /.+/;
+      }
+      let escaped = escapeRegExp(mask, ESCAPE_CHARACTERS.filter((ch) => ch !== '*'));
+      escaped = escaped.replace(/[*]/g, '.+');
+      if (/^[\\/]/.test(escaped)) {
+        escaped = '^'.concat(escaped);
+      } else {
+        escaped = '(^|\\/|\\\\)'.concat(escaped);
+      }
+      escaped = escaped.concat('$');
+      return new RegExp(escaped, 'i');
+    };
+    const processMasks = (masks) => {
+      if (typeof masks === 'string') {
+        return [processMask(masks)];
+      }
+      return masks.map(processMask);
+    };
+    const processPreference = (preference = {}) => {
+      const {
+        allow = [],
+        deny = [],
+        ...rest
+      } = preference || {};
+      return {
+        allow: processMasks(allow),
+        deny: processMasks(deny),
+        ...rest
+      };
+    };
+    const value = this.getPreferenceValue('faceted.filter.download');
+    if (value) {
+      try {
+        return processPreference(JSON.parse(value));
+      } catch (e) {
+        console.warn('Error parsing "ui.tool.kube.labels" preference:', e.message);
+      }
+    }
+    return processPreference();
   }
 
   toolScanningEnabledForRegistry (registry) {
