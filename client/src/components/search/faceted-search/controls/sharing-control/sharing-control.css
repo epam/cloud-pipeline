@@ -15,7 +15,5 @@
  */
 
 .menu div[class~="ant-dropdown-menu-submenu-popup"] {
-  width: 200px;
-  width: 305px;
-  z-index: 0;
+  width: fit-content;
 }

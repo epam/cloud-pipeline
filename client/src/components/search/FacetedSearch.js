@@ -382,7 +382,10 @@ class FacetedSearch extends React.Component {
             });
             return;
           }
-          const query = advancedSearchMode ? currentQuery : `*${currentQuery}*`;
+          let query = currentQuery;
+          if (!advancedSearchMode && currentQuery) {
+            query = `*${currentQuery}*`;
+          }
           const userDocumentTypesFilter = userDocumentTypes.length > 0
             ? {[DocumentTypeFilterName]: userDocumentTypes}
             : {};
