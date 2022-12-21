@@ -93,6 +93,7 @@ class SharingControl extends React.Component {
       shareDialogVisible: true,
       showSelectionPreview: false
     });
+    this.setDropDownVisibility(false);
   };
 
   closeShareItemDialog = () => {
@@ -106,6 +107,7 @@ class SharingControl extends React.Component {
     const {items} = this.props;
     if (items && items.length > 0) {
       this.setState({showSelectionPreview: true});
+      this.setDropDownVisibility(false);
     }
   };
 
@@ -116,10 +118,15 @@ class SharingControl extends React.Component {
     });
   };
 
+  setDropDownVisibility = (visible) => {
+    this.setState({dropDownVisible: visible});
+  };
+
   clearSelection = () => {
     const {onClearSelection} = this.props;
     onClearSelection && onClearSelection();
     this.closeSelectionPreview();
+    this.setDropDownVisibility(false);
   };
 
   onDownload = (items) => {
@@ -218,9 +225,7 @@ class SharingControl extends React.Component {
             overlay={<div>{this.renderMenuOverlay()}</div>}
             trigger={['click']}
             visible={dropDownVisible}
-            onVisibleChange={(visible) => this.setState({
-              dropDownVisible: visible
-            })}
+            onVisibleChange={this.setDropDownVisibility}
           >
             <Button
               size="large"
