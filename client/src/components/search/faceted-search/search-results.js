@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Alert, Checkbox, Icon, Spin, Tooltip} from 'antd';
+import {Alert, Checkbox, Icon, Spin} from 'antd';
 import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
@@ -357,15 +357,13 @@ class SearchResults extends React.Component {
   }
 
   itemSelectionAvailable = (item) => {
-    const {selectionAvailable} = this.props;
+    const {
+      dataStorageSharingEnabled,
+      preferences
+    } = this.props;
 
-    return selectionAvailable && elasticItemUtilities.itemSelectionAvailable(item);
-  };
-
-  itemSelectionDisabled = (item) => {
-    const {selectedItems = []} = this.props;
-
-    return !elasticItemUtilities.canAppendItemToSelection(item, selectedItems);
+    return (dataStorageSharingEnabled && elasticItemUtilities.itemSharingAvailable(item)) ||
+      elasticItemUtilities.itemIsDownloadable(item, preferences);
   };
 
   onRowSelectionChange = (item, event) => {
@@ -384,17 +382,7 @@ class SearchResults extends React.Component {
     if (!this.itemSelectionAvailable(item)) {
       return null;
     }
-    const disabled = this.itemSelectionDisabled(item);
     const handleClick = e => e.stopPropagation();
-    const checkbox = (
-      <Checkbox
-        checked={this.itemSelected(item)}
-        disabled={disabled}
-        onChange={e => this.onRowSelectionChange(item, e)}
-        onClick={handleClick}
-        style={disabled ? {pointerEvents: 'none'} : {}}
-      />
-    );
     return (
       <div
         style={{padding: '10px 5px'}}
@@ -403,19 +391,11 @@ class SearchResults extends React.Component {
           e.preventDefault();
         }}
       >
-        {
-          disabled
-            ? (
-              <Tooltip
-                title="Only files from single storage could be selected at a time"
-              >
-                <span style={{cursor: 'not-allowed'}}>
-                  {checkbox}
-                </span>
-              </Tooltip>
-            )
-            : checkbox
-        }
+        <Checkbox
+          checked={this.itemSelected(item)}
+          onChange={e => this.onRowSelectionChange(item, e)}
+          onClick={handleClick}
+        />
       </div>
     );
   };
@@ -670,7 +650,7 @@ SearchResults.propTypes = {
   onSelectItem: PropTypes.func,
   onDeselectItem: PropTypes.func,
   selectedItems: PropTypes.array,
-  selectionAvailable: PropTypes.bool,
+  dataStorageSharingEnabled: PropTypes.bool,
   pageSize: PropTypes.number,
   showResults: PropTypes.bool,
   style: PropTypes.object,

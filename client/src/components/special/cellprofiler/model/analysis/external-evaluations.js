@@ -19,22 +19,13 @@ import {getExternalEvaluationsSettings} from './job-utilities';
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import storages from '../../../../../models/dataStorage/DataStorageAvailable';
 import parseHCSFileParts from '../../../hcs-image/utilities/parse-hcs-file-parts';
+import escapeRegExp, {ESCAPE_CHARACTERS} from '../../../../../utils/escape-reg-exp';
 
 const EVALUATION_PLACEHOLDER = 'EVALUATION_ID';
 const OWNER_PLACEHOLDER = 'OWNER';
 
 const EVALUATION_REG_EXP = new RegExp(`\\{${EVALUATION_PLACEHOLDER}\\}`, 'ig');
 const OWNER_REG_EXP = new RegExp(`\\{${OWNER_PLACEHOLDER}\\}`, 'ig');
-
-const ESCAPE_CHARACTERS = ['.', '-', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}'];
-function escapeRegExp (string, characters = ESCAPE_CHARACTERS) {
-  let result = string;
-  characters.forEach(character => {
-    result = result
-      .replace(new RegExp('\\' + character, 'g'), `\\${character}`);
-  });
-  return result;
-}
 
 /**
  * @typedef {Object} HCSExternalEvaluationsReplacer

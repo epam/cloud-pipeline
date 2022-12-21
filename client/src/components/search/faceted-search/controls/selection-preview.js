@@ -18,10 +18,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Checkbox, Button, Modal} from 'antd';
 import classNames from 'classnames';
+import {inject, observer} from 'mobx-react';
 import DocumentListPresentation from '../document-presentation/list';
 import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
 import styles from '../search-results.css';
 
+@inject('preferences')
+@observer
 class SelectionPreview extends React.Component {
   state = {
     selection: [],
@@ -29,11 +32,12 @@ class SelectionPreview extends React.Component {
   };
 
   get actualSelection () {
-    const {items = []} = this.props;
+    const {items = [], preferences} = this.props;
     const {removedItems = []} = this.state;
-    return items.filter(o => !removedItems
+    const notRemoved = items.filter(o => !removedItems
       .find(elasticItemUtilities.filterMatchingItemsFn(o))
     );
+    return elasticItemUtilities.filterDownloadableItems(notRemoved, preferences);
   }
 
   componentDidMount () {
@@ -75,15 +79,10 @@ class SelectionPreview extends React.Component {
     }
   };
 
-  onShareClicked = () => {
-    const {onShare, items = []} = this.props;
-    if (onShare) {
-      const {removedItems = []} = this.state;
-      onShare(
-        items.filter(o => !removedItems
-          .find(elasticItemUtilities.filterMatchingItemsFn(o))
-        )
-      );
+  onDownloadClicked = () => {
+    const {onDownload} = this.props;
+    if (typeof onDownload === 'function') {
+      onDownload(this.actualSelection);
     }
   };
 
@@ -127,10 +126,10 @@ class SelectionPreview extends React.Component {
               </Button>
               <Button
                 disabled={this.actualSelection.length === 0}
-                onClick={this.onShareClicked}
+                onClick={this.onDownloadClicked}
                 type="primary"
               >
-                SHARE
+                DOWNLOAD
               </Button>
             </div>
           </div>
@@ -174,7 +173,7 @@ SelectionPreview.propTypes = {
   items: PropTypes.array,
   onClose: PropTypes.func,
   onClear: PropTypes.func,
-  onShare: PropTypes.func,
+  onDownload: PropTypes.func,
   title: PropTypes.string,
   visible: PropTypes.bool
 };
