@@ -21,15 +21,14 @@ import {inject, observer} from 'mobx-react';
 import {
   Badge,
   Button,
-  Icon,
-  Dropdown
+  Icon
 } from 'antd';
 import RcMenu, {MenuItem, SubMenu, Divider as MenuDivider} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 import {SearchItemTypes} from '../../../../../models/search';
 import SharedItemInfo
   from '../../../../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import SelectionPreview from '../selection-preview';
-import styles from './sharing-control.css';
 
 function getItemType (item) {
   if (
@@ -48,7 +47,8 @@ class SharingControl extends React.Component {
   state = {
     itemsToShare: [],
     shareDialogVisible: false,
-    showSelectionPreview: false
+    showSelectionPreview: false,
+    dropDownVisible: false
   };
 
   componentDidMount () {
@@ -178,8 +178,10 @@ class SharingControl extends React.Component {
       <RcMenu
         onClick={this.handleMenuClick}
         selectedKeys={[]}
-        getPopupContainer={o => o.parentNode}
-        className={styles.menu}
+        subMenuOpenDelay={0.2}
+        subMenuCloseDelay={0.2}
+        openAnimation="zoom"
+        getPopupContainer={node => node.parentNode}
       >
         {shareSubMenu}
         <MenuItem key="download">
@@ -205,7 +207,7 @@ class SharingControl extends React.Component {
       visible,
       extraColumns
     } = this.props;
-    const {showSelectionPreview} = this.state;
+    const {showSelectionPreview, dropDownVisible} = this.state;
     if (!items || !visible) {
       return null;
     }
@@ -213,8 +215,12 @@ class SharingControl extends React.Component {
       <div style={{margin: '0 5px'}}>
         <Badge count={(items || []).length} style={{zIndex: 999}}>
           <Dropdown
-            overlay={this.renderMenuOverlay()}
+            overlay={<div>{this.renderMenuOverlay()}</div>}
             trigger={['click']}
+            visible={dropDownVisible}
+            onVisibleChange={(visible) => this.setState({
+              dropDownVisible: visible
+            })}
           >
             <Button
               size="large"
