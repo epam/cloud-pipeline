@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -112,6 +113,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final int LONG_STATUS_THRESHOLD = 100;
     private static final Duration LONG_RUNNING_DURATION = Duration.standardMinutes(6);
     private static final Long LONG_PAUSED_SECONDS = 10L;
+    private static final long LONG_THRESHOLD = 2000L;
+
 
     @Autowired
     private NotificationManager notificationManager;
@@ -127,6 +130,9 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @MockBean
     private KubernetesManager kubernetesManager;
+
+    @MockBean
+    private RunStatusManager runStatusManager;
 
     @Autowired
     private UserDao userDao;
@@ -203,6 +209,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
         longRunnging = new PipelineRun();
         DateTime date = DateTime.now(DateTimeZone.UTC).minus(LONG_RUNNING_DURATION);
+        longRunnging.setId(1L);
         longRunnging.setStartDate(date.toDate());
         longRunnging.setStatus(TaskStatus.RUNNING);
         longRunnging.setOwner(admin.getUserName());
@@ -258,6 +265,41 @@ public class NotificationManagerTest extends AbstractManagerTest {
         notificationTemplateDao.deleteNotificationTemplate(longRunningTemplate.getId());
         podMonitor.updateStatus();
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(0, messages.size());
+    }
+
+    @Test
+    public void testNotNotifyLongRunningAfterResume() {
+        NotificationSettings settings = notificationSettingsDao.loadNotificationSettings(1L);
+        // set threshold to 2 sec
+        settings.setThreshold(LONG_THRESHOLD);
+        notificationSettingsDao.updateNotificationSettings(settings);
+        final List<RunStatus> runStatuses = Arrays.asList(
+                RunStatus.builder()
+                        .runId(longRunnging.getId())
+                        .status(TaskStatus.PAUSING)
+                        .timestamp(DateUtils.nowUTC().minusHours(1))
+                        .build(),
+                RunStatus.builder()
+                        .runId(longRunnging.getId())
+                        .status(TaskStatus.PAUSED)
+                        .timestamp(DateUtils.nowUTC().minusMinutes(2))
+                        .build(),
+                RunStatus.builder()
+                        .runId(longRunnging.getId())
+                        .status(TaskStatus.RESUMING)
+                        .timestamp(DateUtils.nowUTC().minusMinutes(1))
+                        .build(),
+                RunStatus.builder()
+                        .runId(longRunnging.getId())
+                        .status(TaskStatus.RUNNING)
+                        .timestamp(DateUtils.nowUTC())
+                        .build());
+        when(runStatusManager.loadRunStatus(longRunnging.getId())).thenReturn(runStatuses);
+        longRunnging.setRunStatuses(runStatuses);
+        pipelineRunManager.updatePipelineStatus(longRunnging);
+        podMonitor.updateStatus();
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(0, messages.size());
     }
 
