@@ -612,6 +612,7 @@ public class GitManagerTest extends AbstractManagerTest {
         final Revision revision = new Revision(TEST_REVISION, "Initial commit", date,
                 "somecommitsha", "someauthor", "author@email.com");
         pipeline.setCurrentVersion(revision);
+        pipeline.setDocsPath(DOCS + "/");
         return pipeline;
     }
 

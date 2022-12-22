@@ -105,12 +105,6 @@ public class GitManager {
     @Value("${working.directory}")
     private String workingDirPath;
 
-    @Value("${git.src.directory}")
-    private String srcDirectory;
-
-    @Value("${git.docs.directory}")
-    private String docsDirectory;
-
     @Value("${templates.directory}")
     private String templatesDirectoryPath;
 
@@ -202,9 +196,9 @@ public class GitManager {
                 .filter(e -> !e.getName().startsWith(".")).collect(Collectors.toList());
     }
 
-    public List<GitRepositoryEntry> getPipelineSources(Long id, String version)
-            throws GitClientException {
-        return this.getPipelineSources(id, version, srcDirectory, false);
+    public List<GitRepositoryEntry> getPipelineSources(Long id, String version) throws GitClientException {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return this.getPipelineSources(id, version, findRepoSrcPath(pipeline), false);
     }
 
     public List<GitRepositoryEntry> getPipelineSources(Long id,
@@ -215,7 +209,8 @@ public class GitManager {
             throws GitClientException {
         List<GitRepositoryEntry> entries;
         if (StringUtils.isNullOrEmpty(path)) {
-            entries = this.getPipelineSources(id, version, srcDirectory, recursive);
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+            entries = this.getPipelineSources(id, version, findRepoSrcPath(pipeline), recursive);
             if (appendConfigurationFileIfNeeded) {
                 GitRepositoryEntry configurationEntry = this.getConfigurationFileEntry(id, version);
                 if (configurationEntry != null) {
@@ -423,7 +418,7 @@ public class GitManager {
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         Assert.isTrue(!StringUtils.isNullOrEmpty(folder),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_ROOT_FOLDER_CANNOT_BE_REMOVED));
-        Assert.isTrue(!folder.equalsIgnoreCase(srcDirectory),
+        Assert.isTrue(!folder.equalsIgnoreCase(pipeline.getCodePath()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_CANNOT_BE_REMOVED, folder));
         GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
         List<GitRepositoryEntry> allFiles = gitlabClient.getRepositoryContents(folder,
@@ -682,15 +677,11 @@ public class GitManager {
      */
     public List<GitRepositoryEntry> getPipelineDocs(Long id, String version)
             throws GitClientException {
-        Pipeline pipeline = pipelineManager.load(id);
-        try {
-            loadRevision(pipeline, version);
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new IllegalArgumentException(e.getMessage());
-        }
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        final String docsPath = pipeline.getDocsPath();
+        Assert.notNull(docsPath, messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_DOCS_NOT_FOUND, id));
         return this.getGitlabClientForPipeline(pipeline)
-                .getRepositoryContents(docsDirectory, getRevisionName(version), false).stream()
+                .getRepositoryContents(docsPath, getRevisionName(version), false).stream()
                 .filter(e -> !e.getName().startsWith(".")).collect(Collectors.toList());
     }
 
@@ -967,5 +958,19 @@ public class GitManager {
         } catch (InterruptedException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    private String findRepoSrcPath(final Pipeline pipeline) {
+        Assert.notNull(pipeline.getCodePath(),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_SRC_NOT_FOUND, pipeline.getId()));
+        return pipeline.getCodePath();
+    }
+
+    private Pipeline loadPipelineAndCheckRevision(final Long id, final String revision) {
+        final Pipeline pipeline = pipelineManager.load(id);
+        if (!StringUtils.isNullOrEmpty(revision)) {
+            checkRevision(pipeline, revision);
+        }
+        return pipeline;
     }
 }

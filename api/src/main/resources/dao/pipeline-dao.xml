@@ -35,7 +35,9 @@
                         repository_token,
                         repository_type,
                         locked,
-                        visibility)
+                        visibility,
+                        code_path,
+                        docs_path)
                     VALUES (
                         :PIPELINE_ID,
                         :PIPELINE_NAME,
@@ -48,7 +50,9 @@
                         :REPOSITORY_TOKEN,
                         :REPOSITORY_TYPE,
                         :PIPELINE_LOCKED,
-                        :VISIBILITY)
+                        :VISIBILITY,
+                        :CODE_PATH,
+                        :DOCS_PATH)
                 ]]>
             </value>
         </property>
@@ -63,7 +67,9 @@
                         repository_token = :REPOSITORY_TOKEN,
                         repository = :REPOSITORY,
                         repository_ssh = :REPOSITORY_SSH,
-                        visibility = :VISIBILITY
+                        visibility = :VISIBILITY,
+                        code_path = :CODE_PATH,
+                        docs_path = :DOCS_PATH
                     WHERE
                         pipeline_id = :PIPELINE_ID
                 ]]>
@@ -84,7 +90,9 @@
                         repository_token,
                         repository_type,
                         locked as pipeline_locked,
-                        visibility
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     ORDER BY pipeline_id
@@ -113,7 +121,9 @@
                         repository_token,
                         repository_type,
                         locked as pipeline_locked,
-                        visibility
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -136,7 +146,9 @@
                         repository_token,
                         repository_type,
                         locked as pipeline_locked,
-                        visibility
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -159,7 +171,9 @@
                         repository_token,
                         repository_type,
                         locked as pipeline_locked,
-                        visibility
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -182,7 +196,9 @@
                         repository_token,
                         repository_type,
                         locked as pipeline_locked,
-                        visibility
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -215,6 +231,8 @@
                             p.repository_type,
                             p.locked AS pipeline_locked,
                             p.visibility,
+                            p.code_path,
+                            p.docs_path,
 		                    p.owner,
 		                    c.folder_id,
                             c.parent_id AS parent_folder_id
@@ -237,6 +255,8 @@
                             null AS repository_type,
                             null AS pipeline_locked,
                             null AS visibility,
+                            null AS code_path,
+                            null AS docs_path,
 		                    null AS owner,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
@@ -261,6 +281,8 @@
                             p.repository_type,
                             p.locked AS pipeline_locked,
                             p.visibility,
+                            p.code_path,
+                            p.docs_path,
 		                    p.owner,
 		                    c.folder_id,
                             c.parent_id AS parent_folder_id
@@ -279,6 +301,8 @@
                             null AS repository_type,
                             null AS pipeline_locked,
                             null AS visibility,
+                            null AS code_path,
+                            null AS docs_path,
 		                    null AS owner,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id

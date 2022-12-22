@@ -35,7 +35,8 @@ public class PipelineVO {
     private String templateId;
     private RepositoryType repositoryType;
     private RunVisibilityPolicy visibility;
-
+    private String codePath;
+    private String docsPath;
 
     public Pipeline toPipeline() {
         Pipeline pipeline = new Pipeline();
@@ -49,6 +50,8 @@ public class PipelineVO {
         pipeline.setTemplateId(getTemplateId());
         pipeline.setRepositoryType(getRepositoryType());
         pipeline.setVisibility(getVisibility());
+        pipeline.setCodePath(getCodePath());
+        pipeline.setDocsPath(getDocsPath());
         return pipeline;
     }
 }

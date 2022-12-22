@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,13 @@ package com.epam.pipeline.dao.pipeline;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -40,6 +47,8 @@ public class PipelineDaoTest extends AbstractSpringTest {
     private static final String TEST_NAME = "Test";
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
+    private static final String TEST_CODE_PATH = "/src";
+    private static final String TEST_DOCS_PATH = "/docs";
 
     @Autowired
     private PipelineDao pipelineDao;
@@ -50,12 +59,18 @@ public class PipelineDaoTest extends AbstractSpringTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testCreatePipeline() {
-        Pipeline pipeline = getPipeline(TEST_NAME);
+        final Pipeline pipeline = getPipeline(TEST_NAME);
+        pipeline.setVisibility(RunVisibilityPolicy.OWNER);
+        pipeline.setCodePath(TEST_CODE_PATH);
+        pipeline.setDocsPath(TEST_DOCS_PATH);
         pipelineDao.createPipeline(pipeline);
         List<Pipeline> result = pipelineDao.loadAllPipelines();
         assertEquals(1, result.size());
+        final Pipeline resultPipeline = result.get(0);
+        assertEquals(resultPipeline.getVisibility(), RunVisibilityPolicy.OWNER);
+        assertEquals(resultPipeline.getCodePath(), TEST_CODE_PATH);
+        assertEquals(resultPipeline.getDocsPath(), TEST_DOCS_PATH);
     }
-
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)

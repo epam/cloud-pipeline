@@ -35,6 +35,8 @@ public final class MessageConstants {
     public static final String ERROR_PIPELINE_REPO_EXISTS = "error.pipeline.name.exists";
     public static final String ERROR_INVALID_PIPELINE_NAME = "error.pipeline.name.invalid";
     public static final String ERROR_INVALID_PIPELINE_REVISION_NAME = "error.pipeline.revision.name.invalid";
+    public static final String ERROR_REPOSITORY_SRC_NOT_FOUND = "error.repository.src.not.found";
+    public static final String ERROR_REPOSITORY_DOCS_NOT_FOUND = "error.repository.docs.not.found";
 
     //Pipeline config
     public static final String ERROR_CONFIG_INVALID = "error.pipeline.config.invalid";
