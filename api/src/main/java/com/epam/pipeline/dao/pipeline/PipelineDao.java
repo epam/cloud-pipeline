@@ -157,7 +157,9 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         PARENT_FOLDER_ID,
         BRANCH,
         CONFIG,
-        VISIBILITY;
+        VISIBILITY,
+        CODE_PATH,
+        DOCS_PATH;
 
         static MapSqlParameterSource getParameters(Pipeline pipeline) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -185,6 +187,8 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(VISIBILITY.name(), Optional.ofNullable(pipeline.getVisibility())
                     .map(Enum::name)
                     .orElse(null));
+            params.addValue(CODE_PATH.name(), pipeline.getCodePath());
+            params.addValue(DOCS_PATH.name(), pipeline.getDocsPath());
             return params;
         }
 
@@ -237,6 +241,8 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
             pipeline.setBranch(rs.getString(BRANCH.name()));
             pipeline.setVisibility(getRunVisibility(rs.getString(VISIBILITY.name())));
+            pipeline.setCodePath(rs.getString(CODE_PATH.name()));
+            pipeline.setDocsPath(rs.getString(DOCS_PATH.name()));
             return pipeline;
         }
 

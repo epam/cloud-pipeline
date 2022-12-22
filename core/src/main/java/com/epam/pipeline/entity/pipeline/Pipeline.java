@@ -46,6 +46,8 @@ public class Pipeline extends AbstractSecuredEntity {
     private String branch;
     private String configurationPath;
     private RunVisibilityPolicy visibility;
+    private String codePath;
+    private String docsPath;
 
     public Pipeline(Long id) {
         super(id);

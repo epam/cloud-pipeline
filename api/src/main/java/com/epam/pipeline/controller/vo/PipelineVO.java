@@ -41,6 +41,8 @@ public class PipelineVO {
     private String branch;
     private RunVisibilityPolicy visibility;
     private String configurationPath;
+    private String codePath;
+    private String docsPath;
 
     public Pipeline toPipeline() {
         Pipeline pipeline = new Pipeline();
@@ -57,6 +59,8 @@ public class PipelineVO {
         pipeline.setBranch(getBranch());
         pipeline.setVisibility(getVisibility());
         pipeline.setConfigurationPath(getConfigurationPath());
+        pipeline.setCodePath(getCodePath());
+        pipeline.setDocsPath(getDocsPath());
         return pipeline;
     }
 }
