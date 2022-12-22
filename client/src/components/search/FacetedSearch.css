@@ -107,6 +107,7 @@
 .container .actions .export-button {
   display: flex;
   align-self: stretch;
+  margin-left: auto;
 }
 
 .container .actions > * {

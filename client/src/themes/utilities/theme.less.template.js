@@ -2181,9 +2181,6 @@ export default `
   background: @primary-color;
   color: @primary-text-color;
 }
-@THEME .cp-search-actions > * {
-  border-right: 1px solid @panel-border-color;
-}
 @THEME .cp-search-clear-button {
   color: @application-color-faded;
 }

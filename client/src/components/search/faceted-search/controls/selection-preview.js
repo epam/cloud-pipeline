@@ -16,7 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, Button, Modal} from 'antd';
+import {
+  Alert,
+  Checkbox,
+  Button,
+  Modal
+} from 'antd';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import DocumentListPresentation from '../document-presentation/list';
@@ -38,6 +43,11 @@ class SelectionPreview extends React.Component {
       .find(elasticItemUtilities.filterMatchingItemsFn(o))
     );
     return elasticItemUtilities.filterDownloadableItems(notRemoved, preferences);
+  }
+
+  get notAllowedToDownload () {
+    const {items = [], preferences} = this.props;
+    return items.filter((item) => !elasticItemUtilities.itemIsDownloadable(item, preferences));
   }
 
   componentDidMount () {
@@ -95,6 +105,7 @@ class SelectionPreview extends React.Component {
       visible
     } = this.props;
     const {selection = []} = this.state;
+    const skipped = this.notAllowedToDownload.length;
     return (
       <Modal
         visible={visible}
@@ -130,12 +141,30 @@ class SelectionPreview extends React.Component {
                 type="primary"
               >
                 DOWNLOAD
+                {
+                  skipped > 0 && ` (${this.actualSelection.length})`
+                }
               </Button>
             </div>
           </div>
         )}
       >
         <div style={{maxHeight: '50vh', overflow: 'auto'}}>
+          {
+            skipped > 0 && (
+              <Alert
+                type="info"
+                showIcon
+                style={{marginBottom: 5}}
+                message={(
+                  <div>
+                    {skipped} file{skipped === 1 ? ' is' : 's are'} not allowed
+                    to be downloaded and therefore will be skipped
+                  </div>
+                )}
+              />
+            )
+          }
           {
             selection.map(document => (
               <div

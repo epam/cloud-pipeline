@@ -821,7 +821,6 @@ class FacetedSearch extends React.Component {
         <div
           className={classNames(styles.actions, 'cp-search-actions')}
         >
-          {this.renderExportButton()}
           <TogglePresentationMode
             className={styles.togglePresentationMode}
             onChange={this.onChangePresentationMode}
@@ -829,6 +828,7 @@ class FacetedSearch extends React.Component {
             size="default"
           />
           {this.renderSortingControls()}
+          {this.renderExportButton()}
         </div>
       );
     }

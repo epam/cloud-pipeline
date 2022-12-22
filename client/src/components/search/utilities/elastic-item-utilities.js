@@ -61,6 +61,7 @@ export function itemIsDownloadable (item, preferences) {
   if (
     !item ||
     (
+      item.type !== SearchItemTypes.NFSFile &&
       item.type !== SearchItemTypes.s3File &&
       item.type !== SearchItemTypes.azFile &&
       item.type !== SearchItemTypes.gsFile

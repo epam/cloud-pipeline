@@ -21,7 +21,8 @@ import {inject, observer} from 'mobx-react';
 import {
   Badge,
   Button,
-  Icon
+  Icon,
+  Popover
 } from 'antd';
 import RcMenu, {MenuItem, SubMenu, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -200,6 +201,7 @@ class SharingControl extends React.Component {
           <b>Share</b> selected
         </MenuItem>
       );
+    const skipDownloadCount = this.shareableItems.length - this.downloadableItems.length;
     return (
       <RcMenu
         onClick={this.handleMenuClick}
@@ -209,11 +211,27 @@ class SharingControl extends React.Component {
         openAnimation="zoom"
         getPopupContainer={node => node.parentNode}
       >
-        {dataStorageSharingEnabled && shareSubMenu}
+        {dataStorageSharingEnabled && this.shareableItems.length > 0 && shareSubMenu}
         {
           this.downloadableItems.length > 0 && (
             <MenuItem key="download">
               <b>Download</b> selected
+              {
+                skipDownloadCount > 0 && ` (${this.downloadableItems.length})`
+              }
+              {
+                skipDownloadCount > 0 && (
+                  <div
+                    style={{lineHeight: '12px', fontSize: 'smaller'}}
+                    className="cp-text-not-important"
+                  >
+                    {skipDownloadCount} file{skipDownloadCount === 1 ? ' is' : 's are'} not allowed
+                    to be downloaded
+                    <br />
+                    and therefore will be skipped
+                  </div>
+                )
+              }
             </MenuItem>
           )
         }

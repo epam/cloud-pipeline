@@ -67,7 +67,6 @@
 .view-toggler {
   display: flex;
   flex-direction: row;
-  padding: 0 5px;
   align-items: flex-start;
 }
 
