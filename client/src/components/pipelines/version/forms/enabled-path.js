@@ -63,7 +63,7 @@ class EnabledPath extends React.Component {
         enabled,
         value
       } = this.state;
-      onChange(enabled ? value : undefined);
+      onChange(enabled ? value : '');
     }
   };
 
