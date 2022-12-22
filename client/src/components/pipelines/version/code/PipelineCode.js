@@ -129,10 +129,16 @@ export default class PipelineCode extends Component {
 
   @computed
   get rootFolder () {
-    if (this.isBitBucket) {
-      return '';
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {codePath} = pipeline.value || {};
+      let rootFolder = codePath || '';
+      if (rootFolder.startsWith('/')) {
+        rootFolder = rootFolder.slice(1);
+      }
+      return rootFolder;
     }
-    return 'src';
+    return '';
   }
 
   renderSourceItemType = (item) => {
