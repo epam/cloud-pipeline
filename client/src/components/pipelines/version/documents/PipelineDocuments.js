@@ -16,7 +16,7 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {observable, computed} from 'mobx';
 import classNames from 'classnames';
 import {Input, Row, Button, Icon, Table, message, Modal} from 'antd';
 import FileSaver from 'file-saver';
@@ -57,6 +57,20 @@ export default class PipelineDocuments extends Component {
   _mdFileRequest = null;
   @observable
   _mdOriginalContent = '';
+
+  @computed
+  get docsFolder () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {docsPath} = pipeline.value;
+      let docsFolder = docsPath || '';
+      if (docsFolder.startsWith('/')) {
+        docsFolder = docsFolder.slice(1);
+      }
+      return docsFolder;
+    }
+    return undefined;
+  }
 
   updateAndNavigateToNewVersion = async () => {
     await this.props.pipeline.fetch();
@@ -322,13 +336,12 @@ export default class PipelineDocuments extends Component {
     });
   };
 
-  deleteFile = async ({name}) => {
-    const fileFullName = `docs/${name}`;
+  deleteFile = async ({name, path}) => {
     const request = new PipelineFileDelete(this.props.pipelineId);
     const hide = message.loading(`Deleting file '${name}'...`, 0);
     await request.send({
       comment: `Deleting a file ${name}`,
-      path: fileFullName,
+      path,
       lastCommitId: this.props.pipeline.value.currentVersion.commitId
     });
     hide();
@@ -346,7 +359,7 @@ export default class PipelineDocuments extends Component {
 
   openRenameFileDialog = (file, event) => {
     event.stopPropagation();
-    this.setState({renameFile: file.name});
+    this.setState({renameFile: file});
   };
 
   closeRenameFileDialog = () => {
@@ -354,14 +367,14 @@ export default class PipelineDocuments extends Component {
   };
 
   renameFile = async ({name, comment}) => {
-    const fileFullName = `docs/${name}`;
-    const filePreviousFullName = `docs/${this.state.renameFile}`;
+    const {path = ''} = this.state.renameFile || {};
+    const newPath = (path || '').split('/').slice(0, -1).concat(name).join('/');
     const request = new PipelineFileUpdate(this.props.pipelineId);
     const hide = message.loading('Renaming file...', 0);
     await request.send({
       comment: comment,
-      path: fileFullName,
-      previousPath: filePreviousFullName,
+      path: newPath,
+      previousPath: path,
       lastCommitId: this.props.pipeline.value.currentVersion.commitId
     });
     hide();
@@ -383,7 +396,9 @@ export default class PipelineDocuments extends Component {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
-      this.props.version === this.props.pipeline.value.currentVersion.name;
+      this.props.version === this.props.pipeline.value.currentVersion.name &&
+      !!this.docsFolder &&
+      this.docsFolder.length;
   };
 
   render () {
@@ -484,7 +499,7 @@ export default class PipelineDocuments extends Component {
             synchronous
             onRefresh={this.updateAndNavigateToNewVersion}
             title={'Upload'}
-            action={PipelineFileUpdate.uploadUrl(this.props.pipelineId, 'docs')} />
+            action={PipelineFileUpdate.uploadUrl(this.props.pipelineId, this.docsFolder)} />
         </Row>
       )
       : undefined;
@@ -517,7 +532,7 @@ export default class PipelineDocuments extends Component {
         key="docs name dialog"
         visible={this.state.renameFile !== null}
         title="Rename file"
-        name={this.state.renameFile}
+        name={this.state.renameFile ? this.state.renameFile.name : undefined}
         onSubmit={this.renameFile}
         onCancel={this.closeRenameFileDialog}
         pending={false} />

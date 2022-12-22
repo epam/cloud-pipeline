@@ -27,6 +27,20 @@ const CloneOption = {
 
 const CLOSE_POPOVER_DELAY_MS = 200;
 
+const RepositoryTypes = {
+  GitLab: 'GITLAB',
+  GitHub: 'GITHUB',
+  BitBucket: 'BITBUCKET'
+};
+
+const RepositoryTypeNames = {
+  [RepositoryTypes.GitLab]: 'GitLab',
+  [RepositoryTypes.GitHub]: 'GitHub',
+  [RepositoryTypes.BitBucket]: 'BitBucket'
+};
+
+export {RepositoryTypes, RepositoryTypeNames};
+
 export default @observer
 class GitRepositoryControl extends React.Component {
   static propTypes = {

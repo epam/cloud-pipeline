@@ -401,7 +401,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       name,
       description,
       token,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     } = values || {};
     const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, -1);
     await this.updatePipelineRequest.send({
@@ -409,7 +411,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       name: name,
       description: description,
       parentFolderId: this.props.pipeline.value.parentFolderId,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();

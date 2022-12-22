@@ -916,7 +916,15 @@ export default class Folder extends localization.LocalizedReactComponent {
   createPipelineRequest = new CreatePipeline();
 
   createPipeline = async (opts = {}) => {
-    const {name, description, repository, token, visibility} = opts;
+    const {
+      name,
+      description,
+      repository,
+      token,
+      visibility,
+      codePath,
+      docsPath
+    } = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -925,7 +933,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       templateId: this.state.pipelineTemplate ? this.state.pipelineTemplate.id : undefined,
       repository: repository,
       repositoryToken: token,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     });
     hide();
     if (this.createPipelineRequest.error) {
@@ -1021,7 +1031,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       name,
       description,
       token,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     } = values || {};
     const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.updatePipelineRequest.send({
@@ -1029,7 +1041,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       name: name,
       description: description,
       parentFolderId: this._currentFolder.folder.id,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
