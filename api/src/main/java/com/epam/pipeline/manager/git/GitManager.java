@@ -52,7 +52,6 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.GitUtils;
-import joptsimple.internal.Strings;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -118,12 +117,6 @@ public class GitManager {
 
     @Value("${working.directory}")
     private String workingDirPath;
-
-    @Value("${git.src.directory}")
-    private String srcDirectory;
-
-    @Value("${git.docs.directory}")
-    private String docsDirectory;
 
     @Value("${templates.directory}")
     private String templatesDirectoryPath;
@@ -214,8 +207,8 @@ public class GitManager {
 
     public List<GitRepositoryEntry> getPipelineSources(Long id, String version) throws GitClientException {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-        final String sources = findRepoPath(pipeline.getCodePath(), srcDirectory);
-        return pipelineRepositoryService.getRepositoryContents(pipeline, sources, version, false);
+        return pipelineRepositoryService
+                .getRepositoryContents(pipeline, findRepoSrcPath(pipeline), version, false);
     }
 
     public List<GitRepositoryEntry> getPipelineSources(Long id,
@@ -227,9 +220,8 @@ public class GitManager {
         List<GitRepositoryEntry> entries;
         if (StringUtils.isNullOrEmpty(path)) {
             final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-            final String sources = findRepoPath(pipeline.getCodePath(),
-                    RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) ? Strings.EMPTY : srcDirectory);
-            entries = pipelineRepositoryService.getRepositoryContents(pipeline, sources, version, recursive);
+            entries = pipelineRepositoryService.getRepositoryContents(
+                    pipeline, findRepoSrcPath(pipeline), version, recursive);
             if (!RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) && appendConfigurationFileIfNeeded) {
                 final GitRepositoryEntry configurationEntry = getConfigurationFileEntry(id, version,
                         pipeline.getConfigurationPath());
@@ -298,7 +290,7 @@ public class GitManager {
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
         return pipelineRepositoryService.removeFolder(pipeline, folder, lastCommitId, commitMessage,
-                findRepoPath(pipeline.getCodePath(), srcDirectory));
+                pipeline.getCodePath());
     }
 
     public GitCommitEntry modifyFile(Pipeline pipeline,
@@ -361,7 +353,8 @@ public class GitManager {
      */
     public List<GitRepositoryEntry> getPipelineDocs(Long id, String version) throws GitClientException {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-        final String docsPath = findRepoPath(pipeline.getDocsPath(), docsDirectory);
+        final String docsPath = pipeline.getDocsPath();
+        Assert.notNull(docsPath, messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_DOCS_NOT_FOUND, id));
         return pipelineRepositoryService.getRepositoryContents(pipeline, docsPath, version, false);
     }
 
@@ -781,7 +774,9 @@ public class GitManager {
         return Paths.get(namespace, project + GIT_REPO_EXTENSION).toString();
     }
 
-    private String findRepoPath(final String path, final String defaultPath) {
-        return StringUtils.isNullOrEmpty(path) ? defaultPath : path;
+    private String findRepoSrcPath(final Pipeline pipeline) {
+        Assert.notNull(pipeline.getCodePath(),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_SRC_NOT_FOUND, pipeline.getId()));
+        return pipeline.getCodePath();
     }
 }
