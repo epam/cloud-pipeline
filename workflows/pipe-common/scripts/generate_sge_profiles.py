@@ -14,6 +14,7 @@
 
 import logging
 import os
+import sys
 import traceback
 
 from pipeline.api import PipelineAPI
@@ -35,8 +36,19 @@ def generate_sge_profiles():
     cap_scripts_dir = os.getenv('CP_CAP_SCRIPTS_DIR', '/common/cap_scripts')
     default_queue_disabled = os.getenv('CP_CAP_SGE_DISABLE_DEFAULT_QUEUE', 'false').lower() == 'true'
 
-    logging.basicConfig(level=logging_level_local, format=logging_format,
-                        filename=os.path.join(logging_dir, logging_file))
+    logging_formatter = logging.Formatter(logging_format)
+
+    logging.getLogger().setLevel(logging_level_local)
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging_level_local)
+    console_handler.setFormatter(logging_formatter)
+    logging.getLogger().addHandler(console_handler)
+
+    file_handler = logging.FileHandler(os.path.join(logging_dir, logging_file))
+    file_handler.setLevel(logging_level_local)
+    file_handler.setFormatter(logging_formatter)
+    logging.getLogger().addHandler(file_handler)
 
     api = PipelineAPI(api_url=api_url, log_dir=logging_dir)
     logger = RunLogger(api=api, run_id=run_id)
@@ -129,12 +141,12 @@ def _write_profiles(profiles, params, cap_scripts_dir, logger):
         profile_script_path = os.path.join(cap_scripts_dir, profile_script_name)
         with open(profile_script_path, 'w') as f:
             f.write("""# Grid Engine {} queue profile.
-# 
-# Please use this configuration file to modify 
+#
+# Please use this configuration file to modify
 # the corresponding grid engine queue's autoscaling.
-# 
+#
 # Below you can find all the available configuration parameters.
-# Change already existing parameters or configure additional ones 
+# Change already existing parameters or configure additional ones
 # by uncommenting the corresponding lines and setting proper values.
 
 """.format(profile_queue_name))

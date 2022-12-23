@@ -16,6 +16,7 @@ import logging
 import os
 import re
 import subprocess
+import sys
 
 import psutil
 
@@ -62,8 +63,19 @@ def configure_sge_profiles_interactively():
     sge_profile_script_name_pattern = '^sge_profile_(.+)\\.sh$'
     sge_profile_script_regexp = re.compile(sge_profile_script_name_pattern)
 
-    logging.basicConfig(level=logging_level_local, format=logging_format,
-                        filename=os.path.join(logging_dir, logging_file))
+    logging_formatter = logging.Formatter(logging_format)
+
+    logging.getLogger().setLevel(logging_level_local)
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging_level_local)
+    console_handler.setFormatter(logging_formatter)
+    logging.getLogger().addHandler(console_handler)
+
+    file_handler = logging.FileHandler(os.path.join(logging_dir, logging_file))
+    file_handler.setLevel(logging_level_local)
+    file_handler.setFormatter(logging_formatter)
+    logging.getLogger().addHandler(file_handler)
 
     api = PipelineAPI(api_url=api_url, log_dir=logging_dir)
     logger = RunLogger(api=api, run_id=run_id)
@@ -95,12 +107,14 @@ def _select_editor(logger):
     editors = [default_editor] + fallback_editors if default_editor else fallback_editors
     editor = None
     for potential_editor in editors:
-        exit_code = subprocess.call(['command', '-v', potential_editor])
+        exit_code = subprocess.call('command -v ' + potential_editor, shell=True)
         if not exit_code:
             editor = potential_editor
             break
     if not editor:
-        logger.error('No suitable editor has been found. Exiting...')
+        logger.error('No available text editor has been found. '
+                     'Please install vi/vim/nano or set VISUAL/EDITOR environment variable. '
+                     'Exiting...')
         raise SGEProfileConfigurationError()
     logger.debug('Editor {} has been selected.'.format(editor))
     return editor
@@ -154,7 +168,7 @@ def _get_processes(logger, *args, **kwargs):
 
 
 def _launch_autoscaler(queue, sge_autoscale_script_path, logger):
-    logger.debug('Launching queue {} sge autoscaler process...', queue.name)
+    logger.debug('Launching queue {} sge autoscaler process...'.format(queue.name))
     subprocess.check_call("""
 source "{sge_profile_script_path}"
 if check_cp_cap "CP_CAP_AUTOSCALE"; then
