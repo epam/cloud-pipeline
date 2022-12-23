@@ -96,6 +96,27 @@ export default class PipelineCode extends Component {
     }
   ];
 
+  reloadCodeIfFolderChanged = () => {
+    if (
+      this.props.pipeline.loaded &&
+      this.props.pipeline.value &&
+      this._prevCodePath !== this.props.pipeline.value.codePath
+    ) {
+      this._prevCodePath = this.props.pipeline.value.codePath;
+      this.props.source.fetch();
+      return true;
+    }
+    return false;
+  };
+
+  componentDidMount () {
+    this.reloadCodeIfFolderChanged();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    this.reloadCodeIfFolderChanged();
+  }
+
   @computed
   get isBitBucket () {
     const {pipeline} = this.props;
@@ -132,11 +153,7 @@ export default class PipelineCode extends Component {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
       const {codePath} = pipeline.value || {};
-      let rootFolder = codePath || '';
-      if (rootFolder.startsWith('/')) {
-        rootFolder = rootFolder.slice(1);
-      }
-      return rootFolder;
+      return removeSlashes(codePath);
     }
     return '';
   }
@@ -340,7 +357,7 @@ export default class PipelineCode extends Component {
   createFile = async ({name, comment}) => {
     this.closeCreateFileDialog();
     const fileFullName = this.props.path
-      ? `${this.props.path}/${name}`
+      ? `${removeSlashes(this.props.path)}/${name}`
       : `${this.rootFolder}/${name}`;
     const request = new PipelineFileUpdate(this.props.pipelineId);
     const hide = message.loading(`Creating file '${name}'...`, 0);
@@ -390,7 +407,7 @@ export default class PipelineCode extends Component {
 
   createFolder = async ({name, comment}) => {
     const folderFullName = this.props.path
-      ? `${this.props.path}/${name}`
+      ? `${removeSlashes(this.props.path)}/${name}`
       : `${this.rootFolder}/${name}`;
     const request = new PipelineFolderUpdate(this.props.pipelineId);
     const hide = message.loading(`Creating folder '${name}'...`, 0);
@@ -652,7 +669,7 @@ export default class PipelineCode extends Component {
                 action={
                   PipelineFileUpdate.uploadUrl(
                     this.props.pipelineId,
-                    this.props.path || this.rootFolder
+                    removeSlashes(this.props.path) || this.rootFolder
                   )
                 }
               />
