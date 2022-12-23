@@ -34,6 +34,23 @@ import PipelineCodeSourceNameDialog from '../code/forms/PipelineCodeSourceNameDi
 import roleModel from '../../../../utils/roleModel';
 import * as styles from './PipelineDocuments.css';
 
+function correctFolderPath (folder) {
+  if (!folder) {
+    return folder;
+  }
+  if (folder === '/') {
+    return folder;
+  }
+  let result = folder;
+  if (result.startsWith('/')) {
+    result = result.slice(1);
+  }
+  if (result.endsWith('/')) {
+    result = result.slice(0, -1);
+  }
+  return result;
+}
+
 @inject(({pipelines, routing}, {onReloadTree, params}) => ({
   onReloadTree,
   pipelineId: params.id,
@@ -63,11 +80,7 @@ export default class PipelineDocuments extends Component {
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
       const {docsPath} = pipeline.value;
-      let docsFolder = docsPath || '';
-      if (docsFolder.startsWith('/')) {
-        docsFolder = docsFolder.slice(1);
-      }
-      return docsFolder;
+      return correctFolderPath(docsPath);
     }
     return undefined;
   }
@@ -573,9 +586,32 @@ export default class PipelineDocuments extends Component {
     }
   }
 
+  reloadDocumentsIfFolderChanged = () => {
+    if (
+      this.props.pipeline.loaded &&
+      this.props.pipeline.value &&
+      this._prevDocsPath !== this.props.pipeline.value.docsPath
+    ) {
+      this._prevDocsPath = this.props.pipeline.value.docsPath;
+      this.props.docs.fetch();
+      return true;
+    }
+    return false;
+  };
+
+  componentDidMount () {
+    this.reloadDocumentsIfFolderChanged();
+  }
+
   componentDidUpdate (prevProps, prevState) {
+    if (prevProps.version !== this.props.version ||
+      prevProps.pipelineId !== this.props.pipelineId) {
+      this._prevDocsPath = undefined;
+    }
+    const docsPathChanged = this.reloadDocumentsIfFolderChanged();
     if (
       this.state.managingMdFile && (
+        docsPathChanged ||
         prevProps.pipelineId !== this.props.pipelineId ||
         prevProps.version !== this.props.version ||
         (!prevState.managingMdFile && this.state.managingMdFile) ||
@@ -605,6 +641,8 @@ export default class PipelineDocuments extends Component {
         const md = this.props.docs.value.filter(source => this.isMdFile(source)).shift();
         if (md) {
           this.setManagingMdFile(md);
+        } else {
+          this.setManagingMdFile(undefined);
         }
       }
     }

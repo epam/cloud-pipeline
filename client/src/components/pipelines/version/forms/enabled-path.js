@@ -41,11 +41,10 @@ class EnabledPath extends React.Component {
 
   updateFromProps = () => {
     const {
-      defaultPathValue,
       value
     } = this.props;
     this.setState({
-      value: defaultPathValue,
+      value: value,
       enabled: !!value && value.length > 0
     });
   };
@@ -152,7 +151,7 @@ EnabledPath.propTypes = {
   style: PropTypes.object,
   value: PropTypes.string,
   onChange: PropTypes.func,
-  defaultPathValue: PropTypes.string.isRequired,
+  defaultPathValue: PropTypes.string,
   placeholder: PropTypes.string
 };
 

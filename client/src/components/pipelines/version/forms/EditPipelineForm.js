@@ -291,13 +291,17 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         >
           {getFieldDecorator('codePath',
             {
-              initialValue: this.props.pipeline && this.props.pipeline.codePath
+              initialValue: this.props.pipeline
                 ? this.props.pipeline.codePath
                 : this.pipelineDefaultPaths.src
             })(
             <EnabledPath
               disabled={this.props.pending || readOnly}
-              defaultPathValue={this.pipelineDefaultPaths.src}
+              defaultPathValue={
+                this.props.pipeline && this.props.pipeline.codePath
+                  ? this.props.pipeline.codePath
+                  : this.pipelineDefaultPaths.src
+              }
             />
           )}
         </Form.Item>
@@ -312,13 +316,17 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         >
           {getFieldDecorator('docsPath',
             {
-              initialValue: this.props.pipeline && this.props.pipeline.docsPath
+              initialValue: this.props.pipeline
                 ? this.props.pipeline.docsPath
                 : this.pipelineDefaultPaths.docs
             })(
             <EnabledPath
               disabled={this.props.pending || readOnly}
-              defaultPathValue={this.pipelineDefaultPaths.docs}
+              defaultPathValue={
+                this.props.pipeline && this.props.pipeline.docsPath
+                  ? this.props.pipeline.docsPath
+                  : this.pipelineDefaultPaths.docs
+              }
             />
           )}
         </Form.Item>
