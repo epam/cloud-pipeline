@@ -75,6 +75,30 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   }
 
   @computed
+  get codePath () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {codePath} = pipeline.value || {};
+      if (codePath && codePath.length) {
+        return codePath;
+      }
+    }
+    return undefined;
+  }
+
+  @computed
+  get docsPath () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {docsPath} = pipeline.value || {};
+      if (docsPath && docsPath.length) {
+        return docsPath;
+      }
+    }
+    return undefined;
+  }
+
+  @computed
   get displayGraph () {
     const {language} = this.props;
     if (language && language.loaded) {
@@ -122,15 +146,15 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     switch (this.repositoryType) {
       case 'BITBUCKET':
         return [
-          code,
+          this.codePath ? code : false,
           configuration,
           history,
           storage
         ].filter(Boolean);
       default:
         return [
-          documents,
-          code,
+          this.docsPath ? documents : false,
+          this.codePath ? code : false,
           configuration,
           graph,
           history,
@@ -140,18 +164,26 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   }
 
   componentDidMount () {
-    this.redirectToVersionedStorage();
+    this.redirectIfRequired();
   }
 
   componentDidUpdate () {
-    this.redirectToVersionedStorage();
+    this.redirectIfRequired();
   }
 
-  redirectToVersionedStorage = () => {
+  redirectIfRequired = () => {
     if (this.props.pipeline.loaded) {
       const {id, pipelineType} = this.props.pipeline.value;
       if (/^versioned_storage$/i.test(pipelineType)) {
         this.props.router && this.props.router.push(`/vs/${id}`);
+      } else {
+        const {router: {location}} = this.props;
+        const [,, activeTab] = location.pathname.split('/').filter(o => o.length);
+        const currentTab = this.tabs.find(o => o.key === activeTab);
+        const [first] = this.tabs;
+        if (!currentTab && first) {
+          this.props.router && this.props.router.push(first.link);
+        }
       }
     }
   };
@@ -175,7 +207,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           parentFolderId: this.props.pipeline.value.parentFolderId,
           branch: values.branch,
           configurationPath: values.configurationPath,
-          visibility: values.visibility
+          visibility: values.visibility,
+          codePath: values.codePath,
+          docsPath: values.docsPath
         }
       );
       if (updatePipeline.error) {

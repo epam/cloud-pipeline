@@ -974,7 +974,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       branch,
       token,
       configurationPath,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     } = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
@@ -987,7 +989,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       repositoryToken: token,
       branch,
       configurationPath,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     });
     hide();
     if (this.createPipelineRequest.error) {
@@ -1160,7 +1164,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       token,
       branch,
       configurationPath,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     } = values || {};
     const {pipelineType} = this.state.editablePipeline;
     const objectName = /^versioned_storage$/i.test(pipelineType)
@@ -1174,7 +1180,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       parentFolderId: this._currentFolder.folder.id,
       branch,
       configurationPath,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
