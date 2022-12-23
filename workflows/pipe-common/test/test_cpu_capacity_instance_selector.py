@@ -171,14 +171,28 @@ test_cases = [
      + 3 * [FractionalDemand(cpu=1, owner=owner)],
      [InstanceDemand(instance=instance_4cpu, owner=owner),
       InstanceDemand(instance=instance_4cpu, owner=owner),
-      InstanceDemand(instance=instance_2cpu, owner=owner)]]
+      InstanceDemand(instance=instance_2cpu, owner=owner)]],
+
+    ['2cpu job using 4cpu and 2cpu instances (largest first)',
+     [instance_4cpu,
+      instance_2cpu],
+     [IntegralDemand(cpu=2, owner=owner)],
+     [InstanceDemand(instance=instance_4cpu, owner=owner)]],
+
+    ['3x2cpu job using 4cpu and 2cpu instances (largest first)',
+     [instance_4cpu,
+      instance_2cpu],
+     3 * [IntegralDemand(cpu=2, owner=owner)],
+     [InstanceDemand(instance=instance_4cpu, owner=owner),
+      InstanceDemand(instance=instance_4cpu, owner=owner)]]
 ]
 
 
-@pytest.mark.parametrize('instances,input,output', [test_case[1:] for test_case in test_cases],
+@pytest.mark.parametrize('instances,resource_demands,required_instance_demands',
+                         [test_case[1:] for test_case in test_cases],
                          ids=[test_case[0] for test_case in test_cases])
-def test_select(instances, input, output):
-    instance_provider.get_allowed_instances = MagicMock(return_value=instances)
-    selector = CpuCapacityInstanceSelector(instance_provider, free_cores)
-    actual_demands = list(selector.select(input, price_type))
-    assert output == actual_demands
+def test_select(instances, resource_demands, required_instance_demands):
+    instance_provider.provide = MagicMock(return_value=instances)
+    instance_selector = CpuCapacityInstanceSelector(instance_provider, free_cores)
+    actual_instance_demands = list(instance_selector.select(resource_demands))
+    assert required_instance_demands == actual_instance_demands
