@@ -24,6 +24,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import DocumentListPresentation from '../document-presentation/list';
 import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
 import SelectionDownloadCommand from './selection-download-command';
@@ -45,6 +46,15 @@ class SelectionPreview extends React.Component {
       .find(elasticItemUtilities.filterMatchingItemsFn(o))
     );
     return elasticItemUtilities.filterDownloadableItems(notRemoved, preferences);
+  }
+
+  @computed
+  get commandGenerationAvailable () {
+    const {preferences} = this.props;
+    const {
+      command = {}
+    } = preferences.facetedFilterDownload || {};
+    return Object.keys(command).length > 0;
   }
 
   get selectionInfo () {
@@ -106,11 +116,11 @@ class SelectionPreview extends React.Component {
     }
   };
 
-  openDownloadComandModal = () => {
+  openDownloadCommandModal = () => {
     this.setState({downloadCommandVisible: true});
   };
 
-  closeDownloadComandModal = () => {
+  closeDownloadCommandModal = () => {
     this.setState({downloadCommandVisible: false});
   };
 
@@ -148,12 +158,17 @@ class SelectionPreview extends React.Component {
               CANCEL
             </Button>
             <div>
-              <Button
-                style={{marginRight: 5}}
-                onClick={this.openDownloadComandModal}
-              >
-                GENERATE DOWNLOAD COMMAND
-              </Button>
+              {
+                this.commandGenerationAvailable && (
+                  <Button
+                    disabled={this.actualSelection.length === 0}
+                    style={{marginRight: 5}}
+                    onClick={this.openDownloadCommandModal}
+                  >
+                    GENERATE COMMAND
+                  </Button>
+                )
+              }
               <Button
                 style={{
                   marginRight: 5
@@ -222,7 +237,7 @@ class SelectionPreview extends React.Component {
             items={this.selectionInfo}
             style={{marginTop: 10}}
             visible={downloadCommandVisible}
-            onClose={this.closeDownloadComandModal}
+            onClose={this.closeDownloadCommandModal}
           />
         </div>
       </Modal>

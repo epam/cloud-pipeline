@@ -63,7 +63,7 @@ class SelectionDownloadCommand extends React.Component {
     const {preferences} = this.props;
     if (preferences.loaded && preferences.facetedFilterDownload) {
       const {command} = preferences.facetedFilterDownload;
-      return command;
+      return command || {};
     }
     return {};
   }

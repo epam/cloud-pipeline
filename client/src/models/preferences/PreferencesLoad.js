@@ -448,6 +448,24 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
+  /**
+   * @typedef {object} DownloadCommandTemplate
+   * @property {string} template
+   * @property {string} [before]
+   * @property {string} [after]
+   */
+
+  /**
+   * @typedef {object} FacetedFilterDownloadConfiguration
+   * @property {RegExp[]} allow
+   * @property {RegExp[]} deny
+   * @property {number} [maximum]
+   * @property {{[group: string]: DownloadCommandTemplate}} command
+   */
+
+  /**
+   * @returns {FacetedFilterDownloadConfiguration}
+   */
   @computed
   get facetedFilterDownload () {
     const processMask = (mask) => {
@@ -472,7 +490,7 @@ class PreferencesLoad extends Remote {
     };
     const processCommandTemplate = (command) => {
       if (!command) {
-        return command;
+        return {};
       }
       if (typeof command === 'string') {
         return {
