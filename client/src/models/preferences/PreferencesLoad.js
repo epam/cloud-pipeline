@@ -489,7 +489,18 @@ class PreferencesLoad extends Remote {
           default: command
         };
       }
-      return command;
+      const keys = Object.keys(command);
+      return keys
+        .map((key) => {
+          const value = command[key];
+          if (typeof value === 'string') {
+            return {
+              [key]: {template: value}
+            };
+          }
+          return {[key]: value};
+        })
+        .reduce((r, c) => ({...r, ...c}), {});
     };
     const processPreference = (preference = {}) => {
       const {
