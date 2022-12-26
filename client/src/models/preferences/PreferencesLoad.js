@@ -448,6 +448,24 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
+  /**
+   * @typedef {object} DownloadCommandTemplate
+   * @property {string} template
+   * @property {string} [before]
+   * @property {string} [after]
+   */
+
+  /**
+   * @typedef {object} FacetedFilterDownloadConfiguration
+   * @property {RegExp[]} allow
+   * @property {RegExp[]} deny
+   * @property {number} [maximum]
+   * @property {{[group: string]: DownloadCommandTemplate}} command
+   */
+
+  /**
+   * @returns {FacetedFilterDownloadConfiguration}
+   */
   @computed
   get facetedFilterDownload () {
     const processMask = (mask) => {
@@ -470,15 +488,49 @@ class PreferencesLoad extends Remote {
       }
       return masks.map(processMask);
     };
+    const processCommandTemplate = (command) => {
+      if (!command) {
+        return {};
+      }
+      if (typeof command === 'string') {
+        return {
+          default: {
+            template: command
+          }
+        };
+      }
+      if (
+        typeof command === 'object' &&
+        typeof command.template === 'string'
+      ) {
+        return {
+          default: command
+        };
+      }
+      const keys = Object.keys(command);
+      return keys
+        .map((key) => {
+          const value = command[key];
+          if (typeof value === 'string') {
+            return {
+              [key]: {template: value}
+            };
+          }
+          return {[key]: value};
+        })
+        .reduce((r, c) => ({...r, ...c}), {});
+    };
     const processPreference = (preference = {}) => {
       const {
         allow = [],
         deny = [],
+        command,
         ...rest
       } = preference || {};
       return {
         allow: processMasks(allow),
         deny: processMasks(deny),
+        command: processCommandTemplate(command),
         ...rest
       };
     };

@@ -1,0 +1,16 @@
+{
+    "allow": [],
+    "deny": [],
+    "maximum": 10,
+    "command": {
+        "Windows": {
+            "template": "pipe storage cp {storage.pathMask}{storage.delimiter}{path} .\\{name}"
+        },
+        "Linux": {
+            "template": "pipe storage cp {storage.pathMask}{storage.delimiter}{path} ./{name}"
+        },
+        "MacOS": {
+            "template": "pipe storage cp {storage.pathMask}{storage.delimiter}{path} ./{name}"
+        }
+    }
+}

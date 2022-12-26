@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,11 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import DocumentListPresentation from '../document-presentation/list';
 import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
+import SelectionDownloadCommand from './selection-download-command';
+import {SearchItemTypes} from '../../../../models/search';
 import styles from '../search-results.css';
 
 @inject('preferences')
@@ -33,7 +36,8 @@ import styles from '../search-results.css';
 class SelectionPreview extends React.Component {
   state = {
     selection: [],
-    removedItems: []
+    removedItems: [],
+    downloadCommandVisible: false
   };
 
   get actualSelection () {
@@ -43,6 +47,25 @@ class SelectionPreview extends React.Component {
       .find(elasticItemUtilities.filterMatchingItemsFn(o))
     );
     return elasticItemUtilities.filterDownloadableItems(notRemoved, preferences);
+  }
+
+  @computed
+  get commandGenerationAvailable () {
+    const {preferences} = this.props;
+    const {
+      command = {}
+    } = preferences.facetedFilterDownload || {};
+    return Object.keys(command).length > 0;
+  }
+
+  get selectionInfo () {
+    return this.actualSelection
+      .filter(item => item.type !== SearchItemTypes.NFSFile)
+      .map(selection => ({
+        storageId: selection.parentId,
+        path: selection.path,
+        name: selection.name
+      }));
   }
 
   get notAllowedToDownload () {
@@ -96,6 +119,14 @@ class SelectionPreview extends React.Component {
     }
   };
 
+  openDownloadCommandModal = () => {
+    this.setState({downloadCommandVisible: true});
+  };
+
+  closeDownloadCommandModal = () => {
+    this.setState({downloadCommandVisible: false});
+  };
+
   render () {
     const {
       extraColumns = [],
@@ -104,7 +135,10 @@ class SelectionPreview extends React.Component {
       title = 'Selected documents',
       visible
     } = this.props;
-    const {selection = []} = this.state;
+    const {
+      selection = [],
+      downloadCommandVisible
+    } = this.state;
     const skipped = this.notAllowedToDownload.length;
     return (
       <Modal
@@ -135,6 +169,17 @@ class SelectionPreview extends React.Component {
               >
                 CLEAR SELECTION
               </Button>
+              {
+                this.commandGenerationAvailable && (
+                  <Button
+                    disabled={this.selectionInfo.length === 0}
+                    style={{marginRight: 5}}
+                    onClick={this.openDownloadCommandModal}
+                  >
+                    GENERATE COMMAND
+                  </Button>
+                )
+              }
               <Button
                 disabled={this.actualSelection.length === 0}
                 onClick={this.onDownloadClicked}
@@ -191,6 +236,14 @@ class SelectionPreview extends React.Component {
               </div>
             ))
           }
+          <SelectionDownloadCommand
+            items={this.selectionInfo}
+            style={{marginTop: 10}}
+            visible={downloadCommandVisible}
+            onClose={this.closeDownloadCommandModal}
+            skipped={this.notAllowedToDownload.length}
+            filtered={(this.actualSelection.length - this.selectionInfo.length)}
+          />
         </div>
       </Modal>
     );
