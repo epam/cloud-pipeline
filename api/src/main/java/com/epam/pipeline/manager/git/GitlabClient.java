@@ -221,10 +221,11 @@ public class GitlabClient {
     }
 
     public GitProject createTemplateRepository(Template template, String name, String description,
-                                               boolean indexingEnabled, String hookUrl) throws GitClientException {
+                                               boolean indexingEnabled, String hookUrl,
+                                               String visibility) throws GitClientException {
         return createGitProject(template, description,
                                 GitUtils.convertPipeNameToProject(name),
-                                indexingEnabled, hookUrl);
+                                indexingEnabled, hookUrl, visibility);
     }
 
     public boolean projectExists(final String namespace, final String name) throws GitClientException {
@@ -252,11 +253,12 @@ public class GitlabClient {
     }
 
     public GitProject createTemplateRepository(Template template, String description,
-                                               boolean indexingEnabled, String hookUrl) throws GitClientException {
+                                               boolean indexingEnabled, String hookUrl,
+                                               String visibility) throws GitClientException {
         Assert.notNull(this.projectName, "Project name cannot be empty");
         try {
             String repoName = this.projectName;
-            return createGitProject(template, description, repoName, indexingEnabled, hookUrl);
+            return createGitProject(template, description, repoName, indexingEnabled, hookUrl, visibility);
         } catch (HttpClientErrorException e) {
             throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
         }
@@ -518,9 +520,9 @@ public class GitlabClient {
                 .flatMap(Stream::findFirst);
     }
 
-    private GitProject createRepo(String repoName, String description) throws GitClientException {
+    private GitProject createRepo(String repoName, String description, String visibility) throws GitClientException {
         GitProjectRequest gitProject = GitProjectRequest.builder().name(repoName).description(description)
-                .visibility(PUBLIC_VISIBILITY).build();
+                .visibility(visibility).build();
         return execute(gitLabApi.createProject(apiVersion, gitProject));
     }
 
@@ -534,8 +536,9 @@ public class GitlabClient {
     }
 
     private GitProject createGitProject(Template template, String description, String repoName,
-                                        boolean indexingEnabled, String hookUrl) throws GitClientException {
-        GitProject project = createRepo(repoName, description);
+                                        boolean indexingEnabled, String hookUrl,
+                                        String visibility) throws GitClientException {
+        GitProject project = createRepo(repoName, description, visibility);
         if (indexingEnabled) {
             addProjectHook(String.valueOf(project.getId()), hookUrl);
         }

@@ -712,7 +712,8 @@ public class GitManager {
                         pipelineName,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL),
+                        preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY));
     }
 
     public boolean checkProjectExists(String name) {
@@ -745,7 +746,8 @@ public class GitManager {
                 .createTemplateRepository(template,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL),
+                        preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY));
     }
 
     public void deletePipelineRepository(Pipeline pipeline) throws GitClientException {
