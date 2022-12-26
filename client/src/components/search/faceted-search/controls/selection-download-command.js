@@ -22,7 +22,7 @@ import {
   Button,
   Select,
   Modal,
-  message
+  message, Alert
 } from 'antd';
 import BashCode from '../../../special/bash-code';
 import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
@@ -231,7 +231,9 @@ class SelectionDownloadCommand extends React.Component {
     const {
       style,
       items,
-      visible
+      visible,
+      skipped = 0,
+      filtered = 0
     } = this.props;
     if (!items || !items.length || !currentConfiguration) {
       return null;
@@ -268,6 +270,35 @@ class SelectionDownloadCommand extends React.Component {
           style={style}
         >
           {
+            (skipped > 0 || filtered > 0) && (
+              <Alert
+                type="info"
+                showIcon
+                style={{marginBottom: 5}}
+                message={(
+                  <div>
+                    {
+                      skipped > 0 && (
+                        <div>
+                          {skipped} file{skipped === 1 ? ' is' : 's are'} not allowed
+                          to be downloaded and therefore will be skipped
+                        </div>
+                      )
+                    }
+                    {
+                      filtered > 0 && (
+                        <div>
+                          {filtered} file{filtered === 1 ? ' is' : 's are'} not allowed
+                          to be downloaded using <b>pipe cli</b> due to the data storage type
+                        </div>
+                      )
+                    }
+                  </div>
+                )}
+              />
+            )
+          }
+          {
             this.renderOperationSystemSelector()
           }
           <BashCode
@@ -290,7 +321,9 @@ SelectionDownloadCommand.propTypes = {
   })),
   style: PropTypes.object,
   visible: PropTypes.bool,
-  onClose: PropTypes.func
+  onClose: PropTypes.func,
+  skipped: PropTypes.number,
+  filtered: PropTypes.number
 };
 
 export default SelectionDownloadCommand;

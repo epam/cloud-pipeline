@@ -241,6 +241,8 @@ class SelectionPreview extends React.Component {
             style={{marginTop: 10}}
             visible={downloadCommandVisible}
             onClose={this.closeDownloadCommandModal}
+            skipped={this.notAllowedToDownload.length}
+            filtered={(this.actualSelection.length - this.selectionInfo.length)}
           />
         </div>
       </Modal>
