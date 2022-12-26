@@ -16,9 +16,18 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {computed} from 'mobx';
 import classNames from 'classnames';
-import {Input, Row, Button, Icon, Table, message, Modal} from 'antd';
+import {
+  Alert,
+  Input,
+  Row,
+  Button,
+  Icon,
+  Table,
+  message,
+  Modal
+} from 'antd';
 import FileSaver from 'file-saver';
 import PipelineFile from '../../../../models/pipelines/PipelineFile';
 import VersionFile from '../../../../models/pipelines/VersionFile';
@@ -51,29 +60,67 @@ function correctFolderPath (folder) {
   return result;
 }
 
+function getDefaultDocument (documents = []) {
+  const readme = documents.find((document) => /^readme\.md$/i.test(document.name));
+  if (readme) {
+    return readme;
+  }
+  return documents.find((document) => /\.md$/i.test(document.name));
+}
+
+function increaseToken (token) {
+  return (token || 0) + 1;
+}
+
 @inject(({pipelines, routing}, {onReloadTree, params}) => ({
   onReloadTree,
   pipelineId: params.id,
   pipeline: pipelines.getPipeline(params.id),
   version: params.version,
   pipelineVersions: pipelines.versionsForPipeline(params.id),
-  docs: pipelines.getDocuments(params.id, params.version),
-  routing
+  routing,
+  pipelines
 }))
 @observer
 export default class PipelineDocuments extends Component {
   state = {
     renameFile: null,
-    managingMdFile: null,
-    editManagingMdFileMode: false,
+    error: undefined,
+    pending: false,
+    defaultFile: undefined,
+    editMode: false,
+    defaultFilePending: true,
+    defaultFileError: undefined,
+    defaultFileContent: undefined,
+    defaultFileModifiedContent: undefined,
     commitMessageForm: false,
-    mdModifiedContent: null
+    graphReady: false
   };
 
-  @observable
-  _mdFileRequest = null;
-  @observable
-  _mdOriginalContent = '';
+  fetchToken;
+  fetchFileToken;
+
+  componentDidMount () {
+    this.updateDocsPath();
+    this.updateDocuments();
+  }
+
+  componentDidUpdate (prevProps, prevState) {
+    const docsPathChanged = this.updateDocsPath();
+    if (
+      prevProps.version !== this.props.version ||
+      prevProps.pipelineId !== this.props.pipelineId ||
+      docsPathChanged
+    ) {
+      this.updateDocuments(docsPathChanged);
+    }
+  }
+
+  componentWillUnmount () {
+    // to prevent setState of the fetch methods (updateDocuments / setDefaultFile)
+    this.fetchToken = increaseToken(this.fetchToken);
+    this.fetchFileToken = increaseToken(this.fetchFileToken);
+  }
 
   @computed
   get docsFolder () {
@@ -85,11 +132,79 @@ export default class PipelineDocuments extends Component {
     return undefined;
   }
 
+  updateDocsPath = () => {
+    const {
+      pipeline
+    } = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {docsPath} = pipeline.value;
+      if (this._docsPath !== docsPath) {
+        this._docsPath = docsPath;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  updateDocuments = (force = false) => {
+    const {
+      pipelineId,
+      version,
+      pipelines
+    } = this.props;
+    if (pipelineId && version) {
+      const fetchToken = this.fetchToken = increaseToken(this.fetchToken);
+      const commitState = (state, cb) => {
+        if (this.fetchToken === fetchToken) {
+          this.setState(state, cb);
+        }
+      };
+      this.setState({
+        pending: true,
+        error: undefined
+      }, async () => {
+        const state = {
+          pending: false
+        };
+        try {
+          const request = pipelines.getDocuments(pipelineId, version);
+          await (force ? request.fetch() : request.fetchIfNeededOrWait());
+          if (request.error) {
+            throw new Error(request.error);
+          }
+          if (!request.loaded) {
+            throw new Error('Error fetching documents');
+          }
+          state.documents = request.value || [];
+        } catch (error) {
+          state.error = error.message;
+        } finally {
+          commitState(
+            state,
+            () => this.setDefaultFile(getDefaultDocument(this.state.documents))
+          );
+        }
+      });
+    } else {
+      this.setState({
+        pending: false,
+        error: 'Pipeline id or version is not specified'
+      });
+    }
+  };
+
   updateAndNavigateToNewVersion = async () => {
-    await this.props.pipeline.fetch();
-    await this.props.pipelineVersions.fetch();
-    if (this.props.onReloadTree) {
-      await this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
+    const {
+      pipeline,
+      pipelineVersions,
+      onReloadTree
+    } = this.props;
+    await Promise.all([
+      pipeline.fetch(),
+      pipelineVersions.fetch()
+    ]);
+    if (typeof onReloadTree === 'function') {
+      await onReloadTree(!pipeline.value.parentFolderId);
     }
     this.navigateToNewVersion();
   };
@@ -101,40 +216,80 @@ export default class PipelineDocuments extends Component {
       .push(`${value?.id}/${value?.currentVersion?.name}/documents`);
   };
 
-  isMdFile = file => file && file.name.endsWith('.md');
-
-  setManagingMdFile = (managingMdFile) => {
-    this.setState({managingMdFile, editManagingMdFileMode: false});
+  setDefaultFile = (defaultFile) => {
+    const fetchFileToken = this.fetchFileToken = increaseToken(this.fetchFileToken);
+    const commitState = (state) => {
+      if (this.fetchFileToken === fetchFileToken) {
+        this.setState(state);
+      }
+    };
+    const {
+      pipelineId,
+      version
+    } = this.props;
+    this.setState(
+      {
+        defaultFile,
+        editMode: false,
+        defaultFilePending: true,
+        defaultFileError: undefined,
+        defaultFileContent: undefined,
+        defaultFileModifiedContent: undefined
+      },
+      async () => {
+        const state = {
+          defaultFilePending: false
+        };
+        try {
+          if (defaultFile) {
+            const request = new VersionFile(
+              pipelineId,
+              defaultFile.path,
+              version
+            );
+            await request.fetch();
+            if (request.error) {
+              throw new Error(request.error);
+            }
+            state.defaultFileContent = atob(request.response);
+            state.defaultFileModifiedContent = state.defaultFileContent;
+          }
+        } catch (error) {
+          state.defaultFileError = error.message;
+        } finally {
+          commitState(state);
+        }
+      }
+    );
   };
 
-  onMdFileChanged = (mdModifiedContent) => {
-    this.setState({mdModifiedContent});
+  onDefaultFileContentChange = (content) => {
+    this.setState({defaultFileModifiedContent: content});
   };
 
-  toggleEditManagingMdFileMode = (mode) => {
-    const editManagingMdFileMode = mode !== undefined
+  toggleEditMode = (mode) => {
+    const editMode = mode !== undefined
       ? mode
-      : !this.state.editManagingMdFileMode;
-    this.setState({
-      editManagingMdFileMode,
-      mdModifiedContent: editManagingMdFileMode ? this._mdOriginalContent : null
-    });
+      : !this.state.editMode;
+    this.setState({editMode});
   };
 
-  onMdSave = () => {
-    if (this.state.mdModifiedContent && this.state.mdModifiedContent !== this._mdOriginalContent) {
+  onSaveDefaultFile = () => {
+    if (
+      this.state.defaultFileModifiedContent !== this.state.defaultFileContent
+    ) {
       this.setState({commitMessageForm: true});
     } else {
-      this.toggleEditManagingMdFileMode(false);
+      this.toggleEditMode(false);
     }
   };
 
   doCommit = (options) => {
     this.setState({
-      editManagingMdFileMode: false
+      editMode: false
     }, () => {
       this.closeCommitForm();
-      this.saveEditableFile(this.state.mdModifiedContent, options.message);
+      (this.saveEditableFile)(options.message);
     });
   };
 
@@ -142,31 +297,46 @@ export default class PipelineDocuments extends Component {
     this.setState({commitMessageForm: false});
   };
 
-  saveEditableFile = async (contents, comment) => {
-    const request = new PipelineFileUpdate(this.props.pipeline.value.id);
+  saveEditableFile = async (comment) => {
+    const {
+      pipelineId,
+      pipeline,
+      pipelineVersions,
+      onReloadTree
+    } = this.props;
+    if (
+      !this.state.defaultFile ||
+      !pipeline ||
+      !pipeline.value ||
+      !pipeline.value.currentVersion
+    ) {
+      return;
+    }
+    const request = new PipelineFileUpdate(pipelineId);
     const hide = message.loading('Committing changes...');
     await request.send({
-      contents: contents,
+      contents: this.state.defaultFileModifiedContent,
       comment,
-      path: this.state.managingMdFile.path,
-      lastCommitId: this.props.pipeline.value.currentVersion.commitId
+      path: this.state.defaultFile.path,
+      lastCommitId: pipeline.value.currentVersion.commitId
     });
     hide();
     if (request.error) {
       message.error(request.error, 5);
       return false;
     } else {
-      await this.props.pipeline.fetch();
-      await this.props.pipelineVersions.fetch();
-      if (this.props.onReloadTree) {
-        await this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
+      await pipeline.fetch();
+      await pipelineVersions.fetch();
+      if (typeof onReloadTree === 'function') {
+        await onReloadTree(!pipeline.value.parentFolderId);
       }
       this.navigateToNewVersion();
       return true;
     }
   };
 
-  actionsRenderer = (text, file, graphReady) => {
+  actionsRenderer = (text, file) => {
+    const {graphReady} = this.state;
     const parts = file.name.split('.');
     const docx = parts[parts.length - 1].toLowerCase() === 'docx';
     return (
@@ -179,11 +349,13 @@ export default class PipelineDocuments extends Component {
                 size="small"
                 type="danger"
                 onClick={(e) => this.deleteFileConfirm(file, e)}>
-                <Icon type="delete" />Delete
+                <Icon type="delete" />
+                Delete
               </Button>
               <Button
                 size="small" onClick={(e) => this.openRenameFileDialog(file, e)}>
-                <Icon type="edit" />Rename
+                <Icon type="edit" />
+                Rename
               </Button>
               <span className="ant-divider" />
             </span>
@@ -210,21 +382,20 @@ export default class PipelineDocuments extends Component {
 
   onFileClick = (file, _index, event) => {
     if (event.target.type !== 'button') {
-      this.isMdFile(file)
-        ? this.setManagingMdFile(file)
+      file && /\.md$/i.test(file.name)
+        ? this.setDefaultFile(file)
         : this.downloadPipelineFile(file);
     }
   };
 
-  createDocumentsTable = (sources, graphReady) => {
-    const dataSource = [];
-
+  createDocumentsTable = () => {
+    const {documents = []} = this.state;
     const columns = [
       {
         dataIndex: 'name',
         key: 'name',
         title: 'Name',
-        render: (name, file) => (
+        render: (name) => (
           <span
             className={classNames(styles.documentName, 'cp-primary')}>
             {name}
@@ -234,32 +405,26 @@ export default class PipelineDocuments extends Component {
       {
         key: 'actions',
         className: styles.actions,
-        render: (text, file) => this.actionsRenderer(text, file, graphReady)
+        render: (text, file) => this.actionsRenderer(text, file)
       }
     ];
-
-    for (let source of (sources || [])) {
-      if (!source) {
-        continue;
-      }
-
-      dataSource.push({
-        key: source.id,
-        mode: source.mode,
-        name: source.name,
-        path: source.path,
-        type: source.type
-      });
-    }
-
-    return {dataSource, columns};
+    return {
+      dataSource: documents.map((document) => ({
+        ...document,
+        key: document.id
+      })),
+      columns
+    };
   };
 
   downloadPipelineFile = async (file, event) => {
-    const {id, version} = this.props.params;
+    const {
+      pipelineId,
+      version
+    } = this.props;
     event && event.stopPropagation();
     try {
-      const pipelineFile = new PipelineFile(id, version, file.path);
+      const pipelineFile = new PipelineFile(pipelineId, version, file.path);
       let res;
       await pipelineFile.fetch();
       res = pipelineFile.response;
@@ -289,14 +454,17 @@ export default class PipelineDocuments extends Component {
   }
 
   generateDocument = async (file) => {
-    const {id, version} = this.props.params;
+    const {
+      pipelineId,
+      version
+    } = this.props;
     let graph = this._graphComponent ? this._graphComponent.base64Image() : '';
     if (graph.indexOf('data:image/png;base64,') === 0) {
       graph = graph.substring('data:image/png;base64,'.length);
     }
     try {
       const hide = message.loading('Processing...', 0);
-      const pipelineGenerateFile = new PipelineGenerateFile(id, version, file.path);
+      const pipelineGenerateFile = new PipelineGenerateFile(pipelineId, version, file.path);
       let res;
       await pipelineGenerateFile.send({
         luigiWorkflowGraphVO: {
@@ -323,14 +491,13 @@ export default class PipelineDocuments extends Component {
     }
   };
 
-  @observable
-  _graphReady = false;
-
   _graphComponent;
 
   initializeHiddenGraph = (graph) => {
     this._graphComponent = graph;
-    this._graphReady = true;
+    if (!this.state.graphReady) {
+      this.setState({graphReady: true});
+    }
   };
 
   deleteFileConfirm = (item, event) => {
@@ -414,92 +581,134 @@ export default class PipelineDocuments extends Component {
       this.docsFolder.length;
   };
 
-  render () {
-    if (this.props.docs.pending) {
-      return <LoadingView />;
+  renderMarkdownControls = () => {
+    if (!this.canModifySources) {
+      return undefined;
     }
-    const tableData = this.createDocumentsTable(this.props.docs.value, this._graphReady);
-
-    const renderMarkdownControls = () => {
-      if (!this.canModifySources) {
-        return undefined;
-      }
-      const buttons = [];
-      if (this.state.editManagingMdFileMode) {
-        buttons.push(
-          <Button
-            key="cancel"
-            size="small"
-            onClick={() => this.toggleEditManagingMdFileMode(false)}>
-            CANCEL
-          </Button>
-        );
-        buttons.push(
-          <Button key="save" size="small" type="primary" onClick={() => this.onMdSave()}>
-            SAVE
-          </Button>
-        );
-      } else {
-        buttons.push(
-          <Button key="edit" size="small" onClick={() => this.toggleEditManagingMdFileMode(true)}>
-            EDIT
-          </Button>
-        );
-      }
-      return (
-        <Row className={styles.mdActions}>
-          {buttons}
-        </Row>
+    const buttons = [];
+    if (this.state.editMode) {
+      buttons.push(
+        <Button
+          key="cancel"
+          size="small"
+          onClick={() => this.toggleEditMode(false)}>
+          CANCEL
+        </Button>
       );
-    };
+      buttons.push(
+        <Button
+          key="save"
+          size="small"
+          type="primary"
+          onClick={this.onSaveDefaultFile}
+        >
+          SAVE
+        </Button>
+      );
+    } else {
+      buttons.push(
+        <Button
+          key="edit"
+          size="small"
+          onClick={() => this.toggleEditMode(true)}
+        >
+          EDIT
+        </Button>
+      );
+    }
+    return (
+      <Row className={styles.mdActions}>
+        {buttons}
+      </Row>
+    );
+  };
 
-    const renderMarkdown = () => {
-      if (!this.state.managingMdFile) {
-        return;
-      }
-      if (this._mdFileRequest && this._mdFileRequest.pending) {
-        return <LoadingView />;
-      }
-      if (this.state.editManagingMdFileMode) {
-        return (
-          <Input
-            value={this.state.mdModifiedContent}
-            onChange={(e) => this.onMdFileChanged(e.target.value)}
-            type="textarea"
-            onKeyDown={(e) => {
-              if (e.key && e.key === 'Escape') {
-                this.toggleEditManagingMdFileMode(false);
-              }
-            }}
-            autosize={{minRows: 25}}
-            style={{width: '100%', resize: 'none'}}
-            className={styles.markdownEditor}
-          />
-        );
-      } else {
-        if (this._mdOriginalContent && this._mdOriginalContent.trim().length) {
-          return (
-            <Markdown
-              className={styles.markdown}
-              md={this._mdOriginalContent}
-            />
-          );
-        } else {
-          return (
-            <span
-              className={
-                classNames(
-                  styles.noMdContent,
-                  'cp-text-not-important'
-                )
-              }
-            >
-              No content
-            </span>
-          );
+  renderMarkdown = () => {
+    const {
+      editMode,
+      pending,
+      defaultFile,
+      defaultFilePending,
+      defaultFileError,
+      defaultFileContent,
+      defaultFileModifiedContent
+    } = this.state;
+    if (!defaultFile) {
+      return;
+    }
+    if (defaultFilePending || pending) {
+      return (
+        <LoadingView />
+      );
+    }
+    if (defaultFileError) {
+      return (
+        <Alert
+          message={defaultFileError}
+          type="error"
+        />
+      );
+    }
+    if (editMode) {
+      return (
+        <Input
+          value={defaultFileModifiedContent}
+          onChange={(e) => this.onDefaultFileContentChange(e.target.value)}
+          type="textarea"
+          onKeyDown={(e) => {
+            if (e.key && e.key === 'Escape') {
+              this.toggleEditMode(false);
+            }
+          }}
+          autosize={{minRows: 25}}
+          style={{width: '100%', resize: 'none'}}
+          className={styles.markdownEditor}
+        />
+      );
+    }
+    if (defaultFileContent && defaultFileContent.trim().length) {
+      return (
+        <Markdown
+          className={styles.markdown}
+          md={defaultFileContent}
+        />
+      );
+    }
+    return (
+      <span
+        className={
+          classNames(
+            styles.noMdContent,
+            'cp-text-not-important'
+          )
         }
-      }
-    };
+      >
+        No content
+      </span>
+    );
+  };
+
+  render () {
+    const {
+      pending,
+      error,
+      defaultFile
+    } = this.state;
+    const {
+      pipelineId,
+      version
+    } = this.props;
+    if (pending) {
+      return (
+        <LoadingView />
+      );
+    }
+    if (error) {
+      return (
+        <Alert message={error} type="error" />
+      );
+    }
+    const tableData = this.createDocumentsTable();
 
     const header = this.canModifySources
       ? (
@@ -536,11 +745,12 @@ export default class PipelineDocuments extends Component {
         key="docs hidden graph"
         canEdit={false}
         hideError
-        pipelineId={this.props.pipelineId}
-        version={this.props.version}
+        pipelineId={pipelineId}
+        version={version}
         className={styles.graph}
         fitAllSpace
-        onGraphReady={this.initializeHiddenGraph} />,
+        onGraphReady={this.initializeHiddenGraph}
+      />,
       <PipelineCodeSourceNameDialog
         key="docs name dialog"
         visible={this.state.renameFile !== null}
@@ -548,9 +758,10 @@ export default class PipelineDocuments extends Component {
         name={this.state.renameFile ? this.state.renameFile.name : undefined}
         onSubmit={this.renameFile}
         onCancel={this.closeRenameFileDialog}
-        pending={false} />
+        pending={false}
+      />
     ];
-    if (this.state.managingMdFile) {
+    if (defaultFile) {
       return (
         <div style={{overflowY: 'auto'}}>
           {docsContent}
@@ -561,20 +772,24 @@ export default class PipelineDocuments extends Component {
             style={{marginTop: 10}}
             className={classNames(styles.mdHeader, 'cp-content-panel')}
           >
-            <span className={styles.mdTitle}>{this.state.managingMdFile.name}</span>
-            {renderMarkdownControls()}
+            <span className={styles.mdTitle}>
+              {defaultFile.name}
+            </span>
+            {this.renderMarkdownControls()}
           </Row>
           <Row
             type="flex"
             className={classNames(styles.mdBody, 'cp-content-panel')}
             style={{flex: 1, overflowY: 'auto'}}
           >
-            {renderMarkdown()}
+            {this.renderMarkdown()}
           </Row>
           <CodeFileCommitForm
             visible={this.state.commitMessageForm}
-            pending={false} onSubmit={this.doCommit}
-            onCancel={this.closeCommitForm} />
+            pending={false}
+            onSubmit={this.doCommit}
+            onCancel={this.closeCommitForm}
+          />
         </div>
       );
     } else {
@@ -583,83 +798,6 @@ export default class PipelineDocuments extends Component {
           {docsContent}
         </div>
       );
-    }
-  }
-
-  reloadDocumentsIfFolderChanged = () => {
-    if (
-      this.props.pipeline.loaded &&
-      this.props.pipeline.value &&
-      this._prevDocsPath !== this.props.pipeline.value.docsPath
-    ) {
-      this._prevDocsPath = this.props.pipeline.value.docsPath;
-      this.props.docs.fetch();
-      return true;
-    }
-    return false;
-  };
-
-  componentDidMount () {
-    this.reloadDocumentsIfFolderChanged();
-  }
-
-  componentDidUpdate (prevProps, prevState) {
-    if (prevProps.version !== this.props.version ||
-      prevProps.pipelineId !== this.props.pipelineId) {
-      this._prevDocsPath = undefined;
-    }
-    const docsPathChanged = this.reloadDocumentsIfFolderChanged();
-    if (
-      this.state.managingMdFile && (
-        docsPathChanged ||
-        prevProps.pipelineId !== this.props.pipelineId ||
-        prevProps.version !== this.props.version ||
-        (!prevState.managingMdFile && this.state.managingMdFile) ||
-        (prevState.managingMdFile &&
-          prevState.managingMdFile.path !== this.state.managingMdFile.path)
-      )
-    ) {
-      this._mdFileRequest = new VersionFile(
-        this.props.pipelineId,
-        this.state.managingMdFile.path,
-        this.props.version
-      );
-      this._mdFileRequest.fetch();
-      this._mdOriginalContent = '';
-    } else if (!this.state.managingMdFile) {
-      this._mdFileRequest = null;
-      this._mdOriginalContent = '';
-    }
-    if (this._mdFileRequest && !this._mdFileRequest.pending && !this._mdOriginalContent) {
-      this._mdOriginalContent = atob(this._mdFileRequest.response);
-    }
-    if (!this.props.docs.pending && this.props.docs.value && !this.state.managingMdFile) {
-      const [readme] = this.props.docs.value.filter(source => source.name === 'README.md');
-      if (readme) {
-        this.setManagingMdFile(readme);
-      } else {
-        const md = this.props.docs.value.filter(source => this.isMdFile(source)).shift();
-        if (md) {
-          this.setManagingMdFile(md);
-        } else {
-          this.setManagingMdFile(undefined);
-        }
-      }
-    }
-  }
-
-  componentWillUnmount () {
-    this._mdFileRequest = null;
-    this._mdOriginalContent = '';
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.version !== this.props.version ||
-      nextProps.pipelineId !== this.props.pipelineId) {
-      this._graphReady = false;
-      this.setState({
-        managingMdFile: null
-      });
     }
   }
 }

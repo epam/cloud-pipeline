@@ -396,6 +396,27 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   updatePipelineRequest = new UpdatePipeline();
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
+  reload = async () => {
+    const {
+      parentFolderId
+    } = this.props.pipeline.value || {};
+    await Promise.all([
+      this.props.pipeline.fetch(),
+      this.props.versions.fetch()
+    ]);
+    if (this.props.onReloadTree) {
+      if (parentFolderId) {
+        this.props.folders.invalidateFolder(parentFolderId);
+      } else {
+        this.props.pipelinesLibrary.invalidateCache();
+      }
+      this.props.onReloadTree(
+        !parentFolderId,
+        parentFolderId
+      );
+    }
+  };
+
   editPipeline = async (values) => {
     const {
       name,
@@ -405,7 +426,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       codePath,
       docsPath
     } = values || {};
-    const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, -1);
+    const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.updatePipelineRequest.send({
       id: this.props.pipeline.value.id,
       name: name,
@@ -430,29 +451,26 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           message.error(this.updatePipelineTokenRequest.error, 5);
         } else {
           this.closeEditPipelineDialog();
-          this.props.pipeline.fetch();
-          if (this.props.onReloadTree) {
-            this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-          }
+          (this.reload)();
         }
       } else {
         hide();
         this.closeEditPipelineDialog();
-        this.props.pipeline.fetch();
-        if (this.props.onReloadTree) {
-          this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-        }
+        (this.reload)();
       }
     }
   };
 
   renamePipeline = async (name) => {
-    const hide = message.loading(`Renaming ${this.localizedString('pipeline')} ${name}...`, -1);
+    const hide = message.loading(`Renaming ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.updatePipelineRequest.send({
       id: this.props.pipeline.value.id,
       name: name,
       description: this.props.pipeline.value.description,
-      parentFolderId: this.props.pipeline.value.parentFolderId
+      parentFolderId: this.props.pipeline.value.parentFolderId,
+      visibility: this.props.pipeline.value.visibility,
+      codePath: this.props.pipeline.value.codePath,
+      docsPath: this.props.pipeline.value.docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
@@ -466,10 +484,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       } else {
         this.props.pipelinesLibrary.invalidateCache();
       }
-      await this.props.pipeline.fetch();
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-      }
+      await this.reload();
     }
   };
 
@@ -492,7 +507,10 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         this.props.pipelinesLibrary.invalidateCache();
       }
       if (this.props.onReloadTree) {
-        this.props.onReloadTree(!parentFolderId);
+        this.props.onReloadTree(
+          !parentFolderId,
+          parentFolderId
+        );
       }
       if (parentFolderId) {
         this.props.router.push(`/folder/${parentFolderId}`);
@@ -526,11 +544,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       message.error(request.error, 5);
     } else {
       this.closeRegisterVersionDialog();
-      await this.props.pipeline.fetch();
-      await this.props.versions.fetch();
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-      }
+      await this.reload();
     }
   };
 

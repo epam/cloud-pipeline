@@ -171,6 +171,24 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     });
   };
 
+  reload = async () => {
+    const {
+      parentFolderId
+    } = this.props.pipeline.value || {};
+    await this.props.pipeline.fetch();
+    if (this.props.onReloadTree) {
+      if (parentFolderId) {
+        this.props.folders.invalidateFolder(parentFolderId);
+      } else {
+        this.props.pipelinesLibrary.invalidateCache();
+      }
+      this.props.onReloadTree(
+        !parentFolderId,
+        parentFolderId
+      );
+    }
+  };
+
   updatePipeline = (values) => {
     this.setState({updating: true}, async () => {
       const updatePipeline = new UpdatePipeline();
@@ -190,12 +208,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         message.error(`Error updating ${this.localizedString('pipeline')}: ${updatePipeline.error}`);
         this.setState({updating: false});
       } else {
-        this.setState({updating: false, isModalVisible: false}, () => {
-          this.props.pipeline.fetch();
-          if (this.props.onReloadTree) {
-            this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-          }
-        });
+        this.setState({updating: false, isModalVisible: false}, () => this.reload());
       }
     });
   };
@@ -217,10 +230,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       this.setState({
         isModalVisible: false
       });
-      await this.props.pipeline.fetch();
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-      }
+      await this.reload();
     }
   };
 
@@ -233,14 +243,17 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         message.error(`Error deleting ${this.localizedString('pipeline')}: ${deletePipeline.error}`);
         this.setState({deleting: false});
       } else {
-        const parentFolderId = this.props.pipeline.value.parentFolderId;
+        const {parentFolderId} = this.props.pipeline.value;
         if (parentFolderId) {
           this.props.folders.invalidateFolder(parentFolderId);
         } else {
           this.props.pipelinesLibrary.invalidateCache();
         }
         if (this.props.onReloadTree) {
-          this.props.onReloadTree(!parentFolderId);
+          this.props.onReloadTree(
+            !parentFolderId,
+            parentFolderId
+          );
         }
         if (parentFolderId) {
           this.props.router.push(`/folder/${parentFolderId}`);

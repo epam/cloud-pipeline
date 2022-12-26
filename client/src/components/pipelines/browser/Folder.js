@@ -1036,8 +1036,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       docsPath
     } = values || {};
     const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
+    const pipelineId = this.state.editablePipeline.id;
     await this.updatePipelineRequest.send({
-      id: this.state.editablePipeline.id,
+      id: pipelineId,
       name: name,
       description: description,
       parentFolderId: this._currentFolder.folder.id,
@@ -1060,7 +1061,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           message.error(this.updatePipelineTokenRequest.error, 5);
         } else {
           this.closeEditPipelineDialog();
-          await this.props.folder.fetch();
+          await Promise.all([
+            this.props.folder.fetch(),
+            this.props.pipelines.getPipeline(pipelineId).fetch()
+          ]);
           if (this.props.onReloadTree) {
             this.props.onReloadTree(!this._currentFolder.folder.parentId);
           }
