@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {Select} from 'antd';
 import BashCode from '../../../special/bash-code';
+import {getOS, OperationSystems} from '../../../../utils/OSDetection';
 
 const SELECTION_PLACEHOLDERS = [
   {
@@ -38,20 +40,30 @@ const SELECTION_PLACEHOLDERS = [
 @inject('preferences', 'dataStorages')
 @observer
 class SelectionInfo extends React.Component {
+  state = {
+    os: undefined
+  };
+
   componentDidMount () {
     const {preferences, dataStorages} = this.props;
-    preferences.fetchIfNeededOrWait();
+    preferences
+      .fetchIfNeededOrWait()
+      .then(() => this.setDefaultOperationSystem());
     dataStorages.fetchIfNeededOrWait();
   }
 
   @computed
-  get templateParts () {
+  get commandConfiguration () {
     const {preferences} = this.props;
     if (preferences.loaded && preferences.facetedFilterDownload) {
-      const {selectionTemplate} = preferences.facetedFilterDownload;
-      return (selectionTemplate || '').split(/({.*?})/gi).filter(Boolean);
+      const {command} = preferences.facetedFilterDownload;
+      return command;
     }
-    return [];
+    return {};
+  }
+
+  get availableOperationSystems () {
+    return Object.keys(this.commandConfiguration);
   }
 
   @computed
@@ -64,8 +76,19 @@ class SelectionInfo extends React.Component {
 
   get code () {
     const {items} = this.props;
+    const currentConfiguration = this.getCurrentConfiguration();
+    const {
+      after,
+      before,
+      template
+    } = currentConfiguration || {};
+    const templateParts = (template || '')
+      .split(/({.*?})/gi).filter(Boolean);
     const mapItemTemplate = (item) => {
-      return this.templateParts.map((string) => {
+      if (!template || templateParts.length === 0) {
+        return undefined;
+      }
+      return templateParts.map((string) => {
         if (!/({.*?})/.test(string)) {
           return string;
         }
@@ -85,21 +108,121 @@ class SelectionInfo extends React.Component {
         }
       }).join('');
     };
-    return items
-      .map(mapItemTemplate)
-      .join('\n');
+    return [
+      before,
+      items.map(mapItemTemplate),
+      after
+    ].filter(Boolean).join('\n');
+  };
+
+  /**
+   * @returns {{after: string, before: string, template: string}}
+   */
+  getCurrentConfiguration = () => {
+    const {
+      os
+    } = this.state;
+    if (os && this.commandConfiguration[os]) {
+      return this.commandConfiguration[os];
+    }
+    const options = this.availableOperationSystems;
+    if (options.length > 0) {
+      return this.commandConfiguration[options[0]];
+    }
+    return {};
+  };
+
+  setDefaultOperationSystem = () => {
+    const available = this.availableOperationSystems;
+    const current = getOS();
+    const findAvailableByName = (name) =>
+      available.find((o) => o.toLowerCase().includes(name.toLowerCase()));
+    const findLike = (...options) => {
+      for (let i = 0; i < options.length; i += 1) {
+        const found = findAvailableByName(options[i]);
+        if (found) {
+          return found;
+        }
+      }
+      return available[0];
+    };
+    switch (current) {
+      case OperationSystems.windows:
+        this.setState({
+          os: findLike('windows', 'win')
+        });
+        break;
+      case OperationSystems.linux:
+        this.setState({
+          os: findLike('linux')
+        });
+        break;
+      case OperationSystems.macOS:
+        this.setState({
+          os: findLike('macos', 'mac')
+        });
+        break;
+      case OperationSystems.other:
+      default:
+        this.setState({
+          os: available[0]
+        });
+        break;
+    }
+  };
+
+  renderOperationSystemSelector = () => {
+    const available = this.availableOperationSystems;
+    if (available.length <= 1) {
+      return null;
+    }
+    const onChange = (os) => this.setState({os});
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: 5
+        }}
+      >
+        <span style={{marginRight: 5}}>
+          Operation system:
+        </span>
+        <Select
+          style={{width: 200}}
+          value={this.state.os}
+          onChange={onChange}
+        >
+          {
+            available.map((os) => (
+              <Select.Option key={os} value={os}>
+                {os}
+              </Select.Option>
+            ))
+          }
+        </Select>
+      </div>
+    );
   };
 
   render () {
+    const currentConfiguration = this.getCurrentConfiguration();
     const {style, items} = this.props;
-    if (!items || !items.length || !this.templateParts.length) {
+    if (!items || !items.length || !currentConfiguration) {
       return null;
     }
     return (
-      <BashCode
+      <div
         style={style}
-        code={this.code}
-      />
+      >
+        {
+          this.renderOperationSystemSelector()
+        }
+        <BashCode
+          code={this.code}
+        />
+      </div>
     );
   }
 }

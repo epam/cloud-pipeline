@@ -470,15 +470,38 @@ class PreferencesLoad extends Remote {
       }
       return masks.map(processMask);
     };
+    const processCommandTemplate = (command) => {
+      if (!command) {
+        return command;
+      }
+      if (typeof command === 'string') {
+        return {
+          default: {
+            template: command
+          }
+        };
+      }
+      if (
+        typeof command === 'object' &&
+        typeof command.template === 'string'
+      ) {
+        return {
+          default: command
+        };
+      }
+      return command;
+    };
     const processPreference = (preference = {}) => {
       const {
         allow = [],
         deny = [],
+        command,
         ...rest
       } = preference || {};
       return {
         allow: processMasks(allow),
         deny: processMasks(deny),
+        command: processCommandTemplate(command),
         ...rest
       };
     };
