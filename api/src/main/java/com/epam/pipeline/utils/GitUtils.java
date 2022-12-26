@@ -52,27 +52,6 @@ public final class GitUtils {
         return name.trim().toLowerCase().replaceAll(CHARS_TO_BE_REMOVED_FROM_NAME, "").replaceAll("\\s+", "-");
     }
 
-    public static String getRevisionName(final String version) {
-        if (StringUtils.isBlank(version)) {
-            return version;
-        }
-        return version.startsWith(DRAFT_PREFIX) ? version.substring(DRAFT_PREFIX.length()) : version;
-    }
-
-    public static String buildModifyFileCommitMessage(final String commitMessage, final String filePath,
-                                                      final boolean fileExists) {
-        if (StringUtils.isNotBlank(commitMessage)) {
-            return commitMessage;
-        }
-        return fileExists
-                ? String.format("Updating file %s", filePath)
-                : String.format("Creating file %s", filePath);
-    }
-
-    public static String getBranchRefOrDefault(final String branch) {
-        return String.format(BRANCH_REF_PATTERN, StringUtils.isNotBlank(branch) ? branch : GIT_MASTER_REPOSITORY);
-    }
-
     public static String withoutLeadingDelimiter(final String path) {
         if (StringUtils.isBlank(path) || ProviderUtils.DELIMITER.equals(path)) {
             return path;
