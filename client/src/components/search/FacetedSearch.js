@@ -723,7 +723,6 @@ class FacetedSearch extends React.Component {
       <ExportButton
         className={styles.exportButton}
         size="default"
-        type="primary"
         columns={this.columns}
         query={query}
         filters={{
@@ -809,35 +808,19 @@ class FacetedSearch extends React.Component {
   };
 
   renderControlsRow = () => {
-    const {
-      presentationMode,
-      userDocumentTypes = []
-    } = this.state;
-    if (!userDocumentTypes) {
-      return null;
-    }
-    if (userDocumentTypes.length === 0) {
-      return (
-        <div
-          className={classNames(styles.actions, 'cp-search-actions')}
-        >
-          <TogglePresentationMode
-            className={styles.togglePresentationMode}
-            onChange={this.onChangePresentationMode}
-            mode={presentationMode}
-            size="default"
-          />
-          {this.renderSortingControls()}
-          {this.renderExportButton()}
-        </div>
-      );
-    }
+    const {presentationMode} = this.state;
     return (
       <div
         className={classNames(styles.actions, 'cp-search-actions')}
       >
-        {this.renderExportButton()}
+        <TogglePresentationMode
+          className={styles.togglePresentationMode}
+          onChange={this.onChangePresentationMode}
+          mode={presentationMode}
+          size="default"
+        />
         {this.renderSortingControls()}
+        {this.renderExportButton()}
       </div>
     );
   };
@@ -926,7 +909,6 @@ class FacetedSearch extends React.Component {
     const {
       activeFilters,
       facetsLoaded,
-      presentationMode,
       query,
       selectedItems = [],
       userDocumentTypes = [],
@@ -1003,16 +985,6 @@ class FacetedSearch extends React.Component {
               />
             )
           }
-          {
-            userDocumentTypes.length > 0 && (
-              <TogglePresentationMode
-                className={styles.togglePresentationMode}
-                onChange={this.onChangePresentationMode}
-                mode={presentationMode}
-                size="default"
-              />
-            )
-          }
           <Button
             className={styles.find}
             size="default"
@@ -1059,7 +1031,7 @@ class FacetedSearch extends React.Component {
                   Clear filters
                 </span>
                 {
-                  this.filters.map((filter, index) => (
+                  this.filters.map((filter) => (
                     <FacetedFilter
                       key={filter.name}
                       name={filter.name}
