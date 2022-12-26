@@ -19,6 +19,11 @@ from mock import MagicMock, Mock
 from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, Instance
 from utils import assert_first_argument_contained
 
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
+
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
 HOSTNAME = 'hostname'
@@ -43,13 +48,17 @@ region_id = 1
 instance_cores = 4
 polling_timeout = 600
 instance = Instance(name='instance', price_type=price_type, cpu=4, memory=16, gpu=0)
+queue_name = 'main.q'
+hostlist = '@allhosts'
+run_id_queue = Queue()
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                             host_storage=host_storage, parent_run_id=parent_run_id,
                                             default_hostfile=default_hostfile,
                                             instance_disk=instance_disk, instance_image=instance_image,
                                             cmd_template=cmd_template, price_type=price_type,
-                                            region_id=region_id, owner_param_name=owner_param_name,
-                                            polling_timeout=polling_timeout, polling_delay=0, instance_family='c5')
+                                            region_id=region_id, queue=queue_name, hostlist=hostlist,
+                                            owner_param_name=owner_param_name,
+                                            polling_timeout=polling_timeout, polling_delay=0)
 
 
 def setup_function():
@@ -78,20 +87,20 @@ def setup_function():
 
 
 def test_waiting_for_run_to_initialize():
-    scale_up_handler.scale_up(instance, owner)
+    scale_up_handler.scale_up(instance, owner, run_id_queue)
 
     api.load_run.assert_called()
     assert api.load_run.call_count == 9
 
 
 def test_enabling_worker_in_grid_engine():
-    scale_up_handler.scale_up(instance, owner)
+    scale_up_handler.scale_up(instance, owner, run_id_queue)
 
     grid_engine.enable_host.assert_called_with(HOSTNAME)
 
 
 def test_updating_hosts():
-    scale_up_handler.scale_up(instance, owner)
+    scale_up_handler.scale_up(instance, owner, run_id_queue)
 
     assert_first_argument_contained(cmd_executor.execute, 'add_to_hosts')
     assert_first_argument_contained(cmd_executor.execute,  HOSTNAME)
@@ -99,6 +108,6 @@ def test_updating_hosts():
 
 
 def test_scale_up_add_host_to_storage():
-    scale_up_handler.scale_up(instance, owner)
+    scale_up_handler.scale_up(instance, owner, run_id_queue)
 
     assert [HOSTNAME] == host_storage.load_hosts()

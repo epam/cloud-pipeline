@@ -87,21 +87,25 @@ class GridEngineParameters:
             name='CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE',
             help='Specifies a maximum number of CPUs available on hybrid autoscaling workers.\n'
                  'If specified only instance types which have less or equal number of CPUs will be used.')
+        self.descending_autoscale = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_DESCENDING',
+            help='Enables descending autoscaling.\n'
+                 'As long as default instance type is available then autoscaling works as non hybrid.\n'
+                 'If target instance type is temporary unavailable then autoscaling works as hybrid\n'
+                 'using only smaller instance types from the same instance family.')
         self.scale_up_strategy = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_SCALE_UP_STRATEGY',
             help='Specifies autoscaling strategy.\n'
                  'Allowed values:\n'
-                 '    cpu-capacity:\n'
+                 '    cpu-capacity (default):\n'
                  '        Scales up instance types which capacities allow to execute\n'
                  '        the waiting jobs in the fastest possible manner.\n'
                  '    naive-cpu-capacity (deprecated):\n'
-                 '        Scales up instance types based on naive sum of all job CPU requirements\n'
+                 '        Scales up instance types based on naive sum of all job CPU requirements.\n'
                  '    default (deprecated):\n'
                  '        If batch autoscaling is used\n'
                  '        then has the same effect as cpu-capacity strategy\n'
-                 '        else has the same effect as naive-cpu-capacity.\n'
-                 '    cpu-count (experimental):\n'
-                 '        Scales up an instance type with the largest amount of CPUs.')
+                 '        else has the same effect as naive-cpu-capacity.')
         self.scale_up_batch_size = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_SCALE_UP_BATCH_SIZE',
             help='Specifies a maximum number of simultaneously scaling up workers.')
@@ -736,8 +740,7 @@ class GridEngineScaleUpOrchestrator:
     _POLL_DELAY = 10
 
     def __init__(self, scale_up_handler, grid_engine, host_storage, instance_selector, worker_recorder,
-                 price_type, batch_size,
-                 polling_delay=_POLL_DELAY, clock=Clock()):
+                 batch_size, polling_delay=_POLL_DELAY, clock=Clock()):
         """
         Grid engine scale up orchestrator.
 
@@ -750,7 +753,6 @@ class GridEngineScaleUpOrchestrator:
         :param host_storage: Additional hosts storage.
         :param instance_selector: Additional instances selector.
         :param worker_recorder: Additional hosts recorder.
-        :param price_type: Additional nodes price type.
         :param batch_size: Scaling up batch size.
         :param polling_delay: Polling delay - in seconds.
         """
@@ -759,13 +761,12 @@ class GridEngineScaleUpOrchestrator:
         self.host_storage = host_storage
         self.instance_selector = instance_selector
         self.worker_recorder = worker_recorder
-        self.price_type = price_type
         self.batch_size = batch_size
         self.polling_delay = polling_delay
         self.clock = clock
 
     def scale_up(self, resource_demands, max_batch_size):
-        instance_demands = list(itertools.islice(self.instance_selector.select(resource_demands, self.price_type),
+        instance_demands = list(itertools.islice(self.instance_selector.select(resource_demands),
                                                  min(self.batch_size, max_batch_size)))
         number_of_threads = len(instance_demands)
         Logger.info('Scaling up %s additional workers...' % number_of_threads)
@@ -811,7 +812,7 @@ class GridEngineScaleUpHandler:
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
                  instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, instance_launch_params=None, clock=Clock()):
+                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_launch_params=None, clock=Clock()):
         """
         Grid engine scale up handler.
 
@@ -834,8 +835,6 @@ class GridEngineScaleUpHandler:
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         :param polling_delay: Polling delay - in seconds.
         :param ge_polling_timeout: Grid Engine polling timeout - in seconds.
-        :param instance_family: Instance family for launching additional instance,
-                e.g. c5 means that you can run instances like c5.large, c5.xlarge etc.
         :param instance_launch_params: Instance launch params dictionary.
         """
         self.executor = cmd_executor
@@ -855,7 +854,6 @@ class GridEngineScaleUpHandler:
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
         self.ge_polling_timeout = ge_polling_timeout
-        self.instance_family = instance_family
         self.instance_launch_params = instance_launch_params or {}
         self.clock = clock
 
@@ -1528,28 +1526,8 @@ class GridEngineWorkerValidator:
 
 class GridEngineInstanceSelector:
 
-    def _resolve_owner(self, demands):
-        owner_cpus_counter = sum([Counter({demand.owner: demand.cpu}) for demand in demands], Counter())
-        return owner_cpus_counter.most_common()[0][0]
-
-
-class CpuCountInstanceSelector(GridEngineInstanceSelector):
-
-    def __init__(self, instance_provider, free_cores):
-        """
-        CPU count instance selector.
-
-        CPU count is a number of CPUs on an instance.
-        An instance with most CPUs will be selected first.
-
-        :param instance_provider: Cloud Pipeline instance provider.
-        """
-        self.instance_selector = NaiveCpuCapacityInstanceSelector(ReverseInstanceProvider(instance_provider),
-                                                                  free_cores)
-
-    def select(self, demands, price_type):
-        Logger.info('Selecting instances using cpu count strategy...')
-        return self.instance_selector.select(demands, price_type)
+    def select(self, demands):
+        pass
 
 
 class BackwardCompatibleInstanceSelector(GridEngineInstanceSelector):
@@ -1570,8 +1548,8 @@ class BackwardCompatibleInstanceSelector(GridEngineInstanceSelector):
         else:
             self.instance_selector = NaiveCpuCapacityInstanceSelector(instance_provider, free_cores)
 
-    def select(self, demands, price_type):
-        return self.instance_selector.select(demands, price_type)
+    def select(self, demands):
+        return self.instance_selector.select(demands)
 
 
 class NaiveCpuCapacityInstanceSelector(GridEngineInstanceSelector):
@@ -1591,8 +1569,7 @@ class NaiveCpuCapacityInstanceSelector(GridEngineInstanceSelector):
         self.free_cores = free_cores
         self.instance_selector = CpuCapacityInstanceSelector(instance_provider, free_cores)
 
-    def select(self, demands, price_type):
-        Logger.info('Selecting instances using fractional cpu capacity strategy...')
+    def select(self, demands):
         fractional_demands = [demand if isinstance(demand, FractionalDemand)
                               else FractionalDemand(cpu=demand.cpu,
                                                     gpu=demand.gpu,
@@ -1600,7 +1577,7 @@ class NaiveCpuCapacityInstanceSelector(GridEngineInstanceSelector):
                                                     disk=demand.disk,
                                                     owner=demand.owner)
                               for demand in demands]
-        return self.instance_selector.select(fractional_demands, price_type)
+        return self.instance_selector.select(fractional_demands)
 
 
 class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
@@ -1618,9 +1595,8 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
         self.instance_provider = instance_provider
         self.free_cores = free_cores
 
-    def select(self, demands, price_type):
-        Logger.info('Selecting instances using cpu capacity strategy...')
-        instances = self.instance_provider.get_allowed_instances(price_type)
+    def select(self, demands):
+        instances = self.instance_provider.provide()
         remaining_demands = demands
         while remaining_demands:
             best_capacity = 0
@@ -1640,7 +1616,7 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
                     best_fulfilled_demands = current_fulfilled_demands
             remaining_demands = best_remaining_demands
             if not best_instance:
-                raise ScalingError('No instances were found which satisfy all resource demands.')
+                raise ScalingError('No instances were found which satisfy any of the resource demands.')
             best_instance_owner = self._resolve_owner(best_fulfilled_demands)
             logging.info('Selecting %s instance using %s/%s cpus for %s user...'
                          % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
@@ -1672,6 +1648,10 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
                 raise ScalingError('Unsupported demand type %s.', type(demand))
         return remaining_demands, fulfilled_demands
 
+    def _resolve_owner(self, demands):
+        owner_cpus_counter = sum([Counter({demand.owner: demand.cpu}) for demand in demands], Counter())
+        return owner_cpus_counter.most_common()[0][0]
+
 
 class GridEngineWorkerRecord:
 
@@ -1692,19 +1672,16 @@ class GridEngineWorkerRecorder:
     def get(self):
         pass
 
-
-class DoNothingWorkerRecorder(GridEngineWorkerRecorder):
-
-    def __init__(self):
+    def clear(self):
         pass
 
 
 class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
 
-    def __init__(self, api):
+    def __init__(self, api, capacity=100):
         self._api = api
         self._records = []
-        self._records_number = 100
+        self._capacity = capacity
         self._datetime_format = '%Y-%m-%d %H:%M:%S.%f'
 
     def record(self, run_id):
@@ -1721,7 +1698,7 @@ class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
                                             started=run_started, stopped=run_stopped,
                                             has_insufficient_instance_capacity=has_insufficient_instance_capacity)
             self._records.append(record)
-            self._records = self._records[-self._records_number:]
+            self._records = self._records[-self._capacity:]
         except KeyboardInterrupt:
             pass
         except Exception as e:
@@ -1747,20 +1724,25 @@ class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
     def get(self):
         return list(self._records)
 
+    def clear(self):
+        self._records = []
+
 
 class GridEngineInstanceProvider:
 
-    def get_allowed_instances(self, price_type):
+    def provide(self):
         pass
 
 
-class ReverseInstanceProvider(GridEngineInstanceProvider):
+class DescendingInstanceProvider(GridEngineInstanceProvider):
 
     def __init__(self, inner):
         self._inner = inner
 
-    def get_allowed_instances(self, price_type):
-        return list(reversed(self._inner.get_allowed_instances(price_type)))
+    def provide(self):
+        return sorted(self._inner.provide(),
+                      key=lambda instance: instance.cpu,
+                      reverse=True)
 
 
 class AvailableInstanceProvider(GridEngineInstanceProvider):
@@ -1771,8 +1753,8 @@ class AvailableInstanceProvider(GridEngineInstanceProvider):
         self._unavailability_delay = timedelta(seconds=unavailability_delay)
         self._clock = clock
 
-    def get_allowed_instances(self, price_type):
-        allowed_instances = self._inner.get_allowed_instances(price_type)
+    def provide(self):
+        allowed_instances = self._inner.provide()
         available_instances = list(self._get_available(allowed_instances))
         if available_instances:
             return available_instances
@@ -1786,68 +1768,82 @@ class AvailableInstanceProvider(GridEngineInstanceProvider):
             else:
                 Logger.warn('Circuit breaking %s instance type because it is unavailable...' % instance.name)
 
-    def _is_available(self, instance_name):
+    def _is_available(self, instance_type):
         now = self._clock.now()
         unavailability_expiration = now - self._unavailability_delay
         unavailability = None
         for record in self._worker_recorder.get():
-            if record.instance_type != instance_name:
+            if record.instance_type != instance_type:
                 continue
             if record.has_insufficient_instance_capacity:
                 unavailability = record.stopped
-        return not unavailability or unavailability - unavailability_expiration <= timedelta(seconds=0)
+        return not unavailability or unavailability < unavailability_expiration
+
+
+class SizeLimitingInstanceProvider(GridEngineInstanceProvider):
+
+    def __init__(self, inner, max_instance_cores):
+        self.inner = inner
+        self.instance_cores = max_instance_cores
+
+    def provide(self):
+        return [instance for instance in self.inner.provide()
+                if instance.cpu <= self.instance_cores]
+
+
+class FamilyInstanceProvider(GridEngineInstanceProvider):
+
+    def __init__(self, inner, instance_cloud_provider, instance_family):
+        self.inner = inner
+        self.instance_cloud_provider = instance_cloud_provider
+        self.instance_family = instance_family
+
+    def provide(self):
+        return sorted([instance for instance in self.inner.provide()
+                       if self._is_part_of_family(instance.name)],
+                      key=lambda instance: instance.cpu)
+
+    def _is_part_of_family(self, instance_type):
+        return extract_family_from_instance_type(self.instance_cloud_provider, instance_type) == self.instance_family
+
+
+class DefaultInstanceProvider(GridEngineInstanceProvider):
+
+    def __init__(self, inner, instance_type):
+        self.inner = inner
+        self.instance_type = instance_type
+
+    def provide(self):
+        return [instance for instance in self.inner.provide()
+                if instance.name == self.instance_type]
 
 
 class CloudPipelineInstanceProvider(GridEngineInstanceProvider):
 
-    def __init__(self, pipe, cloud_provider, region_id, instance_type, instance_family,
-                 hybrid_autoscale, hybrid_instance_cores, free_cores):
+    def __init__(self, pipe, region_id, price_type):
         self.pipe = pipe
-        self.cloud_provider = cloud_provider
         self.region_id = region_id
-        self.instance_type = instance_type
-        self.instance_family = instance_family
-        self.hybrid_autoscale = hybrid_autoscale
-        self.hybrid_instance_cores = hybrid_instance_cores
-        self.free_cores = free_cores
+        self.price_type = price_type
 
-    def get_allowed_instances(self, price_type):
-        if self.hybrid_autoscale and self.instance_family:
-            return self._get_hybrid_instances(price_type)
-        else:
-            return self._get_default_instance(price_type)
-
-    def _get_default_instance(self, price_type):
-        return [instance for instance in self._get_existing_instances(price_type)
-                if instance.name == self.instance_type]
-
-    def _get_hybrid_instances(self, price_type):
-        return sorted([instance for instance in self._get_existing_instances(price_type)
-                       if self._is_instance_from_family(instance.name) and instance.cpu <= self.hybrid_instance_cores],
-                      key=lambda instance: instance.cpu)
-
-    def _get_existing_instances(self, price_type):
-        allowed_instance_types = pipe.get_allowed_instance_types(self.region_id, price_type == 'spot')
+    def provide(self):
+        allowed_instance_types = self.pipe.get_allowed_instance_types(self.region_id, self.price_type == 'spot')
         docker_instance_types = allowed_instance_types['cluster.allowed.instance.types.docker']
         return [Instance.from_cp_response(instance) for instance in docker_instance_types]
 
-    @staticmethod
-    def get_family_from_type(cloud_provider, instance_type):
-        if cloud_provider == CloudProvider.aws():
-            search = re.search('^(\w+)\..*', instance_type)
-            return search.group(1) if search else None
-        elif cloud_provider == CloudProvider.gcp():
-            search = re.search('^\w\d\-(\w+)-.*', instance_type)
-            return search.group(1) if search else None
-        elif cloud_provider == CloudProvider.azure():
-            # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
-            search = re.search('^([a-zA-Z]+)\d+(.*)', instance_type.split('_', 1)[1].replace('_', ''))
-            return search.group(1) + search.group(2) if search else None
-        else:
-            return None
 
-    def _is_instance_from_family(self, instance_type):
-        return CloudPipelineInstanceProvider.get_family_from_type(self.cloud_provider, instance_type) == self.instance_family
+def extract_family_from_instance_type(cloud_provider, instance_type):
+    if cloud_provider == CloudProvider.aws():
+        search = re.search('^(\w+)\..*', instance_type)
+        return search.group(1) if search else None
+    elif cloud_provider == CloudProvider.gcp():
+        search = re.search('^\w\d\-(\w+)-.*', instance_type)
+        return search.group(1) if search else None
+    elif cloud_provider == CloudProvider.azure():
+        # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
+        search = re.search('^([a-zA-Z]+)\d+(.*)', instance_type.split('_', 1)[1].replace('_', ''))
+        return search.group(1) + search.group(2) if search else None
+    else:
+        return None
 
 
 class CloudProvider:
@@ -1926,6 +1922,7 @@ class GridEngineAutoscalingDaemon:
         self.timeout = polling_timeout
 
     def start(self):
+        Logger.info('Launching grid engine autoscaling daemon...')
         while True:
             try:
                 time.sleep(self.timeout)
@@ -2033,7 +2030,7 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     return launch_params
 
 
-if __name__ == '__main__':
+def main():
     params = GridEngineParameters()
     pipeline_api = os.environ['API']
     master_run_id = os.environ['RUN_ID']
@@ -2053,15 +2050,15 @@ if __name__ == '__main__':
     instance_owner_param = os.getenv(params.instance_owner_param.name, 'CP_CAP_AUTOSCALE_OWNER')
 
     hybrid_autoscale = os.getenv(params.hybrid_autoscale.name, 'false').strip().lower() == 'true'
-    hybrid_instance_cores = int(os.getenv(params.hybrid_instance_cores.name, sys.maxint))
+    hybrid_instance_cores = int(os.getenv(params.hybrid_instance_cores.name, 0))
     hybrid_instance_family = os.getenv(params.hybrid_instance_family.name,
-                                       CloudPipelineInstanceProvider.get_family_from_type(instance_cloud_provider,
-                                                                                          instance_type))
+                                       extract_family_from_instance_type(instance_cloud_provider, instance_type))
+    descending_autoscale = os.getenv(params.descending_autoscale.name, 'true').strip().lower() == 'true'
 
-    scale_up_strategy = os.getenv(params.scale_up_strategy.name, 'default')
+    scale_up_strategy = os.getenv(params.scale_up_strategy.name, 'cpu-capacity')
     scale_up_batch_size = int(os.getenv(params.scale_up_batch_size.name, 1))
     scale_up_polling_delay = int(os.getenv(params.scale_up_polling_delay.name, 10))
-    scale_up_unavailability_delay = int(os.getenv(params.scale_up_unavailability_delay.name, 0))
+    scale_up_unavailability_delay = int(os.getenv(params.scale_up_unavailability_delay.name, 1800))
 
     scale_down_idle_timeout = int(os.getenv(params.scale_down_idle_timeout.name, 30))
 
@@ -2082,6 +2079,8 @@ if __name__ == '__main__':
     Logger.init(log_file=os.path.join(log_dir, '.autoscaler.%s.log' % queue_name),
                 task=log_task, verbose=log_verbose)
 
+    Logger.info('Initiating grid engine autoscaling...')
+
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(log_dir, '.autoscaler.%s.pipe.log' % queue_name))
     api = CloudPipelineAPI(pipe=pipe)
@@ -2091,36 +2090,71 @@ if __name__ == '__main__':
     clock = Clock()
     cmd_executor = CmdExecutor()
 
-    instance_provider = CloudPipelineInstanceProvider(cloud_provider=instance_cloud_provider, region_id=instance_region_id,
-                                                      instance_family=hybrid_instance_family, instance_type=instance_type,
-                                                      pipe=pipe, hybrid_autoscale=hybrid_autoscale,
-                                                      hybrid_instance_cores=hybrid_instance_cores,
-                                                      free_cores=hosts_free_cores)
-    if hybrid_autoscale and scale_up_unavailability_delay > 0:
-        worker_recorder = CloudPipelineWorkerRecorder(api=api)
-        instance_provider = AvailableInstanceProvider(inner=instance_provider,
-                                                      worker_recorder=worker_recorder,
-                                                      unavailability_delay=scale_up_unavailability_delay,
-                                                      clock=clock)
+    worker_recorder = CloudPipelineWorkerRecorder(api=api)
+    cloud_instance_provider = CloudPipelineInstanceProvider(pipe=pipe, region_id=instance_region_id,
+                                                            price_type=instance_price_type)
+    default_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider, instance_type=instance_type)
+
+    descending_instance = default_instance_provider.provide().pop()
+    descending_instance_cores = descending_instance.cpu if descending_instance else 0
+    descending_instance_type = descending_instance.name if descending_instance else ''
+    descending_instance_family = extract_family_from_instance_type(instance_cloud_provider, descending_instance_type)
+
+    if hybrid_autoscale and hybrid_instance_family:
+        Logger.info('Using hybrid autoscaling of {} instances...'.format(hybrid_instance_family))
+        instance_provider = FamilyInstanceProvider(inner=cloud_instance_provider,
+                                                   instance_cloud_provider=instance_cloud_provider,
+                                                   instance_family=hybrid_instance_family)
+        if hybrid_instance_cores:
+            Logger.info('Using instances with no more than {} cpus...'.format(hybrid_instance_cores))
+            instance_provider = SizeLimitingInstanceProvider(inner=instance_provider,
+                                                             max_instance_cores=hybrid_instance_cores)
+        if scale_up_unavailability_delay:
+            Logger.info('Using only available instances...')
+            instance_provider = AvailableInstanceProvider(inner=instance_provider,
+                                                          worker_recorder=worker_recorder,
+                                                          unavailability_delay=scale_up_unavailability_delay,
+                                                          clock=clock)
+    elif descending_autoscale and descending_instance_family and descending_instance_cores:
+        Logger.info('Using descending autoscaling of {} instances...'.format(descending_instance_type))
+        instance_provider = FamilyInstanceProvider(inner=cloud_instance_provider,
+                                                   instance_cloud_provider=instance_cloud_provider,
+                                                   instance_family=descending_instance_family)
+        if descending_instance_cores:
+            Logger.info('Using instances with no more than {} cpus...'.format(descending_instance_cores))
+            instance_provider = SizeLimitingInstanceProvider(inner=instance_provider,
+                                                             max_instance_cores=descending_instance_cores)
+        if scale_up_unavailability_delay:
+            Logger.info('Using only available instances...')
+            instance_provider = AvailableInstanceProvider(inner=instance_provider,
+                                                          worker_recorder=worker_recorder,
+                                                          unavailability_delay=scale_up_unavailability_delay,
+                                                          clock=clock)
+        instance_provider = DescendingInstanceProvider(inner=instance_provider)
     else:
-        worker_recorder = DoNothingWorkerRecorder()
+        Logger.info('Using default autoscaling of {} instances...'.format(instance_type))
+        instance_provider = default_instance_provider
+
+    Logger.info('Using the following instance types:\n{}'
+                .format('\n'.join('- {} ({} cpus, {} gpus)'.format(instance.name, instance.cpu, instance.gpu)
+                                  for instance in instance_provider.provide())))
 
     if scale_up_strategy == 'cpu-capacity':
+        Logger.info('Selecting instances using cpu capacity strategy...')
         instance_selector = CpuCapacityInstanceSelector(instance_provider=instance_provider,
                                                         free_cores=hosts_free_cores)
     elif scale_up_strategy == 'naive-cpu-capacity':
+        Logger.info('Selecting instances using fractional cpu capacity strategy...')
         instance_selector = NaiveCpuCapacityInstanceSelector(instance_provider=instance_provider,
                                                              free_cores=hosts_free_cores)
-    elif scale_up_strategy == 'cpu-count':
-        instance_selector = CpuCountInstanceSelector(instance_provider=instance_provider,
-                                                     free_cores=hosts_free_cores)
-
     else:
+        Logger.info('Selecting instances using default strategy...')
         instance_selector = BackwardCompatibleInstanceSelector(instance_provider=instance_provider,
                                                                free_cores=hosts_free_cores,
                                                                batch_size=scale_up_batch_size)
 
-    max_instance_cores = instance_provider.get_allowed_instances(instance_price_type).pop().cpu - hosts_free_cores
+    max_instance = sorted(instance_provider.provide(), key=lambda instance: instance.cpu).pop()
+    max_instance_cores = max_instance.cpu - hosts_free_cores
     max_cluster_cores = max_instance_cores * autoscaling_hosts_number
     if queue_static:
         max_cluster_cores += master_cores + (static_hosts_cores - hosts_free_cores) * static_hosts_number
@@ -2146,14 +2180,12 @@ if __name__ == '__main__':
                                                 owner_param_name=instance_owner_param,
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
-                                                instance_family=hybrid_instance_family,
                                                 instance_launch_params=instance_launch_params,
                                                 clock=clock)
     scale_up_orchestrator = GridEngineScaleUpOrchestrator(scale_up_handler=scale_up_handler, grid_engine=grid_engine,
                                                           host_storage=host_storage,
                                                           instance_selector=instance_selector,
                                                           worker_recorder=worker_recorder,
-                                                          price_type=instance_price_type,
                                                           batch_size=scale_up_batch_size,
                                                           polling_delay=scale_up_polling_delay,
                                                           clock=clock)
@@ -2169,3 +2201,7 @@ if __name__ == '__main__':
     daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
                                          polling_timeout=10)
     daemon.start()
+
+
+if __name__ == '__main__':
+    main()
