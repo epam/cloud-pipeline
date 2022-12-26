@@ -28,6 +28,7 @@ import {computed} from 'mobx';
 import DocumentListPresentation from '../document-presentation/list';
 import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
 import SelectionDownloadCommand from './selection-download-command';
+import {SearchItemTypes} from '../../../../models/search';
 import styles from '../search-results.css';
 
 @inject('preferences')
@@ -58,11 +59,13 @@ class SelectionPreview extends React.Component {
   }
 
   get selectionInfo () {
-    return this.actualSelection.map(selection => ({
-      storageId: selection.parentId,
-      path: selection.path,
-      name: selection.name
-    }));
+    return this.actualSelection
+      .filter(item => item.type !== SearchItemTypes.NFSFile)
+      .map(selection => ({
+        storageId: selection.parentId,
+        path: selection.path,
+        name: selection.name
+      }));
   }
 
   get notAllowedToDownload () {
@@ -158,17 +161,6 @@ class SelectionPreview extends React.Component {
               CANCEL
             </Button>
             <div>
-              {
-                this.commandGenerationAvailable && (
-                  <Button
-                    disabled={this.actualSelection.length === 0}
-                    style={{marginRight: 5}}
-                    onClick={this.openDownloadCommandModal}
-                  >
-                    GENERATE COMMAND
-                  </Button>
-                )
-              }
               <Button
                 style={{
                   marginRight: 5
@@ -177,6 +169,17 @@ class SelectionPreview extends React.Component {
               >
                 CLEAR SELECTION
               </Button>
+              {
+                this.commandGenerationAvailable && (
+                  <Button
+                    disabled={this.selectionInfo.length === 0}
+                    style={{marginRight: 5}}
+                    onClick={this.openDownloadCommandModal}
+                  >
+                    GENERATE COMMAND
+                  </Button>
+                )
+              }
               <Button
                 disabled={this.actualSelection.length === 0}
                 onClick={this.onDownloadClicked}

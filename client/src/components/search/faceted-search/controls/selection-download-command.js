@@ -116,7 +116,7 @@ class SelectionDownloadCommand extends React.Component {
     };
     return [
       before,
-      items.map(mapItemTemplate),
+      ...items.map(mapItemTemplate),
       after
     ].filter(Boolean).join('\n');
   };
@@ -273,6 +273,8 @@ class SelectionDownloadCommand extends React.Component {
           <BashCode
             code={this.code}
             style={{maxHeight: '50vh', overflow: 'auto'}}
+            breakLines
+            nowrap
           />
         </div>
       </Modal>
