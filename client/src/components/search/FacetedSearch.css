@@ -28,7 +28,7 @@
 }
 
 .container .search {
-  padding: 5px;
+  padding: 5px 6px;
 }
 
 .container .content {
@@ -96,7 +96,7 @@
 }
 
 .container .actions {
-  margin: 0 5px;
+  margin-left: 5px;
   display: flex;
   flex-direction: row;
   align-items: flex-start;

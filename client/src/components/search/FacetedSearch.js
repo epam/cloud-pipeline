@@ -723,7 +723,6 @@ class FacetedSearch extends React.Component {
       <ExportButton
         className={styles.exportButton}
         size="default"
-        type="primary"
         columns={this.columns}
         query={query}
         filters={{
@@ -1032,7 +1031,7 @@ class FacetedSearch extends React.Component {
                   Clear filters
                 </span>
                 {
-                  this.filters.map((filter, index) => (
+                  this.filters.map((filter) => (
                     <FacetedFilter
                       key={filter.name}
                       name={filter.name}
