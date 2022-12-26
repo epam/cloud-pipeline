@@ -317,6 +317,8 @@ public class SystemPreferences {
             "bitbucket.default.src.directory", "/", GIT_GROUP, pass, true);
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
+    public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
+            "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
 
     // DOCKER_SECURITY_GROUP
     /**

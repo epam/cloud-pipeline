@@ -60,8 +60,8 @@ public class PipelineRepositoryProviderService {
     }
 
     public GitProject createRepository(final RepositoryType repositoryType, final String description,
-                                       final String repositoryPath, final String token) {
-        return getProvider(repositoryType).createRepository(description, repositoryPath, token);
+                                       final String repositoryPath, final String token, final String visibility) {
+        return getProvider(repositoryType).createRepository(description, repositoryPath, token, visibility);
     }
 
     public GitProject renameRepository(final RepositoryType repositoryType, final String currentRepositoryPath,

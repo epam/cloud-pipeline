@@ -226,16 +226,18 @@ public class GitlabClient {
     }
 
     public GitProject createTemplateRepository(Template template, String name, String description,
-                                               boolean indexingEnabled, String hookUrl) throws GitClientException {
+                                               boolean indexingEnabled, String hookUrl,
+                                               String visibility) throws GitClientException {
         return createGitProject(template, description,
                                 GitUtils.convertPipeNameToProject(name),
-                                indexingEnabled, hookUrl);
+                                indexingEnabled, hookUrl, visibility);
     }
 
     public GitProject createEmptyRepository(final String name, final String description,
                                             final boolean indexingEnabled, final boolean initCommit,
-                                            final String hookUrl) throws GitClientException {
-        final GitProject project = createRepo(name, description);
+                                            final String hookUrl,
+                                            final String visibility) throws GitClientException {
+        final GitProject project = createRepo(name, description, visibility);
         if (indexingEnabled) {
             addProjectHook(String.valueOf(project.getId()), hookUrl);
         }
@@ -440,17 +442,17 @@ public class GitlabClient {
         return execute(gitLabApi.getProjectStorage(makeProjectId(namespace, project)));
     }
 
-    private GitProject createRepo(String repoName, String description) throws GitClientException {
+    private GitProject createRepo(String repoName, String description, String visibility) throws GitClientException {
         GitProjectRequest gitProject = GitProjectRequest.builder()
                 .name(repoName)
                 .description(description)
-                .visibility(PUBLIC_VISIBILITY)
+                .visibility(visibility)
                 .build();
         return execute(gitLabApi.createProject(apiVersion, gitProject));
     }
 
-    public GitProject createRepo(final String description) throws GitClientException {
-        return createRepo(projectName, description);
+    public GitProject createRepo(final String description, final String visibility) throws GitClientException {
+        return createRepo(projectName, description, visibility);
     }
 
     public void createFile(final GitProject project, final String path, final String content, final String branch) {
@@ -539,8 +541,10 @@ public class GitlabClient {
     }
 
     private GitProject createGitProject(Template template, String description, String repoName,
-                                        boolean indexingEnabled, String hookUrl) throws GitClientException {
-        final GitProject project = createEmptyRepository(repoName, description, indexingEnabled, false, hookUrl);
+                                        boolean indexingEnabled, String hookUrl,
+                                        String visibility) throws GitClientException {
+        final GitProject project = createEmptyRepository(repoName, description, indexingEnabled,
+                false, hookUrl, visibility);
         uploadFolder(template, repoName, project);
         try {
             boolean fileExists = getFileContents(project.getId().toString(), DEFAULT_README, DEFAULT_BRANCH) != null;

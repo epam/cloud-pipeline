@@ -36,6 +36,8 @@ import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -82,15 +84,18 @@ public class PipelineRepositoryService {
 
     private final PipelineRepositoryProviderService providerService;
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
     private final String defaultTemplate;
     private final String templatesDirectoryPath;
 
     public PipelineRepositoryService(final PipelineRepositoryProviderService providerService,
                                      final MessageHelper messageHelper,
+                                     final PreferenceManager preferenceManager,
                                      @Value("${templates.default.template}") final String defaultTemplate,
                                      @Value("${templates.directory}") final String templatesDirectoryPath) {
         this.providerService = providerService;
         this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
         this.defaultTemplate = defaultTemplate;
         this.templatesDirectoryPath = templatesDirectoryPath;
     }
@@ -448,7 +453,7 @@ public class PipelineRepositoryService {
                                              final String repositoryPath, final String token, final boolean initCommit,
                                              final String branch) throws GitClientException {
         final GitProject repository = providerService.createRepository(repositoryType, description,
-                repositoryPath, token);
+                repositoryPath, token, preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY));
 
         providerService.handleHook(repositoryType, repository, token);
 

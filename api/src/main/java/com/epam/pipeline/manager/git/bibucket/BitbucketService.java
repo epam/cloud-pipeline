@@ -107,7 +107,10 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
-    public GitProject createRepository(final String description, final String path, final String token) {
+    public GitProject createRepository(final String description,
+                                       final String path,
+                                       final String token,
+                                       final String visibility) {
         final BitbucketRepository bitbucketRepository = BitbucketRepository.builder()
                 .isPublic(false)
                 .description(description)

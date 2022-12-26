@@ -392,7 +392,8 @@ public class GitManager {
                         pipelineName,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL),
+                        preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY));
     }
 
     public GitProject createRepository(final String pipelineName, final String description) throws GitClientException {
@@ -401,7 +402,8 @@ public class GitManager {
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         true,
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL),
+                        preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY)
                 );
     }
 
@@ -430,7 +432,8 @@ public class GitManager {
                 description,
                 preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                 false,
-                preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+                preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL),
+                preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY)
         );
     }
 
