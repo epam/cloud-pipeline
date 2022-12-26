@@ -266,21 +266,22 @@ public class GitManager {
     }
 
     public GitCommitEntry createOrRenameFolder(Long id, PipelineSourceItemVO folderVO) throws GitClientException {
-        String folderName = FilenameUtils.getName(folderVO.getPath());
+        final String folderPath = GitUtils.withoutLeadingDelimiter(folderVO.getPath());
+        String folderName = FilenameUtils.getName(folderPath);
         Assert.isTrue(GitUtils.checkGitNaming(folderName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_FOLDER_NAME, folderName));
         Pipeline pipeline = pipelineManager.load(id, true);
         if (folderVO.getPreviousPath() == null) {
             // Previous path is missing: creating folder
             return pipelineRepositoryService.createFolder(pipeline,
-                    folderVO.getPath(),
+                    folderPath,
                     folderVO.getLastCommitId(),
                     folderVO.getComment());
         }
         // else: renaming folder
         return pipelineRepositoryService.renameFolder(pipeline,
-                folderVO.getPreviousPath(),
-                folderVO.getPath(),
+                GitUtils.withoutLeadingDelimiter(folderVO.getPreviousPath()),
+                folderPath,
                 folderVO.getLastCommitId(),
                 folderVO.getComment());
     }
@@ -289,13 +290,13 @@ public class GitManager {
                                        final String folder,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
-        return pipelineRepositoryService.removeFolder(pipeline, folder, lastCommitId, commitMessage,
-                pipeline.getCodePath());
+        return pipelineRepositoryService.removeFolder(pipeline, GitUtils.withoutLeadingDelimiter(folder),
+                lastCommitId, commitMessage, GitUtils.withoutLeadingDelimiter(pipeline.getCodePath()));
     }
 
     public GitCommitEntry modifyFile(Pipeline pipeline,
                                      PipelineSourceItemVO sourceItemVO) throws GitClientException {
-        String sourcePath = sourceItemVO.getPath();
+        final String sourcePath = GitUtils.withoutLeadingDelimiter(sourceItemVO.getPath());
         Arrays.stream(sourcePath.split(PATH_DELIMITER)).forEach(pathPart ->
             Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, sourcePath)));
@@ -309,7 +310,7 @@ public class GitManager {
         }
         return pipelineRepositoryService.renameFile(pipeline,
                 sourcePath,
-                sourceItemVO.getPreviousPath(),
+                GitUtils.withoutLeadingDelimiter(sourceItemVO.getPreviousPath()),
                 sourceItemVO.getLastCommitId(),
                 sourceItemVO.getComment());
     }
@@ -319,17 +320,18 @@ public class GitManager {
         Assert.hasLength(sourceItemRevertVO.getCommitToRevert(), "Commit to revert should be provided!");
         Assert.hasLength(sourceItemRevertVO.getPath(), "Path to file should be provided!");
 
+        final String sourcePath = GitUtils.withoutLeadingDelimiter(sourceItemRevertVO.getPath());
         final byte[] content = getPipelineFileContents(
-                        pipeline,
-                        sourceItemRevertVO.getCommitToRevert(),
-                        sourceItemRevertVO.getPath()
+                pipeline,
+                sourceItemRevertVO.getCommitToRevert(),
+                sourcePath
         );
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(getRevertMessage(sourceItemRevertVO));
 
         final GitPushCommitActionEntry revertGitAction = new GitPushCommitActionEntry();
-        revertGitAction.setFilePath(sourceItemRevertVO.getPath());
+        revertGitAction.setFilePath(sourcePath);
         revertGitAction.setContent(Base64.getEncoder().encodeToString(content));
         revertGitAction.setEncoding(BASE64_ENCODING);
         revertGitAction.setAction(ACTION_UPDATE);

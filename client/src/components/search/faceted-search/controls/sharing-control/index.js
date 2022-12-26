@@ -21,8 +21,7 @@ import {inject, observer} from 'mobx-react';
 import {
   Badge,
   Button,
-  Icon,
-  Popover
+  Icon
 } from 'antd';
 import RcMenu, {MenuItem, SubMenu, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
