@@ -14,7 +14,7 @@
 
 import logging
 
-from scripts.autoscale_sge import CloudProvider, CloudPipelineInstanceProvider
+from scripts.autoscale_sge import CloudProvider, extract_family_from_instance_type
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
@@ -26,29 +26,32 @@ GCP_HIGHCPU = "highcpu"
 
 AWS_C5 = "c5"
 AWS_P2 = "p2"
+AWS_G4DN = "g4dn"
 
 
 def test_aws_familes():
-    family = CloudPipelineInstanceProvider.get_family_from_type(CloudProvider.aws(), "c5.xlarge")
+    family = extract_family_from_instance_type(CloudProvider.aws(), "c5.xlarge")
     assert family == AWS_C5
-    family = CloudPipelineInstanceProvider.get_family_from_type(CloudProvider.aws(), "p2.xlarge")
+    family = extract_family_from_instance_type(CloudProvider.aws(), "p2.xlarge")
     assert family == AWS_P2
+    family = extract_family_from_instance_type(CloudProvider.aws(), "g4dn.2xlarge")
+    assert family == AWS_G4DN
 
 
 def test_gcp_familes():
-    family = CloudPipelineInstanceProvider.get_family_from_type(CloudProvider.gcp(), "n2-standard-2")
+    family = extract_family_from_instance_type(CloudProvider.gcp(), "n2-standard-2")
     assert family == GCP_STANDARD
-    family = CloudPipelineInstanceProvider.get_family_from_type(CloudProvider.gcp(), "n2-highcpu-2")
+    family = extract_family_from_instance_type(CloudProvider.gcp(), "n2-highcpu-2")
     assert family == GCP_HIGHCPU
-    family = CloudPipelineInstanceProvider.get_family_from_type(CloudProvider.gcp(), "custom-12-16")
+    family = extract_family_from_instance_type(CloudProvider.gcp(), "custom-12-16")
     assert family is None
 
 
 def test_azure_familes():
-    family = CloudPipelineInstanceProvider.get_family_from_type(CloudProvider.azure(), "Standard_B1ms")
+    family = extract_family_from_instance_type(CloudProvider.azure(), "Standard_B1ms")
     assert family == AZURE_BMS
-    family = CloudPipelineInstanceProvider.get_family_from_type(CloudProvider.azure(), "Standard_D2s_v3")
+    family = extract_family_from_instance_type(CloudProvider.azure(), "Standard_D2s_v3")
     assert family == AZURE_DSV
-    family = CloudPipelineInstanceProvider.get_family_from_type(CloudProvider.azure(), "Standard_D16s_v3")
+    family = extract_family_from_instance_type(CloudProvider.azure(), "Standard_D16s_v3")
     assert family == AZURE_DSV
 
