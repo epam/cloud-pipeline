@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import DocumentListPresentation from '../document-presentation/list';
 import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
+import SelectionInfo from './selection-info';
 import styles from '../search-results.css';
 
 @inject('preferences')
@@ -43,6 +44,14 @@ class SelectionPreview extends React.Component {
       .find(elasticItemUtilities.filterMatchingItemsFn(o))
     );
     return elasticItemUtilities.filterDownloadableItems(notRemoved, preferences);
+  }
+
+  get selectionInfo () {
+    return this.actualSelection.map(selection => ({
+      storageId: selection.parentId,
+      path: selection.path,
+      name: selection.name
+    }));
   }
 
   get notAllowedToDownload () {
@@ -191,6 +200,10 @@ class SelectionPreview extends React.Component {
               </div>
             ))
           }
+          <SelectionInfo
+            items={this.selectionInfo}
+            style={{marginTop: 10}}
+          />
         </div>
       </Modal>
     );
