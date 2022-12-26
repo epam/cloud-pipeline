@@ -916,7 +916,15 @@ export default class Folder extends localization.LocalizedReactComponent {
   createPipelineRequest = new CreatePipeline();
 
   createPipeline = async (opts = {}) => {
-    const {name, description, repository, token, visibility} = opts;
+    const {
+      name,
+      description,
+      repository,
+      token,
+      visibility,
+      codePath,
+      docsPath
+    } = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -925,7 +933,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       templateId: this.state.pipelineTemplate ? this.state.pipelineTemplate.id : undefined,
       repository: repository,
       repositoryToken: token,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     });
     hide();
     if (this.createPipelineRequest.error) {
@@ -1021,15 +1031,20 @@ export default class Folder extends localization.LocalizedReactComponent {
       name,
       description,
       token,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     } = values || {};
     const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
+    const pipelineId = this.state.editablePipeline.id;
     await this.updatePipelineRequest.send({
-      id: this.state.editablePipeline.id,
+      id: pipelineId,
       name: name,
       description: description,
       parentFolderId: this._currentFolder.folder.id,
-      visibility
+      visibility,
+      codePath,
+      docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
@@ -1046,7 +1061,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           message.error(this.updatePipelineTokenRequest.error, 5);
         } else {
           this.closeEditPipelineDialog();
-          await this.props.folder.fetch();
+          await Promise.all([
+            this.props.folder.fetch(),
+            this.props.pipelines.getPipeline(pipelineId).fetch()
+          ]);
           if (this.props.onReloadTree) {
             this.props.onReloadTree(!this._currentFolder.folder.parentId);
           }
