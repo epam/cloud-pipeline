@@ -809,35 +809,19 @@ class FacetedSearch extends React.Component {
   };
 
   renderControlsRow = () => {
-    const {
-      presentationMode,
-      userDocumentTypes = []
-    } = this.state;
-    if (!userDocumentTypes) {
-      return null;
-    }
-    if (userDocumentTypes.length === 0) {
-      return (
-        <div
-          className={classNames(styles.actions, 'cp-search-actions')}
-        >
-          <TogglePresentationMode
-            className={styles.togglePresentationMode}
-            onChange={this.onChangePresentationMode}
-            mode={presentationMode}
-            size="default"
-          />
-          {this.renderSortingControls()}
-          {this.renderExportButton()}
-        </div>
-      );
-    }
+    const {presentationMode} = this.state;
     return (
       <div
         className={classNames(styles.actions, 'cp-search-actions')}
       >
-        {this.renderExportButton()}
+        <TogglePresentationMode
+          className={styles.togglePresentationMode}
+          onChange={this.onChangePresentationMode}
+          mode={presentationMode}
+          size="default"
+        />
         {this.renderSortingControls()}
+        {this.renderExportButton()}
       </div>
     );
   };
@@ -926,7 +910,6 @@ class FacetedSearch extends React.Component {
     const {
       activeFilters,
       facetsLoaded,
-      presentationMode,
       query,
       selectedItems = [],
       userDocumentTypes = [],
@@ -1000,16 +983,6 @@ class FacetedSearch extends React.Component {
                 selection={(activeFilters || {})[DocumentTypeFilterName]}
                 onChange={this.onChangeFilter(DocumentTypeFilterName)}
                 onClearFilters={this.onClearFilters}
-              />
-            )
-          }
-          {
-            userDocumentTypes.length > 0 && (
-              <TogglePresentationMode
-                className={styles.togglePresentationMode}
-                onChange={this.onChangePresentationMode}
-                mode={presentationMode}
-                size="default"
               />
             )
           }
