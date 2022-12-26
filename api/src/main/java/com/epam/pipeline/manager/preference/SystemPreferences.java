@@ -310,9 +310,9 @@ public class SystemPreferences {
     public static final BooleanPreference GITLAB_HASHED_REPO_SUPPORT = new BooleanPreference(
             "git.gitlab.hashed.repo.support", false, GIT_GROUP, pass);
     public static final StringPreference GITLAB_DEFAULT_SRC_DIRECTORY = new StringPreference(
-            "gitlab.default.src.directory", "/src/", GIT_GROUP, pass);
+            "gitlab.default.src.directory", "src/", GIT_GROUP, pass);
     public static final StringPreference GITLAB_DEFAULT_DOC_DIRECTORY = new StringPreference(
-            "gitlab.default.doc.directory", "/docs/", GIT_GROUP, pass);
+            "gitlab.default.doc.directory", "docs/", GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_DEFAULT_SRC_DIRECTORY = new StringPreference(
             "bitbucket.default.src.directory", "/", GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
