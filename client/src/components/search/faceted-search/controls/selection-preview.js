@@ -26,7 +26,7 @@ import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import DocumentListPresentation from '../document-presentation/list';
 import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
-import SelectionInfo from './selection-info';
+import SelectionDownloadCommand from './selection-download-command';
 import styles from '../search-results.css';
 
 @inject('preferences')
@@ -34,7 +34,8 @@ import styles from '../search-results.css';
 class SelectionPreview extends React.Component {
   state = {
     selection: [],
-    removedItems: []
+    removedItems: [],
+    downloadCommandVisible: false
   };
 
   get actualSelection () {
@@ -105,6 +106,14 @@ class SelectionPreview extends React.Component {
     }
   };
 
+  openDownloadComandModal = () => {
+    this.setState({downloadCommandVisible: true});
+  };
+
+  closeDownloadComandModal = () => {
+    this.setState({downloadCommandVisible: false});
+  };
+
   render () {
     const {
       extraColumns = [],
@@ -113,7 +122,10 @@ class SelectionPreview extends React.Component {
       title = 'Selected documents',
       visible
     } = this.props;
-    const {selection = []} = this.state;
+    const {
+      selection = [],
+      downloadCommandVisible
+    } = this.state;
     const skipped = this.notAllowedToDownload.length;
     return (
       <Modal
@@ -136,6 +148,12 @@ class SelectionPreview extends React.Component {
               CANCEL
             </Button>
             <div>
+              <Button
+                style={{marginRight: 5}}
+                onClick={this.openDownloadComandModal}
+              >
+                GENERATE DOWNLOAD COMMAND
+              </Button>
               <Button
                 style={{
                   marginRight: 5
@@ -200,9 +218,11 @@ class SelectionPreview extends React.Component {
               </div>
             ))
           }
-          <SelectionInfo
+          <SelectionDownloadCommand
             items={this.selectionInfo}
             style={{marginTop: 10}}
+            visible={downloadCommandVisible}
+            onClose={this.closeDownloadComandModal}
           />
         </div>
       </Modal>

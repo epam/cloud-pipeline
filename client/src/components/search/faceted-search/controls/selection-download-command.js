@@ -18,8 +18,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Select} from 'antd';
+import {
+  Button,
+  Select,
+  Modal,
+  message
+} from 'antd';
 import BashCode from '../../../special/bash-code';
+import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
 import {getOS, OperationSystems} from '../../../../utils/OSDetection';
 
 const SELECTION_PLACEHOLDERS = [
@@ -39,7 +45,7 @@ const SELECTION_PLACEHOLDERS = [
 
 @inject('preferences', 'dataStorages')
 @observer
-class SelectionInfo extends React.Component {
+class SelectionDownloadCommand extends React.Component {
   state = {
     os: undefined
   };
@@ -206,34 +212,83 @@ class SelectionInfo extends React.Component {
     );
   };
 
+  onClose = () => {
+    const {onClose} = this.props;
+    onClose && onClose();
+  };
+
+  onCopy = () => {
+    copyTextToClipboard(this.code)
+      .then(() => {
+        message.info('Download command copied to clipboard', 3);
+      }).catch((error) => {
+        message.error(error.message, 3);
+      });
+  };
+
   render () {
     const currentConfiguration = this.getCurrentConfiguration();
-    const {style, items} = this.props;
+    const {
+      style,
+      items,
+      visible
+    } = this.props;
     if (!items || !items.length || !currentConfiguration) {
       return null;
     }
     return (
-      <div
-        style={style}
+      <Modal
+        visible={visible}
+        onCancel={this.onClose}
+        title="Generate download command"
+        width="50vw"
+        footer={(
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end'
+            }}
+          >
+            <Button
+              onClick={this.onCopy}
+            >
+              COPY TO CLIPBOARD
+            </Button>
+            <Button
+              onClick={this.onClose}
+            >
+              OK
+            </Button>
+          </div>
+        )}
       >
-        {
-          this.renderOperationSystemSelector()
-        }
-        <BashCode
-          code={this.code}
-        />
-      </div>
+        <div
+          style={style}
+        >
+          {
+            this.renderOperationSystemSelector()
+          }
+          <BashCode
+            code={this.code}
+            style={{maxHeight: '50vh', overflow: 'auto'}}
+          />
+        </div>
+      </Modal>
     );
   }
 }
 
-SelectionInfo.propTypes = {
+SelectionDownloadCommand.propTypes = {
   items: PropTypes.arrayOf(PropTypes.shape({
     storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     path: PropTypes.string,
     name: PropTypes.string
   })),
-  style: PropTypes.object
+  style: PropTypes.object,
+  visible: PropTypes.bool,
+  onClose: PropTypes.func
 };
 
-export default SelectionInfo;
+export default SelectionDownloadCommand;
