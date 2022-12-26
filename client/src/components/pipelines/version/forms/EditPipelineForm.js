@@ -32,10 +32,13 @@ import {
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
+import {RepositoryTypes} from '../../../special/git-repository-control';
+import EnabledPath from './enabled-path';
+import {getPipelineDefaultPaths} from './default-paths';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('dockerRegistries', 'pipelines')
+@inject('dockerRegistries', 'pipelines', 'preferences')
 @inject((stores, props) => {
   const {pipelines} = stores;
   const {pipeline} = props;
@@ -69,7 +72,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       locked: PropTypes.bool,
       repository: PropTypes.string,
       repositoryToken: PropTypes.string,
-      visibility: PropTypes.string
+      visibility: PropTypes.string,
+      codePath: PropTypes.string,
+      docsPath: PropTypes.string
     }),
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -89,6 +94,28 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       sm: {span: 18}
     }
   };
+
+  formItemStyle = {
+    marginBottom: 5
+  };
+
+  /**
+   * @returns {{docs: string, src: string}}
+   */
+  get pipelineDefaultPaths () {
+    const {
+      preferences,
+      pipeline
+    } = this.props;
+    let repositoryType = RepositoryTypes.GitLab;
+    if (pipeline) {
+      repositoryType = pipeline.repositoryType || RepositoryTypes.GitLab;
+    }
+    return getPipelineDefaultPaths(preferences)[repositoryType] || {
+      src: 'src',
+      docs: 'docs'
+    };
+  }
 
   @computed
   get latestConfigurationsTools () {
@@ -151,19 +178,23 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
 
   renderForm = () => {
     const {getFieldDecorator} = this.props.form;
+    const readOnly = !!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline);
     const formItems = [];
     formItems.push((
       <Form.Item
+        {...this.formItemLayout}
+        style={this.formItemStyle}
         key="pipeline name"
         className="edit-pipeline-form-name-container"
-        {...this.formItemLayout} label={`${this.localizedString('Pipeline')} name`}>
+        label={`${this.localizedString('Pipeline')} name`}
+      >
         {getFieldDecorator('name',
           {
             rules: [{required: true, message: `${this.localizedString('Pipeline')} name is required`}],
             initialValue: `${this.props.pipeline ? this.props.pipeline.name : ''}`
           })(
             <Input
-              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))}
+              disabled={this.props.pending || readOnly}
               onPressEnter={this.handleSubmit}
               ref={this.initializeNameInput} />
         )}
@@ -171,9 +202,12 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     ));
     formItems.push((
       <Form.Item
+        {...this.formItemLayout}
+        style={this.formItemStyle}
         key="pipeline description"
         className="edit-pipeline-form-description-container"
-        {...this.formItemLayout} label={`${this.localizedString('Pipeline')} description`}>
+        label={`${this.localizedString('Pipeline')} description`}
+      >
         {getFieldDecorator('description',
           {
             initialValue: `${this.props.pipeline && this.props.pipeline.description
@@ -182,13 +216,14 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             <Input
               type="textarea"
               autosize={{minRows: 2, maxRows: 6}}
-              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
+              disabled={this.props.pending || readOnly} />
         )}
       </Form.Item>
     ));
     formItems.push((
       <Form.Item
         {...this.formItemLayout}
+        style={this.formItemStyle}
         key="Visibility"
         className="edit-pipeline-form-visibility-container"
         label="Visibility"
@@ -215,7 +250,10 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         <Form.Item
           key="repository"
           className="edit-pipeline-form-repository-container"
-          {...this.formItemLayout} label="Repository">
+          {...this.formItemLayout}
+          style={this.formItemStyle}
+          label="Repository"
+        >
           {getFieldDecorator('repository',
             {
               initialValue: `${this.props.pipeline && this.props.pipeline.repository ? this.props.pipeline.repository : ''}`
@@ -230,13 +268,66 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         <Form.Item
           key="token"
           className="edit-pipeline-form-repository-container"
-          {...this.formItemLayout} label="Token">
+          {...this.formItemLayout}
+          style={this.formItemStyle}
+          label="Token"
+        >
           {getFieldDecorator('token', {
             initialValue: `${this.props.pipeline && this.props.pipeline.repositoryToken ? this.props.pipeline.repositoryToken : ''}`
           })(
             <Input
               onPressEnter={this.handleSubmit}
-              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
+              disabled={this.props.pending || readOnly} />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="codePath"
+          className="edit-pipeline-form-code-path-container"
+          {...this.formItemLayout}
+          style={this.formItemStyle}
+          label="Code path"
+        >
+          {getFieldDecorator('codePath',
+            {
+              initialValue: this.props.pipeline
+                ? this.props.pipeline.codePath
+                : this.pipelineDefaultPaths.src
+            })(
+            <EnabledPath
+              disabled={this.props.pending || readOnly}
+              defaultPathValue={
+                this.props.pipeline && this.props.pipeline.codePath
+                  ? this.props.pipeline.codePath
+                  : this.pipelineDefaultPaths.src
+              }
+            />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="docsPath"
+          className="edit-pipeline-form-docs-path-container"
+          {...this.formItemLayout}
+          style={this.formItemStyle}
+          label="Docs path"
+        >
+          {getFieldDecorator('docsPath',
+            {
+              initialValue: this.props.pipeline
+                ? this.props.pipeline.docsPath
+                : this.pipelineDefaultPaths.docs
+            })(
+            <EnabledPath
+              disabled={this.props.pending || readOnly}
+              defaultPathValue={
+                this.props.pipeline && this.props.pipeline.docsPath
+                  ? this.props.pipeline.docsPath
+                  : this.pipelineDefaultPaths.docs
+              }
+            />
           )}
         </Form.Item>
       ));
@@ -464,6 +555,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       }, 0);
     }
   };
+
+  componentDidMount () {
+    const {preferences} = this.props;
+    preferences.fetchIfNeededOrWait();
+  }
 
   componentDidUpdate (prevProps) {
     if (prevProps.visible !== this.props.visible) {
