@@ -16,8 +16,7 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
@@ -33,13 +32,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.entity.pipeline.Folder;
-import com.epam.pipeline.entity.pipeline.Pipeline;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class PipelineDaoTest extends AbstractSpringTest {
 

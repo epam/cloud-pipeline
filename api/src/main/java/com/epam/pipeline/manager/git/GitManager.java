@@ -184,13 +184,7 @@ public class GitManager {
      */
     public List<GitRepositoryEntry> getPipelineSources(Long id, String version, String path, boolean recursive)
             throws GitClientException {
-        Pipeline pipeline = pipelineManager.load(id);
-        try {
-            loadRevision(pipeline, version);
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new IllegalArgumentException(e.getMessage());
-        }
+        Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return this.getGitlabClientForPipeline(pipeline)
                 .getRepositoryContents(path, getRevisionName(version), recursive).stream()
                 .filter(e -> !e.getName().startsWith(".")).collect(Collectors.toList());
@@ -327,21 +321,22 @@ public class GitManager {
     }
 
     public GitCommitEntry createOrRenameFolder(Long id, PipelineSourceItemVO folderVO) throws GitClientException {
-        String folderName = FilenameUtils.getName(folderVO.getPath());
+        final String folderPath = GitUtils.withoutLeadingDelimiter(folderVO.getPath());
+        String folderName = FilenameUtils.getName(folderPath);
         Assert.isTrue(GitUtils.checkGitNaming(folderName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_FOLDER_NAME, folderName));
         Pipeline pipeline = pipelineManager.load(id, true);
         if (folderVO.getPreviousPath() == null) {
             // Previous path is missing: creating update
             return createFolder(pipeline,
-                    folderVO.getPath(),
+                    folderName,
                     folderVO.getLastCommitId(),
                     folderVO.getComment());
         } else {
             // else: renaming update
             return renameFolder(pipeline,
                     folderVO.getPreviousPath(),
-                    folderVO.getPath(),
+                    folderName,
                     folderVO.getLastCommitId(),
                     folderVO.getComment());
         }
@@ -441,7 +436,7 @@ public class GitManager {
 
     public GitCommitEntry modifyFile(Pipeline pipeline,
                                      PipelineSourceItemVO sourceItemVO) throws GitClientException {
-        String sourcePath = sourceItemVO.getPath();
+        final String sourcePath = GitUtils.withoutLeadingDelimiter(sourceItemVO.getPath());
         Arrays.stream(sourcePath.split(PATH_DELIMITER)).forEach(pathPart ->
             Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, sourcePath)));
@@ -454,7 +449,7 @@ public class GitManager {
         } else {
             return this.renameFile(pipeline,
                     sourcePath,
-                    sourceItemVO.getPreviousPath(),
+                    GitUtils.withoutLeadingDelimiter(sourceItemVO.getPreviousPath()),
                     sourceItemVO.getLastCommitId(),
                     sourceItemVO.getComment());
         }
@@ -516,7 +511,7 @@ public class GitManager {
             gitPushCommitEntry.setCommitMessage(sourceItemVOList.getComment());
         }
         for (PipelineSourceItemVO sourceItemVO : sourceItemVOList.getItems()) {
-            String sourcePath = sourceItemVO.getPath();
+            String sourcePath =  GitUtils.withoutLeadingDelimiter(sourceItemVO.getPath());
             Arrays.stream(sourcePath.split(PATH_DELIMITER)).forEach(pathPart ->
                     Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                             messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, sourcePath)));
