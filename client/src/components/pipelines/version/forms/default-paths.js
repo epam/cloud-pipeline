@@ -17,8 +17,8 @@
 import {RepositoryTypes} from '../../../special/git-repository-control';
 
 const defaultValues = {
-  [RepositoryTypes.GitLab]: {src: 'src', docs: 'docs'},
-  [RepositoryTypes.GitHub]: {src: 'src', docs: 'docs'},
+  [RepositoryTypes.GitLab]: {src: 'src/', docs: 'docs/'},
+  [RepositoryTypes.GitHub]: {src: 'src/', docs: 'docs/'},
   [RepositoryTypes.BitBucket]: {src: '/', docs: ''}
 };
 
