@@ -12,35 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import namedtuple
+
 import logging
 import os
+import psutil
 import re
+import shutil
 import subprocess
 import sys
-
-import psutil
+import tempfile
 
 from pipeline.api import PipelineAPI
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
+from scripts.generate_sge_profiles import PROFILE_QUEUE_FORMAT, PROFILE_AUTOSCALING_FORMAT, PROFILE_QUEUE_PATTERN
+
+Profile = namedtuple('Profile', 'name,path_queue,path_autoscaling')
 
 
 class SGEProfileConfigurationError(RuntimeError):
     pass
-
-
-class Queue:
-
-    def __init__(self, name, profile_path):
-        self._name = name
-        self._profile_path = profile_path
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def profile_path(self):
-        return self._profile_path
 
 
 def configure_sge_profiles_interactively():
@@ -59,9 +50,8 @@ def configure_sge_profiles_interactively():
     run_dir = os.getenv('RUN_DIR', default=os.path.join(runs_root, pipeline_name + '-' + run_id))
     common_repo_dir = os.getenv('COMMON_REPO_DIR', default=os.path.join(run_dir, 'CommonRepo'))
     cap_scripts_dir = os.getenv('CP_CAP_SCRIPTS_DIR', default='/common/cap_scripts')
-    sge_autoscale_script_path = os.path.join(common_repo_dir, 'scripts', 'autoscale_sge.py')
-    sge_profile_script_name_pattern = '^sge_profile_(.+)\\.sh$'
-    sge_profile_script_regexp = re.compile(sge_profile_script_name_pattern)
+    autoscaling_script_path = os.path.join(common_repo_dir, 'scripts', 'autoscale_sge.py')
+    queue_profile_regexp = re.compile(PROFILE_QUEUE_PATTERN)
 
     logging_formatter = logging.Formatter(logging_format)
 
@@ -85,69 +75,95 @@ def configure_sge_profiles_interactively():
 
     try:
         if parent_run_id:
-            logger.error('Please use the following node to configure grid engine profiles: '
-                         'pipeline-{}.'.format(parent_run_id))
+            logger.error('Grid Engine autoscaling profiles shall be configured from cluster parent run.\n'
+                         'Please use the following commands to configure grid engine autoscaling profiles:\n\n'
+                         'ssh root@pipeline-{}\n'
+                         'sge_configure'.format(parent_run_id))
             raise SGEProfileConfigurationError()
-
-        logger.debug('Initiating grid engine profiles configuration...')
-        editor = _select_editor(logger)
-        queues = list(_collect_queues(cap_scripts_dir, sge_profile_script_regexp, logger))
-        _reconfigure_queues(queues, editor, logger)
-        _restart_autoscalers(queues, sge_autoscale_script_path, logger)
+        logger.debug('Initiating grid engine autoscaling profiles configuration...')
+        editor = _find_editor(logger)
+        profiles = list(_collect_profiles(cap_scripts_dir, queue_profile_regexp, logger))
+        modified_profiles = list(_configure_profiles(profiles, editor, logger))
+        _restart_autoscalers(modified_profiles, autoscaling_script_path, logger)
     except SGEProfileConfigurationError:
         exit(1)
     except KeyboardInterrupt:
         logger.warning('Interrupted.')
 
 
-def _select_editor(logger):
-    logger.debug('Selecting editor...')
+def _find_editor(logger):
+    logger.debug('Searching for editor...')
     default_editor = os.getenv('VISUAL', os.getenv('EDITOR'))
     fallback_editors = ['nano', 'vi', 'vim']
     editors = [default_editor] + fallback_editors if default_editor else fallback_editors
     editor = None
     for potential_editor in editors:
-        exit_code = subprocess.call('command -v ' + potential_editor, shell=True)
-        if not exit_code:
+        try:
+            subprocess.check_output('command -v ' + potential_editor, shell=True, stderr=subprocess.STDOUT)
             editor = potential_editor
+            logger.debug('Editor {} has been found.'.format(editor))
             break
+        except subprocess.CalledProcessError as e:
+            logger.debug('Editor {} has not been found because {}.'
+                         .format(potential_editor, e.output or 'the tool is not installed'))
+
     if not editor:
-        logger.error('No available text editor has been found. '
-                     'Please install vi/vim/nano or set VISUAL/EDITOR environment variable. '
-                     'Exiting...')
+        logger.error('Grid Engine autoscaling profiles configuration requires a text editor to be installed locally.\n'
+                     'Please set VISUAL/EDITOR environment variable or install vi/vim/nano using one of the commands below.\n\n'
+                     'yum install -y nano\n'
+                     'apt-get install -y nano')
         raise SGEProfileConfigurationError()
-    logger.debug('Editor {} has been selected.'.format(editor))
     return editor
 
 
-def _collect_queues(cap_scripts_dir, sge_profile_script_regexp, logger):
-    logger.debug('Collecting existing queues...')
-    for sge_profile_script_name in os.listdir(cap_scripts_dir):
-        sge_profile_script_match = sge_profile_script_regexp.match(sge_profile_script_name)
-        if not sge_profile_script_match:
+def _collect_profiles(cap_scripts_dir, profile_regexp, logger):
+    logger.debug('Collecting existing profiles...')
+    for profile_name in os.listdir(cap_scripts_dir):
+        profile_match = profile_regexp.match(profile_name)
+        if not profile_match:
             continue
-        queue_name = sge_profile_script_match.group(1)
-        sge_profile_script_path = os.path.join(cap_scripts_dir, sge_profile_script_name)
-        yield Queue(name=queue_name, profile_path=sge_profile_script_path)
-        logger.debug('Queue {} has been collected.'.format(queue_name))
+        queue_name = profile_match.group(1)
+        logger.debug('Profile {} has been collected.'.format(queue_name))
+        yield Profile(name=queue_name,
+                      path_queue=os.path.join(cap_scripts_dir, PROFILE_QUEUE_FORMAT.format(queue_name)),
+                      path_autoscaling=os.path.join(cap_scripts_dir, PROFILE_AUTOSCALING_FORMAT.format(queue_name)))
 
 
-def _reconfigure_queues(queues, editor, logger):
-    for queue in queues:
-        logger.debug('Reconfiguring queue {} by editing {}...'.format(queue.name, queue.profile_path))
-        subprocess.check_call([editor, queue.profile_path])
-        logger.info('Queue {} has been reconfigured.'.format(queue.name))
+def _configure_profiles(profiles, editor, logger):
+    for profile in profiles:
+        tmp_profile_path = tempfile.mktemp()
+        logger.debug('Copying grid engine {} autoscaling profile to {}...'.format(profile.name, tmp_profile_path))
+        shutil.copy2(profile.path_autoscaling, tmp_profile_path)
+        logger.debug('Modifying temporary grid engine {} autoscaling profile...'.format(profile.name))
+        subprocess.check_call([editor, tmp_profile_path])
+        profile_changes = _compare_profiles(profile.name, profile.path_autoscaling, tmp_profile_path, logger)
+        if not profile_changes:
+            logger.info('Grid Engine {} autoscaling profile has not been changed.'.format(profile.name))
+            continue
+        logger.info('Grid Engine {} autoscaling profile has been changed:\n{}'.format(profile.name, profile_changes))
+        logger.debug('Persisting grid engine {} autoscaling profile changes...'.format(profile.name))
+        shutil.move(tmp_profile_path, profile.path_autoscaling)
+        yield profile
 
 
-def _restart_autoscalers(queues, sge_autoscale_script_path, logger):
-    for queue in queues:
-        _stop_autoscaler(queue, sge_autoscale_script_path, logger)
-        _launch_autoscaler(queue, sge_autoscale_script_path, logger)
+def _compare_profiles(profile_name, before_path, after_path, logger):
+    logger.debug('Extracting changes from grid engine {} autoscaling profile...'
+                 .format(profile_name, after_path))
+    try:
+        return subprocess.check_output(['diff', before_path, after_path], stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        return e.output
 
 
-def _stop_autoscaler(queue, sge_autoscale_script_path, logger):
-    logger.debug('Searching for {} autoscaler processes...'.format(queue.name))
-    for proc in _get_processes(logger, sge_autoscale_script_path, CP_CAP_SGE_QUEUE_NAME=queue.name):
+def _restart_autoscalers(profiles, autoscaling_script_path, logger):
+    for profile in profiles:
+        _stop_autoscaler(profile, autoscaling_script_path, logger)
+        _launch_autoscaler(profile, autoscaling_script_path, logger)
+
+
+def _stop_autoscaler(profile, autoscaling_script_path, logger):
+    logger.debug('Searching for {} autoscaler processes...'.format(profile.name))
+    for proc in _get_processes(logger, autoscaling_script_path, CP_CAP_SGE_QUEUE_NAME=profile.name):
         logger.debug('Stopping process #{}...'.format(proc.pid))
         proc.terminate()
 
@@ -167,17 +183,17 @@ def _get_processes(logger, *args, **kwargs):
             yield proc
 
 
-def _launch_autoscaler(queue, sge_autoscale_script_path, logger):
-    logger.debug('Launching queue {} sge autoscaler process...'.format(queue.name))
+def _launch_autoscaler(profile, autoscaling_script_path, logger):
+    logger.debug('Launching grid engine queue {} autoscaling...'.format(profile.name))
     subprocess.check_call("""
-source "{sge_profile_script_path}"
+source "{autoscaling_profile_path}"
 if check_cp_cap "CP_CAP_AUTOSCALE"; then
-    nohup "$CP_PYTHON2_PATH" "{sge_autoscale_script_path}" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
+    nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
 fi
-    """.format(sge_profile_script_path=queue.profile_path,
-               sge_autoscale_script_path=sge_autoscale_script_path),
+    """.format(autoscaling_profile_path=profile.path_queue,
+               autoscaling_script_path=autoscaling_script_path),
                           shell=True)
-    logger.info('Queue {} sge autoscaler process has been launched.'.format(queue.name))
+    logger.info('Grid Engine {} autoscaling has been launched.'.format(profile.name))
 
 
 if __name__ == '__main__':
