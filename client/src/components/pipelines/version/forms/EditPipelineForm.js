@@ -282,160 +282,180 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           )}
         </Form.Item>
       ));
-      if (this.state.editRepositorySettings) {
-        formItems.push((
-          <Form.Item
-            key="repositoryType"
-            className="edit-pipeline-form-repository-type-container"
-            {...this.formItemLayout}
-            style={this.formItemStyle}
-            label="Repository Type"
-          >
-            {getFieldDecorator('repositoryType',
-              {
-                initialValue: this.props.pipeline && this.props.pipeline.repositoryType
-                  ? this.props.pipeline.repositoryType
-                  : RepositoryTypes.GitLab
-              })(
-              <RepositoryTypeSelector
-                disabled={!!this.props.pipeline || this.props.pending}
-                onRepositoryTypeChanged={this.onRepositoryTypeChanged}
-              />
-            )}
-          </Form.Item>
-        ));
-        formItems.push((
-          <Form.Item
-            key="repository"
-            className="edit-pipeline-form-repository-container"
-            {...this.formItemLayout}
-            style={this.formItemStyle}
-            label="Repository"
-          >
-            {getFieldDecorator('repository',
-              {
-                initialValue: `${this.props.pipeline && this.props.pipeline.repository ? this.props.pipeline.repository : ''}`
-              })(
-              <Input
-                onPressEnter={this.handleSubmit}
-                disabled={!!this.props.pipeline || this.props.pending} />
-            )}
-          </Form.Item>
-        ));
-        formItems.push((
-          <Form.Item
-            key="branch"
-            className="edit-pipeline-form-branch-container"
-            {...this.formItemLayout}
-            style={this.formItemStyle}
-            label="Branch"
-          >
-            {getFieldDecorator('branch',
-              {
-                initialValue: this.props.pipeline && this.props.pipeline.branch
-                  ? this.props.pipeline.branch
-                  : undefined
-              })(
-              <Input
-                disabled={this.props.pending || readOnly}
-              />
-            )}
-          </Form.Item>
-        ));
-        formItems.push((
-          <Form.Item
-            key="token"
-            className="edit-pipeline-form-repository-container"
-            {...this.formItemLayout}
-            style={this.formItemStyle}
-            label="Token"
-          >
-            {getFieldDecorator('token', {
-              initialValue: `${this.props.pipeline && this.props.pipeline.repositoryToken ? this.props.pipeline.repositoryToken : ''}`
-            })(
-              <Input
-                onPressEnter={this.handleSubmit}
-                disabled={this.props.pending || readOnly} />
-            )}
-          </Form.Item>
-        ));
-        formItems.push((
-          <Form.Item
-            key="configurationPath"
-            className="edit-pipeline-form-configuration-path-container"
-            {...this.formItemLayout}
-            style={this.formItemStyle}
-            label="Configuration path"
-          >
-            {getFieldDecorator('configurationPath',
-              {
-                initialValue: this.props.pipeline && this.props.pipeline.configurationPath
-                  ? this.props.pipeline.configurationPath
-                  : undefined
-              })(
-              <Input
-                disabled={this.props.pending || readOnly}
-              />
-            )}
-          </Form.Item>
-        ));
-        formItems.push((
-          <Form.Item
-            key="codePath"
-            className="edit-pipeline-form-code-path-container"
-            {...this.formItemLayout}
-            style={this.formItemStyle}
-            label="Code path"
-          >
-            {getFieldDecorator('codePath',
-              {
-                initialValue: this.props.pipeline
-                  ? this.props.pipeline.codePath
-                  : this.pipelineDefaultPaths.src
-              })(
-              <EnabledPath
-                disabled={this.props.pending || readOnly}
-                defaultPathValue={
-                  this.props.pipeline && this.props.pipeline.codePath
-                    ? this.props.pipeline.codePath
-                    : this.pipelineDefaultPaths.src
-                }
-              />
-            )}
-          </Form.Item>
-        ));
-        formItems.push((
-          <Form.Item
-            key="docsPath"
-            className="edit-pipeline-form-docs-path-container"
-            {...this.formItemLayout}
-            style={this.formItemStyle}
-            label="Docs path"
-          >
-            {getFieldDecorator('docsPath',
-              {
-                initialValue: this.props.pipeline
-                  ? this.props.pipeline.docsPath
-                  : this.pipelineDefaultPaths.docs
-              })(
-              <EnabledPath
-                disabled={this.props.pending || readOnly}
-                defaultPathValue={
-                  this.props.pipeline && this.props.pipeline.docsPath
-                    ? this.props.pipeline.docsPath
-                    : this.pipelineDefaultPaths.docs
-                }
-              />
-            )}
-          </Form.Item>
-        ));
-      } else {
+      if (!this.state.editRepositorySettings) {
         formItems.push((
           <Row key="edit repository settings" style={{textAlign: 'right'}}>
             <a onClick={this.displayRepositorySettings}>Edit repository settings</a>
           </Row>
         ));
       }
+      formItems.push((
+        <Form.Item
+          key="repositoryType"
+          className="edit-pipeline-form-repository-type-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Repository Type"
+        >
+          {getFieldDecorator('repositoryType',
+            {
+              initialValue: this.props.pipeline && this.props.pipeline.repositoryType
+                ? this.props.pipeline.repositoryType
+                : RepositoryTypes.GitLab
+            })(
+            <RepositoryTypeSelector
+              disabled={!!this.props.pipeline || this.props.pending}
+              onRepositoryTypeChanged={this.onRepositoryTypeChanged}
+            />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="repository"
+          className="edit-pipeline-form-repository-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Repository"
+        >
+          {getFieldDecorator('repository',
+            {
+              initialValue: `${this.props.pipeline && this.props.pipeline.repository ? this.props.pipeline.repository : ''}`
+            })(
+            <Input
+              onPressEnter={this.handleSubmit}
+              disabled={!!this.props.pipeline || this.props.pending} />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="branch"
+          className="edit-pipeline-form-branch-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Branch"
+        >
+          {getFieldDecorator('branch',
+            {
+              initialValue: this.props.pipeline && this.props.pipeline.branch
+                ? this.props.pipeline.branch
+                : undefined
+            })(
+            <Input
+              disabled={this.props.pending || readOnly}
+            />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="token"
+          className="edit-pipeline-form-repository-token-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Token"
+        >
+          {getFieldDecorator('token', {
+            initialValue: `${this.props.pipeline && this.props.pipeline.repositoryToken ? this.props.pipeline.repositoryToken : ''}`
+          })(
+            <Input
+              onPressEnter={this.handleSubmit}
+              disabled={this.props.pending || readOnly} />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="configurationPath"
+          className="edit-pipeline-form-configuration-path-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Configuration path"
+        >
+          {getFieldDecorator('configurationPath',
+            {
+              initialValue: this.props.pipeline && this.props.pipeline.configurationPath
+                ? this.props.pipeline.configurationPath
+                : undefined
+            })(
+            <Input
+              disabled={this.props.pending || readOnly}
+            />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="codePath"
+          className="edit-pipeline-form-code-path-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Code path"
+        >
+          {getFieldDecorator('codePath',
+            {
+              initialValue: this.props.pipeline
+                ? this.props.pipeline.codePath
+                : this.pipelineDefaultPaths.src
+            })(
+            <EnabledPath
+              disabled={this.props.pending || readOnly}
+              defaultPathValue={
+                this.props.pipeline && this.props.pipeline.codePath
+                  ? this.props.pipeline.codePath
+                  : this.pipelineDefaultPaths.src
+              }
+            />
+          )}
+        </Form.Item>
+      ));
+      formItems.push((
+        <Form.Item
+          key="docsPath"
+          className="edit-pipeline-form-docs-path-container"
+          {...this.formItemLayout}
+          style={{
+            ...this.formItemStyle,
+            display: this.state.editRepositorySettings ? 'inherit' : 'none'
+          }}
+          label="Docs path"
+        >
+          {getFieldDecorator('docsPath',
+            {
+              initialValue: this.props.pipeline
+                ? this.props.pipeline.docsPath
+                : this.pipelineDefaultPaths.docs
+            })(
+            <EnabledPath
+              disabled={this.props.pending || readOnly}
+              defaultPathValue={
+                this.props.pipeline && this.props.pipeline.docsPath
+                  ? this.props.pipeline.docsPath
+                  : this.pipelineDefaultPaths.docs
+              }
+            />
+          )}
+        </Form.Item>
+      ));
     }
     return formItems;
   };
