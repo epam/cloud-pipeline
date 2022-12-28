@@ -15,11 +15,16 @@
 import logging
 import os
 import sys
-import traceback
 
 from pipeline.api import PipelineAPI
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
 from pipeline.utils.profile import suffix_non_unique, build_environment_profiles
+from scripts.autoscale_sge import GridEngineParameters
+
+PROFILE_QUEUE_FORMAT = 'sge_profile_{}_queue.sh'
+PROFILE_QUEUE_PATTERN = '^sge_profile_(.+)_queue\\.sh$'
+PROFILE_AUTOSCALING_FORMAT = 'sge_profile_{}_autoscaling.sh'
+PROFILE_AUTOSCALING_PATTERN = '^sge_profile_(.+)_autoscaling\\.sh$'
 
 
 def generate_sge_profiles():
@@ -56,21 +61,9 @@ def generate_sge_profiles():
     logger = LevelLogger(level=logging_level, inner=logger)
     logger = LocalLogger(inner=logger)
 
+    params = GridEngineParameters()
     profiles = _generate_profiles(default_queue_disabled, logger)
-    params = _get_parameters(logger)
-    _write_profiles(profiles, params, cap_scripts_dir, logger)
-
-
-def _get_parameters(logger):
-    try:
-        from scripts.autoscale_sge import GridEngineParameters
-        return GridEngineParameters().as_dict()
-    except KeyboardInterrupt:
-        raise
-    except Exception:
-        logger.warning('Grid engine parameter definitions retrieving has failed.')
-        logger.warning(traceback.format_exc())
-        return {}
+    _write_profiles(params, profiles, cap_scripts_dir, logger)
 
 
 def _generate_profiles(default_queue_disabled, logger):
@@ -127,7 +120,7 @@ def _merge_dicts(left, right):
     return profiles
 
 
-def _write_profiles(profiles, params, cap_scripts_dir, logger):
+def _write_profiles(params, profiles, cap_scripts_dir, logger):
     logger.debug('')
     logger.debug('Writing grid engine profile scripts...')
     for profile_index, profile in profiles.items():
@@ -137,34 +130,91 @@ def _write_profiles(profiles, params, cap_scripts_dir, logger):
             param_value = profile.get(param_name)
             logger.debug('{}={}'.format(param_name, param_value))
         profile_queue_name = profile.get('CP_CAP_SGE_QUEUE_NAME')
-        profile_script_name = 'sge_profile_{}.sh'.format(profile_queue_name)
-        profile_script_path = os.path.join(cap_scripts_dir, profile_script_name)
-        with open(profile_script_path, 'w') as f:
-            f.write("""# Grid Engine {} queue profile.
+        queue_profile_name = PROFILE_QUEUE_FORMAT.format(profile_queue_name)
+        queue_profile_path = os.path.join(cap_scripts_dir, queue_profile_name)
+        autoscaling_profile_name = PROFILE_AUTOSCALING_FORMAT.format(profile_queue_name)
+        autoscaling_profile_path = os.path.join(cap_scripts_dir, autoscaling_profile_name)
+        _write_queue_profile(profile, profile_queue_name, params,
+                             queue_profile_path, autoscaling_profile_path)
+        _write_autoscaling_profile(profile, profile_queue_name, params,
+                                   queue_profile_path, autoscaling_profile_path)
+
+
+def _write_autoscaling_profile(profile, profile_queue_name, params,
+                               queue_profile_path, autoscaling_profile_path):
+    with open(autoscaling_profile_path, 'w') as f:
+        f.write("""# Grid Engine {queue_name} autoscaling profile.
 #
-# Please use this configuration file to modify
+# Please use this configuration file to dynamically modify
 # the corresponding grid engine queue's autoscaling.
 #
-# Below you can find all the available configuration parameters.
-# Change already existing parameters or configure additional ones
-# by uncommenting the corresponding lines and setting proper values.
+# The autoscaling process restarts only if some configuration parameters change.
+# Otherwise autoscaling proceeds the same.
+#
+# Notice that all existing additional workers are not affected
+# and not yet initialized additional workers may be stopped.
+#
+# Below there is a list of all the available configuration parameters.
+# You can change already configured parameter values or
+# uncomment additional ones and set their values.
+#
+#
+# See also
+# {queue_profile_path}
+# {autoscaling_profile_path}
 
-""".format(profile_queue_name))
-            for param_name in sorted(params):
-                param = params.get(param_name)
-                param_help = param.help
-                param_value = profile.get(param_name)
-                if param_help:
-                    f.write('# ' + param_help.replace('\n', '\n# ') + '\n')
-                if param_value:
-                    f.write('export {}="{}"\n\n'.format(param_name, param_value))
-                else:
-                    f.write('# export {}=""\n\n'.format(param_name))
-            for param_name in sorted(profile):
-                if param_name in params:
-                    continue
-                param_value = profile.get(param_name)
-                f.write('export {}="{}"\n'.format(param_name, param_value))
+""".format(queue_name=profile_queue_name,
+           queue_profile_path=queue_profile_path,
+           autoscaling_profile_path=autoscaling_profile_path))
+        for param in params.autoscaling.as_list():
+            param_value = profile.get(param.name)
+            if param.help:
+                f.write('# ' + param.help.replace('\n', '\n# ') + '\n')
+            if param_value:
+                f.write('export {}="{}"\n\n'.format(param.name, param_value))
+            else:
+                f.write('# export {}=""\n\n'.format(param.name))
+
+
+def _write_queue_profile(profile, profile_queue_name, params,
+                         queue_profile_path, autoscaling_profile_path):
+    with open(queue_profile_path, 'w') as f:
+        f.write("""# Grid Engine {queue_name} queue profile.
+#
+# This configuration file contains grid engine queue configuration.
+# It cannot be used to dynamically modify grid engine queue.
+#
+# In order to dynamically modify grid engine queue's autoscaling
+# use the following command:
+#
+#     sge_configure
+#
+#
+# See also
+# {queue_profile_path}
+# {autoscaling_profile_path}
+
+""".format(queue_name=profile_queue_name,
+           queue_profile_path=queue_profile_path,
+           autoscaling_profile_path=autoscaling_profile_path))
+        for param in params.queue.as_list():
+            param_value = profile.get(param.name)
+            if param.help:
+                f.write('# ' + param.help.replace('\n', '\n# ') + '\n')
+            if param_value:
+                f.write('export {}="{}"\n\n'.format(param.name, param_value))
+            else:
+                f.write('# export {}=""\n\n'.format(param.name))
+        queue_params = params.queue.as_dict()
+        autoscaling_params = params.autoscaling.as_dict()
+        for param_name in sorted(profile):
+            if param_name in queue_params or param_name in autoscaling_params:
+                continue
+            param_value = profile.get(param_name)
+            f.write('export {}="{}"\n'.format(param_name, param_value))
+        f.write("""
+. {autoscaling_profile_path}
+""".format(autoscaling_profile_path=autoscaling_profile_path))
 
 
 if __name__ == '__main__':
