@@ -42,7 +42,25 @@ GridEngineParameter = namedtuple('GridEngineParameter', 'name,help')
 KubernetesPod = namedtuple('KubernetesPod', 'ip,name')
 
 
-class GridEngineParameters:
+class GridEngineParametersGroup:
+
+    def as_list(self):
+        return list(self.as_gen())
+
+    def as_dict(self):
+        return {attr.name: attr for attr in self.as_gen()}
+
+    def as_gen(self):
+        for attr_name in sorted(dir(self)):
+            if attr_name.startswith('__'):
+                continue
+            attr = getattr(self, attr_name)
+            if not isinstance(attr, GridEngineParameter):
+                continue
+            yield attr
+
+
+class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
 
     def __init__(self):
         self.autoscale = GridEngineParameter(
@@ -51,13 +69,6 @@ class GridEngineParameters:
         self.autoscaling_hosts_number = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_WORKERS',
             help='Specifies a maximum number of autoscaling workers.')
-        self.instance_cloud_provider = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_CLOUD_PROVIDER',
-            help='Specifies worker cloud provider.\n'
-                 'Allowed values: AWS, GCP and AZURE.')
-        self.instance_region_id = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_CLOUD_REGION_ID',
-            help='Specifies cloud region id.')
         self.instance_type = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_TYPE',
             help='Specifies worker instance type.')
@@ -69,14 +80,10 @@ class GridEngineParameters:
             help='Specifies worker docker image.')
         self.price_type = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_PRICE_TYPE',
-            help='Specifies worker price type')
+            help='Specifies worker price type.')
         self.cmd_template = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_CMD_TEMPLATE',
             help='Specifies worker cmd template.')
-        self.instance_owner_param = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME',
-            help='Specifies worker parameter name which is used to specify an owner of a worker.\n'
-                 'The parameter is used to bill specific users rather than a cluster owner.')
         self.hybrid_autoscale = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_HYBRID',
             help='Enables hybrid autoscaling.')
@@ -115,12 +122,44 @@ class GridEngineParameters:
         self.scale_up_unavailability_delay = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_DELAY',
             help='Specifies a delay in seconds to temporary avoid unavailable instance types usage.\n'
-                 'An instance type is considered unavailable if cloud region lacks such instances at the moment.\n'
-                 'The parameter has effect only if hybrid autoscaling is used.')
+                 'An instance type is considered unavailable if cloud region lacks such instances at the moment.')
         self.scale_down_idle_timeout = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_IDLE_TIMEOUT',
             help='Specifies a timeout in seconds after which an inactive worker is considered idled.\n'
                  'If an autoscaling worker is idle then it is scaled down.')
+        self.log_dir = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_LOGDIR',
+            help='Specifies logging directory.')
+        self.log_verbose = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_VERBOSE',
+            help='Enables verbose logging.')
+
+
+class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
+
+    def __init__(self):
+        self.instance_cloud_provider = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_CLOUD_PROVIDER',
+            help='Specifies worker cloud provider.\n'
+                 'Allowed values: AWS, GCP and AZURE.')
+        self.instance_region_id = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_CLOUD_REGION_ID',
+            help='Specifies cloud region id.')
+        self.instance_owner_param = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME',
+            help='Specifies worker parameter name which is used to specify an owner of a worker.\n'
+                 'The parameter is used to bill specific users rather than a cluster owner.')
+        self.work_dir = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_WORKDIR',
+            help='Specifies autoscaler working directory.')
+        self.log_task = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_TASK',
+            help='Specifies logging task.')
+
+
+class GridEngineQueueParameters(GridEngineParametersGroup):
+
+    def __init__(self):
         self.queue_name = GridEngineParameter(
             name='CP_CAP_SGE_QUEUE_NAME',
             help='Specifies a name of a queue which is going to be autoscaled.')
@@ -141,30 +180,20 @@ class GridEngineParameters:
         self.master_cores = GridEngineParameter(
             name='CP_CAP_SGE_MASTER_CORES',
             help='Specifies a number of available cores on a cluster manager.')
-        self.work_dir = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_WORKDIR',
-            help='Specifies autoscaler working directory.')
-        self.log_dir = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_LOGDIR',
-            help='Specifies logging directory.')
-        self.log_task = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_TASK',
-            help='Specifies logging task.')
-        self.log_verbose = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_VERBOSE',
-            help='Enables verbose logging')
 
-    def as_dict(self):
-        return {attr.name: attr for attr in self._as_gen()}
 
-    def _as_gen(self):
-        for attr_name in dir(self):
-            if attr_name.startswith('__'):
-                continue
-            attr = getattr(self, attr_name)
-            if not isinstance(attr, GridEngineParameter):
-                continue
-            yield attr
+class GridEngineParameters(GridEngineParametersGroup):
+
+    def __init__(self):
+        self.autoscaling = GridEngineAutoscalingParametersGroup()
+        self.autoscaling_advanced = GridEngineAdvancedAutoscalingParametersGroup()
+        self.queue = GridEngineQueueParameters()
+
+    def as_gen(self):
+        attrs = itertools.chain(self.autoscaling.as_gen(),
+                                self.autoscaling_advanced.as_gen(),
+                                self.queue.as_gen())
+        return sorted(attrs, key=lambda attr: attr.name)
 
 
 def synchronized(func):
@@ -2038,43 +2067,43 @@ def main():
 
     static_hosts_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
     static_hosts_number = int(os.getenv('node_count', 0))
-    autoscaling_hosts_number = int(os.getenv(params.autoscaling_hosts_number.name, 3))
+    autoscaling_hosts_number = int(os.getenv(params.autoscaling.autoscaling_hosts_number.name, 3))
 
-    instance_cloud_provider = CloudProvider(os.getenv(params.instance_cloud_provider.name, os.environ['CLOUD_PROVIDER']))
-    instance_region_id = os.getenv(params.instance_region_id.name, os.environ['CLOUD_REGION_ID'])
-    instance_type = os.getenv(params.instance_type.name, os.environ['instance_size'])
-    instance_disk = os.getenv(params.instance_disk.name, os.environ['instance_disk'])
-    instance_image = os.getenv(params.instance_image.name, os.environ['docker_image'])
-    instance_price_type = os.getenv(params.price_type.name, os.environ['price_type'])
-    instance_cmd_template = os.getenv(params.cmd_template.name, 'sleep infinity')
-    instance_owner_param = os.getenv(params.instance_owner_param.name, 'CP_CAP_AUTOSCALE_OWNER')
+    instance_cloud_provider = CloudProvider(os.getenv(params.autoscaling_advanced.instance_cloud_provider.name, os.environ['CLOUD_PROVIDER']))
+    instance_region_id = os.getenv(params.autoscaling_advanced.instance_region_id.name, os.environ['CLOUD_REGION_ID'])
+    instance_type = os.getenv(params.autoscaling.instance_type.name, os.environ['instance_size'])
+    instance_disk = os.getenv(params.autoscaling.instance_disk.name, os.environ['instance_disk'])
+    instance_image = os.getenv(params.autoscaling.instance_image.name, os.environ['docker_image'])
+    instance_price_type = os.getenv(params.autoscaling.price_type.name, os.environ['price_type'])
+    instance_cmd_template = os.getenv(params.autoscaling.cmd_template.name, 'sleep infinity')
+    instance_owner_param = os.getenv(params.autoscaling_advanced.instance_owner_param.name, 'CP_CAP_AUTOSCALE_OWNER')
 
-    hybrid_autoscale = os.getenv(params.hybrid_autoscale.name, 'false').strip().lower() == 'true'
-    hybrid_instance_cores = int(os.getenv(params.hybrid_instance_cores.name, 0))
-    hybrid_instance_family = os.getenv(params.hybrid_instance_family.name,
+    hybrid_autoscale = os.getenv(params.autoscaling.hybrid_autoscale.name, 'false').strip().lower() == 'true'
+    hybrid_instance_cores = int(os.getenv(params.autoscaling.hybrid_instance_cores.name, 0))
+    hybrid_instance_family = os.getenv(params.autoscaling.hybrid_instance_family.name,
                                        extract_family_from_instance_type(instance_cloud_provider, instance_type))
-    descending_autoscale = os.getenv(params.descending_autoscale.name, 'true').strip().lower() == 'true'
+    descending_autoscale = os.getenv(params.autoscaling.descending_autoscale.name, 'true').strip().lower() == 'true'
 
-    scale_up_strategy = os.getenv(params.scale_up_strategy.name, 'cpu-capacity')
-    scale_up_batch_size = int(os.getenv(params.scale_up_batch_size.name, 1))
-    scale_up_polling_delay = int(os.getenv(params.scale_up_polling_delay.name, 10))
-    scale_up_unavailability_delay = int(os.getenv(params.scale_up_unavailability_delay.name, 1800))
+    scale_up_strategy = os.getenv(params.autoscaling.scale_up_strategy.name, 'cpu-capacity')
+    scale_up_batch_size = int(os.getenv(params.autoscaling.scale_up_batch_size.name, 1))
+    scale_up_polling_delay = int(os.getenv(params.autoscaling.scale_up_polling_delay.name, 10))
+    scale_up_unavailability_delay = int(os.getenv(params.autoscaling.scale_up_unavailability_delay.name, 1800))
 
-    scale_down_idle_timeout = int(os.getenv(params.scale_down_idle_timeout.name, 30))
+    scale_down_idle_timeout = int(os.getenv(params.autoscaling.scale_down_idle_timeout.name, 30))
 
-    queue_name = os.getenv(params.queue_name.name, 'main.q')
+    queue_name = os.getenv(params.queue.queue_name.name, 'main.q')
     queue_name_short = (queue_name if not queue_name.endswith('.q') else queue_name[:-2])
-    queue_static = os.getenv(params.queue_static.name, 'false').strip().lower() == 'true'
-    queue_default = os.getenv(params.queue_default.name, 'false').strip().lower() == 'true'
-    hostlist_name = os.getenv(params.hostlist_name.name, '@allhosts')
-    hosts_free_cores = int(os.getenv(params.hosts_free_cores.name, 0))
-    master_cores = int(os.getenv(params.master_cores.name, static_hosts_cores))
+    queue_static = os.getenv(params.queue.queue_static.name, 'false').strip().lower() == 'true'
+    queue_default = os.getenv(params.queue.queue_default.name, 'false').strip().lower() == 'true'
+    hostlist_name = os.getenv(params.queue.hostlist_name.name, '@allhosts')
+    hosts_free_cores = int(os.getenv(params.queue.hosts_free_cores.name, 0))
+    master_cores = int(os.getenv(params.queue.master_cores.name, static_hosts_cores))
     master_cores = master_cores - hosts_free_cores if master_cores - hosts_free_cores > 0 else master_cores
 
-    work_dir = os.getenv(params.work_dir.name, os.getenv('TMP_DIR', '/tmp'))
-    log_dir = os.getenv(params.log_dir.name, os.getenv('LOG_DIR', '/var/log'))
-    log_task = os.getenv(params.log_task.name, 'GridEngineAutoscaling-%s' % queue_name_short)
-    log_verbose = os.getenv(params.log_verbose.name, 'false').strip().lower() == 'true'
+    work_dir = os.getenv(params.autoscaling_advanced.work_dir.name, os.getenv('TMP_DIR', '/tmp'))
+    log_dir = os.getenv(params.autoscaling.log_dir.name, os.getenv('LOG_DIR', '/var/log'))
+    log_task = os.getenv(params.autoscaling_advanced.log_task.name, 'GridEngineAutoscaling-%s' % queue_name_short)
+    log_verbose = os.getenv(params.autoscaling.log_verbose.name, 'false').strip().lower() == 'true'
 
     Logger.init(log_file=os.path.join(log_dir, '.autoscaler.%s.log' % queue_name),
                 task=log_task, verbose=log_verbose)
