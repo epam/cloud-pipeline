@@ -43,6 +43,11 @@ function isMainColumn (columnKey) {
   return DocumentColumns.find((column) => column.key === columnKey);
 }
 
+const GROUPS = {
+  main: 'main',
+  other: 'other'
+};
+
 class ExportConfigurationModal extends React.Component {
   state = {
     configuration: [],
@@ -60,6 +65,16 @@ class ExportConfigurationModal extends React.Component {
     ) {
       this.updateDefaultConfiguration();
     }
+  }
+
+  get groupedColumns () {
+    const {
+      columns = []
+    } = this.props;
+    return {
+      [GROUPS.main]: columns.filter((column) => isMainColumn(column.key)),
+      [GROUPS.other]: columns.filter((column) => !isMainColumn(column.key))
+    };
   }
 
   updateDefaultConfiguration = () => {
@@ -89,7 +104,7 @@ class ExportConfigurationModal extends React.Component {
   columnSelected = (columnKey) => {
     const {configuration = []} = this.state;
     return configuration.includes(columnKey);
-  }
+  };
 
   changeColumnSelection = (columnKey, selected) => {
     let columnIsSelected = selected;
@@ -147,6 +162,41 @@ class ExportConfigurationModal extends React.Component {
     });
   }
 
+  onToggleGroupSelection = (event, group, selectAll) => {
+    const {configuration} = this.state;
+    if (!this.groupedColumns[group]) {
+      return;
+    }
+    const groupKeys = this.groupedColumns[group].map((column) => column.key);
+    event && event.stopPropagation();
+    if (selectAll) {
+      return this.setState({
+        configuration: [...new Set([...configuration, ...groupKeys])]
+      });
+    }
+    return this.setState({
+      configuration: configuration.filter(key => !groupKeys.includes(key))
+    });
+  };
+
+  renderCollapseHeader = (title, group) => {
+    const allGroupSelected = !this.groupedColumns[group]
+      .some(column => !this.columnSelected(column.key));
+    const hasSelection = this.groupedColumns[group]
+      .some(column => this.columnSelected(column.key));
+    return (
+      <div>
+        <Checkbox
+          checked={allGroupSelected}
+          indeterminate={!allGroupSelected && hasSelection}
+          onClick={evt => this.onToggleGroupSelection(evt, group, !allGroupSelected)}
+          style={{margin: '0 7px 0 3px'}}
+        />
+        {title}
+      </div>
+    );
+  };
+
   render () {
     const {
       visible,
@@ -157,8 +207,6 @@ class ExportConfigurationModal extends React.Component {
       configuration = [],
       expanded = ['main']
     } = this.state;
-    const mainColumns = columns.filter((column) => isMainColumn(column.key));
-    const otherColumns = columns.filter((column) => !isMainColumn(column.key));
     const allSelected = columns.length > 0 &&
       !columns.some((column) => !this.columnSelected(column.key));
     const selectedCount = columns.filter((column) => this.columnSelected(column.key)).length;
@@ -211,17 +259,17 @@ class ExportConfigurationModal extends React.Component {
         >
           <Collapse.Panel
             key="main"
-            header="Main columns"
+            header={this.renderCollapseHeader('Main columns', GROUPS.main)}
           >
-            {this.renderColumnsList(mainColumns)}
+            {this.renderColumnsList(this.groupedColumns.main)}
           </Collapse.Panel>
           {
-            otherColumns.length > 0 && (
+            this.groupedColumns.other.length > 0 && (
               <Collapse.Panel
                 key="other"
-                header="Other columns"
+                header={this.renderCollapseHeader('Other columns', GROUPS.other)}
               >
-                {this.renderColumnsList(otherColumns)}
+                {this.renderColumnsList(this.groupedColumns.other)}
               </Collapse.Panel>
             )
           }
