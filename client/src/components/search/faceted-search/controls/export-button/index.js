@@ -115,6 +115,7 @@ class ExportButton extends React.Component {
     const hide = message.loading('Exporting...', 0);
     await setStateAwaited({pending: true});
     const {
+      advanced,
       columns = [],
       query = '*',
       filters = {},
@@ -137,7 +138,7 @@ class ExportButton extends React.Component {
         csvFileName: 'export.csv',
         facetedSearchExportVO,
         facetedSearchRequest: {
-          query,
+          query: advanced ? query : `*${query}*`,
           filters,
           sorts: getSortingPayload(sorting),
           metadataFields,
@@ -220,6 +221,7 @@ ExportButton.propTypes = {
     key: PropTypes.string,
     name: PropTypes.string
   })),
+  advanced: PropTypes.bool,
   query: PropTypes.string,
   filters: PropTypes.object,
   sorting: PropTypes.array,

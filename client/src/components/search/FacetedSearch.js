@@ -713,6 +713,7 @@ class FacetedSearch extends React.Component {
 
   renderExportButton = () => {
     const {
+      advancedSearchMode,
       activeFilters,
       query,
       userDocumentTypes = [],
@@ -724,6 +725,7 @@ class FacetedSearch extends React.Component {
         className={styles.exportButton}
         size="default"
         columns={this.columns}
+        advanced={advancedSearchMode}
         query={query}
         filters={{
           ...(activeFilters || {}),
