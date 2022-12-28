@@ -200,7 +200,7 @@ class SharingControl extends React.Component {
           <b>Share</b> selected
         </MenuItem>
       );
-    const skipDownloadCount = this.shareableItems.length - this.downloadableItems.length;
+    const skipDownloadCount = this.items.length - this.downloadableItems.length;
     return (
       <RcMenu
         onClick={this.handleMenuClick}
