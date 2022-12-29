@@ -57,9 +57,12 @@ import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
 import impersonation from '../../models/user/impersonation';
-import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
+import CurrentUserAttributes, {
+  CURRENT_USER_ATTRIBUTES_STORE
+} from '../../utils/current-user-attributes';
 import CloudPipelineThemes from '../../themes';
 import multiZoneManager from '../../utils/multizone';
+import ApplicationInfo from '../../models/utils/application-info';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -90,6 +93,8 @@ const currentUserAttributes = new CurrentUserAttributes(
   dataStorageAvailable
 );
 
+const applicationInfo = new ApplicationInfo();
+
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
 (() => { return allowedInstanceTypes.fetchIfNeededOrWait(); })();
@@ -98,6 +103,7 @@ const currentUserAttributes = new CurrentUserAttributes(
 (() => { return spotToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
+(() => { return applicationInfo.fetchIfNeededOrWait(); })();
 
 const themes = new CloudPipelineThemes();
 
@@ -149,7 +155,8 @@ const Root = () =>
       cloudCredentialProfiles,
       [HiddenObjects.injectionName]: hiddenObjects,
       themes,
-      multiZoneManager
+      multiZoneManager,
+      applicationInfo
     }}>
     <AppRouter />
   </Provider>;
