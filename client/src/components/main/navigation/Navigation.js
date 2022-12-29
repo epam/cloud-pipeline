@@ -19,8 +19,8 @@ import {Link} from 'react-router';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import classNames from 'classnames';
-import {SERVER, VERSION} from '../../../config';
-import {Button, Icon, message, Popover, Row, Tooltip} from 'antd';
+import {SERVER} from '../../../config';
+import {Button, Icon, message, Popover, Tooltip} from 'antd';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import RunsCounterMenuItem from './RunsCounterMenuItem';
@@ -29,6 +29,7 @@ import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
 import {Pages} from '../../../utils/ui-navigation';
 import invalidateEdgeTokens from '../../../utils/invalidate-edge-tokens';
+import ApplicationVersion from './application-version';
 
 @inject('uiNavigation', 'impersonation')
 @observer
@@ -252,32 +253,22 @@ export default class Navigation extends React.Component {
             )
           }
         >
-          {
-            VERSION &&
-            <Popover
-              content={
-                <Row>
-                  <Row>
-                    <b>{this.props.deploymentName || 'EPAM Cloud Pipeline'}</b>
-                  </Row>
-                  <Row>
-                    <b>Version:</b> {VERSION}
-                  </Row>
-                </Row>
-              }
-              placement="right"
-              trigger="click"
-              onVisibleChange={this.handleVersionInfoVisible}
-              visible={this.state.versionInfoVisible}>
-              <Button
-                id="navigation-button-logo"
-                className="cp-navigation-menu-item">
-                <div className="cp-navigation-item-logo">
-                  {'\u00A0'}
-                </div>
-              </Button>
-            </Popover>
-          }
+          <Popover
+            content={
+              <ApplicationVersion />
+            }
+            placement="right"
+            trigger="click"
+            onVisibleChange={this.handleVersionInfoVisible}
+            visible={this.state.versionInfoVisible}>
+            <Button
+              id="navigation-button-logo"
+              className="cp-navigation-menu-item">
+              <div className="cp-navigation-item-logo">
+                {'\u00A0'}
+              </div>
+            </Button>
+          </Popover>
           {menuItems}
           <SupportMenu
             itemClassName="cp-navigation-menu-item"

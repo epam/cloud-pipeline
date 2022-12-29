@@ -60,8 +60,11 @@ import multiZoneManager from '../../utils/multizone';
 import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
-import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
+import CurrentUserAttributes, {
+  CURRENT_USER_ATTRIBUTES_STORE
+} from '../../utils/current-user-attributes';
 import CloudPipelineThemes from '../../themes';
+import ApplicationInfo from '../../models/utils/application-info';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -96,6 +99,8 @@ const currentUserAttributes = new CurrentUserAttributes(
   dataStorageAvailable
 );
 
+const applicationInfo = new ApplicationInfo();
+
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
 (() => { return allowedInstanceTypes.fetchIfNeededOrWait(); })();
@@ -104,6 +109,7 @@ const currentUserAttributes = new CurrentUserAttributes(
 (() => { return spotToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
+(() => { return applicationInfo.fetchIfNeededOrWait(); })();
 
 const themes = new CloudPipelineThemes();
 
@@ -157,7 +163,8 @@ const Root = () =>
       multiZoneManager,
       uiNavigation,
       vsActions,
-      themes
+      themes,
+      applicationInfo
     }}>
     <AppRouter />
   </Provider>;
