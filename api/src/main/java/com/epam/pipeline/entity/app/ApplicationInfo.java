@@ -24,10 +24,12 @@ import java.util.Map;
 public class ApplicationInfo {
 
     private final String version;
+    private final String prettyName;
     private final Map<String, String> components;
 
-    public ApplicationInfo(final Map<String, String> components) {
+    public ApplicationInfo(final Map<String, String> components, final String prettyName) {
         this.version = getClass().getPackage().getImplementationVersion();
+        this.prettyName = prettyName;
         this.components = components;
     }
 }
