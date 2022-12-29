@@ -33,3 +33,11 @@ def parse_timestamp(timestamp_string):
 
 def parse_date(date_string):
     return datetime.datetime.strptime(date_string, ISO_DATE_FORMAT).date()
+
+
+def current_date_string():
+    return datetime.datetime.now().date().strftime(ISO_DATE_FORMAT)
+
+
+def is_date_before_now(date):
+    return date <= datetime.datetime.now().date()
