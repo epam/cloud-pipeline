@@ -24,7 +24,8 @@ import {
   Input,
   Dropdown,
   Menu,
-  message
+  message,
+  Tabs
 } from 'antd';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
@@ -58,6 +59,18 @@ import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 import downloadStorageItems from '../special/download-storage-items';
 
+function getDomainKey (domain) {
+  return `domain-${domain || ''}`;
+}
+
+function parseDomainKey (key) {
+  const [, domain] = (key || '').match(/^domain-(.*)$/i);
+  if (domain && domain.length) {
+    return domain;
+  }
+  return undefined;
+}
+
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
 @inject((stores, props) => {
   const {location = {}} = props || {};
@@ -80,6 +93,9 @@ class FacetedSearch extends React.Component {
     pending: false,
     facetsLoaded: false,
     facets: [],
+    domain: undefined,
+    createOtherDomain: false,
+    otherDomainName: 'Other',
     error: undefined,
     facetsCount: {},
     documents: [],
@@ -184,6 +200,7 @@ class FacetedSearch extends React.Component {
       )
       .map(d => ({
         name: d.name,
+        domain: d.domain,
         values: d.values
           .map(v => ({name: v, count: facetsCount[d.name][v] || 0}))
           .sort((a, b) => b.count - a.count)
@@ -196,6 +213,33 @@ class FacetedSearch extends React.Component {
             )
           )
       }));
+  }
+
+  get filterDomains () {
+    const {
+      createOtherDomain
+    } = this.state;
+    const filters = this.filters.filter((f) => f.name !== DocumentTypeFilterName);
+    const domains = [...new Set(filters.map((filter) => filter.domain).concat(undefined))]
+      .sort((a, b) => {
+        if (!a) {
+          return 1;
+        }
+        if (!b) {
+          return -1;
+        }
+        return a.localeCompare(b);
+      });
+    return domains
+      .map((domain) => ({
+        domain,
+        enabled: filters
+          .filter((f) => f.domain === domain)
+          .some((f) => f.values.length > 0)
+      }))
+      .filter((domain) => domain.enabled)
+      .map(domain => domain.domain)
+      .filter(domain => domain || createOtherDomain);
   }
 
   get filteredSortingFields () {
@@ -308,6 +352,11 @@ class FacetedSearch extends React.Component {
     if (window.AbortController) {
       this.abortController = new AbortController();
     }
+  };
+
+  setDefaultDomain = () => {
+    const domains = this.filterDomains;
+    this.setState({domain: domains[0]});
   };
 
   onChangeFilter = (group) => (selection) => {
@@ -547,7 +596,11 @@ class FacetedSearch extends React.Component {
           )
           .reduce((r, c) => ([...r, ...c]), []);
         if (systemDictionaries.loaded && configuration) {
-          const {dictionaries = []} = configuration || {};
+          const {
+            createOtherDomain = false,
+            otherDomainName = 'Other',
+            dictionaries = []
+          } = configuration || {};
           const orders = dictionaries
             .map(d => ({[d.dictionary]: d.order || Infinity}))
             .reduce((r, c) => ({...r, ...c}), {});
@@ -555,8 +608,13 @@ class FacetedSearch extends React.Component {
             .filter(d => orders.hasOwnProperty(d.key));
           filtered
             .sort((a, b) => orders[a.key] - orders[b.key]);
+          const getDictionaryDomain = (dictionary) => {
+            const obj = dictionaries.find((o) => o.dictionary === dictionary);
+            return obj ? obj.domain : undefined;
+          };
           const facets = filtered.map(d => ({
             name: d.key,
+            domain: getDictionaryDomain(d.key),
             values: (d.values || []).map(v => v.value)
           }));
           facets.push({
@@ -583,6 +641,8 @@ class FacetedSearch extends React.Component {
                 return;
               }
               this.setState({
+                createOtherDomain,
+                otherDomainName,
                 extraColumnsConfiguration,
                 initialFacetsCount: facetsCount,
                 facetsCount,
@@ -591,6 +651,7 @@ class FacetedSearch extends React.Component {
                 facets,
                 userDocumentTypes: documentTypes
               }, () => {
+                this.setDefaultDomain();
                 this.correctSorting()
                   .then(resolve);
               });
@@ -906,6 +967,8 @@ class FacetedSearch extends React.Component {
     }
   };
 
+  handleDomainSelection = (key) => this.setState({domain: parseDomainKey(key)});
+
   render () {
     const {systemDictionaries} = this.props;
     const {
@@ -914,8 +977,19 @@ class FacetedSearch extends React.Component {
       query,
       selectedItems = [],
       userDocumentTypes = [],
-      advancedSearchMode
+      advancedSearchMode,
+      domain,
+      createOtherDomain,
+      otherDomainName
     } = this.state;
+    const filterFacetByDomain = (facet) => {
+      if (createOtherDomain) {
+        // Create separate tab for filters without domains
+        return domain === facet.domain;
+      }
+      // Display filters without domains for every domain tab
+      return domain === facet.domain || !facet.domain;
+    };
     if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
       return (
         <LoadingView />
@@ -1018,34 +1092,74 @@ class FacetedSearch extends React.Component {
             >
               <div
                 key="faceted-filter"
-                className={classNames(styles.panel, styles.facetedFilters)}
+                className={classNames(styles.panel, styles.facetedFiltersContainer)}
               >
-                <span
-                  className={classNames(
-                    styles.clearFiltersBtn,
-                    'cp-search-clear-filters-button',
-                    {
-                      [styles.disabled]: this.activeFiltersIsEmpty
-                    }
-                  )}
-                  onClick={this.onClearFilters}
-                >
-                  Clear filters
-                </span>
                 {
-                  this.filters.map((filter) => (
-                    <FacetedFilter
-                      key={filter.name}
-                      name={filter.name}
-                      className={styles.filter}
-                      values={filter.values}
-                      selection={(activeFilters || {})[filter.name]}
-                      onChange={this.onChangeFilter(filter.name)}
-                      preferences={this.getFilterPreferences(filter.name)}
-                      showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY}
-                    />
-                  ))
+                  this.filterDomains.length > 1 && (
+                    <Tabs
+                      className={
+                        classNames(
+                          'cp-tabs-no-content',
+                          'cp-faceted-filters'
+                        )
+                      }
+                      hideAdd
+                      type="card"
+                      activeKey={getDomainKey(domain)}
+                      onChange={this.handleDomainSelection}
+                    >
+                      {
+                        this.filterDomains.map((domain) => (
+                          <Tabs.TabPane
+                            key={getDomainKey(domain)}
+                            closable={false}
+                            tab={domain || otherDomainName}
+                          />
+                        ))
+                      }
+                    </Tabs>
+                  )
                 }
+                <div
+                  className={
+                    classNames(
+                      styles.facetedFilters,
+                      {
+                        [styles.singleGroup]: this.filterDomains.length <= 1,
+                        'cp-tabs-content': this.filterDomains.length > 1
+                      }
+                    )
+                  }
+                >
+                  <span
+                    className={classNames(
+                      styles.clearFiltersBtn,
+                      'cp-search-clear-filters-button',
+                      {
+                        [styles.disabled]: this.activeFiltersIsEmpty
+                      }
+                    )}
+                    onClick={this.onClearFilters}
+                  >
+                    Clear filters
+                  </span>
+                  {
+                    this.filters
+                      .filter(filterFacetByDomain)
+                      .map((filter) => (
+                        <FacetedFilter
+                          key={filter.name}
+                          name={filter.name}
+                          className={styles.filter}
+                          values={filter.values}
+                          selection={(activeFilters || {})[filter.name]}
+                          onChange={this.onChangeFilter(filter.name)}
+                          preferences={this.getFilterPreferences(filter.name)}
+                          showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY}
+                        />
+                      ))
+                  }
+                </div>
               </div>
               {this.renderSearchResults()}
             </SplitPanel>

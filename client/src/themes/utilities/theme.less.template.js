@@ -180,6 +180,20 @@ export default `
 @THEME .cp-divider.right {
   border-right: 1px solid @panel-border-color;
 }
+@THEME .cp-divider.top.dashed,
+@THEME .cp-divider.horizontal.dashed {
+  border-top: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.bottom.dashed {
+  border-bottom: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.left.dashed,
+@THEME .cp-divider.vertical.dashed {
+  border-left: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.right.dashed {
+  border-right: 1px dashed @panel-border-color;
+}
 @THEME .cp-divider.horizontal {
   width: 100%;
   height: 1px;
@@ -538,6 +552,14 @@ export default `
 }
 @THEME .ant-tabs.cp-tabs-no-padding.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   padding: 0;
+}
+@THEME .ant-tabs-tab-prev,
+@THEME .ant-tabs-tab-next {
+  color: @application-color;
+}
+@THEME .ant-tabs-tab-btn-disabled,
+@THEME .ant-tabs-tab-btn-disabled:hover {
+  color: @application-color-disabled;
 }
 @THEME .cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   border-bottom: 0;
@@ -2410,6 +2432,9 @@ export default `
 @THEME .cp-fast-search-result-item.cp-table-element-hover {
   background-color: @table-element-hover-background-color;
   color: @table-element-hover-color;
+}
+@THEME .cp-tabs-no-content.cp-faceted-filters .ant-tabs-content {
+  padding: 0!important;
 }
 
 @THEME .cp-versioned-storage-breadcrumb {

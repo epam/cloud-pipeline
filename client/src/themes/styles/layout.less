@@ -99,6 +99,24 @@ a.cp-danger:focus,
   border-right: 1px solid @panel-border-color;
 }
 
+.cp-divider.top.dashed,
+.cp-divider.horizontal.dashed {
+  border-top: 1px dashed @panel-border-color;
+}
+
+.cp-divider.bottom.dashed {
+  border-bottom: 1px dashed @panel-border-color;
+}
+
+.cp-divider.left.dashed,
+.cp-divider.vertical.dashed {
+  border-left: 1px dashed @panel-border-color;
+}
+
+.cp-divider.right.dashed {
+  border-right: 1px dashed @panel-border-color;
+}
+
 .cp-divider.horizontal {
   width: 100%;
   height: 1px;
@@ -532,6 +550,15 @@ h6 {
 
 .ant-tabs.cp-tabs-no-padding.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   padding: 0;
+}
+
+.ant-tabs-tab-prev, .ant-tabs-tab-next {
+  color: @application-color;
+}
+
+.ant-tabs-tab-btn-disabled,
+.ant-tabs-tab-btn-disabled:hover {
+  color: @application-color-disabled;
 }
 
 .cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {

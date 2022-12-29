@@ -61,10 +61,23 @@
   overflow: auto;
 }
 
-.container .content .panel.faceted-filters {
+.container .content .panel.faceted-filters-container {
   display: flex;
   flex-direction: column;
   position: relative;
+}
+
+.container .content .panel .faceted-filters {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  padding: 5px 2px 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.container .content .panel .faceted-filters.single-group {
+  padding: 0;
 }
 
 .container .content .panel.search-results {
@@ -146,7 +159,7 @@
 }
 
 .container .clear-filters-btn.disabled {
-  transform: translateY(-22px);
+  transform: translateY(-30px);
 }
 
 .sorting-controls-container {
