@@ -270,6 +270,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
               initialValue: this.props.pipeline ? this.props.pipeline.visibility : 'INHERIT'
             })(
             <Select
+              allowClear
               disabled={this.props.pending}
             >
               <Select.Option key="INHERIT" value="INHERIT">

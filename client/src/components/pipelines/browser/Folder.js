@@ -1211,7 +1211,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       } else {
         hide();
         this.closeEditPipelineDialog();
-        await this.props.folder.fetch();
+        await Promise.all([
+          this.props.folder.fetch(),
+          this.props.pipelines.getPipeline(pipelineId).fetch()
+        ]);
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this._currentFolder.folder.parentId);
         }
