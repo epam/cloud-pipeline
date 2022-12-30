@@ -146,9 +146,10 @@ class SelectionPreview extends React.Component {
         style={{cursor: 'default', margin: '2px 0'}}
       >
         <Checkbox
-          checked={this.itemIsSelected(document)}
+          checked={isDownloadable && this.itemIsSelected(document)}
           onChange={this.toggleSelection(document)}
           style={{marginRight: 5}}
+          disabled={!isDownloadable}
         />
         <DocumentListPresentation
           className={styles.title}
