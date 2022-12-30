@@ -127,9 +127,41 @@ class SelectionPreview extends React.Component {
     this.setState({downloadCommandVisible: false});
   };
 
+  renderSelectionDocument = (document) => {
+    const {extraColumns = []} = this.props;
+    const isDownloadable = !this.notAllowedToDownload
+      .find(item => item.id === document.id);
+    return (
+      <div
+        key={`${document.elasticId}`}
+        id={`search-result-item-${document.elasticId}`}
+        className={
+          classNames(
+            styles.resultItem,
+            'cp-even-odd-element',
+            'cp-search-result-item',
+            {'disabled': !isDownloadable}
+          )
+        }
+        style={{cursor: 'default', margin: '2px 0'}}
+      >
+        <Checkbox
+          checked={isDownloadable && this.itemIsSelected(document)}
+          onChange={this.toggleSelection(document)}
+          style={{marginRight: 5}}
+          disabled={!isDownloadable}
+        />
+        <DocumentListPresentation
+          className={styles.title}
+          document={document}
+          extraColumns={extraColumns}
+        />
+      </div>
+    );
+  };
+
   render () {
     const {
-      extraColumns = [],
       onClose,
       onClear,
       title = 'Selected documents',
@@ -211,30 +243,7 @@ class SelectionPreview extends React.Component {
             )
           }
           {
-            selection.map(document => (
-              <div
-                key={`${document.elasticId}`}
-                id={`search-result-item-${document.elasticId}`}
-                className={
-                  classNames(
-                    styles.resultItem,
-                    'cp-even-odd-element'
-                  )
-                }
-                style={{cursor: 'default', margin: '2px 0'}}
-              >
-                <Checkbox
-                  checked={this.itemIsSelected(document)}
-                  onChange={this.toggleSelection(document)}
-                  style={{marginRight: 5}}
-                />
-                <DocumentListPresentation
-                  className={styles.title}
-                  document={document}
-                  extraColumns={extraColumns}
-                />
-              </div>
-            ))
+            selection.map(this.renderSelectionDocument)
           }
           <SelectionDownloadCommand
             items={this.selectionInfo}
