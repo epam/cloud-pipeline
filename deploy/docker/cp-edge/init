@@ -157,7 +157,7 @@ for service_mount_dir in "$pki_mount_dir"/*; do
     if [ -d "$service_mount_dir/pki" ]; then
       echo "Copying $service_mount_dir/pki -> $service_local_dir/pki..."
       mkdir -p "$service_local_dir"
-      cp -r "$service_mount_dir/pki" "$service_local_dir/pki"
+      cp -rL "$service_mount_dir/pki" "$service_local_dir/pki"
     fi
 done
 
@@ -188,6 +188,7 @@ for static_file in /etc/nginx/static/*; do
 done
 
 # Start nginx
+echo "Starting nginx..."
 nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf
 
 sleep 5
