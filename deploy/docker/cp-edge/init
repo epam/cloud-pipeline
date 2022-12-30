@@ -140,8 +140,26 @@ fi
 #   * Nginx cannot start at all as the configuration is invalid
 # So it's better to have everything local to a docker filesystem, this way the configuration would be consistent
 if [ -d /etc/nginx/ext/external-apps ]; then
+    echo "Copying /etc/nginx/ext/external-apps -> /etc/nginx/external-apps..."
     cp -r /etc/nginx/ext/external-apps /etc/nginx/external-apps
 fi
+
+# Copy the "pki" service keys to a docker filesystem
+# Previously all the pki keys were available directly from a shared file system
+# This was causing an issue, if:
+#   * EDGE and shared file system are deployed to different regions
+# So it's better to have everything local to a docker filesystem, this way nginx performance will be optimal
+pki_mount_dir="/opt"
+pki_local_dir="/etc"
+for service_mount_dir in "$pki_mount_dir"/*; do
+    service_name="$(basename "$service_mount_dir")"
+    service_local_dir="$pki_local_dir/$service_name"
+    if [ -d "$service_mount_dir/pki" ]; then
+      echo "Copying $service_mount_dir/pki -> $service_local_dir/pki..."
+      mkdir -p "$service_local_dir"
+      cp -r "$service_mount_dir/pki" "$service_local_dir/pki"
+    fi
+done
 
 # Start wetty.js for SSH proxy
 nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/wetty.log 2>&1 &

@@ -774,6 +774,10 @@ spec:
           configMap:
             name: canal-config
         # Used to install CNI.
+        # todo 30.12.22: Use local directory such as /etc/cni rather than /opt/cni shared directory.
+        # Disk performance of this directory is crucial for container initialization time.
+        # Therefore shared directory usage can introduce a significant delay for instances
+        # running in geographically distant cloud regions from target file system.
         - name: cni-bin-dir
           hostPath:
             path: /opt/cni/bin
