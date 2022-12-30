@@ -80,11 +80,11 @@ nginx_system_endpoints_config_path = '/etc/nginx/endpoints-config/system_endpoin
 nginx_default_location_attributes_path = '/etc/nginx/endpoints-config/default_location_attributes.json'
 edge_service_port = 31000
 edge_service_external_ip = ''
-pki_search_path = '/opt/edge/pki/'
+pki_search_path = '/etc/edge/pki/'
 pki_search_suffix_cert = '-public-cert.pem'
 pki_search_suffix_key = '-private-key.pem'
-pki_default_cert = '/opt/edge/pki/ssl-public-cert.pem'
-pki_default_cert_key = '/opt/edge/pki/ssl-private-key.pem'
+pki_default_cert = '/etc/edge/pki/ssl-public-cert.pem'
+pki_default_cert_key = '/etc/edge/pki/ssl-private-key.pem'
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 DEFAULT_LOCATION_ATTRIBUTES = []
