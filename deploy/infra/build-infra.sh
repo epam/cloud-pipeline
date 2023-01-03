@@ -663,7 +663,7 @@ for region_item in "${regions_arr[@]}"; do
     echo "-> Region: $region_item"
     echo
 
-    echo "-> Common image"
+    echo "-> CPU image"
     build_ami   "${CP_CLOUD_PROVIDER}" \
                 "${region_item}" \
                 "${CP_BASE_COMMON_IMAGE_ID:-NA}" \
@@ -673,13 +673,13 @@ for region_item in "${regions_arr[@]}"; do
                 "${CP_SECURITY_GROUPS:-NA}" \
                 "${CP_SUBNET:-NA}" \
                 "${CP_IMAGE_PREFIX}-Common" \
-                "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-common-node.sh" \
+                "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-cpu-node.sh" \
                 "$CP_OUTPUT" \
                 "${CP_MAKE_IMAGES_PUBLIC:-true}" \
                 "LINUX"
 
     if [ $? -ne 0 ]; then
-        echo "ERROR: Common image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
+        echo "ERROR: CPU image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
     fi
 
     echo
@@ -705,24 +705,49 @@ for region_item in "${regions_arr[@]}"; do
 
     echo
 
-    echo "-> Windows Common image"
-    build_ami   "${CP_CLOUD_PROVIDER}" \
-                "${region_item}" \
-                "${CP_BASE_WIN_COMMON_IMAGE_ID:-NA}" \
-                "${CP_DEFAULT_DISK:-NA}" \
-                "${CP_DEFAULT_COMMON_SIZE:-NA}" \
-                "${CP_AWS_SSH_KEY_NAME:-NA}" \
-                "${CP_SECURITY_GROUPS:-NA}" \
-                "${CP_SUBNET:-NA}" \
-                "${CP_IMAGE_PREFIX}-Windows-Common" \
-                "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-common-win-node.ps1" \
-                "$CP_OUTPUT" \
-                "${CP_MAKE_IMAGES_PUBLIC:-true}" \
-                "WINDOWS"
+    if [ -f "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-cpu-node-win.ps1" ]; then
+        echo "-> Windows CPU image"
+        build_ami   "${CP_CLOUD_PROVIDER}" \
+                    "${region_item}" \
+                    "${CP_BASE_WIN_COMMON_IMAGE_ID:-NA}" \
+                    "${CP_DEFAULT_DISK:-NA}" \
+                    "${CP_DEFAULT_COMMON_SIZE:-NA}" \
+                    "${CP_AWS_SSH_KEY_NAME:-NA}" \
+                    "${CP_SECURITY_GROUPS:-NA}" \
+                    "${CP_SUBNET:-NA}" \
+                    "${CP_IMAGE_PREFIX}-Windows-Common" \
+                    "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-cpu-node-win.ps1" \
+                    "$CP_OUTPUT" \
+                    "${CP_MAKE_IMAGES_PUBLIC:-true}" \
+                    "WINDOWS"
 
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Windows Common image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Windows CPU image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
+        fi
+
+        echo
     fi
 
-    echo
+    if [ -f "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-service-node.sh" ]; then
+        echo "-> Service image"
+        build_ami   "${CP_CLOUD_PROVIDER}" \
+                    "${region_item}" \
+                    "${CP_BASE_COMMON_IMAGE_ID:-NA}" \
+                    "${CP_DEFAULT_DISK:-NA}" \
+                    "${CP_DEFAULT_COMMON_SIZE:-NA}" \
+                    "${CP_AWS_SSH_KEY_NAME:-NA}" \
+                    "${CP_SECURITY_GROUPS:-NA}" \
+                    "${CP_SUBNET:-NA}" \
+                    "${CP_IMAGE_PREFIX}-Service" \
+                    "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-service-node.sh" \
+                    "$CP_OUTPUT" \
+                    "${CP_MAKE_IMAGES_PUBLIC:-true}" \
+                    "LINUX"
+
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Service image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
+        fi
+
+        echo
+    fi
 done

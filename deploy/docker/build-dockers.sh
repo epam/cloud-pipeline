@@ -292,6 +292,7 @@ docker push "$CP_MONITORING_SRV_DIST_NAME"
 
 # Deployment autoscaler
 CP_DEPLOYMENT_AUTOSCALER_DIST_NAME=${CP_DEPLOYMENT_AUTOSCALER_DIST_NAME:-"$CP_DIST_REPO_NAME:deployment-autoscaler-${DOCKERS_VERSION}"}
+\cp -r $DOCKERS_SOURCES_PATH/../../scripts/autoscaling/init_multicloud_service.sh $DOCKERS_SOURCES_PATH/cp-deployment-autoscaler/init_multicloud.sh
 docker build    $DOCKERS_SOURCES_PATH/cp-deployment-autoscaler \
                 -t "$CP_DEPLOYMENT_AUTOSCALER_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
