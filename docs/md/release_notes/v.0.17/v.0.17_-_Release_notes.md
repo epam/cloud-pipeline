@@ -29,6 +29,7 @@
 - [Custom Run capabilities](#custom-run-capabilities)
 - [Storage lifecycle management](#storage-lifecycle-management)
 - [Image history](#image-history)
+- [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -1052,6 +1053,22 @@ It can be viewed via the specific tab in the tool version menu - **Image history
 This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.
 
 For more details see [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#image-history).
+
+## Environments synchronization via `pipectl`
+
+In some cases, admins need to synchronize two different environments of the Cloud Pipeline.  
+New special routine in the [`pipectl`](https://github.com/epam/cloud-pipeline/tree/develop/deploy/README.md) utility is implemented for that - `pipectl sync`.
+
+It allows to synchronize from the source environment to the destination one the following objects:
+
+- users / user groups / user roles
+- docker registry / tool groups / tools
+
+Synchronization can be performed with or without synchronization of attributes (metadata) for the specified Platform objects.
+
+During the synchronization, changes are being performed only in the **_destination_** environment, the **_source_** environment remains the same.
+
+For details and examples see [here](../../installation/management/environments_sync.md).
 
 ## AWS: seamless authentication
 
