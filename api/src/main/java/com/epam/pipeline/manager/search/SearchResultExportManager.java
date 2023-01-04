@@ -74,16 +74,20 @@ public class SearchResultExportManager {
 
         final String searchResultDisplayNameTag = preferenceManager.getPreference(
                 SystemPreferences.FACETED_FILTER_DISPLAY_NAME_TAG);
+        final List<String> effectiveMetadataFields =
+                ListUtils.emptyIfNull(searchExportRequest.getFacetedSearchRequest().getMetadataFields())
+                        .stream().filter(field -> !field.equalsIgnoreCase(searchResultDisplayNameTag))
+                        .collect(Collectors.toList());
 
         try (StringWriter writer = new StringWriter(); CSVWriter csvWriter = new CSVWriter(writer, delimiter)) {
-            final String[] header = buildCsvHeader(searchExportRequest.getFacetedSearchRequest().getMetadataFields(),
-                    facetedSearchExportVO);
+            final String[] header = buildCsvHeader(effectiveMetadataFields, facetedSearchExportVO);
             csvWriter.writeNext(header, false);
             CollectionUtils.emptyIfNull(searchResult.getDocuments()).stream()
-                    .map(searchDocument -> createItem(
-                            searchDocument, facetedSearchExportVO,
-                            searchExportRequest.getFacetedSearchRequest().getMetadataFields(),
-                            searchResultDisplayNameTag)
+                    .map(
+                        searchDocument -> createItem(
+                            searchDocument, facetedSearchExportVO, effectiveMetadataFields,
+                            searchResultDisplayNameTag
+                        )
                     ).forEach(item -> csvWriter.writeNext(item, false));
             return writer.toString().getBytes(Charset.defaultCharset());
         } catch (IOException e) {
