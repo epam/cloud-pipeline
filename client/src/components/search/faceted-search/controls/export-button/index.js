@@ -117,7 +117,7 @@ class ExportButton extends React.Component {
     const {
       advanced,
       columns = [],
-      query = '*',
+      query: currentQuery,
       filters = {},
       sorting = [],
       facets = []
@@ -138,7 +138,9 @@ class ExportButton extends React.Component {
         csvFileName: 'export.csv',
         facetedSearchExportVO,
         facetedSearchRequest: {
-          query: advanced ? query : `*${query}*`,
+          query: !advanced && currentQuery
+            ? `*${currentQuery}*`
+            : (currentQuery || '*'),
           filters,
           sorts: getSortingPayload(sorting),
           metadataFields,
