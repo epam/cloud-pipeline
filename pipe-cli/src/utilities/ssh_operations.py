@@ -1137,7 +1137,7 @@ def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
                             cat "{remote_public_key_path}" | tee -a "$user_authorized_keys_path" > /dev/null
                         done
                         if ! command -v puttygen; then
-                            wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/putty/puttygen.tgz" -O "/tmp/puttygen.tgz"
+                            wget -q "${{GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}}tools/putty/puttygen.tgz" -O "/tmp/puttygen.tgz"
                             tar -zxf "/tmp/puttygen.tgz" -C "${{CP_USR_BIN:-/usr/cpbin}}"
                             rm -f "/tmp/puttygen.tgz"
                         fi
