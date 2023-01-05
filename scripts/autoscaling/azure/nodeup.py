@@ -251,12 +251,13 @@ resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
 def run_instance(api_url, api_token, api_user, instance_name, instance_type, cloud_region, run_id, pool_id, ins_hdd, ins_img, ins_platform, ssh_pub_key, user,
-                 ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images):
+                 ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                 global_distribution_url, pre_pull_images):
     ins_key = read_ssh_key(ssh_pub_key)
     swap_size = get_swap_size(cloud_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                            swap_size, pre_pull_images)
+                                            global_distribution_url, swap_size, pre_pull_images)
     access_config = get_access_config(cloud_region)
     disable_external_access = False
     if access_config is not None:
@@ -981,7 +982,8 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 
 def get_user_data_script(api_url, api_token, api_user, cloud_region, ins_type, ins_img, ins_platform, kube_ip,
-                         kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images):
+                         kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                         global_distribution_url, swap_size, pre_pull_images):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -998,15 +1000,16 @@ def get_user_data_script(api_url, api_token, api_user, cloud_region, ins_type, i
         user_data_script = replace_swap(swap_size, user_data_script)
         user_data_script = replace_docker_images(pre_pull_images, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
-                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
-                                            .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
-                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
-                                            .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
-                                            .replace('@API_URL@', api_url) \
-                                            .replace('@API_TOKEN@', api_token) \
-                                            .replace('@API_USER@', api_user) \
-                                            .replace('@FS_TYPE@', fs_type)
+                                           .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                           .replace('@KUBE_IP@', kube_ip) \
+                                           .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                           .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
+                                           .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
+                                           .replace('@API_URL@', api_url) \
+                                           .replace('@API_TOKEN@', api_token) \
+                                           .replace('@API_USER@', api_user) \
+                                           .replace('@FS_TYPE@', fs_type) \
+                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url)
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
@@ -1105,6 +1108,8 @@ def main():
     pre_pull_images = args.image
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get(POOL_ID_KEY)
+    global_distribution_url = os.getenv('GLOBAL_DISTRIBUTION_URL',
+                                        default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
 
     global zone
     zone = region_id
@@ -1163,7 +1168,8 @@ def main():
             api_token = os.environ["API_TOKEN"]
             api_user = os.environ["API_USER"]
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, resource_name, ins_type, cloud_region, run_id, pool_id, ins_hdd, ins_img, ins_platform, ins_key_path,
-                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images)
+                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                                          global_distribution_url, pre_pull_images)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region, additional_labels)
         pipe_log('Node created:\n'

@@ -81,6 +81,8 @@ function setup_swap_device {
     fi
 }
 
+export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
+
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
@@ -136,7 +138,7 @@ _DOCKER_SYS_IMGS="/ebs/docker-system-images"
 rm -rf $_DOCKER_SYS_IMGS
 _KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
 if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
-  _KUBE_SYSTEM_PODS_DISTR="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
+  _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
 fi
 mkdir -p $_DOCKER_SYS_IMGS
 _WO="--timeout=10 --waitretry=1 --tries=10"
