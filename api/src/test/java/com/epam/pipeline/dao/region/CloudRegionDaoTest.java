@@ -65,6 +65,8 @@ public class CloudRegionDaoTest extends AbstractJdbcTest {
     private static final String UPDATED_KMS_KEY_ID = "updatedKmsKeyId";
     private static final String UPDATED_KMS_KEY_ARN = "updatedKmsKeyArn";
     private static final String SSH_PUBLIC_KEY_PATH = "ssh";
+    private static final String GLOBAL_DISTRIBUTION_URL = "globalDistributionUrl";
+    private static final String UPDATED_GLOBAL_DISTRIBUTION_URL = "updatedGlobalDistributionUrl";
     private static final double RAM = 3.75;
     private static final int CPU = 2;
     private static final int GPU = 1;
@@ -171,6 +173,15 @@ public class CloudRegionDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void createShouldSaveEntityWithGlobalDistributionUrl() {
+        final AwsRegion expectedRegion = getAwsRegion();
+        expectedRegion.setGlobalDistributionUrl(GLOBAL_DISTRIBUTION_URL);
+        final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
+        final AwsRegion actualRegion = loadAndCheckType(createdRegion.getId(), AwsRegion.class);
+        assertRegionEquals(expectedRegion, actualRegion);
+    }
+
+    @Test
     public void createShouldReturnEntityWithGeneratedId() {
         final AwsRegion region = getAwsRegion();
         assertNull(region.getId());
@@ -214,6 +225,7 @@ public class CloudRegionDaoTest extends AbstractJdbcTest {
         originRegion.setKmsKeyId(KMS_KEY_ID);
         originRegion.setKmsKeyArn(KMS_KEY_ARN);
         originRegion.setDefault(false);
+        originRegion.setGlobalDistributionUrl(GLOBAL_DISTRIBUTION_URL);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion);
         final AwsRegion updatedRegion = getAwsRegion();
         updatedRegion.setId(savedRegion.getId());
@@ -222,6 +234,7 @@ public class CloudRegionDaoTest extends AbstractJdbcTest {
         updatedRegion.setKmsKeyId(UPDATED_KMS_KEY_ID);
         updatedRegion.setKmsKeyArn(UPDATED_KMS_KEY_ARN);
         updatedRegion.setDefault(true);
+        updatedRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
 
         cloudRegionDao.update(updatedRegion, null);
         final AwsRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AwsRegion.class);
@@ -235,6 +248,7 @@ public class CloudRegionDaoTest extends AbstractJdbcTest {
         originRegion.setAuthFile(AUTH_FILE);
         originRegion.setAzurePolicy(new AzurePolicy("ipMin", "ipMax"));
         originRegion.setDefault(false);
+        originRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion, null);
         final AzureRegion updatedRegion = getAzureRegion();
         updatedRegion.setId(savedRegion.getId());
@@ -242,6 +256,7 @@ public class CloudRegionDaoTest extends AbstractJdbcTest {
         updatedRegion.setAuthFile(UPDATED_AUTH_FILE);
         updatedRegion.setAzurePolicy(new AzurePolicy("updatedIpMin", "updatedIpMax"));
         updatedRegion.setDefault(true);
+        updatedRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
 
         cloudRegionDao.update(updatedRegion, null);
         final AzureRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AzureRegion.class);
@@ -302,6 +317,7 @@ public class CloudRegionDaoTest extends AbstractJdbcTest {
         assertThat(expectedRegion.getCreatedDate(), is(actualRegion.getCreatedDate()));
         assertThat(expectedRegion.getProvider(), is(actualRegion.getProvider()));
         assertThat(actualRegion, instanceOf(expectedRegion.getClass()));
+        assertThat(expectedRegion.getGlobalDistributionUrl(), is(actualRegion.getGlobalDistributionUrl()));
     }
 
     private void assertRegionEquals(final AwsRegion expectedRegion, final AwsRegion actualRegion) {

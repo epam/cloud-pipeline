@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
@@ -384,6 +385,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         envVars.put(AWSUtils.AWS_ACCESS_KEY_ID_VAR, credentials.getKeyId());
         envVars.put(AWSUtils.AWS_SECRET_ACCESS_KEY_VAR, credentials.getAccessKey());
         envVars.put(AWSUtils.AWS_SESSION_TOKEN_VAR, credentials.getToken());
+        envVars.put(SystemParams.GLOBAL_DISTRIBUTION_URL.name(), getGlobalDistributionUrl(region));
         return envVars;
+    }
+
+    private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
+        return Optional.ofNullable(region.getGlobalDistributionUrl())
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
     }
 }

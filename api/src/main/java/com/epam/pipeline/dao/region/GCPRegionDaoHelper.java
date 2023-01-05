@@ -56,34 +56,36 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
         }
         params.addValue(CloudRegionParameters.VERSIONING_ENABLED.name(), region.isVersioningEnabled());
         params.addValue(CloudRegionParameters.BACKUP_DURATION.name(), region.getBackupDuration());
+        params.addValue(CloudRegionParameters.GLOBAL_DISTRIBUTION_URL.name(), region.getGlobalDistributionUrl());
         return params;
     }
 
     @Override
     @SneakyThrows
     public GCPRegion parseCloudRegion(final ResultSet rs) {
-        final GCPRegion gcpRegion = new GCPRegion();
-        fillCommonCloudRegionFields(gcpRegion, rs);
-        gcpRegion.setCorsRules(rs.getString(CloudRegionParameters.CORS_RULES.name()));
-        gcpRegion.setPolicy(rs.getString(CloudRegionParameters.POLICY.name()));
-        gcpRegion.setAuthFile(rs.getString(CloudRegionParameters.AUTH_FILE.name()));
-        gcpRegion.setSshPublicKeyPath(rs.getString(CloudRegionParameters.SSH_PUBLIC_KEY.name()));
-        gcpRegion.setProject(rs.getString(CloudRegionParameters.PROJECT.name()));
-        gcpRegion.setApplicationName(rs.getString(CloudRegionParameters.APPLICATION_NAME.name()));
-        gcpRegion.setImpersonatedAccount(rs.getString(CloudRegionParameters.IMPERSONATED_ACCOUNT.name()));
+        final GCPRegion region = new GCPRegion();
+        fillCommonCloudRegionFields(region, rs);
+        region.setCorsRules(rs.getString(CloudRegionParameters.CORS_RULES.name()));
+        region.setPolicy(rs.getString(CloudRegionParameters.POLICY.name()));
+        region.setAuthFile(rs.getString(CloudRegionParameters.AUTH_FILE.name()));
+        region.setSshPublicKeyPath(rs.getString(CloudRegionParameters.SSH_PUBLIC_KEY.name()));
+        region.setProject(rs.getString(CloudRegionParameters.PROJECT.name()));
+        region.setApplicationName(rs.getString(CloudRegionParameters.APPLICATION_NAME.name()));
+        region.setImpersonatedAccount(rs.getString(CloudRegionParameters.IMPERSONATED_ACCOUNT.name()));
         final String customInstanceTypes = rs.getString(CloudRegionParameters.CUSTOM_INSTANCE_TYPES.name());
         if (StringUtils.isNotBlank(customInstanceTypes)) {
-            gcpRegion.setCustomInstanceTypes(JsonMapper.parseData(customInstanceTypes,
+            region.setCustomInstanceTypes(JsonMapper.parseData(customInstanceTypes,
                     new TypeReference<List<GCPCustomInstanceType>>() {}));
         } else {
-            gcpRegion.setCustomInstanceTypes(Collections.emptyList());
+            region.setCustomInstanceTypes(Collections.emptyList());
         }
         int backup = rs.getInt(CloudRegionParameters.BACKUP_DURATION.name());
         if (!rs.wasNull()) {
-            gcpRegion.setBackupDuration(backup);
+            region.setBackupDuration(backup);
         }
-        gcpRegion.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
-        return gcpRegion;
+        region.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
+        region.setGlobalDistributionUrl(rs.getString(CloudRegionParameters.GLOBAL_DISTRIBUTION_URL.name()));
+        return region;
     }
 
     @Override
