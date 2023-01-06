@@ -620,6 +620,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> CLOUD_DATA_DISTRIBUTION_URL = new ObjectPreference<>(
             "base.cloud.data.distribution.url", null, new TypeReference<Map<String, String>>() {},
             BASE_URLS_GROUP, isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
+    public static final StringPreference BASE_GLOBAL_DISTRIBUTION_URL = new StringPreference(
+            "base.global.distribution.url", "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/",
+            BASE_URLS_GROUP, isNotBlank, true);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,

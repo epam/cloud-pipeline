@@ -234,10 +234,13 @@ resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
 def run_instance(api_url, api_token, instance_name, instance_type, cloud_region, run_id, pool_id, ins_hdd, ins_img, ssh_pub_key, user,
-                 ins_type, is_spot, kube_ip, kubeadm_token):
+                 ins_type, is_spot, kube_ip, kubeadm_token,
+                 global_distribution_url):
     ins_key = read_ssh_key(ssh_pub_key)
     swap_size = get_swap_size(cloud_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    user_data_script = get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip,
+                                            kubeadm_token,
+                                            global_distribution_url, swap_size)
     access_config = get_access_config(cloud_region)
     disable_external_access = False
     if access_config is not None:
@@ -948,7 +951,9 @@ def get_swap_ratio(swap_params):
     return None
 
 
-def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
+def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip,
+                         kubeadm_token,
+                         global_distribution_url, swap_size):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -958,18 +963,19 @@ def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, ku
         fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
         if fs_type not in SUPPORTED_FS_TYPES:
             pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
-                          fs_type, DEFAULT_FS_TYPE)
+                          (fs_type, DEFAULT_FS_TYPE))
             fs_type = DEFAULT_FS_TYPE
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
-                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
-                                            .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
-                                            .replace('@API_URL@', api_url) \
-                                            .replace('@API_TOKEN@', api_token) \
-                                            .replace('@FS_TYPE@', fs_type)
+                                           .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                           .replace('@KUBE_IP@', kube_ip) \
+                                           .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                           .replace('@API_URL@', api_url) \
+                                           .replace('@API_TOKEN@', api_token) \
+                                           .replace('@FS_TYPE@', fs_type) \
+                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url)
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
@@ -1060,6 +1066,8 @@ def main():
     pre_pull_images = args.image
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get(POOL_ID_KEY)
+    global_distribution_url = os.getenv('GLOBAL_DISTRIBUTION_URL',
+                                        default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
 
     global zone
     zone = region_id
@@ -1115,7 +1123,8 @@ def main():
             api_url = os.environ["API"]
             api_token = os.environ["API_TOKEN"]
             ins_id, ins_ip = run_instance(api_url, api_token, resource_name, ins_type, cloud_region, run_id, pool_id, ins_hdd, ins_img, ins_key_path,
-                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token)
+                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token,
+                                          global_distribution_url)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region)
         pipe_log('Node created:\n'

@@ -30,6 +30,7 @@ public class DockerPauseCommand extends AbstractDockerCommand {
     private final String apiToken;
     private final String pauseDistributionUrl;
     private final String distributionUrl;
+    private final String globalDistributionUrl;
     private final String runId;
     private final String containerId;
     private final String timeout;
@@ -59,6 +60,7 @@ public class DockerPauseCommand extends AbstractDockerCommand {
         command.add(defaultTaskName);
         command.add(preCommitCommand);
         command.add(postCommitCommand);
+        command.add(globalDistributionUrl);
         return command;
     }
 }

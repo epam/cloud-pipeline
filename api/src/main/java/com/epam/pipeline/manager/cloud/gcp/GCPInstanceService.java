@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.exception.cloud.gcp.GCPException;
@@ -33,6 +34,8 @@ import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.google.api.services.compute.model.Instance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -65,12 +68,14 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     private final String nodeDownScript;
     private final String nodeReassignScript;
     private final String nodeTerminateScript;
+    private final PreferenceManager preferenceManager;
     private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
     public GCPInstanceService(final ClusterCommandService commandService,
                               final CommonCloudInstanceService instanceService,
                               final GCPVMService vmService,
+                              final PreferenceManager preferenceManager,
                               final ParallelExecutorService executorService,
                               @Value("${cluster.gcp.nodeup.script}") final String nodeUpScript,
                               @Value("${cluster.gcp.nodedown.script}") final String nodeDownScript,
@@ -79,8 +84,9 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         this.commandService = commandService;
         this.instanceService = instanceService;
         this.vmService = vmService;
-        this.nodeUpScript = nodeUpScript;
+        this.preferenceManager = preferenceManager;
         this.executorService = executorService;
+        this.nodeUpScript = nodeUpScript;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
         this.nodeTerminateScript = nodeTerminateScript;
@@ -286,6 +292,12 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
             envVars.put(GOOGLE_APPLICATION_CREDENTIALS, region.getAuthFile());
         }
         envVars.put(GOOGLE_PROJECT_ID, region.getProject());
+        envVars.put(SystemParams.GLOBAL_DISTRIBUTION_URL.name(), getGlobalDistributionUrl(region));
         return envVars;
+    }
+
+    private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
+        return Optional.ofNullable(region.getGlobalDistributionUrl())
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
     }
 }

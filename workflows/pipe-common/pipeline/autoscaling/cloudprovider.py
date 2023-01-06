@@ -19,7 +19,8 @@ LIMIT_EXCEEDED_EXIT_CODE = 6
 class AbstractInstanceProvider(object):
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, pool_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token):
+                     num_rep, time_rep, kube_ip, kubeadm_token,
+                     global_distribution_url):
         pass
 
     def find_and_tag_instance(self, old_id, new_id):

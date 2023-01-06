@@ -77,13 +77,13 @@ install_pip() {
     pip --version
     if [[ "$?" -ne 0 ]]; then
         echo "Installing pip"
-        curl "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py" -o "get-pip.py"
+        curl "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" -o "get-pip.py"
         python get-pip.py
     fi
 }
 
 install_pipeline_code() {
-    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url ${GLOBAL_DISTRIBUTION_URL}tools/python/pypi/simple --trusted-host ${GLOBAL_DISTRIBUTION_URL_HOST}"
     echo "Installing pipeline packages and code"
     pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
     mkdir $COMMON_REPO_DIR

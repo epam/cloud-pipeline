@@ -54,7 +54,7 @@ function install_prerequisites {
 function install_dcv {
   pipe_log_info "Installing DCV server" "$DCV_INSTALL_TASK"
   _pkg_result=0
-  _dcv_distro_url="${CP_CAP_DCV_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dcv}"
+  _dcv_distro_url="${CP_CAP_DCV_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/dcv"}"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     if [[ "$CP_VER" == *"7"* ]]; then
         _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-el7-x86_64
