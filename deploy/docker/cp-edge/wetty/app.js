@@ -259,7 +259,7 @@ process.on('uncaughtException', function(e) {
 });
 
 const app = express();
-app.get('/ssh/pipeline/:pipeline', function(req, res) {
+app.get('/ssh/pipeline/*', function(req, res) {
     res.sendfile(__dirname + '/public/ssh/index.html');
 });
 app.use('/', express.static(path.join(__dirname, 'public')));
