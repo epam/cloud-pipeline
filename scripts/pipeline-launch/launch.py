@@ -15,6 +15,7 @@
 import logging
 import os
 import pathlib
+import re
 import subprocess
 import tarfile
 import traceback
@@ -73,6 +74,17 @@ def _extract_boolean_parameter(name, default='false', default_provider=lambda: '
     return parameter.lower() == 'true'
 
 
+def _extract_pypi_base_url(global_distribution_url):
+    website_distribution_url_match = re.search('^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)', global_distribution_url)
+    if website_distribution_url_match:
+        website_distribution_url = 'http://{storage_name}.s3-website.{storage_region}.amazonaws.com{storage_path}' \
+            .format(storage_name=website_distribution_url_match.group(1),
+                    storage_region=website_distribution_url_match.group(2),
+                    storage_path=website_distribution_url_match.group(3))
+        return f'{website_distribution_url}tools/python/pypi/simple'
+    return None
+
+
 def _parse_host_and_port(url, default_host, default_port):
     parsed_url = urlparse(url)
     host_and_port = parsed_url.netloc if parsed_url.netloc else parsed_url.path
@@ -101,8 +113,6 @@ try:
     global_distribution_url = _extract_parameter(
         'GLOBAL_DISTRIBUTION_URL',
         default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
-    global_distribution_url_host = _extract_parameter('GLOBAL_DISTRIBUTION_URL_HOST',
-                                                      default=urlparse(global_distribution_url).netloc)
     api_url = _extract_parameter('API', default='https://cp-api-srv.default.svc.cluster.local:31080/pipeline/restapi/')
     api_token = _extract_parameter('API_TOKEN')
     node_owner = _extract_parameter('CP_NODE_OWNER', default='Administrator')
@@ -121,10 +131,12 @@ try:
     python_dir = _extract_parameter('CP_PYTHON_DIR', 'c:\\python')
     # todo: Enable support for custom repo usage once launch with default parameters issue is fixed in GUI
     requires_repo = False
-    repo_pypi_base_url = _extract_parameter('CP_REPO_PYPI_BASE_URL_DEFAULT',
-                                            default=global_distribution_url + 'tools/python/pypi/simple')
+    repo_pypi_base_url = _extract_parameter(
+        'CP_REPO_PYPI_BASE_URL_DEFAULT',
+        default_provider=lambda: _extract_pypi_base_url(global_distribution_url),
+        default='http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple')
     repo_pypi_trusted_host = _extract_parameter('CP_REPO_PYPI_TRUSTED_HOST_DEFAULT',
-                                                default=global_distribution_url_host)
+                                                default_provider=lambda: urlparse(repo_pypi_base_url).netloc)
 
     # Enables network file systems and object storages mounting
     requires_storage_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_STORAGE')
@@ -331,7 +343,6 @@ try:
         task_ssh = LoggingExecutor(logger=task_logger, inner=node_ssh)
         task_logger.info('Adding EDGE root certificate to trusted...')
         edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
-        from urllib.parse import urlparse
         edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
         task_ssh.execute(f'{python_dir}\\python.exe -c '
                          f'\\"from scripts.add_root_certificate_win import add_root_cert_to_trusted_root_win;'

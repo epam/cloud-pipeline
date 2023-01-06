@@ -349,6 +349,30 @@ function upgrade_installed_packages {
       return $?
 }
 
+function configure_package_manager_pip {
+    if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+        # Converts regional s3 endpoints
+        # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+        # to regional website s3 endpoints
+        # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
+        _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+            | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            # If the conversion was successful
+            CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
+        else
+            CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI_BASE_URL_DEFAULT
+    export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+}
+
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
 function configure_package_manager {
       # Get the distro name and version
@@ -445,12 +469,9 @@ function configure_package_manager {
                         fi
                   done
             fi
-            # Pip setup
-            local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/python/pypi/simple"}"
-            local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL_HOST}"}"
-            export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-      fi
 
+            configure_package_manager_pip
+      fi
 }
 
 # Generates apt-get or yum command to install specified list of packages (second argument)
@@ -905,8 +926,7 @@ if [ -f /bin/bash ]; then
 fi
 
 export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
-IFS="/" read -r _ _ GLOBAL_DISTRIBUTION_URL_HOST _ <<<"$GLOBAL_DISTRIBUTION_URL"
-export GLOBAL_DISTRIBUTION_URL_HOST
+echo "Using global distribution $GLOBAL_DISTRIBUTION_URL..."
 
 # Perform any distro/version specific package manage configuration
 configure_package_manager
