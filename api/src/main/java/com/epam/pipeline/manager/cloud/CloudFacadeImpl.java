@@ -208,6 +208,7 @@ public class CloudFacadeImpl implements CloudFacade {
                         envVars.put(SystemParams.CLOUD_PROVIDER.name(), r.getProvider().name());
                         envVars.put(SystemParams.CLOUD_REGION.name(), r.getRegionCode());
                         envVars.put(SystemParams.CLOUD_REGION_ID.name(), String.valueOf(r.getId()));
+                        envVars.put(SystemParams.GLOBAL_DISTRIBUTION_URL.name(), getGlobalDistributionUrl(r));
                     }
                     return envVars;
                 })
@@ -220,6 +221,11 @@ public class CloudFacadeImpl implements CloudFacade {
                     return true;
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2));
+    }
+
+    private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
+        return Optional.ofNullable(region.getGlobalDistributionUrl())
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
     }
 
     @Override

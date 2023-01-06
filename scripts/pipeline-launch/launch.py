@@ -16,10 +16,12 @@ import logging
 import os
 import pathlib
 import subprocess
+import tarfile
 import traceback
 import zipfile
+from urllib.parse import urlparse
+
 import sys
-import tarfile
 
 
 class LaunchError(RuntimeError):
@@ -96,6 +98,11 @@ try:
     resources_dir = _extract_parameter('RESOURCES_DIR', default=os.path.join(run_dir, 'resources'))
     distribution_url = _extract_parameter('DISTRIBUTION_URL',
                                           default='https://cp-api-srv.default.svc.cluster.local:31080/pipeline/')
+    global_distribution_url = _extract_parameter(
+        'GLOBAL_DISTRIBUTION_URL',
+        default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
+    global_distribution_url_host = _extract_parameter('GLOBAL_DISTRIBUTION_URL_HOST',
+                                                      default=urlparse(global_distribution_url).netloc)
     api_url = _extract_parameter('API', default='https://cp-api-srv.default.svc.cluster.local:31080/pipeline/restapi/')
     api_token = _extract_parameter('API_TOKEN')
     node_owner = _extract_parameter('CP_NODE_OWNER', default='Administrator')
@@ -107,19 +114,17 @@ try:
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
     owner_groups = _extract_parameter('OWNER_GROUPS', default='Administrators')
     logon_title = _extract_parameter('CP_LOGON_TITLE', default='Login as ' + owner)
-    logon_image_url = _extract_parameter(
-        'CP_LOGON_IMAGE_URL',
-        default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/logon.bmp')
+    logon_image_url = _extract_parameter('CP_LOGON_IMAGE_URL',
+                                         default=global_distribution_url + 'tools/pgina/logon.bmp')
     logon_image_path = _extract_parameter('CP_LOGON_IMAGE_PATH', default=os.path.join(resources_dir, 'logon.bmp'))
     task_path = _extract_parameter('CP_TASK_PATH', '.\\task.ps1')
     python_dir = _extract_parameter('CP_PYTHON_DIR', 'c:\\python')
     # todo: Enable support for custom repo usage once launch with default parameters issue is fixed in GUI
     requires_repo = False
-    repo_pypi_base_url = _extract_parameter(
-        'CP_REPO_PYPI_BASE_URL_DEFAULT',
-        default='http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple')
+    repo_pypi_base_url = _extract_parameter('CP_REPO_PYPI_BASE_URL_DEFAULT',
+                                            default=global_distribution_url + 'tools/python/pypi/simple')
     repo_pypi_trusted_host = _extract_parameter('CP_REPO_PYPI_TRUSTED_HOST_DEFAULT',
-                                                default='cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com')
+                                                default=global_distribution_url_host)
 
     # Enables network file systems and object storages mounting
     requires_storage_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_STORAGE')
@@ -138,7 +143,7 @@ try:
 
     cloud_data_distribution_url = _extract_parameter(
         'CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
-        default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/cloud-data-win-x64.zip')
+        default=global_distribution_url + 'tools/cloud-data/win/cloud-data-win-x64.zip')
 
     # Enables network file systems mounting as drives
     requires_drive_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_DRIVE')

@@ -66,6 +66,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -159,6 +160,8 @@ public class DockerContainerOperationManager {
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
+        final RunInstance instance = run.getInstance();
+        final AbstractCloudRegion region = regionManager.load(instance.getCloudRegionId());
         final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
                 run.getActualDockerImage());
 
@@ -195,6 +198,7 @@ public class DockerContainerOperationManager {
                     .apiToken(apiToken)
                     .commitDistributionUrl(commitScriptsDistributionsUrl)
                     .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
+                    .globalDistributionUrl(getGlobalDistributionUrl(region))
                     .runId(String.valueOf(run.getId()))
                     .containerId(containerId)
                     .cleanUp(String.valueOf(clearContainer))
@@ -213,7 +217,7 @@ public class DockerContainerOperationManager {
                     .build()
                     .getCommand();
 
-            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), commitContainerCommand,
+            Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), commitContainerCommand,
                     getSshPort(run));
             boolean isFinished = sshConnection.waitFor(
                     preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT), TimeUnit.SECONDS);
@@ -464,6 +468,8 @@ public class DockerContainerOperationManager {
     }
 
     private boolean launchPauseRunScript(final PipelineRun run) throws IOException, InterruptedException {
+        final RunInstance instance = run.getInstance();
+        final AbstractCloudRegion region = regionManager.load(instance.getCloudRegionId());
         final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
                 run.getActualDockerImage());
         final String apiToken = authManager.issueTokenForCurrentUser().getToken();
@@ -476,6 +482,7 @@ public class DockerContainerOperationManager {
                 .apiToken(apiToken)
                 .pauseDistributionUrl(commitScriptsDistributionsUrl)
                 .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
+                .globalDistributionUrl(getGlobalDistributionUrl(region))
                 .runId(String.valueOf(run.getId()))
                 .containerId(containerId)
                 .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
@@ -486,7 +493,6 @@ public class DockerContainerOperationManager {
                 .build()
                 .getCommand();
 
-        final RunInstance instance = run.getInstance();
         kubernetesManager.addNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL,
                 TaskStatus.PAUSED.name());
 
@@ -512,6 +518,11 @@ public class DockerContainerOperationManager {
         Assert.state(sshConnection.exitValue() == 0,
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_PAUSE_FAILED, run.getId()));
         return true;
+    }
+
+    private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
+        return Optional.ofNullable(region.getGlobalDistributionUrl())
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
     }
 
     private void validateInstanceState(final CloudInstanceState state) {

@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -285,7 +286,13 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
             envVars.put(AZURE_AUTH_LOCATION, region.getAuthFile());
         }
         envVars.put(AZURE_RESOURCE_GROUP, region.getResourceGroup());
+        envVars.put(SystemParams.GLOBAL_DISTRIBUTION_URL.name(), getGlobalDistributionUrl(region));
         return envVars;
+    }
+
+    private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
+        return Optional.ofNullable(region.getGlobalDistributionUrl())
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
     }
 
     private String buildNodeUpCommand(final AzureRegion region, final String nodeLabel, final RunInstance instance,

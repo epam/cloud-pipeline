@@ -51,7 +51,7 @@ if [ "$CP_CAP_SHELL_LIST_ZSH_SET_AS_DEFAULT" == "true" ]; then
 else
     echo "[INFO] ZSH will not be set as a default shell. It is not requested"
 fi
-_oh_my_zsh_url=${CP_CAP_SHELL_LIST_ZSH_OH_MY_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/zsh/oh-my-zsh/install.sh}
+_oh_my_zsh_url="${CP_CAP_SHELL_LIST_ZSH_OH_MY_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/zsh/oh-my-zsh/install.sh"}"
 
 echo "[INFO] Installing 'oh-my-zsh' framework from '${_oh_my_zsh_url}'"
 

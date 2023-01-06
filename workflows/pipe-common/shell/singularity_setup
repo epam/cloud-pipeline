@@ -99,10 +99,10 @@ pipe_log_info "Done with singularity dependencies" "$SNGLRT_SETUP_TASK"
 # Install Singularity 
 ######################
 
-# Two version are avaialble for now:
-# 2.5.2:            https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/2.5.2/singularity.tgz
-# 3.6.1 (default):  https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/3.6.1/singularity.tgz
-CP_SNGLRT_DISTR_URL="${CP_SNGLRT_DISTR_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/3.6.1/singularity.tgz}"
+# Two version are available for now:
+# 2.5.2:            tools/singularity/2.5.2/singularity.tgz
+# 3.6.1 (default):  tools/singularity/3.6.1/singularity.tgz
+CP_SNGLRT_DISTR_URL="${CP_SNGLRT_DISTR_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/singularity/3.6.1/singularity.tgz"}"
 CP_SNGLRT_INSTALL_PATH="${CP_SNGLRT_INSTALL_PATH:-/var/lib/singularity}"
 CP_SNGLRT_INSTALL_TEMP="/tmp/snglrt-tmp"
 rm -rf "$CP_SNGLRT_INSTALL_TEMP" && \
