@@ -180,16 +180,10 @@ export default class AWSRegionsForm extends React.Component {
     if (!this.awsRegionIds) {
       return [];
     }
-    if (this.awsRegionIds.loaded && this.props.awsRegions.loaded) {
-      const notAvailableRegions = (this.props.awsRegions.value || [])
-        .filter(r => (!!this.state.newRegion && r.provider === this.state.newRegion) ||
-          (!this.state.newRegion && r.id !== this.state.currentRegionId && r.provider === this.state.currentProvider))
-        .map(r => r.regionId);
-      const available = (this.awsRegionIds.value || [])
+    if (this.awsRegionIds.loaded) {
+      return (this.awsRegionIds.value || [])
         .map(r => r)
-        .filter(r => notAvailableRegions.indexOf(r) === -1);
-      available.sort();
-      return available;
+        .sort();
     }
     return [];
   }
