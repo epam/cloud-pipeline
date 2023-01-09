@@ -88,6 +88,10 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                     {
                         "key": "startup-script",
                         "value": user_data_script
+                    },
+                    {
+                        "key": "enable-oslogin",
+                        "value": FALSE
                     }
                 ]
             }
