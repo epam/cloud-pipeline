@@ -113,6 +113,7 @@ public class AwsRegionHelper implements CloudRegionHelper<AwsRegion, AbstractClo
         originalRegion.setMountStorageRule(updatedRegion.getMountStorageRule());
         originalRegion.setMountCredentialsRule(updatedRegion.getMountCredentialsRule());
         originalRegion.setIamRole(updatedRegion.getIamRole());
+        originalRegion.setGlobalDistributionUrl(updatedRegion.getGlobalDistributionUrl());
         return originalRegion;
     }
 
