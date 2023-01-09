@@ -765,7 +765,8 @@ class AWSRegionForm extends React.Component {
       'versioningEnabled',
       'fileShareMounts',
       'mountStorageRule',
-      'mountCredentialsRule'
+      'mountCredentialsRule',
+      'globalDistributionUrl'
     ],
     AZURE: [
       'regionId',
@@ -785,7 +786,8 @@ class AWSRegionForm extends React.Component {
       'enterpriseAgreements',
       'fileShareMounts',
       'mountStorageRule',
-      'mountCredentialsRule'
+      'mountCredentialsRule',
+      'globalDistributionUrl'
     ],
     GCP: [
       'regionId',
@@ -808,6 +810,7 @@ class AWSRegionForm extends React.Component {
         required: form => form.getFieldValue('versioningEnabled')
       },
       'versioningEnabled',
+      'globalDistributionUrl'
     ]
   };
 
@@ -903,7 +906,7 @@ class AWSRegionForm extends React.Component {
       }
       try {
         const initialValueStr = preProcessJSON(initialValue, true);
-        return initialValueStr !== value;
+        return (initialValueStr || '') !== (value || '');
       } catch (__) {
 
       }
@@ -916,6 +919,7 @@ class AWSRegionForm extends React.Component {
     };
     this._modified = check('regionId', checkStringValue) ||
       check('name', checkStringValue) ||
+      check('globalDistributionUrl', checkStringValue) ||
       check('default', checkBOOLValue) ||
       check('kmsKeyId', checkStringValue) ||
       check('kmsKeyArn', checkStringValue) ||
@@ -1959,6 +1963,24 @@ class AWSRegionForm extends React.Component {
                   ref={this.initializeCustomInstanceTypesEditor}
                   editorClassName={styles.codeEditor}
                   editorLanguage="application/json"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Distribution URL"
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'globalDistributionUrl',
+                  'edit-region-distribution-url-container'
+                )
+              }
+            >
+              {getFieldDecorator('globalDistributionUrl', {
+                initialValue: this.props.region.globalDistributionUrl
+              })(
+                <Input
+                  size="small"
                   disabled={this.props.pending} />
               )}
             </Form.Item>
