@@ -127,7 +127,8 @@ mkdir -p $MOUNT_POINT/reference
 rm -rf $MOUNT_POINT/lost+found
 
 ssh_node_port="@NODE_SSH_PORT@"
-if [ "$ssh_node_port" ]; then
+
+if [ "$ssh_node_port" ]  && [[ "$ssh_node_port" != "@"*"@" ]]; then
   sed -i "/#Port/c\Port $ssh_node_port" /etc/ssh/sshd_config
   systemctl restart sshd
 fi
@@ -401,7 +402,7 @@ EOF
 
 _PRE_PULL_DOCKERS="@PRE_PULL_DOCKERS@"
 _API_USER="@API_USER@"
-if [[ ! -z "${_PRE_PULL_DOCKERS}" ]]; then
+if [[ ! -z "${_PRE_PULL_DOCKERS}" ]] && [[ "${_PRE_PULL_DOCKERS}" != "@"*"@" ]] ; then
   echo "Pre-pulling requested docker images ${_PRE_PULL_DOCKERS}"
   IFS=',' read -ra DOCKERS <<< "$_PRE_PULL_DOCKERS"
   for _DOCKER in "${DOCKERS[@]}"; do
