@@ -91,7 +91,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                     },
                     {
                         "key": "enable-oslogin",
-                        "value": FALSE
+                        "value": "FALSE"
                     }
                 ]
             }
