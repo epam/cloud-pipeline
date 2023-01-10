@@ -81,11 +81,9 @@ public class DtsSynchronizationService {
     private final String defaultCronExpression;
     private final String syncToken;
     private final CloudPipelineAPIClient apiClient;
-    private final ApiTokenService apiTokenService;
 
     @Autowired
     public DtsSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
-                                     final @Value("${dts.api.token}") String pipeApiToken,
                                      final @Value("${dts.autonomous.sync.cron}") String defaultCronExpression,
                                      final @Value("${dts.sync.token.name:dts-sync-complete}") String syncToken,
                                      final TransferService autonomousTransferService,
@@ -96,7 +94,6 @@ public class DtsSynchronizationService {
                                      final CloudPipelineAPIClient apiClient,
                                      final ApiTokenService apiTokenService) {
         this.apiClient = apiClient;
-        this.apiTokenService = apiTokenService;
         this.pipeCredentials = new PipelineCredentials(pipeApiUrl, apiTokenService.getToken());
         this.taskRepository = taskRepository;
         this.transferService = autonomousTransferService;
