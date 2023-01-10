@@ -2551,6 +2551,7 @@ export default class DataStorage extends React.Component {
   }
 
   componentDidUpdate (prevProps) {
+    this.clearSelectedItemsIfRequired();
     this.updateStorageIfRequired();
   }
 
@@ -2560,5 +2561,11 @@ export default class DataStorage extends React.Component {
       this.props.path,
       this.props.showVersions
     );
+  };
+
+  clearSelectedItemsIfRequired = () => {
+    if (this.storage.storageId !== this.props.storageId) {
+      this.clearSelection();
+    }
   };
 }
