@@ -370,7 +370,8 @@ h6 {
 .cp-error .ant-input,
 .ant-input.cp-error,
 .ant-select.cp-error .ant-select-selection,
-.ant-input-number.cp-error {
+.ant-input-number.cp-error,
+.cp-run-capabilities-input.cp-error {
   border-color: @color-red;
   color: @color-red;
   box-shadow: none;
@@ -1189,6 +1190,14 @@ li.ant-calendar-time-picker-select-option-selected {
   color: @element-selected-color;
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;
+}
+
+.cp-run-capabilities-input .cp-run-capabilities-input-tag.tag-placeholder {
+  color: @application-color-disabled;
+}
+
+.cp-run-capabilities-input .cp-run-capabilities-input-tag.required {
+  color: @color-red;
 }
 
 .ant-select-selection--multiple .ant-select-selection__choice__remove {
