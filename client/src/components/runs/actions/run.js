@@ -56,7 +56,8 @@ import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
 import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import {
   applyCustomCapabilitiesParameters,
-  CapabilitiesDisclaimer
+  CapabilitiesDisclaimer,
+  checkRequiredCapabilitiesErrors
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 import ToolLayersCheckWarning from './check/tool-layers/warning';
 
@@ -546,7 +547,8 @@ export class RunConfirmation extends React.Component {
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
     skipCheck: PropTypes.bool,
-    dockerImage: PropTypes.string
+    dockerImage: PropTypes.string,
+    runCapabilitiesError: PropTypes.bool
   };
 
   static defaultProps = {
@@ -1082,6 +1084,14 @@ export class RunConfirmation extends React.Component {
         {
           this.renderCapabilitiesDisclaimer()
         }
+        {this.props.runCapabilitiesError ? (
+          <Alert
+            type="error"
+            style={{margin: 2}}
+            showIcon
+            message="Some of the required run capabilities are missing."
+          />
+        ) : null}
         <ToolLayersCheckWarning
           style={{margin: 2}}
           toolId={this.props.dockerImage}
@@ -1154,6 +1164,16 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     limitMounts: null,
     runNameAlias: null
   };
+
+  get runCapabilitiesError () {
+    if (this.props.parameters && this.props.preferences) {
+      return checkRequiredCapabilitiesErrors(
+        Object.keys(this.props.parameters),
+        this.props.preferences
+      );
+    }
+    return false;
+  }
 
   onChangeSpotType = (isSpot) => {
     this.setState({
@@ -1280,6 +1300,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             hddSize={this.props.hddSize}
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
+            runCapabilitiesError={this.runCapabilitiesError}
             preferences={this.props.preferences}
             skipCheck={this.props.skipCheck}
             dockerImage={this.props.dockerImage}

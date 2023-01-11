@@ -54,7 +54,10 @@ import styles from './Panel.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import PlatformIcon from '../../../tools/platform-icon';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
-import {applyUserCapabilities} from '../../../pipelines/launch/form/utilities/run-capabilities';
+import {
+  applyUserCapabilities,
+  checkRequiredCapabilitiesErrors
+} from '../../../pipelines/launch/form/utilities/run-capabilities';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -732,6 +735,16 @@ export default class PersonalToolsPanel extends React.Component {
     }
   };
 
+  get runCapabilitiesError () {
+    if (this.state.runToolInfo && this.state.runToolInfo.payload.params) {
+      return checkRequiredCapabilitiesErrors(
+        Object.keys(this.state.runToolInfo.payload.params),
+        this.props.preferences
+      );
+    }
+    return false;
+  }
+
   render () {
     if (!this.props.dockerRegistries.loaded && this.props.dockerRegistries.pending) {
       return <LoadingView />;
@@ -790,6 +803,7 @@ export default class PersonalToolsPanel extends React.Component {
                 </Button>
                 <Button
                   disabled={
+                    this.runCapabilitiesError ||
                     !this.state.runToolInfo ||
                     !this.state.runToolInfo.payload ||
                     !this.state.runToolInfo.payload.instanceType ||
@@ -852,6 +866,7 @@ export default class PersonalToolsPanel extends React.Component {
                 preferences={this.props.preferences}
                 platform={this.state.runToolInfo.tool.platform}
                 dockerImage={this.state.runToolInfo.payload.dockerImage}
+                runCapabilitiesError={this.runCapabilitiesError}
               />
           }
           {

@@ -107,7 +107,8 @@ import RunCapabilities, {
   getUserCapabilities,
   hasPlatformSpecificCapabilities,
   isCustomCapability,
-  RUN_CAPABILITIES
+  RUN_CAPABILITIES,
+  RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -519,6 +520,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             platform={this.toolPlatform}
             dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
             provider={this.currentCloudRegionProvider}
+            mode={RUN_CAPABILITIES_MODE.launch}
           />
         </FormItem>
       );

@@ -43,6 +43,11 @@ export const RUN_CAPABILITIES_PARAMETERS = {
   [RUN_CAPABILITIES.dcv]: CP_CAP_DCV
 };
 
+export const RUN_CAPABILITIES_MODE = {
+  launch: 'launch',
+  edit: 'edit'
+};
+
 const CAPABILITIES_DEPENDENCIES = {
   [RUN_CAPABILITIES.dcv]: [CP_CAP_DCV_DESKTOP, CP_CAP_DCV_WEB, CP_CAP_SYSTEMD_CONTAINER]
 };
@@ -118,7 +123,7 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     !capability.cloud ||
     capability.cloud.length === 0 ||
     capability.cloud.some(p => p.toLowerCase() === provider.toLowerCase());
-  const mapCapability = (capability) => {
+  const mapCapability = (capability, parent) => {
     const {
       capabilities = [],
       ...capabilityInfo
@@ -127,8 +132,9 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     const enabledByCloudProvider = filterByCloudProvider(capability);
     return {
       ...capabilityInfo,
-      capabilities: capabilities.map(mapCapability),
-      disabled: !enabledByOS || !enabledByCloudProvider
+      capabilities: capabilities.map(c => mapCapability(c, capability)),
+      disabled: !enabledByOS || !enabledByCloudProvider,
+      parentValue: parent?.value
     };
   };
   return capabilities.map(o => ({
@@ -138,7 +144,7 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     cloud: CAPABILITIES_CLOUD_FILTERS[o]
   }))
     .concat((custom || []).filter(filterCustomCapability))
-    .map(mapCapability);
+    .map(capability => mapCapability(capability));
 }
 
 function plainList (capabilities = []) {
@@ -175,7 +181,8 @@ class RunCapabilities extends React.Component {
 
   static defaultProps = {
     values: null,
-    onChange: null
+    onChange: null,
+    initialRequiredCapabilities: []
   };
 
   state = {
@@ -184,6 +191,7 @@ class RunCapabilities extends React.Component {
 
   componentDidMount () {
     this.fetchDockerImageOS();
+    this.setInitialRequiredCapabilities();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -192,9 +200,59 @@ class RunCapabilities extends React.Component {
       prevProps.dockerImageOS !== this.props.dockerImageOS
     ) {
       this.fetchDockerImageOS();
+      this.setInitialRequiredCapabilities();
     } else if (prevProps.platform !== this.props.platform) {
       this.correctCapabilitiesSelection();
+      this.setInitialRequiredCapabilities();
     }
+  }
+
+  setInitialRequiredCapabilities = () => {
+    const {values} = this.props;
+    this.setState({
+      initialRequiredCapabilities: (values || [])
+        .filter(this.capabilityIsRequired)
+    });
+  };
+
+  get allCapabilities () {
+    const {
+      platform,
+      provider,
+      preferences
+    } = this.props;
+    const {
+      os
+    } = this.state;
+    return getAllPlatformCapabilities(preferences, {platform, os, provider});
+  }
+
+  get filteredValues () {
+    const {
+      platform,
+      provider,
+      preferences,
+      values
+    } = this.props;
+    const {
+      os
+    } = this.state;
+    const capabilities = getPlatformSpecificCapabilities(
+      preferences,
+      {platform, os, provider}
+    );
+    return (values || [])
+      .filter(value => capabilities.find(o => o.value === value));
+  }
+
+  get hasErrors () {
+    const {
+      values,
+      preferences,
+      mode
+    } = this.props;
+    return checkRequiredCapabilitiesErrors(values, preferences) &&
+    mode === RUN_CAPABILITIES_MODE.launch;
   }
 
   fetchDockerImageOS () {
@@ -237,36 +295,98 @@ class RunCapabilities extends React.Component {
     onChange && onChange(filtered);
   };
 
+  getCapabilityByValue = (value) => {
+    return plainList(this.allCapabilities)
+      .find(capability => capability.value === value);
+  };
+
+  capabilityIsRequired = (value) => {
+    const current = this.getCapabilityByValue(value);
+    if (current) {
+      return current.custom &&
+        (current.capabilities || []).length > 0;
+    }
+    return false;
+  };
+
+  renderRequiredCapabilities = () => {
+    const {mode} = this.props;
+    const getCapabilityName = value => {
+      const current = this.getCapabilityByValue(value) || {};
+      return current.name || value;
+    };
+    return [
+      this.filteredValues
+        .filter(this.capabilityIsRequired)
+        .map(value => (
+          <div
+            key={value}
+            className={
+              classNames(
+                styles.runCapabilitiesInputTag,
+                'cp-run-capabilities-input-tag',
+                {'required': mode === RUN_CAPABILITIES_MODE.launch},
+                {'tag-placeholder': mode === RUN_CAPABILITIES_MODE.edit}
+              )
+            }
+          >
+            {getCapabilityName(value)}
+          </div>
+        ))
+    ];
+  };
+
   render () {
     const {
       disabled,
-      values,
-      platform,
-      provider,
-      preferences,
       className,
-      style
+      style,
+      mode
     } = this.props;
-    const {os} = this.state;
-    const capabilities = getPlatformSpecificCapabilities(
-      preferences,
-      {platform, os, provider}
-    );
-    const all = getAllPlatformCapabilities(preferences, {platform, os, provider});
-    const filteredValues = (values || [])
-      .filter(value => capabilities.find(o => o.value === value));
+    const {initialRequiredCapabilities} = this.state;
     const toggleValue = (value) => {
-      if (disabled) {
+      const current = this.getCapabilityByValue(value);
+      const parent = this.getCapabilityByValue(current.parentValue);
+      const isRequired = this.capabilityIsRequired(value);
+      const isSelected = this.filteredValues.includes(value);
+      if (disabled || (mode === RUN_CAPABILITIES_MODE.launch && isRequired)) {
         return;
       }
-      const selected = [...filteredValues];
-      const index = selected.indexOf(value);
-      if (index >= 0) {
-        selected.splice(index, 1);
+      const correctSelection = (selection) => {
+        if (parent) {
+          const parentIsRequired = initialRequiredCapabilities
+            .includes(parent.value);
+          const siblings = parent.capabilities
+            .filter(capability => capability.value !== current.value)
+            .map(capability => capability.value);
+          const newSelection = parent.multiple
+            ? selection.filter(value => value !== current.parentValue)
+            : selection.filter(value => value !== current.parentValue &&
+              !siblings.includes(value));
+          const siblingsHasSelection = newSelection
+            .some(value => siblings.includes(value));
+          if (isSelected && !siblingsHasSelection && parentIsRequired) {
+            newSelection.push(current.parentValue);
+          }
+          return newSelection;
+        }
+        if (
+          isRequired &&
+          mode === RUN_CAPABILITIES_MODE.edit
+        ) {
+          const childValues = (current.capabilities || [])
+            .map(capability => capability.value);
+          return selection.filter(value => !childValues.includes(value));
+        }
+        return selection;
+      };
+      let capabilities = correctSelection([...this.filteredValues]);
+      if (isSelected) {
+        capabilities = capabilities.filter(v => v !== value);
       } else {
-        selected.push(value);
+        capabilities.push(value);
       }
-      this.onSelectionChanged(selected);
+      this.onSelectionChanged(capabilities);
     };
     const onCapabilityClick = ({domEvent, key}) => {
       if (disabled) {
@@ -290,7 +410,7 @@ class RunCapabilities extends React.Component {
           >
             <Capability
               capability={capability}
-              selected={filteredValues.includes(capability.value)}
+              selected={this.filteredValues.includes(capability.value)}
               style={{width: '100%'}}
             />
           </MenuItem>
@@ -303,11 +423,11 @@ class RunCapabilities extends React.Component {
           title={(
             <Capability
               capability={capability}
-              selected={filteredValues.includes(capability.value)}
+              selected={this.filteredValues.includes(capability.value)}
               style={{width: '100%', paddingRight: 20}}
               nested={
                 capabilities
-                  .filter(child => filteredValues.includes(child.value))
+                  .filter(child => this.filteredValues.includes(child.value))
                   .map(child => child.value)
               }
             />
@@ -334,7 +454,7 @@ class RunCapabilities extends React.Component {
                 selectedKeys={[]}
                 onClick={onCapabilityClick}
               >
-                {all.map(renderCapability)}
+                {this.allCapabilities.map(renderCapability)}
               </Menu>
             </div>
           )}
@@ -348,6 +468,7 @@ class RunCapabilities extends React.Component {
                 'cp-run-capabilities-input',
                 {
                   disabled,
+                  'cp-error': this.hasErrors,
                   [styles.disabled]: disabled
                 }
               )
@@ -355,11 +476,13 @@ class RunCapabilities extends React.Component {
             style={style}
           >
             {
-              filteredValues.length === 0 && '\u00A0'
+              this.filteredValues.length === 0 && '\u00A0'
             }
             {
-              plainList(all)
-                .filter(capability => filteredValues.includes(capability.value))
+              plainList(this.allCapabilities)
+                .filter(o => this.filteredValues.includes(o.value) &&
+                  !this.capabilityIsRequired(o.value)
+                )
                 .map((capability) => (
                   <div
                     key={capability.value}
@@ -379,10 +502,16 @@ class RunCapabilities extends React.Component {
                   </div>
                 ))
             }
+            {this.renderRequiredCapabilities()}
           </div>
         </Dropdown>
+        {this.hasErrors ? (
+          <div className={classNames(styles.errorText, 'cp-error')}>
+            Some of the required values are missing
+          </div>
+        ) : null}
         <CapabilitiesDisclaimer
-          values={filteredValues}
+          values={this.filteredValues}
           style={{marginTop: 5}}
         />
       </div>
@@ -629,6 +758,18 @@ export function checkRunCapabilitiesModified (capabilities1, capabilities2, pref
     }
   }
   return false;
+}
+
+export function checkRequiredCapabilitiesErrors (values = [], preferences) {
+  const checkMissedDependency = (capability) => {
+    return !capability.capabilities.some(({value}) => values.includes(value));
+  };
+  const requiredCapabilities = getAllPlatformCapabilities(preferences)
+    .filter(capability => values.includes(capability.value) &&
+      capability.capabilities.length > 0 &&
+      capability.custom
+    );
+  return requiredCapabilities.some(checkMissedDependency);
 }
 
 function getDisclaimersList (options = {}) {
