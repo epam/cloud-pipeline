@@ -170,13 +170,17 @@ class RunCapabilities extends React.Component {
   static propTypes = {
     className: PropTypes.string,
     style: PropTypes.object,
+    tagStyle: PropTypes.object,
     disabled: PropTypes.bool,
     values: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)]),
     platform: PropTypes.string,
     onChange: PropTypes.func,
     dockerImage: PropTypes.string,
     dockerImageOS: PropTypes.string,
-    provider: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    provider: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    mode: PropTypes.string,
+    showError: PropTypes.bool,
+    getPopupContainer: PropTypes.func
   };
 
   static defaultProps = {
@@ -203,6 +207,9 @@ class RunCapabilities extends React.Component {
       this.setInitialRequiredCapabilities();
     } else if (prevProps.platform !== this.props.platform) {
       this.correctCapabilitiesSelection();
+      this.setInitialRequiredCapabilities();
+    }
+    if (this.props.values && !prevProps.values) {
       this.setInitialRequiredCapabilities();
     }
   }
@@ -249,10 +256,12 @@ class RunCapabilities extends React.Component {
     const {
       values,
       preferences,
-      mode
+      mode,
+      showError = true
     } = this.props;
     return checkRequiredCapabilitiesErrors(values, preferences) &&
-    mode === RUN_CAPABILITIES_MODE.launch;
+    mode === RUN_CAPABILITIES_MODE.launch &&
+    showError;
   }
 
   fetchDockerImageOS () {
@@ -279,7 +288,7 @@ class RunCapabilities extends React.Component {
     this.onSelectionChanged(this.props.values);
   }
 
-  onSelectionChanged = (values = []) => {
+  onSelectionChanged = (values) => {
     const {
       platform,
       provider,
@@ -291,7 +300,8 @@ class RunCapabilities extends React.Component {
       preferences,
       {platform, os, provider}
     );
-    const filtered = values.filter(v => capabilities.find(o => o.value === v));
+    const filtered = (values || [])
+      .filter(v => capabilities.find(o => o.value === v));
     onChange && onChange(filtered);
   };
 
@@ -310,7 +320,7 @@ class RunCapabilities extends React.Component {
   };
 
   renderRequiredCapabilities = () => {
-    const {mode} = this.props;
+    const {mode, tagStyle} = this.props;
     const getCapabilityName = value => {
       const current = this.getCapabilityByValue(value) || {};
       return current.name || value;
@@ -329,6 +339,7 @@ class RunCapabilities extends React.Component {
                 {'tag-placeholder': mode === RUN_CAPABILITIES_MODE.edit}
               )
             }
+            style={tagStyle}
           >
             {getCapabilityName(value)}
           </div>
@@ -341,7 +352,9 @@ class RunCapabilities extends React.Component {
       disabled,
       className,
       style,
-      mode
+      tagStyle,
+      mode,
+      getPopupContainer = () => document.body
     } = this.props;
     const {initialRequiredCapabilities} = this.state;
     const toggleValue = (value) => {
@@ -400,6 +413,9 @@ class RunCapabilities extends React.Component {
       const {
         capabilities = []
       } = capability;
+      const selectable = this.capabilityIsRequired(capability.value)
+        ? mode === RUN_CAPABILITIES_MODE.edit
+        : true;
       if (capabilities.length === 0) {
         return (
           <MenuItem
@@ -410,7 +426,10 @@ class RunCapabilities extends React.Component {
           >
             <Capability
               capability={capability}
-              selected={this.filteredValues.includes(capability.value)}
+              selected={
+                selectable &&
+                this.filteredValues.includes(capability.value)
+              }
               style={{width: '100%'}}
             />
           </MenuItem>
@@ -434,7 +453,6 @@ class RunCapabilities extends React.Component {
           )}
           disabled={capability.disabled}
           onTitleClick={onCapabilityClick}
-          onClick={onCapabilityClick}
         >
           {
             capabilities.map(renderCapability)
@@ -453,6 +471,7 @@ class RunCapabilities extends React.Component {
                 mode="vertical"
                 selectedKeys={[]}
                 onClick={onCapabilityClick}
+                getPopupContainer={getPopupContainer}
               >
                 {this.allCapabilities.map(renderCapability)}
               </Menu>
@@ -492,6 +511,7 @@ class RunCapabilities extends React.Component {
                         'cp-run-capabilities-input-tag'
                       )
                     }
+                    style={tagStyle}
                   >
                     <Capability capability={capability} />
                     <Icon
@@ -760,12 +780,12 @@ export function checkRunCapabilitiesModified (capabilities1, capabilities2, pref
   return false;
 }
 
-export function checkRequiredCapabilitiesErrors (values = [], preferences) {
+export function checkRequiredCapabilitiesErrors (values, preferences) {
   const checkMissedDependency = (capability) => {
     return !capability.capabilities.some(({value}) => values.includes(value));
   };
   const requiredCapabilities = getAllPlatformCapabilities(preferences)
-    .filter(capability => values.includes(capability.value) &&
+    .filter(capability => (values || []).includes(capability.value) &&
       capability.capabilities.length > 0 &&
       capability.custom
     );

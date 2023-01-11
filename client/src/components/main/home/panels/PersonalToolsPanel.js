@@ -55,6 +55,8 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import PlatformIcon from '../../../tools/platform-icon';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 import {
+  applyCapabilities,
+  getEnabledCapabilities,
   applyUserCapabilities,
   checkRequiredCapabilitiesErrors
 } from '../../../pipelines/launch/form/utilities/run-capabilities';
@@ -93,7 +95,8 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   state = {
-    runToolInfo: null
+    runToolInfo: null,
+    runCapabilities: null
   };
 
   isAdmin = () => {
@@ -220,6 +223,16 @@ export default class PersonalToolsPanel extends React.Component {
     return [];
   }
 
+  get runCapabilitiesError () {
+    if (this.state.runToolInfo && this.state.runToolInfo.payload.params) {
+      return checkRequiredCapabilitiesErrors(
+        Object.keys(this.state.runToolInfo.payload.params),
+        this.props.preferences
+      );
+    }
+    return false;
+  }
+
   runToolWithDefaultSettings = async () => {
     const payload = this.state.runToolInfo.payload;
     if (this.state.runToolInfo.isSpot !== undefined) {
@@ -249,6 +262,14 @@ export default class PersonalToolsPanel extends React.Component {
       this.props.preferences,
       this.state.runToolInfo.tool.platform
     );
+    if (this.state.runCapabilities) {
+      applyCapabilities(
+        payload.params,
+        this.state.runCapabilities,
+        this.props.preferences,
+        this.state.runToolInfo.tool.platform
+      );
+    }
     if (await run(this)(payload, false)) {
       this.setState({
         runToolInfo: null
@@ -523,12 +544,15 @@ export default class PersonalToolsPanel extends React.Component {
               tag: defaultTag,
               payload: defaultPayload,
               warning: launchTooltip,
-              pricePerHour: estimatedPriceRequest.loaded ? estimatedPriceRequest.value.pricePerHour : false,
+              pricePerHour: estimatedPriceRequest.loaded
+                ? estimatedPriceRequest.value.pricePerHour
+                : false,
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
               availablePriceTypes,
               permissionErrors
-            }
+            },
+            runCapabilities: getEnabledCapabilities(defaultPayload.params)
           });
         } else {
           message.error(tooltip);
@@ -735,15 +759,9 @@ export default class PersonalToolsPanel extends React.Component {
     }
   };
 
-  get runCapabilitiesError () {
-    if (this.state.runToolInfo && this.state.runToolInfo.payload.params) {
-      return checkRequiredCapabilitiesErrors(
-        Object.keys(this.state.runToolInfo.payload.params),
-        this.props.preferences
-      );
-    }
-    return false;
-  }
+  onChangeRunCapabilities = (capabilities) => {
+    this.setState({runCapabilities: (capabilities || []).slice()});
+  };
 
   render () {
     if (!this.props.dockerRegistries.loaded && this.props.dockerRegistries.pending) {
@@ -803,7 +821,6 @@ export default class PersonalToolsPanel extends React.Component {
                 </Button>
                 <Button
                   disabled={
-                    this.runCapabilitiesError ||
                     !this.state.runToolInfo ||
                     !this.state.runToolInfo.payload ||
                     !this.state.runToolInfo.payload.instanceType ||
@@ -866,7 +883,9 @@ export default class PersonalToolsPanel extends React.Component {
                 preferences={this.props.preferences}
                 platform={this.state.runToolInfo.tool.platform}
                 dockerImage={this.state.runToolInfo.payload.dockerImage}
+                runCapabilities={this.state.runCapabilities}
                 runCapabilitiesError={this.runCapabilitiesError}
+                onChangeRunCapabilities={this.onChangeRunCapabilities}
               />
           }
           {
