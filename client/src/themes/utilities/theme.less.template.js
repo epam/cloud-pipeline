@@ -389,7 +389,8 @@ export default `
 @THEME .cp-error .ant-input,
 @THEME .ant-input.cp-error,
 @THEME .ant-select.cp-error .ant-select-selection,
-@THEME .ant-input-number.cp-error {
+@THEME .ant-input-number.cp-error,
+@THEME .cp-run-capabilities-input.cp-error {
   border-color: @color-red;
   color: @color-red;
   box-shadow: none;
@@ -1053,6 +1054,12 @@ export default `
   color: @element-selected-color;
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;
+}
+@THEME .cp-run-capabilities-input .cp-run-capabilities-input-tag.tag-placeholder {
+  color: @application-color-disabled;
+}
+@THEME .cp-run-capabilities-input .cp-run-capabilities-input-tag.required {
+  color: @color-red;
 }
 @THEME .ant-select-selection--multiple .ant-select-selection__choice__remove {
   color: @application-color-faded;

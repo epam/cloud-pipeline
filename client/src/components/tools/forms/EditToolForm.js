@@ -77,6 +77,7 @@ import {
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
   RUN_CAPABILITIES,
+  RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
   applyCapabilities,
   checkRunCapabilitiesModified,
@@ -316,7 +317,7 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          applyCapabilities(
+          parameters = applyCapabilities(
             parameters,
             this.state.runCapabilities,
             this.props.preferences
@@ -1414,6 +1415,7 @@ export default class EditToolForm extends React.Component {
                   onChange={this.onRunCapabilitiesSelect}
                   dockerImageOS={this.props.dockerOSVersion}
                   provider={this.getCloudProvider()}
+                  mode={RUN_CAPABILITIES_MODE.edit}
                 />
               </Form.Item>
               <ConfigureClusterDialog

@@ -226,7 +226,9 @@ class PreferencesLoad extends Remote {
             custom: true,
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
-            capabilities: Object.entries(capabilities).map(mapCapability)
+            capabilities: Object.entries(capabilities)
+              .map(c => mapCapability(c, entry)),
+            multiple: Boolean(entry?.multiple)
           };
         };
         return Object

@@ -102,10 +102,12 @@ import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSet
 import RunCapabilities, {
   addCapability,
   applyCapabilities,
+  correctRequiredCapabilities,
   getEnabledCapabilities,
   getUserCapabilities,
   isCustomCapability,
-  RUN_CAPABILITIES
+  RUN_CAPABILITIES,
+  RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -499,6 +501,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         onChange={this.onRunCapabilitiesSelect}
         dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
         provider={this.currentCloudRegionProvider}
+        mode={RUN_CAPABILITIES_MODE.launch}
       />
     </FormItem>
   );
@@ -885,10 +888,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (
       !this.props.editConfigurationMode
     ) {
-      runCapabilities = [...new Set([
-        ...(runCapabilities || []),
-        ...(this.state.userRunCapabilities || [])
-      ])];
+      runCapabilities = correctRequiredCapabilities(
+        [...new Set([...(runCapabilities || []), ...(this.state.userRunCapabilities || [])])],
+        this.props.preferences
+      );
     }
     if (keepPipeline) {
       this.setState({
@@ -1173,7 +1176,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       }
     }
-    applyCapabilities(
+    payload[PARAMETERS] = applyCapabilities(
       payload[PARAMETERS],
       this.state.runCapabilities,
       this.props.preferences
@@ -1380,7 +1383,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
-    applyCapabilities(
+    payload.params = applyCapabilities(
       payload.params,
       this.state.runCapabilities,
       this.props.preferences
@@ -5349,16 +5352,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.setState({
       userRunCapabilitiesPending: true
     }, () => {
-      getUserCapabilities()
+      this.props.preferences
+        .fetchIfNeededOrWait()
+        .then(() => getUserCapabilities())
         .then((userRunCapabilities = []) => {
           let {runCapabilities} = this.state;
           if (
             !this.props.editConfigurationMode
           ) {
-            runCapabilities = [...new Set([
-              ...(runCapabilities || []),
-              ...userRunCapabilities
-            ])];
+            runCapabilities = correctRequiredCapabilities(
+              [...new Set([...(runCapabilities || []), ...userRunCapabilities])],
+              this.props.preferences
+            );
           }
           this.setState({
             userRunCapabilities,
