@@ -35,7 +35,7 @@ import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.getFacete
 public class SearchResultExportManagerTest extends AbstractSpringTest {
 
     private static final String EXPORT_FILE_NAME = "test_search_export.csv";
-    private static final String PLAIN_HEADER = "Name,Changed,Size,Owner,Path";
+    private static final String PLAIN_HEADER = "Name,Changed,Size,Owner,Path,Cloud path,Mount path";
 
     @Autowired
     private SearchResultExportManager searchResultExportManager;

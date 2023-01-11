@@ -47,7 +47,7 @@ public final class SearchCreatorUtils {
     public static final String SPECIES = "Species";
     public static final String HUMAN = "human";
     public static final String MOUSE = "mouse";
-    public static final String HEADER_WITH_ATTRIBUTE = "Name,Changed,Size,Species,Owner,Path";
+    public static final String HEADER_WITH_ATTRIBUTE = "Name,Changed,Size,Species,Owner,Path,Cloud path,Mount path";
 
     private static final SearchDocumentType SEARCH_DOCUMENT_TYPE = SearchDocumentType.AZ_BLOB_FILE;
 
@@ -124,6 +124,8 @@ public final class SearchCreatorUtils {
         facetedSearchExportVO.setIncludeOwner(true);
         facetedSearchExportVO.setIncludePath(true);
         facetedSearchExportVO.setIncludeSize(true);
+        facetedSearchExportVO.setIncludeCloudPath(true);
+        facetedSearchExportVO.setIncludeMountPath(true);
         return facetedSearchExportVO;
     }
 
