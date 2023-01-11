@@ -691,6 +691,26 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
   return parameters;
 }
 
+export function updateCustomCapabilities (
+  parameters = {},
+  newCapabilities = [],
+  preferences
+) {
+  const clearCustomCapabilities = (parameters) => {
+    return Object.fromEntries(Object.entries(parameters)
+      .filter(([key]) => !isCustomCapability(key, preferences))
+    );
+  };
+  parameters = clearCustomCapabilities(parameters);
+  newCapabilities.forEach(key => {
+    parameters[key] = {
+      type: 'boolean',
+      value: true
+    };
+  });
+  return parameters;
+}
+
 /**
  * @returns {Promise<string[]>}
  */

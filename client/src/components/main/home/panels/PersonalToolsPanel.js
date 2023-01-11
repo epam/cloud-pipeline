@@ -55,7 +55,7 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import PlatformIcon from '../../../tools/platform-icon';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 import {
-  applyCapabilities,
+  updateCustomCapabilities,
   getEnabledCapabilities,
   applyUserCapabilities,
   checkRequiredCapabilitiesErrors
@@ -263,11 +263,10 @@ export default class PersonalToolsPanel extends React.Component {
       this.state.runToolInfo.tool.platform
     );
     if (this.state.runCapabilities) {
-      applyCapabilities(
+      payload.params = updateCustomCapabilities(
         payload.params,
         this.state.runCapabilities,
-        this.props.preferences,
-        this.state.runToolInfo.tool.platform
+        this.props.preferences
       );
     }
     if (await run(this)(payload, false)) {

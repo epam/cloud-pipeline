@@ -57,7 +57,7 @@ import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStorage
 import RunCapabilities, {
   RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
-  applyCapabilities,
+  updateCustomCapabilities,
   applyCustomCapabilitiesParameters,
   CapabilitiesDisclaimer,
   checkRequiredCapabilitiesErrors
@@ -451,11 +451,10 @@ function runFn (
         onOk: async function () {
           if (component) {
             if (component.state.runCapabilities) {
-              applyCapabilities(
+              payload.params = updateCustomCapabilities(
                 payload.params,
                 component.state.runCapabilities,
-                stores.preferences,
-                component.props.platform
+                stores.preferences
               );
             }
             payload.isSpot = component.state.isSpot;
