@@ -447,7 +447,7 @@ function runFn (
         style: {
           wordWrap: 'break-word'
         },
-        okText: 'Launch23',
+        okText: 'Launch',
         onOk: async function () {
           if (component) {
             if (component.state.runCapabilities) {

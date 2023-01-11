@@ -520,7 +520,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             platform={this.toolPlatform}
             dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
             provider={this.currentCloudRegionProvider}
-            mode={RUN_CAPABILITIES_MODE.launch}
+            mode={this.props.editConfigurationMode && !this.props.detached
+              ? RUN_CAPABILITIES_MODE.edit
+              : RUN_CAPABILITIES_MODE.launch
+            }
           />
         </FormItem>
       );

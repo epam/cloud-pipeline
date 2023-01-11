@@ -426,10 +426,7 @@ class RunCapabilities extends React.Component {
           >
             <Capability
               capability={capability}
-              selected={
-                selectable &&
-                this.filteredValues.includes(capability.value)
-              }
+              selected={this.filteredValues.includes(capability.value)}
               style={{width: '100%'}}
             />
           </MenuItem>
@@ -442,7 +439,10 @@ class RunCapabilities extends React.Component {
           title={(
             <Capability
               capability={capability}
-              selected={this.filteredValues.includes(capability.value)}
+              selected={
+                selectable &&
+                this.filteredValues.includes(capability.value)
+              }
               style={{width: '100%', paddingRight: 20}}
               nested={
                 capabilities
