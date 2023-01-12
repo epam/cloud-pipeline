@@ -102,7 +102,7 @@ import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSet
 import ServerlessAPIButton from '../../../special/serverless-api-button';
 import RunCapabilities, {
   addCapability,
-  applyCapabilities,
+  applyCapabilities, correctRequiredCapabilities,
   getEnabledCapabilities,
   getUserCapabilities,
   hasPlatformSpecificCapabilities,
@@ -520,10 +520,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             platform={this.toolPlatform}
             dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
             provider={this.currentCloudRegionProvider}
-            mode={this.props.editConfigurationMode && !this.props.detached
-              ? RUN_CAPABILITIES_MODE.edit
-              : RUN_CAPABILITIES_MODE.launch
-            }
+            mode={RUN_CAPABILITIES_MODE.launch}
           />
         </FormItem>
       );
@@ -913,10 +910,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (
       !this.props.editConfigurationMode
     ) {
-      runCapabilities = [...new Set([
-        ...(runCapabilities || []),
-        ...(this.state.userRunCapabilities || [])
-      ])];
+      runCapabilities = correctRequiredCapabilities(
+        [...new Set([...(runCapabilities || []), ...(this.state.userRunCapabilities || [])])],
+        this.props.preferences
+      );
     }
     const isRawEditEnabled = this.props.parameters.raw;
     if (keepPipeline) {
@@ -1220,7 +1217,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       }
     }
-    applyCapabilities(
+    payload[PARAMETERS] = applyCapabilities(
       payload[PARAMETERS],
       this.state.runCapabilities,
       this.props.preferences,
@@ -1431,7 +1428,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
-    applyCapabilities(
+    payload.params = applyCapabilities(
       payload.params,
       this.state.runCapabilities,
       this.props.preferences,
@@ -5581,16 +5578,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.setState({
       userRunCapabilitiesPending: true
     }, () => {
-      getUserCapabilities()
+      this.props.preferences
+        .fetchIfNeededOrWait()
+        .then(() => getUserCapabilities())
         .then((userRunCapabilities = []) => {
           let {runCapabilities} = this.state;
           if (
             !this.props.editConfigurationMode
           ) {
-            runCapabilities = [...new Set([
-              ...(runCapabilities || []),
-              ...userRunCapabilities
-            ])];
+            runCapabilities = correctRequiredCapabilities(
+              [...new Set([...(runCapabilities || []), ...userRunCapabilities])],
+              this.props.preferences
+            );
           }
           this.setState({
             userRunCapabilities,

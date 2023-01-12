@@ -55,7 +55,7 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import PlatformIcon from '../../../tools/platform-icon';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 import {
-  updateCustomCapabilities,
+  updateCapabilities,
   getEnabledCapabilities,
   applyUserCapabilities,
   checkRequiredCapabilitiesErrors
@@ -83,7 +83,6 @@ const findGroupByName = (groups, name) => {
 @withCurrentUserAttributes()
 @observer
 export default class PersonalToolsPanel extends React.Component {
-
   static propTypes = {
     completedRuns: PropTypes.object,
     panelKey: PropTypes.string,
@@ -95,8 +94,7 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   state = {
-    runToolInfo: null,
-    runCapabilities: null
+    runToolInfo: null
   };
 
   isAdmin = () => {
@@ -224,9 +222,9 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   get runCapabilitiesError () {
-    if (this.state.runToolInfo && this.state.runToolInfo.payload.params) {
+    if (this.state.runToolInfo && this.state.runToolInfo.runCapabilities) {
       return checkRequiredCapabilitiesErrors(
-        Object.keys(this.state.runToolInfo.payload.params),
+        this.state.runToolInfo.runCapabilities,
         this.props.preferences
       );
     }
@@ -262,11 +260,12 @@ export default class PersonalToolsPanel extends React.Component {
       this.props.preferences,
       this.state.runToolInfo.tool.platform
     );
-    if (this.state.runCapabilities) {
-      payload.params = updateCustomCapabilities(
+    if (this.state.runToolInfo.runCapabilities) {
+      payload.params = updateCapabilities(
         payload.params,
-        this.state.runCapabilities,
-        this.props.preferences
+        this.state.runToolInfo.runCapabilities,
+        this.props.preferences,
+        this.state.runToolInfo.tool.platform
       );
     }
     if (await run(this)(payload, false)) {
@@ -536,6 +535,12 @@ export default class PersonalToolsPanel extends React.Component {
             dockerRegistries: this.props.dockerRegistries,
             dataStorages: this.props.dataStorageAvailable
           });
+          defaultPayload.params = await applyUserCapabilities(
+            defaultPayload.params || {},
+            this.props.preferences,
+            tool.platform
+          );
+          const runCapabilities = getEnabledCapabilities(defaultPayload.params);
           this.setState({
             runToolInfo: {
               tool,
@@ -549,9 +554,13 @@ export default class PersonalToolsPanel extends React.Component {
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
               availablePriceTypes,
-              permissionErrors
-            },
-            runCapabilities: getEnabledCapabilities(defaultPayload.params)
+              permissionErrors,
+              runCapabilities,
+              runCapabilitiesError: checkRequiredCapabilitiesErrors(
+                runCapabilities,
+                this.props.preferences
+              )
+            }
           });
         } else {
           message.error(tooltip);
@@ -759,7 +768,15 @@ export default class PersonalToolsPanel extends React.Component {
   };
 
   onChangeRunCapabilities = (capabilities) => {
-    this.setState({runCapabilities: (capabilities || []).slice()});
+    const {runToolInfo} = this.state;
+    if (runToolInfo) {
+      this.setState({
+        runToolInfo: {
+          ...runToolInfo,
+          runCapabilities: (capabilities || []).slice()
+        }
+      });
+    }
   };
 
   render () {
@@ -826,7 +843,8 @@ export default class PersonalToolsPanel extends React.Component {
                     (
                       this.state.runToolInfo.permissionErrors &&
                       this.state.runToolInfo.permissionErrors.length > 0
-                    )
+                    ) ||
+                    this.runCapabilitiesError
                   }
                   onClick={this.runToolWithDefaultSettings}
                   type="primary">
@@ -882,9 +900,10 @@ export default class PersonalToolsPanel extends React.Component {
                 preferences={this.props.preferences}
                 platform={this.state.runToolInfo.tool.platform}
                 dockerImage={this.state.runToolInfo.payload.dockerImage}
-                runCapabilities={this.state.runCapabilities}
-                runCapabilitiesError={this.runCapabilitiesError}
+                runCapabilities={this.state.runToolInfo.runCapabilities}
+                showRunCapabilities={this.state.runToolInfo.runCapabilitiesError}
                 onChangeRunCapabilities={this.onChangeRunCapabilities}
+                dockerRegistries={this.props.dockerRegistries}
               />
           }
           {

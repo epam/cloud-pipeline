@@ -57,7 +57,7 @@ import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStorage
 import RunCapabilities, {
   RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
-  updateCustomCapabilities,
+  updateCapabilities,
   applyCustomCapabilitiesParameters,
   CapabilitiesDisclaimer,
   checkRequiredCapabilitiesErrors
@@ -451,11 +451,21 @@ function runFn (
         onOk: async function () {
           if (component) {
             if (component.state.runCapabilities) {
-              payload.params = updateCustomCapabilities(
+              payload.params = updateCapabilities(
                 payload.params,
                 component.state.runCapabilities,
                 stores.preferences
               );
+            }
+            if (
+              checkRequiredCapabilitiesErrors(
+                getEnabledCapabilities(payload.params),
+                stores.preferences
+              )
+            ) {
+              const error = 'You need to specify required capabilities';
+              message.error(error, 5);
+              return Promise.reject(new Error(error));
             }
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
@@ -559,9 +569,10 @@ export class RunConfirmation extends React.Component {
     preferences: PropTypes.object,
     skipCheck: PropTypes.bool,
     dockerImage: PropTypes.string,
+    dockerRegistries: PropTypes.object,
     runCapabilities: PropTypes.array,
     onChangeRunCapabilities: PropTypes.func,
-    runCapabilitiesError: PropTypes.bool
+    showRunCapabilities: PropTypes.bool
   };
 
   static defaultProps = {
@@ -1112,7 +1123,7 @@ export class RunConfirmation extends React.Component {
         {
           this.renderCapabilitiesDisclaimer()
         }
-        {this.props.runCapabilitiesError ? (
+        {this.props.showRunCapabilities ? (
           <Alert
             type={this.runCapabilitiesErrorSolved ? 'info' : 'error'}
             style={{margin: 2}}
@@ -1362,10 +1373,11 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             hddSize={this.props.hddSize}
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
-            runCapabilitiesError={this.runCapabilitiesError}
+            showRunCapabilities={this.runCapabilitiesError}
             preferences={this.props.preferences}
             skipCheck={this.props.skipCheck}
             dockerImage={this.props.dockerImage}
+            dockerRegistries={this.props.dockerRegistries}
           />
         </Row>
         {

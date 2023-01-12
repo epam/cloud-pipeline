@@ -21,6 +21,7 @@ import {
 import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
 import {mergeUserRoleAttributes} from '../../../../../utils/attributes/merge-user-role-attributes';
+import fetchToolDefaultParameters from './fetch-tool-default-parameters';
 import styles from './run-capabilities.css';
 
 export const RUN_CAPABILITIES = {
@@ -147,6 +148,11 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     .map(capability => mapCapability(capability));
 }
 
+function getAllRequiredCapabilities (preferences) {
+  return getAllPlatformCapabilities(preferences)
+    .filter(capability => (capability.capabilities || []).length > 0);
+}
+
 function plainList (capabilities = []) {
   const getPlain = (capability) => {
     const {capabilities: nested = []} = capability;
@@ -207,7 +213,6 @@ class RunCapabilities extends React.Component {
       this.setInitialRequiredCapabilities();
     } else if (prevProps.platform !== this.props.platform) {
       this.correctCapabilitiesSelection();
-      this.setInitialRequiredCapabilities();
     }
     if (this.props.values && !prevProps.values) {
       this.setInitialRequiredCapabilities();
@@ -215,11 +220,25 @@ class RunCapabilities extends React.Component {
   }
 
   setInitialRequiredCapabilities = () => {
-    const {values} = this.props;
-    this.setState({
-      initialRequiredCapabilities: (values || [])
-        .filter(this.capabilityIsRequired)
-    });
+    const token = this.token = (this.token || 0) + 1;
+    this.props.preferences
+      .fetchIfNeededOrWait()
+      .then(() => fetchToolDefaultParameters(
+        this.props.dockerImage,
+        this.props.dockerRegistries
+      ))
+      .then((parameters) => {
+        const enabled = getEnabledCapabilities(parameters || {});
+        const required = getAllRequiredCapabilities(this.props.preferences);
+        const initialRequired = required
+          .filter((capability) => enabled.includes(capability.value))
+          .map((capability) => capability.value);
+        if (token === this.token) {
+          this.setState({
+            initialRequiredCapabilities: initialRequired
+          });
+        }
+      });
   };
 
   get allCapabilities () {
@@ -313,8 +332,7 @@ class RunCapabilities extends React.Component {
   capabilityIsRequired = (value) => {
     const current = this.getCapabilityByValue(value);
     if (current) {
-      return current.custom &&
-        (current.capabilities || []).length > 0;
+      return (current.capabilities || []).length > 0;
     }
     return false;
   };
@@ -347,6 +365,74 @@ class RunCapabilities extends React.Component {
     ];
   };
 
+  toggleValue = (value) => {
+    const {
+      disabled,
+      mode
+    } = this.props;
+    const {initialRequiredCapabilities} = this.state;
+    const current = this.getCapabilityByValue(value);
+    const parent = this.getCapabilityByValue(current.parentValue);
+    const isRequired = this.capabilityIsRequired(value);
+    const isSelected = !this.filteredValues.includes(value);
+    // if component is disabled OR
+    // we are trying to select / deselect parent capability (required) -
+    // do nothing
+    if (disabled || (mode === RUN_CAPABILITIES_MODE.launch && isRequired)) {
+      return;
+    }
+    // first, select or deselect current value:
+    let newSelection = (this.filteredValues || [])
+      .filter((existing) => existing !== value);
+    if (isSelected) {
+      // add capability
+      newSelection.push(value);
+    }
+    // If it is "parent" / "child", we need to handle special cases:
+    // a) if we select parent capability (isRequired & isSelected)
+    // b) if we de-select parent capability -
+    //    do nothing, because we're in the EDIT mode or `value` is not a parent:
+    //    (NOT (launch AND isRequired))
+    // c) if we select child capability (parent is not null AND isSelected)
+    // d) if we deselect child capability at launch mode - if none of child capabilities
+    //    is selected, we should select parent capability (if it was selected INITIALLY)
+    //    (parent is not null AND !isSelected AND launch)
+    if (isRequired && isSelected) {
+      // this is "parent" capability;
+      // we should remove all child capabilities from selection
+      const siblings = (current.capabilities || [])
+        .map(capability => capability.value);
+      // this is "parent" capability
+      newSelection = newSelection.filter((existing) => !siblings.includes(existing));
+    } else if (parent && isSelected) {
+      // we selected child capability.
+      // first, remove parent capability:
+      newSelection = newSelection.filter((existing) => existing !== parent.value);
+      // then, if it is not a multiple mode, remove other child capabilities:
+      if (!parent.multiple) {
+        const siblings = (parent.capabilities || [])
+          .map(capability => capability.value);
+        newSelection = newSelection
+          .filter((existing) => existing === value || !siblings.includes(existing));
+      }
+    } else if (parent && !isSelected && mode === RUN_CAPABILITIES_MODE.launch) {
+      // we de-selected child capability at launch mode;
+      // if none of the child capabilities is selected - we need to select parent one
+      const siblings = (parent.capabilities || [])
+        .map(capability => capability.value);
+      const initialSelection = !!initialRequiredCapabilities
+        .find((initial) => initial === parent.value);
+      if (
+        initialSelection &&
+        !newSelection.some((existing) => siblings.includes(existing)) &&
+        !newSelection.includes(parent.value)
+      ) {
+        newSelection.push(parent.value);
+      }
+    }
+    this.onSelectionChanged(newSelection);
+  };
+
   render () {
     const {
       disabled,
@@ -356,58 +442,13 @@ class RunCapabilities extends React.Component {
       mode,
       getPopupContainer = () => document.body
     } = this.props;
-    const {initialRequiredCapabilities} = this.state;
-    const toggleValue = (value) => {
-      const current = this.getCapabilityByValue(value);
-      const parent = this.getCapabilityByValue(current.parentValue);
-      const isRequired = this.capabilityIsRequired(value);
-      const isSelected = this.filteredValues.includes(value);
-      if (disabled || (mode === RUN_CAPABILITIES_MODE.launch && isRequired)) {
-        return;
-      }
-      const correctSelection = (selection) => {
-        if (parent) {
-          const parentIsRequired = initialRequiredCapabilities
-            .includes(parent.value);
-          const siblings = parent.capabilities
-            .filter(capability => capability.value !== current.value)
-            .map(capability => capability.value);
-          const newSelection = parent.multiple
-            ? selection.filter(value => value !== current.parentValue)
-            : selection.filter(value => value !== current.parentValue &&
-              !siblings.includes(value));
-          const siblingsHasSelection = newSelection
-            .some(value => siblings.includes(value));
-          if (isSelected && !siblingsHasSelection && parentIsRequired) {
-            newSelection.push(current.parentValue);
-          }
-          return newSelection;
-        }
-        if (
-          isRequired &&
-          mode === RUN_CAPABILITIES_MODE.edit
-        ) {
-          const childValues = (current.capabilities || [])
-            .map(capability => capability.value);
-          return selection.filter(value => !childValues.includes(value));
-        }
-        return selection;
-      };
-      let capabilities = correctSelection([...this.filteredValues]);
-      if (isSelected) {
-        capabilities = capabilities.filter(v => v !== value);
-      } else {
-        capabilities.push(value);
-      }
-      this.onSelectionChanged(capabilities);
-    };
     const onCapabilityClick = ({domEvent, key}) => {
       if (disabled) {
         return;
       }
       domEvent.stopPropagation();
       domEvent.preventDefault();
-      toggleValue(key);
+      this.toggleValue(key);
     };
     const renderCapability = (capability) => {
       const {
@@ -590,11 +631,13 @@ export class RunCapabilitiesMetadataPreference extends React.Component {
           Run capabilities:
         </div>
         <RunCapabilities
+          mode={RUN_CAPABILITIES_MODE.launch}
           disabled={readOnly || disabled}
           values={this.values}
           onChange={this.onChange}
           className={styles.runCapabilitiesMetadataInput}
           style={{minHeight: '28px', lineHeight: '28px'}}
+          getPopupContainer={node => node}
         />
       </div>
     );
@@ -664,6 +707,44 @@ export function addCapability (capabilities, ...capability) {
   return result;
 }
 
+function correctParametersForRequiredCapabilities (parameters, preferences) {
+  const result = {...(parameters || {})};
+  const enabled = getEnabledCapabilities(parameters);
+  const required = getAllRequiredCapabilities(preferences);
+  const removeCapability = (capability) => {
+    if (result[capability]) {
+      delete result[capability];
+    }
+  };
+  enabled.forEach((capability) => {
+    const parent = required
+      .find((r) => (r.capabilities || []).map(o => o.value).includes(capability));
+    if (parent && enabled.includes(parent.value)) {
+      removeCapability(parent.value);
+    }
+  });
+  return result;
+}
+
+export function correctRequiredCapabilities (capabilities, preferences) {
+  const result = (capabilities || []).slice();
+  const required = getAllRequiredCapabilities(preferences);
+  const removeCapability = (capability) => {
+    const idx = result.indexOf(capability);
+    if (idx >= 0) {
+      result.splice(idx, 1);
+    }
+  };
+  capabilities.forEach((capability) => {
+    const parent = required
+      .find((r) => (r.capabilities || []).map(o => o.value).includes(capability));
+    if (parent && capabilities.includes(parent.value)) {
+      removeCapability(parent.value);
+    }
+  });
+  return result;
+}
+
 export function applyCapabilities (parameters, capabilities = [], preferences, platform) {
   if (!parameters) {
     parameters = {};
@@ -688,27 +769,23 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
         : (CAPABILITIES_DEPENDENCIES[capability.value] || []);
       dependencies.forEach(dependency => enable(dependency));
     });
-  return parameters;
+  return correctParametersForRequiredCapabilities(parameters, preferences);
 }
 
-export function updateCustomCapabilities (
+export function updateCapabilities (
   parameters = {},
-  newCapabilities = [],
-  preferences
+  capabilities = [],
+  preferences,
+  platform
 ) {
-  const clearCustomCapabilities = (parameters) => {
-    return Object.fromEntries(Object.entries(parameters)
-      .filter(([key]) => !isCustomCapability(key, preferences))
-    );
+  const clearCapabilities = (parameters) => {
+    return Object.entries(parameters)
+      .filter(([key]) => !isCapability(key, preferences))
+      .map(([key, value]) => ({[key]: value}))
+      .reduce((r, c) => ({...r, ...c}), {});
   };
-  parameters = clearCustomCapabilities(parameters);
-  newCapabilities.forEach(key => {
-    parameters[key] = {
-      type: 'boolean',
-      value: true
-    };
-  });
-  return parameters;
+  parameters = clearCapabilities(parameters);
+  return applyCapabilities(parameters, capabilities, preferences, platform);
 }
 
 /**

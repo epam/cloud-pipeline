@@ -332,7 +332,7 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          applyCapabilities(
+          parameters = applyCapabilities(
             parameters,
             this.state.runCapabilities,
             this.props.preferences,

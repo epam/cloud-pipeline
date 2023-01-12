@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {injectParametersStore} from './store';
-import RunCapabilities from '../../../form/utilities/run-capabilities';
+import RunCapabilities, {RUN_CAPABILITIES_MODE} from '../../../form/utilities/run-capabilities';
 
 function ParametersRunCapabilities (props) {
   const {
@@ -43,6 +43,7 @@ function ParametersRunCapabilities (props) {
       platform={tool ? tool.platform : undefined}
       provider={provider}
       values={parametersStore.capabilities}
+      mode={RUN_CAPABILITIES_MODE.launch}
     />
   );
 }
