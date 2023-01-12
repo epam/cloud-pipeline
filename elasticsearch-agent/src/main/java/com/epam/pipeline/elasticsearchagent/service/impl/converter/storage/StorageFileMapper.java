@@ -118,7 +118,7 @@ public class StorageFileMapper {
     }
 
     private static String constructCloudPath(AbstractDataStorage dataStorage, DataStorageFile dataStorageFile) {
-        return String.join(dataStorage.getDelimiter(), dataStorage.getPath(), dataStorageFile.getPath());
+        return String.join(dataStorage.getDelimiter(), dataStorage.getPathMask(), dataStorageFile.getPath());
     }
 
     public void updateSearchMasks(final CloudPipelineAPIClient cloudPipelineAPIClient, final Logger logger) {
