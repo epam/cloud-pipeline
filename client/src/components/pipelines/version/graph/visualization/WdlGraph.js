@@ -1541,6 +1541,9 @@ export default class WdlGraph extends Graph {
       if (codePath.startsWith('/')) {
         codePath = codePath.slice(1);
       }
+      if (codePath.endsWith('/')) {
+        codePath = codePath.slice(0, -1);
+      }
       const filePathParts = this.props.parameters.value.main_file.split('.');
       if (filePathParts[filePathParts.length - 1].toLowerCase() === 'wdl') {
         this._mainFileRequest = new VersionFile(
