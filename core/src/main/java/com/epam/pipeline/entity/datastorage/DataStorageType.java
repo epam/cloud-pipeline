@@ -17,28 +17,29 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.epam.pipeline.entity.region.CloudProvider;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Getter
+@RequiredArgsConstructor
 public enum DataStorageType {
-    S3("S3"),
-    NFS("NFS"),
-    AZ("AZ"),
-    GS("GS");
+    S3("S3", StorageServiceType.OBJECT_STORAGE),
+    NFS("NFS", StorageServiceType.FILE_SHARE),
+    AZ("AZ", StorageServiceType.OBJECT_STORAGE),
+    GS("GS", StorageServiceType.OBJECT_STORAGE);
 
-    private String id;
-    private static Map<String, DataStorageType> idMap;
-    private static Map<String, DataStorageType> namesMap;
+    private final String id;
+    private final StorageServiceType serviceType;
+    private final static Map<String, DataStorageType> idMap;
+    private final static Map<String, DataStorageType> namesMap;
 
     static {
         idMap = Arrays.stream(values()).collect(Collectors.toMap(v -> v.id, v -> v));
         namesMap = Arrays.stream(values()).collect(Collectors.toMap(Enum::name, v -> v));
-    }
-
-    DataStorageType(String id) {
-        this.id = id;
     }
 
     public static DataStorageType fromServiceType(final CloudProvider provider,
@@ -64,10 +65,6 @@ public enum DataStorageType {
         return namesMap.get(name);
     }
 
-    public String getId() {
-        return this.id;
-    }
-
     private static DataStorageType getObjectStorageType(final CloudProvider provider) {
         switch (provider) {
             case AWS: return S3;
@@ -76,6 +73,4 @@ public enum DataStorageType {
             default: throw new IllegalArgumentException("Unsupported provider for object storage: " + provider);
         }
     }
-
-
 }
