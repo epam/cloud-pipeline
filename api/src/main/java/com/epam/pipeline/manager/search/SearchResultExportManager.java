@@ -43,7 +43,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.search.SearchSourceFields.CLOUD_PATH;
 import static com.epam.pipeline.manager.search.SearchSourceFields.LAST_MODIFIED;
+import static com.epam.pipeline.manager.search.SearchSourceFields.MOUNT_PATH;
 import static com.epam.pipeline.manager.search.SearchSourceFields.NAME;
 import static com.epam.pipeline.manager.search.SearchSourceFields.OWNER;
 import static com.epam.pipeline.manager.search.SearchSourceFields.PATH;
@@ -136,6 +138,18 @@ public class SearchResultExportManager {
                     .orElse(StringUtils.EMPTY);
             result.add(docPath);
         }
+        if (facetedSearchExportVO.isIncludeCloudPath()) {
+            final String docCloudPath = Optional.ofNullable(attributes.get(CLOUD_PATH.getFieldName()))
+                    .map(this::getItem)
+                    .orElse(StringUtils.EMPTY);
+            result.add(docCloudPath);
+        }
+        if (facetedSearchExportVO.isIncludeMountPath()) {
+            final String docMountPath = Optional.ofNullable(attributes.get(MOUNT_PATH.getFieldName()))
+                    .map(this::getItem)
+                    .orElse(StringUtils.EMPTY);
+            result.add(docMountPath);
+        }
         return result.toArray(new String[0]);
     }
 
@@ -158,6 +172,12 @@ public class SearchResultExportManager {
         if (facetedSearchExportVO.isIncludePath()) {
             header.add(columnHeaderMapper(PATH));
         }
+        if (facetedSearchExportVO.isIncludeCloudPath()) {
+            header.add(columnHeaderMapper(CLOUD_PATH));
+        }
+        if (facetedSearchExportVO.isIncludeMountPath()) {
+            header.add(columnHeaderMapper(MOUNT_PATH));
+        }
         return header.toArray(new String[0]);
     }
 
@@ -172,6 +192,8 @@ public class SearchResultExportManager {
             case SIZE: return "Size";
             case OWNER: return "Owner";
             case PATH: return "Path";
+            case CLOUD_PATH: return "Cloud path";
+            case MOUNT_PATH: return "Mount path";
             default: throw new IllegalArgumentException(format("%s search source field is not supported", field));
         }
     }

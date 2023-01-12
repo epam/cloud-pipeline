@@ -21,6 +21,7 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.utils.FileContentUtils;
@@ -48,6 +49,9 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 
 public class StorageFileMapper {
 
+    private static final String DELIMITER = "/";
+    private static final String DEFAULT_MOUNT_POINT = "/cloud-data";
+
     private final Map<String, Set<String>> hiddenMasks = new HashMap<>();
     private final Map<String, Set<String>> indexContentMasks = new HashMap<>();
 
@@ -65,6 +69,8 @@ public class StorageFileMapper {
                     .field("lastModified", dataStorageFile.getChanged())
                     .field("size", dataStorageFile.getSize())
                     .field("path", dataStorageFile.getPath())
+                    .field("cloud_path", constructCloudPath(dataStorage, dataStorageFile))
+                    .field("mount_path", constructMountPath(dataStorage, dataStorageFile))
                     .field("id", dataStorageFile.getPath())
                     .field("name", dataStorageFile.getName())
                     .field("ownerUserName", tags.get("CP_OWNER"))
@@ -95,6 +101,24 @@ public class StorageFileMapper {
         } catch (IOException e) {
             throw new AmazonS3Exception("An error occurred while creating document: ", e);
         }
+    }
+
+    // This method construct mount path assuming that default mount point is /cloud-data/,
+    // if f.e. CP_STORAGE_MOUNT_ROOT_DIR is defined in launch.env.properties or somewhere else,
+    // this method will return wrong results
+    private static String constructMountPath(AbstractDataStorage dataStorage, DataStorageFile dataStorageFile) {
+        String mountPoint = dataStorage.getMountPoint();
+        if (StringUtils.isEmpty(mountPoint)) {
+            final String storageMountName = DataStorageType.NFS == dataStorage.getType()
+                    ? dataStorage.getPath().replaceFirst(":", "")
+                    : dataStorage.getPath();
+            mountPoint = String.join(DELIMITER, DEFAULT_MOUNT_POINT, storageMountName);
+        }
+        return String.join(DELIMITER, mountPoint, dataStorageFile.getPath());
+    }
+
+    private static String constructCloudPath(AbstractDataStorage dataStorage, DataStorageFile dataStorageFile) {
+        return String.join(dataStorage.getDelimiter(), dataStorage.getPathMask(), dataStorageFile.getPath());
     }
 
     public void updateSearchMasks(final CloudPipelineAPIClient cloudPipelineAPIClient, final Logger logger) {
