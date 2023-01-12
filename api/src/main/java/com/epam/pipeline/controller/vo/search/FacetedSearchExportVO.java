@@ -24,5 +24,7 @@ public class FacetedSearchExportVO {
     private boolean includeSize;
     private boolean includeOwner;
     private boolean includePath;
+    private boolean includeCloudPath;
+    private boolean includeMountPath;
     private String delimiter;
 }
