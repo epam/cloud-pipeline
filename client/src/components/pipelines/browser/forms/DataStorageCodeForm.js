@@ -38,7 +38,6 @@ import DataStorageItemContent from '../../../../models/dataStorage/DataStorageIt
 import SampleSheet, {utilities} from '../../../special/sample-sheet';
 
 function validateJSON (content) {
-  console.log('content:', content)
   if (!content) {
     return undefined;
   }
