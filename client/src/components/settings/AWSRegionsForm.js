@@ -719,17 +719,6 @@ class AWSRegionForm extends React.Component {
     style: {marginBottom: 2}
   };
 
-  sectionFormItemLayout = {
-    labelCol: {
-      xs: {span: 24},
-      sm: {span: 4}
-    },
-    wrapperCol: {
-      xs: {span: 24},
-      sm: {span: 20}
-    }
-  };
-
   formItemLayoutWideLabel = this.formItemLayout;
 
   defaultCheckBoxFormItemLayout = {
