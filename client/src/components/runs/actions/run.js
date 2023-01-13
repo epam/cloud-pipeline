@@ -377,6 +377,10 @@ function runFn (
                 stores.preferences
               );
             }
+            payload.params = applyCustomCapabilitiesParameters(
+              payload.params,
+              stores.preferences
+            );
             if (
               checkRequiredCapabilitiesErrors(
                 getEnabledCapabilities(payload.params),
