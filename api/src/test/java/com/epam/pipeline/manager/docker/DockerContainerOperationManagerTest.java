@@ -161,6 +161,7 @@ public class DockerContainerOperationManagerTest {
                 eq(DEFAULT_SSH_PORT));
         when(sshConnection.exitValue()).thenReturn(0);
         when(cloudFacade.getInstanceState(anyLong())).thenReturn(CloudInstanceState.RUNNING);
+        when(regionManager.load(anyLong())).thenReturn(region());
         doReturn(PAUSE_TIMEOUT).when(preferenceManager).getPreference(SystemPreferences.PAUSE_TIMEOUT);
 
         operationManager.pauseRun(idledRun, false);
@@ -180,6 +181,7 @@ public class DockerContainerOperationManagerTest {
         when(kubernetesManager.getContainerIdFromKubernetesPod(anyString(), anyString())).thenReturn(TEST_TAG);
         when(nodesManager.terminateNode(NODE_NAME)).thenReturn(new NodeInstance());
         when(authManager.issueTokenForCurrentUser().getToken()).thenReturn(TEST_TAG);
+        when(regionManager.load(anyLong())).thenReturn(region());
         final Process sshConnection = Mockito.mock(Process.class);
         doReturn(sshConnection).when(operationManager).submitCommandViaSSH(
                 anyString(), anyString(), eq(DEFAULT_SSH_PORT));
