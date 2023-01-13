@@ -33,7 +33,80 @@ function update_nameserver {
 }
 
 function check_param() {
-    [ "$1" ] && [[ "$1" != "@"*"@" ]]
+  [ "$1" ] && [[ "$1" != "@"*"@" ]]
+}
+
+function configure_instance_details() {
+  INSTANCE_CLOUD="$(curl --head -s "http://169.254.169.254/latest/dynamic/instance-identity/document" | grep Server | cut -f2 -d:)"
+  gcloud_header="$(curl --head -s "http://169.254.169.254/latest/dynamic/instance-identity/document" | grep Metadata-Flavor | cut -f2 -d:)"
+  if [[ "$INSTANCE_CLOUD" == *"EC2"* ]]; then
+    INSTANCE_ID="$(curl -s "http://169.254.169.254/latest/dynamic/instance-identity/document" | grep instanceId | cut -d\" -f4)"
+    INSTANCE_NAME="$INSTANCE_ID"
+  elif [[ "$INSTANCE_CLOUD" == *"Microsoft"* ]]; then
+    INSTANCE_ID="$(curl -H Metadata:true -s "http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text")"
+    INSTANCE_NAME="$(echo "$INSTANCE_ID" | grep -xE "[a-zA-Z0-9\-]{1,256}" &>/dev/null && echo "$INSTANCE_ID" || hostname)"
+  elif [[ "$gcloud_header" == *"Google"* ]]; then
+    INSTANCE_CLOUD="$gcloud_header"
+    INSTANCE_ID="$(curl -H "Metadata-Flavor:Google" "http://169.254.169.254/computeMetadata/v1/instance/name")"
+    INSTANCE_NAME="$INSTANCE_ID"
+  else
+    echo "WARNING: Instance cloud provider has not been resolved."
+  fi
+  export INSTANCE_ID
+  export INSTANCE_NAME
+  export INSTANCE_CLOUD
+}
+
+function download_system_images() {
+  local wo="--timeout=10 --waitretry=1 --tries=10"
+
+  KUBE_SYS_IMGS_DIR="/ebs/docker-system-images"
+  rm -rf "$KUBE_SYS_IMGS_DIR"
+  mkdir -p "$KUBE_SYS_IMGS_DIR"
+  wget $wo "${KUBE_SYS_IMGS_DISTR}/calico-node-v3.14.1.tar" -O "$KUBE_SYS_IMGS_DIR/calico-node-v3.14.1.tar" &&
+    wget $wo "${KUBE_SYS_IMGS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O "$KUBE_SYS_IMGS_DIR/calico-pod2daemon-flexvol-v3.14.1.tar" &&
+    wget $wo "${KUBE_SYS_IMGS_DISTR}/calico-cni-v3.14.1.tar" -O "$KUBE_SYS_IMGS_DIR/calico-cni-v3.14.1.tar" &&
+    wget $wo "${KUBE_SYS_IMGS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O "$KUBE_SYS_IMGS_DIR/k8s.gcr.io-kube-proxy-v1.15.4.tar" &&
+    wget $wo "${KUBE_SYS_IMGS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O "$KUBE_SYS_IMGS_DIR/quay.io-coreos-flannel-v0.11.0.tar" &&
+    wget $wo "${KUBE_SYS_IMGS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O "$KUBE_SYS_IMGS_DIR/k8s.gcr.io-pause-3.1.tar"
+  if [ $? -ne 0 ]; then
+    KUBE_SYS_IMGS_DIR="/opt/docker-system-images"
+  fi
+  export KUBE_SYS_IMGS_DIR
+}
+
+function load_system_images() {
+  for KUBE_SYS_IMG_FILE in "$KUBE_SYS_IMGS_DIR"/*.tar; do
+    docker load -i "$KUBE_SYS_IMG_FILE"
+  done
+  rm -rf "$KUBE_SYS_IMGS_DIR"
+}
+
+function mount_shared_fs() {
+  local shared_dir="$1"
+
+  if [[ "$INSTANCE_CLOUD" == *"EC2"* ]]; then
+    amazon-linux-extras install -y lustre2.10
+    yum install -y lustre-client --disablerepo=kubernetes
+    mkdir -p "$shared_dir"
+    mount -t lustre -o noatime,flock "$AWS_FS_URL" "$shared_dir"
+    echo "$AWS_FS_URL $shared_dir lustre defaults,noatime,flock,_netdev 0 0" >>/etc/fstab
+  elif [[ "$INSTANCE_CLOUD" == *"Microsoft"* ]]; then
+    echo "WARNING: Azure shared file system mounting is not yet supported."
+    # todo: Implement
+  elif [[ "$INSTANCE_CLOUD" == *"Google"* ]]; then
+    echo "WARNING: Google Cloud shared file system mounting is not yet supported."
+    # todo: Implement
+  fi
+}
+
+function localize_cni_binaries() {
+  local source="$1"
+  local target="$2"
+
+  mkdir -p "$target"
+  cp -r "$source/bin" "$target/bin"
+  mount -B -o ro "$target" "$source"
 }
 
 user_data_log="/var/log/user_data.log"
@@ -59,19 +132,9 @@ if ! check_param "$KUBE_SYS_IMGS_DISTR"; then
 fi
 export AWS_FS_URL="${AWS_FS_URL:-"@AWS_FS_URL@"}"
 
-_KUBE_SYS_IMGS_DIR="/ebs/docker-system-images"
-rm -rf "$_KUBE_SYS_IMGS_DIR"
-mkdir -p "$_KUBE_SYS_IMGS_DIR"
-_WO="--timeout=10 --waitretry=1 --tries=10"
-wget $_WO "${KUBE_SYS_IMGS_DISTR}/calico-node-v3.14.1.tar" -O "$_KUBE_SYS_IMGS_DIR/calico-node-v3.14.1.tar" &&
-  wget $_WO "${KUBE_SYS_IMGS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O "$_KUBE_SYS_IMGS_DIR/calico-pod2daemon-flexvol-v3.14.1.tar" &&
-  wget $_WO "${KUBE_SYS_IMGS_DISTR}/calico-cni-v3.14.1.tar" -O "$_KUBE_SYS_IMGS_DIR/calico-cni-v3.14.1.tar" &&
-  wget $_WO "${KUBE_SYS_IMGS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O "$_KUBE_SYS_IMGS_DIR/k8s.gcr.io-kube-proxy-v1.15.4.tar" &&
-  wget $_WO "${KUBE_SYS_IMGS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O "$_KUBE_SYS_IMGS_DIR/quay.io-coreos-flannel-v0.11.0.tar" &&
-  wget $_WO "${KUBE_SYS_IMGS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O "$_KUBE_SYS_IMGS_DIR/k8s.gcr.io-pause-3.1.tar"
-if [ $? -ne 0 ]; then
-  _KUBE_SYS_IMGS_DIR="/opt/docker-system-images"
-fi
+configure_instance_details
+
+download_system_images
 
 mkdir -p /etc/docker
 cat <<EOT >/etc/docker/daemon.json
@@ -90,46 +153,26 @@ EOF
 if check_param "$KUBE_LABELS"; then
   echo "KUBELET_EXTRA_ARGS=--node-labels $KUBE_LABELS" >>/etc/sysconfig/kubelet
 fi
-exe
+
 systemctl daemon-reload
+
+systemctl start docker
+load_system_images
+systemctl stop docker
+
+# Shared fs shall be mounted after system docker images are loaded
+# because they can be loaded from local /opt/docker-system-images
+mount_shared_fs /opt
+
+# CNI binaries have a significant effect in container creating time,
+# here CNI binaries are localized and mounted on top of shared fs
+localize_cni_binaries /opt/cni /usr/local/cni
+
 systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
-
-cloud="$(curl --head -s "http://169.254.169.254/latest/dynamic/instance-identity/document" | grep Server | cut -f2 -d:)"
-gcloud_header="$(curl --head -s "http://169.254.169.254/latest/dynamic/instance-identity/document" | grep Metadata-Flavor | cut -f2 -d:)"
-if [[ $cloud == *"EC2"* ]]; then
-  _CLOUD_INSTANCE_ID="$(curl -s "http://169.254.169.254/latest/dynamic/instance-identity/document" | grep instanceId | cut -d\" -f4)"
-  _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
-elif [[ $cloud == *"Microsoft"* ]]; then
-  _CLOUD_INSTANCE_ID="$(curl -H Metadata:true -s "http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text")"
-  _KUBE_NODE_NAME="$(echo "$_CLOUD_INSTANCE_ID" | grep -xE "[a-zA-Z0-9\-]{1,256}" &>/dev/null && echo "$_CLOUD_INSTANCE_ID" || hostname)"
-elif [[ $gcloud_header == *"Google"* ]]; then
-  _CLOUD_INSTANCE_ID="$(curl -H "Metadata-Flavor:Google" "http://169.254.169.254/computeMetadata/v1/instance/name")"
-  _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
-fi
-
-for _KUBE_SYS_IMG_FILE in "$_KUBE_SYS_IMGS_DIR"/*.tar; do
-  docker load -i "$_KUBE_SYS_IMG_FILE"
-done
-rm -rf "$_KUBE_SYS_IMGS_DIR"
-
-kubeadm join --token "$KUBE_TOKEN" "$KUBE_IP:$KUBE_PORT" --discovery-token-unsafe-skip-ca-verification --ignore-preflight-errors all --node-name "$_KUBE_NODE_NAME"
+kubeadm join --token "$KUBE_TOKEN" "$KUBE_IP:$KUBE_PORT" --discovery-token-unsafe-skip-ca-verification --ignore-preflight-errors all --node-name "$INSTANCE_NAME"
 systemctl start kubelet
 
 yum install -y nc
 update_nameserver "$KUBE_DNS_IP" "infinity"
-
-if [[ $cloud == *"EC2"* ]]; then
-  amazon-linux-extras install -y lustre2.10
-  yum install -y lustre-client --disablerepo=kubernetes
-  mkdir -p /opt
-  mount -t lustre -o noatime,flock "$AWS_FS_URL" /opt
-  echo "$AWS_FS_URL /opt lustre defaults,noatime,flock,_netdev 0 0" >>/etc/fstab
-elif [[ $cloud == *"Microsoft"* ]]; then
-  echo "WARNING: Azure shared file system mounting is not yet supported."
-  # todo: Implement
-elif [[ $gcloud_header == *"Google"* ]]; then
-  echo "WARNING: Google Cloud shared file system mounting is not yet supported."
-  # todo: Implement
-fi

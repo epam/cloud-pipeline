@@ -42,7 +42,6 @@ fi
 
 # Get the kube docker images, required by the kubelet
 # This is needed, as we don't want to rely on the external repos
-systemctl start docker && \
 mkdir -p /opt/docker-system-images && \
 wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-node-v3.14.1.tar" -O /opt/docker-system-images/calico-node-v3.14.1.tar && \
 wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/calico-pod2daemon-flexvol-v3.14.1.tar" -O /opt/docker-system-images/calico-pod2daemon-flexvol-v3.14.1.tar && \
@@ -50,8 +49,6 @@ wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docke
 wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O /opt/docker-system-images/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
 wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/quay.io-coreos-flannel-v0.11.0.tar" -O /opt/docker-system-images/quay.io-coreos-flannel-v0.11.0.tar && \
 wget "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker/k8s.gcr.io-pause-3.1.tar" -O /opt/docker-system-images/k8s.gcr.io-pause-3.1.tar
-
-systemctl stop docker
 
 # Install kubelet
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
@@ -83,6 +80,12 @@ yum install -y \
             kubeadm-1.15.4-0.x86_64 \
             kubectl-1.15.4-0.x86_64 \
             kubelet-1.15.4-0.x86_64
+
+systemctl daemon-reload
+systemctl disable docker
+systemctl disable kubelet
+systemctl stop docker
+systemctl stop kubelet
 
 # Label instance as Done
 instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
