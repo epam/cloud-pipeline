@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,15 @@ import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
+import {
+  Switch,
+  Alert,
+  Button,
+  Row,
+  Col,
+  Modal,
+  Spin
+} from 'antd';
 
 import CodeEditor from '../../../special/CodeEditor';
 import HotTable from 'react-handsontable';
@@ -28,6 +36,27 @@ import styles from './DataStorageCodeForm.css';
 import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateDownloadUrl';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import SampleSheet, {utilities} from '../../../special/sample-sheet';
+
+function validateJSON (content) {
+  try {
+    JSON.parse(content);
+  } catch (e) {
+    return [e.message];
+  }
+  return undefined;
+}
+
+function validateTXT (content = '') {
+  const lines = content.split('\n');
+  const lastLine = lines[lines.length - 1];
+  if (
+    (lines.length === 1 && !lastLine.trim()) ||
+    (typeof lastLine === 'string' && !lastLine)
+  ) {
+    return undefined;
+  }
+  return true;
+}
 
 @inject(({routing}, params) => ({
   routing
@@ -63,6 +92,8 @@ export default class DataStorageCodeForm extends React.Component {
   _fileContents = null;
   @observable
   _generateDownloadUrl = null;
+  @observable
+  _errors = null;
 
   @computed
   get codeTruncated () {
@@ -75,6 +106,11 @@ export default class DataStorageCodeForm extends React.Component {
       return this._generateDownloadUrl.value.url;
     }
     return undefined;
+  }
+
+  @computed
+  get errors () {
+    return this._errors;
   }
 
   componentWillReceiveProps (nextProps) {
@@ -104,11 +140,39 @@ export default class DataStorageCodeForm extends React.Component {
       this._originalCode = this._fileContents.value.content
         ? atob(this._fileContents.value.content)
         : '';
+      this.validateAndCorrectFile(this._originalCode);
     }
   }
 
   onCodeChange = (newText) => {
     this._modifiedCode = newText;
+    this.validateAndCorrectFile(this._modifiedCode);
+  };
+
+  validateAndCorrectFile = (code, correctCode = false) => {
+    if (!this._fileContents) {
+      return null;
+    }
+    let errors;
+    switch (this.fileType) {
+      case 'json':
+        errors = validateJSON(code);
+        break;
+      case 'text':
+        if (correctCode && validateTXT(code)) {
+          this._modifiedCode = `${this._modifiedCode}\n`;
+        };
+        break;
+    }
+    this._errors = errors;
+  };
+
+  beforeEdit = () => {
+    this.validateAndCorrectFile(this._originalCode);
+  };
+
+  beforeSave = () => {
+    this.validateAndCorrectFile(this._modifiedCode, true);
   };
 
   onClose = () => {
@@ -154,9 +218,10 @@ export default class DataStorageCodeForm extends React.Component {
       this.props.cancel();
     };
     const save = async () => {
+      this.beforeSave();
       await this.props.save(this.props.file.path, this._modifiedCode);
     };
-    if (this._modifiedCode && this._originalCode !== this._modifiedCode) {
+    if (this._modifiedCode !== null && this._originalCode !== this._modifiedCode) {
       Modal.confirm({
         title: (
           <div>
@@ -194,6 +259,7 @@ export default class DataStorageCodeForm extends React.Component {
     }
     if (!this.state.editMode) {
       this._modifiedCode = null;
+      this.beforeEdit();
       this.setState({editMode: !this.state.editMode});
     } else if (this._modifiedCode !== null && this._modifiedCode !== this._originalCode) {
       this.onSave();
@@ -256,6 +322,7 @@ export default class DataStorageCodeForm extends React.Component {
       case 'dsv': return 'dsv';
       case 'tsv': return 'tsv';
       case 'csv': return 'csv';
+      case 'json': return 'json';
       case 'txt':
       default: return 'text';
     }
@@ -393,74 +460,87 @@ export default class DataStorageCodeForm extends React.Component {
     const tableClassName = this.state.editMode ? styles.tableEditor : styles.tableEditorReadonly;
     const title = this.props.file
       ? (
-        <Row type="flex" justify="space-between">
-          <Col>{this.props.file.name}</Col>
-          {
-            this.codeTruncated && this.downloadUrl &&
+        <div style={styles.titleContainer}>
+          <Row type="flex" justify="space-between">
+            <Col>{this.props.file.name}</Col>
+            {
+              this.codeTruncated && this.downloadUrl &&
+              <Col>
+                File is too large to be shown.
+                {this.props.downloadable && (
+                  <span>
+                    <a
+                      href={this.downloadUrl}
+                      target="_blank"
+                      download={this.props.file.name}
+                    >
+                      {' Download file'}
+                    </a>
+                    {' to view full contents'}
+                  </span>
+                )}
+              </Col>
+            }
             <Col>
-              File is too large to be shown.
-              {this.props.downloadable && (
-                <span>
-                  <a
-                    href={this.downloadUrl}
-                    target="_blank"
-                    download={this.props.file.name}
-                  >
-                    {' Download file'}
-                  </a>
-                  {' to view full contents'}
-                </span>
-              )}
+              {
+                this.isEditable && this.isTabular &&
+                <span>{this.state.editMode ? 'Edit' : 'View'} as text: <Switch
+                  className={styles.button}
+                  onChange={(checked) => this.toggleEditTabularAsText(checked)}
+                /></span>
+              }
+              {
+                this.isEditable && this.state.editMode &&
+                <Button
+                  id="code-form-save-edit-button"
+                  type="primary"
+                  className={styles.button}
+                  onClick={this.toggleEditMode}
+                >
+                  Save
+                </Button>
+              }
+              {
+                this.isEditable && this.state.editMode &&
+                <Button
+                  id="code-form-cancel-edit-button"
+                  className={styles.button}
+                  onClick={this.cancelEdit}
+                >
+                  CANCEL
+                </Button>
+              }
+              {
+                this.isEditable && !this.state.editMode &&
+                <Button
+                  id="code-form-edit-button"
+                  className={styles.button}
+                  onClick={this.toggleEditMode}
+                >
+                  Edit
+                </Button>
+              }
+              <Button
+                id="code-form-close-button"
+                className={styles.button}
+                onClick={this.onClose}
+              >
+                Close
+              </Button>
             </Col>
-          }
-          <Col>
-            {
-              this.isEditable && this.isTabular &&
-              <span>{this.state.editMode ? 'Edit' : 'View'} as text: <Switch
-                className={styles.button}
-                onChange={(checked) => this.toggleEditTabularAsText(checked)}
-              /></span>
-            }
-            {
-              this.isEditable && this.state.editMode &&
-              <Button
-                id="code-form-save-edit-button"
-                type="primary"
-                className={styles.button}
-                onClick={this.toggleEditMode}
-              >
-                Save
-              </Button>
-            }
-            {
-              this.isEditable && this.state.editMode &&
-              <Button
-                id="code-form-cancel-edit-button"
-                className={styles.button}
-                onClick={this.cancelEdit}
-              >
-                CANCEL
-              </Button>
-            }
-            {
-              this.isEditable && !this.state.editMode &&
-              <Button
-                id="code-form-edit-button"
-                className={styles.button}
-                onClick={this.toggleEditMode}
-              >
-                Edit
-              </Button>
-            }
-            <Button
-              id="code-form-close-button"
-              className={styles.button}
-              onClick={this.onClose}
-            >
-              Close
-            </Button>
-          </Col>
-        </Row>)
+          </Row>
+          {this.errors && this.errors.length > 0 ? (
+            this.errors.map(error => (
+              <Alert
+                key={error}
+                message={error}
+                type="error"
+                style={{marginTop: '5px'}}
+              />
+            ))
+          ) : null}
+        </div>
+      )
       : null;
     return (
       <Modal
