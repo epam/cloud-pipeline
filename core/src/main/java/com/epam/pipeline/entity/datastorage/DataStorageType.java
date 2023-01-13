@@ -17,29 +17,27 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.epam.pipeline.entity.region.CloudProvider;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Getter
+@RequiredArgsConstructor
 public enum DataStorageType {
-    S3("S3"),
-    NFS("NFS"),
-    AZ("AZ"),
-    GS("GS");
+    S3("S3", StorageServiceType.OBJECT_STORAGE),
+    NFS("NFS", StorageServiceType.FILE_SHARE),
+    AZ("AZ", StorageServiceType.OBJECT_STORAGE),
+    GS("GS", StorageServiceType.OBJECT_STORAGE);
 
-    private String id;
-    private static Map<String, DataStorageType> idMap;
-    private static Map<String, DataStorageType> namesMap;
-
-    static {
-        idMap = Arrays.stream(values()).collect(Collectors.toMap(v -> v.id, v -> v));
-        namesMap = Arrays.stream(values()).collect(Collectors.toMap(Enum::name, v -> v));
-    }
-
-    DataStorageType(String id) {
-        this.id = id;
-    }
+    private final String id;
+    private final StorageServiceType serviceType;
+    private static final Map<String, DataStorageType> ID_MAP = Arrays.stream(values())
+            .collect(Collectors.toMap(v -> v.id, v -> v));
+    private static final Map<String, DataStorageType> NAMES_MAP = Arrays.stream(values())
+            .collect(Collectors.toMap(Enum::name, v -> v));
 
     public static DataStorageType fromServiceType(final CloudProvider provider,
                                                   final StorageServiceType serviceType) {
@@ -54,18 +52,14 @@ public enum DataStorageType {
         if (id == null) {
             return null;
         }
-        return idMap.get(id.toUpperCase());
+        return ID_MAP.get(id.toUpperCase());
     }
 
     public static DataStorageType getByName(String name) {
         if (name == null) {
             return null;
         }
-        return namesMap.get(name);
-    }
-
-    public String getId() {
-        return this.id;
+        return NAMES_MAP.get(name);
     }
 
     private static DataStorageType getObjectStorageType(final CloudProvider provider) {
@@ -76,6 +70,4 @@ public enum DataStorageType {
             default: throw new IllegalArgumentException("Unsupported provider for object storage: " + provider);
         }
     }
-
-
 }

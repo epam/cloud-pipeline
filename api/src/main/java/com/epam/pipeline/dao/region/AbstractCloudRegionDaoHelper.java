@@ -45,7 +45,8 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         params.addValue(CloudRegionParameters.OWNER.name(), region.getOwner());
         params.addValue(CloudRegionParameters.CREATED_DATE.name(), region.getCreatedDate());
         params.addValue(CloudRegionParameters.CLOUD_PROVIDER.name(), region.getProvider().name());
-        params.addValue(CloudRegionParameters.MOUNT_STORAGE_RULE.name(), region.getMountStorageRule().name());
+        params.addValue(CloudRegionParameters.MOUNT_STORAGE_RULE.name(), region.getMountObjectStorageRule().name());
+        params.addValue(CloudRegionParameters.MOUNT_FILE_STORAGE_RULE.name(), region.getMountFileStorageRule().name());
         params.addValue(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name(), region.getMountCredentialsRule().name());
 
         final String slsPropertiesJson = Optional.ofNullable(region.getStorageLifecycleServiceProperties())
@@ -82,8 +83,10 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         region.setDefault(rs.getBoolean(CloudRegionParameters.IS_DEFAULT.name()));
         region.setOwner(rs.getString(CloudRegionParameters.OWNER.name()));
         region.setCreatedDate(new Date(rs.getTimestamp(CloudRegionParameters.CREATED_DATE.name()).getTime()));
-        region.setMountStorageRule(MountStorageRule.valueOf(
+        region.setMountObjectStorageRule(MountStorageRule.valueOf(
                 rs.getString(CloudRegionParameters.MOUNT_STORAGE_RULE.name())));
+        region.setMountFileStorageRule(MountStorageRule.valueOf(
+                rs.getString(CloudRegionParameters.MOUNT_FILE_STORAGE_RULE.name())));
         region.setMountCredentialsRule(MountStorageRule.valueOf(
                 rs.getString(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name())));
         final String slsJsonString = rs.getString(CloudRegionParameters.STORAGE_LIFECYCLE_SERVICE_PROPERTIES.name());
