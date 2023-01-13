@@ -103,7 +103,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
         @SneakyThrows
         public AccessToken refreshAccessToken() {
             credentials = credentialsSupplier.get();
-            final Date expirationDate = ESConstants.FILE_DATE_FORMAT.parse(credentials.getExpirationTime());
+            final Date expirationDate = ESConstants.GS_DATE_FORMAT.parse(credentials.getExpirationTime());
             return new AccessToken(credentials.getToken(), expirationDate);
         }
         
