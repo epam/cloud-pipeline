@@ -30,7 +30,9 @@ import {
   Changed,
   Size,
   Owner,
-  Path
+  Path,
+  CloudPath,
+  MountPath
 } from '../../utilities/document-columns';
 import FacetedSearchExport from '../../../../../models/search/faceted-search-export';
 import checkBlob from '../../../../../utils/check-blob';
@@ -40,7 +42,9 @@ const exportVOColumns = {
   [Changed.key]: 'includeChanged',
   [Size.key]: 'includeSize',
   [Owner.key]: 'includeOwner',
-  [Path.key]: 'includePath'
+  [Path.key]: 'includePath',
+  [CloudPath.key]: 'includeCloudPath',
+  [MountPath.key]: 'includeMountPath'
 };
 
 function ExportMenu ({onExport, onConfigure}) {

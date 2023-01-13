@@ -248,12 +248,38 @@ const Finished = {
   types: new Set([SearchItemTypes.run])
 };
 
+const CloudPath = {
+  key: 'cloud_path',
+  name: 'Cloud path',
+  width: '15%',
+  types: new Set([
+    SearchItemTypes.s3File,
+    SearchItemTypes.NFSFile,
+    SearchItemTypes.gsFile,
+    SearchItemTypes.azFile
+  ])
+};
+
+const MountPath = {
+  key: 'mount_path',
+  name: 'Mount path',
+  width: '15%',
+  types: new Set([
+    SearchItemTypes.s3File,
+    SearchItemTypes.NFSFile,
+    SearchItemTypes.gsFile,
+    SearchItemTypes.azFile
+  ])
+};
+
 const DocumentColumns = [
   Name,
   Owner,
   Description,
   Changed,
   Path,
+  CloudPath,
+  MountPath,
   Size,
   Started,
   Finished
@@ -283,6 +309,8 @@ export {
   Size,
   Owner,
   Path,
+  CloudPath,
+  MountPath,
   Description,
   Started,
   Finished
