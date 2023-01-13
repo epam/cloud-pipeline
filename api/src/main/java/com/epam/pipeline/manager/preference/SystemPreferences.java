@@ -1080,6 +1080,10 @@ public class SystemPreferences {
             "ldap.blocked.user.name.attribute", "sAMAccountName", LDAP_GROUP, pass);
     public static final IntPreference LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE = new IntPreference(
             "ldap.blocked.user.filter.page.size", 50, LDAP_GROUP, pass);
+    public static final ObjectPreference<Set<String>> LDAP_INVALID_USER_ENTRIES = new ObjectPreference<>(
+            "ldap.blocked.invalid.user.entries",
+            Collections.singleton("Name not found"), new TypeReference<Set<String>>() {}, LDAP_GROUP,
+            isNullOrValidJson(new TypeReference<Set<String>>() {}));
 
     //NGS Preprocessing
     public static final StringPreference PREPROCESSING_MACHINE_RUN_CLASS = new StringPreference(
