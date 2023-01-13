@@ -30,6 +30,7 @@ import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -87,9 +88,9 @@ public class LdapBlockedUsersManager {
                                                     final String nameAttribute) {
         final String filter = buildFilter(filterTemplate, patch, nameAttribute);
 
-        final Set<String> userNamesFromLdap = ListUtils.emptyIfNull(
-                queryLdap(patch.size(), filter, nameAttribute)
-                ).stream()
+        final List<LdapEntity> response = ListUtils.emptyIfNull(queryLdap(patch.size(), filter, nameAttribute));
+        final Set<String> userNamesFromLdap = response
+                .stream()
                 .filter(Objects::nonNull)
                 .map(LdapEntity::getName)
                 .filter(StringUtils::isNotBlank)
@@ -97,9 +98,14 @@ public class LdapBlockedUsersManager {
                 .collect(Collectors.toSet());
 
         if (userNamesFromLdap.isEmpty()) {
-            log.debug("Result from LDAP are empty, " +
-                            "will not try to determinate blocking users in this patch: {}",
+            log.debug("Results from LDAP are empty, " +
+                            "will not try to determine blocked users in this patch: {}",
                     patch.stream().map(PipelineUser::getUserName).collect(Collectors.joining(", ")));
+            return Collections.emptyList();
+        }
+
+        if (containsInvalidEntries(userNamesFromLdap)) {
+            log.debug("LDAP search results contain invalid entries. Skipping user blocking: {}.", response);
             return Collections.emptyList();
         }
 
@@ -115,14 +121,29 @@ public class LdapBlockedUsersManager {
                         .peek(u -> log.debug("Found blocked user: " + u.getUserName()))
                         .collect(Collectors.toList());
             case LOAD_ACTIVE_AND_INTERCEPT:
-                return usersByName.entrySet().stream()
+                final List<PipelineUser> blocked = usersByName.entrySet()
+                        .stream()
                         .filter(pu -> !userNamesFromLdap.contains(pu.getKey()))
                         .map(Map.Entry::getValue)
                         .peek(u -> log.debug("Found blocked user: " + u.getUserName()))
                         .collect(Collectors.toList());
+                if (blocked.size() == usersByName.size()) {
+                    log.debug("All {} user(s) in current chunk seem to be blocked. " +
+                            "Assuming this is an error and skipping blocking. LDAP response: {}",
+                            blocked.size(), response);
+                    return Collections.emptyList();
+                }
+                return blocked;
             default:
                 throw new IllegalArgumentException("Unsupported search method: " + searchMethod.name());
         }
+    }
+
+    private boolean containsInvalidEntries(final Set<String> userNamesFromLdap) {
+        final Set<String> invalidEntries = SetUtils.emptyIfNull(
+                preferenceManager.getPreference(SystemPreferences.LDAP_INVALID_USER_ENTRIES));
+        return userNamesFromLdap.stream().anyMatch(name -> invalidEntries.stream()
+                .anyMatch(invalid -> StringUtils.equalsIgnoreCase(invalid, name)));
     }
 
     private LdapBlockedUserSearchMethod chooseLdapSearchMethod() {
