@@ -44,7 +44,6 @@ function validateJSON (content) {
   }
   try {
     JSON.parse(content);
-    console.log('111', JSON.parse(content))
   } catch (e) {
     return [e.message];
   }
@@ -178,7 +177,6 @@ export default class DataStorageCodeForm extends React.Component {
   };
 
   beforeEdit = () => {
-    console.log('before edit')
     this.validateAndCorrectFile(this._originalCode);
   };
 
