@@ -47,7 +47,9 @@ public abstract class AbstractCloudRegionDTO {
     @JsonProperty(value = "default")
     private boolean isDefault;
     private String globalDistributionUrl;
-    private MountStorageRule mountStorageRule = MountStorageRule.NONE;
+    @JsonProperty(value = "mountStorageRule")
+    private MountStorageRule mountObjectStorageRule = MountStorageRule.NONE;
+    private MountStorageRule mountFileStorageRule = MountStorageRule.NONE;
     private MountStorageRule mountCredentialsRule = MountStorageRule.NONE;
 
     public abstract CloudProvider getProvider();

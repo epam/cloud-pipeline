@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.entity.region.MountStorageRule;
 import com.epam.pipeline.manager.region.CloudRegionAspect;
 import org.apache.commons.lang.math.RandomUtils;
 import org.junit.Test;
@@ -65,6 +66,10 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     private static final String UPDATED_KMS_KEY_ID = "updatedKmsKeyId";
     private static final String UPDATED_KMS_KEY_ARN = "updatedKmsKeyArn";
     private static final String SSH_PUBLIC_KEY_PATH = "ssh";
+    private static final MountStorageRule MOUNT_OBJECT_STORAGE_RULE = MountStorageRule.CLOUD;
+    private static final MountStorageRule UPDATED_MOUNT_OBJECT_STORAGE_RULE = MountStorageRule.ALL;
+    private static final MountStorageRule MOUNT_FILE_STORAGE_RULE = MountStorageRule.CLOUD;
+    private static final MountStorageRule UPDATED_MOUNT_FILE_STORAGE_RULE = MountStorageRule.ALL;
     private static final String GLOBAL_DISTRIBUTION_URL = "globalDistributionUrl";
     private static final String UPDATED_GLOBAL_DISTRIBUTION_URL = "updatedGlobalDistributionUrl";
     private static final double RAM = 3.75;
@@ -182,6 +187,24 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     }
 
     @Test
+    public void createShouldSaveEntityWithMountObjectStorageRule() {
+        final AwsRegion expectedRegion = getAwsRegion();
+        expectedRegion.setMountObjectStorageRule(MOUNT_OBJECT_STORAGE_RULE);
+        final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
+        final AwsRegion actualRegion = loadAndCheckType(createdRegion.getId(), AwsRegion.class);
+        assertRegionEquals(expectedRegion, actualRegion);
+    }
+
+    @Test
+    public void createShouldSaveEntityWithMountFileStorageRule() {
+        final AwsRegion expectedRegion = getAwsRegion();
+        expectedRegion.setMountFileStorageRule(MOUNT_FILE_STORAGE_RULE);
+        final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
+        final AwsRegion actualRegion = loadAndCheckType(createdRegion.getId(), AwsRegion.class);
+        assertRegionEquals(expectedRegion, actualRegion);
+    }
+
+    @Test
     public void createShouldReturnEntityWithGeneratedId() {
         final AwsRegion region = getAwsRegion();
         assertNull(region.getId());
@@ -226,6 +249,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         originRegion.setKmsKeyArn(KMS_KEY_ARN);
         originRegion.setDefault(false);
         originRegion.setGlobalDistributionUrl(GLOBAL_DISTRIBUTION_URL);
+        originRegion.setMountObjectStorageRule(MOUNT_OBJECT_STORAGE_RULE);
+        originRegion.setMountFileStorageRule(MOUNT_FILE_STORAGE_RULE);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion);
         final AwsRegion updatedRegion = getAwsRegion();
         updatedRegion.setId(savedRegion.getId());
@@ -235,6 +260,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         updatedRegion.setKmsKeyArn(UPDATED_KMS_KEY_ARN);
         updatedRegion.setDefault(true);
         updatedRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
+        originRegion.setMountObjectStorageRule(UPDATED_MOUNT_OBJECT_STORAGE_RULE);
+        originRegion.setMountFileStorageRule(UPDATED_MOUNT_FILE_STORAGE_RULE);
 
         cloudRegionDao.update(updatedRegion, null);
         final AwsRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AwsRegion.class);
@@ -249,6 +276,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         originRegion.setAzurePolicy(new AzurePolicy("ipMin", "ipMax"));
         originRegion.setDefault(false);
         originRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
+        originRegion.setMountObjectStorageRule(MOUNT_OBJECT_STORAGE_RULE);
+        originRegion.setMountFileStorageRule(MOUNT_FILE_STORAGE_RULE);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion, null);
         final AzureRegion updatedRegion = getAzureRegion();
         updatedRegion.setId(savedRegion.getId());
@@ -257,6 +286,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         updatedRegion.setAzurePolicy(new AzurePolicy("updatedIpMin", "updatedIpMax"));
         updatedRegion.setDefault(true);
         updatedRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
+        originRegion.setMountObjectStorageRule(UPDATED_MOUNT_OBJECT_STORAGE_RULE);
+        originRegion.setMountFileStorageRule(UPDATED_MOUNT_FILE_STORAGE_RULE);
 
         cloudRegionDao.update(updatedRegion, null);
         final AzureRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AzureRegion.class);
@@ -318,6 +349,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertThat(expectedRegion.getProvider(), is(actualRegion.getProvider()));
         assertThat(actualRegion, instanceOf(expectedRegion.getClass()));
         assertThat(expectedRegion.getGlobalDistributionUrl(), is(actualRegion.getGlobalDistributionUrl()));
+        assertThat(expectedRegion.getMountObjectStorageRule(), is(actualRegion.getMountObjectStorageRule()));
+        assertThat(expectedRegion.getMountFileStorageRule(), is(actualRegion.getMountFileStorageRule()));
     }
 
     private void assertRegionEquals(final AwsRegion expectedRegion, final AwsRegion actualRegion) {
