@@ -38,8 +38,13 @@ import DataStorageItemContent from '../../../../models/dataStorage/DataStorageIt
 import SampleSheet, {utilities} from '../../../special/sample-sheet';
 
 function validateJSON (content) {
+  console.log('content:', content)
+  if (!content) {
+    return undefined;
+  }
   try {
     JSON.parse(content);
+    console.log('111', JSON.parse(content))
   } catch (e) {
     return [e.message];
   }
@@ -136,7 +141,12 @@ export default class DataStorageCodeForm extends React.Component {
   }
 
   componentDidUpdate () {
-    if (this._fileContents && !this._fileContents.pending && !this._originalCode) {
+    if (
+      this._fileContents &&
+      !this._fileContents.pending &&
+      !this._originalCode &&
+      !this._modifiedCode
+    ) {
       this._originalCode = this._fileContents.value.content
         ? atob(this._fileContents.value.content)
         : '';
@@ -168,6 +178,7 @@ export default class DataStorageCodeForm extends React.Component {
   };
 
   beforeEdit = () => {
+    console.log('before edit')
     this.validateAndCorrectFile(this._originalCode);
   };
 
