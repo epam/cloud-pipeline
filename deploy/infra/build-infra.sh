@@ -663,7 +663,7 @@ for region_item in "${regions_arr[@]}"; do
     echo "-> Region: $region_item"
     echo
 
-    echo "-> CPU image"
+    echo "-> Common image"
     build_ami   "${CP_CLOUD_PROVIDER}" \
                 "${region_item}" \
                 "${CP_BASE_COMMON_IMAGE_ID:-NA}" \
@@ -673,7 +673,7 @@ for region_item in "${regions_arr[@]}"; do
                 "${CP_SECURITY_GROUPS:-NA}" \
                 "${CP_SUBNET:-NA}" \
                 "${CP_IMAGE_PREFIX}-Common" \
-                "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-cpu-node.sh" \
+                "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-common-node.sh" \
                 "$CP_OUTPUT" \
                 "${CP_MAKE_IMAGES_PUBLIC:-true}" \
                 "LINUX"
@@ -705,8 +705,8 @@ for region_item in "${regions_arr[@]}"; do
 
     echo
 
-    if [ -f "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-cpu-node-win.ps1" ]; then
-        echo "-> Windows CPU image"
+    if [ -f "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-common-node-win.ps1" ]; then
+        echo "-> Windows Common image"
         build_ami   "${CP_CLOUD_PROVIDER}" \
                     "${region_item}" \
                     "${CP_BASE_WIN_COMMON_IMAGE_ID:-NA}" \
