@@ -73,3 +73,28 @@
 .file-share-mount-row:last-child {
   border-bottom: none;
 }
+
+.section-container {
+  margin: 5px 0;
+}
+
+.section-title {
+  text-align: right;
+  padding-right: 8px;
+  line-height: 32px;
+}
+
+.mount-rules-form-item {
+  display: flex;
+  flex-wrap: nowrap;
+  margin-bottom: 2px;
+}
+
+.mount-rules-form-item div[class~="ant-form-item-label"] {
+  width: 100px;
+}
+
+.mount-rules-form-item div[class~="ant-form-item-control-wrapper"] {
+  width: auto;
+  flex-grow: 1;
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,6 @@ function fromJSON (obj, defaultValue) {
 @inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router', 'authenticatedUserInfo')
 @observer
 export default class AWSRegionsForm extends React.Component {
-
   static propTypes = {
     onInitialize: PropTypes.func
   };
@@ -671,7 +670,6 @@ export default class AWSRegionsForm extends React.Component {
 })
 @observer
 class AWSRegionForm extends React.Component {
-
   static propTypes = {
     regionIds: PropTypes.array,
     region: PropTypes.object,
@@ -741,6 +739,7 @@ class AWSRegionForm extends React.Component {
       'versioningEnabled',
       'fileShareMounts',
       'mountStorageRule',
+      'mountFileStorageRule',
       'mountCredentialsRule',
       'globalDistributionUrl'
     ],
@@ -762,6 +761,7 @@ class AWSRegionForm extends React.Component {
       'enterpriseAgreements',
       'fileShareMounts',
       'mountStorageRule',
+      'mountFileStorageRule',
       'mountCredentialsRule',
       'globalDistributionUrl'
     ],
@@ -778,6 +778,7 @@ class AWSRegionForm extends React.Component {
       'customInstanceTypes',
       'corsRules',
       'mountStorageRule',
+      'mountFileStorageRule',
       'mountCredentialsRule',
       'policy',
       {
@@ -807,6 +808,45 @@ class AWSRegionForm extends React.Component {
   get provider () {
     return this.props.region ? this.props.region.provider : null;
   }
+
+  static Section = ({
+    title,
+    layout,
+    className,
+    children
+  }) => {
+    return (
+      <Row
+        className={
+          classNames(
+            styles.sectionContainer,
+            className
+          )
+        }
+      >
+        <Col
+          xs={layout.labelCol.xs.span}
+          sm={layout.labelCol.sm.span}
+          className={
+            classNames(
+              styles.sectionTitle,
+              'cp-settings-form-item-label'
+            )
+          }
+        >
+          <span>
+            {title}
+          </span>
+        </Col>
+        <Col
+          xs={layout.wrapperCol.xs.span}
+          sm={layout.wrapperCol.sm.span}
+        >
+          {children}
+        </Col>
+      </Row>
+    );
+  };
 
   getFieldClassName = (field, defaultClassName) => {
     const classNames = defaultClassName ? [defaultClassName] : [];
@@ -901,6 +941,7 @@ class AWSRegionForm extends React.Component {
       check('kmsKeyArn', checkStringValue) ||
       check('corsRules', checkJSONValue) ||
       check('mountStorageRule', checkStringValue) ||
+      check('mountFileStorageRule', checkStringValue) ||
       check('mountCredentialsRule', checkStringValue) ||
       check('policy', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
@@ -1515,48 +1556,82 @@ class AWSRegionForm extends React.Component {
                 </Checkbox>
               )}
             </Form.Item>
-            <Form.Item
-              {...this.formItemLayoutWideLabel}
-              className={this.getFieldClassName('mountStorageRule')}
-              label="Mount storages across regions"
+            <AWSRegionForm.Section
+              title="Mount rules:"
+              layout={this.formItemLayout}
             >
-              {getFieldDecorator('mountStorageRule', {
-                initialValue: this.props.region.mountStorageRule
-              })(
-                <Select
-                  size="small"
-                  allowClear={false}
-                  style={{marginTop: 4}}
-                >
-                  <Select.Option value="NONE">None</Select.Option>
-                  <Select.Option value="CLOUD">Same cloud</Select.Option>
-                  <Select.Option value="ALL">All</Select.Option>
-                </Select>
-              )}
-            </Form.Item>
-            <Form.Item
-              {...this.formItemLayoutWideLabel}
-              className={this.getFieldClassName('mountCredentialsRule')}
-              label="Mount credentials rule"
-            >
-              {getFieldDecorator('mountCredentialsRule', {
-                initialValue: this.props.region.mountCredentialsRule
-              })(
-                <Select
-                  size="small"
-                  allowClear={false}
-                  style={{marginTop: 4}}
-                >
-                  <Select.Option value="NONE">None</Select.Option>
-                  <Select.Option value="CLOUD">Same cloud</Select.Option>
-                  <Select.Option value="ALL">All</Select.Option>
-                </Select>
-              )}
-            </Form.Item>
+              <Form.Item
+                className={classNames(
+                  styles.mountRulesFormItem,
+                  this.getFieldClassName('mountStorageRule')
+                )}
+                label="Object storages"
+              >
+                {getFieldDecorator('mountStorageRule', {
+                  initialValue: this.props.region.mountStorageRule
+                })(
+                  <Select
+                    size="small"
+                    allowClear={false}
+                    style={{marginTop: 4}}
+                  >
+                    <Select.Option value="NONE">None</Select.Option>
+                    <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="ALL">All</Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
+              <Form.Item
+                className={classNames(
+                  styles.mountRulesFormItem,
+                  this.getFieldClassName('mountFileStorageRule')
+                )}
+                label="File storages"
+              >
+                {getFieldDecorator('mountFileStorageRule', {
+                  initialValue: this.props.region.mountFileStorageRule
+                })(
+                  <Select
+                    size="small"
+                    allowClear={false}
+                    style={{marginTop: 4}}
+                  >
+                    <Select.Option value="NONE">None</Select.Option>
+                    <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="ALL">All</Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
+              <Form.Item
+                className={classNames(
+                  styles.mountRulesFormItem,
+                  this.getFieldClassName('mountCredentialsRule')
+                )}
+                label="Credentials"
+              >
+                {getFieldDecorator('mountCredentialsRule', {
+                  initialValue: this.props.region.mountCredentialsRule
+                })(
+                  <Select
+                    size="small"
+                    allowClear={false}
+                    style={{marginTop: 4}}
+                  >
+                    <Select.Option value="NONE">None</Select.Option>
+                    <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="ALL">All</Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
+            </AWSRegionForm.Section>
             <Form.Item
               label="FS Mounts"
               {...this.formItemLayout}
-              className={this.getFieldClassName('fileShareMounts', 'edit-region-elastic-file-share-mounts-container')}>
+              className={this.getFieldClassName(
+                'fileShareMounts',
+                'edit-region-elastic-file-share-mounts-container'
+              )}
+            >
               {getFieldDecorator('fileShareMounts', {
                 initialValue: this.props.region.fileShareMounts
               })(
@@ -1574,7 +1649,10 @@ class AWSRegionForm extends React.Component {
               {...this.formItemLayout}>
               {getFieldDecorator('storageAccount', {
                 initialValue: this.props.region.storageAccount,
-                rules: [{required: this.providerSupportsField('storageAccount'), message: 'Storage account is required'}]
+                rules: [{
+                  required: this.providerSupportsField('storageAccount'),
+                  message: 'Storage account is required'
+                }]
               })(
                 <Input
                   size="small"
