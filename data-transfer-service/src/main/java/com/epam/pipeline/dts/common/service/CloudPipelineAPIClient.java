@@ -36,6 +36,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,11 +45,18 @@ import java.util.Optional;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class CloudPipelineAPIClient {
     
-    private final CloudPipelineAPI cloudPipelineAPI;
+    private CloudPipelineAPI cloudPipelineAPI;
     private final RetryingCloudPipelineApiExecutor pipelineApiExecutor = RetryingCloudPipelineApiExecutor.basic();
 
     @Autowired
     private ApiTokenService apiTokenService;
+
+    @Value("${dts.api.url}")
+    private String api;
+
+    CloudPipelineAPIClient(final CloudPipelineAPI api) {
+        this.cloudPipelineAPI = api;
+    }
 
     public static CloudPipelineAPIClient from(final CloudPipelineAPI api) {
         return new CloudPipelineAPIClient(api);
@@ -64,8 +72,17 @@ public class CloudPipelineAPIClient {
         return CloudPipelineAPIClient.from(credentials.getApi(), credentials.getApiToken());
     }
 
+    public void updateClient() {
+        String token = apiTokenService.getToken();
+        if (apiTokenService.isExpired(token)) {
+            token = getToken();
+            apiTokenService.updateToken(token);
+            cloudPipelineAPI = new CloudPipelineApiBuilder(0, 0, api, token).buildClient();
+        }
+    }
+
     public List<MetadataEntry> loadMetadataEntry(final List<EntityVO> entities) {
-        updateToken();
+        updateClient();
         return ListUtils.emptyIfNull(pipelineApiExecutor.execute(cloudPipelineAPI.loadFolderMetadata(entities)));
     }
 
@@ -83,18 +100,12 @@ public class CloudPipelineAPIClient {
     }
 
     public Optional<PipelineUser> whoami() {
-        updateToken();
+        updateClient();
         return Optional.ofNullable(pipelineApiExecutor.execute(cloudPipelineAPI.whoami()));
     }
 
     public String getToken() {
         return Optional.ofNullable(pipelineApiExecutor.execute(cloudPipelineAPI.getToken())).orElse(null);
-    }
-
-    private void updateToken() {
-        if (apiTokenService.isExpired()) {
-            apiTokenService.updateToken(getToken());
-        }
     }
 
     public Optional<String> getUserMetadataValueByKey(final String key) {
@@ -107,7 +118,7 @@ public class CloudPipelineAPIClient {
     }
 
     public Optional<DtsRegistry> findDtsRegistryByNameOrId(final String dtsId) {
-        updateToken();
+        updateClient();
         try {
             return Optional.of(pipelineApiExecutor.execute(cloudPipelineAPI.loadDts(dtsId)));
         } catch (PipelineResponseApiException e) {
@@ -116,28 +127,28 @@ public class CloudPipelineAPIClient {
     }
 
     public DtsRegistry deleteDtsRegistryPreferences(final String dtsId, final List<String> preferencesToRemove) {
-        updateToken();
+        updateClient();
         return pipelineApiExecutor.execute(
             cloudPipelineAPI.deleteDtsPreferences(dtsId, new DtsRegistryPreferencesRemovalVO(preferencesToRemove)));
     }
 
     public DtsRegistry updateDtsRegistryHeartbeat(final String dtsId) {
-        updateToken();
+        updateClient();
         return pipelineApiExecutor.execute(cloudPipelineAPI.updateDtsHeartbeat(dtsId));
     }
 
     public AbstractDataStorage findStorageByPath(final String path) {
-        updateToken();
+        updateClient();
         return pipelineApiExecutor.execute(cloudPipelineAPI.findStorageByPath(path));
     }
 
     public DataStorageItemContent getStorageItemContent(final Long storageId, final String path) {
-        updateToken();
+        updateClient();
         return pipelineApiExecutor.execute(cloudPipelineAPI.getStorageItemContent(storageId, path));
     }
 
     public DataStorageFile createStorageItem(final Long storageId, final String path, final String content) {
-        updateToken();
+        updateClient();
         return pipelineApiExecutor.execute(cloudPipelineAPI.createStorageItem(storageId, path, content));
     }
 }
