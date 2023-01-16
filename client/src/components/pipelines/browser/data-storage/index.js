@@ -2273,7 +2273,7 @@ export default class DataStorage extends React.Component {
             <Metadata
               pending={this.state.previewPending}
               key={METADATA_PANEL_KEY}
-              readOnly={!this.storage.isOwner}
+              readOnly={!this.storage.writeAllowed}
               downloadable={!sensitive}
               showContent={
                 !sensitive &&
