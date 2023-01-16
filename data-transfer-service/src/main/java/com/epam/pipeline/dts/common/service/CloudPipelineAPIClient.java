@@ -36,7 +36,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Collections;
 import java.util.List;
@@ -50,9 +49,6 @@ public class CloudPipelineAPIClient {
 
     @Autowired
     private ApiTokenService apiTokenService;
-
-    @Value("${dts.api.url}")
-    private String api;
 
     CloudPipelineAPIClient(final CloudPipelineAPI api) {
         this.cloudPipelineAPI = api;
@@ -72,18 +68,19 @@ public class CloudPipelineAPIClient {
         return CloudPipelineAPIClient.from(credentials.getApi(), credentials.getApiToken());
     }
 
-    public void updateClient() {
+    public CloudPipelineAPI getClient() {
         String token = apiTokenService.getToken();
         if (apiTokenService.isExpired(token)) {
             token = getToken();
             apiTokenService.updateToken(token);
-            cloudPipelineAPI = new CloudPipelineApiBuilder(0, 0, api, token).buildClient();
+            cloudPipelineAPI = new CloudPipelineApiBuilder(0, 0, apiTokenService.api, token)
+                    .buildClient();
         }
+        return cloudPipelineAPI;
     }
 
     public List<MetadataEntry> loadMetadataEntry(final List<EntityVO> entities) {
-        updateClient();
-        return ListUtils.emptyIfNull(pipelineApiExecutor.execute(cloudPipelineAPI.loadFolderMetadata(entities)));
+        return ListUtils.emptyIfNull(pipelineApiExecutor.execute(getClient().loadFolderMetadata(entities)));
     }
 
     public Optional<MetadataEntry> findMetadataEntry(final EntityVO entity) {
@@ -100,8 +97,7 @@ public class CloudPipelineAPIClient {
     }
 
     public Optional<PipelineUser> whoami() {
-        updateClient();
-        return Optional.ofNullable(pipelineApiExecutor.execute(cloudPipelineAPI.whoami()));
+        return Optional.ofNullable(pipelineApiExecutor.execute(getClient().whoami()));
     }
 
     public String getToken() {
@@ -118,37 +114,31 @@ public class CloudPipelineAPIClient {
     }
 
     public Optional<DtsRegistry> findDtsRegistryByNameOrId(final String dtsId) {
-        updateClient();
         try {
-            return Optional.of(pipelineApiExecutor.execute(cloudPipelineAPI.loadDts(dtsId)));
+            return Optional.of(pipelineApiExecutor.execute(getClient().loadDts(dtsId)));
         } catch (PipelineResponseApiException e) {
             return Optional.empty();
         }
     }
 
     public DtsRegistry deleteDtsRegistryPreferences(final String dtsId, final List<String> preferencesToRemove) {
-        updateClient();
         return pipelineApiExecutor.execute(
-            cloudPipelineAPI.deleteDtsPreferences(dtsId, new DtsRegistryPreferencesRemovalVO(preferencesToRemove)));
+                getClient().deleteDtsPreferences(dtsId, new DtsRegistryPreferencesRemovalVO(preferencesToRemove)));
     }
 
     public DtsRegistry updateDtsRegistryHeartbeat(final String dtsId) {
-        updateClient();
-        return pipelineApiExecutor.execute(cloudPipelineAPI.updateDtsHeartbeat(dtsId));
+        return pipelineApiExecutor.execute(getClient().updateDtsHeartbeat(dtsId));
     }
 
     public AbstractDataStorage findStorageByPath(final String path) {
-        updateClient();
-        return pipelineApiExecutor.execute(cloudPipelineAPI.findStorageByPath(path));
+        return pipelineApiExecutor.execute(getClient().findStorageByPath(path));
     }
 
     public DataStorageItemContent getStorageItemContent(final Long storageId, final String path) {
-        updateClient();
-        return pipelineApiExecutor.execute(cloudPipelineAPI.getStorageItemContent(storageId, path));
+        return pipelineApiExecutor.execute(getClient().getStorageItemContent(storageId, path));
     }
 
     public DataStorageFile createStorageItem(final Long storageId, final String path, final String content) {
-        updateClient();
-        return pipelineApiExecutor.execute(cloudPipelineAPI.createStorageItem(storageId, path, content));
+        return pipelineApiExecutor.execute(getClient().createStorageItem(storageId, path, content));
     }
 }

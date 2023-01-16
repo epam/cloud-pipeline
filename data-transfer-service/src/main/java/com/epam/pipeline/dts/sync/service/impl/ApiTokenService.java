@@ -48,7 +48,7 @@ public class ApiTokenService {
     @Value("${dts.api.token}")
     private String apiToken;
     @Value("${dts.api.url}")
-    private String api;
+    public String api;
 
     private String currentApiToken;
 
