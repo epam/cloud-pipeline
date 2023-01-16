@@ -20,6 +20,7 @@ export {facetedQueryString};
 export {
   DocumentColumns,
   getDefaultColumns,
+  filterDisplayedColumns,
   parseExtraColumns
 } from './document-columns';
 export {default as facetsSearch} from './facets-search';

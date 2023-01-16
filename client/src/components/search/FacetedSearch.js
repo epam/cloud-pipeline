@@ -41,6 +41,7 @@ import SearchResults, {DEFAULT_PAGE_SIZE} from './faceted-search/search-results'
 import {
   DocumentColumns,
   getDefaultColumns,
+  filterDisplayedColumns,
   DefaultSorting,
   ExcludedSortingKeys,
   parseExtraColumns,
@@ -58,7 +59,6 @@ import {SplitPanel} from '../special/splitPanel';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 import downloadStorageItems from '../special/download-storage-items';
-import {Path} from './faceted-search/utilities/document-columns';
 
 function getDomainKey (domain) {
   return `domain-${domain || ''}`;
@@ -282,6 +282,11 @@ class FacetedSearch extends React.Component {
 
   get columns () {
     const documentTypes = this.documentTypes;
+    return filterDisplayedColumns(this.allColumns, documentTypes);
+  }
+
+  get allColumns () {
+    const documentTypes = this.documentTypes;
     const all = getDefaultColumns(this.extraColumns);
     if (!documentTypes || !documentTypes.length) {
       return all;
@@ -289,10 +294,6 @@ class FacetedSearch extends React.Component {
       return all
         .filter(column => !column.types || documentTypes.find(type => column.types.has(type)));
     }
-  }
-
-  get displayedColumns () {
-    return this.columns.filter((column) => column.key !== Path.key);
   }
 
   get activeFiltersIsEmpty () {
@@ -790,7 +791,7 @@ class FacetedSearch extends React.Component {
       <ExportButton
         className={styles.exportButton}
         size="default"
-        columns={this.columns}
+        columns={this.allColumns}
         advanced={advancedSearchMode}
         query={query}
         filters={{
@@ -940,7 +941,7 @@ class FacetedSearch extends React.Component {
           showResults={showResults}
           onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
           mode={presentationMode}
-          columns={this.displayedColumns}
+          columns={this.columns}
         />
       </div>
     );

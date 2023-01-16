@@ -26,6 +26,7 @@ import displaySize from '../../../../utils/displaySize';
 import displayDate from '../../../../utils/displayDate';
 import styles from '../search-results.css';
 import OpenInToolAction from '../../../special/file-actions/open-in-tool';
+import {SearchGroupTypes} from '../../searchGroupTypes';
 
 function parseExtraColumns (preferences) {
   const configuration = preferences.searchExtraFieldsConfiguration;
@@ -299,10 +300,21 @@ function getDefaultColumns (extraColumns = []) {
   ];
 }
 
+function filterDisplayedColumns (columns = [], documentTypes = []) {
+  let shouldExcludePathColumn = false;
+  if (documentTypes.length > 0) {
+    shouldExcludePathColumn = !documentTypes
+      .some((type) => !SearchGroupTypes.storage.types.includes(type));
+  }
+  return columns
+    .filter((column) => !shouldExcludePathColumn || column !== Path);
+}
+
 export {
   DocumentColumns,
   fetchAndParseExtraColumns,
   getDefaultColumns,
+  filterDisplayedColumns,
   parseExtraColumns,
   Name,
   Changed,
