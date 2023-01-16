@@ -58,6 +58,7 @@ import {SplitPanel} from '../special/splitPanel';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 import downloadStorageItems from '../special/download-storage-items';
+import {Path} from './faceted-search/utilities/document-columns';
 
 function getDomainKey (domain) {
   return `domain-${domain || ''}`;
@@ -288,6 +289,10 @@ class FacetedSearch extends React.Component {
       return all
         .filter(column => !column.types || documentTypes.find(type => column.types.has(type)));
     }
+  }
+
+  get displayedColumns () {
+    return this.columns.filter((column) => column.key !== Path.key);
   }
 
   get activeFiltersIsEmpty () {
@@ -935,7 +940,7 @@ class FacetedSearch extends React.Component {
           showResults={showResults}
           onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
           mode={presentationMode}
-          columns={this.columns}
+          columns={this.displayedColumns}
         />
       </div>
     );
