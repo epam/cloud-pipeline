@@ -26,6 +26,7 @@ import displaySize from '../../../../utils/displaySize';
 import displayDate from '../../../../utils/displayDate';
 import styles from '../search-results.css';
 import OpenInToolAction from '../../../special/file-actions/open-in-tool';
+import {SearchGroupTypes} from '../../searchGroupTypes';
 
 function parseExtraColumns (preferences) {
   const configuration = preferences.searchExtraFieldsConfiguration;
@@ -248,12 +249,38 @@ const Finished = {
   types: new Set([SearchItemTypes.run])
 };
 
+const CloudPath = {
+  key: 'cloud_path',
+  name: 'Cloud path',
+  width: '15%',
+  types: new Set([
+    SearchItemTypes.s3File,
+    SearchItemTypes.NFSFile,
+    SearchItemTypes.gsFile,
+    SearchItemTypes.azFile
+  ])
+};
+
+const MountPath = {
+  key: 'mount_path',
+  name: 'Mount path',
+  width: '15%',
+  types: new Set([
+    SearchItemTypes.s3File,
+    SearchItemTypes.NFSFile,
+    SearchItemTypes.gsFile,
+    SearchItemTypes.azFile
+  ])
+};
+
 const DocumentColumns = [
   Name,
   Owner,
   Description,
   Changed,
   Path,
+  CloudPath,
+  MountPath,
   Size,
   Started,
   Finished
@@ -273,16 +300,29 @@ function getDefaultColumns (extraColumns = []) {
   ];
 }
 
+function filterDisplayedColumns (columns = [], documentTypes = []) {
+  let shouldExcludePathColumn = false;
+  if (documentTypes.length > 0) {
+    shouldExcludePathColumn = !documentTypes
+      .some((type) => !SearchGroupTypes.storage.types.includes(type));
+  }
+  return columns
+    .filter((column) => !shouldExcludePathColumn || column !== Path);
+}
+
 export {
   DocumentColumns,
   fetchAndParseExtraColumns,
   getDefaultColumns,
+  filterDisplayedColumns,
   parseExtraColumns,
   Name,
   Changed,
   Size,
   Owner,
   Path,
+  CloudPath,
+  MountPath,
   Description,
   Started,
   Finished

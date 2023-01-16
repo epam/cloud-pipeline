@@ -41,6 +41,7 @@ import SearchResults, {DEFAULT_PAGE_SIZE} from './faceted-search/search-results'
 import {
   DocumentColumns,
   getDefaultColumns,
+  filterDisplayedColumns,
   DefaultSorting,
   ExcludedSortingKeys,
   parseExtraColumns,
@@ -280,6 +281,11 @@ class FacetedSearch extends React.Component {
   }
 
   get columns () {
+    const documentTypes = this.documentTypes;
+    return filterDisplayedColumns(this.allColumns, documentTypes);
+  }
+
+  get allColumns () {
     const documentTypes = this.documentTypes;
     const all = getDefaultColumns(this.extraColumns);
     if (!documentTypes || !documentTypes.length) {
@@ -785,7 +791,7 @@ class FacetedSearch extends React.Component {
       <ExportButton
         className={styles.exportButton}
         size="default"
-        columns={this.columns}
+        columns={this.allColumns}
         advanced={advancedSearchMode}
         query={query}
         filters={{
