@@ -32,6 +32,7 @@ class AnalysisPipeline {
   @observable createdDate;
   @observable modifiedDate;
   @observable path;
+  @observable version;
   @observable isNew = true;
   usedChannels = [];
   /**
@@ -96,7 +97,7 @@ class AnalysisPipeline {
     const relateObjectsModules = this.modules
       .filter(cpModule => /^RelateObjects$/i.test(cpModule.name));
     const appendSpots = (parent, child) => {
-      const image = this.getSourceImageForObjet(child);
+      const image = this.getSourceImageForObject(child);
       if (child && image) {
         spots.push({
           parent: parent,
@@ -107,8 +108,11 @@ class AnalysisPipeline {
     };
     relateObjectsModules.forEach(relateObjectsModule => {
       const parent = relateObjectsModule.getParameterValue('parent');
-      const child = relateObjectsModule.getParameterValue('child');
-      appendSpots(parent, child);
+      const saveAsNew = relateObjectsModule.getBooleanParameterValue('saveAsNew');
+      const child = saveAsNew
+        ? relateObjectsModule.getParameterValue('name')
+        : relateObjectsModule.getParameterValue('child');
+      appendSpots(saveAsNew ? undefined : parent, child);
     });
     const findSpotsModules = this.modules
       .filter(cpModule => /^FindSpots$/i.test(cpModule.name));
@@ -143,7 +147,10 @@ class AnalysisPipeline {
     this.modules
       .filter(cpModule => /^RelateObjects$/i.test(cpModule.name))
       .forEach(relateObjectsModule => {
-        const child = relateObjectsModule.getParameterValue('child');
+        const saveAsNew = relateObjectsModule.getBooleanParameterValue('saveAsNew');
+        const child = saveAsNew
+          ? relateObjectsModule.getParameterValue('name')
+          : relateObjectsModule.getParameterValue('child');
         if (child && populationNames.has(child)) {
           exclude.add(child);
         }
@@ -258,7 +265,7 @@ class AnalysisPipeline {
     return result.filter(Boolean);
   };
 
-  getSourceImageForObjet = (object) => {
+  getSourceImageForObject = (object) => {
     if (!object) {
       return undefined;
     }
@@ -268,6 +275,12 @@ class AnalysisPipeline {
           .some(output => output.name === object && output.type === AnalysisTypes.object)
       );
     if (cpModule) {
+      if (
+        /^RelateObjects$/i.test(cpModule.name) &&
+        cpModule.getBooleanParameterValue('saveAsNew')
+      ) {
+        return this.getSourceImageForObject(cpModule.getParameterValue('child'));
+      }
       return cpModule.sourceImage;
     }
     return undefined;
@@ -291,6 +304,7 @@ class AnalysisPipeline {
       return {
         uuid: this.uuid,
         path: this.path,
+        version: this.version,
         name: this.name,
         description: this.description,
         channels: this.channels,
@@ -342,6 +356,8 @@ class AnalysisPipeline {
           pipeline.uuid = value;
         } else if (/^name$/i.test(key)) {
           pipeline.name = value;
+        } else if (/^version$/i.test(key)) {
+          pipeline.version = value;
         } else if (/^description$/i.test(key)) {
           pipeline.description = value;
         } else if (/^author$/i.test(key)) {

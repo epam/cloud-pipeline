@@ -25,6 +25,7 @@ import IdentifyTertiaryObjects from './identify-tertiary-objects';
 import MaskObjects from './mask-objects';
 import RelateObjects from './relate-objects';
 import ResizeObjects from './resize-objects';
+import SplitOrMergeObjects from './split-or-merge-objects';
 
 export default [
   ConvertObjectsToImage,
@@ -36,5 +37,6 @@ export default [
   IdentifyTertiaryObjects,
   MaskObjects,
   RelateObjects,
-  ResizeObjects
+  ResizeObjects,
+  SplitOrMergeObjects
 ];

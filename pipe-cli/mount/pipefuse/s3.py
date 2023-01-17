@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -292,3 +292,36 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._min_part_size, max_part_size=self._max_part_size)
         mpu = TruncatingMultipartCopyUpload(mpu, length=length, min_part_number=self._min_chunk)
         return mpu
+
+    def download_xattrs(self, path):
+        logging.info('Downloading tags for %s...' % path)
+        try:
+            response = self._s3.get_object_tagging(Bucket=self.bucket, Key=path) or {}
+            return {tag.get('Key'): tag.get('Value') for tag in response.get('TagSet', [])}
+        except Exception:
+            logging.debug('No tags have been found for %s' % path, exc_info=True)
+            return {}
+
+    def upload_xattrs(self, path, xattrs):
+        logging.info('Uploading tags for %s...' % path)
+        self._s3.put_object_tagging(Bucket=self.bucket, Key=path, Tagging={
+            'TagSet': [{'Key': name, 'Value': value} for name, value in xattrs.items()]
+        })
+
+    def upload_xattr(self, path, name, value):
+        logging.info('Uploading tag %s for %s...' % (name, path))
+        tags = self.download_xattrs(path)
+        tags[name] = value
+        self.upload_xattrs(path, tags)
+
+    def remove_xattrs(self, path):
+        logging.info('Removing tags for %s...' % path)
+        self._s3.delete_object_tagging(Bucket=self.bucket, Key=path)
+
+    def remove_xattr(self, path, name):
+        logging.info('Removing tag %s for %s...' % (name, path))
+        tags = self.download_xattrs(path)
+        if name in tags:
+            del tags[name]
+        self.remove_xattrs(path)
+        self.upload_xattrs(path, tags)

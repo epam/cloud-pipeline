@@ -20,6 +20,7 @@ import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, Button, Icon, Radio} from 'antd';
+import FileSaver from 'file-saver';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
@@ -161,7 +162,7 @@ class HcsImage extends React.PureComponent {
     if (sequence) {
       const {selectedWells = []} = this.state;
       const wellIsSelected = aWell => selectedWells
-        .some(o => Number(o.x) === Number(aWell.x) && Number(o.y) === Number(aWell.y));
+        .some(o => o.id === aWell.id);
       const {wells = []} = sequence;
       return wells
         .filter(wellIsSelected)
@@ -179,7 +180,7 @@ class HcsImage extends React.PureComponent {
     if (well) {
       const {selectedFields = []} = this.state;
       const fieldIsSelected = aField => selectedFields
-        .some(o => Number(o.x) === Number(aField.x) && Number(o.y) === Number(aField.y));
+        .some(o => aField.id === o.id);
       return (well.images || [])
         .filter(fieldIsSelected)
         .sort((a, b) => (a.x - b.x) || (a.y - b.y));
@@ -321,7 +322,8 @@ class HcsImage extends React.PureComponent {
       }
       this.hcsVideoSource.setSequenceTimePoints(
         newSequenceId,
-        this.selectedTimePoints
+        timePointId,
+        newSequence ? (newSequence.timeSeries || []).length > 1 : false
       );
     });
   };
@@ -336,7 +338,7 @@ class HcsImage extends React.PureComponent {
       if (newZ !== currentZ && this.hcsImageViewer) {
         this.hcsImageViewer.setGlobalZPosition(Number(newZ));
       }
-      this.hcsVideoSource.setZPlanes([this.selectedZCoordinate + 1]);
+      this.hcsVideoSource.setZPlanes(this.selectedZCoordinate);
       this.loadImageForAnalysis();
     });
   };
@@ -421,6 +423,7 @@ class HcsImage extends React.PureComponent {
       let url = sequence.omeTiff;
       let offsetsJsonUrl = sequence.offsetsJson;
       let {id} = fields[0];
+      const multipleZCoordinates = fields[0].depth > 1;
       if (this.showEntireWell) {
         url = sequence.overviewOmeTiff;
         offsetsJsonUrl = sequence.overviewOffsetsJson;
@@ -429,7 +432,9 @@ class HcsImage extends React.PureComponent {
       if (this.hcsVideoSource) {
         this.hcsVideoSource.setWellView(
           this.showEntireWell,
-          id
+          id,
+          well,
+          multipleZCoordinates
         );
       }
       if (this.hcsImageViewer) {
@@ -473,27 +478,31 @@ class HcsImage extends React.PureComponent {
       const selectedZCoordinates = zCoordinates.length > 0 ? zCoordinates : [0];
       const analysisInputs = [];
       const imageSelected = anImage => selectedFields
-        .some(aField => aField.x === anImage.x && aField.y === anImage.y);
+        .some(aField => aField.fieldID === anImage.fieldID);
       this.selectedSequences.forEach(sequence => {
         const timePoints = selectedSequenceTimePoints
           .filter(o => o.sequence === sequence.id)
           .map(o => Number(o.timePoint));
         const wells = sequence.wells
-          .filter(aWell => selectedWells.some(w => w.x === aWell.x && w.y === aWell.y));
+          .filter(aWell => selectedWells.some(w => w.id === aWell.id));
         wells.forEach(aWell => {
           const {
             x: row,
             y: column
           } = aWell;
-          const images = aWell.images.filter(imageSelected);
+          let images = aWell.images.filter(imageSelected);
+          if (images.length === 0) {
+            // we should select all fields from the well
+            images = aWell.images.slice();
+          }
           images.forEach(anImage => {
             timePoints.forEach(aTimePoint => {
               selectedZCoordinates.forEach(z => {
                 (anImage.channels || []).forEach((channel, channelIndex) => {
                   analysisInputs.push({
                     sourceDirectory: sequence.sourceDirectory,
-                    x: column,
-                    y: row,
+                    x: column + 1,
+                    y: row + 1,
                     z: Number(z) + 1,
                     t: Number(aTimePoint) + 1,
                     fieldID: anImage.fieldID,
@@ -649,42 +658,50 @@ class HcsImage extends React.PureComponent {
     );
   }
 
-  renderDownloadBtn () {
-    if (this.hcsVideoSource.videoMode) {
-      return (
-        <Button
-          className={styles.action}
-          size="small"
-          disabled={!this.hcsVideoSource.videoUrl || this.hcsVideoSource.videoPending}
-          onClick={() => {
-            window.location.href = this.hcsVideoSource.videoUrl;
-          }}
-        >
-          <Icon
-            type="download"
-            className="cp-larger"
-          />
-        </Button>
-      );
-    }
-    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer);
-    return (
-      <Button
-        className={styles.action}
-        size="small"
-        disabled={!downloadAvailable}
-        onClick={() => downloadCurrentTiff(
+  renderDownloadBtn (options = {}) {
+    const {
+      showTitle = false,
+      buttonSize = 'small'
+    } = options;
+    const {
+      videoMode,
+      videoUrl,
+      videoPending
+    } = this.hcsVideoSource;
+    const downloadAvailable = videoMode
+      ? (videoUrl && !videoPending)
+      : downloadCurrentTiffAvailable(this.hcsImageViewer);
+    const handleClickDownload = () => {
+      if (videoMode) {
+        fetch(videoUrl)
+          .then(res => res.blob())
+          .then(blob => FileSaver.saveAs(blob, this.hcsVideoSource.getVideoFileName(videoUrl)));
+      } else {
+        downloadCurrentTiff(
           this.hcsImageViewer,
           {
             wellView: this.showEntireWell,
             wellId: this.selectedWell ? this.selectedWell.id : undefined
           }
-        )}
-      >
+        );
+      }
+    };
+    const btnContent = showTitle
+      ? `Download current ${videoMode ? 'video' : 'image'}`
+      : (
         <Icon
-          type="camera"
+          type={videoMode ? 'download' : 'camera'}
           className="cp-larger"
         />
+      );
+    return (
+      <Button
+        className={styles.action}
+        disabled={!downloadAvailable}
+        onClick={handleClickDownload}
+        size={buttonSize}
+      >
+        {btnContent}
       </Button>
     );
   }
@@ -703,9 +720,8 @@ class HcsImage extends React.PureComponent {
     ) {
       return null;
     }
-    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer) &&
-      !this.hcsVideoSource.videoMode;
     const analysisAvailable = this.hcsAnalysis && this.hcsAnalysis.available;
+    const selectedImage = this.selectedWellFields[0];
     if (!showConfiguration) {
       return (
         <div
@@ -725,7 +741,10 @@ class HcsImage extends React.PureComponent {
           <VideoButton
             className={styles.action}
             videoSource={this.hcsVideoSource}
-            available={this.selectedSequence && this.selectedSequence.timeSeries.length > 1}
+            available={
+              (this.selectedSequence && this.selectedSequence.timeSeries.length > 1) ||
+              (selectedImage && selectedImage.depth > 1)
+            }
           />
           {this.renderDownloadBtn()}
           <Button
@@ -788,18 +807,7 @@ class HcsImage extends React.PureComponent {
               </Radio.Group>
             </div>
           )}
-          <Button
-            className={styles.action}
-            disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(
-              this.hcsImageViewer,
-              {
-                wellView: this.showEntireWell,
-                wellId: this.selectedWell ? this.selectedWell.id : undefined
-              })}
-          >
-            Download current image
-          </Button>
+          {this.renderDownloadBtn({showTitle: true, buttonSize: 'default'})}
         </div>
       </Panel>
     );
@@ -851,6 +859,10 @@ class HcsImage extends React.PureComponent {
       batchJobId
     } = this.state;
     if (showAnalysis) {
+      const {
+        path
+      } = this.props;
+      const sourceName = (path || '').split(/[\//]/).pop();
       return (
         <HcsImageAnalysis
           className={styles.analysis}
@@ -859,6 +871,7 @@ class HcsImage extends React.PureComponent {
           batchMode={batchAnalysis}
           batchJobId={batchJobId}
           toggleBatchMode={this.toggleBatchAnalysis}
+          source={sourceName}
         />
       );
     }
@@ -987,34 +1000,31 @@ class HcsImage extends React.PureComponent {
         >
           <HcsCellSelector
             className={styles.selectorContainer}
+            title="Plate"
             cells={sequenceInfo.wells}
             selected={selectedWells}
             onChange={this.changeWells}
             width={HcsCellSelector.widthCorrection(plateWidth, sequenceInfo.wells)}
             height={HcsCellSelector.heightCorrection(plateHeight, sequenceInfo.wells)}
-            title="Plate"
-            cellShape={HcsCellSelector.Shapes.circle}
-            showLegend
-            multiple
+            showRulers
+            searchPlaceholder="Search wells"
+            showElementHint
           />
           <HcsCellSelector
             className={styles.selectorContainer}
+            title={selectedWell.id}
             cells={selectedWell.images}
-            onChange={this.changeWellImages}
             selected={selectedFields}
+            onChange={this.changeWellImages}
+            gridMode="CROSS"
             width={
               HcsCellSelector.widthCorrection(selectedWell.width, selectedWell.images)
             }
             height={
               HcsCellSelector.heightCorrection(selectedWell.height, selectedWell.images)
             }
-            title={selectedWell.id}
-            cellShape={HcsCellSelector.Shapes.rect}
-            gridShape={HcsCellSelector.Shapes.circle}
-            gridRadius={selectedWell.radius}
-            flipVertical
-            showLegend={false}
-            multiple
+            scaleToROI
+            radius={selectedWell.radius}
           />
           <HcsSequenceSelector
             sequences={this.sequences}

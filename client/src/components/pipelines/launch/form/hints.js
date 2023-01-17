@@ -153,6 +153,15 @@ const prettyUrlHint = (localizedStringFn) => (
   </Row>
 );
 
+const prettySSHUrlHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    This value will be used in the <b>SSH URL</b> instead of the general
+    "/ssh/pipeline/run_id" string.
+    This value shall be unique across all runs. <br />
+    You can not use domain name for the SSH URL. Only alphanumeric string is allowed.
+  </Row>
+);
+
 const endpointNameHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     This value specifies which <b>tool endpoint</b> will be used to process <b>serverless API</b> calls
@@ -203,6 +212,7 @@ const hints = {
   limitMountsHint,
   doNotMountStoragesHint,
   prettyUrlHint,
+  prettySSHUrlHint,
   executionEnvironmentSummaryHint,
   endpointNameHint,
   stopAfterHint,

@@ -17,6 +17,7 @@
 package com.epam.pipeline.vmmonitor.service.filesystem;
 
 import com.epam.pipeline.vmmonitor.model.filesystem.FileSystemUsageSummary;
+import com.epam.pipeline.vmmonitor.service.Monitor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class FileSystemMonitor {
+public class FileSystemMonitor implements Monitor {
 
     private final FileSystemNotifier notifier;
     private final Map<String, Double> thresholdMapping;
@@ -43,7 +44,8 @@ public class FileSystemMonitor {
         this.thresholdMapping = thresholdMapping;
     }
 
-    public void checkFileSystemConsumption() {
+    @Override
+    public void monitor() {
         final List<FileSystemUsageSummary> fsPathsExceedingLimits = thresholdMapping.entrySet()
             .stream()
             .map(this::mapToFileSystemUsageSummary)

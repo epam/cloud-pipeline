@@ -134,7 +134,8 @@ export async function getBatchAnalysisSettings (refresh = false) {
     defaultStorage,
     rawImageDataRoot: predefinedRawImageDataRoot,
     mounts = [],
-    tempFilesPath
+    tempFilesPath,
+    ...rest
   } = batch;
   if (!specsFolder) {
     throw new Error('Batch analysis: specs folder not specified');
@@ -210,6 +211,7 @@ export async function getBatchAnalysisSettings (refresh = false) {
   }
   return {
     ...dockerImageInfo,
+    ...rest,
     specs: {
       folder: specsStorage.getRelativePath(specsFolder),
       storage: specsStorage
@@ -221,6 +223,28 @@ export async function getBatchAnalysisSettings (refresh = false) {
     mounts: [...additionalMounts],
     rawImagesPath,
     tempFilesPath
+  };
+}
+
+export async function getExternalEvaluationsSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    hcsFilesFolder,
+    batch = {}
+  } = settings || {};
+  const {
+    otherEvaluations = {}
+  } = batch;
+  const {
+    specPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/spec.json',
+    resultsPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/Results.csv',
+    analysisPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/AnalysisFile.aas'
+  } = otherEvaluations;
+  return {
+    hcsFilesFolder,
+    specPath,
+    resultsPath,
+    analysisPath
   };
 }
 
@@ -237,6 +261,24 @@ export async function getVideoSettings (refresh = false) {
   return {
     ...rest,
     api
+  };
+}
+
+export async function getBatchAnalysisSimilarCheckSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    batch = {}
+  } = settings || {};
+  const {
+    similar = {}
+  } = batch;
+  const {
+    'max-different-parameters': maxDifferentParameters,
+    mode = 'total'
+  } = similar;
+  return {
+    maxDifferentParameters,
+    mode
   };
 }
 

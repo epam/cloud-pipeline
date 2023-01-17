@@ -62,7 +62,6 @@ import static java.lang.String.format;
 public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
 
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
-    private Pattern dataValuePatten = Pattern.compile("@VALUE@");
     private Pattern wherePattern = Pattern.compile("@WHERE_CLAUSE@");
     private Pattern orderPattern = Pattern.compile("@ORDER_CLAUSE@");
     private Pattern searchPattern = Pattern.compile("@QUERY@");
@@ -153,11 +152,10 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateMetadataEntityDataKey(MetadataEntity metadataEntity, String key, String value, String type) {
-        String query = dataKeyPattern.matcher(updateMetadataEntityDataKeyQuery)
-                .replaceFirst(format("'{%s}'", key));
-        query = dataValuePatten.matcher(query)
-                .replaceFirst(format("'{\"type\": \"%s\", \"value\": \"%s\"}'", type, value));
-        getNamedParameterJdbcTemplate().update(query, MetadataEntityParameters.getParameters(metadataEntity));
+        MapSqlParameterSource parameters = MetadataEntityParameters.getParameters(metadataEntity);
+        parameters.addValue("KEY", format("{%s}", key));
+        parameters.addValue("VALUE", JsonMapper.convertDataToJsonStringForQuery(new PipeConfValue(type, value)));
+        getNamedParameterJdbcTemplate().update(updateMetadataEntityDataKeyQuery, parameters);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

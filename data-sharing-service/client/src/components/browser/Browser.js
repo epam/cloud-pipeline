@@ -43,7 +43,8 @@ import styles from './Browser.css';
 import {NoStorage} from '../main/App';
 import PreviewModal from './preview/preview-modal';
 import VSIPreviewPage from '../vsi-preview';
-import {fastCheckPreviewAvailable} from "../special/hcs-image/utilities/check-preview-available";
+import {fastCheckPreviewAvailable} from '../special/hcs-image/utilities/check-preview-available';
+import {getStaticResourceUrl} from '../../models/static-resources';
 
 const PAGE_SIZE = 40;
 
@@ -499,25 +500,34 @@ export default class Browser extends React.Component {
         results = this.props.storage.value.results || [];
       }
       const masks = preferences.dataSharingHiddenMask;
+      const previewMasks = preferences.dataStorageItemPreviewMasks;
       items.push(
         ...results
           .filter(o => o.path &&
             !masks.some(mask => mask.test(o.path.startsWith('/') ? o.path : '/'.concat(o.path)))
           )
-          .map(i => ({
-            key: `${i.type}_${i.path}`,
-            ...i,
-            downloadable: preferences.dataSharingDownloadEnabled &&
-              i.type.toLowerCase() === 'file' && !i.deleteMarker &&
-              (
-                !i.labels ||
-                !i.labels['StorageClass'] ||
-                i.labels['StorageClass'].toLowerCase() !== 'glacier'
-              ),
-            editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
-            deletable: roleModel.writeAllowed(this.props.info.value),
-            selectable: !i.deleteMarker
-          }))
+          .map(i => {
+            const archived = i.labels &&
+              i.labels['StorageClass'] &&
+              i.labels['StorageClass'].toLowerCase() !== 'standard';
+            return {
+              key: `${i.type}_${i.path}`,
+              ...i,
+              downloadable: preferences.dataSharingDownloadEnabled &&
+                i.type.toLowerCase() === 'file' &&
+                !i.deleteMarker &&
+                !archived,
+              editable: roleModel.writeAllowed(this.props.info.value) &&
+                !i.deleteMarker &&
+                !archived,
+              deletable: roleModel.writeAllowed(this.props.info.value) &&
+               !archived,
+              selectable: !i.deleteMarker,
+              documentPreview: !i.deleteMarker &&
+                /^file$/i.test(i.type) &&
+                previewMasks.some(o => o.test(i.path))
+            };
+          })
       );
       return items;
     };
@@ -671,7 +681,7 @@ export default class Browser extends React.Component {
         selectedItems: []
       });
     } else if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
-
+      (this.onItemClick)(item);
     }
   };
 
@@ -757,6 +767,37 @@ export default class Browser extends React.Component {
         currentPage,
         pagePerformed: false
       });
+    }
+  };
+
+  onItemClick = async (item, event) => {
+    if (!item) {
+      return;
+    }
+    const {
+      preferences,
+      info
+    } = this.props;
+    if (
+      !/^file$/i.test(item.type) ||
+      !preferences.dataStorageItemPreviewMasks.some(o => o.test(item.path))
+    ) {
+      return;
+    }
+    await info.fetchIfNeededOrWait();
+    const {
+      path
+    } = info.value || {};
+    if (!path) {
+      return;
+    }
+    const url = getStaticResourceUrl(path, item.path);
+    if (url) {
+      window.open(url, '_blank');
+    }
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
     }
   };
 
@@ -869,7 +910,11 @@ export default class Browser extends React.Component {
           title={title}
           rowKey="key"
           pagination={false}
-          rowClassName={(item) => `${styles[item.type.toLowerCase()]} ${item.deleteMarker ? styles.deleteMarker : ''}`}
+          rowClassName={(item) => [
+            styles[item.type.toLowerCase()],
+            item.deleteMarker ? styles.deleteMarker : false,
+            item.documentPreview ? styles.documentPreview : false
+          ].filter(Boolean).join(' ')}
           locale={{emptyText: 'Folder is empty'}}
           size="small" />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10, marginBottom: 10, paddingRight: 15}}>

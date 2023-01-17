@@ -167,3 +167,16 @@ class HcsParsingUtils:
     def replace_special_chars(file_path):
         return file_path.replace('/', '|')
 
+    @staticmethod
+    def find_in_xml(element, name):
+        if element is None:
+            return None
+        else:
+            return element.find(name)
+
+    @staticmethod
+    def find_all_in_xml(element, name):
+        if element is None:
+            return []
+        else:
+            return element.findall(name)

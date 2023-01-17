@@ -19,23 +19,20 @@ import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
+import {Alert, message, Modal, Row} from 'antd';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
-import {
-  PipelineRunCommitCheck,
-  PIPELINE_RUN_COMMIT_CHECK_FAILED
-} from '../../../../models/pipelines/PipelineRunCommitCheck';
 import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
 import CardsPanel from './components/CardsPanel';
 import renderRunCard from './components/renderRunCard';
 import getRunActions from './components/getRunActions';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
-import {Alert, message, Modal, Row} from 'antd';
 import {openReRunForm, runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
 import pipelineRunSSHCache from '../../../../models/pipelines/PipelineRunSSHCache';
 import VSActions from '../../../versioned-storages/vs-actions';
+import confirmPause from '../../../runs/actions/pause-confirmation';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
@@ -86,27 +83,10 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   };
 
   confirmPause = async (run, warning, actionText, action) => {
-    const checkRequest = new PipelineRunCommitCheck(run.id);
-    await checkRequest.fetch();
-    let content;
-    if (checkRequest.loaded && !checkRequest.value) {
-      content = (
-        <Alert
-          type="error"
-          message={PIPELINE_RUN_COMMIT_CHECK_FAILED} />
-      );
+    const confirmed = await confirmPause({id: run.id, run, title: warning});
+    if (confirmed && typeof action === 'function') {
+      action();
     }
-    Modal.confirm({
-      title: warning,
-      content,
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk: () => action(),
-      okText: actionText,
-      cancelText: 'CANCEL',
-      width: 450
-    });
   };
 
   pauseRun = async (run) => {

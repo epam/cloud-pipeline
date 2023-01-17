@@ -116,6 +116,13 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 clausesCount++;
             }
 
+            if (CollectionUtils.isNotEmpty(requestVO.getTermTypes())) {
+                whereBuilder.append(" i.term_type IN :").append(InstanceOfferParameters.TERM_TYPE.name());
+                params.addValue(InstanceOfferParameters.TERM_TYPE.name(),
+                        String.join(",", requestVO.getTermTypes()));
+                clausesCount++;
+            }
+
             if (requestVO.getUnit() != null) {
                 if (clausesCount > 0) {
                     whereBuilder.append(AND);

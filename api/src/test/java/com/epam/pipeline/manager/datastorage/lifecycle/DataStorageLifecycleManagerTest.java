@@ -41,6 +41,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -191,12 +192,19 @@ public class DataStorageLifecycleManagerTest {
 
     @Test
     public void shouldSuccessfullyCreateLifecycleRuleExecution() {
-        lifecycleManager.createStorageLifecycleRuleExecution(ID,
-                StorageLifecycleRuleExecution.builder()
-                        .ruleId(ID).path("/data/1/dataset1")
-                        .storageClass(STORAGE_CLASS)
-                        .status(StorageLifecycleRuleExecutionStatus.RUNNING)
-                        .build());
+        final StorageLifecycleRuleExecution execution = StorageLifecycleRuleExecution.builder()
+                .ruleId(ID).path("/data/1/dataset1")
+                .storageClass(STORAGE_CLASS)
+                .status(StorageLifecycleRuleExecutionStatus.RUNNING)
+                .build();
+        final StorageLifecycleRuleExecutionEntity saved = StorageLifecycleRuleExecutionEntity.builder()
+                .ruleId(ID).path("/data/1/dataset1")
+                .storageClass(STORAGE_CLASS)
+                .status(StorageLifecycleRuleExecutionStatus.RUNNING)
+                .build();
+        Mockito.doReturn(saved).when(lifecycleRuleExecutionRepository)
+                .save(any(StorageLifecycleRuleExecutionEntity.class));
+        lifecycleManager.createStorageLifecycleRuleExecution(ID, execution);
         Mockito.verify(lifecycleRuleExecutionRepository).save(Mockito.any(StorageLifecycleRuleExecutionEntity.class));
     }
 
@@ -212,21 +220,23 @@ public class DataStorageLifecycleManagerTest {
 
     @Test
     public void shouldSuccessfullyUpdateStatusForLifecycleRuleExecution() {
-        final LocalDateTime startPoint = DateUtils.nowUTC();
-        Mockito.doReturn(
-                        StorageLifecycleRuleExecutionEntity.builder()
-                                .ruleId(ID).path("/data/1/dataset1")
-                                .storageClass(STORAGE_CLASS)
-                                .status(StorageLifecycleRuleExecutionStatus.RUNNING)
-                                .build()
-                ).when(lifecycleRuleExecutionRepository)
-                .findOne(eq(ID));
+        final LocalDateTime startPoint = DateUtils.nowUTC().minus(1, ChronoUnit.SECONDS);
+        final StorageLifecycleRuleExecutionEntity execution = StorageLifecycleRuleExecutionEntity.builder()
+                .ruleId(ID).path("/data/1/dataset1")
+                .storageClass(STORAGE_CLASS)
+                .status(StorageLifecycleRuleExecutionStatus.RUNNING)
+                .updated(DateUtils.nowUTC())
+                .build();
+        Mockito.doReturn(execution).when(lifecycleRuleExecutionRepository).findOne(eq(ID));
+        Mockito.doReturn(execution).when(lifecycleRuleExecutionRepository)
+                .save(any(StorageLifecycleRuleExecutionEntity.class));
+
         lifecycleManager.updateStorageLifecycleRuleExecutionStatus(ID, StorageLifecycleRuleExecutionStatus.SUCCESS);
-        final ArgumentCaptor<StorageLifecycleRuleExecutionEntity> execution =
+        final ArgumentCaptor<StorageLifecycleRuleExecutionEntity> updated =
                 ArgumentCaptor.forClass(StorageLifecycleRuleExecutionEntity.class);
-        Mockito.verify(lifecycleRuleExecutionRepository).save(execution.capture());
-        Assert.assertTrue(execution.getValue().getUpdated().isAfter(startPoint));
-        Assert.assertEquals(execution.getValue().getStatus(), StorageLifecycleRuleExecutionStatus.SUCCESS);
+        Mockito.verify(lifecycleRuleExecutionRepository).save(updated.capture());
+        Assert.assertTrue(updated.getValue().getUpdated().isAfter(startPoint));
+        Assert.assertEquals(updated.getValue().getStatus(), StorageLifecycleRuleExecutionStatus.SUCCESS);
     }
 
     @Test(expected = IllegalArgumentException.class)

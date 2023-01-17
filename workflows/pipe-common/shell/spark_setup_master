@@ -230,7 +230,7 @@ export SHARED_FOLDER=${SHARED_FOLDER:-"/common"}
 export CP_CAP_SPARK_INSTALL_DIR="${CP_CAP_SPARK_INSTALL_DIR:-$SHARED_FOLDER/spark}"
 export CP_CAP_SPARK_VERSION="${CP_CAP_SPARK_VERSION:-2.4.3}"
 # INFO: A custom Spark distribution is built using https://github.com/sidoruka/cloud-pipeline-spark-build (see README and build script for the customization reasons)
-export CP_CAP_SPARK_DIST_URL="${CP_CAP_SPARK_DIST_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/spark/spark-$CP_CAP_SPARK_VERSION.tgz}"
+export CP_CAP_SPARK_DIST_URL="${CP_CAP_SPARK_DIST_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/spark/spark-$CP_CAP_SPARK_VERSION.tgz"}"
 export CP_CAP_SPARK_HOST="${CP_CAP_SPARK_HOST:-$(hostname)}"
 export CP_CAP_SPARK_PORT="${CP_CAP_SPARK_PORT:-7077}"
 export CP_CAP_SPARK_UI_PORT="${CP_CAP_SPARK_UI_PORT:-8087}"
@@ -268,7 +268,7 @@ pipe_log_info "Spark installed into $CP_CAP_SPARK_INSTALL_DIR" "$SPARK_MASTER_SE
 # Install java
 if ! java -version > /dev/null 2>&1 || [ ! -d "$JAVA_HOME" ]; then
     export CP_CAP_SPARK_JAVA_VERSION="${CP_CAP_SPARK_JAVA_VERSION:-1.8.0_222}"
-    export CP_CAP_SPARK_JAVA_DIST_URL="${CP_CAP_SPARK_JAVA_DIST_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/java/openjdk-${CP_CAP_SPARK_JAVA_VERSION}_linux-x64_bin.tar.gz}"
+    export CP_CAP_SPARK_JAVA_DIST_URL="${CP_CAP_SPARK_JAVA_DIST_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/java/openjdk-${CP_CAP_SPARK_JAVA_VERSION}_linux-x64_bin.tar.gz"}"
 
     pipe_log_info "JAVA not found, it will be installed using $CP_CAP_SPARK_JAVA_DIST_URL" "$SPARK_MASTER_SETUP_TASK"
 

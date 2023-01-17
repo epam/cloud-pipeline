@@ -22,6 +22,7 @@ export default {
   output: 'name|object',
   sourceImageParameter: 'input',
   parameters: [
+    'Use advanced settings?|flag|true|HIDDEN',
     'Select the input image|file|ALIAS input|REQUIRED',
     'Name the primary objects to be identified|string|IdentifyPrimaryObjects|ALIAS=name|REQUIRED',
     'Typical diameter of objects (Min,Max)|units[0,Infinity]|[1, 6]|ALIAS=diameterRange|PARAMETER Typical diameter of objects, in pixel units (Min,Max)',

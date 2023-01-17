@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.manager.datastorage.tag;
 
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -28,6 +44,17 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Performs batch operations with storage objects to insert, update, list and delete tags for these objects.
+ *
+ * @implNote All these operations expects from client to provide full paths of the storage object
+ *           (full path is a path from datastorage_root of storage and not from storage itself) with in BatchRequests
+ *           for example:
+ *           @see DataStorageTagBatchManager#upsert(Long, DataStorageTagUpsertBatchRequest) and
+ *           @see DataStorageTagDao to get more information on actual logic
+ *  TODO: Maybe it is good idea to expand API to allow to specify flag 'relative' on BatchRequest level,
+ *  TODO: to be able to automatically performs such resolving of paths on server side rather that client side
+ * */
 @Service
 @RequiredArgsConstructor
 public class DataStorageTagBatchManager {

@@ -23,20 +23,6 @@ import getBrowserDependentConfiguration from '../../../../utils/browserDependent
 
 const DEFAULT_DELAY_MS = 500;
 
-function numberArraysAreEqual (arr1, arr2) {
-  const sortedArray1 = [...new Set(arr1)].sort((a, b) => Number(a) - Number(b));
-  const sortedArray2 = [...new Set(arr2)].sort((a, b) => Number(a) - Number(b));
-  if (sortedArray1.length !== sortedArray2.length) {
-    return false;
-  }
-  for (let i = 0; i < sortedArray1.length; i++) {
-    if (sortedArray1[i] !== sortedArray2[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 function channelsAreEqual (channelsSet1, channelsSet2) {
   const channels1 = Object.keys(channelsSet1 || {}).sort();
   const channels2 = Object.keys(channelsSet2 || {}).sort();
@@ -83,9 +69,13 @@ class HcsVideoSource {
   @observable pathMask;
   @observable storageId;
   @observable sequenceId;
-  @observable timePoints = [];
-  @observable zPlanes = [];
+  @observable timePoint = 0;
+  @observable multipleTimePoints = false;
+  @observable zPlane = 0;
+  @observable multipleZPlanes = false;
+  @observable videoByZPlanes = false;
   @observable wellView = false;
+  @observable well = undefined;
   @observable imageId;
   @observable channels = {};
   @observable videoEndpointAPI;
@@ -107,8 +97,48 @@ class HcsVideoSource {
 
   responseToken = 0;
 
+  @computed
+  get hasTimePointsAndZPlanes () {
+    return this.multipleZPlanes && this.multipleTimePoints;
+  }
+
   constructor () {
     (this.initialize)();
+  }
+
+  getVideoFileName (url) {
+    if (this.path && this.generatedFilePath && this.well) {
+      const name = this.path
+        .split('/')
+        .pop()
+        .split('.')
+        .slice(0, -1)
+        .join('.')
+        .replace(/\s/, '_');
+      const format = this.generatedFilePath.split('.').pop();
+      const {
+        x,
+        y
+      } = this.well;
+      const col = x + 1;
+      const row = y + 1;
+      const wellCol = col < 9 ? `0${col}` : col;
+      const wellRow = row < 9 ? `0${row}` : row;
+      const wellInfo = `r${wellRow}c${wellCol}`;
+      const fieldInfo = this.wellView || !this.imageId
+        ? ''
+        : `f${this.imageId.split(':').pop()}`;
+      const zPlane = this.zPlane;
+      const planeNumber = `p${zPlane + 1}`;
+      const timeSeriesNumber = `ts${this.sequenceId || 1}`;
+      return `${name}-${wellInfo}${fieldInfo}${planeNumber}${timeSeriesNumber}.${format}`;
+    }
+    try {
+      const urlObject = new URL(url);
+      return urlObject.pathname.split('/').pop();
+    } catch (_) {
+      return `video.${this.videoType}`;
+    }
   }
 
   @computed
@@ -172,28 +202,45 @@ class HcsVideoSource {
     }
   }
 
-  setSequenceTimePoints = (sequenceId, timePoints = []) => {
+  setSequenceTimePoints = (sequenceId, timePoint = 0, multipleTimePoints) => {
     if (
       sequenceId !== this.sequenceId ||
-      !numberArraysAreEqual(timePoints, this.timePoints)
+      timePoint !== this.timePoint ||
+      multipleTimePoints !== this.multipleTimePoints
     ) {
       this.sequenceId = sequenceId;
-      this.timePoints = timePoints;
+      this.timePoint = timePoint;
+      this.multipleTimePoints = multipleTimePoints;
+      this.updateVideoGenerationMode();
       this.generateUrlDelayed();
     }
   };
 
-  setZPlanes = (zPlanes = []) => {
-    if (!numberArraysAreEqual(zPlanes, this.zPlanes)) {
-      this.zPlanes = zPlanes;
+  setZPlanes = (zPlane = 0) => {
+    if (this.zPlane !== zPlane) {
+      this.zPlane = zPlane;
       this.generateUrlDelayed();
     }
   };
 
-  setWellView = (wellView, imageId) => {
-    if (wellView !== this.wellView || imageId !== this.imageId) {
+  updateVideoGenerationMode = () => {
+    if (this.hasTimePointsAndZPlanes) {
+      return;
+    }
+    this.videoByZPlanes = this.multipleZPlanes;
+  };
+
+  setWellView = (wellView, imageId, well, multipleZCoordinates) => {
+    this.well = well;
+    if (
+      wellView !== this.wellView ||
+      imageId !== this.imageId ||
+      multipleZCoordinates !== this.multipleZPlanes
+    ) {
       this.wellView = wellView;
       this.imageId = imageId;
+      this.multipleZPlanes = multipleZCoordinates;
+      this.updateVideoGenerationMode();
       (this.generateUrl)();
     }
   };
@@ -307,10 +354,11 @@ class HcsVideoSource {
       path: this.path,
       pathMask: this.pathMask,
       sequenceId: this.sequenceId,
-      timePoints: [...this.timePoints],
-      zPlanes: [...this.zPlanes],
+      timePoint: this.timePoint + 1,
+      zPlane: this.zPlane + 1,
       wellView: this.wellView,
-      delay: this.delay
+      delay: this.delay,
+      byTime: this.videoByZPlanes ? 0 : 1
     };
     const {
       imageId: currentImageId,
@@ -318,11 +366,10 @@ class HcsVideoSource {
       storageId: currentStorageId,
       path: currentPath,
       pathMask: currentPathMask,
-      // timePoints: currentTimePoints = [],
-      // zPlanes: currentZPlanes = [],
       wellView: currentWellView,
       channels: currentChannels = {},
-      delay: currentDelay
+      delay: currentDelay,
+      byTime: currentByTime
     } = this.currentPayload || {};
     this.currentPayload = payload;
     if (
@@ -331,7 +378,6 @@ class HcsVideoSource {
       payload.pathMask &&
       payload.path &&
       payload.sequenceId &&
-      // payload.timePoints.length > 1 &&
       Object.keys(payload.channels || {}).length > 0 &&
       (
         payload.storageId !== currentStorageId ||
@@ -339,10 +385,10 @@ class HcsVideoSource {
         payload.sequenceId !== currentSequenceId ||
         payload.path !== currentPath ||
         payload.pathMask !== currentPathMask ||
-        // !timePointsArraysAreEqual(currentTimePoints, payload.timePoints) ||
         !channelsAreEqual(currentChannels, payload.channels || {}) ||
         payload.wellView !== currentWellView ||
-        payload.delay !== currentDelay
+        payload.delay !== currentDelay ||
+        payload.byTime !== currentByTime
       )
     ) {
       let path = payload.path;
@@ -355,12 +401,13 @@ class HcsVideoSource {
       const query = {
         cell: payload.imageId.split(':').pop(),
         byField: payload.wellView ? 0 : 1,
+        byTime: payload.byTime,
         sequenceId: payload.sequenceId,
         path,
         duration: payload.delay,
         format: `.${this.videoType}`,
         codec: this.videoCodec,
-        planeId: payload.zPlanes.length > 0 ? payload.zPlanes[0] : 1,
+        pointId: payload.byTime ? payload.zPlane : payload.timePoint,
         ...(
           Object
             .entries(payload.channels)

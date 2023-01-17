@@ -102,11 +102,13 @@ import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSet
 import ServerlessAPIButton from '../../../special/serverless-api-button';
 import RunCapabilities, {
   addCapability,
-  applyCapabilities,
+  applyCapabilities, correctRequiredCapabilities,
   getEnabledCapabilities,
+  getUserCapabilities,
   hasPlatformSpecificCapabilities,
   isCustomCapability,
-  RUN_CAPABILITIES
+  RUN_CAPABILITIES,
+  RUN_CAPABILITIES_MODE
 } from './utilities/run-capabilities';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -336,6 +338,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     autoPause: true,
     showLaunchCommands: false,
     runCapabilities: [],
+    userRunCapabilities: [],
+    userRunCapabilitiesPending: true,
     useResolvedParameters: false,
     runNameAlias: undefined,
     isRawEditEnabled: false
@@ -510,11 +514,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           hasFeedback
         >
           <RunCapabilities
+            disabled={this.state.userRunCapabilitiesPending}
             values={this.state.runCapabilities}
             onChange={this.onRunCapabilitiesSelect}
             platform={this.toolPlatform}
             dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
             provider={this.currentCloudRegionProvider}
+            mode={RUN_CAPABILITIES_MODE.launch}
           />
         </FormItem>
       );
@@ -900,7 +906,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
     const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
     const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
-    const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
+    let runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
+    if (
+      !this.props.editConfigurationMode
+    ) {
+      runCapabilities = correctRequiredCapabilities(
+        [...new Set([...(runCapabilities || []), ...(this.state.userRunCapabilities || [])])],
+        this.props.preferences
+      );
+    }
     const isRawEditEnabled = this.props.parameters.raw;
     if (keepPipeline) {
       this.setState({
@@ -1203,7 +1217,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       }
     }
-    applyCapabilities(
+    payload[PARAMETERS] = applyCapabilities(
       payload[PARAMETERS],
       this.state.runCapabilities,
       this.props.preferences,
@@ -1414,7 +1428,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
-    applyCapabilities(
+    payload.params = applyCapabilities(
       payload.params,
       this.state.runCapabilities,
       this.props.preferences,
@@ -2809,8 +2823,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             type="flex"
             justify="space-around">
             <Button
-              disabled={(this.props.readOnly && !this.props.canExecute) ||
-              (!!this.state.pipeline && this.props.detached)}
+              disabled={
+                !this.state.isRawEditEnabled && (
+                  (this.props.readOnly && !this.props.canExecute) ||
+                  (!!this.state.pipeline && this.props.detached)
+                )
+              }
               id="add-system-parameter-button"
               onClick={this.openSystemParameterBrowser}>
               Add system parameter
@@ -2843,8 +2861,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             justify="space-around">
             <Button.Group>
               <Button
-                disabled={(this.props.readOnly && !this.props.canExecute) ||
-                (!!this.state.pipeline && this.props.detached)}
+                disabled={
+                  !this.state.isRawEditEnabled && (
+                    (this.props.readOnly && !this.props.canExecute) ||
+                    (!!this.state.pipeline && this.props.detached)
+                  )
+                }
                 id="add-parameter-button"
                 onClick={
                   () => this.addParameter(sectionName, {type: 'string'}, isSystemParametersSection)
@@ -3415,10 +3437,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       !this.props.editConfigurationMode;
   }
 
-  @computed
   get prettyUrlEnabled () {
-    if (this.state.fireCloudMethodName || this.props.detached) {
-      return undefined;
+    return !this.state.fireCloudMethodName && !this.props.detached;
+  }
+
+  @computed
+  get prettyUrlSSHMode () {
+    if (!this.prettyUrlEnabled) {
+      return false;
     }
     const dockerImage = this.getSectionFieldValue(EXEC_ENVIRONMENT)('dockerImage') ||
       this.getDefaultValue('docker_image');
@@ -3433,15 +3459,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const [image] = toolAndVersion.split(':');
           const [im] = (imageGroup.tools || [])
             .filter(i => i.image.toLowerCase() === `${group}/${image}`);
-          return im && im.endpoints && (im.endpoints || []).length > 0;
+          return !(im && im.endpoints && (im.endpoints || []).length > 0);
         }
       }
     }
-    return false;
+    return true;
   }
 
   checkFriendlyURL = (rule, value, callback) => {
-    const error = prettyUrlGenerator.validate(value);
+    const error = prettyUrlGenerator.validate(value, this.prettyUrlSSHMode);
     if (error) {
       callback(error);
     }
@@ -3450,6 +3476,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderPrettyUrlFormItem = () => {
     if (this.prettyUrlEnabled && this.friendlyUrlAvailable()) {
+      const sshMode = this.prettyUrlSSHMode;
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
@@ -3477,7 +3504,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             </FormItem>
           </Col>
           <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.prettyUrlHint)}
+            {
+              hints.renderHint(
+                this.localizedStringWithSpotDictionaryFn,
+                sshMode ? hints.prettySSHUrlHint : hints.prettyUrlHint
+              )
+            }
           </Col>
         </FormItem>
       );
@@ -4419,6 +4451,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   );
 
   renderCmdTemplateFormItem = () => {
+    const {isRawEditEnabled} = this.state;
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'cmdTemplate')}
@@ -4430,7 +4463,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               disabled={
                 !!this.state.fireCloudMethodName ||
                 (this.props.readOnly && !this.props.canExecute) ||
-                (this.state.pipeline && this.props.detached)
+                (this.state.pipeline && this.props.detached && !isRawEditEnabled)
               }
               onChange={(e) => this.setState(
                 {
@@ -4451,7 +4484,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   disabled={
                     !!this.state.fireCloudMethodName ||
                     (this.props.readOnly && !this.props.canExecute) ||
-                    (this.state.pipeline && this.props.detached)
+                    (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                   }
                   onChange={(e) => this.setState(
                     {
@@ -4490,7 +4523,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         <Input
                           disabled={
                             (this.props.readOnly && !this.props.canExecute) ||
-                            (this.state.pipeline && this.props.detached)
+                            (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                           }
                           className={styles.hiddenItem} />
                       )}
@@ -4499,7 +4532,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         readOnly={
                           !!this.state.fireCloudMethodName ||
                           (this.props.readOnly && !this.props.canExecute) ||
-                          (this.state.pipeline && this.props.detached)
+                          (this.state.pipeline && this.props.detached && !isRawEditEnabled)
                         }
                         className={styles.codeEditor}
                         language="shell"
@@ -5541,7 +5574,34 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         prevState.fireCloudMethodConfigurationSnapshot);
   };
 
+  fetchUserRunCapabilities = () => {
+    this.setState({
+      userRunCapabilitiesPending: true
+    }, () => {
+      this.props.preferences
+        .fetchIfNeededOrWait()
+        .then(() => getUserCapabilities())
+        .then((userRunCapabilities = []) => {
+          let {runCapabilities} = this.state;
+          if (
+            !this.props.editConfigurationMode
+          ) {
+            runCapabilities = correctRequiredCapabilities(
+              [...new Set([...(runCapabilities || []), ...userRunCapabilities])],
+              this.props.preferences
+            );
+          }
+          this.setState({
+            userRunCapabilities,
+            runCapabilities,
+            userRunCapabilitiesPending: false
+          });
+        });
+    });
+  };
+
   componentDidMount () {
+    this.fetchUserRunCapabilities();
     this.reset(true);
     this.evaluateEstimatedPrice({});
     if (this.props.parameters && this.props.parameters.docker_image) {

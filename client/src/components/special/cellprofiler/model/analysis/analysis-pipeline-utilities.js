@@ -198,7 +198,7 @@ function appendRequiredModules (modules) {
   function generateMeasurementModules (filterObjectsModule) {
     const objectName = filterObjectsModule.getParameterValue('input');
     const objectSourceImage = filterObjectsModule && filterObjectsModule.pipeline
-      ? filterObjectsModule.pipeline.getSourceImageForObjet(objectName)
+      ? filterObjectsModule.pipeline.getSourceImageForObject(objectName)
       : undefined;
     const measurements = filterObjectsModule.getParameterValue('measurements');
     const measurementModules = new Set();

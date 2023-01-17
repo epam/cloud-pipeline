@@ -111,6 +111,11 @@ public class PipelineRunDockerOperationManager {
         );
     }
 
+    public Long getContainerLayers(final Long id) {
+        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
+        return dockerContainerOperationManager.getContainerLayers(pipelineRun);
+    }
+
     /**
      * Pauses pipeline run for specified {@code runId}.
      * @param runId {@link PipelineRun} id for pipeline run to be paused

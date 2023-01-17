@@ -33,6 +33,8 @@ public enum SearchSourceFields {
     DESCRIPTION("description"),
     OWNER("ownerUserName"),
     PATH("path"),
+    CLOUD_PATH("cloud_path"),
+    MOUNT_PATH("mount_path"),
     TEXT("text"),
     START_DATE("startDate"),
     END_DATE("endDate"),
@@ -40,8 +42,10 @@ public enum SearchSourceFields {
     SIZE("size"),
     LAST_MODIFIED("lastModified");
 
-    public static final Set<String> ADDITIONAL_FIELDS = setOf(PATH, TEXT, START_DATE, END_DATE, IMAGE, SIZE,
-            LAST_MODIFIED);
+    public static final Set<String> ADDITIONAL_FIELDS = setOf(
+            PATH, CLOUD_PATH, MOUNT_PATH, TEXT, START_DATE,
+            END_DATE, IMAGE, SIZE, LAST_MODIFIED
+    );
     public static final Set<String> DATE_FIELDS = setOf(START_DATE, END_DATE, LAST_MODIFIED);
     public static final Set<String> NUMERIC_FIELDS = setOf(SIZE);
 

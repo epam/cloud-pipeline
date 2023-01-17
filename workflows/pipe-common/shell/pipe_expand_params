@@ -70,6 +70,7 @@ _cp_include_names=()
 _cp_exclude_names=()
 _cp_include_types=()
 _cp_exclude_types=()
+_cp_replace_underscore_to_dash=()
 
 while [[ $# -gt 0 ]]; do
     key="$1"
@@ -94,6 +95,11 @@ while [[ $# -gt 0 ]]; do
         shift
         shift
         ;;
+        --replace-underscore-to-dash)
+        _cp_replace_underscore_to_dash+=("$2")
+        shift
+        shift
+        ;;
         -f|--format)
         _cp_format="$2"
         shift
@@ -115,6 +121,34 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 set -- "${_positional[@]}"
+
+# Check if some of the missing params are set via environment variables
+if (( "${#_cp_include_names[@]}" == 0 )) && [ "$CP_PIPE_EXPAND_PARAMS_INCLUDE_NAMES" ]; then
+    _cp_include_names=($CP_PIPE_EXPAND_PARAMS_INCLUDE_NAMES)
+fi
+if (( "${#_cp_exclude_names[@]}" == 0 )) && [ "$CP_PIPE_EXPAND_PARAMS_EXCLUDE_NAMES" ]; then
+    _cp_exclude_names=($CP_PIPE_EXPAND_PARAMS_EXCLUDE_NAMES)
+fi
+if (( "${#_cp_include_types[@]}" == 0 )) && [ "$CP_PIPE_EXPAND_PARAMS_INCLUDE_TYPES" ]; then
+    _cp_include_types=($CP_PIPE_EXPAND_PARAMS_INCLUDE_TYPES)
+fi
+if (( "${#_cp_exclude_types[@]}" == 0 )) && [ "$CP_PIPE_EXPAND_PARAMS_EXCLUDE_TYPES" ]; then
+    _cp_exclude_types=($CP_PIPE_EXPAND_PARAMS_EXCLUDE_TYPES)
+fi
+if (( "${#_cp_replace_underscore_to_dash[@]}" == 0 )) && [ "$CP_PIPE_EXPAND_PARAMS_REPLACE_UNDERSCORE_TO_DASH" ]; then
+    _cp_replace_underscore_to_dash=($CP_PIPE_EXPAND_PARAMS_REPLACE_UNDERSCORE_TO_DASH)
+fi
+if  [ -z "$_cp_format" ] && [ "$CP_PIPE_EXPAND_PARAMS_FORMAT" ]; then
+    _cp_format=($CP_PIPE_EXPAND_PARAMS_FORMAT)
+fi
+if  [ -z "$_cp_format_boolean" ] && [ "$CP_PIPE_EXPAND_PARAMS_FORMAT_BOOLEAN" ]; then
+    _cp_format_boolean=($CP_PIPE_EXPAND_PARAMS_FORMAT_BOOLEAN)
+fi
+if  [ -z "$_cp_include_system_params" ] && [ "$CP_PIPE_EXPAND_PARAMS_INCLUDE_SYSTEM_PARAMS" ]; then
+    _cp_include_system_params=($CP_PIPE_EXPAND_PARAMS_INCLUDE_SYSTEM_PARAMS)
+fi
+
+
 
 if (( "${#_cp_include_names[@]}" > 0 )) && (( "${#_cp_exclude_names[@]}" > 0 )); then
     echo "[ERROR] Cannot combine include and exclude names options"
@@ -158,6 +192,12 @@ for _env_name in $_all_env_names; do
                     continue
                 fi
             fi
+
+            if (( "${#_cp_replace_underscore_to_dash[@]}" > 0 )) && \
+                [[ " ${_cp_replace_underscore_to_dash[*]} " =~ " ${param_name} " ]]; then
+                param_name=$(echo "${param_name/_/-}")
+            fi
+
             result_params="$result_params $(eval echo $_effective_format)"
         fi
     fi

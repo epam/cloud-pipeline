@@ -17,6 +17,7 @@ package com.epam.pipeline.acl.cluster.pool;
 
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolInfo;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
@@ -36,8 +37,8 @@ public class NodePoolApiService {
     private final NodePoolUsageService nodePoolUsageService;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public List<NodePool> loadAll() {
-        return nodeManager.loadAll();
+    public List<? extends NodePoolInfo> loadAll(final boolean loadStatus) {
+        return nodeManager.loadAll(loadStatus);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

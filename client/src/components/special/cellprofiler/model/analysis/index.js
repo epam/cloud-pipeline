@@ -25,9 +25,11 @@ import {
 import {AnalysisPipeline} from './pipeline';
 import AnalysisApi from './analysis-api';
 import runAnalysisPipeline, {getPipelineModules} from './analysis-pipeline-utilities';
-import {loadPipeline, savePipeline} from './analysis-pipeline-management';
+import {savePipeline} from './analysis-pipeline-management';
 import {submitBatchAnalysis} from './batch';
+import {findSimilarAnalysis} from './similar-analysis';
 import PhysicalSize from './physical-size';
+import moment from 'moment-timezone';
 
 const AUTOUPDATE = false;
 
@@ -65,6 +67,7 @@ class Analysis {
   eventListeners = [];
   storageId;
   path;
+  analysisDate;
 
   @computed
   get analysisRequested () {
@@ -200,38 +203,25 @@ class Analysis {
     if (asNew) {
       this.pipeline.path = undefined;
     }
-    const path = await savePipeline(this.pipeline);
-    if (path) {
-      this.pipeline.path = path;
-    }
+    await this.userInfo.fetchIfNeededOrWait();
+    this.pipeline.author = (this.userInfo.value || {}).userName;
+    await savePipeline(this.pipeline);
   };
 
   /**
-   * @param {AnalysisPipelineFile} pipelineFile
-   * @returns {Promise<void>}
+   * @param {AnalysisPipeline} pipeline
    */
-  loadPipeline = async (pipelineFile) => {
-    if (!pipelineFile) {
+  loadPipeline = (pipeline) => {
+    if (!pipeline) {
       return;
     }
-    try {
-      this.pending = true;
-      this.status = `Opening pipeline ${pipelineFile.name}...`;
-      const pipeline = pipelineFile.pipeline || (await loadPipeline(pipelineFile));
-      if (!pipeline) {
-        throw new Error(`Error opening pipeline ${pipelineFile.name}: empty pipeline`);
-      }
-      pipeline.analysis = this;
-      this.pipeline = pipeline;
-      this.status = `Pipeline ${pipeline.name} opened`;
-      this.error = undefined;
-      this.changed = true;
-      this.analysisRequested = true;
-    } catch (error) {
-      this.error = error.message;
-    } finally {
-      this.pending = false;
-    }
+    pipeline.analysis = this;
+    this.pipeline = pipeline;
+    this.status = `Pipeline ${pipeline.name} opened`;
+    this.error = undefined;
+    this.changed = true;
+    this.analysisRequested = true;
+    this.pending = false;
   };
 
   destroy = () => {
@@ -393,6 +383,45 @@ class Analysis {
   };
 
   @action
+  checkSimilarBatchAnalysis = async () => {
+    try {
+      this.analysing = true;
+      this.pending = true;
+      this.error = undefined;
+      this.status = 'Checking batch analysis...';
+      if (!this.namesAndTypes || !this.namesAndTypes.sourceDirectory) {
+        throw new Error('HCS file\'s measurement UUID not specified');
+      }
+      /**
+       * @type {BatchAnalysisSpecification}
+       */
+      const specification = {
+        alias: this.alias,
+        storage: this.storageId,
+        path: this.path,
+        pipeline: this.pipeline.exportPipeline(true),
+        measurementUUID: this.namesAndTypes.sourceDirectory,
+        inputs: this.getInputsPayload(),
+        modules: getPipelineModules(this.modules)
+          .map((module, idx) => ({
+            moduleName: module.name,
+            moduleId: idx + 1,
+            parameters: module.getPayload()
+          }))
+      };
+      const similar = await findSimilarAnalysis(specification);
+      this.status = 'Batch analysis checked';
+      return similar;
+    } catch (error) {
+      this.error = error.message;
+      return [];
+    } finally {
+      this.pending = false;
+      this.analysing = false;
+    }
+  };
+
+  @action
   runBatch = async () => {
     try {
       this.analysing = true;
@@ -495,6 +524,7 @@ class Analysis {
           callback: reportModuleStatus
         }
       );
+      this.analysisDate = moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS');
       this.analysisResults = results.filter(o => !o.object);
       const objectResults = results.filter(o => o.object);
       const lastOverlay = objectResults.length > 0

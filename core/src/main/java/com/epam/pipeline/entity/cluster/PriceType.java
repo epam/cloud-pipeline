@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.cluster;
 
+import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -47,6 +48,20 @@ public enum PriceType {
             return SPOT;
         } else {
             throw new IllegalArgumentException("Wrong term type of instance: " + termType);
+        }
+    }
+
+    public static String spotTermName(final CloudProvider provider) {
+        switch (provider) {
+            case AWS:
+                //for aws all prices are saved as ON_DEMAND
+                return TermType.ON_DEMAND.getName();
+            case AZURE:
+                return TermType.LOW_PRIORITY.getName();
+            case GCP:
+                return (TermType.PREEMPTIBLE.getName());
+            default:
+                throw new IllegalArgumentException("Unsupported cloud provider");
         }
     }
 }

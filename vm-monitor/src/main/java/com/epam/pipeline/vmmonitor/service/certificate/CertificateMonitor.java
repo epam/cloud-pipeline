@@ -18,6 +18,7 @@
 package com.epam.pipeline.vmmonitor.service.certificate;
 
 import com.epam.pipeline.vmmonitor.model.cert.PkiCertificate;
+import com.epam.pipeline.vmmonitor.service.Monitor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,7 @@ import java.util.stream.Stream;
 
 @Service
 @Slf4j
-public class CertificateMonitor {
+public class CertificateMonitor implements Monitor {
 
     private static final String DELIMITER = ",";
     private final List<String> directoriesToScan;
@@ -61,7 +62,8 @@ public class CertificateMonitor {
         this.daysToNotify = daysToNotify;
     }
 
-    public void checkCertificates() {
+    @Override
+    public void monitor() {
         directoriesToScan.forEach(this::scanDirForCertificates);
     }
 

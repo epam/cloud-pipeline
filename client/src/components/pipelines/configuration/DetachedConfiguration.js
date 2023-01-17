@@ -45,7 +45,7 @@ import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import HiddenObjects from '../../../utils/hidden-objects';
 import getPathParameters from '../browser/metadata-controls/get-path-parameters';
-import {applyCustomCapabilitiesParameters} from "../launch/form/utilities/run-capabilities";
+import {applyCustomCapabilitiesParameters} from '../launch/form/utilities/run-capabilities';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -388,7 +388,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         const request = new ConfigurationUpdate();
         const payload = {
@@ -686,7 +689,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         if (!configuration.configuration) {
           configuration.configuration = {};
@@ -807,7 +813,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             }
           }
         } else {
-          configuration.configuration = opts;
+          configuration.configuration = {
+            ...configuration.configuration,
+            ...opts
+          };
         }
         if (!configuration.configuration) {
           configuration.configuration = {};

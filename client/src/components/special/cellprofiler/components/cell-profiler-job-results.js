@@ -22,6 +22,10 @@ import {inject, observer} from 'mobx-react';
 import {isObservableArray} from 'mobx';
 import {Link} from 'react-router';
 import {getBatchJobInfo, getSpecification} from '../model/analysis/batch';
+import {
+  getExternalJobInfo,
+  isExternalJobIdentifier
+} from '../model/analysis/external-evaluations';
 import LoadingView from '../../LoadingView';
 import StatusIcon from '../../run-status-icon';
 import displayDate from '../../../../utils/displayDate';
@@ -47,6 +51,24 @@ function parseInputs (inputs = []) {
     };
   }
   return inputs;
+}
+
+async function getJobInfo (jobId) {
+  if (!Number.isNaN(Number(jobId))) {
+    // cloud pipeline run identifier
+    return getBatchJobInfo(jobId);
+  }
+  if (isExternalJobIdentifier(jobId)) {
+    return getExternalJobInfo(jobId);
+  }
+  throw new Error('Cannot retrieve batch job info (unknown job)');
+}
+
+async function getJobSpecification (job) {
+  if (job && job.other) {
+    return Promise.resolve(job.specification || {});
+  }
+  return getSpecification(job);
 }
 
 class CellProfilerJobResults extends React.PureComponent {
@@ -88,7 +110,7 @@ class CellProfilerJobResults extends React.PureComponent {
           error: undefined
         };
         try {
-          const job = await getBatchJobInfo(jobId);
+          const job = await getJobInfo(jobId);
           if (jobId !== this.props.jobId) {
             return;
           }
@@ -125,7 +147,7 @@ class CellProfilerJobResults extends React.PureComponent {
       job
     } = this.state;
     if (job && (force || !specification)) {
-      getSpecification(job)
+      getJobSpecification(job)
         .then(spec => {
           this.setState({
             specification: spec
@@ -194,8 +216,17 @@ class CellProfilerJobResults extends React.PureComponent {
           <div
             className={styles.cellProfilerJobInfoRow}
           >
-            <b>{key}:</b>
-            <span className={styles.value}>{value}</span>
+            <b className={styles.key}>{key}:</b>
+            <span
+              className={
+                classNames(
+                  styles.value,
+                  'cp-ellipsis-text'
+                )
+              }
+            >
+              {value}
+            </span>
           </div>
         );
       }
@@ -222,13 +253,22 @@ class CellProfilerJobResults extends React.PureComponent {
         ? path
         : (path || '').split('/').slice(0, -1).join('/');
       let link = `storage/${storageId}`;
+      const query = {};
       if (parentFolder && parentFolder.length) {
-        link = link.concat(`?path=${parentFolder}`);
+        query.path = parentFolder;
       }
       const storage = getStorageById(storageId);
       let displayPath = path;
       if (storage) {
         displayPath = storage.pathMask.concat(storage.delimiter || '/').concat(path);
+      }
+      const file = (path || '').split('/').pop();
+      if (/\.hcs$/i.test(file)) {
+        query.preview = file;
+      }
+      if (Object.keys(query).length > 0) {
+        link = link
+          .concat(`?${Object.entries(query).map(([key, value]) => `${key}=${value}`).join('&')}`);
       }
       return renderInfo(
         key,
@@ -251,6 +291,9 @@ class CellProfilerJobResults extends React.PureComponent {
         files = [],
         zPlanes = []
       } = parseInputs(inputs);
+      if (files.length === 0) {
+        return null;
+      }
       const wellsCount = new Set(files.map(o => `${o.x}|${o.y}`)).size;
       const fieldsCount = new Set(files.map(o => o.fieldId)).size;
       const timePointsCount = new Set(files.map(o => o.timepoint)).size;
@@ -277,10 +320,33 @@ class CellProfilerJobResults extends React.PureComponent {
     };
     return (
       <Collapse header="Details">
-        {renderInfo('Owner', (<UserName userName={owner} />))}
-        {renderInfo('Started', displayDate(startDate, 'D MMMM, YYYY, HH:mm'))}
-        {renderInfo('Duration', (<Duration startDate={startDate} endDate={endDate} />))}
-        {renderInfo('Job ID', (<Link to={`run/${job.id}`} target="_blank">#{job.id}</Link>))}
+        {renderInfo('Owner', owner ? (<UserName userName={owner} />) : undefined)}
+        {
+          renderInfo(
+            'Started',
+            job.other && startDate ? displayDate(startDate, 'D MMMM, YYYY, HH:mm') : undefined
+          )
+        }
+        {
+          renderInfo(
+            'Started',
+            !job.other && startDate ? displayDate(startDate, 'D MMMM, YYYY, HH:mm') : undefined
+          )
+        }
+        {
+          renderInfo(
+            'Duration',
+            !job.other && startDate
+              ? (<Duration startDate={startDate} endDate={endDate} />)
+              : undefined
+          )
+        }
+        {
+          !job.other && renderInfo(
+            'Job ID',
+            (<Link to={`run/${job.id}`} target="_blank">#{job.id}</Link>)
+          )
+        }
         {renderLocation('HCS Image', input)}
         {renderLocation('Output folder', outputFolder, true)}
         {renderSpecificationInfo()}
@@ -296,17 +362,41 @@ class CellProfilerJobResults extends React.PureComponent {
     }
     const {
       status,
-      outputFolder: output
+      outputFolder: output,
+      result,
+      input,
+      analysisFile
     } = job;
-    if (!/^(success)$/i.test(status) || !output) {
+    if (!/^(success)$/i.test(status) || (!output && !result)) {
       return null;
+    }
+    const fileName = input && input.path
+      ? input.path.split('/').pop()
+      : undefined;
+    let path, downloadPath, storageId;
+    if (result) {
+      path = result.path;
+      downloadPath = result.path;
+      if (/\.csv$/.test(downloadPath)) {
+        downloadPath = downloadPath.split('.').slice(0, -1).join('.').concat('.xlsx');
+      }
+      storageId = result.storageId;
+    } else if (output) {
+      path = (output.path || '').concat('/Results.csv');
+      downloadPath = (output.path || '').concat('/Results.xlsx');
+      storageId = output.storageId;
     }
     return (
       <AnalysisOutputWithDownload
         className={styles.cellProfilerJobResultsOutput}
-        storageId={output.storageId}
-        path={(output.path || '').concat('/Results.csv')}
-        downloadPath={(output.path || '').concat('/Results.xlsx')}
+        storageId={storageId}
+        path={path}
+        downloadPath={downloadPath}
+        input={fileName}
+        analysisDate={job.startDate}
+        analysisName={job.alias || job.pipelineName}
+        analysisStorageId={analysisFile ? analysisFile.storageId : undefined}
+        analysisPath={analysisFile ? analysisFile.path : undefined}
       />
     );
   };

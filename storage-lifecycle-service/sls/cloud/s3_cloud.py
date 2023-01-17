@@ -181,9 +181,22 @@ class S3StorageOperations(StorageOperations):
 
     def check_files_restore(self, region, storage_container, files, restore_timestamp, restore_mode):
         bucket = storage_container.bucket
+
         archived_files_to_check = [f for f in files if f.storage_class != self.STANDARD]
+        if archived_files_to_check:
+            storage_class = archived_files_to_check[0].storage_class
+        else:
+            self.logger.log("There are no files to check but restore action is in progress! "
+                            "Will fail restore action. Restore process start: {}. restore mode: {}."
+                            .format(restore_timestamp, restore_mode))
+            return {
+                "status": True,
+                "value": None,
+                "reason": "There are no files to check but restore action is in progress!"
+            }
+
         is_restore_possibly_ready = self._check_if_restore_could_be_ready(
-            next(iter(archived_files_to_check), None), restore_timestamp, restore_mode)
+            storage_class, restore_timestamp, restore_mode)
         restored_till_value = None
         if not is_restore_possibly_ready:
             self.logger.log("Probably files is steel restoring because appropriate period of time is not passed. "
@@ -236,6 +249,18 @@ class S3StorageOperations(StorageOperations):
                 "value": restored_till_value.strftime("%Y-%m-%d %H:%M:%S.000"),
                 "reason": "All files are ready!"
             }
+
+    def get_storage_class_transition_map(self, transition_storage_classes):
+        possible_storage_classes = ["GLACIER_IR", "GLACIER", "DEEP_ARCHIVE", "DELETION"]
+        storage_class_road_map = {}
+        source_storage_classes = ["STANDARD"]
+        for storage_class in possible_storage_classes:
+            if storage_class not in transition_storage_classes:
+                source_storage_classes.append(storage_class)
+            else:
+                storage_class_road_map[storage_class] = source_storage_classes
+                source_storage_classes = [storage_class]
+        return storage_class_road_map
 
     def _run_s3_batch_operation(self, region, storage_container, files, operation_obj, operation_id):
         bucket = storage_container.bucket
@@ -386,7 +411,7 @@ class S3StorageOperations(StorageOperations):
             S3StorageOperations._path_from_s3_format(s3_object["Key"]) if convert_path else s3_object["Key"],
             s3_object["LastModified"],
             s3_object["StorageClass"],
-            s3_object["VersionId"] if 'VersionId' in s3_object and s3_object['VersionId'] != "null" else None
+            s3_object["VersionId"] if 'VersionId' in s3_object else None
         )
 
     @staticmethod
@@ -399,18 +424,18 @@ class S3StorageOperations(StorageOperations):
 
     # For more information on periods see:
     # https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html
-    def _check_if_restore_could_be_ready(self, file, updated, restore_mode):
-        if not file or not updated:
+    def _check_if_restore_could_be_ready(self, storage_class, updated, restore_mode):
+        if not storage_class or not updated:
             return False
         now = datetime.datetime.now(datetime.timezone.utc)
         restore_mode = self.STANDARD_RESTORE_MODE if not restore_mode else restore_mode
         check_shift_period = datetime.timedelta(hours=12)
-        if file.storage_class == self.GLACIER or file.storage_class == self.GLACIER_IR:
+        if storage_class == self.GLACIER or storage_class == self.GLACIER_IR:
             if restore_mode == self.BULK_RESTORE_MODE:
                 check_shift_period = datetime.timedelta(hours=12)
             elif restore_mode == self.STANDARD_RESTORE_MODE:
                 check_shift_period = datetime.timedelta(hours=5)
-        if file.storage_class == self.DEEP_ARCHIVE:
+        if storage_class == self.DEEP_ARCHIVE:
             if restore_mode == self.BULK_RESTORE_MODE:
                 check_shift_period = datetime.timedelta(hours=48)
             elif restore_mode == self.STANDARD_RESTORE_MODE:

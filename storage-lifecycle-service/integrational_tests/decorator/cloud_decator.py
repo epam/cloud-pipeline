@@ -44,3 +44,6 @@ class AttributesChangingStorageOperations(StorageOperations):
 
     def tag_files_to_transit(self, region, storage_container, files, storage_class, transit_id):
         return self.cloud_operations.tag_files_to_transit(region, storage_container, files, storage_class, transit_id)
+
+    def get_storage_class_transition_map(self, storage_classes):
+        return self.cloud_operations.get_storage_class_transition_map(storage_classes)

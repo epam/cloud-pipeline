@@ -19,9 +19,11 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import {Icon, Alert} from 'antd';
+import FileSaver from 'file-saver';
 import {Analysis} from '../model/analysis';
 import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
 import {generateResourceUrl} from '../model/analysis/output-utilities';
+import displayDate from '../../../../utils/displayDate';
 import styles from './cell-profiler.css';
 
 /**
@@ -38,19 +40,31 @@ function getDownloadUrl (output) {
   return Promise.resolve(output.url);
 }
 
+function getFileNameExtensionFromUrl (url) {
+  try {
+    const urlObject = new URL(url);
+    return (urlObject.pathname || '').split(/\//).pop().split('.').pop();
+  } catch (_) {
+    return undefined;
+  }
+}
+
 @observer
 class AnalysisOutputWithDownload extends React.Component {
   state = {
     url: undefined,
     downloadUrl: undefined,
+    analysisUrl: undefined,
     data: undefined,
     output: undefined,
     pending: false,
-    error: undefined
+    error: undefined,
+    analysisPending: false
   };
 
   componentDidMount () {
     this.updateUrl();
+    this.updateAnalysisUrl();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -62,6 +76,13 @@ class AnalysisOutputWithDownload extends React.Component {
       prevProps.downloadPath !== this.props.downloadPath
     ) {
       this.updateUrl();
+    }
+    if (
+      prevProps.analysisStorageId !== this.props.analysisStorageId ||
+      prevProps.analysisPath !== this.props.analysisPath ||
+      prevProps.analysisUrl !== this.props.analysisUrl
+    ) {
+      this.updateAnalysisUrl();
     }
   }
 
@@ -113,6 +134,37 @@ class AnalysisOutputWithDownload extends React.Component {
     });
   };
 
+  updateAnalysisUrl = () => {
+    const {
+      analysisUrl,
+      analysisPath,
+      analysisStorageId
+    } = this.props;
+    this.setState({
+      analysisPending: true,
+      analysisUrl: undefined
+    }, async () => {
+      const state = {
+        analysisPending: false,
+        analysisUrl: undefined
+      };
+      try {
+        const _url = await generateResourceUrl({
+          url: analysisUrl,
+          storageId: analysisStorageId,
+          path: analysisPath,
+          checkExists: true
+        });
+        if (_url) {
+          state.analysisUrl = _url;
+        }
+      } catch (_) {
+      } finally {
+        this.setState(state);
+      }
+    });
+  };
+
   handleDownload = async (e) => {
     e.preventDefault();
     const {
@@ -121,34 +173,106 @@ class AnalysisOutputWithDownload extends React.Component {
     if (!downloadUrl) {
       return null;
     }
-    window.open(downloadUrl, '_blank');
+    const {
+      input = 'analysis',
+      analysisDate,
+      analysisName
+    } = this.props;
+    const hcsFileName = input
+      .split(/[\\/]/)
+      .pop()
+      .split('.')
+      .slice(0, -1)
+      .join('.')
+      .replace(/\s/g, '_');
+    const dateTime = analysisDate
+      ? displayDate(analysisDate, 'YYYYMMDD_HHmmss')
+      : undefined;
+    let fileName = [
+      hcsFileName,
+      analysisName ? analysisName.replace(/\s/g, '_') : undefined,
+      dateTime
+    ].filter(Boolean).join('-');
+    const extension = getFileNameExtensionFromUrl(downloadUrl) || 'xlsx';
+    fileName = fileName.concat('.').concat(extension);
+    fetch(downloadUrl)
+      .then(res => res.blob())
+      .then(blob => FileSaver.saveAs(blob, fileName));
+  };
+
+  handleDownloadAnalysisFile = async (e) => {
+    e.preventDefault();
+    const {
+      analysisUrl
+    } = this.state;
+    if (!analysisUrl) {
+      return null;
+    }
+    const {
+      input = 'analysis',
+      analysisName
+    } = this.props;
+    const hcsFileName = input
+      .split(/[\\/]/)
+      .pop()
+      .split('.')
+      .slice(0, -1)
+      .join('.')
+      .replace(/\s/g, '_');
+    let fileName = [
+      hcsFileName,
+      analysisName ? analysisName.replace(/\s/g, '_') : undefined
+    ].filter(Boolean).join('_');
+    const extension = getFileNameExtensionFromUrl(analysisUrl) || 'xlsx';
+    fileName = fileName.concat('.').concat(extension);
+    fetch(analysisUrl)
+      .then(res => res.blob())
+      .then(blob => FileSaver.saveAs(blob, fileName));
   };
 
   renderHeader () {
     const {
       url,
-      pending
+      pending,
+      analysisUrl,
+      analysisPending
     } = this.state;
     const {
       onClose
     } = this.props;
-    if (!url) {
+    if (!url && !analysisUrl) {
       return null;
     }
     return (
       <div
         className={styles.analysisOutputHeader}
       >
-        <b>Analysis results</b>
         {
-          pending && (<Icon type="loading" style={{marginLeft: 5}} />)
+          url && (<b>Analysis results</b>)
         }
-        <a
-          style={{marginLeft: 5}}
-          onClick={this.handleDownload}
-        >
-          Download
-        </a>
+        {
+          (pending || analysisPending) && (<Icon type="loading" style={{marginLeft: 5}} />)
+        }
+        {
+          url && (
+            <a
+              style={{marginLeft: 5}}
+              onClick={this.handleDownload}
+            >
+              Download results
+            </a>
+          )
+        }
+        {
+          analysisUrl && (
+            <a
+              style={{marginLeft: 5}}
+              onClick={this.handleDownloadAnalysisFile}
+            >
+              Download analysis file
+            </a>
+          )
+        }
         {
           typeof onClose === 'function' && (
             <Icon
@@ -219,9 +343,15 @@ AnalysisOutputWithDownload.propTypes = {
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   path: PropTypes.string,
   downloadPath: PropTypes.string,
+  analysisStorageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  analysisPath: PropTypes.string,
   url: PropTypes.string,
   downloadUrl: PropTypes.string,
-  onClose: PropTypes.func
+  analysisUrl: PropTypes.string,
+  onClose: PropTypes.func,
+  input: PropTypes.string,
+  analysisDate: PropTypes.string,
+  analysisName: PropTypes.string
 };
 
 @observer
@@ -324,6 +454,9 @@ class AnalysisOutput extends React.Component {
         url={url}
         downloadUrl={downloadUrl}
         onClose={onClose}
+        input={analysis.path}
+        analysisDate={analysis.analysisDate}
+        analysisName={analysis.pipeline ? analysis.pipeline.name : undefined}
       />
     );
   }

@@ -13,13 +13,15 @@
 # limitations under the License.
 
 import json
+
 import requests
 import urllib3
 
-from ..config import Config
+from internal.config import Config
 
 
 class API(object):
+
     def __init__(self, config):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.__config__ = config if config is not None else Config.instance()
@@ -63,7 +65,3 @@ class API(object):
             raise RuntimeError('{}. Server responded with message: {}'.format(message_text, response_data['message']))
         else:
             return response_data
-
-    @classmethod
-    def instance(cls):
-        return cls()

@@ -2798,14 +2798,14 @@ export default class Metadata extends React.Component {
     };
     if (folderChanged) {
       newState.defaultMetadataPropertiesFetched = false;
-      newState.defaultMetadataPropertiesFetching = false;
+      newState.defaultMetadataPropertiesFetching = true;
       newState.defaultColumnsNames = [];
     }
     this.setState(newState, () => {
       this.clearSelection();
       const promises = [
         folderChanged
-          ? this.fetchDefaultMetadataProperties()
+          ? this.fetchDefaultMetadataProperties(folderChanged)
           : this.loadColumns({reset: true}),
         folderChanged ? this.props.entityFields.fetch() : Promise.resolve()
       ];
@@ -2826,7 +2826,7 @@ export default class Metadata extends React.Component {
     });
   };
 
-  fetchDefaultMetadataProperties = () => {
+  fetchDefaultMetadataProperties = (folderChanged = false) => {
     const {
       defaultMetadataPropertiesFetched,
       defaultMetadataPropertiesFetching
@@ -2835,8 +2835,8 @@ export default class Metadata extends React.Component {
     return new Promise((resolve) => {
       if (
         authenticatedUserInfo.loaded &&
-        !defaultMetadataPropertiesFetched &&
-        !defaultMetadataPropertiesFetching
+        ((!defaultMetadataPropertiesFetched &&
+        !defaultMetadataPropertiesFetching) || folderChanged)
       ) {
         this.setState({
           defaultMetadataPropertiesFetching: true

@@ -170,6 +170,16 @@ export class DataStorageEditDialog extends React.Component {
   }
 
   @computed
+  get transitionRulesReadOnly () {
+    const {dataStorage, authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const isAdmin = authenticatedUserInfo.value.admin;
+      return !isAdmin && !roleModel.isOwner(dataStorage);
+    }
+    return true;
+  }
+
+  @computed
   get awsRegions () {
     return this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : [];
   }
@@ -589,6 +599,7 @@ export class DataStorageEditDialog extends React.Component {
               <Tabs.TabPane key="transitionRules" tab="Transition rules">
                 <LifeCycleRules
                   storageId={this.props.dataStorage.id}
+                  readOnly={this.transitionRulesReadOnly}
                 />
               </Tabs.TabPane>
             )}

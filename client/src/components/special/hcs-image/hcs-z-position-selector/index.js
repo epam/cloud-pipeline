@@ -52,7 +52,8 @@ function HcsZPositionSelector (props) {
     image,
     selection: rawSelection = [0],
     onChange,
-    mergeZPlanes
+    mergeZPlanes,
+    multiple
   } = props;
   if (!image) {
     return null;
@@ -152,7 +153,7 @@ function HcsZPositionSelector (props) {
           ))
         }
         {
-          positions.length > selection.length && (
+          positions.length > selection.length && multiple && (
             <a
               className={styles.zItem}
               onClick={onSelectAll}

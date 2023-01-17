@@ -89,6 +89,7 @@ function HCSImageViewer(
   const {
     mesh,
     overlayImages,
+    pending
   } = state;
   const containerRef = useRef();
   const size = useElementSize(containerRef);
@@ -122,6 +123,7 @@ function HCSImageViewer(
     useLens,
     lensEnabled,
     lensChannel,
+    pending: viewerStatePending
   } = viewerState;
   useEffect(() => {
     if (typeof setImageViewportLoading === 'function') {
@@ -174,7 +176,7 @@ function HCSImageViewer(
       {
         readyForRendering && (
           <VivViewer
-            mesh={mesh}
+            mesh={pending || viewerStatePending ? undefined : mesh}
             overlayImages={overlayImages}
             contrastLimits={contrastLimits}
             colors={colors}

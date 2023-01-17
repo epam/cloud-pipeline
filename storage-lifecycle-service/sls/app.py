@@ -34,7 +34,7 @@ def main():
     parser.add_argument("--start-each", required=False)
     parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
     parser.add_argument("--log-dir", default="logs")
-    parser.add_argument("--log-backup-days", default=31, required=False)
+    parser.add_argument("--log-backup-days", type=int, default=31, required=False)
     parser.add_argument("--max-execution-running-days", default=2)
 
     args = parser.parse_args()

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.external.datastorage.controller;
 
+import com.epam.pipeline.external.datastorage.exception.ResourceNotFoundException;
 import com.epam.pipeline.rest.Result;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -47,8 +48,11 @@ public class ExceptionHandlerAdvice {
         // adds information about encountered error to application log
         LOG.error(messageHelper.getMessage("logger.error", request.getDescription(true)), exception);
         HttpStatus code = HttpStatus.OK;
-
         String message = exception.getMessage();
+
+        if (exception instanceof ResourceNotFoundException) {
+            throw new ResourceNotFoundException(exception.getMessage());
+        }
 
         return new ResponseEntity<>(Result.error(StringUtils.defaultString(StringUtils.trimToNull(message),
                 messageHelper.getMessage("error.default"))), code);

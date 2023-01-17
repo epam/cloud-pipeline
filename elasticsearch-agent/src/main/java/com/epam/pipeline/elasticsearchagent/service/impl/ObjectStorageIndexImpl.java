@@ -21,12 +21,13 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
-import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
@@ -35,13 +36,18 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -66,6 +72,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final DataStorageType storageType;
     @Getter
     private final SearchDocumentType documentType;
+    private final String tagDelimiter;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Override
@@ -105,7 +112,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                         .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
                         .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())))
                         .map(file -> createIndexRequest(file, dataStorage, permissionsContainer, indexName,
-                                credentials.getRegion()))
+                                credentials.getRegion(), findFileContent(dataStorage, file.getPath())))
                         .forEach(requestContainer::add);
             }
 
@@ -152,11 +159,11 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                                             final AbstractDataStorage dataStorage,
                                             final PermissionsContainer permissionsContainer,
                                             final String indexName,
-                                            final String region) {
+                                            final String region,
+                                            final String content) {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
-                        permissionsContainer,
-                        getDocumentType()));
+                        permissionsContainer, getDocumentType(), tagDelimiter, content));
     }
 
     private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,
@@ -178,5 +185,24 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
 
     private String withTrailingDelimiter(final String path, final String delimiter) {
         return StringUtils.isNotBlank(path) && !path.endsWith(delimiter) ? path + delimiter : path;
+    }
+
+    private String findFileContent(final AbstractDataStorage storage, final String filePath) {
+        if (fileMapper.isSkipContent(storage.getName(), filePath)) {
+            return null;
+        }
+        final DataStorageDownloadFileUrl downloadUrl = cloudPipelineAPIClient
+                .generateDownloadUrl(storage.getId(), filePath);
+        if (Objects.isNull(downloadUrl) || StringUtils.isBlank(downloadUrl.getUrl())) {
+            log.error("Cannot find download url for file '{}' from storage '{}'", filePath, storage.getName());
+            return null;
+        }
+        try (InputStream inputStream = new URL(downloadUrl.getUrl()).openStream()) {
+            return fileMapper.getFileContent(IOUtils.toByteArray(inputStream), filePath, log);
+        } catch (IOException e) {
+            log.error("An error occurred during reading file '{}' content from storage '{}'",
+                    filePath, storage.getName(), e);
+            return null;
+        }
     }
 }

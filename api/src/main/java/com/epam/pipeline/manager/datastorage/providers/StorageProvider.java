@@ -35,13 +35,13 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
-import org.springframework.data.util.Pair;
 
 public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageType getStorageType();
@@ -136,7 +136,9 @@ public interface StorageProvider<T extends AbstractDataStorage> {
 
     void verifyStorageLifecycleRuleExecution(StorageLifecycleRuleExecution execution);
 
-    Pair<Boolean, String> isRestoreActionEligible(T dataStorage, String path);
+    void verifyRestoreActionSupported();
 
     String verifyOrDefaultRestoreMode(StorageRestoreActionRequest restoreMode);
+
+    DataStorageItemType getItemType(T dataStorage, String path, String version);
 }

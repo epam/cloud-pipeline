@@ -42,7 +42,7 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
     def __init__(self, api, logger):
         self.api = api
         self.logger = logger
-        self.parser = LifecycleRuleParser(self._load_default_lifecycle_rule_notification())
+        self.parser = LifecycleRuleParser()
 
     def load_available_storages(self):
         return self.api.load_available_storages()
@@ -52,11 +52,11 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
 
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         rules_json = self.api.load_lifecycle_rules_for_storage(datastorage_id)
-        return [self.parser.parse_rule(rule) for rule in (rules_json if rules_json else [])]
-
-    def load_lifecycle_rule(self, datastorage_id, rule_id):
-        rule_json = self.api.load_lifecycle_rule(datastorage_id, rule_id)
-        return self.parser.parse_rule(rule_json)
+        if rules_json:
+            default_notification = self._load_default_lifecycle_rule_notification()
+            return [self.parser.parse_rule(rule, default_notification) for rule in rules_json if rules_json]
+        else:
+            return []
 
     def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
         return self.parser.parse_execution(
@@ -135,7 +135,6 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
         return CloudPipelineNotification.build_from_dicts(notification_template, notification_settings)
 
     def _load_default_lifecycle_rule_notification(self):
-
         notification = self.load_notification(self.DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE)
         default_rule_prolong_days = self.load_preference("storage.lifecycle.prolong.days")
         default_rule_notify_before_days = self.load_preference("storage.lifecycle.notify.before.days")

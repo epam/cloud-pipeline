@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.FileItemIterator;
@@ -40,6 +41,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -148,8 +150,29 @@ public abstract class AbstractRestController {
                                          InputStream stream,
                                          String fileName,
                                          MediaType contentType) throws IOException {
+        writeStreamToResponse(response, stream, fileName, contentType, false);
+    }
+
+    protected void writeStreamToResponse(HttpServletResponse response,
+                                         InputStream stream,
+                                         String fileName,
+                                         MediaType contentType,
+                                         boolean inline) throws IOException {
         try (InputStream in = stream) {
-            writeToResponse(response, ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType);
+            writeToResponse(response,
+                    ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType, inline);
+        }
+    }
+
+    protected void writeStreamToResponse(HttpServletResponse response,
+                                         InputStream stream,
+                                         String fileName,
+                                         MediaType contentType,
+                                         boolean inline,
+                                         Map<String, String> headers) throws IOException {
+        try (InputStream in = stream) {
+            writeToResponse(response,
+                    ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType, inline, headers);
         }
     }
 
@@ -161,14 +184,31 @@ public abstract class AbstractRestController {
     protected void writeToResponse(final HttpServletResponse response,
                                    final ResultWriter writer,
                                    final MediaType contentType) throws IOException {
-        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, getContentDisposition(writer));
+        writeToResponse(response, writer, contentType, false);
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType,
+                                   final boolean inline) throws IOException {
+        writeToResponse(response, writer, contentType, inline, Collections.emptyMap());
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType,
+                                   final boolean inline,
+                                   final Map<String, String> headers) throws IOException {
+        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, getContentDisposition(writer, inline));
         response.setContentType(contentType.toString());
+        MapUtils.emptyIfNull(headers).forEach(response::setHeader);
         writer.write(response);
         response.flushBuffer();
     }
 
-    private String getContentDisposition(final ResultWriter writer) {
-        return "attachment;filename=" + writer.getName();
+    private String getContentDisposition(final ResultWriter writer, final boolean inline) {
+        final String disposition = inline ? "inline": "attachment";
+        return disposition + ";filename=" + writer.getName();
     }
 
     protected MediaType guessMediaType(String fileName) {

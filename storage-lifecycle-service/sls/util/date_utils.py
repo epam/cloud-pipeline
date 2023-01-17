@@ -41,3 +41,7 @@ def current_date_string():
 
 def is_date_before_now(date):
     return date <= datetime.datetime.now().date()
+
+
+def str_date(date):
+    return date.strftime(ISO_DATE_FORMAT)

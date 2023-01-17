@@ -30,6 +30,7 @@
   font-size: larger;
   cursor: pointer;
   padding: 0 5px;
+  vertical-align: middle;
 }
 
 .control-btn:not(:last-child) {

@@ -127,6 +127,7 @@ import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.report.NodePoolReportService;
 import com.epam.pipeline.manager.report.UsersUsageReportService;
+import com.epam.pipeline.manager.resource.StaticResourcesService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -570,6 +571,8 @@ public class AclTestBeans {
     @MockBean
     protected DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
 
+    @MockBean
+    protected StaticResourcesService staticResourcesService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

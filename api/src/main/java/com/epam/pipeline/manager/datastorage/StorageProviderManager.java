@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -42,7 +43,6 @@ import com.epam.pipeline.utils.CommonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -242,12 +242,18 @@ public class StorageProviderManager {
         getStorageProvider(dataStorage).verifyStorageLifecycleRuleExecution(execution);
     }
 
-    public Pair<Boolean, String> isRestoreActionEligible(final AbstractDataStorage dataStorage, final String path) {
-        return getStorageProvider(dataStorage).isRestoreActionEligible(dataStorage, path);
+    public void verifyRestoreActionSupported(final AbstractDataStorage dataStorage) {
+        getStorageProvider(dataStorage).verifyRestoreActionSupported();
     }
 
     public String verifyOrDefaultRestoreMode(final AbstractDataStorage dataStorage,
                                              final StorageRestoreActionRequest restoreActionRequest) {
         return getStorageProvider(dataStorage).verifyOrDefaultRestoreMode(restoreActionRequest);
+    }
+
+    public DataStorageItemType getItemType(final AbstractDataStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        return getStorageProvider(dataStorage).getItemType(dataStorage, path, version);
     }
 }

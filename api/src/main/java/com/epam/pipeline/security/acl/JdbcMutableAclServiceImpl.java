@@ -58,6 +58,8 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     private static final String DELETE_ENTRIES_BY_SID_QUERY = "delete from acl_entry where sid=?";
     private static final String LOAD_ENTRIES_BY_SIDS_COUNT_QUERY =
         "SELECT count(*) FROM pipeline.acl_entry where sid IN (@in@)";
+    private static final String LOAD_OWNER_ENTRIES_BY_SID_COUNT_QUERY =
+            "SELECT count(*) FROM pipeline.acl_object_identity where owner_sid=?";
     private static final String LOAD_ENTRIES_SUMMARY_BY_SID_QUERY =
         "SELECT entries.acl_object_identity,"
         + " identities.object_id_identity,"
@@ -130,6 +132,12 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSidById(Long sidId) {
         jdbcTemplate.update(DELETE_ENTRIES_BY_SID_QUERY, sidId);
+        final Integer ownerEntries = jdbcTemplate.queryForObject(
+                LOAD_OWNER_ENTRIES_BY_SID_COUNT_QUERY, Integer.class, sidId);
+        if (ownerEntries > 0) {
+            log.debug("Sid {} in an owner of {} entity(s). Leaving ACL record.", sidId, ownerEntries);
+            return;
+        }
         jdbcTemplate.update(DELETE_SID_BY_ID_QUERY, sidId);
     }
 

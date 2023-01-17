@@ -74,9 +74,13 @@ public class GitLabService implements GitClientService {
     }
 
     @Override
-    public GitProject createRepository(final String description, final String repositoryPath, final String token)
+    public GitProject createRepository(final String description,
+                                       final String repositoryPath,
+                                       final String token,
+                                       final String visibility)
             throws GitClientException {
-        return getGitlabClientForRepository(repositoryPath, token, true).createRepo(description);
+        return getGitlabClientForRepository(repositoryPath, token, true)
+                .createRepo(description, visibility);
     }
 
     @Override
@@ -364,8 +368,9 @@ public class GitLabService implements GitClientService {
         String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
+        final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
         return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, gitToken,
-                authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
+                authManager.getAuthorizedUser(), gitAdminId, gitAdminName, apiVersion);
     }
 
     private GitlabClient getGitlabClientForPipeline(final Pipeline pipeline) {
@@ -383,9 +388,10 @@ public class GitLabService implements GitClientService {
         final boolean externalHost = StringUtils.isNotBlank(providedToken);
         final String token = externalHost ? providedToken
                 : preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
+        final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
         return GitlabClient.initializeGitlabClientFromRepositoryAndToken(
                 rootClient ? adminName : authManager.getAuthorizedUser(),
-                repository, token, adminId, adminName, externalHost);
+                repository, token, adminId, adminName, externalHost, apiVersion);
     }
 
     private Date parseGitDate(final String dateStr) {

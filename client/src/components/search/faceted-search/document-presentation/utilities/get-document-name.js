@@ -20,6 +20,9 @@ export default function getDocumentName (resultItem) {
   if (!resultItem) {
     return '';
   }
+  if (resultItem.nameOverride) {
+    return resultItem.nameOverride;
+  }
   switch (resultItem.type) {
     case SearchItemTypes.run: {
       if (resultItem.description) {

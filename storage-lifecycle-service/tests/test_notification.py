@@ -61,7 +61,7 @@ class TestNotificationPositive(unittest.TestCase):
         )
 
     def test_notification_will_be_sent_if_files_are_eligible_for_week_after_and_execution_with_failed_status(self):
-        self.assertTrue(
+        self.assertFalse(
             StorageLifecycleArchivingSynchronizer._notification_should_be_sent(
                 self.enabled_notification, self.failed_execution, self.today + datetime.timedelta(days=7), self.today
             )

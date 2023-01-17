@@ -1,5 +1,6 @@
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.exception.PipelineResponseApiException;
 import com.epam.pipeline.exception.PipelineResponseException;
 import com.epam.pipeline.exception.PipelineResponseHttpException;
@@ -32,6 +33,7 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
 
     private static final int DEFAULT_RETRY_ATTEMPTS = 3;
     private static final Duration DEFAULT_RETRY_DELAY = Duration.ofSeconds(5);
+    public static final int NOT_FOUND = 404;
 
     private final int attempts;
     private final Duration delay;
@@ -66,6 +68,9 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
                 log.error("Cloud Pipeline API call {}/{} has failed due to API error. " +
                         "It won't be retried.", attempt, attempts, e);
                 throw e;
+            } catch (ObjectNotFoundException e) {
+                log.error("Cloud Pipeline API call responded with 404.");
+                throw e;
             } catch (Exception e) {
                 log.error("Cloud Pipeline API call {}/{} has failed due to IO error. " +
                         "It will be retried in {} s.", attempt, attempts, delay.getSeconds(), e);
@@ -79,6 +84,9 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
     private <T> T internalExecute(final Call<Result<T>> call) throws IOException {
         final Response<Result<T>> response = call.execute();
         if (!response.isSuccessful()) {
+            if (response.code() == NOT_FOUND) {
+                throw new ObjectNotFoundException(response.message());
+            }
             throw new PipelineResponseHttpException(String.format("Unexpected response http code: %d, %s",
                     response.code(), response.errorBody() != null ? response.errorBody().string() : StringUtils.EMPTY));
         }
@@ -124,6 +132,17 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
         }
     }
 
+    @Override
+    public Response<ResponseBody> getResponse(final Call<ResponseBody> call) {
+        try {
+            final Response<ResponseBody> response = call.execute();
+            validateResponseStatus(response);
+            return response;
+        } catch (IOException e) {
+            throw new PipelineResponseIOException(e);
+        }
+    }
+
     private byte[] internalGetByteResponse(final Call<byte[]> call) throws IOException {
         try {
             final Response<byte[]> response = call.execute();
@@ -137,6 +156,9 @@ public class RetryingCloudPipelineApiExecutor implements CloudPipelineApiExecuto
 
     private void validateResponseStatus(final Response<?> response) throws IOException {
         if (!response.isSuccessful()) {
+            if (response.code() == NOT_FOUND) {
+                throw new ObjectNotFoundException(response.message());
+            }
             throw new PipelineResponseException(String.format("Unexpected status code: %d, %s", response.code(),
                     response.errorBody() != null ? response.errorBody().string() : ""));
         }

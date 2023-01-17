@@ -146,5 +146,5 @@ class ScaleDeploymentsLimit(AutoscalingLimit):
                          'Scaling replicas ↓ from %s to %s...',
                          replicas_number, self._configuration.limit.max_replicas_number,
                          replicas_number, replicas_number - 1)
-            self.deployment_scaler.scale_down(deployments_container.deployments)
+            self._deployment_scaler.scale_down(deployments_container.deployments)
             raise AbortScalingError()

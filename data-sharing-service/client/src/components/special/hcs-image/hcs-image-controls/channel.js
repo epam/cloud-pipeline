@@ -19,11 +19,41 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Checkbox,
-  Popover,
+  Icon,
   Slider
 } from 'antd';
-import {ChromePicker} from 'react-color';
+import ColorPicker from '../../color-picker';
 import styles from './hcs-image-controls.css';
+
+function LockCheckbox (
+  {
+    disabled,
+    style,
+    locked,
+    onLockedChanged
+  }
+) {
+  const onClick = (event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (typeof onLockedChanged === 'function') {
+      onLockedChanged(!locked);
+    }
+  };
+  return (
+    <Icon
+      style={{
+        cursor: 'pointer',
+        fontSize: 'larger',
+        opacity: locked && !disabled ? 1 : 0.25,
+        ...(style || {})
+      }}
+      type={locked ? 'lock' : 'unlock'}
+      onClick={onClick}
+    />
+  );
+}
 
 class Channel extends React.PureComponent {
   state = {
@@ -33,60 +63,22 @@ class Channel extends React.PureComponent {
   renderColorConfiguration = () => {
     const {
       color = [],
-      loading,
       onColorChanged
     } = this.props;
     if (color.length === 3) {
-      const presenter = (
-        <div
-          key="color-presenter"
-          className={styles.colorPresenter}
-        >
-          <div
-            className={styles.fill}
-            style={{
-              color: `rgb(${color.join(', ')})`
-            }}
-          >
-            {'\u00A0'}
-          </div>
-        </div>
-      );
-      if (loading || !onColorChanged) {
-        return presenter;
-      }
-      const {colorPickerVisible} = this.state;
-      const handleColorPickerVisibility = (visible) => this.setState({
-        colorPickerVisible: visible
-      });
-      const value = {
-        r: color[0],
-        g: color[1],
-        b: color[2]
-      };
-      const onChange = (options) => {
-        const {rgb = {}} = options;
-        const {r = 255, g = 255, b = 255} = rgb;
+      const onChange = (channels) => {
+        const {r = 255, g = 255, b = 255} = channels;
         if (onColorChanged) {
           onColorChanged([r, g, b]);
         }
       };
       return (
-        <Popover
-          overlayClassName="popover-overlay-content-no-padding"
-          onVisibleChange={handleColorPickerVisibility}
-          key="color picker"
-          trigger={['click']}
-          content={colorPickerVisible && (
-            <ChromePicker
-              color={value}
-              onChange={onChange}
-              disableAlpha
-            />
-          )}
-        >
-          {presenter}
-        </Popover>
+        <ColorPicker
+          color={`rgb(${color.join(',')})`}
+          onChange={onChange}
+          ignoreAlpha
+          channels
+        />
       );
     }
     return null;
@@ -125,8 +117,10 @@ class Channel extends React.PureComponent {
       name,
       style,
       visible,
+      locked,
       loading,
-      onVisibilityChanged
+      onVisibilityChanged,
+      onLockedChanged
     } = this.props;
     return (
       <div
@@ -141,13 +135,31 @@ class Channel extends React.PureComponent {
         <div
           className={styles.header}
         >
+          <LockCheckbox
+            disabled={loading}
+            locked={locked}
+            onLockedChanged={onLockedChanged}
+            style={{
+              marginRight: 5
+            }}
+          />
           <Checkbox
             disabled={loading}
-            style={{marginRight: 5}}
             checked={visible}
             onChange={e => onVisibilityChanged ? onVisibilityChanged(e.target.checked) : {}}
-          />
-          <b>{name}</b>
+          >
+            <b>{name}</b>
+            {
+              locked && (
+                <i
+                  className="cp-text-not-important"
+                  style={{fontWeight: 'normal'}}
+                >
+                  {' - locked'}
+                </i>
+              )
+            }
+          </Checkbox>
           <div style={{marginLeft: 'auto'}}>
             {this.renderColorConfiguration()}
           </div>
@@ -169,8 +181,10 @@ Channel.propTypes = {
   onContrastLimitsChanged: PropTypes.func,
   onColorChanged: PropTypes.func,
   onVisibilityChanged: PropTypes.func,
+  onLockedChanged: PropTypes.func,
   style: PropTypes.object,
-  visible: PropTypes.bool
+  visible: PropTypes.bool,
+  locked: PropTypes.bool
 };
 
 export default Channel;

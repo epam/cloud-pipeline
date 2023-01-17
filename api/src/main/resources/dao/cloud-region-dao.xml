@@ -40,6 +40,7 @@
                         storage_account,
                         storage_account_key,
                         mount_storage_rule,
+                        mount_file_storage_rule,
                         mount_credentials_rule,
                         resource_group,
                         profile,
@@ -55,7 +56,8 @@
                         impersonated_account,
                         custom_instance_types,
                         aws_iam_role,
-                        storage_lifecycle_service_properties)
+                        storage_lifecycle_service_properties,
+                        global_distribution_url)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -74,6 +76,7 @@
                         :STORAGE_ACCOUNT,
                         :STORAGE_ACCOUNT_KEY,
                         :MOUNT_STORAGE_RULE,
+                        :MOUNT_FILE_STORAGE_RULE,
                         :MOUNT_CREDENTIALS_RULE,
                         :RESOURCE_GROUP,
                         :PROFILE,
@@ -89,7 +92,8 @@
                         :IMPERSONATED_ACCOUNT,
                         :CUSTOM_INSTANCE_TYPES,
                         :AWS_IAM_ROLE,
-                        :STORAGE_LIFECYCLE_SERVICE_PROPERTIES)
+                        :STORAGE_LIFECYCLE_SERVICE_PROPERTIES,
+                        :GLOBAL_DISTRIBUTION_URL)
                 ]]>
             </value>
         </constructor-arg>
@@ -128,9 +132,11 @@
                         r.impersonated_account,
                         r.custom_instance_types,
                         r.mount_storage_rule,
+                        r.mount_file_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
                         r.storage_lifecycle_service_properties,
+                        r.global_distribution_url,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -177,9 +183,11 @@
                         r.impersonated_account,
                         r.custom_instance_types,
                         r.mount_storage_rule,
+                        r.mount_file_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
                         r.storage_lifecycle_service_properties,
+                        r.global_distribution_url,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -226,9 +234,11 @@
                         r.impersonated_account,
                         r.custom_instance_types,
                         r.mount_storage_rule,
+                        r.mount_file_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
                         r.storage_lifecycle_service_properties,
+                        r.global_distribution_url,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -275,9 +285,11 @@
                         r.impersonated_account,
                         r.custom_instance_types,
                         r.mount_storage_rule,
+                        r.mount_file_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
                         r.storage_lifecycle_service_properties,
+                        r.global_distribution_url,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -324,9 +336,11 @@
                         r.impersonated_account,
                         r.custom_instance_types,
                         r.mount_storage_rule,
+                        r.mount_file_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
                         r.storage_lifecycle_service_properties,
+                        r.global_distribution_url,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -370,12 +384,14 @@
                         enterprise_agreements = :ENTERPRISE_AGREEMENTS,
                         project = :PROJECT,
                         mount_storage_rule = :MOUNT_STORAGE_RULE,
+                        mount_file_storage_rule = :MOUNT_FILE_STORAGE_RULE,
                         mount_credentials_rule = :MOUNT_CREDENTIALS_RULE,
                         application_name = :APPLICATION_NAME,
                         impersonated_account = :IMPERSONATED_ACCOUNT,
                         custom_instance_types = :CUSTOM_INSTANCE_TYPES,
                         aws_iam_role = :AWS_IAM_ROLE,
-                        storage_lifecycle_service_properties = :STORAGE_LIFECYCLE_SERVICE_PROPERTIES
+                        storage_lifecycle_service_properties = :STORAGE_LIFECYCLE_SERVICE_PROPERTIES,
+                        global_distribution_url = :GLOBAL_DISTRIBUTION_URL
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -426,9 +442,11 @@
                         r.impersonated_account,
                         r.custom_instance_types,
                         r.mount_storage_rule,
+                        r.mount_file_storage_rule,
                         r.mount_credentials_rule,
                         r.aws_iam_role,
                         r.storage_lifecycle_service_properties,
+                        r.global_distribution_url,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,

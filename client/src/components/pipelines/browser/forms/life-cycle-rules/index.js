@@ -175,12 +175,14 @@ class LifeCycleRules extends React.Component {
   };
 
   renderRule = (rule) => {
+    const {readOnly} = this.props;
     const controls = [
       <Button
         className={styles.controlBtn}
         onClick={() => this.openEditRuleDialog(rule)}
         size="small"
         key="edit"
+        disabled={readOnly}
       >
         <Icon type="edit" />
       </Button>,
@@ -189,14 +191,17 @@ class LifeCycleRules extends React.Component {
         onClick={() => this.showHistory(rule)}
         size="small"
         key="history"
+        disabled={readOnly}
       >
         <Icon type="book" />
       </Button>,
       <Button
+        className={styles.controlBtn}
         type="danger"
         onClick={() => this.deleteRule(rule.id)}
         size="small"
         key="delete"
+        disabled={readOnly}
       >
         <Icon type="delete" />
       </Button>
@@ -259,7 +264,7 @@ class LifeCycleRules extends React.Component {
       showHistory,
       pending
     } = this.state;
-    const {storageId} = this.props;
+    const {storageId, readOnly} = this.props;
     return (
       <Spin spinning={pending}>
         <div className={styles.container}>
@@ -267,6 +272,7 @@ class LifeCycleRules extends React.Component {
             className={styles.createBtn}
             onClick={() => this.openEditRuleDialog({})}
             size="small"
+            disabled={readOnly}
           >
             <Icon type="plus" />
             Create
@@ -309,7 +315,8 @@ class LifeCycleRules extends React.Component {
 }
 
 LifeCycleRules.propTypes = {
-  storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  readOnly: PropTypes.bool
 };
 
 export default LifeCycleRules;

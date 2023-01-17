@@ -12,11 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import datetime
 
 import boto3
 
 from integrational_tests.processor.processor import TestCaseProcessor
 from integrational_tests.util import file_utils
+from sls.util import date_utils
 
 SETUP_MODE = "SETUP"
 CLEAN_UP_MODE = "CLEAN_UP"
@@ -122,6 +124,12 @@ class CloudPipelinePlatformTestCasePreparator(TestCaseProcessor):
             for rule in storage.rules:
                 rule["datastorageId"] = storage.datastorage_id
 
+                for transition in rule["transitions"]:
+                    if "transitionDate" in transition:
+                        transition["transitionDate"] = date_utils.str_date(
+                            datetime.datetime.now() - datetime.timedelta(days=transition["transitionDate"])
+                        )
+
                 prolongations = []
                 if "prolongations" in rule:
                     prolongations = rule["prolongations"]
@@ -135,7 +143,9 @@ class CloudPipelinePlatformTestCasePreparator(TestCaseProcessor):
                 rule["id"] = rule_ids_mapping[rule["id"]]
 
                 for prolongation in prolongations:
-                    self.api.prolong_lifecycle_rule(storage.datastorage_id, rule["id"], prolongation["path"], prolongation["days"])
+                    self.api.prolong_lifecycle_rule(
+                        storage.datastorage_id, rule["id"], prolongation["path"], prolongation["days"], True
+                    )
 
             for execution in storage.executions:
                 execution["ruleId"] = rule_ids_mapping[execution["ruleId"]]

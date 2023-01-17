@@ -2,12 +2,14 @@
 
 - [Billing reports enhancements](#billing-reports-enhancements)
 - [System dictionaries](#system-dictionaries)
+- [Cloud Data application](#cloud-data-application)
 - [Sending of email notifications enhancements](#sending-of-email-notifications-enhancements)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
 - [Export custom user's attributes](#export-custom-users-attributes)
 - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
+- [Sensitive storages](#sensitive-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
@@ -25,6 +27,9 @@
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
 - [Resolve variables for a rerun](#resolve-variables-for-a-rerun)
 - [NAT gateway](#nat-gateway)
+- [Custom Run capabilities](#custom-run-capabilities)
+- [Storage lifecycle management](#storage-lifecycle-management)
+- [Image history](#image-history)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -195,6 +200,42 @@ In the GUI, such connection is being handled in the following way:
 
 For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-dictionaries).
 
+## Cloud Data application
+
+Previously, there were several ways to manage data between local workstation and Cloud data storages, including CLI, GUI, mounting data storages as a network drives, and others.  
+
+In the current version, a new Platform capability was implemented that provides a simple and convenient way to manage files, copy/move them between Cloud data storage and local workstation or even FTP-server.  
+This introduces via the new separate application that can be downloaded from the Cloud Pipeline Platform and launched at the local machine - **Cloud Data** application.
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_01.png)
+
+Cloud Data application allows you manage files/folders as in a file commander.  
+Main application form contains two panels (left and right).  
+In each panel, one of the following sources can be opened: **local workstation** / **FTP server** / **Cloud data** (datastorages).
+
+- the **_local_** content shows files and folders of the local workstation (by default, _home_ user's directory). Navigation between and inside folders is available:  
+   ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_02.png)
+- the **_Cloud data_** content includes:
+    - all FS mounts from the Cloud Pipeline environment - to which current user has permissions.  
+      They are shown as simple folders
+    - those object storages from the Cloud Pipeline environment - to which current user has permissions and "File system access" was requested.  
+      They are shown with storage icon
+    - Navigation between and inside folders/storages is available  
+   ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_03.png)
+- the **_ftp_** content shows files and folders of the FTP/SFTP server. Navigation between and inside folders is available:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_04.png)
+
+The base scenario of the application usage:
+
+1. User selects desired source and destination in panels, e.g. FTP server and object datastorage correspondingly:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_05.png)
+2. Users selects desired files/folders in the source and clicks the data management button in the source panel - according to the action user wants to perform, e.g. to copy a file:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_06.png)
+3. Action will be performed, content of the panels will be updated:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_07.png)
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app.md).
+
 ## Sending of email notifications enhancements
 
 Several additions and updates were implemented in the current version for the System Email notifications.  
@@ -348,6 +389,35 @@ In the current version, such ability was implemented:
     - _additionally_ for storages, **Cloud Region**/**Provider** icons for multi-provider deployments
 - if the user clicks any object in the list - its regular page is being opened
 - for each "repository", there is a search field for the quick search over objects list
+
+## Sensitive storages
+
+Previously, Cloud Pipeline platform allows performing upload/download operations for any authorized data storage.  
+But certain storages may contain sensitive data, which shall not be copied anywhere outside that storage.
+
+For storing such data, special "sensitive" storages are implemented.  
+Sensitive data from that storages can be used for calculations or different other jobs, but this data cannot be copy/download to another regular storage/local machine/via the Internet etc.  
+Viewing of the sensitive data is also partially restricted.
+
+Sensitive storage is being created similar to general object storage, user only should tick the corresponding checkbox:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_1.png)
+
+Via the GUI, the sensitive storage looks similar to the regular object storage, but there are some differences (even for admin/storage **_OWNER_**):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_3.png)  
+
+I.e. files/folders in the sensitive storage can be created/renamed/removed but can't be downloaded/viewed or edited by any user.
+
+Sensitive storages can be mounted to the run. In this case, the run will become _sensitive_ too.  
+In sensitive runs, all storages selected for the mounting including sensitive are being mounted in **readonly** mode to exclude any copy/move operations between storages.
+
+Files from the sensitive storages can be viewed **_inside_** the sensitive run and also copied into the inner instance disk, but not to any other storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_4.png)
+
+Files from the sensitive storages can't be viewed **_outside_** the sensitive run or copied/moved anywhere (for example, when using not the web-terminal version of `pipe` SSH):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_5.png)
+
+For more details and restrictions that are imposed by using of sensitive storages see [here](../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md).
 
 ## Updates of "Limit mounts" for object storages
 
@@ -889,6 +959,119 @@ To add a route, admin shall:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_05.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12.14._NAT_gateway.md).
+
+## Custom Run capabilities
+
+Previously, users might select only predefined "system" **Run capabilities** for a job.  
+In some cases or deployments, these capabilities may not be enough.  
+In the current version, the ability for admins to add custom **Run capabilities** was implemented. Use them for a job/tool run all users can.
+
+Managing of the custom capabilities is being performed via the new system preference **`launch.capabilities`**.  
+This preference contains an array of capability descriptions in `JSON`-format and has the following structure:
+
+``` json
+{
+  "<capability_name_1>": {
+    "description": "<Description of the capability>",
+    "commands": [
+        "<command_1>",
+        "<command_2>",
+        ...
+    ],
+    "params": {
+        "<parameter_1>": "<value_1>",
+        "<parameter_2>": "<value_2>",
+        ...
+    }
+  },
+  "<capability_name_2": {
+      ...
+  },
+  ...
+}
+```
+
+For example:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_1.png)
+
+Saved capability then can be used for a job/tool:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_3.png)
+
+For more details see [here](../../manual/10_Manage_Tools/10.9._Run_capabilities.md#custom-capabilities).
+
+## Storage lifecycle management
+
+Previously, users had the simplified opportunity to configure the lifecycle of data in storages - via specifying STS/LTS durations in the storage settings.  
+This way is rather primitive and does not allow to fine-tune data archiving/restoring.
+
+In the current version, the ability to configure datastorage lifecycle in details was implemented.  
+This new option allows to perform the automatical data transition from standard storage to different types of archival storages by occurance of a certain event and restore that data back as well if needed.  
+Previous functionality (STS/LTS durations) was excluded.  
+For the new one, an additional tab was included to the storage settings - **Transition rules**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_01.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_02.png)
+
+New implemented functionality includes abilities:
+
+- automatic data archiving/removing according to specified transition rule(s)
+- restoring of previously archived data for the specified period
+
+_Data archiving_ is provided by configurable set of transition rules for each separate storage. Each rule defines which files, when (specific date or by the event) and where (different types of archive) shall be automatically transferred:
+
+- firstly, user creates a rule for a storage - specifying the path and glob pattern for a file(s) name(s) which shall be transferred, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_03.png)  
+    User can select to transfer files one-by-one or in bulk-mode by the first/last appeared file in a group.  
+    Also, an additional condition for the files transition can be configured.
+- then user selects an archive class as the data destination. Here, several destinations can be added (for different dates), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_04.png)  
+    **_Note_**: archive classes depend on the Cloud Provider
+- then user defines the event by which the data shall be transferred - after certain period after the file(s) creation or at the specific date:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_05.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_06.png)
+- also, notifications can be configured for the rule events (optionally):  
+    - recipients list
+    - notification title and text
+    - ability to specify a delay for data transition - user that receive such notification will have the ability to prolong (delay) transition for some period  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_07.png)
+- created rule can be found in the **Transition rules** tab of the storage settings:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_08.png)
+- after the rule is created, it starts to work. If file matches the condition of any storage rule - it will be transferred to some archive or removed (if `Deletion` is set as data destination). Transferred file becomes disabled for changing/renaming from the GUI/CLI. At the GUI, near such file a label appears that corresponds to the transition destination, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_09.png)
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#archiving).
+
+_Data restoring_ can be applied to previously archived files. Separate files or whole folders (with sub-folders) can be restored:
+
+- user selects which files/folders shall be restored, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_10.png)
+- user defines the period for which files shall be restored and notification recipients list:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_11.png)
+- after the confirmation, the restore process begins - it is shown by the special status icon:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_12.png)
+- when file is restored - it is shown by the special status icon as well:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_13.png)
+- once the restore period is over, files will be automatically transferred to the archive where they were before
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#restoring).
+
+## Image history
+
+**Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
+
+- Available software packages
+- Possible vulnerabilities of those packages
+
+The users may leverage this feature to choose which docker image to use, depending on the needs for a specific application.  
+But this list of the software packages may not show the full list of the applications as the scanning mechanism uses only the "well-known" filesystem locations to collect the applications/versions informations. Some of the apps, might be installed into any custom location and the scanner won't be able to find it.
+
+To fulfill this gap and to address some advanced cases, in the current version, a new feature was introduced: now it's possible to view the list of the "Docker layers" and corresponding commands, which were used to generate those layers.  
+It can be viewed via the specific tab in the tool version menu - **Image history**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_1.png)
+
+This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.
+
+For more details see [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#image-history).
 
 ## AWS: seamless authentication
 

@@ -162,6 +162,7 @@ public class GitManagerTest extends AbstractManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.GIT_READER_HOST)).thenReturn(gitHost.asString());
         when(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID)).thenReturn(ROOT_USER_ID);
         when(preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME)).thenReturn(ROOT_USER_NAME);
+        when(preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION)).thenReturn("v3");
     }
 
     @Before
@@ -705,6 +706,7 @@ public class GitManagerTest extends AbstractManagerTest {
         final Revision revision = new Revision(TEST_REVISION, "Initial commit", date,
                 "somecommitsha", "someauthor", "author@email.com");
         pipeline.setCurrentVersion(revision);
+        pipeline.setDocsPath(DOCS + "/");
         return pipeline;
     }
 

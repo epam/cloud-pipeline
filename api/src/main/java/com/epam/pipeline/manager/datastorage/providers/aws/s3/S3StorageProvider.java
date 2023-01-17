@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -61,7 +62,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.Assert;
@@ -412,13 +412,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public Pair<Boolean, String> isRestoreActionEligible(final S3bucketDataStorage dataStorage, final String path) {
-        final String storagePathPrefix = path.startsWith(dataStorage.getDelimiter())
-                ? path.substring(dataStorage.getDelimiter().length())
-                : path;
-        final boolean result = listDataStorageFiles(dataStorage, storagePathPrefix).findAny().isPresent();
-        final String reason = !result ? "Path not found!" : "";
-        return Pair.of(result, reason);
+    public void verifyRestoreActionSupported() {
+        // s3 provider supports restore - nothing to do
     }
 
     @Override
@@ -446,6 +441,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
         return new TemporaryCredentialsS3Helper(credentials, messageHelper, region);
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final S3bucketDataStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        return getS3Helper(dataStorage).getItemType(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path), version);
     }
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {

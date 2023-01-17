@@ -18,6 +18,22 @@ from sls.util import path_utils
 
 
 def _verify_s3_sls_properties(sls_properties, logger):
+
+    def _verify_or_default_int_value(key, default):
+        resulted_value = default
+        if key in properties:
+            try:
+                resulted_value = int(properties[key])
+            except BaseException:
+                logger.log("Cannot parse int value from batch_operation_job_poll_status_retry_count, using default")
+                resulted_value = default
+
+        if resulted_value < 1:
+            logger.log(
+                "Value {} within S3 storage lifecycle service cloud configuration should be > 1".format(key))
+            resulted_value = None
+        return resulted_value
+
     if not sls_properties or not sls_properties.properties:
         logger(
             "There is no configured Storage Lifecycle Service properties!")
@@ -44,18 +60,14 @@ def _verify_s3_sls_properties(sls_properties, logger):
     properties["batch_operation_job_report_bucket_prefix"] = properties.get("batch_operation_job_report_bucket_prefix").strip(
         "/")
 
-    if "batch_operation_job_poll_status_retry_count" not in properties:
-        properties["batch_operation_job_poll_status_retry_count"] = 30
-    if properties["batch_operation_job_poll_status_retry_count"] < 1:
-        logger.log(
-            "Value batch_operation_job_poll_status_retry_count within S3 storage lifecycle service cloud configuration should be > 1")
+    properties["batch_operation_job_poll_status_retry_count"] = \
+        _verify_or_default_int_value("batch_operation_job_poll_status_retry_count", 30)
+    if not properties["batch_operation_job_poll_status_retry_count"]:
         return False
 
-    if "batch_operation_job_poll_status_sleep_sec" not in properties:
-        properties["batch_operation_job_poll_status_sleep_sec"] = 5
-    if properties["batch_operation_job_poll_status_sleep_sec"] < 1:
-        logger.log(
-            "Value batch_operation_job_poll_status_sleep_sec within S3 storage lifecycle service cloud configuration should be > 1")
+    properties["batch_operation_job_poll_status_sleep_sec"] = \
+        _verify_or_default_int_value("batch_operation_job_poll_status_sleep_sec", 5)
+    if not properties["batch_operation_job_poll_status_sleep_sec"]:
         return False
 
     return True
@@ -160,12 +172,16 @@ class PlatformToCloudOperationsAdapter:
                 region, storage_container, files, action.updated, action.restore_mode
             )
         except Exception as e:
-            self.logger.log("Problem with cheking restoring files, cause: {}".format(e))
+            self.logger.log("Problem with checking restoring files, cause: {}".format(e))
             return {
                 "status": False,
                 "reason": e,
                 "value": None
             }
+
+    def get_storage_class_transition_map(self, storage, rule):
+        storage_classes = [transition.storage_class for transition in rule.transitions]
+        return self.cloud_operations[storage.storage_type].get_storage_class_transition_map(storage_classes)
 
     @staticmethod
     def _parse_storage_path(storage):

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/* eslint-disable max-len */
 const endpointURIMask = /^[a-zA-Z\d_]+$/;
 const domainMask = /^[-a-zA-Z0-9_\.]+(:\d+)?$/i;
 
@@ -34,11 +34,19 @@ function parse (value) {
   return value;
 }
 
-function validate (url) {
+function validate (url, sshMode = false) {
   if (!url) {
     return undefined;
   }
   const {domain, path} = build(url, false);
+  if (sshMode) {
+    if (domain) {
+      return 'You can not use domain name for the SSH URL';
+    }
+    if (path && !endpointURIMask.test(path)) {
+      return 'Please enter valid endpoint name (only characters, numbers and \'_\' symbols are allowed)';
+    }
+  }
   if (
     domain &&
     (

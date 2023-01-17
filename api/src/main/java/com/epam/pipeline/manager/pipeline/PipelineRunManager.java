@@ -252,8 +252,7 @@ public class PipelineRunManager {
         checkRunLaunchLimits(runVO);
         final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
-                configuration.getSharedWithRoles()));
+        runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
@@ -329,8 +328,7 @@ public class PipelineRunManager {
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager
                 .getPipelineConfigurationForPipeline(pipeline, runVO);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
-                configuration.getSharedWithRoles()));
+        runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
@@ -350,6 +348,7 @@ public class PipelineRunManager {
     public void prolongIdleRun(Long runId) {
         PipelineRun run = loadPipelineRun(runId);
         run.setLastIdleNotificationTime(null);
+        run.setLastNotificationTime(null);
         run.setProlongedAtTime(DateUtils.nowUTC());
         updateProlongIdleRunAndLastIdleNotificationTime(run);
     }
@@ -394,7 +393,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region, 
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region,
                 parentRun.orElse(null), entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
@@ -1530,21 +1529,6 @@ public class PipelineRunManager {
         return Objects.isNull(parsedImage)
                 ? null
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
-    }
-
-    private List<RunSid> mergeRunSids(final List<RunSid> runSidsFromVO,
-                                      final List<RunSid> userSidsFromConfiguration,
-                                      final List<RunSid> roleSidsFromConfiguration) {
-        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
-        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(userSidsFromConfiguration), true));
-        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(roleSidsFromConfiguration), false));
-        return new ArrayList<>(runSids);
-    }
-
-    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
-        return runsSids.stream()
-                .peek(runSid -> runSid.setIsPrincipal(principal))
-                .collect(Collectors.toList());
     }
 
     private void checkRunLaunchLimits(final PipelineStart runVO) {

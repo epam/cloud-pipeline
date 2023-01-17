@@ -28,6 +28,7 @@ from src.utils import get_int_run_param, get_bool_run_param
 
 CLUSTER_MAX_SIZE = get_int_run_param('CP_CAP_AUTOSCALE_WORKERS', 1)
 TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
+EVAL_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_EVAL_ONLY')
 FORCE_PROCESSING = get_bool_run_param('HCS_FORCE_PROCESSING')
 
 COMMON_JAVA_OPTS = os.getenv('JAVA_OPTS')
@@ -220,7 +221,7 @@ def try_process_hcs_in_cluster(hcs_root_dir):
 
 
 def process_hcs_files_cluster():
-    should_force_processing = TAGS_PROCESSING_ONLY or FORCE_PROCESSING
+    should_force_processing = TAGS_PROCESSING_ONLY or EVAL_PROCESSING_ONLY or FORCE_PROCESSING
     paths_to_hcs_roots = get_processing_roots(should_force_processing, MEASUREMENT_INDEX_FILE_PATH)
     if not paths_to_hcs_roots or len(paths_to_hcs_roots) == 0:
         log_run_success('Found no files requires processing in the lookup directories.')

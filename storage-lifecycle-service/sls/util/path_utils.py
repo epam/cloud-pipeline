@@ -39,6 +39,7 @@ def convert_glob_to_regexp(glob_str):
     if resulted_regexp.endswith("\\/"):
         resulted_regexp = resulted_regexp[:len(resulted_regexp) - 2]
     resulted_regexp += "$"
+    resulted_regexp = resulted_regexp.replace(".", "\\.")
     return resulted_regexp
 
 

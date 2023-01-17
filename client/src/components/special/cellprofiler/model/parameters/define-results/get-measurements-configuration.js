@@ -82,7 +82,7 @@ function getConfigurationProperties (configuration, pipeline) {
         const {object, property, function: stat} = variableValue;
         return {
           object,
-          image: pipeline.getSourceImageForObjet(object),
+          image: pipeline.getSourceImageForObject(object),
           spots: spots.filter(aSpot => aSpot.parent === object),
           parents: spots.filter(aSpot => aSpot.name === object)
             .map(aSpot => aSpot.parent),
@@ -105,7 +105,7 @@ function getConfigurationProperties (configuration, pipeline) {
   return expandProperties(props, pipeline, object)
     .map(property => ({
       object,
-      image: pipeline.getSourceImageForObjet(object),
+      image: pipeline.getSourceImageForObject(object),
       spots: spots.filter(aSpot => aSpot.parent === object),
       parents: spots.filter(aSpot => aSpot.name === object).map(aSpot => aSpot.parent),
       property: property.name,

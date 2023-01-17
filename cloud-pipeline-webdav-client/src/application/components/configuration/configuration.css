@@ -30,6 +30,10 @@
   font-size: smaller;
 }
 
+.configuration .app-version + .app-version {
+  margin-top: 0;
+}
+
 .configuration .network-logs {
   border-top: 1px solid #ccc;
   justify-content: flex-end;
@@ -44,4 +48,20 @@
 .configuration .network-logs .label {
   min-width: 175px;
   font-weight: normal
+}
+
+.auto-update-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 5px;
+  height: 30px;
+}
+
+.update-error {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: smaller;
+  color: red;
 }

@@ -35,6 +35,7 @@ class RemotePost {
   static noResponse = false;
 
   @observable error = undefined;
+  @observable networkError = undefined;
 
   url;
 
@@ -109,6 +110,7 @@ class RemotePost {
         } else {
           this.failed = true;
           this.error = e.toString();
+          this.networkError = e.toString();
         }
       } finally {
         this._postIsExecuting = false;
@@ -128,6 +130,7 @@ class RemotePost {
     this._response = value;
     if (value.status && value.status === 401) {
       this.error = value.message;
+      this.networkError = undefined;
       this.failed = true;
       if (authorization.isAuthorized()) {
         authorization.setAuthorized(false);
@@ -139,6 +142,7 @@ class RemotePost {
       this._value = this.postprocess(value);
       this._loaded = true;
       this.error = undefined;
+      this.networkError = undefined;
       this.failed = false;
       if (!authorization.isAuthorized()) {
         authorization.setAuthorized(true);
@@ -147,10 +151,12 @@ class RemotePost {
     } else if (!this.constructor.isJson && value instanceof Blob) {
       this._loaded = true;
       this.error = undefined;
+      this.networkError = undefined;
       this.failed = false;
       this._value = value;
     } else {
       this.error = value.message;
+      this.networkError = undefined;
       this.failed = true;
       this._loaded = false;
     }

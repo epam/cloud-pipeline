@@ -98,19 +98,21 @@ spec:
               mountPath: "/etc/cp_ssh"
               readOnly: true
           readinessProbe:
-            httpGet:
-              path: /pipeline/launch.sh
-              port: 8080
-              scheme: HTTPS
-            initialDelaySeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-api-srv.sh
+            initialDelaySeconds: 180
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /pipeline/launch.sh
-              port: 8080
-              scheme: HTTPS
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-api-srv.sh
             # 5 min delay to make sure API is up and running and drop pod after 60 seconds (4*15s) if API didn't respond
-            initialDelaySeconds: 150
+            initialDelaySeconds: 180
             periodSeconds: 15
             failureThreshold: 4
           lifecycle:

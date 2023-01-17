@@ -112,7 +112,7 @@ class NotificationForm extends React.Component {
       await request.fetch();
       this.setState({pending: false}, () => {
         if (request.error) {
-          message.error(request.error, 5);
+          return message.error(request.error, 5);
         }
         this.systemTemplate = (request.value || [])
           .find(template => template.name === TEMPLATE_KEY);
@@ -203,12 +203,17 @@ class NotificationForm extends React.Component {
             type="flex"
             align="middle"
           >
-            <Col offset={3}>
+            <Col
+              {...fullWidthLayout.labelCol}
+              style={{
+                padding: '0px 10px 3px 0px',
+                textAlign: 'right'
+              }}
+            >
               Subject:
             </Col>
-            <Col>
+            <Col {...fullWidthLayout.wrapperCol}>
               <EmailPreview
-                style={{marginLeft: 5}}
                 iFrameStyle={{
                   height: 34,
                   width: '100%',

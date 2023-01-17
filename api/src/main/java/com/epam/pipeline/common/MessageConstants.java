@@ -36,6 +36,8 @@ public final class MessageConstants {
     public static final String ERROR_INVALID_PIPELINE_NAME = "error.pipeline.name.invalid";
     public static final String ERROR_INVALID_PIPELINE_REVISION_NAME = "error.pipeline.revision.name.invalid";
     public static final String ERROR_REPOSITORY_PATH_DOESNT_EXIST = "error.repository.path.doesnt.exist";
+    public static final String ERROR_REPOSITORY_SRC_NOT_FOUND = "error.repository.src.not.found";
+    public static final String ERROR_REPOSITORY_DOCS_NOT_FOUND = "error.repository.docs.not.found";
 
     //Pipeline config
     public static final String ERROR_CONFIG_INVALID = "error.pipeline.config.invalid";
@@ -136,6 +138,7 @@ public final class MessageConstants {
     public static final String ERROR_RUN_PARAMETER_IS_REQUIRED = "error.run.parameter.required";
     public static final String ERROR_RUN_PIPELINES_NOT_FOUND = "error.run.pipelines.not.found";
     public static final String ERROR_RUN_PIPELINES_COMMIT_FAILED = "error.run.pipeline.commit.failed";
+    public static final String ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED = "error.container.layers.count.failed";
     public static final String ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND = "error.container.id.for.run.not.found";
     public static final String INFO_EXECUTE_COMMIT_RUN_PIPELINES = "info.execute.ssh.run.pipeline.command";
     public static final String ERROR_RUN_PIPELINES_PAUSE_FAILED = "error.run.pipeline.pause.failed";
@@ -296,6 +299,8 @@ public final class MessageConstants {
             "error.datastorage.lifecycle.rule.cant.define.days.to.prolong";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG =
             "error.datastorage.lifecycle.rule.wrong.days.to.prolong";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANT_BE_PROLONGED =
+        "error.datastorage.lifecycle.rule.cant.be.prolonged";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE =
             "error.datastorage.lifecycle.rule.was.prolong.before";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED =
@@ -577,8 +582,12 @@ public final class MessageConstants {
     public static final String ERROR_REGION_CREDENTIALS_NOT_FOUND = "error.region.credentials.not.found";
     public static final String ERROR_REGION_DEFAULT_UNDEFINED = "error.region.default.undefined";
     public static final String ERROR_REGION_NAME_MISSING = "error.region.name.missing";
-    public static final String ERROR_REGION_MOUNT_RULE_MISSING = "error.region.mount.rule.missing";
-    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING = "error.region.mont.credentials.missing";
+    public static final String ERROR_REGION_MOUNT_OBJECT_STORAGE_RULE_MISSING =
+            "error.region.mount.object.storage.rule.missing";
+    public static final String ERROR_REGION_MOUNT_FILE_STORAGE_RULE_MISSING =
+            "error.region.mount.file.storage.rule.missing";
+    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING =
+            "error.region.mount.credentials.rule.missing";
     public static final String ERROR_REGION_PROVIDER_MISMATCH = "error.region.provider.mismatch";
     public static final String ERROR_REGION_REGIONID_MISSING = "error.region.regionid.missing";
     public static final String ERROR_REGION_REGIONID_INVALID = "error.region.regionid.invalid";
@@ -680,6 +689,7 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
     public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
     public static final String ERROR_LUSTRE_MISSING_NETWORK = "error.lustre.missing.network";
+    public static final String ERROR_LUSTRE_MISSING_THROUGHPUT = "error.lustre.missing.throughput";
 
     //Node Schedule
     public static final String ERROR_NODE_SCHEDULE_MISSING_ENTRIES = "error.node.schedule.missing.entries";
@@ -824,6 +834,11 @@ public final class MessageConstants {
             "error.ngs.preprocessing.no.folder.metadata";
     public static final String ERROR_NGS_PREPROCESSING_SAMPLE_ID_NOT_FOUND =
             "error.ngs.preprocessing.sampleid.is.not.found";
+
+    // Static resource
+    public static final String ERROR_STATIC_RESOURCES_INVALID_PATH = "error.static.resources.invalid.path";
+    public static final String ERROR_STATIC_RESOURCES_FOLDER_PATH = "error.static.resources.folder.path";
+
 
     private MessageConstants() {
         // no-op

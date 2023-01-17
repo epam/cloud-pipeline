@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, observable} from 'mobx';
+import {action, computed, observable} from 'mobx';
 
 function shallowCompareArrays (array1, array2) {
   if (array1 && array2 && array1.length === array2.length) {
@@ -104,11 +104,17 @@ class ViewerState {
    * @type {ChannelState[]}
    */
   @observable channels = [];
-  @observable channelsLocked = false;
+  @observable lockedChannels = [];
   @observable imageZPosition = 0;
   @observable fieldID;
   @observable videoPayload;
   listeners = [];
+
+  @computed
+  get allChannelsLocked () {
+    const lockedChannels = this.lockedChannels || [];
+    return !(this.channels || []).some((channel) => !lockedChannels.includes(channel.name));
+  }
 
   constructor (viewer) {
     this.attachToViewer(viewer);
@@ -210,7 +216,11 @@ class ViewerState {
      * @type {ChannelOptions[]}
      */
     if (lockChannels !== undefined) {
-      this.channelsLocked = lockChannels;
+      if (typeof lockChannels === 'boolean') {
+        this.lockedChannels = lockChannels ? channels.slice() : [];
+      } else if (Array.isArray(lockChannels)) {
+        this.lockedChannels = lockChannels.slice();
+      }
     }
     const updatedChannels = [];
     for (let c = 0; c < identifiers.length; c++) {
@@ -297,10 +307,26 @@ class ViewerState {
   };
 
   @action
-  setChannelsLocked = (channelsLocked) => {
+  setChannelLocked = (channel, locked) => {
     if (this.viewer && typeof this.viewer.setLockChannels === 'function') {
-      this.channelsLocked = channelsLocked;
-      this.viewer.setLockChannels(channelsLocked);
+      let channelName = channel;
+      if (typeof channel === 'object' && typeof channel.name === 'string') {
+        channelName = channel.name;
+      }
+      this.lockedChannels = this.lockedChannels
+        .filter(c => c !== channelName)
+        .concat(locked ? [channelName] : []);
+      this.viewer.setLockChannels(this.lockedChannels.slice());
+    }
+  };
+
+  @action
+  setChannelsLocked = (locked) => {
+    if (this.viewer && typeof this.viewer.setLockChannels === 'function') {
+      this.lockedChannels = locked
+        ? (this.channels || []).map(c => c.name)
+        : [];
+      this.viewer.setLockChannels(locked);
     }
   };
 

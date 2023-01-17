@@ -171,10 +171,18 @@ docker build    $DOCKERS_SOURCES_PATH/cp-clair \
 docker push "$CP_CLAIR_DIST_NAME"
 
 # GitLab
-CP_GITLAB_DIST_NAME=${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-${DOCKERS_VERSION}"}
+# 9.4.0 version
+CP_GITLAB_DIST_NAME=${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-9-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 -t "$CP_GITLAB_DIST_NAME"
 docker push "$CP_GITLAB_DIST_NAME"
+
+# 15.4.3 version
+CP_GITLAB_15_DIST_NAME=${CP_GITLAB_15_DIST_NAME:-"$CP_DIST_REPO_NAME:git-15-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-git \
+                -t "$CP_GITLAB_15_DIST_NAME" \
+                --build-arg BASE_IMAGE="gitlab/gitlab-ce:15.5.4-ce.0"
+docker push "$CP_GITLAB_15_DIST_NAME"
 
 # Notifier
 CP_NOTIFIER_DIST_NAME=${CP_NOTIFIER_DIST_NAME:-"$CP_DIST_REPO_NAME:notifier-${DOCKERS_VERSION}"}
@@ -202,12 +210,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
                 -t "$CP_NODE_LOGGER_DIST_NAME"
 docker push "$CP_NODE_LOGGER_DIST_NAME"
 
-# OOM Reporter
-CP_OOM_REPORTER_DIST_NAME=${CP_OOM_REPORTER_DIST_NAME:-"$CP_DIST_REPO_NAME:oom-reporter-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-oom-reporter \
-                -t "$CP_OOM_REPORTER_DIST_NAME" \
+# Node Reporter
+CP_NODE_REPORTER_DIST_NAME=${CP_NODE_REPORTER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-reporter-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-node-reporter \
+                -t "$CP_NODE_REPORTER_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_OOM_REPORTER_DIST_NAME"
+docker push "$CP_NODE_REPORTER_DIST_NAME"
 
 # Backups manager
 CP_BKP_WORKER_DIST_NAME=${CP_BKP_WORKER_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-bkp-worker-${DOCKERS_VERSION}"}

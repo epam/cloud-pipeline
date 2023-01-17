@@ -44,6 +44,8 @@ public class S3FileSyncConfiguration {
     private Integer bulkInsertSize;
     @Value("${sync.s3-file.bulk.load.tags.size:100}")
     private Integer bulkLoadTagsSize;
+    @Value("${sync.s3-file.tag.value.delimiter:;}")
+    private String tagDelimiter;
 
     @Bean
     public ObjectStorageFileManager s3FileManager() {
@@ -61,7 +63,8 @@ public class S3FileSyncConfiguration {
                 s3FileManager, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.S3,
-                SearchDocumentType.S3_FILE);
+                SearchDocumentType.S3_FILE,
+                tagDelimiter);
     }
 
 }

@@ -183,6 +183,9 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
     }
 
     private LocalDateTime asDateTime(final String value) {
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
         try {
             return LocalDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME);
         } catch (DateTimeParseException e) {

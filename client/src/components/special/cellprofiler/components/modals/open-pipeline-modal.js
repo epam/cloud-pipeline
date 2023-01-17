@@ -16,14 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Checkbox, Modal, Table} from 'antd';
+import {Alert, Button, Checkbox, Icon, message, Modal, Table} from 'antd';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
-import {
-  loadAvailablePipelines,
-  CP_CELLPROFILER_PIPELINE_NAME,
-  CP_CELLPROFILER_PIPELINE_DESCRIPTION
-} from '../../model/analysis/analysis-pipeline-management';
+import {loadAvailablePipelineGroups} from '../../model/analysis/analysis-pipeline-management';
 import LoadingView from '../../../LoadingView';
 import UserName from '../../../UserName';
 import styles from '../cell-profiler.css';
@@ -37,7 +33,9 @@ class OpenPipelineModal extends React.Component {
     selectedPipeline: undefined,
     pending: false,
     error: undefined,
-    page: 0
+    page: 0,
+    opening: false,
+    expandedKeys: []
   };
 
   componentDidMount () {
@@ -52,40 +50,15 @@ class OpenPipelineModal extends React.Component {
     if (visible && prevProps.visible !== visible) {
       this.updatePipelineFilesList();
     }
-    if (
-      prevState.page !== this.state.page ||
-      prevState.pipelineFiles !== this.state.pipelineFiles
-    ) {
-      this.loadPipelinesInfo();
-    }
   }
-
-  loadPipelinesInfo = () => {
-    const {
-      page,
-      pipelineFiles = []
-    } = this.state;
-    Promise.all(
-      pipelineFiles
-        .slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-        .filter(pipelineFile => !pipelineFile.pipeline)
-        .map(pipelineFile => pipelineFile.load())
-    )
-      .then(results => {
-        if (results.length > 0) {
-          this.forceUpdate();
-        }
-      });
-  };
 
   updatePipelineFilesList = () => {
     this.setState({
-      pending: true
+      pending: true,
+      selectedPipeline: undefined,
+      expandedKeys: []
     }, () => {
-      loadAvailablePipelines()
-        .then(pipelineFiles => Promise.all(
-          pipelineFiles.map(pipelineFile => pipelineFile.load())
-        ))
+      loadAvailablePipelineGroups()
         .then(pipelineFiles => this.setState({
           pipelineFiles,
           error: undefined,
@@ -102,7 +75,8 @@ class OpenPipelineModal extends React.Component {
       error,
       page,
       pending,
-      selectedPipeline
+      selectedPipeline,
+      expandedKeys
     } = this.state;
     if (error) {
       return (
@@ -119,8 +93,10 @@ class OpenPipelineModal extends React.Component {
     }
     const pipelineIsSelected = pipeline => pipeline &&
       selectedPipeline &&
-      pipeline.path === selectedPipeline.path;
-    const togglePipeline = (pipeline, e) => {
+      pipeline.path === selectedPipeline.path &&
+      pipeline.version === selectedPipeline.version;
+    const togglePipeline = (pipelineFile, e) => {
+      const {pipeline} = pipelineFile || {};
       if (e) {
         e.stopPropagation();
       }
@@ -137,20 +113,17 @@ class OpenPipelineModal extends React.Component {
         title: 'Name',
         className: classNames(styles.analysisPipelineCell, styles.analysisPipelineCellName),
         render: (name, obj) => {
-          let pipelineName = name;
-          if (obj.pipeline) {
-            pipelineName = obj.pipeline.name;
-          } else if (obj.info && obj.info[CP_CELLPROFILER_PIPELINE_NAME]) {
-            pipelineName = obj.info[CP_CELLPROFILER_PIPELINE_NAME];
+          if (obj.loading) {
+            return (<Icon type="loading" />);
           }
           return (
             <span>
               <Checkbox
                 style={{marginRight: 5}}
-                checked={pipelineIsSelected(obj)}
+                checked={pipelineIsSelected(obj.pipeline)}
                 onChange={(e) => togglePipeline(obj, e)}
               />
-              {pipelineName}
+              {name}
             </span>
           );
         }
@@ -160,48 +133,45 @@ class OpenPipelineModal extends React.Component {
         title: 'Author',
         className: styles.analysisPipelineCell,
         render: (obj) => {
-          let owner;
-          if (obj.pipeline) {
-            owner = obj.pipeline.author;
-          } else if (obj.info && obj.info.CP_OWNER) {
-            owner = obj.info.CP_OWNER;
+          if (obj.loading) {
+            return null;
           }
-          if (owner) {
-            return (
-              <UserName
-                userName={owner}
-                showIcon
-              />
-            );
-          }
-          return undefined;
+          return (
+            <UserName
+              userName={obj.pipeline ? obj.pipeline.author : undefined}
+              showIcon
+            />
+          );
         }
       },
       {
         key: 'description',
         title: 'Description',
         className: styles.analysisPipelineCell,
-        render: (obj) => {
-          let description;
-          if (obj.pipeline) {
-            description = obj.pipeline.description;
-          } else if (obj.info && obj.info[CP_CELLPROFILER_PIPELINE_DESCRIPTION]) {
-            description = obj.info[CP_CELLPROFILER_PIPELINE_DESCRIPTION];
-          }
-          return description;
-        }
+        render: (obj) => obj.loading || !obj.pipeline ? undefined : obj.pipeline.description
       }
     ];
     const onChange = (page) => this.setState({page: page - 1});
+    const onExpand = (expanded, pipeline) => {
+      if (expanded) {
+        pipeline
+          .loadVersions()
+          .then(() => this.forceUpdate())
+          .catch(() => {});
+      }
+    };
     return (
       <Table
         columns={columns}
         dataSource={pipelineFiles}
         loading={pending}
-        rowKey="path"
+        rowKey="key"
         size="small"
         rowClassName={() => classNames(styles.analysisPipelineRow)}
         onRowClick={(pipeline, opts, event) => togglePipeline(pipeline, event)}
+        onExpand={onExpand}
+        expandedRowKeys={expandedKeys}
+        onExpandedRowsChange={keys => this.setState({expandedKeys: keys})}
         bordered={false}
         pagination={{
           total: pipelineFiles.length,
@@ -213,11 +183,53 @@ class OpenPipelineModal extends React.Component {
     );
   };
 
-  onOpenClicked = () => {
+  loadSelectedPipeline = async () => {
+    const {
+      selectedPipeline,
+      pipelineFiles = []
+    } = this.state;
+    if (!selectedPipeline) {
+      return undefined;
+    }
+    const {
+      path,
+      version
+    } = selectedPipeline;
+    const pipelineGroup = pipelineFiles.find(o => o.path === path);
+    if (!pipelineGroup) {
+      return undefined;
+    }
+    if (pipelineGroup.version === version) {
+      return pipelineGroup.load();
+    }
+    const {children = []} = pipelineGroup;
+    const specificVersion = children.find(o => o.pipeline && o.pipeline.version === version);
+    if (!specificVersion) {
+      return undefined;
+    }
+    return specificVersion.load();
+  };
+
+  onOpenClicked = async () => {
     const {onSelect} = this.props;
-    const {selectedPipeline} = this.state;
+    const {
+      selectedPipeline
+    } = this.state;
     if (typeof onSelect === 'function' && selectedPipeline) {
-      onSelect(selectedPipeline);
+      const hide = message.loading('Opening...');
+      this.setState({opening: true});
+      try {
+        const opened = await this.loadSelectedPipeline();
+        if (!opened) {
+          throw new Error('Error loading pipeline version');
+        }
+        onSelect(opened);
+      } catch (e) {
+        message.error(e.message);
+      } finally {
+        hide();
+        this.setState({opening: false});
+      }
     }
   };
 
@@ -227,7 +239,8 @@ class OpenPipelineModal extends React.Component {
       onClose
     } = this.props;
     const {
-      selectedPipeline
+      selectedPipeline,
+      opening
     } = this.state;
     return (
       <Modal
@@ -235,16 +248,19 @@ class OpenPipelineModal extends React.Component {
         width="50%"
         title="Open analysis pipeline"
         onCancel={onClose}
+        closable={!opening}
+        maskClosable={!opening}
         footer={(
           <div className={styles.modalFooter}>
             <Button
               onClick={onClose}
+              disabled={opening}
             >
               CANCEL
             </Button>
             <Button
               type="primary"
-              disabled={!selectedPipeline}
+              disabled={!selectedPipeline || opening}
               onClick={this.onOpenClicked}
             >
               OPEN
