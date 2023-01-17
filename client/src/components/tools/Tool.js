@@ -127,7 +127,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     instanceTypesManagementPanel: false,
     createLinkInProgress: false,
     createLinkFormVisible: false,
-    versionFilterField: undefined,
     versionFilterValue: undefined
   };
 
@@ -857,7 +856,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     const {versionFilterValue} = this.state;
     if (versionFilterValue && versionFilterValue.length) {
       return data.filter((item) => (
-        item.name.toLowerCase().includes(this.state.versionFilterValue.toLocaleLowerCase())
+        item.name.toLowerCase().includes(versionFilterValue.toLocaleLowerCase())
       ));
     }
     return data;
@@ -1099,12 +1098,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && !this.state.isShowUnscannedVersion) {
       data = data.filter(d => d.platform === 'windows' || d.status !== ScanStatuses.notScanned);
     }
-    const handleChangeInput = (e) => {
-      this.setState({versionFilterField: e.target.value});
-    };
-    const filterVersions = () => {
-      this.setState({versionFilterValue: this.state.versionFilterField});
-    };
     return (
       <Row style={{width: '100%'}}>
         {
@@ -1115,9 +1108,10 @@ export default class Tool extends localization.LocalizedReactComponent {
             style={{margin: '5px 0 10px 0'}} />
         }
         <Input
-          value={this.state.versionFilterField}
-          onChange={handleChangeInput}
-          onPressEnter={filterVersions}
+          value={this.state.versionFilterValue}
+          onChange={(e) => {
+            this.setState({versionFilterValue: e.target.value});
+          }}
           placeholder="Enter version name"
           className={styles.versionFilterInput}
         />
