@@ -270,6 +270,11 @@ CP_MONITORING_SRV_KUBE_NODE_NAME=${CP_MONITORING_SRV_KUBE_NODE_NAME:-$KUBE_MASTE
 print_info "-> Assigning cloud-pipeline/cp-monitoring-srv to $CP_MONITORING_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_MONITORING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-monitoring-srv="true" --overwrite
 
+# Allow to schedule Storage Lifecycle Service to the master
+CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME=${CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-storage-lifecycle-service to $CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME"
+kubectl label nodes "$CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME" cloud-pipeline/cp-storage-lifecycle-service="true" --overwrite
+
 echo
 
 ##########
@@ -1259,6 +1264,25 @@ if is_service_requested cp-monitoring-srv; then
         wait_for_deployment "cp-monitoring-srv"
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-monitoring-srv: deployed"
+    fi
+    echo
+fi
+
+# Storage Lifecycle Service
+if is_service_requested cp-storage-lifecycle-service; then
+    print_ok "[Starting Storage Lifecycle Service deployment]"
+
+    print_info "-> Deleting existing instance of Storage Lifecycle Service service"
+    delete_deployment_and_service   "cp-storage-lifecycle-service" \
+                                    "/opt/cp-sls"
+    if is_install_requested; then
+        print_info "-> Deploying cp-storage-lifecycle-service service"
+        create_kube_resource $K8S_SPECS_HOME/cp-storage-lifecycle-service/cp-storage-lifecycle-service-dpl.yaml
+
+        print_info "-> Waiting for cp-storage-lifecycle-service to initialize"
+        wait_for_deployment "cp-storage-lifecycle-service"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-storage-lifecycle-service: deployed"
     fi
     echo
 fi
