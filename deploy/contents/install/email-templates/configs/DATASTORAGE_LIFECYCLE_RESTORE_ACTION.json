@@ -2,5 +2,5 @@
   "keepInformedAdmins":false,
   "keepInformedOwner":false,
   "enabled":true,
-  "subject":"Restore finished. Files #$templateParameters[\"path\"] for storage `#$templateParameters[\"storageName\"]` is ready"
+  "subject":"[Genie] Files under path #$templateParameters[\"path\"] in storage #$templateParameters[\"storageName\"] have been restored"
 }
