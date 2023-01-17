@@ -370,14 +370,18 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
 
             _to_user = next(iter(cc_users), None)
+            is_date_expired = self._is_action_date_expired(notification_properties)
+            date_of_action = date_utils.current_date_string() if is_date_expired \
+                else notification_properties["date_of_action"]
             notification_parameters = {
                 "storageName": storage.name,
                 "storageId": storage.id,
                 "ruleId": rule.rule_id,
                 "path": notification_properties["path"],
                 "storageClass": notification_properties["storage_class"],
-                "dateOfAction": notification_properties["date_of_action"],
-                "prolongDays": notification_properties["prolong_days"]
+                "dateOfAction": date_of_action,
+                "prolongDays": notification_properties["prolong_days"],
+                "isDateNotExpired": not is_date_expired
             }
 
             return rule.notification.subject, rule.notification.body, _to_user, cc_users, notification_parameters
@@ -518,3 +522,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         resulted_regexp = path_utils.convert_glob_to_regexp(glob_str)
         pattern = re.compile(resulted_regexp)
         return [p for p in directories if pattern.match(p)]
+
+    @staticmethod
+    def _is_action_date_expired(notification_properties):
+        date_of_action = notification_properties["date_of_action"]
+        if not date_of_action:
+            return False
+        return date_utils.is_date_before_now(date_utils.parse_date(date_of_action))
