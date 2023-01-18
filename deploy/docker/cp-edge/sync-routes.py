@@ -804,28 +804,45 @@ def write_stub_location_configuration(path_to_route, service_location, service_s
         path_to_stub = path_to_route.replace(path_to_route_extension, stub_extension)
         with open(path_to_stub, "w") as stub_file:
                 stub_file.write(nginx_route_definition)
-        do_log('Creating stub route: ' + path_to_stub)
+        do_log('Adding new stub route: ' + path_to_stub)
         return path_to_stub
 
 
-def check_route(path_to_route, service_location, service_spec, has_custom_domain, service_hostname):
-        test_config_command = "nginx -c %s -t" % nginx_root_config_path
+def check_nginx_config():
+        test_config_command = 'nginx -c %s -t' % nginx_root_config_path
 
         try:
                 check_output(test_config_command, shell=True)
+                do_log('Added new route is OK')
+                return True
         except CalledProcessError as e:
-                do_log("Nginx configuration test failed with exit code '%s'" % e.returncode)
-                path_to_stub = write_stub_location_configuration(path_to_route,
-                                                                 service_location,
-                                                                 service_spec,
-                                                                 has_custom_domain)
-                do_log('Deleting invalid route: ' + path_to_route)
-                os.remove(path_to_route)
+                do_log('Added new route is NOT OK (%s)' % e.returncode)
+                return False
+
+
+def check_route(path_to_route, service_location, service_spec, has_custom_domain, service_hostname):
+        if check_nginx_config():
+                return
+
+        do_log('Deleting invalid route...')
+        os.remove(path_to_route)
+        if has_custom_domain:
+                do_log('Deleting invalid custom domain route...')
+                remove_custom_domain_all(path_to_route)
+
+        path_to_stub = write_stub_location_configuration(path_to_route,
+                                                         service_location,
+                                                         service_spec,
+                                                         has_custom_domain)
+
+        if check_nginx_config():
                 if has_custom_domain:
-                        do_log('Deleting invalid custom domain route: ' + path_to_route)
-                        remove_custom_domain_all(path_to_route)
-                        do_log('Adding {} route stub to the server block {}'.format(path_to_stub, service_hostname))
+                        do_log('Adding new stub route {} to server block {}'.format(path_to_stub, service_hostname))
                         add_custom_domain(service_hostname, path_to_stub, is_external_app=service_spec['external_app'])
+                return
+
+        do_log('Deleting invalid stub route...')
+        os.remove(path_to_stub)
 
 
 do_log('============ Started iteration ============')
