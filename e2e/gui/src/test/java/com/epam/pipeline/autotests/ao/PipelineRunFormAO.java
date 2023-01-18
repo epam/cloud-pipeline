@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.fail;
 
 public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
@@ -597,7 +599,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return elements;
         }
 
-        public ConfigureClusterPopupAO<PARENT_AO> clusterSettingsForm(String type){
+        public ConfigureClusterPopupAO<PARENT_AO> clusterSettingsForm(String type) {
             if (type.equals("Single node") || type.equals("Cluster") || type.equals("Auto-scaled cluster")) {
                 context()
                         .find(byXpath(
@@ -638,7 +640,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return this;
         }
 
-        public ConfigureClusterPopupAO<PARENT_AO> clusterEnableCheckboxSelect(String checkBox){
+        public ConfigureClusterPopupAO<PARENT_AO> clusterEnableCheckboxSelect(String checkBox) {
             if (checkBox.equals("Enable GridEngine")
                     || checkBox.equals("Enable Apache Spark")
                     || checkBox.equals("Enable Slurm")
@@ -653,17 +655,18 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return this;
         }
 
-        public ConfigureClusterPopupAO<PARENT_AO> checkWarningMessageExist(String message) {
+        public ConfigureClusterPopupAO<PARENT_AO> checkWarningMessageExist(final String message) {
             sleep(5, SECONDS);
-            assertTrue($(byClassName("ant-modal-content")).find(byClassName("ant-alert-message"))
-                            .text().equals(message), format("Message '%s' isn't visible", message));
+            assertEquals(message,
+                    $(byClassName("ant-modal-content")).find(byClassName("ant-alert-message")).text(),
+                    format("Message '%s' isn't visible", message));
             return this;
         }
 
         public ConfigureClusterPopupAO<PARENT_AO> checkWarningMessageNotExist() {
             sleep(5, SECONDS);
-            assertFalse($(byClassName("ant-modal-content")).find(byClassName("ant-alert-message"))
-                    .exists(), "Warning message shouldn't be visible");
+            assertFalse($(byClassName("ant-modal-content")).find(byClassName("ant-alert-message")).exists(),
+                    "Warning message shouldn't be visible");
             return this;
         }
     }

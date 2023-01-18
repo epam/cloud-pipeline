@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -953,11 +953,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return new CreateGroupPopup(this);
             }
 
-            public GroupsTabAO createGroupIfNoPresent(String group) {
+            public GroupsTabAO createGroupIfNoPresent(final String group) {
                 searchGroupBySubstring(group.split(StringUtils.SPACE)[0]);
-                performIf(!context().$$(byText(group)).filterBy(visible).first().exists(), t -> {
-                    pressCreateGroup().enterGroupName(group).create();
-                });
+                performIf(!context().$$(byText(group)).filterBy(visible).first().exists(), t ->
+                        pressCreateGroup().enterGroupName(group).create());
                 return this;
             }
 
@@ -1272,9 +1271,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
-        public PreferencesAO setNumberPreference(String preference, String value, boolean eyeIsChecked) {
+        public PreferencesAO setNumberPreference(final String preference,
+                                                 final String value,
+                                                 final boolean eyeIsChecked) {
             searchPreference(preference);
-            Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
+            final Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
             action.sendKeys(Keys.chord(Keys.CONTROL, "a")).sendKeys(value).perform();
             setEyeOption(eyeIsChecked);
             return this;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -64,9 +65,9 @@ public class LaunchParametersRestrictionRunsTest
             "number of running jobs. There %s running out of %s.";
     private String launchErrorMessage = "Launch of new jobs is restricted as [%s] user " +
             "will exceed [%s] runs limit [%s]";
-    private final String run_tool_command = format("pipe run -di %s:latest -y", tool);
-    private String[] runID3 = new String[2];
-    private List<String> runID5 = new ArrayList<>();
+    private final String runToolCommand = format("pipe run -di %s:latest -y", tool);
+    private final String[] runID3 = new String[2];
+    private final List<String> runID5 = new ArrayList<>();
 
     @BeforeClass(alwaysRun = true)
     public void getPreferences() {
@@ -74,8 +75,8 @@ public class LaunchParametersRestrictionRunsTest
                 .settings()
                 .switchToPreferences()
                 .getPreference(LAUNCH_MAX_RUNS_USER_GLOBAL);
-        setGroupAllowedInstanceMaxCount(USER_GROUP, "");
-        setUserAllowedInstanceMaxCount(user, "");
+        setGroupAllowedInstanceMaxCount(USER_GROUP, StringUtils.EMPTY);
+        setUserAllowedInstanceMaxCount(user, StringUtils.EMPTY);
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -84,7 +85,7 @@ public class LaunchParametersRestrictionRunsTest
                 .editGroup(USER_GROUP2)
                 .addUser(user)
                 .ok();
-        setGroupAllowedInstanceMaxCount(USER_GROUP2, "");
+        setGroupAllowedInstanceMaxCount(USER_GROUP2, StringUtils.EMPTY);
     }
 
     @BeforeMethod
@@ -103,8 +104,8 @@ public class LaunchParametersRestrictionRunsTest
                 .switchToPreferences()
                 .setNumberPreference(LAUNCH_MAX_RUNS_USER_GLOBAL, launchMaxRunsUserGlobalInitial[0], true)
                 .saveIfNeeded();
-        setGroupAllowedInstanceMaxCount(USER_GROUP, "");
-        setUserAllowedInstanceMaxCount(user, "");
+        setGroupAllowedInstanceMaxCount(USER_GROUP, StringUtils.EMPTY);
+        setUserAllowedInstanceMaxCount(user, StringUtils.EMPTY);
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
@@ -115,8 +116,8 @@ public class LaunchParametersRestrictionRunsTest
     @Test(priority = 1)
     @TestCase(value = {"2642_1"})
     public void checkGlobalRestrictionCountOfRunningInstances() {
-        String message = format(launchErrorMessage, user.login, GLOBAL_LIMIT, GLOBAL_MAX_RUNS);
-        List<String> runIDs = new ArrayList<>();
+        final String message = format(launchErrorMessage, user.login, GLOBAL_LIMIT, GLOBAL_MAX_RUNS);
+        final List<String> runIDs = new ArrayList<>();
         try {
             navigationMenu()
                     .settings()
@@ -142,16 +143,14 @@ public class LaunchParametersRestrictionRunsTest
         } finally {
             logout();
             loginAs(admin);
-            for (String runID : runIDs) {
-                      runsMenu().viewAvailableActiveRuns().stopRun(runID);
-            }
+            runIDs.forEach(runID -> runsMenu().viewAvailableActiveRuns().stopRun(runID));
         }
     }
 
     @Test(priority = 1, dependsOnMethods = "checkGlobalRestrictionCountOfRunningInstances")
     @TestCase(value = {"2642_2"})
     public void checkRunningInstancesRestrictionAppliedToGroup() {
-        List<String> runIDs = new ArrayList<>();
+        final List<String> runIDs = new ArrayList<>();
         try {
             setGroupAllowedInstanceMaxCount(USER_GROUP, GROUP_MAX_RUNS1);
             logout();
@@ -170,9 +169,7 @@ public class LaunchParametersRestrictionRunsTest
         } finally {
             logout();
             loginAs(admin);
-            for (String runID : runIDs) {
-                runsMenu().viewAvailableActiveRuns().stopRun(runID);
-            }
+            runIDs.forEach(runID -> runsMenu().viewAvailableActiveRuns().stopRun(runID));
         }
     }
 
@@ -188,8 +185,7 @@ public class LaunchParametersRestrictionRunsTest
                 .doNotMountStoragesSelect(true)
                 .launch(this);
         runID3[0] = getLastRunId();
-        tools().perform(registry, group, tool, tool ->
-                tool.run(this));
+        tools().perform(registry, group, tool, tool -> tool.run(this));
         runID3[1] = getLastRunId();
         launchToolWithError(GROUP_MAX_RUNS1, format(warningMessage, GROUP_MAX_RUNS1),
                     format(launchErrorMessage, user.login, USER_GROUP2, GROUP_MAX_RUNS1));
@@ -198,12 +194,15 @@ public class LaunchParametersRestrictionRunsTest
                 .waitForSshLink()
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runID3[0])
-                        .execute(run_tool_command)
-                        .assertPageAfterCommandContainsStrings(run_tool_command,
+                        .execute(runToolCommand)
+                        .assertPageAfterCommandContainsStrings(runToolCommand,
                                 format(launchErrorMessage, user.login, USER_GROUP2, GROUP_MAX_RUNS1))
                         .execute("pipe users instances")
-                        .assertPageContains(format("Active runs detected for a user: [%s: %s]", user.login, GROUP_MAX_RUNS1))
-                        .assertPageContains(format("The following restriction applied on runs launching: [%s: %s]", USER_GROUP2, GROUP_MAX_RUNS1))
+                        .assertPageContains(
+                                format("Active runs detected for a user: [%s: %s]", user.login, GROUP_MAX_RUNS1))
+                        .assertPageContains(
+                                format("The following restriction applied on runs launching: [%s: %s]", USER_GROUP2,
+                                        GROUP_MAX_RUNS1))
                         .close());
         runsMenu()
                 .pause(runID3[0], nameWithoutGroup(tool))
@@ -214,7 +213,7 @@ public class LaunchParametersRestrictionRunsTest
     @Test(priority = 1, dependsOnMethods = "checkSimultaneousApplyingTwoGroupLevelRunningInstancesRestrictions")
     @TestCase(value = {"2642_4"})
     public void checkRunningInstancesRestrictionAppliedToUser() {
-        List<String> runIDs = new ArrayList<>();
+        final List<String> runIDs = new ArrayList<>();
         try {
             setUserAllowedInstanceMaxCount(user, USER_MAX_RUNS);
             logout();
@@ -225,8 +224,7 @@ public class LaunchParametersRestrictionRunsTest
             runsMenu()
                     .viewAvailableActiveRuns()
                     .resume(runID3[0], nameWithoutGroup(tool))
-                    .messageShouldAppear(format(launchErrorMessage, user.login,
-                            USER_LIMIT, USER_MAX_RUNS))
+                    .messageShouldAppear(format(launchErrorMessage, user.login, USER_LIMIT, USER_MAX_RUNS))
                     .completedRuns()
                     .rerun(runID3[1], nameWithoutGroup(tool))
                     .expandTab(EXEC_ENVIRONMENT)
@@ -239,8 +237,8 @@ public class LaunchParametersRestrictionRunsTest
                     .waitForSshLink()
                     .ssh(shell -> shell
                             .waitUntilTextAppears(runIDs.get(0))
-                            .execute(run_tool_command)
-                            .assertPageAfterCommandContainsStrings(run_tool_command,
+                            .execute(runToolCommand)
+                            .assertPageAfterCommandContainsStrings(runToolCommand,
                                     format(launchErrorMessage, user.login, USER_LIMIT, USER_MAX_RUNS))
                             .execute("pipe users instances --verbose")
                             .assertPageContainsString("The following restrictions applied on runs launching:")
@@ -256,9 +254,7 @@ public class LaunchParametersRestrictionRunsTest
                 runsMenuAO
                         .terminateRun(runID3[0], format("pipeline-%s", runID3[0]));
             }
-            for (String runID : runIDs) {
-                runsMenuAO.viewAvailableActiveRuns().stopRun(runID);
-            }
+            runIDs.forEach(runID -> runsMenuAO.viewAvailableActiveRuns().stopRun(runID));
         }
     }
 
@@ -297,7 +293,8 @@ public class LaunchParametersRestrictionRunsTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runID5.get(0))
                         .execute("pipe users instances")
-                        .assertPageContains(format("Active runs detected for a user: [%s: %s]", user.login, USER_MAX_RUNS))
+                        .assertPageContains(
+                                format("Active runs detected for a user: [%s: %s]", user.login, USER_MAX_RUNS))
                         .close());
     }
 
@@ -328,9 +325,7 @@ public class LaunchParametersRestrictionRunsTest
                                     .ok()
                                     .performIf(SAVE, enabled, ToolSettings::save)
                     );
-            for (String runID : runID5) {
-                runsMenu().viewAvailableActiveRuns().stopRun(runID);
-            }
+            runID5.forEach(runID -> runsMenu().viewAvailableActiveRuns().stopRun(runID));
         }
     }
 
@@ -365,12 +360,13 @@ public class LaunchParametersRestrictionRunsTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
                         .execute("pipe users instances")
-                        .assertPageContains(format("Active runs detected for a user: [%s: %s]", user.login, USER_MAX_RUNS))
+                        .assertPageContains(
+                                format("Active runs detected for a user: [%s: %s]", user.login, USER_MAX_RUNS))
                         .close());
     }
 
     private List<String> launchSeveralRuns(int count) {
-        List<String> runIDs = new ArrayList<>();
+        final List<String> runIDs = new ArrayList<>();
         IntStream.range(0, count)
                 .forEach(i -> {
                     tools().perform(registry, group, tool, tool ->
