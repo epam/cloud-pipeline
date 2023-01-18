@@ -40,8 +40,6 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.microsoft.azure.storage.blob.BlobSASPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.util.Pair;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
