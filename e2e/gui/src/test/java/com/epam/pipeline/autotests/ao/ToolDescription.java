@@ -76,9 +76,10 @@ public class ToolDescription extends ToolTab<ToolDescription> {
         return description;
     }
 
-    public String[] getDescriptionHtml() {
-        return context().find(byId("description-text-container"))
+    public String getDescriptionHtml() {
+        String[] descriptionHtml = context().find(byId("description-text-container"))
                 .shouldBe(visible).innerHtml().split("\n");
+        return String.join("", descriptionHtml);
     }
 
     public ToolDescription showMetadata(final Consumer<MetadataSectionAO> action) {

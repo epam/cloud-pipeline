@@ -128,9 +128,10 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
         return this;
     }
 
-    public String[] getDescriptionHtml() {
-        return $(byClassName("markdown"))
+    public String getDescriptionHtml() {
+        String[] descriptionHtml =  $(byClassName("markdown"))
                 .shouldBe(visible).innerHtml().split("\n");
+        return String.join("", descriptionHtml);
     }
 
     public DocumentTabAO saveAndCommitWithMessage(String message) {

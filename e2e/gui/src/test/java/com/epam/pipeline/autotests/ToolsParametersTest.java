@@ -99,7 +99,7 @@ public class ToolsParametersTest
     private final String fullDescription = readResourceFully(TOOL_FULL_DESCRIPTION);
     private String[] prefInitialValue;
     private String initialToolDescription;
-    private String[] descriptionHtml;
+    private String descriptionHtml;
     private String[] toolDescription;
 
     @BeforeClass
@@ -370,7 +370,7 @@ public class ToolsParametersTest
         checkMarkdown(markdownMapping, toolDescription, descriptionHtml);
         checkTableMarkdown(toolDescription, descriptionHtml);
         checkListMarkdown(toolDescription, descriptionHtml);
-        String[] pipeReadMeHtml = library()
+        String pipeReadMeHtml = library()
                 .createPipeline(SHELL, pipeline)
                 .clickOnPipeline(pipeline)
                 .firstVersion()
@@ -387,8 +387,7 @@ public class ToolsParametersTest
     }
 
     private void checkMarkdown(final Map<String, String> descPattern,
-                               final String[] input, final String[] output) {
-        String description = String.join("", output);
+                               final String[] input, final String description) {
         if (input.length <= 1 || descPattern.isEmpty()) {
             return;
         }
@@ -405,8 +404,7 @@ public class ToolsParametersTest
         });
     }
 
-    private void checkTableMarkdown(final String[] input, final String[] output) {
-        String description = String.join("", output);
+    private void checkTableMarkdown(final String[] input, final String description) {
         String [] key = {"\\|(.+)\\|(.+)\\|", "\\|-{3,}\\|-{3,}\\|"};
         String out = "<table><thead><tr><th>%s</th><th>%s</th></tr></thead><tbody><tr><td>%s</td><td>%s</td></tr></tbody></table>";
         IntStream.range(0, input.length-2).forEach(i -> {
@@ -424,8 +422,7 @@ public class ToolsParametersTest
         });
     }
 
-    private void checkListMarkdown(final String[] input, final String[] output) {
-        String description = String.join("", output);
+    private void checkListMarkdown(final String[] input, final String description) {
         String key = "(\\d)\\.\\s(.+)";
         String out = "<ol start=\"%s\"><li>%s</li><li>%s</li><li>%s</li></ol>";
         IntStream.range(0, input.length-2).forEach(i -> {
