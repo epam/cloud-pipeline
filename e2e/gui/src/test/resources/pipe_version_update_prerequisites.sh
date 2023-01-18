@@ -42,22 +42,20 @@ function create_tool {
   local payload_e2e_endpoints="{}"
 read -r -d '' payload_e2e_endpoints <<-EOF
 {
-    "image":"$TEST_GROUP/$E2E_ENDPOINTS_TOOL",
-    "registry":"$CP_REGISTRY_NAME",
-    "registryId":$registry_id,
-    "endpoints":["{\"name\":\"E2E-Endpoint\",\"nginx\":{\"port\":\"8081\"},\"isDefault\":false,\"sslBackend\":false,\"customDNS\":false}"],
-    "labels":[],
-    "cpu":"1000mi",
-    "ram":"1Gi",
-    "defaultCommand": "/start.sh",
-    "instanceType": "m5.large",
-    "disk": 20,
-    "allowSensitive":false
+  "image":"$TEST_GROUP/$E2E_ENDPOINTS_TOOL",
+  "registry":"$CP_REGISTRY_NAME",
+  "registryId":$registry_id,
+  "endpoints":["{\"name\":\"E2E-Endpoint\",\"nginx\":{\"port\":\"8081\"},\"isDefault\":false,\"sslBackend\":false,\"customDNS\":false}"],
+  "labels":[],
+  "cpu":"1000mi",
+  "ram":"1Gi",
+  "defaultCommand": "/start.sh",
+  "instanceType": "m5.large",
+  "disk": 20,
+  "allowSensitive":false
 }
 EOF
   set_tool_settings "$TEST_GROUP/$E2E_ENDPOINTS_TOOL" "$payload_e2e_endpoints"
-
-  local registry_id=$(get_registry_id "$TEST_GROUP/$E2E_ENDPOINTS_TOOL")
 }
 
 function check_run {
@@ -66,13 +64,13 @@ function check_run {
   check_api_response_status "$tasks_info"
   tasks_info_result=$?
   if [ $tasks_info_result -ne 0 ]; then
-      print_err "Error occurred while getting tasks for run with runID=$runID:"
-      echo "========"
-      echo "Response:"
-      echo "$tasks_info"
-      echo "========"
-      return 1
-    fi
+    print_err "Error occurred while getting tasks for run with runID=$runID:"
+    echo "========"
+    echo "Response:"
+    echo "$tasks_info"
+    echo "========"
+    return 1
+  fi
   local initializeEnvironment_task_status=$(echo $tasks_info | jq -r ".payload[] | select(.name == \"InitializeEnvironment\") | .status")
   local console_status=$(echo $tasks_info | jq -r ".payload[] | select(.name == \"Console\") | .status")
   while [ "$console_status" = "RUNNING" ] && [ "$initializeEnvironment_task_status" != "SUCCESS" ]; do
