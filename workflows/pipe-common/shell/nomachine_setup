@@ -127,16 +127,16 @@ function config_nm {
 }
 
 function install_nm_extras {
+  CP_NM_EXTRA_INSTALL_CHROME_VERSION="${CP_NM_EXTRA_INSTALL_CHROME_VERSION:-104.0.5112.79-1}"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     # Google chrome installation may be stuck, when updating. So just wait a bit and proceed further
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION:-104.0.5112.79-1}.rpm" -O /opt/google-chrome.rpm && \
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.rpm" -O /opt/google-chrome.rpm && \
     timeout ${CP_NM_EXTRA_INSTALL_TIMEOUT:-1}m yum install -y /opt/google-chrome.rpm && \
     rm -f /opt/google-chrome.rpm
   else
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update -y && \
-    apt-get install --no-upgrade -y google-chrome-stable
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.deb" -O /opt/google-chrome.deb && \
+    apt-get install --no-upgrade -y /opt/google-chrome.deb && \
+    rm -f /opt/google-chrome.deb
   fi
   if [[ $? -ne 0 ]]; then
     return 1
