@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Launch script:
-# bash prerequisites.sh CP_REGISTRY_NAME API API_TOKEN HTTP_PROXY
+# bash pipe_version_update_prerequisites.sh CP_REGISTRY_NAME API API_TOKEN HTTP_PROXY
 
-source utils.sh
+source pipe_version_update_utils.sh
 
 export CP_REGISTRY_NAME="$1"
 export API="$2"
