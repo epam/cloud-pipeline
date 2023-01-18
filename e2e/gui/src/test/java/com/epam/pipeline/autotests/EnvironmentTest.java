@@ -26,7 +26,14 @@ import static java.lang.String.format;
 import static org.testng.Assert.assertNotEquals;
 
 /**
- *
+ * Test should be performed after the application update.
+ * Prerequisites should be created before the application update.
+ * To create Prerequisites:
+ * 1. Launch tool (for ex. centos) and ssh to the created run
+ * 2. Create 2 scripts: prerequisites.sh and utils.sh (scripts text can be found in the resources)
+ * 3. Check that 'RUN_TAG' in the prerequisites.sh has the same value as 'e2e.ui.test.run.tag' parameter in the config file
+ * 4. Launch script: bash prerequisites.sh CP_REGISTRY_NAME API API_TOKEN HTTP_PROXY
+ * 5. Update application
  */
 public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigation {
 

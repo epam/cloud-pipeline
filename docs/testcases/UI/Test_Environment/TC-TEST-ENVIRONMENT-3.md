@@ -1,8 +1,8 @@
 # Check update pipe version in the existing run
 
-Test verifies that in the existing active run launched before the application update  
+Test verifies that in the existing active run launched before the application update 
 - the old version of pipe CLI continues to work correctly after updating the application
-- the new version  of pipe CLI can be installed and works correctly
+- the new version of pipe CLI can be installed and works correctly
 
 **Prerequisites**:
 - Admin user
@@ -16,7 +16,7 @@ Using API methods:
 4. Update application
 
 | Steps | Actions | Expected results |
-| :---: | --- |---|
+| :---: | --- | --- |
 | 1 | Login as the admin user from the prerequisites | |
 | 2 | Open the **Settings** page | |
 | 3 | Click the **CLI** tab | |
@@ -32,5 +32,5 @@ Using API methods:
 | 13 | Enter and perform the command: `pipe ssh <runID>`, where `<runID>` is ID of run launched at step 3 of the Preparations | Interactive session over the SSH protocol is started |
 | 14 | Enter and perform the commands from *Pipe CLI Installation Content* stored at step 6 | |
 | 15 | Enter and perform the *CLI configure command* stored at step 8 | |
-| 16 | Enter and perform the command: `<pipe_new_version>/pipe --version`, where `<pipe_new_version>` is the path of the new version pipe CLI installed at step 14 |  |
-| 17 | Enter and perform the command: `<pipe_new_version>/pipe ssh <runID>` | Interactive session over the SSH protocol is started  |
+| 16 | Enter and perform the command: `<pipe_new_version>/pipe --version`, where `<pipe_new_version>` is the path of the new version pipe CLI installed at step 14 | Version differs from the version in output of step 12 |
+| 17 | Enter and perform the command: `<pipe_new_version>/pipe ssh <runID>` | Interactive session over the SSH protocol is started |
