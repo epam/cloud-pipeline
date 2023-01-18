@@ -126,7 +126,8 @@ export default class Tool extends localization.LocalizedReactComponent {
     showIssuesPanel: false,
     instanceTypesManagementPanel: false,
     createLinkInProgress: false,
-    createLinkFormVisible: false
+    createLinkFormVisible: false,
+    versionFilterValue: undefined
   };
 
   @observable defaultVersionSettings;
@@ -851,7 +852,6 @@ export default class Tool extends localization.LocalizedReactComponent {
         keyIndex += 1;
       });
     }
-
     return data;
   }
 
@@ -1091,6 +1091,12 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && !this.state.isShowUnscannedVersion) {
       data = data.filter(d => d.platform === 'windows' || d.status !== ScanStatuses.notScanned);
     }
+    const {versionFilterValue} = this.state;
+    if (versionFilterValue && versionFilterValue.length) {
+      data = data.filter((item) => (
+        item.name.toLowerCase().includes(versionFilterValue.toLocaleLowerCase())
+      ));
+    }
     return (
       <Row style={{width: '100%'}}>
         {
@@ -1100,6 +1106,14 @@ export default class Tool extends localization.LocalizedReactComponent {
             message={this.props.versions.error}
             style={{margin: '5px 0 10px 0'}} />
         }
+        <Input
+          value={versionFilterValue}
+          onChange={(e) => {
+            this.setState({versionFilterValue: e.target.value});
+          }}
+          placeholder="Enter version name"
+          className={styles.versionFilterInput}
+        />
         <Table
           className={styles.table}
           loading={this.props.versions.pending}
