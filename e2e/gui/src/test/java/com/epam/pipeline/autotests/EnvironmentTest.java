@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.Test;
@@ -23,17 +23,19 @@ import org.testng.annotations.Test;
 import static com.epam.pipeline.autotests.utils.C.AUTH_TOKEN;
 import static com.epam.pipeline.autotests.utils.C.TEST_RUN_TAG;
 import static java.lang.String.format;
-import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 
+/**
+ *
+ */
 public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigation {
 
     private final String COMMAND_VERSION = "%s --version";
     private final String COMMAND_SSH = "%s ssh %s";
     private final String rootHost = "root@pipeline";
-    private final String init_pipe_path = "pipe";
-    private String old_pipe_version;
-    private String new_pipe_version;
-    private String operationSystemInstallationContent;
+    private final String initPipePath = "pipe";
+    private String oldPipeVersion;
+    private String newPipeVersion;
 
     @Test
     @TestCase(value = "TC-TEST-ENVIRONMENT-3")
@@ -41,17 +43,14 @@ public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigat
         if ("false".equals(AUTH_TOKEN)) {
             return;
         }
-        final SettingsPageAO.CliAO cliAO = navigationMenu()
+        final CliAO cliAO = navigationMenu()
                 .settings()
                 .switchToCLI()
                 .switchPipeCLI()
-                .selectOperationSystem("Linux-Binary");
+                .selectOperationSystem(CliAO.OperationSystem.LINUX_BINARY);
         final String operationSystemInstallationContent = cliAO.getOperationSystemInstallationContent();
-        final String cliConfigureCommand = cliAO
-                .generateAccessKey()
-                .getCLIConfigureCommand();
-        final String pipe_with_path = getPipePath(cliConfigureCommand);
-        String runID = runsMenu()
+        final String pipePath = cliAO.getPipePathFromConfigureCommand();
+        final String runID = runsMenu()
                 .activeRuns()
                 .viewAvailableActiveRuns()
                 .getRunIdByTag(TEST_RUN_TAG);
@@ -61,33 +60,29 @@ public class EnvironmentTest  extends AbstractBfxPipelineTest implements Navigat
                 .showLog(runID)
                 .waitForSshLink()
                 .ssh(shell -> {
-                    String sshFirstLine = shell.waitUntilTextAppears(runID).getFirstLine();
-                    old_pipe_version = shell
+                    final String sshFirstLine = shell.waitUntilTextAppears(runID).getFirstLine();
+                    oldPipeVersion = shell
                             .waitUntilTextAppears(runID)
-                            .execute(format(COMMAND_VERSION, init_pipe_path))
-                            .assertNextStringIsVisible(format(COMMAND_VERSION, init_pipe_path), rootHost)
-                            .lastCommandResult(format(COMMAND_VERSION, init_pipe_path));
-                    shell.execute(format(COMMAND_SSH, init_pipe_path, runID))
-                            .assertNextStringIsVisible(format(COMMAND_SSH, init_pipe_path, runID), rootHost)
+                            .execute(format(COMMAND_VERSION, initPipePath))
+                            .assertNextStringIsVisible(format(COMMAND_VERSION, initPipePath), rootHost)
+                            .lastCommandResult(format(COMMAND_VERSION, initPipePath));
+                    shell.execute(format(COMMAND_SSH, initPipePath, runID))
+                            .assertNextStringIsVisible(format(COMMAND_SSH, initPipePath, runID), rootHost)
                             .assertPageAfterCommandContainsStrings(sshFirstLine);
-                    new_pipe_version = shell.execute(operationSystemInstallationContent)
-                            .execute(format(COMMAND_VERSION, pipe_with_path))
-                            .assertNextStringIsVisible(format(COMMAND_VERSION, pipe_with_path), rootHost)
-                            .lastCommandResult(format(COMMAND_VERSION, pipe_with_path));
-                    checkPipeVersion(old_pipe_version, new_pipe_version);
-                    shell.execute(format(COMMAND_SSH, pipe_with_path, runID))
-                            .assertNextStringIsVisible(format(COMMAND_SSH, pipe_with_path, runID), rootHost)
+                    newPipeVersion = shell.execute(operationSystemInstallationContent)
+                            .execute(format(COMMAND_VERSION, pipePath))
+                            .assertNextStringIsVisible(format(COMMAND_VERSION, pipePath), rootHost)
+                            .lastCommandResult(format(COMMAND_VERSION, pipePath));
+                    checkPipeVersion(oldPipeVersion, newPipeVersion);
+                    shell.execute(format(COMMAND_SSH, pipePath, runID))
+                            .assertNextStringIsVisible(format(COMMAND_SSH, pipePath, runID), rootHost)
                             .assertPageAfterCommandContainsStrings(sshFirstLine)
                             .close();
                 });
     }
 
-    private void checkPipeVersion(String old_version, String new_version) {
-        assertFalse(old_version.substring(0, old_version.indexOf("Access"))
-                .equals(new_version.substring(0, new_version.indexOf("Access"))));
-    }
-
-    private String getPipePath(String command) {
-        return command.substring(0, command.indexOf(" configure"));
+    private void checkPipeVersion(final String old_version, final String new_version) {
+        assertNotEquals(new_version.substring(0, new_version.indexOf("Access")),
+                old_version.substring(0, old_version.indexOf("Access")));
     }
 }

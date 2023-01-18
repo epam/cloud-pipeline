@@ -474,18 +474,15 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .shouldBe(visible)
                 .findAll(className("ant-table-row"))
                 .stream()
-                .filter(element ->
-                     element.find(byClassName("un-tags__more-label")).exists())
+                .filter(element -> element.find(byClassName("un-tags__more-label")).exists())
                 .filter(element -> {
                         element.find(byClassName("un-tags__more-label")).hover();
-                        $(byClassName("un-tags__run-tag"))
-                                .has(text(runTag.toUpperCase()));
+                        $(byClassName("un-tags__run-tag")).has(text(runTag.toUpperCase()));
                         return true;
-                        }
+                    }
                 )
                 .findFirst()
-                .orElseThrow(() -> new NoSuchWindowException(String.format(
-                        "No such run with tag {%s}.", runTag)))
+                .orElseThrow(() -> new NoSuchWindowException(format("No such run with tag {%s}.", runTag)))
                 .find(byClassName("un-name__original"))
                 .getText().replace("pipeline-","");
     }

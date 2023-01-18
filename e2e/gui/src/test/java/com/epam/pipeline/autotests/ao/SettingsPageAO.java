@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
@@ -126,66 +127,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public PipelinesLibraryAO ok() {
         click(OK);
         return parentAO;
-    }
-
-    public static class CliAO extends SettingsPageAO {
-        public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                super.elements(),
-                entry(PIPE_CLI, context().findAll("tr").find(text("Pipe CLI"))),
-                entry(GIT_CLI, context().findAll("tr").find(text("Git CLI"))),
-                entry(GIT_COMMAND, context().find(byCssSelector(".tyles__md-preview")))
-        );
-
-        public CliAO(final PipelinesLibraryAO parent) {
-            super(parent);
-        }
-
-        public CliAO switchGitCLI() {
-            click(GIT_CLI);
-            return this;
-        }
-
-        public CliAO switchPipeCLI() {
-            click(PIPE_CLI);
-            return this;
-        }
-
-        public CliAO ensureCodeHasText(final String text) {
-            ensure(GIT_COMMAND, matchesText(text));
-            return this;
-        }
-
-        public CliAO selectOperationSystem(final String operationSystem) {
-            final String defaultSystem = $(tagName("b")).parent().find(byClassName("ant-select-selection__rendered"))
-                    .getText();
-            selectValue(byText(defaultSystem), menuitem(operationSystem));
-            return this;
-        }
-
-        public CliAO checkOperationSystemInstallationContent(final String content) {
-            ensure(byId("pip-install-url-input"), text(content));
-            return this;
-        }
-
-        public String getOperationSystemInstallationContent() {
-            return $(byId("pip-install-url-input")).getText().replaceAll("#(.+)\n", "")
-                    .replaceAll("\n", " && ");
-        }
-
-
-        public CliAO generateAccessKey() {
-            click(byId("generate-access-key-button"));
-            return this;
-        }
-
-        public String getCLIConfigureCommand() {
-            return $(byId("cli-configure-command-text-area")).getText();
-        }
-
-        @Override
-        public Map<Primitive, SelenideElement> elements() {
-            return elements;
-        }
     }
 
     public class SystemEventsAO extends SettingsPageAO {
