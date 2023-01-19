@@ -459,17 +459,20 @@ export default class Browser extends React.Component {
         results = this.props.storage.value.results || [];
       }
       items.push(...results.map(i => {
+        const archived = i.labels &&
+          i.labels['StorageClass'] &&
+          i.labels['StorageClass'].toLowerCase() !== 'standard';
         return {
           key: `${i.type}_${i.path}`,
           ...i,
-          downloadable: i.type.toLowerCase() === 'file' && !i.deleteMarker &&
-          (
-            !i.labels ||
-            !i.labels['StorageClass'] ||
-            i.labels['StorageClass'].toLowerCase() !== 'glacier'
-          ),
-          editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
-          deletable: roleModel.writeAllowed(this.props.info.value),
+          downloadable: i.type.toLowerCase() === 'file' &&
+            !i.deleteMarker &&
+            !archived,
+          editable: roleModel.writeAllowed(this.props.info.value) &&
+            !i.deleteMarker &&
+            !archived,
+          deletable: roleModel.writeAllowed(this.props.info.value) &&
+            !archived,
           selectable: !i.deleteMarker
         };
       }));

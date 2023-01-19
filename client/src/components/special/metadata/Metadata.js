@@ -1716,7 +1716,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       result.push(
         <SplitPanel
           key="split"
-          style={{flex: 1}}
+          style={{flex: 1, overflow: 'auto'}}
           orientation="vertical">
           <div key="file preview" style={{
             display: 'flex',
@@ -1742,9 +1742,16 @@ export default class Metadata extends localization.LocalizedReactComponent {
       return <LoadingView />;
     }
     return (
-      <Row type="flex" style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'auto'
+        }}
+      >
         {this.renderMetadataTable()}
-      </Row>
+      </div>
     );
   }
 

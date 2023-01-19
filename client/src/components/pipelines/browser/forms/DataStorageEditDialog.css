@@ -17,3 +17,10 @@
 .data-storage-form-item {
   margin-bottom: 5px;
 }
+
+.custom-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: end;
+}

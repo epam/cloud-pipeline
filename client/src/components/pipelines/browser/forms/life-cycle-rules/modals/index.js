@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,13 @@
  * limitations under the License.
  */
 
-.header-container {
-  display: flex;
-  flex-direction: column;
-}
+import LifeCycleEditModal, {DESTINATIONS} from './life-cycle-edit-modal';
+import LifeCycleHistoryModal from './life-cycle-history-modal';
+import LifeCycleRestoreModal from './life-cycle-restore-modal';
 
-.editor-container {
-  width: 100% !important;
-  height: 80vh !important;
-}
-
-.table-editor-readonly,
-.table-editor {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.button {
-  margin-right: 10px;
-  text-transform: uppercase;
-}
-
-.button i {
-  font-size: large;
-}
+export {
+  DESTINATIONS,
+  LifeCycleEditModal,
+  LifeCycleHistoryModal,
+  LifeCycleRestoreModal
+};

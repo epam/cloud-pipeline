@@ -110,13 +110,17 @@ class UsersRolesSelect extends React.Component {
       searchString = '',
       adGroups = []
     } = this.state;
-    const {value = []} = this.props;
+    const {
+      value = [],
+      showRoles = true,
+      adGroups: showADGroups = showRoles
+    } = this.props;
     const uniqueRoleNames = new Set(this.roles.map(o => o.name));
     const filteredADGroups = adGroups.filter(o => !uniqueRoleNames.has(o.name));
     const usersAndRoles = [
       ...this.users,
-      ...this.roles,
-      ...filteredADGroups
+      ...(showRoles ? this.roles : []),
+      ...(showRoles && showADGroups ? filteredADGroups : [])
     ];
     const itemIsSelected = (item) => !!value
       .find(v => v.name === item.name && v.principal === item.principal);
@@ -251,16 +255,19 @@ class UsersRolesSelect extends React.Component {
 
 UsersRolesSelect.propTypes = {
   adGroups: PropTypes.bool,
+  showRoles: PropTypes.bool,
   placeholder: PropTypes.string,
   className: PropTypes.string,
   style: PropTypes.object,
   disabled: PropTypes.bool,
   value: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  popupContainerFn: PropTypes.func
 };
 
 UsersRolesSelect.defaultProps = {
-  adGroups: true
+  adGroups: true,
+  showRoles: true
 };
 
 export default UsersRolesSelect;

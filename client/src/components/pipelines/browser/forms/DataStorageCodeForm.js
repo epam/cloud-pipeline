@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,15 @@ import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
+import {
+  Switch,
+  Alert,
+  Button,
+  Row,
+  Col,
+  Modal,
+  Spin
+} from 'antd';
 
 import CodeEditor from '../../../special/CodeEditor';
 import HotTable from 'react-handsontable';
@@ -34,12 +42,12 @@ import DataStorageItemContent from '../../../../models/dataStorage/DataStorageIt
 @inject('cancel', 'storageId', 'save')
 @observer
 export default class DataStorageCodeForm extends React.Component {
-
   static propTypes = {
     file: PropTypes.object,
     cancel: PropTypes.func,
     save: PropTypes.func,
-    downloadable: PropTypes.bool
+    downloadable: PropTypes.bool,
+    onSaveDisclaimer: PropTypes.string
   };
 
   static defaultProps = {
@@ -99,7 +107,11 @@ export default class DataStorageCodeForm extends React.Component {
   }
 
   componentDidUpdate () {
-    if (this._fileContents && !this._fileContents.pending && !this._originalCode) {
+    if (
+      this._fileContents &&
+      !this._fileContents.pending &&
+      !this._originalCode
+    ) {
       this._originalCode = this._fileContents.value.content
         ? atob(this._fileContents.value.content)
         : '';
@@ -155,9 +167,25 @@ export default class DataStorageCodeForm extends React.Component {
     const save = async () => {
       await this.props.save(this.props.file.path, this._modifiedCode);
     };
-    if (this._modifiedCode && this._originalCode !== this._modifiedCode) {
+    if (this._modifiedCode !== null && this._originalCode !== this._modifiedCode) {
       Modal.confirm({
-        title: `Save changes to ${this.props.file.name}?`,
+        title: (
+          <div>
+            <span>
+              {`Save changes to ${this.props.file.name}?`}
+            </span>
+            {this.props.onSaveDisclaimer ? (
+              <Alert
+                message={this.props.onSaveDisclaimer}
+                style={{
+                  marginTop: '20px',
+                  marginBottom: '-10px',
+                  fontWeight: 'normal'
+                }}
+              />
+            ) : null}
+          </div>
+        ),
         style: {
           wordWrap: 'break-word'
         },
@@ -171,7 +199,7 @@ export default class DataStorageCodeForm extends React.Component {
     }
   };
 
-  toggleEditMode = async() => {
+  toggleEditMode = async () => {
     if (this.hotEditor && this.state.editMode) {
       this._modifiedCode = this.stringTableData;
     }
@@ -183,6 +211,29 @@ export default class DataStorageCodeForm extends React.Component {
     } else {
       this._modifiedCode = null;
       this.setState({editMode: !this.state.editMode});
+    }
+  };
+
+  cancelEdit = () => {
+    if (this.hotEditor && this.state.editMode) {
+      this._modifiedCode = this.stringTableData;
+    }
+    const reset = () => {
+      this._modifiedCode = null;
+      this.setState({editMode: false});
+    };
+    if (this._modifiedCode !== null && this._modifiedCode !== this._originalCode) {
+      Modal.confirm({
+        title: `All changes will be lost. Continue?`,
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk () {
+          reset();
+        }
+      });
+    } else {
+      reset();
     }
   };
 
@@ -265,7 +316,7 @@ export default class DataStorageCodeForm extends React.Component {
     return Papa.unparse(this.hotEditor.hotInstance.getData(), unparseConfig);
   }
 
-  get fileEditor () {
+  renderFileEditor () {
     if (this._fileContents && this._fileContents.pending) {
       return null;
     }
@@ -278,12 +329,12 @@ export default class DataStorageCodeForm extends React.Component {
             root="hot"
             ref={this.initializeTableEditor}
             data={this._tableData.data}
-            colHeaders={true}
-            rowHeaders={true}
+            colHeaders
+            rowHeaders
             readOnly={!this.state.editMode}
             readOnlyCellClassName={classNames('readonly-cell', 'cp-table-cell')}
-            manualColumnResize={true}
-            manualRowResize={true}
+            manualColumnResize
+            manualRowResize
             contextMenu={this.state.editMode
               ? [
                 'row_above',
@@ -309,73 +360,109 @@ export default class DataStorageCodeForm extends React.Component {
           <Alert
             message={`Error parsing tabular file ${this.props.file.name}:
               ${this._tableData.message}`}
-            type="error"/>
+            type="error"
+          />
         );
-    } else {
-      return (
-        <CodeEditor
-          ref={this.initializeEditor}
-          readOnly={!this.state.editMode}
-          code={this._modifiedCode !== null ? this._modifiedCode : (this._originalCode || '')}
-          onChange={this.onCodeChange}
-          supportsFullScreen={true}
-          language="text"
-          fileName={this.props.file ? this.props.file.name : undefined}
-          delayedUpdate={true}
-        />
-      );
     }
+    return (
+      <CodeEditor
+        ref={this.initializeEditor}
+        readOnly={!this.state.editMode}
+        code={this._modifiedCode !== null ? this._modifiedCode : (this._originalCode || '')}
+        onChange={this.onCodeChange}
+        supportsFullScreen
+        language="text"
+        fileName={this.props.file ? this.props.file.name : undefined}
+        delayedUpdate
+      />
+    );
   }
 
   render () {
     const tableClassName = this.state.editMode ? styles.tableEditor : styles.tableEditorReadonly;
     const title = this.props.file
       ? (
-        <Row type="flex" justify="space-between">
-          <Col>{this.props.file.name}</Col>
-          {
-            this.codeTruncated && this.downloadUrl &&
+        <div style={styles.titleContainer}>
+          <Row type="flex" justify="space-between">
+            <Col>{this.props.file.name}</Col>
+            {
+              this.codeTruncated && this.downloadUrl &&
+              <Col>
+                File is too large to be shown.
+                {this.props.downloadable && (
+                  <span>
+                    <a
+                      href={this.downloadUrl}
+                      target="_blank"
+                      download={this.props.file.name}
+                    >
+                      {' Download file'}
+                    </a>
+                    {' to view full contents'}
+                  </span>
+                )}
+              </Col>
+            }
             <Col>
-              File is too large to be shown.
-              {this.props.downloadable && (
-                <span>
-                  <a
-                    href={this.downloadUrl}
-                    target="_blank"
-                    download={this.props.file.name}
-                  >
-                    {' Download file'}
-                  </a>
-                  {' to view full contents'}
-                </span>
-              )}
-            </Col>
-          }
-          <Col>
-            {
-              this.isEditable && this.isTabular &&
-              <span>{this.state.editMode ? 'Edit' : 'View'} as text: <Switch
+              {
+                this.isEditable && this.isTabular &&
+                <span>{this.state.editMode ? 'Edit' : 'View'} as text: <Switch
+                  className={styles.button}
+                  onChange={(checked) => this.toggleEditTabularAsText(checked)}
+                /></span>
+              }
+              {
+                this.isEditable && this.state.editMode &&
+                <Button
+                  id="code-form-save-edit-button"
+                  type="primary"
+                  className={styles.button}
+                  onClick={this.toggleEditMode}
+                >
+                  Save
+                </Button>
+              }
+              {
+                this.isEditable && this.state.editMode &&
+                <Button
+                  id="code-form-cancel-edit-button"
+                  className={styles.button}
+                  onClick={this.cancelEdit}
+                >
+                  CANCEL
+                </Button>
+              }
+              {
+                this.isEditable && !this.state.editMode &&
+                <Button
+                  id="code-form-edit-button"
+                  className={styles.button}
+                  onClick={this.toggleEditMode}
+                >
+                  Edit
+                </Button>
+              }
+              <Button
+                id="code-form-close-button"
                 className={styles.button}
-                onChange={(checked) => this.toggleEditTabularAsText(checked)}
-              /></span>
-            }
-            {
-              this.isEditable && this.state.editMode &&
-              <Button type="primary" className={styles.button} onClick={this.toggleEditMode}>
-                Save
+                onClick={this.onClose}
+              >
+                Close
               </Button>
-            }
-            {
-              this.isEditable && !this.state.editMode &&
-              <Button className={styles.button} onClick={this.toggleEditMode}>
-                Edit
-              </Button>
-            }
-            <Button className={styles.button} onClick={this.onClose}>
-              Close
-            </Button>
-          </Col>
-        </Row>)
+            </Col>
+          </Row>
+          {this.errors && this.errors.length > 0 ? (
+            this.errors.map(error => (
+              <Alert
+                key={error}
+                message={error}
+                type="error"
+                style={{marginTop: '5px'}}
+              />
+            ))
+          ) : null}
+        </div>
+      )
       : null;
     return (
       <Modal
@@ -387,10 +474,11 @@ export default class DataStorageCodeForm extends React.Component {
         maskClosable={false}
         footer={false}
         style={{top: 20}}
+        bodyStyle={{padding: 8}}
       >
         <Spin spinning={this._fileContents && this._fileContents.pending}>
           <div className={`${styles.editorContainer} ${tableClassName}`}>
-            { this.fileEditor }
+            {this.renderFileEditor()}
           </div>
         </Spin>
       </Modal>

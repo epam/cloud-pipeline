@@ -100,7 +100,7 @@ const MAX_INLINE_METADATA_KEYS = 10;
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
 @HiddenObjects.checkFolders(props => (props?.params ? props.params.id : props.id))
-@inject('awsRegions')
+@inject('awsRegions', 'preferences')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
   if (params.params) {
@@ -730,8 +730,6 @@ export default class Folder extends localization.LocalizedReactComponent {
       path: path,
       shared: storage.serviceType === ServiceTypes.objectStorage && storage.shared,
       storagePolicy: {
-        longTermStorageDuration: storage.longTermStorageDuration,
-        shortTermStorageDuration: storage.shortTermStorageDuration,
         backupDuration: storage.backupDuration,
         versioningEnabled: storage.versioningEnabled
       },
@@ -790,15 +788,11 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       if (this.state.editableStorage.policySupported &&
         storage.serviceType !== ServiceTypes.fileShare &&
-        (storage.longTermStorageDuration !== undefined ||
-        storage.shortTermStorageDuration !== undefined ||
-        storage.backupDuration !== undefined || !storage.versioningEnabled)) {
+        (storage.backupDuration !== undefined || !storage.versioningEnabled)) {
         const updatePolicyRequest = new DataStorageUpdateStoragePolicy();
         await updatePolicyRequest.send({
           id: this.state.editableStorage.id,
           storagePolicy: {
-            longTermStorageDuration: storage.longTermStorageDuration,
-            shortTermStorageDuration: storage.shortTermStorageDuration,
             backupDuration: storage.backupDuration,
             versioningEnabled: storage.versioningEnabled
           }
@@ -1993,7 +1987,11 @@ export default class Folder extends localization.LocalizedReactComponent {
           visible={!!this.state.editableStorage}
           pending={this.state.operationInProgress}
           dataStorage={this.state.editableStorage}
-          policySupported={this.state.editableStorage && this.state.editableStorage.policySupported} />
+          policySupported={
+            this.state.editableStorage &&
+            this.state.editableStorage.policySupported
+          }
+        />
         <EditDetachedConfigurationForm
           configuration={this.state.editableConfiguration}
           onDelete={this.folderOperationWrapper(this.deleteConfiguration)}

@@ -18,6 +18,7 @@ import Remote from '../basic/Remote';
 import {computed} from 'mobx';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
+// eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
 class PreferencesLoad extends Remote {

@@ -18,9 +18,11 @@ import React from 'react';
 import {Button, Modal, Form, Input, Row, Spin} from 'antd';
 import PropTypes from 'prop-types';
 
+// eslint-disable-next-line
+const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.';
+
 @Form.create()
 export default class EditItemForm extends React.Component {
-
   static propTypes = {
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -28,7 +30,8 @@ export default class EditItemForm extends React.Component {
     visible: PropTypes.bool,
     name: PropTypes.string,
     title: PropTypes.string,
-    includeFileContentField: PropTypes.bool
+    includeFileContentField: PropTypes.bool,
+    disclaimerFn: PropTypes.func
   };
 
   formItemLayout = {
@@ -52,6 +55,7 @@ export default class EditItemForm extends React.Component {
   };
 
   render () {
+    const {disclaimerFn} = this.props;
     const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
@@ -63,11 +67,11 @@ export default class EditItemForm extends React.Component {
       resetFields();
     };
     const nameShouldNotBeTheSameValidator = (rule, value, callback) => {
+      let error;
       if (this.props.name && value && value.toLowerCase() === this.props.name.toLowerCase()) {
-        callback('Name should not be the same');
-      } else {
-        callback();
+        error = 'Name should not be the same';
       }
+      callback(error);
     };
     return (
       <Modal
@@ -89,7 +93,7 @@ export default class EditItemForm extends React.Component {
                   },
                   {
                     pattern: /^[\da-zA-Z._\-@ ]+$/,
-                    message: 'Name can contain only letters, digits, spaces, \'_\', \'-\', \'@\' and \'.\'.'
+                    message: NAME_VALIDATION_TEXT
                   },
                   {validator: nameShouldNotBeTheSameValidator}
                 ],
@@ -113,6 +117,10 @@ export default class EditItemForm extends React.Component {
               </Form.Item>
             }
           </Form>
+          {disclaimerFn
+            ? disclaimerFn()
+            : null
+          }
         </Spin>
       </Modal>
     );

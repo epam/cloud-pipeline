@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {inject, observer, Observer} from 'mobx-react';
 import {Link} from 'react-router';
 import classNames from 'classnames';
 import {computed, observable} from 'mobx';
@@ -47,8 +47,12 @@ import UpdateContent from '../../../../models/dataStorage/DataStorageItemUpdateC
 import DataStorageItemDelete from '../../../../models/dataStorage/DataStorageItemDelete';
 import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateDownloadUrl';
 import GenerateDownloadUrlsRequest from '../../../../models/dataStorage/GenerateDownloadUrls';
+import LifeCycleEffectiveHierarchy from '../../../../models/dataStorage/lifeCycleRules/LifeCycleEffectiveHierarchy';
+// eslint-disable-next-line max-len
+import LifeCycleRestoreCreate from '../../../../models/dataStorage/lifeCycleRules/LifeCycleRestoreCreate';
 import EditItemForm from '../forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from '../forms/DataStorageEditDialog';
+import {LifeCycleRestoreModal} from '../forms/life-cycle-rules/modals';
 import DataStorageNavigation from '../forms/DataStorageNavigation';
 import RestrictedImagesInfo from '../forms/restrict-docker-images/restricted-images-info';
 import {
@@ -57,6 +61,8 @@ import {
   METADATA_PANEL_KEY
 } from '../../../special/splitPanel/SplitPanel';
 import Metadata from '../../../special/metadata/Metadata';
+import LifeCycleCounter from '../forms/life-cycle-rules/components/life-cycle-counter';
+import RestoreStatusIcon, {STATUS} from '../forms/life-cycle-rules/components/restore-status-icon';
 import UploadButton from '../../../special/UploadButton';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import EmbeddedMiew from '../../../applications/miew/EmbeddedMiew';
@@ -81,6 +87,10 @@ import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import styles from '../Browser.css';
 
+const STORAGE_CLASSES = {
+  standard: 'STANDARD'
+};
+
 @roleModel.authenticationInfo
 @inject(
   'awsRegions',
@@ -99,13 +109,21 @@ import styles from '../Browser.css';
     onReloadTree,
     storageId: params.id,
     path: decodeURIComponent(queryParameters.path || ''),
-    showVersions: showVersions
+    showVersions: showVersions,
+    restoreInfo: new LifeCycleEffectiveHierarchy(
+      params.id,
+      decodeURIComponent(queryParameters.path || ''),
+      'FOLDER',
+      false
+    )
   };
 })
 @observer
 export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
+    restoreDialogVisible: false,
+    lifeCycleRestoreMode: undefined,
     downloadUrlModalVisible: false,
     selectedItems: [],
     renameItem: null,
@@ -216,6 +234,19 @@ export default class DataStorage extends React.Component {
   }
 
   @computed
+  get lifeCycleRestoreEnabled () {
+    const {authenticatedUserInfo} = this.props;
+    return authenticatedUserInfo.loaded &&
+      authenticatedUserInfo.value &&
+      this.storage.infoLoaded &&
+      this.storage.info &&
+      (
+        this.storage.isOwner ||
+        authenticatedUserInfo.value.admin
+      ) &&
+      /^s3$/i.test(this.storage.info.storageType || this.storage.info.type);
+  }
+
   get showVersions () {
     if (!this.storage.info) {
       return false;
@@ -223,6 +254,53 @@ export default class DataStorage extends React.Component {
     return this.storage.info.type !== 'NFS' &&
       this.props.showVersions &&
       this.storage.isOwner;
+  }
+
+  @computed
+  get lifeCycleRestoreInfo () {
+    const {
+      restoreInfo,
+      path
+    } = this.props;
+    if (restoreInfo && restoreInfo.loaded) {
+      const [first, ...rest] = restoreInfo.value || [];
+      const currentPath = path
+        ? [
+          !path.startsWith('/') && '/',
+          path,
+          !path.endsWith('/') && '/'
+        ].filter(Boolean).join('')
+        : '/';
+      let parentRestore;
+      let currentRestores;
+      if (
+        first &&
+        first.type === 'FOLDER' &&
+        currentPath.startsWith(first.path)
+      ) {
+        parentRestore = first;
+        currentRestores = rest;
+      } else {
+        currentRestores = restoreInfo.value;
+      }
+      return {
+        parentRestore,
+        currentRestores: currentRestores || []
+      };
+    }
+    return {
+      parentRestore: undefined,
+      currentRestores: []
+    };
+  }
+
+  get restorableItems () {
+    const {selectedItems} = this.state;
+    return (selectedItems || [])
+      .filter(item => (
+        (item.labels && item.labels.StorageClass !== STORAGE_CLASSES.standard) ||
+        item.type === 'Folder'
+      ));
   }
 
   onDataStorageEdit = async (storage) => {
@@ -255,17 +333,14 @@ export default class DataStorage extends React.Component {
         policySupported &&
         storage.serviceType !== ServiceTypes.fileShare &&
         (
-          storage.longTermStorageDuration !== undefined ||
-          storage.shortTermStorageDuration !== undefined ||
-          storage.backupDuration !== undefined || !storage.versioningEnabled
+          storage.backupDuration !== undefined ||
+          !storage.versioningEnabled
         )
       ) {
         const updatePolicyRequest = new UpdateStoragePolicy();
         await updatePolicyRequest.send({
           id: this.props.storageId,
           storagePolicy: {
-            longTermStorageDuration: storage.longTermStorageDuration,
-            shortTermStorageDuration: storage.shortTermStorageDuration,
             backupDuration: storage.backupDuration,
             versioningEnabled: storage.versioningEnabled
           }
@@ -277,6 +352,7 @@ export default class DataStorage extends React.Component {
           hide();
           this.closeEditDialog();
           this.storage.refreshStorageInfo();
+          this.props.folders.invalidateFolder(parentFolderId);
           if (this.props.onReloadTree) {
             this.props.onReloadTree(!parentFolderId);
           }
@@ -285,6 +361,7 @@ export default class DataStorage extends React.Component {
         hide();
         this.closeEditDialog();
         this.storage.refreshStorageInfo();
+        this.props.folders.invalidateFolder(parentFolderId);
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!parentFolderId);
         }
@@ -322,8 +399,14 @@ export default class DataStorage extends React.Component {
         return undefined;
       }
       const childList = [];
+      const restoreStatus = this.getRestoredStatus(item) || {};
+      const fileRestored = restoreStatus.status === STATUS.SUCCEEDED;
       for (let version in versions) {
         if (versions.hasOwnProperty(version)) {
+          const archived = versions[version].labels &&
+            versions[version].labels['StorageClass'] !== STORAGE_CLASSES.standard;
+          const versionRestored = restoreStatus.restoreVersions &&
+            restoreStatus.status === STATUS.SUCCEEDED;
           const latest = versions[version].version === item.version;
           childList.push({
             key: `${item.type}_${item.path}_${version}`,
@@ -331,18 +414,18 @@ export default class DataStorage extends React.Component {
             downloadable: item.type.toLowerCase() === 'file' &&
               !versions[version].deleteMarker &&
               !sensitive &&
-              (
-                !item.labels ||
-                !item.labels['StorageClass'] ||
-                item.labels['StorageClass'].toLowerCase() !== 'glacier'
-              ),
+              (!archived || (latest ? fileRestored : versionRestored)),
             editable: versions[version].version === item.version &&
               writeAllowed &&
               !versions[version].deleteMarker,
             deletable: writeAllowed,
             selectable: false,
             latest,
-            isVersion: true
+            isVersion: true,
+            archived,
+            restored: latest
+              ? fileRestored
+              : versionRestored
           });
         }
       }
@@ -359,24 +442,24 @@ export default class DataStorage extends React.Component {
       return childList;
     };
     items.push(...elements.map(i => {
+      const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
+      const archived = i.labels && i.labels['StorageClass'] !== STORAGE_CLASSES.standard;
       return {
         key: `${i.type}_${i.path}`,
         ...i,
         downloadable: i.type.toLowerCase() === 'file' &&
           !i.deleteMarker &&
           !sensitive &&
-          (
-            !i.labels ||
-            !i.labels['StorageClass'] ||
-            i.labels['StorageClass'].toLowerCase() !== 'glacier'
-          ),
+          (!archived || restored),
         editable: writeAllowed && !i.deleteMarker,
         deletable: writeAllowed,
         children: getChildList(i, i.versions, sensitive),
         selectable: !i.deleteMarker,
         miew: !i.deleteMarker &&
           i.type.toLowerCase() === 'file' &&
-          i.path.toLowerCase().endsWith('.pdb')
+          i.path.toLowerCase().endsWith('.pdb'),
+        archived,
+        restored
       };
     }));
     return items;
@@ -562,6 +645,37 @@ export default class DataStorage extends React.Component {
 
   closeDownloadUrlModal = () => {
     this.setState({downloadUrlModalVisible: false});
+  };
+
+  openRestoreFilesDialog = (mode = 'file') => {
+    this.setState({
+      restoreDialogVisible: true,
+      lifeCycleRestoreMode: mode
+    });
+  };
+
+  closeRestoreFilesDialog = () => {
+    this.setState({
+      restoreDialogVisible: false,
+      lifeCycleRestoreMode: undefined
+    });
+  };
+
+  restoreFiles = (payload) => {
+    const {storageId, restoreInfo} = this.props;
+    const request = new LifeCycleRestoreCreate(storageId);
+    this.setState({restorePending: true}, async () => {
+      await request.send(payload);
+      if (request.error) {
+        message.error(request.error, 5);
+        return this.setState({restorePending: false});
+      }
+      restoreInfo.fetch()
+        .then(() => {
+          this.setState({restorePending: false});
+          this.closeRestoreFilesDialog();
+        });
+    });
   };
 
   openRenameItemDialog = (event, item) => {
@@ -857,14 +971,15 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  canRestoreItem = (item) => {
+  canRestoreVersion = (item) => {
     if (!this.showVersions) {
       return false;
     }
     if (
       (item.type && item.type.toLowerCase() === 'folder') ||
       !item.isVersion ||
-      item.deleteMarker
+      item.deleteMarker ||
+      (item.isVersion && item.archived && !item.restored)
     ) {
       return false;
     }
@@ -908,6 +1023,8 @@ export default class DataStorage extends React.Component {
       (item.isVersion
         ? item.editable && this.versionControlsEnabled
         : item.editable
+      ) && (
+        !item.archived || item.restored
       )
     ) {
       actions.push(
@@ -920,7 +1037,7 @@ export default class DataStorage extends React.Component {
         </Button>
       );
     }
-    if (this.versionControlsEnabled && this.canRestoreItem(item)) {
+    if (this.versionControlsEnabled && this.canRestoreVersion(item)) {
       actions.push(
         <Button
           id={`restore ${item.name}`}
@@ -991,6 +1108,27 @@ export default class DataStorage extends React.Component {
     this.setState({editFile: null});
   };
 
+  getRestoredStatus = (item) => {
+    const {
+      parentRestore,
+      currentRestores
+    } = this.lifeCycleRestoreInfo;
+    if (!item) {
+      return null;
+    }
+    const itemRestoreStatus = (currentRestores || [])
+      .find(({path = ''}) => item.name === path.split('/')
+        .filter(Boolean)
+        .pop()
+      );
+    if (itemRestoreStatus) {
+      return itemRestoreStatus;
+    }
+    return item.type === 'File'
+      ? parentRestore
+      : null;
+  };
+
   get columns () {
     const tableData = this.items;
     const hasAppsColumn = tableData.some(o => o.miew);
@@ -999,11 +1137,21 @@ export default class DataStorage extends React.Component {
       if (!item) {
         return null;
       }
+      let restoredStatus = this.getRestoredStatus(item);
+      if (
+        restoredStatus &&
+        item.type !== 'Folder' &&
+        (!item.archived || (item.isVersion && !restoredStatus.restoreVersions))
+      ) {
+        restoredStatus = null;
+      }
       return (
-        <Icon
-          className={styles.itemType}
-          type={item.type.toLowerCase()}
-        />
+        <RestoreStatusIcon restoreInfo={restoredStatus}>
+          <Icon
+            className={styles.itemType}
+            type={item.type.toLowerCase()}
+          />
+        </RestoreStatusIcon>
       );
     };
     const selectionColumn = {
@@ -1030,7 +1178,11 @@ export default class DataStorage extends React.Component {
       title: '',
       className: styles.itemTypeCell,
       onCellClick: (item) => this.didSelectDataStorageItem(item),
-      render: (text, item) => getItemIcon(item)
+      render: (text, item) => (
+        <Observer>
+          {() => getItemIcon(item)}
+        </Observer>
+      )
     };
     const appsColumn = {
       key: 'apps',
@@ -1275,6 +1427,15 @@ export default class DataStorage extends React.Component {
             }
           </div>
           <div style={{paddingRight: 8}}>
+            {this.lifeCycleRestoreEnabled && this.restorableItems.length > 0 ? (
+              <Button
+                id="restore-button"
+                size="small"
+                onClick={() => this.openRestoreFilesDialog('file')}
+              >
+                {`Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`}
+              </Button>
+            ) : null}
             {
               this.bulkDownloadEnabled &&
               this.storageAllowSignedUrls &&
@@ -1426,9 +1587,34 @@ export default class DataStorage extends React.Component {
       regionId,
       mountStatus,
       mask,
-      policySupported,
-      storagePolicy
+      policySupported
     } = this.storage.info || {};
+
+    const restoreClassChangeDisclaimer = (item, operation) => {
+      if (!item) {
+        return '';
+      }
+      const activeRestore = item.archived
+        ? this.getRestoredStatus(item)
+        : null;
+      let disclaimer;
+      if (item.type === 'Folder' && activeRestore) {
+        disclaimer = [
+          'Files in this folder will be recursively converted',
+          ' to the "STANDARD" storage class',
+          ...(operation ? [` after ${operation}.`] : ['.'])
+        ];
+      }
+      if (item.type === 'File' && activeRestore) {
+        disclaimer = [
+          'This file will be converted to the "STANDARD" storage class',
+          ...(operation ? [` after ${operation}.`] : ['.'])
+        ];
+      }
+      return disclaimer
+        ? disclaimer.filter(Boolean).join('')
+        : '';
+    };
 
     return (
       <div style={{
@@ -1538,24 +1724,6 @@ export default class DataStorage extends React.Component {
                   </Row>
                 )
               }
-              {
-                storagePolicy &&
-                storagePolicy.shortTermStorageDuration !== undefined && (
-                  <Row>
-                    <b>Short-Term Storage duration: </b>
-                    {`${storagePolicy.shortTermStorageDuration} days`}
-                  </Row>
-                )
-              }
-              {
-                storagePolicy &&
-                storagePolicy.longTermStorageDuration !== undefined && (
-                  <Row>
-                    <b>Long-Term Storage duration: </b>
-                    {`${storagePolicy.longTermStorageDuration} days`}
-                  </Row>
-                )
-              }
             </Row>
             <Row style={{marginLeft: 5}}>
               <DataStorageNavigation
@@ -1576,10 +1744,16 @@ export default class DataStorage extends React.Component {
             this.showMetadata &&
             <Metadata
               key={METADATA_PANEL_KEY}
-              readOnly={!this.storage.isOwner}
+              readOnly={!this.storage.writeAllowed}
               downloadable={!sensitive}
-              showContent={!sensitive}
-              hideMetadataTags={/^nfs$/i.test(type)}
+              showContent={
+                !sensitive &&
+                (
+                  this.state.selectedFile && this.state.selectedFile.archived
+                    ? this.state.selectedFile.restored
+                    : true
+                )
+              }
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
               entityName={
@@ -1622,6 +1796,14 @@ export default class DataStorage extends React.Component {
                   : false
               ].filter(Boolean)}
               extraInfo={[
+                <LifeCycleCounter
+                  storage={this.storage.info}
+                  path={this.props.path}
+                  onClickRestore={() => this.openRestoreFilesDialog('folder')}
+                  restoreInfo={this.lifeCycleRestoreInfo}
+                  restoreEnabled={this.lifeCycleRestoreEnabled}
+                  visible={!this.state.selectedFile}
+                />,
                 <StorageSize storage={this.storage.info} />
               ]}
               specialTagsProperties={{
@@ -1637,7 +1819,6 @@ export default class DataStorage extends React.Component {
           dataStorage={this.storage.info}
           pending={this.storage.infoPending}
           policySupported={policySupported}
-          versionControlsEnabled={this.versionControlsEnabled}
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />
@@ -1709,6 +1890,18 @@ export default class DataStorage extends React.Component {
           visible={!!this.state.renameItem}
           onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem}
+          disclaimerFn={() => {
+            const text = restoreClassChangeDisclaimer(
+              this.state.renameItem,
+              'rename'
+            );
+            return text ? (
+              <Alert
+                message={text}
+                type="info"
+              />
+            ) : null;
+          }}
         />
         <Modal
           visible={!!this.state.itemsToDelete}
@@ -1753,12 +1946,24 @@ export default class DataStorage extends React.Component {
             })
           }
         </Modal>
+        <LifeCycleRestoreModal
+          visible={this.state.restoreDialogVisible}
+          items={this.restorableItems}
+          restoreInfo={this.lifeCycleRestoreInfo}
+          onCancel={this.closeRestoreFilesDialog}
+          onOk={this.restoreFiles}
+          folderPath={this.props.path}
+          pending={this.state.restorePending}
+          mode={this.state.lifeCycleRestoreMode}
+          versioningEnabled={this.versionControlsEnabled}
+        />
         <DataStorageCodeForm
           file={this.state.editFile}
           downloadable={!sensitive}
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
           save={this.saveEditableFile}
+          onSaveDisclaimer={restoreClassChangeDisclaimer(this.state.editFile, 'save')}
         />
       </div>
     );
@@ -1774,6 +1979,7 @@ export default class DataStorage extends React.Component {
   }
 
   componentDidUpdate (prevProps) {
+    this.clearSelectedItemsIfRequired();
     this.updateStorageIfRequired();
   }
 
@@ -1783,5 +1989,11 @@ export default class DataStorage extends React.Component {
       this.props.path,
       this.props.showVersions
     );
+  };
+
+  clearSelectedItemsIfRequired = () => {
+    if (this.storage.storageId !== this.props.storageId) {
+      this.clearSelection();
+    }
   };
 }
