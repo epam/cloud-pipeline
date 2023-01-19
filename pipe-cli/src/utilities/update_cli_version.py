@@ -21,7 +21,6 @@ import click
 import requests
 import platform
 import zipfile
-import subprocess
 import uuid
 from datetime import datetime
 
@@ -29,6 +28,7 @@ from src.config import Config
 from src.utilities.version_utils import need_to_update_version
 
 PERMISSION_DENIED_ERROR = "Permission denied: the user has no permissions to modify '%s'"
+WRAPPER_SUPPORT_ONLY_ERROR = "Update operation is not available."
 
 
 class UpdateCLIVersionManager(object):
@@ -118,30 +118,34 @@ class WindowsUpdater(CLIVersionUpdater):
     WINDOWS_SRC_ZIP = 'pipe.zip'
     ATTEMPTS_COUNT = 10
     LOG_FILE = 'update.log'
-    PIPE_BAT = 'pipe.bat' # a static pipe executable, this file shall not be updated
+    WRAPPER_BAT = 'pipe.bat' # a static pipe executable, this file shall not be updated
+    WRAPPER_UPDATE_ENV = 'CP_CLI_UPDATE_WRAPPER'
+    UPDATE_SCRIPT = 'pipe-cli-update.bat'
+    TMP_UNZIP_FOLDER = 'pipe'
 
     def get_download_suffix(self):
         return self.WINDOWS_SRC_ZIP
 
     def update_version(self, path):
-        random_prefix = str(uuid.uuid4()).replace("-", "")
+        if os.environ.get(self.WRAPPER_UPDATE_ENV) != "true":
+            raise RuntimeError(WRAPPER_SUPPORT_ONLY_ERROR)
 
         tmp_folder = self.get_tmp_folder()
-        self.check_write_permissions(tmp_folder, random_prefix)
+        self.check_write_permissions(tmp_folder)
 
         path_to_src_dir = os.path.dirname(sys.executable)
-        self.check_write_permissions(path_to_src_dir, random_prefix)
+        self.check_write_permissions(path_to_src_dir)
 
-        tmp_src_dir = self.download_new_src(path, random_prefix)
-        pipe_bat = os.path.join(tmp_src_dir, self.PIPE_BAT)
-        os.remove(pipe_bat)
+        tmp_src_dir = self.download_new_src(path, self.TMP_UNZIP_FOLDER)
+        pipe_bat = os.path.join(tmp_src_dir, self.WRAPPER_BAT)
+        if os.path.isfile(pipe_bat):
+            os.remove(pipe_bat)
 
-        path_to_update_bat = os.path.join(tmp_folder, "pipe-update-%s.bat" % random_prefix)
+        path_to_update_bat = os.path.join(tmp_folder, self.UPDATE_SCRIPT)
 
         log_file_path = os.path.join(tmp_folder, self.LOG_FILE)
         with open(log_file_path, 'a') as log_file:
-            log_file.write('[%s] Starting a new update operation %s\n' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                                                                          random_prefix))
+            log_file.write('[%s] Starting a new update operation\n' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
 
         bat_file_content = """@echo off
         for /L %%a in (1,1,{attempts_count}) do (
@@ -154,11 +158,12 @@ class WindowsUpdater(CLIVersionUpdater):
                     )
                 )
                 echo The source subfolders were deleted >> "{log_file}"
-                for %%root_file IN ("{src_dir}\\*") do (
-	                if /i not "%%~nxa"=={pipe_bat} (
-	                    del /q "%%root_file" >> "{log_file}" 2>>&1 || (
-                            echo Failed to delete src files by path "{log_file}" >> "{log_file}"
+                for %%a in ("{src_dir}\\*") do (
+	                if /i not "%%~nxa" == "{pipe_bat}" (
+	                    del /q "%%a" >> "{log_file}" 2>>&1 || (
+                            echo Failed to delete src file "%%a" >> "{log_file}"
                             goto fail
+                        )
 	                )
 	            )
                 echo The source files were deleted >> "{log_file}"
@@ -195,10 +200,9 @@ class WindowsUpdater(CLIVersionUpdater):
                    pipe_pid=os.getpid(),
                    src_dir=path_to_src_dir,
                    tmp_dir=tmp_src_dir,
-                   pipe_bat=self.PIPE_BAT)
+                   pipe_bat=self.WRAPPER_BAT)
         with open(path_to_update_bat, 'a') as bat_file:
             bat_file.write(bat_file_content)
-        click.echo(path_to_update_bat)
 
     def download_new_src(self, path, prefix):
         tmp_folder = self.get_tmp_folder()
@@ -220,9 +224,10 @@ class WindowsUpdater(CLIVersionUpdater):
         return tmp_folder
 
     @staticmethod
-    def check_write_permissions(path, prefix):
+    def check_write_permissions(path):
+        random_prefix = str(uuid.uuid4()).replace("-", "")
         try:
-            path_to_tmp_file = os.path.join(path, "tmp-%s" % prefix)
+            path_to_tmp_file = os.path.join(path, "tmp-%s" % random_prefix)
             with open(path_to_tmp_file, 'a') as tmp_file:
                 tmp_file.write("")
             os.remove(path_to_tmp_file)
