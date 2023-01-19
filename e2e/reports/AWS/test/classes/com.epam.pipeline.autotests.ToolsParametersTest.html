@@ -23,13 +23,13 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">6</div>
+<div class="counter">7</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">5</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">31m46.98s</div>
+<div class="counter">39m5.94s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">75%</div>
+<div class="percent">0%</div>
 <p>successful</p>
 </div>
 </td>
@@ -76,20 +76,13 @@
 <a name="customCapabilitiesForToolDockerImageOS - 2323_1"></a>
 <h3 class="failures">customCapabilitiesForToolDockerImageOS - 2323_1</h3>
 <span class="code">
-<pre>Element not found {visible(By.xpath: .//button[normalize-space(.) = 'SCAN'])}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1670677017980.50.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1670677017980.50.html
-Timeout: 120 s.
-Caused by: Element not found {.ant-table-body/.ant-table-row[2]}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1670677016655.49.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1670677016655.49.html
+<pre>Element should be disabled {By.id: edit-preference-form-ok-button}
+Element: '&lt;button class=&quot;ant-btn ant-btn-primary ant-btn-sm&quot; id=&quot;edit-preference-form-ok-button&quot; type=&quot;button&quot;&gt;Save&lt;/button&gt;'
+Actual value: enabled
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1674125048420.43.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1674125048420.43.html
 Timeout: 150 s.
-Caused by: NoSuchElementException: Cannot locate an element using visible(By.xpath: .//button[normalize-space(.) = 'SCAN'])
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
@@ -97,16 +90,9 @@ Caused by: NoSuchElementException: Cannot locate an element using visible(By.xpa
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.ToolVersions.validateScanningProcess(ToolVersions.java:310)
-	at com.epam.pipeline.autotests.ao.ToolVersions.scanVersionIfNeeded(ToolVersions.java:302)
-	at com.epam.pipeline.autotests.ToolsParametersTest.lambda$customCapabilitiesForToolDockerImageOS$2(ToolsParametersTest.java:214)
-	at com.epam.pipeline.autotests.ao.ToolGroup.tool(ToolGroup.java:61)
-	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$3(ToolsPage.java:111)
-	at com.epam.pipeline.autotests.ao.Registry.group(Registry.java:55)
-	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$perform$4(ToolsPage.java:110)
-	at com.epam.pipeline.autotests.ao.ToolsPage.registry(ToolsPage.java:133)
-	at com.epam.pipeline.autotests.ao.ToolsPage.perform(ToolsPage.java:109)
-	at com.epam.pipeline.autotests.ToolsParametersTest.customCapabilitiesForToolDockerImageOS(ToolsParametersTest.java:210)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.save(SettingsPageAO.java:1396)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.saveIfNeeded(SettingsPageAO.java:1405)
+	at com.epam.pipeline.autotests.ToolsParametersTest.customCapabilitiesForToolDockerImageOS(ToolsParametersTest.java:209)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -120,33 +106,157 @@ Caused by: NoSuchElementException: Cannot locate an element using visible(By.xpa
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {.ant-table-body/.ant-table-row[2]}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1670677016655.49.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1670677016655.49.html
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="customCapabilitiesImplementation - 2234"></a>
+<h3 class="failures">customCapabilitiesImplementation - 2234</h3>
+<span class="code">
+<pre>Element should be disabled {By.id: edit-preference-form-ok-button}
+Element: '&lt;button class=&quot;ant-btn ant-btn-primary ant-btn-sm&quot; id=&quot;edit-preference-form-ok-button&quot; type=&quot;button&quot;&gt;Save&lt;/button&gt;'
+Actual value: enabled
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1674126007110.44.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1674126007110.44.html
 Timeout: 150 s.
-Caused by: NoSuchElementException: Cannot locate an element using visible(By.xpath: .//button[normalize-space(.) = 'SCAN'])
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.CollectionElement.createElementNotFoundError(CollectionElement.java:50)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.findElement(Unknown Source)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 30 more
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using visible(By.xpath: .//button[normalize-space(.) = 'SCAN'])
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '733068a696db', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at sun.reflect.GeneratedMethodAccessor25.invoke(Unknown Source)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.save(SettingsPageAO.java:1396)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.saveIfNeeded(SettingsPageAO.java:1405)
+	at com.epam.pipeline.autotests.ToolsParametersTest.customCapabilitiesImplementation(ToolsParametersTest.java:141)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="customCapabilitiesWithConfiguredJobParameters - 2295"></a>
+<h3 class="failures">customCapabilitiesWithConfiguredJobParameters - 2295</h3>
+<span class="code">
+<pre>Element should be disabled {By.id: edit-preference-form-ok-button}
+Element: '&lt;button class=&quot;ant-btn ant-btn-primary ant-btn-sm&quot; id=&quot;edit-preference-form-ok-button&quot; type=&quot;button&quot;&gt;Save&lt;/button&gt;'
+Actual value: enabled
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1674126391769.45.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1674126391769.45.html
+Timeout: 150 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.save(SettingsPageAO.java:1396)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.saveIfNeeded(SettingsPageAO.java:1405)
+	at com.epam.pipeline.autotests.ToolsParametersTest.customCapabilitiesWithConfiguredJobParameters(ToolsParametersTest.java:181)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="fallBackToDefaultToolSettings"></a>
+<h3 class="failures">fallBackToDefaultToolSettings</h3>
+<span class="code">
+<pre>Element should be disabled {By.id: edit-preference-form-ok-button}
+Element: '&lt;button class=&quot;ant-btn ant-btn-primary ant-btn-sm&quot; id=&quot;edit-preference-form-ok-button&quot; type=&quot;button&quot;&gt;Save&lt;/button&gt;'
+Actual value: enabled
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1674127033180.46.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1674127033180.46.html
+Timeout: 150 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.save(SettingsPageAO.java:1396)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO.saveIfNeeded(SettingsPageAO.java:1405)
+	at com.epam.pipeline.autotests.ToolsParametersTest.fallBackToDefaultToolSettings(ToolsParametersTest.java:110)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="runToolThatHaveNoNginxEndpoint - EPMCMBIBPC-502"></a>
+<h3 class="failures">runToolThatHaveNoNginxEndpoint - EPMCMBIBPC-502</h3>
+<span class="code">
+<pre>java.lang.IndexOutOfBoundsException: Index: 28, Size: 25
+	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
+	at java.util.ArrayList.get(ArrayList.java:435)
+	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
-	... 35 more
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.getSize(Unknown Source)
+	at com.epam.pipeline.autotests.ao.LogAO.lambda$logMessages$0(LogAO.java:120)
+	at java.util.stream.ReferencePipeline$4$1.accept(ReferencePipeline.java:210)
+	at java.util.Iterator.forEachRemaining(Iterator.java:116)
+	at java.util.Spliterators$IteratorSpliterator.forEachRemaining(Spliterators.java:1801)
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482)
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:472)
+	at java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:708)
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.util.stream.IntPipeline.reduce(IntPipeline.java:479)
+	at java.util.stream.IntPipeline.sum(IntPipeline.java:437)
+	at com.epam.pipeline.autotests.ao.LogAO.logMessages(LogAO.java:120)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.waitForInitializeNode(RunsMenuAO.java:415)
+	at com.epam.pipeline.autotests.ToolsParametersTest.runToolThatHaveNoNginxEndpoint(ToolsParametersTest.java:127)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
 </pre>
 </span>
 </div>
@@ -173,34 +283,36 @@ Driver info: driver.version: unknown
 </tr>
 <tr>
 <td class="failures">customCapabilitiesForToolDockerImageOS - 2323_1</td>
-<td>3m44.62s</td>
+<td>6m24.09s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">customCapabilitiesImplementation - 2234</td>
-<td>11m50.46s</td>
-<td class="success">passed</td>
+<td class="failures">customCapabilitiesImplementation - 2234</td>
+<td>6m4.31s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">customCapabilitiesWithConfiguredJobParameters - 2295</td>
-<td>1m37.45s</td>
-<td class="success">passed</td>
+<td class="failures">customCapabilitiesWithConfiguredJobParameters - 2295</td>
+<td>6m16.85s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">runToolThatHaveNoNginxEndpoint - EPMCMBIBPC-502</td>
-<td>14m34.45s</td>
-<td class="success">passed</td>
+<td class="failures">fallBackToDefaultToolSettings</td>
+<td>10m41.28s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">runToolThatHaveNoNginxEndpoint - EPMCMBIBPC-502</td>
+<td>9m39.41s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 35213 from [35213]
-Returns latest run with runId 35213 from [35213]
-Returns latest run with runId 35214 from [35213, 35214]
-Returns latest run with runId 35214 from [35213, 35214]
-Returns latest run with runId 35215 from [35213, 35214, 35215]
+<pre>Returns latest run with runId 36366 from [36366]
+Returns latest run with runId 36366 from [36366]
 </pre>
 </span>
 </div>
@@ -212,7 +324,7 @@ Returns latest run with runId 35215 from [35213, 35214, 35215]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 10, 2022 10:14:52 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 19, 2023 7:19:01 PM</p>
 </div>
 </div>
 </body>
