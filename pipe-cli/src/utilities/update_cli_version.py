@@ -118,6 +118,7 @@ class WindowsUpdater(CLIVersionUpdater):
     WINDOWS_SRC_ZIP = 'pipe.zip'
     ATTEMPTS_COUNT = 10
     LOG_FILE = 'update.log'
+    PIPE_BAT = 'pipe.bat' # a static pipe executable, this file shall not be updated
 
     def get_download_suffix(self):
         return self.WINDOWS_SRC_ZIP
@@ -132,7 +133,10 @@ class WindowsUpdater(CLIVersionUpdater):
         self.check_write_permissions(path_to_src_dir, random_prefix)
 
         tmp_src_dir = self.download_new_src(path, random_prefix)
-        path_to_bat = os.path.join(tmp_folder, "pipe-update-%s.bat" % random_prefix)
+        pipe_bat = os.path.join(tmp_src_dir, self.PIPE_BAT)
+        os.remove(pipe_bat)
+
+        path_to_update_bat = os.path.join(tmp_folder, "pipe-update-%s.bat" % random_prefix)
 
         log_file_path = os.path.join(tmp_folder, self.LOG_FILE)
         with open(log_file_path, 'a') as log_file:
@@ -150,10 +154,13 @@ class WindowsUpdater(CLIVersionUpdater):
                     )
                 )
                 echo The source subfolders were deleted >> "{log_file}"
-                del /q "{src_dir}" >> "{log_file}" 2>>&1 || (
-                    echo Failed to delete src files by path "{log_file}" >> "{log_file}"
-                    goto fail
-                )
+                for %%root_file IN ("{src_dir}\\*") do (
+	                if /i not "%%~nxa"=={pipe_bat} (
+	                    del /q "%%root_file" >> "{log_file}" 2>>&1 || (
+                            echo Failed to delete src files by path "{log_file}" >> "{log_file}"
+                            goto fail
+	                )
+	            )
                 echo The source files were deleted >> "{log_file}"
                 xcopy "{tmp_dir}\\pipe" "{src_dir}" /y /s /i > nul 2>> "{log_file}" || (
                     echo Failed to copy files from "{tmp_dir}/pipe" to "{src_dir}" >> "{log_file}"
@@ -187,11 +194,11 @@ class WindowsUpdater(CLIVersionUpdater):
                    log_file=log_file_path,
                    pipe_pid=os.getpid(),
                    src_dir=path_to_src_dir,
-                   tmp_dir=tmp_src_dir)
-        with open(path_to_bat, 'a') as bat_file:
+                   tmp_dir=tmp_src_dir,
+                   pipe_bat=self.PIPE_BAT)
+        with open(path_to_update_bat, 'a') as bat_file:
             bat_file.write(bat_file_content)
-
-        subprocess.Popen("{}".format(path_to_bat))
+        click.echo(path_to_update_bat)
 
     def download_new_src(self, path, prefix):
         tmp_folder = self.get_tmp_folder()
