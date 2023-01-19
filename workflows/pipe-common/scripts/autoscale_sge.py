@@ -1179,7 +1179,7 @@ class GridEngineScaleUpHandler:
         return run_id
 
     def _parameters_str(self, instance_launch_params):
-         return ' '.join('{} {}'.format(key, value) for key, value in instance_launch_params.items())
+        return ' '.join('{} {}'.format(key, value) for key, value in instance_launch_params.items())
 
     def _pipe_cli_price_type(self, price_type):
         """
@@ -2306,7 +2306,7 @@ def extract_family_from_instance_type(cloud_provider, instance_type):
         search = re.search('^(\w+)\..*', instance_type)
         return search.group(1) if search else None
     elif cloud_provider == CloudProvider.gcp():
-        search = re.search('^\w\d\-(\w+)-.*', instance_type)
+        search = re.search('^(?!custom)(\w+-(?!custom)\w+)-?.*', instance_type)
         return search.group(1) if search else None
     elif cloud_provider == CloudProvider.azure():
         # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
