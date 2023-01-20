@@ -22,7 +22,6 @@ import requests
 import platform
 import zipfile
 import uuid
-import shutil
 from datetime import datetime
 
 from src.config import Config
@@ -38,10 +37,7 @@ class UpdateCLIVersionManager(object):
         pass
 
     def update(self, path=None):
-        if not need_to_update_version():
-            click.echo("The Cloud Pipeline CLI version is up-to-date")
-            return
-
+        # TODO: revert changes after debug
         updater = self.get_updater()
 
         if not path:
@@ -122,7 +118,6 @@ class WindowsUpdater(CLIVersionUpdater):
     WRAPPER_BAT = 'pipe.bat' # a static pipe executable, this file shall not be updated
     WRAPPER_UPDATE_ENV = 'CP_CLI_UPDATE_WRAPPER'
     UPDATE_SCRIPT = 'pipe-cli-update.bat'
-    TMP_UNZIP_FOLDER = 'pipe'
 
     def get_download_suffix(self):
         return self.WINDOWS_SRC_ZIP
@@ -131,18 +126,20 @@ class WindowsUpdater(CLIVersionUpdater):
         if os.environ.get(self.WRAPPER_UPDATE_ENV) != "true":
             raise RuntimeError(WRAPPER_SUPPORT_ONLY_ERROR)
 
+        random_prefix = str(uuid.uuid4()).replace("-", "")
+
         tmp_folder = self.get_tmp_folder()
         self.check_write_permissions(tmp_folder)
 
         path_to_src_dir = os.path.dirname(sys.executable)
         self.check_write_permissions(path_to_src_dir)
 
-        tmp_src_dir = self.download_new_src(path, self.TMP_UNZIP_FOLDER)
+        tmp_src_dir = self.download_new_src(path, random_prefix)
         pipe_bat = os.path.join(tmp_src_dir, self.WRAPPER_BAT)
         if os.path.isfile(pipe_bat):
             os.remove(pipe_bat)
 
-        path_to_update_bat = os.path.join(tmp_folder, self.UPDATE_SCRIPT)
+        path_to_update_bat = os.path.join(path_to_src_dir, self.UPDATE_SCRIPT)
 
         log_file_path = os.path.join(tmp_folder, self.LOG_FILE)
         with open(log_file_path, 'a') as log_file:
@@ -206,16 +203,13 @@ class WindowsUpdater(CLIVersionUpdater):
             os.remove(path_to_update_bat)
         with open(path_to_update_bat, 'a') as bat_file:
             bat_file.write(bat_file_content)
-        os.environ['CP_CLI_UPDATE_BAT'] = path_to_update_bat
 
     def download_new_src(self, path, prefix):
         tmp_folder = self.get_tmp_folder()
-        path_to_zip = os.path.join(tmp_folder, self.WINDOWS_SRC_ZIP)
+        path_to_zip = os.path.join(tmp_folder, "%s-%s" % (prefix, self.WINDOWS_SRC_ZIP))
         request = requests.get(path, verify=False)
         open(path_to_zip, 'wb').write(request.content)
         tmp_src_dir = os.path.join(tmp_folder, prefix)
-        if os.path.exists(tmp_src_dir):
-            shutil.rmtree(tmp_src_dir)
         with zipfile.ZipFile(path_to_zip, 'r') as zip_ref:
             zip_ref.extractall(tmp_src_dir)
         os.remove(path_to_zip)
