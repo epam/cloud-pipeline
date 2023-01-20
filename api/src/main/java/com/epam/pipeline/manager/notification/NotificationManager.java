@@ -47,11 +47,12 @@ import java.util.stream.Stream;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationGroup;
 import com.epam.pipeline.entity.notification.NotificationMessage;
-import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import com.epam.pipeline.entity.notification.NotificationType;
+import com.epam.pipeline.entity.notification.UserNotification;
+import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -126,6 +127,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     @Autowired
     private DataStorageManager dataStorageManager;
 
+    @Autowired
+    private UserNotificationManager userNotificationManager;
+
     private final AntPathMatcher matcher = new AntPathMatcher();
 
     /**
@@ -168,6 +172,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold(), duration));
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+        saveUserNotification(notificationMessage);
     }
 
     /**
@@ -200,6 +205,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
 
         monitoringNotificationDao.createMonitoringNotification(message);
+        saveUserNotification(message);
     }
 
     @Override
@@ -244,6 +250,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         message.setTemplateParameters(commentParams);
 
         monitoringNotificationDao.createMonitoringNotification(message);
+        saveUserNotification(message);
     }
 
     @Override
@@ -277,6 +284,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
 
         monitoringNotificationDao.createMonitoringNotification(message);
+        saveUserNotification(message);
     }
 
     /**
@@ -322,6 +330,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .map(pair -> buildMessageForIdleRun(idleRunSettings, ccUserIds, pipelineOwners, idleCpuLevel, pair))
                 .collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
+        saveUserNotifications(messages);
 
         if (NotificationType.IDLE_RUN.equals(notificationType)) {
             final List<Long> runIds = filtered.stream()
@@ -382,6 +391,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final List<Long> runIds = filtered.stream()
                 .map(pm -> pm.getLeft().getId()).collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
+        saveUserNotifications(messages);
         monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
     }
 
@@ -414,6 +424,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                     notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
                     notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
                     monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+                    saveUserNotification(notificationMessage);
                 });
     }
 
@@ -482,6 +493,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         quotaNotificationMessage.setTemplateParameters(
             buildQuotasPlaceholdersDict(storage, exceededQuota, newStatus, activationTime));
         monitoringNotificationDao.createMonitoringNotification(quotaNotificationMessage);
+        saveUserNotification(quotaNotificationMessage);
     }
 
     @Override
@@ -500,6 +512,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                     message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
                     message.setTemplateParameters(buildBillingQuotaParams(appliedQuota));
                     monitoringNotificationDao.createMonitoringNotification(message);
+                    saveUserNotification(message);
                 });
     }
 
@@ -532,6 +545,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         notificationMessage.setTemplateParameters(buildUsersTemplateArguments(pipelineUsers, userStorages));
         notificationMessage.setCopyUserIds(ccUserIds);
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+        saveUserNotification(notificationMessage);
     }
 
     @Override
@@ -565,6 +579,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final List<Long> ccUserIds = getCCUsers(notificationSettings);
         final NotificationMessage message = buildMessageForFullNodePool(filteredPools, notificationSettings, ccUserIds);
         monitoringNotificationDao.createMonitoringNotification(message);
+        saveUserNotification(message);
         monitoringNotificationDao.updateNotificationTimestamp(filteredPools.stream()
                 .map(NodePool::getId)
                 .collect(Collectors.toList()), NotificationType.FULL_NODE_POOL);
@@ -647,7 +662,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage message = toMessage(messageVO);
         monitoringNotificationDao.createMonitoringNotification(message);
-
+        saveUserNotification(message.getToUserId(), message.getSubject(), message.getBody());
         return message;
     }
 
@@ -789,6 +804,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .map(run -> buildMessageForLongPausedRun(run, ccUsers, settings, pipelineOwners))
                 .collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
+        saveUserNotifications(messages);
 
         return filtered;
     }
@@ -948,5 +964,32 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return null;
         }
         return settings;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    private void saveUserNotifications(final List<NotificationMessage> notificationMessages) {
+        final List<UserNotification> userNotifications = notificationMessages.stream().map(n -> {
+            final UserNotification userNotification = new UserNotification();
+            userNotification.setUserId(n.getToUserId());
+            userNotification.setSubject(n.getTemplate().getSubject());
+            userNotification.setText(n.getTemplate().getBody());
+            return userNotification;
+        }).collect(Collectors.toList());
+        userNotificationManager.save(userNotifications);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    private void saveUserNotification(final NotificationMessage notificationMessage) {
+        saveUserNotification(notificationMessage.getToUserId(), notificationMessage.getTemplate().getSubject(),
+                notificationMessage.getTemplate().getBody());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    private void saveUserNotification(final Long userId, final String subject, final String body) {
+        final UserNotification userNotification = new UserNotification();
+        userNotification.setUserId(userId);
+        userNotification.setSubject(subject);
+        userNotification.setText(body);
+        userNotificationManager.save(userNotification);
     }
 }
