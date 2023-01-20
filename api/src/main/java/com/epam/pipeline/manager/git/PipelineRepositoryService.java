@@ -35,6 +35,9 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -81,15 +84,18 @@ public class PipelineRepositoryService {
 
     private final PipelineRepositoryProviderService providerService;
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
     private final String defaultTemplate;
     private final String templatesDirectoryPath;
 
     public PipelineRepositoryService(final PipelineRepositoryProviderService providerService,
                                      final MessageHelper messageHelper,
+                                     final PreferenceManager preferenceManager,
                                      @Value("${templates.default.template}") final String defaultTemplate,
                                      @Value("${templates.directory}") final String templatesDirectoryPath) {
         this.providerService = providerService;
         this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
         this.defaultTemplate = defaultTemplate;
         this.templatesDirectoryPath = templatesDirectoryPath;
     }
@@ -173,7 +179,8 @@ public class PipelineRepositoryService {
                                                   final String path, final int byteLimit) throws GitClientException {
         Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
         Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
-        return providerService.getTruncatedFileContents(pipeline, path, GitUtils.getRevisionName(revision), byteLimit);
+        return providerService.getTruncatedFileContents(pipeline, GitUtils.withoutLeadingDelimiter(path),
+                GitUtils.getRevisionName(revision), byteLimit);
     }
 
     public GitCredentials getPipelineCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
@@ -208,8 +215,8 @@ public class PipelineRepositoryService {
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
                                                           final String version, final boolean recursive,
                                                           final boolean showHiddenFiles) {
-        return ListUtils.emptyIfNull(providerService
-                .getRepositoryContents(pipeline, path, GitUtils.getRevisionName(version), recursive)).stream()
+        return ListUtils.emptyIfNull(providerService.getRepositoryContents(pipeline,
+                GitUtils.withoutLeadingDelimiter(path), GitUtils.getRevisionName(version), recursive)).stream()
                 .filter(entry -> showHiddenFiles || !entry.getName().startsWith(Constants.DOT))
                 .collect(Collectors.toList());
     }
@@ -333,7 +340,9 @@ public class PipelineRepositoryService {
                 : String.format("Updating files %s", sourceItemVOList.getItems().stream()
                 .map(PipelineSourceItemVO::getPath)
                 .collect(Collectors.joining(", ")));
-        sourceItemVOList.getItems().forEach(sourceItemVO -> validateFilePath(sourceItemVO.getPath()));
+        sourceItemVOList.getItems().stream()
+                .peek(sourceItemVO -> sourceItemVO.setPath(GitUtils.withoutLeadingDelimiter(sourceItemVO.getPath())))
+                .forEach(sourceItemVO -> validateFilePath(sourceItemVO.getPath()));
 
         return providerService.updateFiles(pipeline, sourceItemVOList, message);
     }
@@ -374,7 +383,8 @@ public class PipelineRepositoryService {
                                    final String path, final String revision, final String token) {
         Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
         Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
-        return providerService.getFileContents(repositoryType, repository, path, revision, token);
+        return providerService
+                .getFileContents(repositoryType, repository, GitUtils.withoutLeadingDelimiter(path), revision, token);
     }
 
     private void uploadFolder(final RepositoryType repositoryType, final Template template,
@@ -443,7 +453,7 @@ public class PipelineRepositoryService {
                                              final String repositoryPath, final String token, final boolean initCommit,
                                              final String branch) throws GitClientException {
         final GitProject repository = providerService.createRepository(repositoryType, description,
-                repositoryPath, token);
+                repositoryPath, token, preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY));
 
         providerService.handleHook(repositoryType, repository, token);
 
@@ -507,7 +517,8 @@ public class PipelineRepositoryService {
         if (StringUtils.isBlank(folder) || folder.equals(Constants.PATH_DELIMITER)) {
             return fileName;
         }
-        return folder + Constants.PATH_DELIMITER + fileName;
+        final String folderPath = GitUtils.withoutLeadingDelimiter(ProviderUtils.withoutTrailingDelimiter(folder));
+        return folderPath + Constants.PATH_DELIMITER + fileName;
     }
 
     private void validateFilePath(final String path) {

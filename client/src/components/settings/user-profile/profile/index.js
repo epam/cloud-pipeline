@@ -23,7 +23,9 @@ import LoadingView from '../../../special/LoadingView';
 import Metadata from '../../../special/metadata/Metadata';
 import UserName from '../../../special/UserName';
 import {METADATA_KEY as LIMIT_MOUNTS_USER_PREFERENCE}
-from '../../../special/metadata/special/limit-mounts';
+  from '../../../special/metadata/special/limit-mounts';
+import {METADATA_KEY as RUN_CAPABILITIES}
+  from '../../../pipelines/launch/form/utilities/run-capabilities';
 import displayDate from '../../../../utils/displayDate';
 import styles from './profile.css';
 import SshThemeSelect from '../../../special/metadata/special/ssh-theme-select';
@@ -191,7 +193,11 @@ class ProfileSettings extends React.Component {
           entityClass="PIPELINE_USER"
           removeAllAvailable={userInfo.admin}
           restrictedKeys={userInfo.admin ? [] : metadataKeys}
-          extraKeys={[LIMIT_MOUNTS_USER_PREFERENCE, SshThemeSelect.metadataKey]}
+          extraKeys={[
+            LIMIT_MOUNTS_USER_PREFERENCE,
+            RUN_CAPABILITIES,
+            SshThemeSelect.metadataKey
+          ]}
         />
       </div>
     );

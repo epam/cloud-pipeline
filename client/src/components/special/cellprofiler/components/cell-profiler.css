@@ -55,11 +55,22 @@
   overflow: auto;
 }
 
-.cell-profiler-modules .cell-profiler-cp-module:last-child {
+.cell-profiler-other-jobs {
+  overflow: auto;
+  max-height: 50%;
+}
+
+.cell-profiler-collapse {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.cell-profiler-collapse:last-child {
   border-bottom: none;
 }
 
-.cell-profiler-cp-module-header {
+.cell-profiler-collapse-header {
   width: 100%;
   padding: 5px;
   cursor: pointer;
@@ -67,23 +78,29 @@
   align-items: center;
 }
 
-.cell-profiler-cp-module-header .title {
+.cell-profiler-collapse.empty .cell-profiler-collapse-header {
+  cursor: default;
+}
+
+.cell-profiler-collapse-header .title {
   margin-right: auto;
 }
 
-.cell-profiler-cp-module-header .action {
+.cell-profiler-collapse-header .action {
   line-height: 1;
 }
 
-.cell-profiler-cp-module-header .action:not(:last-child) {
+.cell-profiler-collapse-header .action:not(:last-child) {
   margin-right: 5px;
 }
 
-.cell-profiler-cp-module-content {
+.cell-profiler-collapse-content {
   padding: 5px;
+  flex: 1;
+  overflow: auto;
 }
 
-.cell-profiler-cp-module.expanded:not(:last-child) {
+.cell-profiler-collapse.expanded:not(:last-child) {
   margin-bottom: 10px;
 }
 
@@ -312,6 +329,10 @@
   display: flex;
   align-items: center;
   line-height: 24px;
+}
+
+.cell-profiler-job-info-row .key {
+  white-space: nowrap;
 }
 
 .cell-profiler-job-info-row .value {

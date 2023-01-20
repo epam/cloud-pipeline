@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row, Tooltip} from 'antd';
+import {compareUserNames, compareUserNamesWithoutDomain} from '../../utils/users-filters';
 
 @inject('usersInfo')
 @observer
@@ -34,9 +35,13 @@ export default class UserName extends React.Component {
   @computed
   get user () {
     if (this.props.usersInfo.loaded && this.props.userName) {
-      const [user] = (this.props.usersInfo.value || [])
-        .filter(u => u.name.toLowerCase() === this.props.userName.toLowerCase());
-      return user;
+      const user = (this.props.usersInfo.value || [])
+        .find(u => compareUserNames(u.name, this.props.userName));
+      if (user) {
+        return user;
+      }
+      return (this.props.usersInfo.value || [])
+        .find(u => compareUserNamesWithoutDomain(u.name, this.props.userName));
     }
     return null;
   }

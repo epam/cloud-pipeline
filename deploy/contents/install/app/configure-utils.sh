@@ -749,7 +749,17 @@ read -r -d '' payload <<-EOF
     "project": "$CP_GCP_PROJECT",
     "applicationName": "$CP_GCP_APPLICATION_NAME",
     "tempCredentialsRole": "$CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE",
-    "customInstanceTypes": $gcp_custom_instance_types_json
+    "customInstanceTypes": $gcp_custom_instance_types_json,
+    "storageLifecycleServiceProperties": {
+      "properties": {
+        "batch_operation_job_aws_account_id": "${CP_PREF_STORAGE_LIFECYCLE_SERVICE_AWS_ACCOUNT}",
+        "batch_operation_job_role_arn": "${CP_PREF_STORAGE_LIFECYCLE_SERVICE_S3_ROLE_ARN}",
+        "batch_operation_job_report_bucket": "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}",
+        "batch_operation_job_report_bucket_prefix": "${CP_PREF_STORAGE_LIFECYCLE_SERVICE_REPORT_BUCKET_PREFIX:-storage-lifecycle-service/tagging-job-reports}",
+        "batch_operation_job_poll_status_retry_count": 30,
+        "batch_operation_job_poll_status_sleep_sec": 5
+      }
+    }
 }
 EOF
     else

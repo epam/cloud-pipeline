@@ -38,7 +38,21 @@ function shScriptToHtml (script) {
   return command;
 }
 
-function BashCode ({className, code, id, loading, style}) {
+function BashCode (
+  {
+    className,
+    code,
+    id,
+    loading,
+    style,
+    breakLines,
+    nowrap
+  }
+) {
+  let html = (shScriptToHtml(code) || '');
+  if (breakLines) {
+    html = html.replace(/\n/g, '<br />');
+  }
   return (
     <div
       id={id}
@@ -46,6 +60,9 @@ function BashCode ({className, code, id, loading, style}) {
         classNames(
           'code-highlight',
           styles.shCode,
+          {
+            [styles.nowrap]: nowrap
+          },
           className
         )
       }
@@ -57,7 +74,7 @@ function BashCode ({className, code, id, loading, style}) {
       {
         !loading && (
           <pre
-            dangerouslySetInnerHTML={{__html: shScriptToHtml(code)}}
+            dangerouslySetInnerHTML={{__html: html}}
           />
         )
       }
@@ -70,7 +87,9 @@ BashCode.propTypes = {
   className: PropTypes.string,
   code: PropTypes.string,
   loading: PropTypes.bool,
-  style: PropTypes.object
+  style: PropTypes.object,
+  breakLines: PropTypes.bool,
+  nowrap: PropTypes.bool
 };
 
 export default BashCode;

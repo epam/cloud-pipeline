@@ -88,10 +88,10 @@ RUN if [ "$WITH_OFFICE" = "yes" ]; then \
     fi
 
 # Install Chrome
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update && \
-    apt-get install -y google-chrome-stable
+ARG CP_NM_EXTRA_INSTALL_CHROME_VERSION="104.0.5112.79-1"
+RUN wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.deb" -O /opt/google-chrome.deb && \
+    apt-get install --no-upgrade -y /opt/google-chrome.deb && \
+    rm -f /opt/google-chrome.deb
 
 # Add Chrome desktop icon
 ADD create_chrome_launcher.sh /caps/create_chrome_launcher.sh

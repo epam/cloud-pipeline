@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {action, observable} from 'mobx';
+import {action, computed, observable} from 'mobx';
 import moment from 'moment-timezone';
 import {
   ChartData,
@@ -41,8 +41,18 @@ class ChartsData extends ChartData {
 
   @observable node;
 
+  @computed
+  get pending () {
+    if (!this.initialized) {
+      return true;
+    }
+    return this.cpuUsage.pending ||
+      this.memoryUsage.pending ||
+      this.networkUsage.pending ||
+      this.fileSystemUsage.pending;
+  }
+
   set pending (value) {
-    this._pending = value;
     if (this.initialized) {
       this.cpuUsage.pending = value;
       this.memoryUsage.pending = value;

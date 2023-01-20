@@ -349,6 +349,30 @@ function upgrade_installed_packages {
       return $?
 }
 
+function configure_package_manager_pip {
+    if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+        # Converts regional s3 endpoints
+        # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+        # to regional website s3 endpoints
+        # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
+        _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+            | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            # If the conversion was successful
+            CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
+        else
+            CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI_BASE_URL_DEFAULT
+    export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+}
+
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
 function configure_package_manager {
       # Get the distro name and version
@@ -395,7 +419,7 @@ function configure_package_manager {
       CP_REPO_RETRY_COUNT=${CP_REPO_RETRY_COUNT:-3}
       if [ "${CP_REPO_ENABLED,,}" == 'true' ]; then
             # System package manager setup
-            local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
+            local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/repos"}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
             if [ "$CP_OS" == "centos" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
@@ -445,12 +469,9 @@ function configure_package_manager {
                         fi
                   done
             fi
-            # Pip setup
-            local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
-            local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
-            export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-      fi
 
+            configure_package_manager_pip
+      fi
 }
 
 # Generates apt-get or yum command to install specified list of packages (second argument)
@@ -592,7 +613,7 @@ function install_private_packages {
       #    Delete an existing installation, if it's a paused run
       #    We can probably keep it, but it will fail if we need to update a resumed run
       rm -rf "${_install_path}/conda"
-      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
+      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"}"
 
       # Download the distro from a public bucket
       echo "Getting python distro from $CP_CONDA_DISTRO_URL"
@@ -904,6 +925,9 @@ if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
 
+export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
+echo "Using global distribution $GLOBAL_DISTRIBUTION_URL..."
+
 # Perform any distro/version specific package manage configuration
 configure_package_manager
 
@@ -964,12 +988,12 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
-check_python_module_installed "pip --version" || { curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | $CP_PYTHON2_PATH; };
+check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH; };
 
 # Check jq is installed
 if ! jq --version > /dev/null 2>&1; then
     echo "Installing jq"
-    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
     if [ $? -ne 0 ]; then
       echo "[ERROR] Unable to install 'jq', downstream setup may fail"
     fi

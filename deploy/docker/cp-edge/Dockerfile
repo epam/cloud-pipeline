@@ -90,6 +90,7 @@ RUN touch /var/log/sync-routes.log && \
 ## Main config file
 ADD	nginx.conf /etc/nginx/nginx.conf
 ADD endpoints-config /etc/nginx/endpoints-config
+ADD static /etc/nginx/static
 ADD mime.types /etc/nginx/mime.types
 
 ## Logs dir

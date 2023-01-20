@@ -31,6 +31,7 @@ from PIL import Image
 from tifffile import imread
 from .utils import HcsParsingUtils, HcsFileLogger, log_run_info, get_int_run_param, get_bool_run_param
 from .tags import HcsFileTagProcessor
+from .evals import HcsFileEvalProcessor
 
 RAW_TO_OME_TIFF_FLAGS = os.getenv('HCS_PARSING_RAW2OMETIFF_EXTRA_FLAGS')
 BFORMATS_TO_RAW_FLAGS = os.getenv('HCS_PARSING_BIOFORMATS2RAW_EXTRA_FLAGS')
@@ -40,12 +41,16 @@ HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
 HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
 
+HCS_EVAL_DIR_NAME = os.getenv('HCS_EVAL_DIR_NAME', 'eval')
+EVAL_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_EVAL_ONLY')
+
 HCS_PREVIEW_OUTPUT_USE_ABSOLUTE_PATHS = get_bool_run_param('HCS_PARSING_PREVIEW_FIELDS_USE_ABSOLUTE_PATHS', 'true')
 TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
 DEFAULT_CHANNEL_WIDTH = get_int_run_param('HCS_PARSING_DEFAULT_CHANNEL_WIDTH', 1080)
 DEFAULT_CHANNEL_HEIGHT = get_int_run_param('HCS_PARSING_DEFAULT_CHANNEL_HEIGHT', 1080)
 
 WELL_DETAILS_MAPPING = json.loads(os.getenv('HCS_PARSING_PLATE_DETAILS_DICT', '{}'))
+DEFAULT_PLATE_SIZE = float(os.getenv('HCS_PARSING_PLATE_DEFAULT_SIZE', 0.006))
 OME_TIFF_SEQUENCE_CREATION_SCRIPT = os.path.join(os.getenv('HCS_PARSER_HOME', '/opt/local/hcs-tools'),
                                                  'scripts/convert_to_ome_tiff.sh')
 HCS_OME_COMPATIBLE_INDEX_FILE_NAME = 'Index.xml'
@@ -356,7 +361,7 @@ class HcsFileParser:
         wells_tags = self.read_wells_tags()
         if wells_tags:
             self._processing_logger.log_info("Tags " + str(wells_tags))
-        if not TAGS_PROCESSING_ONLY:
+        if not TAGS_PROCESSING_ONLY and not EVAL_PROCESSING_ONLY:
             if not self._localize_related_files():
                 self._processing_logger.log_info('Some errors occurred during copying files from the bucket, exiting...')
                 return 1
@@ -389,9 +394,14 @@ class HcsFileParser:
                 self._processing_logger.log_info('Results transfer was not successful...')
                 return 1
             self._write_hcs_file(time_series_details, plate_width, plate_height)
-        tags_processing_result = self.try_process_tags(xml_info_tree, wells_tags)
-        if TAGS_PROCESSING_ONLY:
-            return tags_processing_result
+        if not EVAL_PROCESSING_ONLY:
+            tags_processing_result = self.try_process_tags(xml_info_tree, wells_tags)
+            if TAGS_PROCESSING_ONLY:
+                return tags_processing_result
+        if not TAGS_PROCESSING_ONLY:
+            eval_processing_result = self.try_process_eval()
+            if EVAL_PROCESSING_ONLY:
+                return eval_processing_result
         self.create_stat_file()
         return 0
 
@@ -464,6 +474,8 @@ class HcsFileParser:
 
         wells_mapping = dict()
         is_well_round, well_size = self.extract_well_configuration(hcs_xml_info_root)
+        self._processing_logger.log_info('Extracted the following plate configuration: round [%s], size [%f]' %
+                                         ('true' if is_well_round else 'false', well_size))
         for well_key, fields_list in measured_wells.items():
             chunks = well_key.split(PLANE_COORDINATES_DELIMITER)
             well_tuple = (chunks[0], chunks[1])
@@ -546,16 +558,61 @@ class HcsFileParser:
         return measured_wells
 
     def extract_well_configuration(self, hcs_xml_info_root):
+        root_xml_file = '-'.join(os.path.basename(self.hcs_root_dir).split('-')[:-1]) + '.xml'
+        root_xml_file_path = os.path.join(self.hcs_root_dir, root_xml_file)
+        if os.path.exists(root_xml_file_path):
+            try:
+                xml_info_root = ET.parse(root_xml_file_path).getroot()
+                hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(xml_info_root)
+                experiment = HcsParsingUtils.find_in_xml(xml_info_root, hcs_schema_prefix + 'Experiment')
+                plate_type = HcsParsingUtils.find_in_xml(experiment, hcs_schema_prefix + 'PlateType')
+                is_well_round = HcsParsingUtils.find_in_xml(plate_type, hcs_schema_prefix + 'WellFormBottom').text.lower() == 'circle'
+                if is_well_round:
+                    well_size = float(HcsParsingUtils.find_in_xml(plate_type, hcs_schema_prefix + 'WellDiameterBottom').text)
+                else:
+                    x_size = float(HcsParsingUtils.find_in_xml(plate_type, hcs_schema_prefix + 'WellWidthXBottom').text)
+                    y_size = float(HcsParsingUtils.find_in_xml(plate_type, hcs_schema_prefix + 'WellWidthYBottom').text)
+                    well_size = max(x_size, y_size)
+                return is_well_round, well_size
+            except Exception as e:
+                self._processing_logger.log_info('An error occurred during reading plate configuration processing: {}'
+                                                 .format(str(e)))
+                print(traceback.format_exc())
+
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
         plate = HcsParsingUtils.extract_plate_from_hcs_xml(hcs_xml_info_root)
         plate_type = plate.find(hcs_schema_prefix + 'PlateTypeName').text
-        well_configuration = WELL_DETAILS_MAPPING[plate_type]
+        well_configuration = WELL_DETAILS_MAPPING.get(plate_type, {'size': DEFAULT_PLATE_SIZE})
         well_size = well_configuration['size']
         is_well_round = True if 'is_round' not in well_configuration else well_configuration['is_round'] == 'false'
         return is_well_round, well_size
 
     def read_wells_tags(self):
         return HcsFileTagProcessor.read_well_tags(self.hcs_root_dir)
+
+    def try_process_eval(self):
+        result = 0
+        local_eval_folder = os.path.join(self.tmp_local_dir, HCS_EVAL_DIR_NAME)
+        harmony_eval_folder = os.path.join(self.hcs_root_dir, HCS_EVAL_DIR_NAME)
+        if not os.path.exists(harmony_eval_folder) or not os.listdir(harmony_eval_folder):
+            self._processing_logger.log_info('Evaluation files not found.')
+            return result
+        try:
+            HcsFileEvalProcessor(harmony_eval_folder, local_eval_folder)\
+                .parse_evaluations()
+            eval_results_path = os.path.join(local_eval_folder, HCS_EVAL_DIR_NAME)
+            if os.path.exists(eval_results_path) and os.listdir(eval_results_path):
+                cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
+                                                  .format(eval_results_path,
+                                                          HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
+                                                          + '/' + HCS_EVAL_DIR_NAME + '/'))
+                if cloud_transfer_result != 0:
+                    self._processing_logger.log_info('Evaluations transfer was not successful.')
+        except Exception as e:
+            self._processing_logger.log_info('An error occurred during evaluations processing: {}'.format(str(e)))
+            print(traceback.format_exc())
+            result = 1
+        return result
 
     def try_process_tags(self, xml_info_tree, wells_tags):
         tags_processing_result = 0
@@ -564,7 +621,7 @@ class HcsFileParser:
                 self._processing_logger.log_info('Some errors occurred during file tagging')
                 tags_processing_result = 1
         except Exception as e:
-            log_run_info('An error occurred during tags processing: {}'.format(str(e)))
+            self._processing_logger.log_info('An error occurred during tags processing: {}'.format(str(e)))
             print(traceback.format_exc())
             tags_processing_result = 1
         return tags_processing_result
@@ -626,17 +683,25 @@ class HcsFileParser:
                     well.append(ET.fromstring('<Image id="{}" />'.format(image_id)))
 
     def merge_image(self, images, hcs_schema_prefix, sequence_preview_dir_path, channel, well):
-        image_size = None
+        image_size_x = None
+        image_size_y = None
+
         name = None
 
-        initial_size = max(channel[0], channel[1])
-        resolution = max(channel[2], channel[3])
+        initial_size_x = channel[0]
+        initial_size_y = channel[1]
 
-        pixel_size = None
-        size = None
+        resolution_x = channel[2]
+        resolution_y = channel[3]
 
-        x_start = 0.0
-        y_start = 0.0
+        pixel_size_x = None
+        size_x = None
+
+        pixel_size_y = None
+        size_y = None
+
+        x_start = sys.maxint
+        y_start = sys.maxint
 
         coordinates = {}
 
@@ -644,12 +709,17 @@ class HcsFileParser:
             for image in list:
                 file_name = image.find(hcs_schema_prefix + 'URL').text
 
-                if image_size is None:
+                if image_size_x is None:
                     name = file_name
                     array = imread(os.path.join(sequence_preview_dir_path, file_name))
-                    image_size = array.shape[0]
-                    pixel_size = resolution * initial_size / image_size
-                    size = pixel_size * image_size
+
+                    image_size_y = array.shape[0]
+                    pixel_size_y = resolution_y * initial_size_y / image_size_y
+                    size_y = pixel_size_y * image_size_y
+
+                    image_size_x = array.shape[1]
+                    pixel_size_x = resolution_x * initial_size_x / image_size_x
+                    size_x = pixel_size_x * image_size_x
 
                 x = float(image.find(hcs_schema_prefix + 'PositionX').text)
                 y = float(image.find(hcs_schema_prefix + 'PositionY').text)
@@ -659,20 +729,23 @@ class HcsFileParser:
                     y_start = y
                 coordinates[file_name] = [x, y, image.find(hcs_schema_prefix + 'FieldID').text]
 
-        x_merged_size = int(well.get_width() * image_size)
-        y_merged_size = int(well.get_height() * image_size)
-        merged_size = max(x_merged_size, y_merged_size)
-        result = np.zeros((merged_size, merged_size))
-        self._processing_logger.log_info("Merging images %s %dx%d" % (name, merged_size, merged_size))
+        result = np.zeros((initial_size_y, initial_size_x))
+        self._processing_logger.log_info("Merging images %s %dx%d" % (name, initial_size_x, initial_size_y))
+
+        if len(coordinates) == 1:
+            for name, coord in coordinates.items():
+                image = imread(os.path.join(sequence_preview_dir_path, name), key=0)
+                return Image.fromarray(image)
 
         for name, coord in coordinates.items():
             coord[0] = coord[0] - x_start
             coord[1] = coord[1] - y_start
 
-            row_end = int((coord[1] + size) / pixel_size)
-            row_start = int(coord[1] / pixel_size)
-            col_start = int(coord[0] / pixel_size)
-            col_end = int((coord[0] + size) / pixel_size)
+            row_end = int((coord[1] + size_y) / pixel_size_y)
+            row_start = int(coord[1] / pixel_size_y)
+
+            col_start = int(coord[0] / pixel_size_x)
+            col_end = int((coord[0] + size_x) / pixel_size_x)
 
             result[row_start:row_end, col_start:col_end] = \
                 np.flipud(imread(os.path.join(sequence_preview_dir_path, name), key=0))

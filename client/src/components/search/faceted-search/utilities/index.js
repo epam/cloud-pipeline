@@ -17,7 +17,12 @@
 import * as facetedQueryString from './facet-query-string';
 
 export {facetedQueryString};
-export {DocumentColumns, parseExtraColumns} from './document-columns';
+export {
+  DocumentColumns,
+  getDefaultColumns,
+  filterDisplayedColumns,
+  parseExtraColumns
+} from './document-columns';
 export {default as facetsSearch} from './facets-search';
 export {default as getFacetFilterToken} from './facet-filter-token';
 export {default as fetchFacets} from './fetch-facets';
@@ -28,5 +33,6 @@ export {
   ExcludedSortingKeys,
   getAvailableSortingFields,
   removeSortingByField,
-  toggleSortingByField
+  toggleSortingByField,
+  getSortingPayload
 } from './sorting';

@@ -43,4 +43,9 @@ public class StorageQuotaTriggersManager {
     public List<NFSQuotaTrigger> loadAll() {
         return storageQuotaTriggersDao.loadAll();
     }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void delete(final NFSQuotaTrigger triggerEntry) {
+        storageQuotaTriggersDao.delete(triggerEntry.getStorageId());
+    }
 }

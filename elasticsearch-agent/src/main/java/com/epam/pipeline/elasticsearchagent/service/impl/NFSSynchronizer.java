@@ -32,6 +32,7 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
@@ -39,6 +40,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -156,7 +158,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                     .filter(path -> path.toFile().isFile())
                     .map(path -> convertToStorageFile(path, mountFolder));
             processFilesTagsInChunks(dataStorage, files)
-                    .map(file -> createIndexRequest(file, indexName, dataStorage, permissionsContainer))
+                    .map(file -> createIndexRequest(file, indexName, dataStorage, permissionsContainer,
+                            findFileContent(dataStorage.getName(), file.getPath(), mountFolder.toString())))
                     .forEach(walker::add);
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred during creating document.", e);
@@ -256,21 +259,36 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                 dataStorage.getId(),
                 new DataStorageTagLoadBatchRequest(
                         files.stream()
-                                .map(DataStorageFile::getPath)
+                                .map(file -> dataStorage.resolveAbsolutePath(file.getPath()))
                                 .map(DataStorageTagLoadRequest::new)
                                 .collect(Collectors.toList())));
         return files.stream()
-                .peek(file -> file.setTags(tags.get(file.getPath())));
+                .peek(file -> file.setTags(tags.get(dataStorage.resolveAbsolutePath(file.getPath()))));
     }
 
     protected IndexRequest createIndexRequest(final DataStorageFile file,
                                               final String indexName,
                                               final AbstractDataStorage dataStorage,
-                                              final PermissionsContainer permissionsContainer) {
+                                              final PermissionsContainer permissionsContainer,
+                                              final String content) {
         // TODO maybe we can use file path as _id instead of generating it
         //  on ES side to perform both create and update using this method
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
                 .source(fileMapper.fileToDocument(file, dataStorage, null, permissionsContainer,
-                        SearchDocumentType.NFS_FILE, tagDelimiter));
+                        SearchDocumentType.NFS_FILE, tagDelimiter, content));
+    }
+
+    protected String findFileContent(final String storageName, final String relativePath, final String mountFolder) {
+        if (fileMapper.isSkipContent(storageName, relativePath)) {
+            return null;
+        }
+        final File absolutePath = Paths.get(mountFolder, relativePath).toFile();
+        try {
+            return fileMapper.getFileContent(FileUtils.readFileToByteArray(absolutePath), relativePath, log);
+        } catch (IOException e) {
+            log.error("An error occurred during reading file '{}' content from storage '{}'",
+                    relativePath, storageName, e);
+            return null;
+        }
     }
 }

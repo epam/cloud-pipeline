@@ -44,14 +44,12 @@ def create_clip(params):
     index_path = os.path.join(preview_dir, 'Index.xml')
     if not os.path.isfile(index_path):
         index_path = os.path.join(preview_dir, 'index.xml')
-    all_channels = get_all_channels(index_path)
-    # z-planes
-    planes = get_planes(index_path)
+    # hcs channels and z-planes
+    channels, planes = get_planes_and_channels(index_path)
     if by_time:
         if point_id not in planes:
             raise RuntimeError('Incorrect Z plane id [{}]'.format(point_id))
-    channels_num = len(all_channels)
-    selected_channel_ids, selected_channels = get_selected_channels(params, all_channels)
+    selected_channels = get_selected_channels(params, channels)
 
     clips = []
     durations = []
@@ -61,19 +59,18 @@ def create_clip(params):
             if point_id not in timepoints:
                 raise RuntimeError('Incorrect timepoint id [{}]'.format(point_id))
         ome_tiff_path, offsets_path = get_path(preview_dir, seq, by_field)
-        pages = get_pages(selected_channel_ids, point_id, planes, channels_num, by_time, timepoints, cell)
-        offsets = get_offsets(offsets_path, pages)
-        images = read_images(ome_tiff_path, pages, offsets)
-        curr = 0
+        pages = get_pages(list(selected_channels.keys()), point_id, planes, len(channels), by_time, timepoints, cell)
+        set_offsets(offsets_path, pages)
+        read_images(ome_tiff_path, pages)
         frames = timepoints if by_time else planes
-        for _ in frames:
-            channel_images = []
-            for channel in selected_channels:
-                channel_image = images[curr]
-                colored_image = color_image(channel_image, channel)
-                channel_images.append(colored_image)
-                curr = curr + 1
-            merged_image = merge_channels(channel_images)
+        for f in frames:
+            frame_pages = _get_items(pages.values(), 'time_point' if by_time else 'plane', f)
+            frame_images = []
+            for frame_page in frame_pages:
+                channel_id = frame_page['channel_id']
+                colored_image = color_image(frame_page['image'], selected_channels[channel_id])
+                frame_images.append(colored_image)
+            merged_image = merge_hcs_channels(frame_images)
             clips.append(np.array(merged_image))
             durations.append(duration)
 
@@ -84,15 +81,11 @@ def create_clip(params):
     return clip_name, round((t1 - t), 2)
 
 
-def read_images(ome_tiff_path, pages, offsets):
-    images = []
-    num = 0
+def read_images(ome_tiff_path, pages):
     tiff_file = TiffFile(ome_tiff_path)
-    for p in pages:
-        img = TiffPage(tiff_file, index=p, offset=offsets[num]).asarray()
-        images.append(img)
-        num = num + 1
-    return images
+    for page_num, page in pages.items():
+        image = TiffPage(tiff_file, index=page_num, offset=page['offset']).asarray()
+        page['image'] = image
 
 
 def get_clip_name(by_field, cell, clip_format, sequence_id, point_id, by_time):
@@ -106,22 +99,24 @@ def get_clip_name(by_field, cell, clip_format, sequence_id, point_id, by_time):
 
 
 def get_pages(channel_ids, point_id, planes, channels, by_time, timepoints, cell):
-    pages = []
     num = 0
+    pages = dict()
     for time_point in timepoints:
         for channel_id in range(channels):
             for plane in planes:
                 if (channel_id in channel_ids) and (plane == point_id if by_time else time_point == point_id):
-                    pages.append(num + len(planes) * channels * len(timepoints) * cell)
+                    page_num = num + len(planes) * channels * len(timepoints) * cell
+                    pages[page_num] = {'channel_id': channel_id, 'time_point': time_point, 'plane': plane}
                 num = num + 1
     return pages
 
 
-def get_offsets(offsets_path, pages):
+def set_offsets(offsets_path, pages):
     with open(offsets_path, 'r') as offsets_file:
         offsets_line = offsets_file.read()
         offsets = offsets_line.replace("[", "").replace("]", "").split(", ")
-        return np.array(offsets, np.int64)[pages]
+        for page_num, page in pages.items():
+            page['offset'] = int(offsets[page_num])
 
 
 def extract_xml_schema(xml_info_root):
@@ -142,35 +137,26 @@ def parse_hcs(path, sequence_id):
         return preview_dir, sequences
 
 
-def get_all_channels(path):
+def get_planes_and_channels(path):
     tree = ET.parse(path)
     hcs_xml_info_root = tree.getroot()
     hcs_schema_prefix = extract_xml_schema(hcs_xml_info_root)
     maps = hcs_xml_info_root.find(hcs_schema_prefix + 'Maps').findall(hcs_schema_prefix + 'Map')
-    channels = []
+    channels = dict()
     for m in maps:
         entries = m.findall(hcs_schema_prefix + 'Entry')
         for e in entries:
             channel_name = e.find(hcs_schema_prefix + 'ChannelName')
             if channel_name is not None:
-                channel = dict()
-                channel['id'] = int(e.attrib.get('ChannelID')) - 1
-                channel['name'] = channel_name.text
-                channels.append(channel)
-    return channels
-
-
-def get_planes(path):
-    tree = ET.parse(path)
-    hcs_xml_info_root = tree.getroot()
-    hcs_schema_prefix = extract_xml_schema(hcs_xml_info_root)
+                channel_id = int(e.attrib.get('ChannelID')) - 1
+                channels[channel_id] = channel_name.text
     images = hcs_xml_info_root.find(hcs_schema_prefix + 'Images').findall(hcs_schema_prefix + 'Image')
     planes = []
     for i in images:
         plane_id = i.find(hcs_schema_prefix + 'PlaneID').text
         if plane_id not in planes:
             planes.append(plane_id)
-    return planes
+    return channels, planes
 
 
 def mkdir(path):
@@ -184,28 +170,25 @@ def mkdir(path):
     return True
 
 
-def get_selected_channels(params, channels):
-    selected_channels = []
-    selected_channel_ids = []
-    for chl in channels:
-        channel_params = params.get(chl['name'])
+def get_selected_channels(params, all_channels):
+    selected_channels = dict()
+    for channel_id, channel_name in all_channels.items():
+        channel_params = params.get(channel_name)
         if channel_params is not None:
             channel_params = channel_params.split(',')
             if len(channel_params) != 5:
                 raise RuntimeError("Channel should have 6 parameters")
-            channel = dict()
-            channel['id'] = chl['id']
-            channel['name'] = chl['name']
-            channel['r'] = int(channel_params[0])
-            channel['g'] = int(channel_params[1])
-            channel['b'] = int(channel_params[2])
-            channel['min'] = int(channel_params[3])
-            channel['max'] = int(channel_params[4])
-            selected_channel_ids.append(chl['id'])
-            selected_channels.append(channel)
+            selected_channels[channel_id] = {
+                'name': channel_name,
+                'r': int(channel_params[0]),
+                'g': int(channel_params[1]),
+                'b': int(channel_params[2]),
+                'min': int(channel_params[3]),
+                'max': int(channel_params[4])
+            }
     if len(selected_channels) < 1:
         raise RuntimeError("At least one channel is required")
-    return selected_channel_ids, selected_channels
+    return selected_channels
 
 
 def get_path(preview_dir, seq, by_field):
@@ -221,20 +204,20 @@ def get_channel_params(params, channel):
     return next(filter(lambda p: p['channelId'] == channel, params))
 
 
-def merge_channels(images):
+def merge_hcs_channels(images):
     result = images[0]
     for i in range(1, len(images)):
         image = images[i]
         r1, g1, b1 = image.split()
         r2, g2, b2 = result.split()
-        r = _merge_color_channel(r1, r2)
-        g = _merge_color_channel(g1, g2)
-        b = _merge_color_channel(b1, b2)
+        r = _merge_color_channels(r1, r2)
+        g = _merge_color_channels(g1, g2)
+        b = _merge_color_channels(b1, b2)
         result = Image.merge("RGB", (Image.fromarray(r), Image.fromarray(g), Image.fromarray(b)))
     return result
 
 
-def _merge_color_channel(r1, r2):
+def _merge_color_channels(r1, r2):
     r = np.add(np.array(r1, dtype='uint16'), np.array(r2, dtype='uint16'))
     r = np.where(r <= 255, r, 255).astype('uint8')
     return r
@@ -263,3 +246,7 @@ def color_image(image, channel):
     rgb = (channel['r'], channel['g'], channel['b'])
     colored_image = ImageOps.colorize(grayscale_image, black='black', white=rgb)
     return colored_image
+
+
+def _get_items(collection, key, target):
+    return list((item for item in collection if item.get(key, None) == target))

@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
@@ -40,6 +41,8 @@ import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
@@ -368,5 +371,21 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByName(#id, 'WRITE')")
     public void updateStorageUsage(final String id) {
         eventsService.ifPresent(s -> s.addReindexEvent(id));
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public DataStorageItemType getItemType(final Long id, final String path, final String version) {
+        return dataStorageManager.getItemType(id, path, version);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public DataStorageItemType getItemTypeOwner(final Long id, final String path, final String version) {
+        return dataStorageManager.getItemType(id, path, version);
+    }
+
+    @PostFilter(AclExpressions.ADMIN_OR_GENERAL_USER)
+    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
+            final DataStorageObjectSearchByTagRequest request) {
+        return dataStorageManager.searchDataStorageItemByTag(request);
     }
 }

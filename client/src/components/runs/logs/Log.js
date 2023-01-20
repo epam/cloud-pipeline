@@ -34,10 +34,6 @@ import {
   Spin
 } from 'antd';
 import SplitPane from 'react-split-pane';
-import {
-  PipelineRunCommitCheck,
-  PIPELINE_RUN_COMMIT_CHECK_FAILED
-} from '../../../models/pipelines/PipelineRunCommitCheck';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
 import PausePipeline from '../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../models/pipelines/ResumePipeline';
@@ -98,6 +94,7 @@ import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
+import confirmPause from '../actions/pause-confirmation';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -306,30 +303,14 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   showPauseConfirmDialog = async () => {
-    const dockerImageParts = (this.props.run.value.dockerImage || '').split('/');
-    const imageName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
-    const pipelineName = this.props.run.value.pipelineName || imageName || this.localizedString('pipeline');
-    const checkRequest = new PipelineRunCommitCheck(this.props.runId);
-    await checkRequest.fetch();
-    let content;
-    if (checkRequest.loaded && !checkRequest.value) {
-      content = (
-        <Alert
-          type="error"
-          message={PIPELINE_RUN_COMMIT_CHECK_FAILED} />
-      );
-    }
-    Modal.confirm({
-      title: `Do you want to pause ${pipelineName}?`,
-      content,
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk: () => this.pausePipeline(),
-      okText: 'PAUSE',
-      cancelText: 'CANCEL',
-      width: 450
+    const {run} = this.props;
+    const confirmed = await confirmPause({
+      id: this.props.runId,
+      run: run.loaded ? run.value : undefined
     });
+    if (confirmed) {
+      await this.pausePipeline();
+    }
   };
 
   showResumeConfirmDialog = () => {
@@ -1108,25 +1089,7 @@ class Logs extends localization.LocalizedReactComponent {
     this.setState({resolvedValues: !this.state.resolvedValues});
   };
 
-  @observable
-  _commitCheck = null;
-
-  fetchCommitCheck = async () => {
-    this._commitCheck = new PipelineRunCommitCheck(this.props.runId);
-    await this._commitCheck.fetch();
-  };
-
-  @computed
-  get commitCheck () {
-    if (!this._commitCheck || !this._commitCheck.loaded) {
-      return true;
-    }
-
-    return !!this._commitCheck.value;
-  }
-
-  openCommitRunForm = () => {
-    this.operationWrapper(this.fetchCommitCheck);
+  openCommitRunForm = async () => {
     this.setState({commitRun: true});
   };
 
@@ -2058,12 +2021,13 @@ class Logs extends localization.LocalizedReactComponent {
           onSave={this.operationWrapper(this.saveShareSids)}
           onClose={this.closeShareDialog} />
         <CommitRunDialog
+          runId={this.props.runId}
           defaultDockerImage={dockerImage}
           pending={this.state.operationInProgress}
           visible={this.state.commitRun}
-          commitCheck={this.commitCheck}
           onCancel={this.closeCommitRunForm}
-          onSubmit={this.operationWrapper(this.commitRun)} />
+          onSubmit={this.operationWrapper(this.commitRun)}
+        />
         <LaunchCommand
           payload={this.runPayload}
           visible={this.state.showLaunchCommands}

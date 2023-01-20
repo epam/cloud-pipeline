@@ -16,8 +16,10 @@
 
 import Remote from '../basic/Remote';
 import {computed} from 'mobx';
+import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
+// eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
 class PreferencesLoad extends Remote {
@@ -137,6 +139,11 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get displayNameTag () {
+    return this.getPreferenceValue('faceted.filter.display.name.tag');
   }
 
   @computed
@@ -308,7 +315,9 @@ class PreferencesLoad extends Remote {
             custom: true,
             params: entry?.params || {},
             disclaimer: entry?.disclaimer || '',
-            capabilities: Object.entries(capabilities).map(mapCapability)
+            capabilities: Object.entries(capabilities)
+              .map(c => mapCapability(c, entry)),
+            multiple: Boolean(entry?.multiple)
           };
         };
         return Object
@@ -382,6 +391,16 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get dataStorageItemPreviewMasks () {
+    const extensions = this.getPreferenceValue('ui.storage.static.preview.mask') || '';
+    return extensions
+      .split(/[,;\s]/g)
+      .filter(o => o.length)
+      .map(o => o.startsWith('.') ? o.slice(1) : o)
+      .map(o => new RegExp(`\\.${o}$`, 'i'));
+  }
+
+  @computed
   get inlineMetadataEntities () {
     const value = this.getPreferenceValue('ui.library.metadata.inline');
     return `${value}`.toLowerCase() === 'true';
@@ -420,6 +439,112 @@ class PreferencesLoad extends Remote {
       }
     }
     return [];
+  }
+
+  @computed
+  get commitMaxLayers () {
+    const value = this.getPreferenceValue('commit.max.layers');
+    if (!value || Number.isNaN(Number(value))) {
+      return undefined;
+    }
+    return Number(value);
+  }
+
+  /**
+   * @typedef {object} DownloadCommandTemplate
+   * @property {string} template
+   * @property {string} [before]
+   * @property {string} [after]
+   */
+
+  /**
+   * @typedef {object} FacetedFilterDownloadConfiguration
+   * @property {RegExp[]} allow
+   * @property {RegExp[]} deny
+   * @property {number} [maximum]
+   * @property {{[group: string]: DownloadCommandTemplate}} command
+   */
+
+  /**
+   * @returns {FacetedFilterDownloadConfiguration}
+   */
+  @computed
+  get facetedFilterDownload () {
+    const processMask = (mask) => {
+      if (!mask) {
+        return /.+/;
+      }
+      let escaped = escapeRegExp(mask, ESCAPE_CHARACTERS.filter((ch) => ch !== '*'));
+      escaped = escaped.replace(/[*]/g, '.+');
+      if (/^[\\/]/.test(escaped)) {
+        escaped = '^'.concat(escaped);
+      } else {
+        escaped = '(^|\\/|\\\\)'.concat(escaped);
+      }
+      escaped = escaped.concat('$');
+      return new RegExp(escaped, 'i');
+    };
+    const processMasks = (masks) => {
+      if (typeof masks === 'string') {
+        return [processMask(masks)];
+      }
+      return masks.map(processMask);
+    };
+    const processCommandTemplate = (command) => {
+      if (!command) {
+        return {};
+      }
+      if (typeof command === 'string') {
+        return {
+          default: {
+            template: command
+          }
+        };
+      }
+      if (
+        typeof command === 'object' &&
+        typeof command.template === 'string'
+      ) {
+        return {
+          default: command
+        };
+      }
+      const keys = Object.keys(command);
+      return keys
+        .map((key) => {
+          const value = command[key];
+          if (typeof value === 'string') {
+            return {
+              [key]: {template: value}
+            };
+          }
+          return {[key]: value};
+        })
+        .reduce((r, c) => ({...r, ...c}), {});
+    };
+    const processPreference = (preference = {}) => {
+      const {
+        allow = [],
+        deny = [],
+        command,
+        ...rest
+      } = preference || {};
+      return {
+        allow: processMasks(allow),
+        deny: processMasks(deny),
+        command: processCommandTemplate(command),
+        ...rest
+      };
+    };
+    const value = this.getPreferenceValue('faceted.filter.download');
+    if (value) {
+      try {
+        return processPreference(JSON.parse(value));
+      } catch (e) {
+        console.warn('Error parsing "ui.tool.kube.labels" preference:', e.message);
+      }
+    }
+    return processPreference();
   }
 
   toolScanningEnabledForRegistry (registry) {

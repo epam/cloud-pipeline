@@ -86,6 +86,7 @@ import PlatformIcon from './platform-icon';
 import HiddenObjects from '../../utils/hidden-objects';
 import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
 import Markdown from '../special/markdown';
+import {applyUserCapabilities} from '../pipelines/launch/form/utilities/run-capabilities';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
@@ -125,7 +126,8 @@ export default class Tool extends localization.LocalizedReactComponent {
     showIssuesPanel: false,
     instanceTypesManagementPanel: false,
     createLinkInProgress: false,
-    createLinkFormVisible: false
+    createLinkFormVisible: false,
+    versionFilterValue: undefined
   };
 
   @observable defaultVersionSettings;
@@ -850,7 +852,6 @@ export default class Tool extends localization.LocalizedReactComponent {
         keyIndex += 1;
       });
     }
-
     return data;
   }
 
@@ -1090,6 +1091,12 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && !this.state.isShowUnscannedVersion) {
       data = data.filter(d => d.platform === 'windows' || d.status !== ScanStatuses.notScanned);
     }
+    const {versionFilterValue} = this.state;
+    if (versionFilterValue && versionFilterValue.length) {
+      data = data.filter((item) => (
+        item.name.toLowerCase().includes(versionFilterValue.toLocaleLowerCase())
+      ));
+    }
     return (
       <Row style={{width: '100%'}}>
         {
@@ -1099,6 +1106,14 @@ export default class Tool extends localization.LocalizedReactComponent {
             message={this.props.versions.error}
             style={{margin: '5px 0 10px 0'}} />
         }
+        <Input
+          value={versionFilterValue}
+          onChange={(e) => {
+            this.setState({versionFilterValue: e.target.value});
+          }}
+          placeholder="Enter version name"
+          className={styles.versionFilterInput}
+        />
         <Table
           className={styles.table}
           loading={this.props.versions.pending}
@@ -1497,6 +1512,11 @@ export default class Tool extends localization.LocalizedReactComponent {
     ]);
     const info = this.getVersionRunningInformation(version || this.defaultTag);
     const platform = this.defaultVersionPlatform;
+    payload.params = await applyUserCapabilities(
+      payload.params || {},
+      this.props.preferences,
+      platform
+    );
     if (await run(this)(
       payload,
       true,

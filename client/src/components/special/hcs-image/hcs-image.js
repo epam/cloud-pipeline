@@ -859,6 +859,10 @@ class HcsImage extends React.PureComponent {
       batchJobId
     } = this.state;
     if (showAnalysis) {
+      const {
+        path
+      } = this.props;
+      const sourceName = (path || '').split(/[\//]/).pop();
       return (
         <HcsImageAnalysis
           className={styles.analysis}
@@ -867,6 +871,7 @@ class HcsImage extends React.PureComponent {
           batchMode={batchAnalysis}
           batchJobId={batchJobId}
           toggleBatchMode={this.toggleBatchAnalysis}
+          source={sourceName}
         />
       );
     }

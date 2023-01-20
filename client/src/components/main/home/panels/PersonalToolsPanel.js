@@ -54,6 +54,12 @@ import styles from './Panel.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import PlatformIcon from '../../../tools/platform-icon';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
+import {
+  updateCapabilities,
+  getEnabledCapabilities,
+  applyUserCapabilities,
+  checkRequiredCapabilitiesErrors
+} from '../../../pipelines/launch/form/utilities/run-capabilities';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -77,7 +83,6 @@ const findGroupByName = (groups, name) => {
 @withCurrentUserAttributes()
 @observer
 export default class PersonalToolsPanel extends React.Component {
-
   static propTypes = {
     completedRuns: PropTypes.object,
     panelKey: PropTypes.string,
@@ -216,6 +221,16 @@ export default class PersonalToolsPanel extends React.Component {
     return [];
   }
 
+  get runCapabilitiesError () {
+    if (this.state.runToolInfo && this.state.runToolInfo.runCapabilities) {
+      return checkRequiredCapabilitiesErrors(
+        this.state.runToolInfo.runCapabilities,
+        this.props.preferences
+      );
+    }
+    return false;
+  }
+
   runToolWithDefaultSettings = async () => {
     const payload = this.state.runToolInfo.payload;
     if (this.state.runToolInfo.isSpot !== undefined) {
@@ -239,6 +254,19 @@ export default class PersonalToolsPanel extends React.Component {
     }
     if (this.state.runToolInfo.runNameAlias) {
       payload.runNameAlias = this.state.runToolInfo.runNameAlias;
+    }
+    payload.params = await applyUserCapabilities(
+      payload.params || {},
+      this.props.preferences,
+      this.state.runToolInfo.tool.platform
+    );
+    if (this.state.runToolInfo.runCapabilities) {
+      payload.params = updateCapabilities(
+        payload.params,
+        this.state.runToolInfo.runCapabilities,
+        this.props.preferences,
+        this.state.runToolInfo.tool.platform
+      );
     }
     if (await run(this)(payload, false)) {
       this.setState({
@@ -507,6 +535,12 @@ export default class PersonalToolsPanel extends React.Component {
             dockerRegistries: this.props.dockerRegistries,
             dataStorages: this.props.dataStorageAvailable
           });
+          defaultPayload.params = await applyUserCapabilities(
+            defaultPayload.params || {},
+            this.props.preferences,
+            tool.platform
+          );
+          const runCapabilities = getEnabledCapabilities(defaultPayload.params);
           this.setState({
             runToolInfo: {
               tool,
@@ -514,11 +548,18 @@ export default class PersonalToolsPanel extends React.Component {
               tag: defaultTag,
               payload: defaultPayload,
               warning: launchTooltip,
-              pricePerHour: estimatedPriceRequest.loaded ? estimatedPriceRequest.value.pricePerHour : false,
+              pricePerHour: estimatedPriceRequest.loaded
+                ? estimatedPriceRequest.value.pricePerHour
+                : false,
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
               availablePriceTypes,
-              permissionErrors
+              permissionErrors,
+              runCapabilities,
+              runCapabilitiesError: checkRequiredCapabilitiesErrors(
+                runCapabilities,
+                this.props.preferences
+              )
             }
           });
         } else {
@@ -726,6 +767,18 @@ export default class PersonalToolsPanel extends React.Component {
     }
   };
 
+  onChangeRunCapabilities = (capabilities) => {
+    const {runToolInfo} = this.state;
+    if (runToolInfo) {
+      this.setState({
+        runToolInfo: {
+          ...runToolInfo,
+          runCapabilities: (capabilities || []).slice()
+        }
+      });
+    }
+  };
+
   render () {
     if (!this.props.dockerRegistries.loaded && this.props.dockerRegistries.pending) {
       return <LoadingView />;
@@ -790,7 +843,8 @@ export default class PersonalToolsPanel extends React.Component {
                     (
                       this.state.runToolInfo.permissionErrors &&
                       this.state.runToolInfo.permissionErrors.length > 0
-                    )
+                    ) ||
+                    this.runCapabilitiesError
                   }
                   onClick={this.runToolWithDefaultSettings}
                   type="primary">
@@ -806,7 +860,11 @@ export default class PersonalToolsPanel extends React.Component {
           {
             this.state.runToolInfo &&
               <RunConfirmation
-                cloudRegions={this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : []}
+                cloudRegions={
+                  this.props.awsRegions.loaded
+                    ? (this.props.awsRegions.value || []).map(r => r)
+                    : []
+                }
                 cloudRegionId={this.state.runToolInfo.payload.cloudRegionId}
                 onChangePriceType={this.onChangePriceType}
                 onChangeInstanceType={this.onChangeInstanceType}
@@ -819,7 +877,9 @@ export default class PersonalToolsPanel extends React.Component {
                 instanceType={this.state.runToolInfo.payload.instanceType}
                 showInstanceTypeSelection={!this.state.runToolInfo.payload.instanceType}
                 instanceTypes={this.state.runToolInfo.availableInstanceTypes}
-                onDemandSelectionAvailable={this.state.runToolInfo.availablePriceTypes.indexOf(false) >= 0}
+                onDemandSelectionAvailable={
+                  this.state.runToolInfo.availablePriceTypes.indexOf(false) >= 0
+                }
                 dataStorages={
                   this.props.dataStorageAvailable.loaded
                     ? (this.props.dataStorageAvailable.value || []).map(d => d)
@@ -839,6 +899,11 @@ export default class PersonalToolsPanel extends React.Component {
                 permissionErrors={this.state.runToolInfo.permissionErrors}
                 preferences={this.props.preferences}
                 platform={this.state.runToolInfo.tool.platform}
+                dockerImage={this.state.runToolInfo.payload.dockerImage}
+                runCapabilities={this.state.runToolInfo.runCapabilities}
+                showRunCapabilities={this.state.runToolInfo.runCapabilitiesError}
+                onChangeRunCapabilities={this.onChangeRunCapabilities}
+                dockerRegistries={this.props.dockerRegistries}
               />
           }
           {

@@ -38,7 +38,6 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
@@ -164,8 +163,9 @@ public class ResourceMonitoringManagerTest {
                                                                         monitoringESDao,
                                                                         messageHelper,
                                                                         preferenceManager,
-                                                                        stopServerlessRunManager);
-        resourceMonitoringManager = new ResourceMonitoringManager(instanceOfferManager, core);
+                                                                        stopServerlessRunManager,
+                                                                        instanceOfferManager);
+        resourceMonitoringManager = new ResourceMonitoringManager(core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
         Whitebox.setInternalState(resourceMonitoringManager, "scheduler", taskScheduler);
@@ -201,11 +201,6 @@ public class ResourceMonitoringManagerTest {
         testType = new InstanceType();
         testType.setVCPU(2);
         testType.setName("t1.test");
-
-        BehaviorSubject<List<InstanceType>> mockSubject = BehaviorSubject.createDefault(
-                Collections.singletonList(testType));
-
-        when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(mockSubject);
 
         RunInstance spotInstance = new RunInstance(testType.getName(), 0, 0, null,
                 null, null, "spotNode", PLATFORM, true);
@@ -294,10 +289,7 @@ public class ResourceMonitoringManagerTest {
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
 
-        resourceMonitoringManager.init();
-
-        verify(taskScheduler).scheduleWithFixedDelay(any(), eq(TEST_RESOURCE_MONITORING_DELAY.longValue()));
-        Assert.assertNotNull(Whitebox.getInternalState(core, "instanceTypeMap"));
+        when(instanceOfferManager.getAllInstanceTypes()).thenReturn(Collections.singletonList(testType));
     }
 
     @Test

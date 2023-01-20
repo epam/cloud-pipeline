@@ -24,9 +24,14 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%
 
 MAX_CLUSTER_CORES = 6
 MAX_INSTANCE_CORES = 2
+QUEUE = 'main.q'
+HOSTLIST = '@allhosts'
+QUEUE_DEFAULT = True
 
 executor = Mock()
-grid_engine = GridEngine(executor, MAX_INSTANCE_CORES, MAX_CLUSTER_CORES)
+grid_engine = GridEngine(cmd_executor=executor,
+                         max_instance_cores=MAX_INSTANCE_CORES, max_cluster_cores=MAX_CLUSTER_CORES,
+                         queue=QUEUE, hostlist=HOSTLIST, queue_default=QUEUE_DEFAULT)
 
 
 def setup_function():
@@ -34,19 +39,52 @@ def setup_function():
 
 
 def test_qstat_parsing():
-    stdout = """
-    queuename                      qtype resv/used/tot. load_avg arch          states
-    ------------------------------------------------------------------------------------
-    main.q@pipeline-38415          BIP   0/2/2          0.11     lx-amd64      
-          1 0.75000 name1      root         r     12/21/2018 11:48:00            1
-    ------------------------------------------------------------------------------------
-    ####################################################################################
-     - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS -
-    ####################################################################################
-          2 0.25000 name2      someUser     qw    12/21/2018 12:39:38            1
+    stdout = """<?xml version='1.0'?>
+<job_info  xmlns:xsd="http://arc.liv.ac.uk/repos/darcs/sge/source/dist/util/resources/schemas/qstat/qstat.xsd">
+  <queue_info>
+    <Queue-List>
+      <name>main.q@pipeline-38415</name>
+      <qtype>BIP</qtype>
+      <slots_used>2</slots_used>
+      <slots_resv>0</slots_resv>
+      <slots_total>2</slots_total>
+      <load_avg>1.00000</load_avg>
+      <arch>lx-amd64</arch>
+      <job_list state="running">
+        <JB_job_number>1</JB_job_number>
+        <JAT_prio>0.75000</JAT_prio>
+        <JB_name>name1</JB_name>
+        <JB_owner>root</JB_owner>
+        <state>r</state>
+        <JAT_start_time>2018-12-21T11:48:00</JAT_start_time>
+        <slots>2</slots>
+        <full_job_name>sleep</full_job_name>
+        <requested_pe name="local">2</requested_pe>
+        <granted_pe name="local">2</granted_pe>
+        <hard_req_queue>main.q</hard_req_queue>
+        <binding>NONE</binding>
+      </job_list>
+    </Queue-List>
+  </queue_info>
+  <job_info>
+    <job_list state="pending">
+      <JB_job_number>2</JB_job_number>
+      <JAT_prio>0.25000</JAT_prio>
+      <JB_name>name2</JB_name>
+      <JB_owner>someUser</JB_owner>
+      <state>qw</state>
+      <JB_submission_time>2018-12-21T12:39:38</JB_submission_time>
+      <slots>2</slots>
+      <full_job_name>sleep</full_job_name>
+      <requested_pe name="local">2</requested_pe>
+      <hard_req_queue>main.q</hard_req_queue>
+      <binding>NONE</binding>
+    </job_list>
+  </job_info>
+</job_info>
     """
 
-    executor.execute_to_lines = MagicMock(return_value=__to_lines(stdout))
+    executor.execute = MagicMock(return_value=stdout)
     jobs = grid_engine.get_jobs()
 
     assert len(jobs) == 2
@@ -69,21 +107,96 @@ def test_qstat_parsing():
 
 
 def test_qstat_array_job_parsing():
-    stdout = """
-    queuename                      qtype resv/used/tot. load_avg arch          states
-    ------------------------------------------------------------------------------------
-    main.q@pipeline-38415          BIP   0/2/2          0.11     lx-amd64      
-          1 0.75000 name1      root         r     12/21/2018 11:48:00            1
-          2 0.25000 name2      root         r     12/21/2018 14:51:43            1 1
-    ####################################################################################
-     - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS -
-    ####################################################################################
-          2 0.25000 name2      root         qw    12/21/2018 14:51:43            1 2-10:1
-          3 0.25000 name3      root         qw    12/21/2018 14:51:43            1 1-5:1
-          4 0.25000 name4      root         qw    12/21/2018 14:51:43            1 8,9
+    stdout = """<?xml version='1.0'?>
+<job_info  xmlns:xsd="http://arc.liv.ac.uk/repos/darcs/sge/source/dist/util/resources/schemas/qstat/qstat.xsd">
+  <queue_info>
+    <Queue-List>
+      <name>main.q@pipeline-38415</name>
+      <qtype>BIP</qtype>
+      <slots_used>2</slots_used>
+      <slots_resv>0</slots_resv>
+      <slots_total>2</slots_total>
+      <load_avg>1.00000</load_avg>
+      <arch>lx-amd64</arch>
+      <job_list state="running">
+        <JB_job_number>1</JB_job_number>
+        <JAT_prio>0.75000</JAT_prio>
+        <JB_name>name1</JB_name>
+        <JB_owner>root</JB_owner>
+        <state>r</state>
+        <JAT_start_time>2018-12-21T11:48:00</JAT_start_time>
+        <slots>2</slots>
+        <full_job_name>sleep</full_job_name>
+        <requested_pe name="local">2</requested_pe>
+        <granted_pe name="local">2</granted_pe>
+        <hard_req_queue>main.q</hard_req_queue>
+        <binding>NONE</binding>
+      </job_list>
+      <job_list state="running">
+        <JB_job_number>2</JB_job_number>
+        <JAT_prio>0.25000</JAT_prio>
+        <JB_name>name2</JB_name>
+        <JB_owner>root</JB_owner>
+        <state>r</state>
+        <JAT_start_time>2018-12-21T14:51:43</JAT_start_time>
+        <slots>1</slots>
+        <tasks>1</tasks>
+        <full_job_name>sleep</full_job_name>
+        <requested_pe name="local">1</requested_pe>
+        <granted_pe name="local">1</granted_pe>
+        <hard_req_queue>main.q</hard_req_queue>
+        <binding>NONE</binding>
+      </job_list>
+    </Queue-List>
+  </queue_info>
+  <job_info>
+    <job_list state="pending">
+      <JB_job_number>2</JB_job_number>
+      <JAT_prio>0.25000</JAT_prio>
+      <JB_name>name2</JB_name>
+      <JB_owner>root</JB_owner>
+      <state>qw</state>
+      <JB_submission_time>2018-12-21T14:51:43</JB_submission_time>
+      <slots>1</slots>
+      <tasks>2-10:1</tasks>
+      <full_job_name>sleep</full_job_name>
+      <requested_pe name="local">1</requested_pe>
+      <hard_req_queue>main.q</hard_req_queue>
+      <binding>NONE</binding>
+    </job_list>
+    <job_list state="pending">
+      <JB_job_number>3</JB_job_number>
+      <JAT_prio>0.25000</JAT_prio>
+      <JB_name>name3</JB_name>
+      <JB_owner>root</JB_owner>
+      <state>qw</state>
+      <JB_submission_time>2018-12-21T14:51:43</JB_submission_time>
+      <slots>1</slots>
+      <tasks>1-5:1</tasks>
+      <full_job_name>sleep</full_job_name>
+      <requested_pe name="local">1</requested_pe>
+      <hard_req_queue>main.q</hard_req_queue>
+      <binding>NONE</binding>
+    </job_list>
+    <job_list state="pending">
+      <JB_job_number>4</JB_job_number>
+      <JAT_prio>0.25000</JAT_prio>
+      <JB_name>name3</JB_name>
+      <JB_owner>root</JB_owner>
+      <state>qw</state>
+      <JB_submission_time>2018-12-21T14:51:43</JB_submission_time>
+      <slots>1</slots>
+      <tasks>8,9</tasks>
+      <full_job_name>sleep</full_job_name>
+      <requested_pe name="local">1</requested_pe>
+      <hard_req_queue>main.q</hard_req_queue>
+      <binding>NONE</binding>
+    </job_list>
+  </job_info>
+</job_info>
     """
 
-    executor.execute_to_lines = MagicMock(return_value=__to_lines(stdout))
+    executor.execute = MagicMock(return_value=stdout)
     jobs = grid_engine.get_jobs()
 
     assert len([job for job in jobs if '2.' in job.id]) == 10
@@ -92,10 +205,25 @@ def test_qstat_array_job_parsing():
 
 
 def test_qstat_empty_parsing():
-    stdout = """
+    stdout = """<?xml version='1.0'?>
+<job_info  xmlns:xsd="http://arc.liv.ac.uk/repos/darcs/sge/source/dist/util/resources/schemas/qstat/qstat.xsd">
+  <queue_info>
+    <Queue-List>
+      <name>main.q@pipeline-38415</name>
+      <qtype>BIP</qtype>
+      <slots_used>0</slots_used>
+      <slots_resv>0</slots_resv>
+      <slots_total>2</slots_total>
+      <load_avg>0.34000</load_avg>
+      <arch>lx-amd64</arch>
+    </Queue-List>
+  </queue_info>
+  <job_info>
+  </job_info>
+</job_info>
     """
 
-    executor.execute_to_lines = MagicMock(return_value=__to_lines(stdout))
+    executor.execute = MagicMock(return_value=stdout)
     jobs = grid_engine.get_jobs()
 
     assert len(jobs) == 0
@@ -123,7 +251,3 @@ def test_force_kill_jobs():
     assert_first_argument_contained(executor.execute, 'qdel ')
     assert_first_argument_contained(executor.execute, ' 1 2')
     assert_first_argument_contained(executor.execute, '-f')
-
-
-def __to_lines(stdout):
-    return [line for line in stdout.splitlines() if line.strip()]

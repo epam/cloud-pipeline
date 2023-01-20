@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -295,6 +296,13 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest actionRequest) {
         throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final AzureBlobStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        throw new UnsupportedOperationException();
     }
 
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {

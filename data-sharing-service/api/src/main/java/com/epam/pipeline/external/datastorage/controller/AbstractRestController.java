@@ -1,0 +1,238 @@
+/*
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.external.datastorage.controller;
+
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.tomcat.util.http.fileupload.FileItemIterator;
+import org.apache.tomcat.util.http.fileupload.FileItemStream;
+import org.apache.tomcat.util.http.fileupload.FileUploadException;
+import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+
+public abstract class AbstractRestController {
+
+    protected static final int BUF_SIZE = 2 * 1024;
+    /**
+     * Declares HTTP status OK code value, used to specify this code when REST API
+     * is described, using Swagger-compliant annotations. It allows create nice
+     * documentation automatically.
+     */
+    protected static final int HTTP_STATUS_OK = 200;
+
+    /**
+     * {@code String} specifies API responses description that explains meaning of different values
+     * for $.status JSON path. It's required and used with swagger ApiResponses annotation.
+     */
+    protected static final String API_STATUS_DESCRIPTION =
+            "It results in a response with HTTP status OK, but "
+                    + "you should always check $.status, which can take several values:<br/>"
+                    + "<b>OK</b> means call has been done without any problems;<br/>"
+                    + "<b>ERROR</b> means call has been aborted due to errors (see $.message "
+                    + "for details in this case).";
+
+    private static final String NO_FILES_MESSAGE = "No files specified";
+    private static final String NOT_A_MULTIPART_REQUEST = "Not a multipart request";
+    public static final String FALSE = "false";
+
+    /**
+     * Writes passed content to {@code HttpServletResponse} to allow it's downloading from
+     * the client
+     * @param response to write data
+     * @param bytes content to download
+     * @param name file name
+     * @throws IOException
+     */
+    protected void writeFileToResponse(HttpServletResponse response, byte[] bytes, String name)
+            throws IOException {
+        response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader("Content-Disposition", String.format("attachment;filename=%s", name));
+        response.setContentLengthLong(bytes.length);
+        try (ServletOutputStream stream = response.getOutputStream()) {
+            stream.write(bytes);
+            stream.flush();
+        }
+    }
+
+    /**
+     * Processes a multipart file upload as streaming upload
+     *
+     * @param request a HttpServletRequest to controller
+     * @return an InputStream of data, being uploaded
+     * @throws IOException
+     * @throws FileUploadException
+     */
+    protected InputStream getMultipartStream(HttpServletRequest request) throws IOException, FileUploadException {
+        Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
+        ServletFileUpload upload = new ServletFileUpload();
+        FileItemIterator iterator = upload.getItemIterator(request);
+
+        Assert.isTrue(iterator.hasNext(), NO_FILES_MESSAGE);
+        while (iterator.hasNext()) {
+            FileItemStream stream = iterator.next();
+            if (!stream.isFormField()) {
+                return stream.openStream();
+            }
+        }
+
+        throw new IllegalArgumentException(NO_FILES_MESSAGE);
+    }
+
+    protected <T> List<T> processStreamingUpload(HttpServletRequest request,
+                                                 BiFunction<InputStream, String, T> uploadMapper)
+            throws IOException, FileUploadException {
+        Assert.isTrue(ServletFileUpload.isMultipartContent(request), NOT_A_MULTIPART_REQUEST);
+
+        ServletFileUpload upload = new ServletFileUpload();
+        FileItemIterator iterator = upload.getItemIterator(request);
+
+        Assert.isTrue(iterator.hasNext(), NO_FILES_MESSAGE);
+        boolean found = false;
+        List<T> uploadedResults = new ArrayList<>();
+        while (iterator.hasNext()) {
+            FileItemStream stream = iterator.next();
+            if (!stream.isFormField()) {
+                found = true;
+                try (InputStream dataStream = stream.openStream()) {
+                    uploadedResults.add(uploadMapper.apply(dataStream, stream.getName()));
+                }
+            }
+        }
+
+        Assert.isTrue(found, NO_FILES_MESSAGE);
+
+        return uploadedResults;
+    }
+
+    protected void writeStreamToResponse(HttpServletResponse response,
+                                         InputStream stream,
+                                         String fileName) throws IOException {
+        writeStreamToResponse(response, stream, fileName, MediaType.APPLICATION_OCTET_STREAM);
+    }
+
+    protected void writeStreamToResponse(HttpServletResponse response,
+                                         InputStream stream,
+                                         String fileName,
+                                         MediaType contentType) throws IOException {
+        writeStreamToResponse(response, stream, fileName, contentType, false);
+    }
+
+    protected void writeStreamToResponse(HttpServletResponse response,
+                                         InputStream stream,
+                                         String fileName,
+                                         MediaType contentType,
+                                         boolean inline) throws IOException {
+        writeStreamToResponse(response, stream, fileName, contentType, inline, Collections.emptyMap());
+    }
+
+    protected void writeStreamToResponse(HttpServletResponse response,
+                                         InputStream stream,
+                                         String fileName,
+                                         MediaType contentType,
+                                         boolean inline,
+                                         Map<String, String> headers) throws IOException {
+        try (InputStream in = stream) {
+            writeToResponse(response,
+                    ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType, inline, headers);
+        }
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer) throws IOException {
+        writeToResponse(response, writer, MediaType.APPLICATION_OCTET_STREAM);
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType) throws IOException {
+        writeToResponse(response, writer, contentType, false);
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType,
+                                   final boolean inline) throws IOException {
+        writeToResponse(response, writer, contentType, inline, Collections.emptyMap());
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType,
+                                   final boolean inline,
+                                   final Map<String, String> headers) throws IOException {
+        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, getContentDisposition(writer, inline));
+        response.setContentType(contentType.toString());
+        MapUtils.emptyIfNull(headers).forEach(response::setHeader);
+        writer.write(response);
+        response.flushBuffer();
+    }
+
+    protected void writeStreamToResponse(final HttpServletResponse response,
+                                         final InputStream stream,
+                                         final String fileName,
+                                         final String disposition,
+                                         final MediaType contentType) throws IOException {
+        try (InputStream in = stream) {
+            writeToResponse(response,
+                    ResultWriter.checked(fileName, out -> IOUtils.copy(in, out)), contentType, disposition);
+        }
+    }
+
+    protected void writeToResponse(final HttpServletResponse response,
+                                   final ResultWriter writer,
+                                   final MediaType contentType,
+                                   final String disposition) throws IOException {
+        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, disposition);
+        response.setContentType(contentType.toString());
+        writer.write(response);
+        response.flushBuffer();
+    }
+
+    private String getContentDisposition(final ResultWriter writer, final boolean inline) {
+        final String disposition = inline ? "inline": "attachment";
+        return disposition + ";filename=" + writer.getName();
+    }
+
+    protected MediaType guessMediaType(String fileName) {
+        switch (FilenameUtils.getExtension(fileName)) {
+            case "gif":
+                return MediaType.IMAGE_GIF;
+            case "jpeg":
+                return MediaType.IMAGE_JPEG;
+            case "jpg":
+            case "png":
+                return MediaType.IMAGE_PNG;
+            default:
+                return MediaType.APPLICATION_OCTET_STREAM;
+        }
+    }
+}
+

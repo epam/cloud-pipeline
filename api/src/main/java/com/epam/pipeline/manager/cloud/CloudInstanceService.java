@@ -58,7 +58,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param instance
      * @return
      */
-    RunInstance scaleUpNode(T region, Long runId, RunInstance instance);
+    RunInstance scaleUpNode(T region, Long runId, RunInstance instance, Map<String, String> runtimeParameters);
 
     RunInstance scaleUpPoolNode(T region, String nodeId, NodePool node);
 

@@ -46,7 +46,7 @@ task copyLocalDtsStartupScripts(type: Copy) {
 }
 
 task generateComponentsVersions(type: Exec) {
-    commandLine "bash", 
+    commandLine "bash",
                 "$project.rootDir/scripts/pipeline-scripts/generate_components_versions.sh",
                 "$project.rootDir",
                 "$rootDir/api/src/main/resources/static/components_versions.json"
@@ -249,6 +249,9 @@ dependencies {
     compile('io.reflectoring.diffparser:diffparser:1.4')
 
     compile 'dnsjava:dnsjava:3.4.3'
+
+    //Template engine
+    compile group: 'org.apache.velocity', name: 'velocity', version: '1.7'
 }
 
 // >>>>> processes profiles

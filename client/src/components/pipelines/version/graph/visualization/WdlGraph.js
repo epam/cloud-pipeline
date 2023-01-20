@@ -1537,18 +1537,25 @@ export default class WdlGraph extends Graph {
   loadMainFile = () => {
     if (this.props.parameters.loaded && this.props.pipeline.loaded &&
       (!this._mainFileRequest || this._mainFileRequest.version !== this.props.version)) {
+      let codePath = this.props.pipeline.value.codePath || '';
+      if (codePath.startsWith('/')) {
+        codePath = codePath.slice(1);
+      }
+      if (codePath.endsWith('/')) {
+        codePath = codePath.slice(0, -1);
+      }
       const filePathParts = this.props.parameters.value.main_file.split('.');
       if (filePathParts[filePathParts.length - 1].toLowerCase() === 'wdl') {
         this._mainFileRequest = new VersionFile(
           this.props.pipelineId,
-          `src/${this.props.parameters.value.main_file}`,
+          `${codePath}/${this.props.parameters.value.main_file}`,
           this.props.version
         );
         this._mainFileRequest.fetch();
       } else {
         this._mainFileRequest = new VersionFile(
           this.props.pipelineId,
-          `src/${this.props.pipeline.value.name}.wdl`,
+          `${codePath}/${this.props.pipeline.value.name}.wdl`,
           this.props.version
         );
         this._mainFileRequest.fetch();

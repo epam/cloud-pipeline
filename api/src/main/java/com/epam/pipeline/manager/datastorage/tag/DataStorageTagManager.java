@@ -75,4 +75,8 @@ public class DataStorageTagManager {
     public void deleteAll(final Long root, final String path) {
         tagDao.batchDeleteAll(root, Collections.singletonList(path));   
     }
+
+    public Map<Long, List<DataStorageTag>> search(final List<Long> rootStorageIds, final Map<String, String> tags) {
+        return tagDao.search(rootStorageIds, tags);
+    }
 }

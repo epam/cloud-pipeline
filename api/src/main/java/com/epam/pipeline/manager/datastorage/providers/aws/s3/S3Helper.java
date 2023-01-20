@@ -83,6 +83,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
 import com.google.common.primitives.SignedBytes;
@@ -1113,7 +1114,7 @@ public class S3Helper {
         } else if (!listing.getObjectSummaries().isEmpty()) {
             return DataStorageItemType.File;
         } else {
-            throw new IllegalArgumentException(messageHelper
+            throw new ObjectNotFoundException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket));
         }
     }
@@ -1130,7 +1131,7 @@ public class S3Helper {
         } else if (!listing.getVersionSummaries().isEmpty()) {
             return DataStorageItemType.File;
         } else {
-            throw new IllegalArgumentException(messageHelper
+            throw new ObjectNotFoundException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket));
         }
     }
@@ -1215,6 +1216,12 @@ public class S3Helper {
         if (CollectionUtils.isNotEmpty(dataStorage.getLinkingMasks())) {
             validatePathMatchingMasks(dataStorage, folderPath);
         }
+    }
+
+    public DataStorageItemType getItemType(final String bucket,
+                                           final String path,
+                                           final String version) {
+        return checkItemType(getDefaultS3Client(), bucket, path, StringUtils.hasValue(version));
     }
 
     private static void validatePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {

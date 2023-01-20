@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -138,4 +139,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     void verifyRestoreActionSupported();
 
     String verifyOrDefaultRestoreMode(StorageRestoreActionRequest restoreMode);
+
+    DataStorageItemType getItemType(T dataStorage, String path, String version);
 }

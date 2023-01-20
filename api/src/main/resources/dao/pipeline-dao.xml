@@ -37,7 +37,10 @@
                         pipeline_type,
                         config,
                         locked,
-                        branch)
+                        branch,
+                        visibility,
+                        code_path,
+                        docs_path)
                     VALUES (
                         :PIPELINE_ID,
                         :PIPELINE_NAME,
@@ -52,7 +55,10 @@
                         :PIPELINE_TYPE,
                         :CONFIG,
                         :PIPELINE_LOCKED,
-                        :BRANCH)
+                        :BRANCH,
+                        :VISIBILITY,
+                        :CODE_PATH,
+                        :DOCS_PATH)
                 ]]>
             </value>
         </property>
@@ -68,7 +74,10 @@
                         repository = :REPOSITORY,
                         repository_ssh = :REPOSITORY_SSH,
                         config = :CONFIG,
-                        branch = :BRANCH
+                        branch = :BRANCH,
+                        visibility = :VISIBILITY,
+                        code_path = :CODE_PATH,
+                        docs_path = :DOCS_PATH
                     WHERE
                         pipeline_id = :PIPELINE_ID
                 ]]>
@@ -91,7 +100,10 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     ORDER BY pipeline_id
@@ -122,7 +134,10 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -147,7 +162,10 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -172,7 +190,10 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -197,7 +218,10 @@
                         pipeline_type,
                         config,
                         locked as pipeline_locked,
-                        branch
+                        branch,
+                        visibility,
+                        code_path,
+                        docs_path
                     FROM
                         pipeline.pipeline
                     WHERE
@@ -232,6 +256,9 @@
                             p.config,
                             p.locked AS pipeline_locked,
                             p.branch,
+                            p.visibility,
+                            p.code_path,
+                            p.docs_path,
 		                    p.owner,
 		                    c.folder_id,
                             c.parent_id AS parent_folder_id
@@ -256,6 +283,9 @@
                             null AS config,
                             null AS pipeline_locked,
                             null AS branch,
+                            null AS visibility,
+                            null AS code_path,
+                            null AS docs_path,
 		                    null AS owner,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
@@ -282,6 +312,9 @@
                             p.config,
                             p.locked AS pipeline_locked,
                             p.branch,
+                            p.visibility,
+                            p.code_path,
+                            p.docs_path,
 		                    p.owner,
 		                    c.folder_id,
                             c.parent_id AS parent_folder_id
@@ -302,6 +335,9 @@
                             null AS config,
                             null AS pipeline_locked,
                             null AS branch,
+                            null AS visibility,
+                            null AS code_path,
+                            null AS docs_path,
 		                    null AS owner,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id

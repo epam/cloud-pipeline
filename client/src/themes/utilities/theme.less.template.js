@@ -180,6 +180,20 @@ export default `
 @THEME .cp-divider.right {
   border-right: 1px solid @panel-border-color;
 }
+@THEME .cp-divider.top.dashed,
+@THEME .cp-divider.horizontal.dashed {
+  border-top: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.bottom.dashed {
+  border-bottom: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.left.dashed,
+@THEME .cp-divider.vertical.dashed {
+  border-left: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.right.dashed {
+  border-right: 1px dashed @panel-border-color;
+}
 @THEME .cp-divider.horizontal {
   width: 100%;
   height: 1px;
@@ -389,7 +403,8 @@ export default `
 @THEME .cp-error .ant-input,
 @THEME .ant-input.cp-error,
 @THEME .ant-select.cp-error .ant-select-selection,
-@THEME .ant-input-number.cp-error {
+@THEME .ant-input-number.cp-error,
+@THEME .cp-run-capabilities-input.cp-error {
   border-color: @color-red;
   color: @color-red;
   box-shadow: none;
@@ -539,6 +554,14 @@ export default `
 @THEME .ant-tabs.cp-tabs-no-padding.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   padding: 0;
 }
+@THEME .ant-tabs-tab-prev,
+@THEME .ant-tabs-tab-next {
+  color: @application-color;
+}
+@THEME .ant-tabs-tab-btn-disabled,
+@THEME .ant-tabs-tab-btn-disabled:hover {
+  color: @application-color-disabled;
+}
 @THEME .cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   border-bottom: 0;
 }
@@ -643,6 +666,16 @@ export default `
   color: @application-color;
   background-color: @panel-background-color;
   border-color: @input-border;
+}
+@THEME .cp-button.primary {
+  background: @primary-color;
+  color: @primary-text-color;
+  border-color: @primary-color;
+}
+@THEME .cp-button.primary:hover {
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-btn-clicked::after {
   border: 0 solid @primary-color;
@@ -1054,6 +1087,12 @@ export default `
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;
 }
+@THEME .cp-run-capabilities-input .cp-run-capabilities-input-tag.tag-placeholder {
+  color: @application-color-disabled;
+}
+@THEME .cp-run-capabilities-input .cp-run-capabilities-input-tag.required {
+  color: @color-red;
+}
 @THEME .ant-select-selection--multiple .ant-select-selection__choice__remove {
   color: @application-color-faded;
 }
@@ -1104,7 +1143,8 @@ export default `
 @THEME .ant-pagination-item-active:focus {
   background-color: @primary-hover-color;
 }
-@THEME .ant-pagination-item.ant-pagination-item-active > a {
+@THEME .ant-pagination-item.ant-pagination-item-active > a,
+@THEME span.ant-pagination-item.ant-pagination-item-active {
   color: @primary-text-color;
 }
 @THEME .ant-pagination-jump-prev::after,
@@ -2170,9 +2210,6 @@ export default `
   background: @primary-color;
   color: @primary-text-color;
 }
-@THEME .cp-search-actions > * {
-  border-right: 1px solid @panel-border-color;
-}
 @THEME .cp-search-clear-button {
   color: @application-color-faded;
 }
@@ -2200,6 +2237,7 @@ export default `
   position: sticky;
   top: 0;
   font-weight: bold;
+  z-index: 2;
 }
 @THEME .cp-search-results-table-header-cell {
   margin: 0;
@@ -2364,31 +2402,14 @@ export default `
 }
 @THEME .cp-search-faceted-button {
   color: @application-color;
-  background-color: @panel-background-color;
-  border: 1px solid @input-border;
 }
-@THEME .cp-search-faceted-button:hover,
-@THEME .cp-search-faceted-button:focus {
+@THEME .cp-search-faceted-button.selected,
+@THEME .cp-search-faceted-button .selected {
   color: @primary-color;
-  background-color: @panel-background-color;
-  border-color: @primary-color;
-}
-@THEME .cp-search-faceted-button.selected {
-  color: @primary-text-color;
-  background-color: @primary-color;
-  border-color: @primary-color;
-}
-@THEME .cp-search-faceted-button.selected:hover,
-@THEME .cp-search-faceted-button.selected:focus {
-  color: @primary-text-color;
-  background-color: @primary-hover-color;
-  border-color: @primary-hover-color;
 }
 @THEME .cp-search-faceted-button.disabled,
 @THEME .cp-search-faceted-button:hover.disabled {
   color: @btn-disabled-color;
-  background-color: transparent;
-  border-color: transparent;
   cursor: default;
 }
 @THEME .cp-search-type-button {
@@ -2418,6 +2439,9 @@ export default `
 @THEME .cp-fast-search-result-item.cp-table-element-hover {
   background-color: @table-element-hover-background-color;
   color: @table-element-hover-color;
+}
+@THEME .cp-tabs-no-content.cp-faceted-filters .ant-tabs-content {
+  padding: 0!important;
 }
 
 @THEME .cp-versioned-storage-breadcrumb {
@@ -3162,7 +3186,7 @@ export default `
 @THEME .cell-profiler-module.expanded .cell-profiler-module-header {
   border-bottom: 1px @card-border-color solid;
 }
-@THEME .cell-profiler-module-header:hover {
+@THEME .cell-profiler-module:not(.empty) .cell-profiler-module-header:hover {
   background-color: darken(@card-background-color, 5%);
 }
 @THEME .cell-profiler-results-table {

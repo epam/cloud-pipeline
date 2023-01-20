@@ -41,21 +41,47 @@ class HcsImageAnalysis extends React.Component {
     userName: undefined
   };
   componentDidMount () {
-    const {authenticatedUserInfo} = this.props;
-    if (authenticatedUserInfo) {
-      authenticatedUserInfo
-        .fetchIfNeededOrWait()
-        .then(() => {
-          if (authenticatedUserInfo.loaded) {
-            const userName = authenticatedUserInfo.value.userName;
-            this.setState({
-              filters: {userNames: [userName]},
-              userName
-            });
-          }
-        });
+    this.updateFiltersFromProps();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.source !== this.props.source) {
+      this.updateFiltersFromProps();
     }
   }
+
+  updateFiltersFromProps = () => {
+    const {
+      source
+    } = this.props;
+    const getUserNames = () => new Promise((resolve) => {
+      const {authenticatedUserInfo} = this.props;
+      if (authenticatedUserInfo) {
+        authenticatedUserInfo
+          .fetchIfNeededOrWait()
+          .then(() => {
+            if (authenticatedUserInfo.loaded) {
+              const userName = authenticatedUserInfo.value.userName;
+              resolve([userName]);
+            } else {
+              resolve([]);
+            }
+          })
+          .catch(() => resolve([]));
+      } else {
+        resolve([]);
+      }
+    });
+    getUserNames()
+      .then((userNames) => {
+        this.setState({
+          filters: {
+            userNames,
+            source
+          }
+        });
+      });
+  };
 
   get activeTab () {
     const {
@@ -189,7 +215,8 @@ HcsImageAnalysis.propTypes = {
   resultsVisible: PropTypes.bool,
   batchMode: PropTypes.bool,
   batchJobId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  toggleBatchMode: PropTypes.func
+  toggleBatchMode: PropTypes.func,
+  source: PropTypes.string
 };
 
 export default inject('hcsAnalysis')(

@@ -228,7 +228,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .filter(Objects::nonNull);
         final PermissionsContainer permissionsContainer = getPermissionContainer(dataStorage);
         processFilesTagsInChunks(dataStorage, fileUpdates)
-            .map(file -> mapToElasticRequest(dataStorage, searchHitMap, indexForNewFiles, permissionsContainer, file))
+            .map(file -> mapToElasticRequest(dataStorage, searchHitMap, indexForNewFiles, permissionsContainer, file,
+                    mountFolder.toString()))
             .forEach(requestContainer::add);
         log.debug("Finished processing events for datastorage [id={}]", dataStorage.getId());
     }
@@ -337,15 +338,17 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                              final Map<String, SearchHit> searchHitMap,
                                              final String newIndex,
                                              final PermissionsContainer permissionsContainer,
-                                             final DataStorageFile storageFile) {
+                                             final DataStorageFile storageFile,
+                                             final String mountFolder) {
+        final String content = findFileContent(dataStorage.getName(), storageFile.getPath(), mountFolder);
         return Optional.ofNullable(searchHitMap.get(storageFile.getPath()))
             .map(document -> {
                 log.debug("Mapping `{}` file to update request [{}]", storageFile.getPath(), document.getId());
-                return updateIndexRequest(dataStorage, storageFile, permissionsContainer, document);
+                return updateIndexRequest(dataStorage, storageFile, permissionsContainer, document, content);
             })
             .orElseGet(() -> {
                 log.debug("Mapping `{}` file to create request", storageFile.getPath());
-                return createIndexRequest(storageFile, newIndex, dataStorage, permissionsContainer);
+                return createIndexRequest(storageFile, newIndex, dataStorage, permissionsContainer, content);
             });
     }
 
@@ -388,8 +391,9 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     }
 
     private IndexRequest updateIndexRequest(final AbstractDataStorage dataStorage, final DataStorageFile file,
-                                            final PermissionsContainer container, final SearchHit hit) {
-        final IndexRequest updateRequest = createIndexRequest(file, hit.getIndex(), dataStorage, container);
+                                            final PermissionsContainer container, final SearchHit hit,
+                                            final String content) {
+        final IndexRequest updateRequest = createIndexRequest(file, hit.getIndex(), dataStorage, container, content);
         updateRequest.id(hit.getId());
         return updateRequest;
     }

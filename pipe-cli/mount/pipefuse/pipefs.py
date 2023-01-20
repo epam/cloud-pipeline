@@ -195,7 +195,7 @@ class PipeFS(Operations, ChainingService):
     def statfs(self, path):
         BLOCK_SIZE = 4096
         # Report 1 Petabyte as a total volume
-        BLOCK_TOTAL = 1 * 1024 * 1024 * 1024 * 1024 * 1024 / BLOCK_SIZE
+        BLOCK_TOTAL = int(1 * 1024 * 1024 * 1024 * 1024 * 1024 / BLOCK_SIZE)
         BLOCK_AVAIL = BLOCK_TOTAL - 1
 
         if self._is_win:

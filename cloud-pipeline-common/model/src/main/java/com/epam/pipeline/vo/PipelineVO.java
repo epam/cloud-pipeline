@@ -18,6 +18,7 @@ package com.epam.pipeline.vo;
 
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,7 +34,10 @@ public class PipelineVO {
     private String templateId;
     private RepositoryType repositoryType;
     private String branch;
+    private RunVisibilityPolicy visibility;
     private String configurationPath;
+    private String codePath;
+    private String docsPath;
 
     public Pipeline toPipeline() {
         Pipeline pipeline = new Pipeline();
@@ -46,7 +50,10 @@ public class PipelineVO {
         pipeline.setTemplateId(getTemplateId());
         pipeline.setRepositoryType(getRepositoryType());
         pipeline.setBranch(getBranch());
+        pipeline.setVisibility(getVisibility());
         pipeline.setConfigurationPath(getConfigurationPath());
+        pipeline.setCodePath(getCodePath());
+        pipeline.setDocsPath(getDocsPath());
         return pipeline;
     }
 }
