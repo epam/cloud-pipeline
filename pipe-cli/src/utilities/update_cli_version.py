@@ -22,6 +22,7 @@ import requests
 import platform
 import zipfile
 import uuid
+import shutil
 from datetime import datetime
 
 from src.config import Config
@@ -201,6 +202,8 @@ class WindowsUpdater(CLIVersionUpdater):
                    src_dir=path_to_src_dir,
                    tmp_dir=tmp_src_dir,
                    pipe_bat=self.WRAPPER_BAT)
+        if os.path.exists(path_to_update_bat):
+            os.remove(path_to_update_bat)
         with open(path_to_update_bat, 'a') as bat_file:
             bat_file.write(bat_file_content)
 
@@ -210,6 +213,8 @@ class WindowsUpdater(CLIVersionUpdater):
         request = requests.get(path, verify=False)
         open(path_to_zip, 'wb').write(request.content)
         tmp_src_dir = os.path.join(tmp_folder, prefix)
+        if os.path.exists(tmp_src_dir):
+            shutil.rmtree(tmp_src_dir)
         with zipfile.ZipFile(path_to_zip, 'r') as zip_ref:
             zip_ref.extractall(tmp_src_dir)
         os.remove(path_to_zip)
