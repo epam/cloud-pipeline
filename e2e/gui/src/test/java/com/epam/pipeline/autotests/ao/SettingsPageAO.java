@@ -1259,7 +1259,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public PreferencesAO clearAndSetJsonToPreference(String preference, String value, boolean eyeIsChecked) {
             SelenideElement pref = context().$(byClassName("preference-group__code-editor"));
             searchPreference(preference);
-            clearTextField(pref);
+            selectAllAndClearTextField(pref);
             clickAndSendKeysWithSlashes(pref, value);
             deleteExtraBrackets(pref, 100);
             setEyeOption(eyeIsChecked);
