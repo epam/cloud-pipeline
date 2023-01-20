@@ -206,6 +206,7 @@ class WindowsUpdater(CLIVersionUpdater):
             os.remove(path_to_update_bat)
         with open(path_to_update_bat, 'a') as bat_file:
             bat_file.write(bat_file_content)
+        os.environ['CP_CLI_UPDATE_BAT'] = path_to_update_bat
 
     def download_new_src(self, path, prefix):
         tmp_folder = self.get_tmp_folder()

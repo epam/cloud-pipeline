@@ -13,16 +13,16 @@
 :: limitations under the License.
 
 @echo off
+SETLOCAL
 
 set all_args=%*
 set first_arg=%1
 
 if "%first_arg%" == "update" (
-    setx CP_CLI_UPDATE_WRAPPER="true"
-	pipe.exe %all_args%'
-	set update_bat=%userprofile%\.pipe\tmp\pipe-cli-update.bat
-	if exist %update_bat% (
-	    %update_bat%
+    set "CP_CLI_UPDATE_WRAPPER=true"
+	pipe.exe %all_args%
+    if exist %CP_CLI_UPDATE_BAT% (
+	    %CP_CLI_UPDATE_BAT%
 	)
 ) else (
 	pipe.exe %all_args%
