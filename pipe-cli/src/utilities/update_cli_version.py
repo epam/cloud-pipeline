@@ -40,6 +40,7 @@ class UpdateCLIVersionManager(object):
         if not need_to_update_version():
             click.echo("The Cloud Pipeline CLI version is up-to-date")
             return
+
         updater = self.get_updater()
 
         if not path:
@@ -131,10 +132,10 @@ class WindowsUpdater(CLIVersionUpdater):
         random_prefix = str(uuid.uuid4()).replace("-", "")
 
         tmp_folder = self.get_tmp_folder()
-        self.check_write_permissions(tmp_folder)
+        self.check_write_permissions(tmp_folder, random_prefix)
 
         path_to_src_dir = os.path.dirname(sys.executable)
-        self.check_write_permissions(path_to_src_dir)
+        self.check_write_permissions(path_to_src_dir, random_prefix)
 
         tmp_src_dir = self.download_new_src(path, random_prefix)
         pipe_bat = os.path.join(tmp_src_dir, self.WRAPPER_BAT)
@@ -145,7 +146,8 @@ class WindowsUpdater(CLIVersionUpdater):
 
         log_file_path = os.path.join(tmp_folder, self.LOG_FILE)
         with open(log_file_path, 'a') as log_file:
-            log_file.write('[%s] Starting a new update operation\n' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
+            log_file.write('[%s] Starting a new update operation %s\n' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                                                                          random_prefix))
 
         bat_file_content = """@echo off
         for /L %%a in (1,1,{attempts_count}) do (
@@ -229,10 +231,9 @@ class WindowsUpdater(CLIVersionUpdater):
         return tmp_folder
 
     @staticmethod
-    def check_write_permissions(path):
-        random_prefix = str(uuid.uuid4()).replace("-", "")
+    def check_write_permissions(path, prefix):
         try:
-            path_to_tmp_file = os.path.join(path, "tmp-%s" % random_prefix)
+            path_to_tmp_file = os.path.join(path, "tmp-%s" % prefix)
             with open(path_to_tmp_file, 'a') as tmp_file:
                 tmp_file.write("")
             os.remove(path_to_tmp_file)
