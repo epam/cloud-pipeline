@@ -63,7 +63,8 @@ public class DNSRecordRunCleaner implements RunCleaner {
                 continue;
             }
             final String domain = URLUtils.getHost(serviceUrl.getUrl());
-            final InstanceDNSRecord record = new InstanceDNSRecord(domain, edgeUrl, InstanceDNSRecord.DNSRecordStatus.NOOP);
+            final InstanceDNSRecord record = new InstanceDNSRecord(domain, edgeUrl,
+                    InstanceDNSRecord.DNSRecordStatus.NOOP);
             cloudFacade.removeDNSRecord(serviceUrl.getRegionId(), record);
         }
     }

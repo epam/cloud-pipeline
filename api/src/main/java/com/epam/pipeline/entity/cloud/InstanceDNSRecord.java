@@ -6,7 +6,8 @@ import org.apache.commons.lang3.StringUtils;
 @Data
 public class InstanceDNSRecord {
 
-    public static InstanceDNSRecord EMPTY = new InstanceDNSRecord(StringUtils.EMPTY, StringUtils.EMPTY, DNSRecordStatus.NOOP);
+    public static final InstanceDNSRecord EMPTY =
+            new InstanceDNSRecord(StringUtils.EMPTY, StringUtils.EMPTY, DNSRecordStatus.NOOP);
 
     private final String dnsRecord;
     private final String target;
