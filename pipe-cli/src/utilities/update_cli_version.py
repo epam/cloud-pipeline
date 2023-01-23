@@ -158,18 +158,20 @@ class WindowsUpdater(CLIVersionUpdater):
                 echo The source subfolders were deleted >> "{log_file}"
                 for %%a in ("{src_dir}\\*") do (
 	                if /i not "%%~nxa" == "{pipe_bat}" (
-	                    del /q "%%a" >> "{log_file}" 2>>&1 || (
-                            echo Failed to delete src file "%%a" >> "{log_file}"
-                            goto fail
-                        )
+	                    if /i not "%%~nxa" == "{update_bat}" (
+                            del /q "%%a" >> "{log_file}" 2>>&1 || (
+                                echo Failed to delete src file "%%a" >> "{log_file}"
+                                goto fail
+                            )
+                        )    
 	                )
 	            )
                 echo The source files were deleted >> "{log_file}"
                 xcopy "{tmp_dir}\\pipe" "{src_dir}" /y /s /i > nul 2>> "{log_file}" || (
-                    echo Failed to copy files from "{tmp_dir}/pipe" to "{src_dir}" >> "{log_file}"
+                    echo Failed to copy files from "{tmp_dir}\\pipe" to "{src_dir}" >> "{log_file}"
                     goto fail
                 )
-                echo Files successfully copied from "{tmp_dir}/pipe" to "{src_dir}" >> "{log_file}"
+                echo Files successfully copied from "{tmp_dir}\\pipe" to "{src_dir}" >> "{log_file}"
                 rd /s /q "{tmp_dir}" || (
                     echo Failed to delete tmp directory '{tmp_dir}' >> "{log_file}"
                     goto fail
@@ -198,7 +200,8 @@ class WindowsUpdater(CLIVersionUpdater):
                    pipe_pid=os.getpid(),
                    src_dir=path_to_src_dir,
                    tmp_dir=tmp_src_dir,
-                   pipe_bat=self.WRAPPER_BAT)
+                   pipe_bat=self.WRAPPER_BAT,
+                   update_bat=self.UPDATE_SCRIPT)
         if os.path.exists(path_to_update_bat):
             os.remove(path_to_update_bat)
         with open(path_to_update_bat, 'a') as bat_file:

@@ -21,10 +21,10 @@ set update_bat=pipe-cli-update.bat
 
 if "%first_arg%" == "update" (
     set "CP_CLI_UPDATE_WRAPPER=true"
-	pipe.exe %all_args%
+	pipe-cli.exe %all_args%
     if exist %update_bat% (
 	    %update_bat%
 	)
 ) else (
-	pipe.exe %all_args%
+	pipe-cli.exe %all_args%
 )
