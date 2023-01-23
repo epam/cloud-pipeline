@@ -161,6 +161,7 @@ public class DetachedConfigurationsTest
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
+                    .sleep(3, SECONDS)
                     .click(SAVE)
                     .waitUntilSaveEnding(pipelineProfile1611);
             })
