@@ -17,6 +17,8 @@ package com.epam.pipeline.manager.cluster.cleaner;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecordStatus;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
@@ -64,7 +66,7 @@ public class DNSRecordRunCleaner implements RunCleaner {
             }
             final String domain = URLUtils.getHost(serviceUrl.getUrl());
             final InstanceDNSRecord record = new InstanceDNSRecord(domain, edgeUrl,
-                    InstanceDNSRecord.DNSRecordStatus.NOOP);
+                    InstanceDNSRecordFormat.ABSOLUTE, InstanceDNSRecordStatus.NOOP);
             cloudFacade.removeDNSRecord(serviceUrl.getRegionId(), record);
         }
     }

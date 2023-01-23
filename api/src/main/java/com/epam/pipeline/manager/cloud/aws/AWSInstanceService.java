@@ -22,6 +22,7 @@ import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -289,9 +290,8 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                                                           final InstanceDNSRecord record) {
         validate(record);
         log.debug("Creating DNS record {} ({})...", record.getDnsRecord(), record.getTarget());
-        final String zoneId = getHostedZoneId(region);
-        final String zoneBase = getHostedZoneBase(region);
-        return route53Helper.createDNSRecord(region, zoneId, withHostedZoneBase(record, zoneBase));
+        return route53Helper.createDNSRecord(region, getDNSHostedZoneId(region),
+                getAbsoluteDNSRecord(record, getDNSHostedZoneBase(region)));
     }
 
     @Override
@@ -299,37 +299,48 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                                                      final InstanceDNSRecord record) {
         validate(record);
         log.debug("Deleting DNS record {} ({})...", record.getDnsRecord(), record.getTarget());
-        final String zoneId = getHostedZoneId(region);
-        final String zoneBase = getHostedZoneBase(region);
-        if (!StringUtils.contains(record.getDnsRecord(), zoneBase)) {
-            log.debug("Skipping deletion of AWS DNS record because it is not part of host zone {}", zoneBase);
-            return InstanceDNSRecord.EMPTY;
-        }
-        return route53Helper.removeDNSRecord(region, zoneId, record);
+        return route53Helper.removeDNSRecord(region, getDNSHostedZoneId(region),
+                getAbsoluteDNSRecord(record, getDNSHostedZoneBase(region)));
     }
 
     private void validate(final InstanceDNSRecord record) {
         Assert.notNull(record, "DNS record is missing");
         Assert.isTrue(StringUtils.isNotBlank(record.getDnsRecord()), "DNS record source is missing");
         Assert.isTrue(StringUtils.isNotBlank(record.getTarget()), "DNS record target is missing");
+        Assert.notNull(record.getFormat(), "DNS record size is missing");
     }
 
-    private String getHostedZoneId(final AwsRegion region) {
+    private static void validate(final InstanceDNSRecord record, final String base) {
+        Assert.isTrue(StringUtils.contains(record.getDnsRecord(), base),
+                String.format("DNS record has wrong DNS hosted zone base (%s): %s", base, record.getDnsRecord()));
+    }
+
+    private String getDNSHostedZoneId(final AwsRegion region) {
         return Optional.ofNullable(region.getDnsHostedZoneId()).map(Optional::of)
                 .orElseGet(() -> Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID)
                         .map(preferenceManager::getPreference))
                 .orElseThrow(() -> new IllegalArgumentException("Host zone id is missing"));
     }
 
-    private String getHostedZoneBase(final AwsRegion region) {
+    private String getDNSHostedZoneBase(final AwsRegion region) {
         return Optional.ofNullable(region.getDnsHostedZoneBase()).map(Optional::of)
                 .orElseGet(() -> Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE)
                         .map(preferenceManager::getPreference))
                 .orElseThrow(() -> new IllegalArgumentException("Host zone base is missing"));
     }
 
-    private InstanceDNSRecord withHostedZoneBase(final InstanceDNSRecord record, final String base) {
-        return new InstanceDNSRecord(record.getDnsRecord() + "." + base, record.getTarget(), record.getStatus());
+    private InstanceDNSRecord getAbsoluteDNSRecord(final InstanceDNSRecord record, final String base) {
+        switch (record.getFormat()) {
+            case ABSOLUTE:
+                validate(record, base);
+                return record;
+            case RELATIVE:
+            default:
+                return record.toBuilder()
+                        .dnsRecord(record.getDnsRecord() + "." + base)
+                        .format(InstanceDNSRecordFormat.ABSOLUTE)
+                        .build();
+        }
     }
 
     @Override
