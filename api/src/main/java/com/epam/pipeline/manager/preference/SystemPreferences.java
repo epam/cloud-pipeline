@@ -510,10 +510,21 @@ public class SystemPreferences {
     public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
             "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<Set<String>>() {}));
+
+    /**
+     * Configures global dns hosted zone id.
+     * Generally should not be used in favor of region specific dns hosted zone id.
+     */
     public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_ID = new StringPreference(
             "instance.dns.hosted.zone.id", null, CLUSTER_GROUP, pass);
+
+    /**
+     * Configures global dns hosted zone base.
+     * Generally should not be used in favor of region specific dns hosted zone base.
+     */
     public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_BASE = new StringPreference(
             "instance.dns.hosted.zone.base", null, CLUSTER_GROUP, pass);
+
     public static final StringPreference DEFAULT_EDGE_REGION = new StringPreference(
             "default.edge.region", "eu-central", CLUSTER_GROUP, pass);
     public static final ObjectPreference<Map<String, RuntimeParameter>> CLUSTER_RUN_PARAMETERS_MAPPING =

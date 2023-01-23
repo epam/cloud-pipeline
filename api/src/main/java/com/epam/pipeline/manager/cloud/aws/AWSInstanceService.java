@@ -315,14 +315,16 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     private String getHostedZoneId(final AwsRegion region) {
-        return Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID)
-                .map(preferenceManager::getPreference)
+        return Optional.ofNullable(region.getDnsHostedZoneId()).map(Optional::of)
+                .orElseGet(() -> Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID)
+                        .map(preferenceManager::getPreference))
                 .orElseThrow(() -> new IllegalArgumentException("Host zone id is missing"));
     }
 
     private String getHostedZoneBase(final AwsRegion region) {
-        return Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE)
-                .map(preferenceManager::getPreference)
+        return Optional.ofNullable(region.getDnsHostedZoneBase()).map(Optional::of)
+                .orElseGet(() -> Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE)
+                        .map(preferenceManager::getPreference))
                 .orElseThrow(() -> new IllegalArgumentException("Host zone base is missing"));
     }
 
