@@ -37,7 +37,9 @@ class UpdateCLIVersionManager(object):
         pass
 
     def update(self, path=None):
-        # TODO: revert changes after debug
+        if not need_to_update_version():
+            click.echo("The Cloud Pipeline CLI version is up-to-date")
+            return
         updater = self.get_updater()
 
         if not path:

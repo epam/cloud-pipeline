@@ -146,7 +146,8 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --icon /pipe-cli/res/cloud-pipeline.ico \
             --name pipe-cli && \
 cd /pipe-cli/dist/win64 && \
-cp /pipe-cli/pipe.bat pipe/ && \
+cp /pipe-cli/pipe.bat pipe-cli/ && \
+mv pipe-cli pipe && \
 zip -r -q pipe.zip pipe
 EOL
 
