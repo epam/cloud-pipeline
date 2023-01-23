@@ -38,7 +38,14 @@ except ImportError:
 
 SVC_PORT_TMPL = 'svc-port-'
 SVC_PATH_TMPL = 'svc-path-'
-SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint}, "sameTab": {is_same_tab} }}'
+SVC_URL_TMPL = '{{ ' \
+               '"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", ' \
+               '"name": "{service_name}", ' \
+               '"isDefault": {is_default_endpoint}, ' \
+               '"sameTab": {is_same_tab}, ' \
+               '"customDNS": {is_custom_dns}, ' \
+               '"regionId": {region_id} ' \
+               '}}'
 EDGE_ROUTE_LOCATION_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
@@ -50,7 +57,6 @@ RUN_ID = 'runid'
 API_UPDATE_SVC = 'run/{run_id}/serviceUrl?region={region}'
 API_GET_RUNS_LIST_DETAILS = 'runs?runIds={run_ids}'
 API_POST_DNS_RECORD = 'cluster/dnsrecord'
-API_GET_HOSTED_ZONE_BASE_PREF = 'preferences/instance.dns.hosted.zone.base'
 API_GET_DEFAULT_EDGE_REGION_PREF = 'preferences/default.edge.region'
 NUMBER_OF_RETRIES = 10
 SECS_TO_WAIT_BEFORE_RETRY = 15
@@ -132,24 +138,23 @@ def call_api(method_url, data=None):
         for n in range(NUMBER_OF_RETRIES):
                 try:
                         do_log('Calling API {}'.format(method_url))
-                        response = None
                         if data:
                                 response = requests.post(method_url, verify=False, data=data, headers=api_headers)
                         else:
                                 response = requests.get(method_url, verify=False, headers=api_headers)
                         response_data = json.loads(response.text)
                         if response_data['status'] == 'OK':
-                                do_log('API call status OK')
+                                do_log('Calling API ... OK')
                                 result = response_data
                         else:
                                 err_msg = 'No error message available'
                                 if 'message' in response_data:
                                         err_msg = response_data['message']
-                                do_log('Error ocurred while calling API ({})\n{}'.format(method_url, err_msg))
+                                do_log('Calling API ... NOT OK ({})\n{}'.format(method_url, err_msg))
                                 do_log('As the API technically succeeded, it will not be retried')
                         break
                 except Exception as api_exception:
-                        do_log('Error ocurred while calling API ({})\n{}'.format(method_url, str(api_exception)))
+                        do_log('Calling API ... NOT OK ({})\n{}'.format(method_url, str(api_exception)))
 
                 if n < NUMBER_OF_RETRIES - 1:
                         do_log('Sleep for {} sec and perform API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 2, NUMBER_OF_RETRIES))
@@ -223,7 +228,6 @@ def add_custom_domain(domain, location_block, is_external_app=False):
                 os.mkdir(nginx_domains_path)
         domain_path = get_domain_config_path(domain, is_external_app=is_external_app)
         domain_cert = search_custom_domain_cert(domain)
-        domain_path_contents = None
         if os.path.exists(domain_path):
                 do_log('-> Adding new location block to existing configuration file at {}'.format(domain_path))
                 with open(domain_path, 'r') as domain_path_file:
@@ -371,14 +375,13 @@ def construct_additional_endpoints_from_run_parameters(run_details):
         custom_endpoint_run_parameters = [rp for rp in run_details["pipelineRunParameters"]
                                           if rp["name"].startswith(CP_CAP_CUSTOM_ENDPOINT_PREFIX)]
 
-        custom_endpoint_run_parameters_num = len(custom_endpoint_run_parameters)
-        do_log('Found {} run parameters related to custom endpoints.'.format(custom_endpoint_run_parameters_num))
-        if custom_endpoint_run_parameters_num == 0:
+        if not custom_endpoint_run_parameters:
                 return []
 
         custom_endpoints_nums = set([CP_CAP_CUSTOM_ENDPOINT_PREFIX + extract_endpoint_num_from_run_parameter(rp)
                                      for rp in custom_endpoint_run_parameters])
-        do_log('Run parameter groups with ids: {} related to custom endpoints were found.'.format(", ".join(str(num) for num in custom_endpoints_nums)))
+        do_log('Detected {} custom endpoints groups: {}.'
+               .format(len(custom_endpoint_run_parameters), ", ".join(str(num) for num in custom_endpoints_nums)))
 
         custom_endpoint_param_groups = {
                 id : {
@@ -484,6 +487,8 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
         return non_matching_tool_endpoints, is_default_endpoint, is_ssl_backend, is_same_tab
 
 def get_active_runs(pods):
+        if not pods:
+                return []
         pod_run_ids = [x['metadata']['labels']['runid'] for x in pods]
         get_runs_list_details_method = os.path.join(api_url,
                                                     API_GET_RUNS_LIST_DETAILS.format(run_ids=','.join(pod_run_ids)))
@@ -505,49 +510,40 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
 
         run_info = run_cache['pipelineRun']
         if run_info:
-                if not run_info["status"] or run_info["status"] != 'RUNNING':
+                if run_info.get("status") != 'RUNNING':
                         do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not been proxied'.format(pod_run_id))
                         return {}
 
                 pod_owner = run_info["owner"]
                 docker_image = run_info["dockerImage"]
-                runs_sids = None
-                if "runSids" in run_info:
-                        runs_sids = run_info["runSids"]
-                pretty_url = None
-                if "prettyUrl" in run_info:
-                        pretty_url = parse_pretty_url(run_info["prettyUrl"])
+                runs_sids = run_info.get("runSids")
+                pretty_url = run_info.get("prettyUrl")
+                pretty_url = parse_pretty_url(pretty_url) if pretty_url else None
                 sensitive = run_info.get("sensitive") or False
 
                 cloud_region_id = run_info.get("instance", {}).get("cloudRegionId") or None
                 instance_ip = run_info.get("instance", {}).get("nodeIP") or None
 
-
-                do_log('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
+                do_log('Processing {} #{} by {} ({})...'.format(pod_id, pod_run_id, pod_owner, docker_image))
 
                 shared_users_sids = run_sids_to_str(runs_sids, True)
-                if shared_users_sids and len(shared_users_sids) > 0:
-                        do_log('Users {} are determined as shared sids of PodID ({}) - RunID ({})'.format(shared_users_sids, pod_id, pod_run_id))
+                if shared_users_sids:
+                        do_log('Detected shared user sids: {}'.format(shared_users_sids))
 
                 shared_groups_sids = run_sids_to_str(runs_sids, False)
-                if shared_groups_sids and len(shared_groups_sids) > 0:
-                        do_log('Groups {} are determined as shared sids of PodID ({}) - RunID ({})'.format(shared_groups_sids, pod_id, pod_run_id))
+                if shared_groups_sids:
+                        do_log('Detected shared group sids: {}'.format(shared_groups_sids))
 
-                registry, separator, image = docker_image.partition("/")
-
-                if "tool" in run_cache and "endpoints" in run_cache["tool"]:
-                        endpoints_data = run_cache["tool"]["endpoints"]
-                else:
-                        endpoints_data = []
+                endpoints_data = run_cache.get('tool', {}).get('endpoints') or []
                 tool_endpoints_count = len(endpoints_data)
-                do_log('{} endpoints are set for the tool {} via settings'.format(tool_endpoints_count, docker_image))
+                do_log('Detected {} tool settings endpoints.'.format(tool_endpoints_count))
+
                 endpoints_data, overridden_endpoints_count = append_additional_endpoints(endpoints_data, run_info)
                 additional_system_endpoints_count = len(endpoints_data) - tool_endpoints_count
-                do_log('{} additional system endpoints are set for the tool {} via run parameters'
-                      .format(additional_system_endpoints_count, docker_image))
+                do_log('Detected {} run parameters endpoints.'.format(additional_system_endpoints_count))
                 if overridden_endpoints_count != 0:
-                        do_log('{} endpoints are overridden by a system ones for the tool {} via run parameters'
-                              .format(overridden_endpoints_count, docker_image))
+                        do_log('Detected {} overridden tool settings endpoints.'.format(overridden_endpoints_count))
+
                 if endpoints_data:
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
@@ -556,10 +552,10 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                 if endpoint["nginx"]:
                                         port = endpoint["nginx"]["port"]
                                         path = endpoint["nginx"].get("path", "")
-                                        service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
-                                        is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
-                                        is_ssl_backend = str(endpoint["sslBackend"]).lower() == 'true' if "sslBackend" in endpoint.keys() else False
-                                        is_same_tab = '"' + str(endpoint["sameTab"]).lower() + '"' if "sameTab" in endpoint.keys() else '"false"'
+                                        service_name = endpoint.get("name", "Default")
+                                        is_default_endpoint = endpoint.get("isDefault", False)
+                                        is_ssl_backend = endpoint.get("sslBackend", False)
+                                        is_same_tab = endpoint.get("sameTab", False)
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
@@ -579,7 +575,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         if pretty_url and pretty_url['domain']:
                                                 edge_location_id = '{}-{}.inc'.format(pretty_url['domain'], edge_location.replace('/', '-') if edge_location else None)
                                         elif create_dns_record:
-                                                edge_location_id = '{}.{}.inc'.format(edge_location, hosted_zone_base_value)
+                                                edge_location_id = '{}.dns.route.inc'.format(edge_location)
                                         else:
                                                 edge_location_id = '{}.loc'.format(edge_location)
 
@@ -672,49 +668,44 @@ def load_pods_for_runs_with_endpoints():
         return pods_with_endpoints
 
 
-def create_dns_record(service_spec):
-        if hosted_zone_base_value is not None:
-                dns_custom_domain = service_spec["edge_location"] + "." + hosted_zone_base_value
-                dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD
-                                                 + "?regionId={regionId}"
-                                                 .format(regionId=service_spec["cloudRegionId"]))
-                data = json.dumps({
-                        'dnsRecord': dns_custom_domain,
-                        'target': "{external_ip}".format(external_ip=edge_service_external_ip)
-                })
-                dns_record_create_response = call_api(dns_record_create, data)
-                if dns_record_create_response and "payload" in dns_record_create_response and "status" in \
-                        dns_record_create_response["payload"] \
-                        and dns_record_create_response["payload"]["status"] == "INSYNC":
-                        service_spec["custom_domain"] = dns_custom_domain
-                        service_spec["edge_location"] = None
-                else:
-                        log_task_event("CreateDNSRecord",
-                                       "Fail to create DNS record for the run",
-                                       service_spec["run_id"],
-                                       service_spec["pod_id"],
-                                       "FAILURE")
-                        update_run_status(service_spec["run_id"], "FAILURE")
-                        raise ValueError("Couldn't create DNS record for: {}, bad response from API".format(service_spec["run_id"]))
-        else:
+def create_dns_record(service_spec, edge_region_id, edge_region_name):
+        dns_custom_record = service_spec["edge_location"] + "." + edge_region_name
+        dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD)
+        if edge_region_id:
+                dns_record_create += "?regionId=" + edge_region_id
+        data = json.dumps({
+                'dnsRecord': dns_custom_record,
+                'target': edge_service_external_ip,
+                'format': 'RELATIVE'
+        })
+        dns_record_create_response = call_api(dns_record_create, data) or {}
+        dns_record_create_response_payload = dns_record_create_response.get('payload', {})
+        dns_record_status = dns_record_create_response_payload.get('status')
+        dns_record_domain = dns_record_create_response_payload.get('dnsRecord')
+
+        if dns_record_status != "INSYNC":
                 log_task_event("CreateDNSRecord",
-                               "No hosted zone is configured for current environment, will not create any DNS records",
+                               "Fail to create DNS record for the run",
                                service_spec["run_id"],
                                service_spec["pod_id"],
                                "FAILURE")
                 update_run_status(service_spec["run_id"], "FAILURE")
-                raise ValueError("Couldn't create DNS record for: {}, no hosted_zone_base_value".format(service_spec["run_id"]))
+                raise ValueError("Couldn't create DNS record for: {}, bad response from API"
+                                 .format(service_spec["run_id"]))
+
+        service_spec["custom_domain"] = dns_record_domain
+        service_spec["edge_location"] = None
 
 
-def create_service_dns_record(service_spec, added_route):
+def create_service_dns_record(service_spec, added_route, edge_region_id, edge_region_name):
         try:
-                create_dns_record(service_spec)
+                create_dns_record(service_spec, edge_region_id, edge_region_name)
                 return added_route, True
         except ValueError as e:
                 do_log(e.message)
                 return added_route, False
 
-def create_service_location(service_spec, added_route, service_url_dict):
+def create_service_location(service_spec, added_route, service_url_dict, edge_region_id):
         has_custom_domain = service_spec["custom_domain"] is not None
         service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip
         service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
@@ -764,37 +755,36 @@ def create_service_location(service_spec, added_route, service_url_dict):
 
         check_route(path_to_route, service_location, service_spec, has_custom_domain, service_hostname)
 
-        service_url = SVC_URL_TMPL.format(external_ip=service_hostname,
-                                          edge_location=service_spec["edge_location"] if service_spec[
-                                                  "edge_location"] else "",
+        service_url = SVC_URL_TMPL.format(external_schema=edge_service_external_schema,
+                                          external_ip=service_hostname,
+                                          edge_location=service_spec.get('edge_location') or '',
                                           edge_port=str(edge_service_port),
-                                          service_name=service_spec["service_name"],
-                                          is_default_endpoint=service_spec["is_default_endpoint"],
-                                          is_same_tab=service_spec["is_same_tab"],
-                                          external_schema=edge_service_external_schema)
-        run_id = service_spec["run_id"]
+                                          service_name=service_spec['service_name'],
+                                          is_default_endpoint=str(service_spec['is_default_endpoint']).lower(),
+                                          is_same_tab=str(service_spec['is_same_tab']).lower(),
+                                          is_custom_dns=str(service_spec['create_dns_record']).lower(),
+                                          region_id=edge_region_id or 'null')
+        run_id = service_spec['run_id']
         if run_id in service_url_dict:
                 service_url = service_url_dict[run_id] + ',' + service_url
         service_url_dict[run_id] = service_url
 
 
-# call API and set Service URL property for the run:
-# -- Get ServiceExternalIP from the EDGE-labeled service description
-# -- http://{ServiceExternalIP}/{PodID}-{svc-port-N}-{N}
-def update_svc_url_for_run(run_id):
+def update_svc_url_for_run(run_id, edge_region_name):
         if run_id in service_url_dict:
                 # make array of json objects
                 service_urls_json = '[' + service_url_dict[run_id] + ']'
-                update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id, region=edge_region))
-                do_log('Assigning service url ({}) to RunID: {}'.format(service_urls_json, run_id))
+                update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id, region=edge_region_name))
+                do_log('Assigning #{} with service url {}'.format(run_id, service_urls_json))
                 data = json.dumps({'serviceUrl': service_urls_json})
                 response_data = call_api(update_svc_method, data=data)
                 if response_data:
-                        do_log('Service url ({}) assigned to RunID: {}'.format(service_urls_json, run_id))
+                        do_log('Assigning #{} with service url ... OK'.format(run_id))
                 else:
-                        do_log('Service url was not assigned due to API errors')
+                        do_log('Assigning #{} with service url ... NOT OK.'.format(run_id))
         else:
-                do_log('Asking for service url update for the run {}, but service_url_dict is empty for this run'.format(run_id))
+                do_log('Assigning #{} with service url has been skipped '
+                       'because the corresponding service url has not been found.'.format(run_id))
 
 
 def find_preference(api_preference_query, preference_name):
@@ -828,10 +818,10 @@ def check_nginx_config():
 
         try:
                 check_output(test_config_command, shell=True)
-                do_log('Added new route is OK')
+                do_log('Adding new route ... OK')
                 return True
         except CalledProcessError as e:
-                do_log('Added new route is NOT OK (%s)' % e.returncode)
+                do_log('Adding new route ... NOT OK (%s)' % e.returncode)
                 return False
 
 
@@ -870,8 +860,8 @@ else:
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False
 
-default_edge_region = find_preference(API_GET_DEFAULT_EDGE_REGION_PREF, 'default.edge.region')
-edge_region = os.environ.get('CP_EDGE_REGION') or default_edge_region
+edge_region_name = os.getenv('CP_EDGE_REGION') or find_preference(API_GET_DEFAULT_EDGE_REGION_PREF, 'default.edge.region')
+edge_region_id = os.getenv('CP_EDGE_REGION_ID')
 
 # Try to get edge_service_external_ip and edge_service_port for service labels several times before get it from
 # service spec IP and nodePort because it is possible that we will do it while redeploy and label just doesn't
@@ -879,10 +869,10 @@ edge_region = os.environ.get('CP_EDGE_REGION') or default_edge_region
 edge_kube_service_object = None
 for n in range(NUMBER_OF_RETRIES):
     edge_kube_service = Service.objects(kube_api).filter(selector={
-            EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE, EDGE_SVC_REGION_LABEL: edge_region})
+            EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE, EDGE_SVC_REGION_LABEL: edge_region_name})
     if len(edge_kube_service.response['items']) == 0:
         do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
-               % (EDGE_SVC_REGION_LABEL, edge_region))
+               % (EDGE_SVC_REGION_LABEL, edge_region_name))
         exit(1)
     else:
         edge_kube_service_object = edge_kube_service.response['items'][0]
@@ -904,7 +894,7 @@ for n in range(NUMBER_OF_RETRIES):
 
 if not edge_kube_service_object:
     do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
-           % (EDGE_SVC_REGION_LABEL, edge_region))
+           % (EDGE_SVC_REGION_LABEL, edge_region_name))
     exit(1)
 
 if not edge_service_external_ip:
@@ -913,11 +903,8 @@ if not edge_service_external_ip:
 if not edge_service_port:
     do_log('Getting EDGE service host port from nodePort')
     edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
-do_log('EDGE service port: ' + str(edge_service_port))
-do_log('EDGE service ip: ' + edge_service_external_ip)
-
-
-hosted_zone_base_value = find_preference(API_GET_HOSTED_ZONE_BASE_PREF, "instance.dns.hosted.zone.base")
+do_log('EDGE service: {}:{}'.format(edge_service_external_ip, edge_service_port))
+do_log('EDGE region: {} #{}'.format(edge_region_name, edge_region_id or 'undefined'))
 
 pods_with_endpoints = load_pods_for_runs_with_endpoints()
 runs_with_endpoints = get_active_runs(pods_with_endpoints)
@@ -934,7 +921,7 @@ for pod_spec in pods_with_endpoints:
 
         services_list.update(get_service_list(runs_with_endpoints, pod_id, pod_run_id, pod_ip))
 
-do_log('Found ' + str(len(services_list)) + ' running PODs for interactive runs')
+do_log('Found {} interactive runs'.format(len(services_list)))
 
 routes_kube = set([x for x in services_list])
 
@@ -959,13 +946,13 @@ routes_current = set([x for x in nginx_modules_list])
 # If they do not match - nginx config will be deleted, thus it will be further recreated during "add" step
 # For now only users/groups sharing is checked
 routes_to_update = routes_current.intersection(routes_kube)
-do_log('Found ' + str(len(routes_to_update)) + ' routes with existing configs, they will be checked for updates')
+do_log('Found {} existing routes, these routes will be updated if changed'.format(len(routes_to_update)))
 
 routes_were_updated = False
 for update_route in routes_to_update:
         path_to_update_route = os.path.join(nginx_sites_path, nginx_modules_list[update_route])
 
-        do_log('Checking nginx config for updates: {}'.format(path_to_update_route))
+        do_log('Checking existing route {}'.format(path_to_update_route))
         with open(path_to_update_route) as update_route_file:
                 update_route_file_contents = update_route_file.read()
 
@@ -981,27 +968,30 @@ for update_route in routes_to_update:
         shared_users_sids_to_update = service_spec["shared_users_sids"]
         shared_groups_sids_to_update = service_spec["shared_groups_sids"]
 
-        do_log('- Shared users found: "{}", while expected: "{}"'.format(shared_users_sids_to_check, shared_users_sids_to_update))
-        do_log('- Shared groups found: "{}", while expected: "{}"'.format(shared_groups_sids_to_check, shared_groups_sids_to_update))
+        if shared_users_sids_to_check != shared_users_sids_to_update:
+                do_log('Detected different shared users. Actual: "{}". Expected: "{}"'
+                       .format(shared_users_sids_to_check, shared_users_sids_to_update))
+        if shared_groups_sids_to_check != shared_groups_sids_to_update:
+                do_log('Detected different shared groups. Actual: "{}". Expected: "{}"'
+                       .format(shared_groups_sids_to_check, shared_groups_sids_to_update))
 
         # If nginx config and settings from API do not match - delete nginx config
         if shared_users_sids_to_check != shared_users_sids_to_update or shared_groups_sids_to_check != shared_groups_sids_to_update:
-                do_log('nginx config will be deleted {}'.format(path_to_update_route))
+                do_log('Deleting modified route {}'.format(path_to_update_route))
                 os.remove(path_to_update_route)
                 routes_current.remove(update_route)
                 routes_were_updated = True
 
 # Perform merge of the existing routes and pods
-do_log('Found out expired and new routes ...')
 routes_to_delete = routes_current - routes_kube
-do_log('Found ' + str(len(routes_to_delete)) + ' expired routes, this routes will be deleted')
+do_log('Found {} expired routes, these routes will be deleted'.format(len(routes_to_delete)))
 routes_to_add = routes_kube - routes_current
-do_log('Found ' + str(len(routes_to_add)) + ' pods without routes, routes for this pods will be added')
+do_log('Found {} missing routes, these routes will be created'.format(len(routes_to_add)))
 
 # For each of the routes that are not present in the list of pods - delete files from /etc/nginx/sites-enabled
 for obsolete_route in routes_to_delete:
         path_to_route = os.path.join(nginx_sites_path, nginx_modules_list[obsolete_route])
-        do_log('Deleting obsolete route: ' + path_to_route)
+        do_log('Deleting expired route {}'.format(path_to_route))
         os.remove(path_to_route)
         remove_custom_domain_all(path_to_route)
 
@@ -1040,17 +1030,12 @@ for added_route in routes_to_add:
         service_spec = services_list[added_route]
 
         if service_spec["create_dns_record"] and not service_spec["custom_domain"]:
-                if default_edge_region == edge_region:
-                        runs_with_custom_dns.add(service_spec["run_id"])
-                        dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record,
-                                                                               (service_spec, added_route)))
-                elif not default_edge_region:
-                        log_task_event("CreateDNSRecord",
-                                       "Can not determine default edge region, will not create any DNS records",
-                                       service_spec["run_id"],
-                                       service_spec["pod_id"])
+                runs_with_custom_dns.add(service_spec["run_id"])
+                dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record,
+                                                                       (service_spec, added_route,
+                                                                        edge_region_id, edge_region_name)))
         else:
-                create_service_location(service_spec, added_route, service_url_dict)
+                create_service_location(service_spec, added_route, service_url_dict, edge_region_id)
 
 # reload nginx first time to enable all urls with out custom dns with "nginx -s reload"
 # TODO: Add error handling, if non-zero is returned - restore previous state
@@ -1064,23 +1049,23 @@ if len(routes_to_add) > 0 or len(routes_to_delete) or routes_were_updated:
 
 for run_id in service_url_dict:
         if run_id not in runs_with_custom_dns:
-                update_svc_url_for_run(run_id)
+                update_svc_url_for_run(run_id, edge_region_name)
 
 
 # Here we check all future on completion, only if at least one exist
 if len(runs_with_custom_dns) > 0:
-        do_log("Wait for all async jobs to complete")
+        do_log("Creating DNS routes asynchronously...")
         dns_services_pool.close()
         dns_services_pool.join()
-        do_log("All async service location creations is completed")
+        do_log("Created DNS routes.")
 
         #after all async tasks are done - merge results in order to update svc_url for such runs
         for dns_result in dns_route_results:
                 route, success = dns_result.get()
-                do_log("for dns route {} success status is {}".format(route, success))
+                do_log("Created DNS route is {}: {}".format('OK' if success else 'NOT OK', route))
                 if success:
                         service_spec = services_list[route]
-                        create_service_location(service_spec, route, service_url_dict)
+                        create_service_location(service_spec, route, service_url_dict, edge_region_id)
 
         # reload nginx second time for custom dns services
         # TODO: Add error handling, if non-zero is returned - restore previous state
@@ -1090,7 +1075,7 @@ if len(runs_with_custom_dns) > 0:
 
         for run_id in service_url_dict:
                 if run_id in runs_with_custom_dns:
-                        update_svc_url_for_run(run_id)
+                        update_svc_url_for_run(run_id, edge_region_name)
 
 do_log('============ Done iteration ============')
 do_log('')

@@ -43,6 +43,8 @@ public abstract class AbstractCloudRegion extends AbstractSecuredEntity {
     @JsonProperty(value = "default")
     private boolean isDefault;
     private String globalDistributionUrl;
+    private String dnsHostedZoneId;
+    private String dnsHostedZoneBase;
     private List<FileShareMount> fileShareMounts = new ArrayList<>();
     @JsonProperty(value = "mountStorageRule")
     private MountStorageRule mountObjectStorageRule = MountStorageRule.NONE;
