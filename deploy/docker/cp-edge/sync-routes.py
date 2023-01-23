@@ -676,7 +676,7 @@ def create_dns_record(service_spec, edge_region_id, edge_region_name):
         data = json.dumps({
                 'dnsRecord': dns_custom_record,
                 'target': edge_service_external_ip,
-                'format': 'ABSOLUTE'
+                'format': 'RELATIVE'
         })
         dns_record_create_response = call_api(dns_record_create, data) or {}
         dns_record_create_response_payload = dns_record_create_response.get('payload', {})
