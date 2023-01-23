@@ -37,9 +37,12 @@ import com.amazonaws.waiters.MaxAttemptsRetryStrategy;
 import com.amazonaws.waiters.PollingStrategy;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecordStatus;
 import com.epam.pipeline.entity.region.AwsRegion;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -54,51 +57,58 @@ public class Route53Helper {
 
     public InstanceDNSRecord createDNSRecord(final AwsRegion awsRegion,
                                              final String hostedZoneId,
-                                             final InstanceDNSRecord dnsRecord) {
-        Assert.notNull(hostedZoneId, "hostedZoneId cannot be null");
-        Assert.isTrue(dnsRecord.getDnsRecord() != null && dnsRecord.getTarget() != null,
-                "DNS Record and DNS Record target cannot be null");
-        log.info("Creating DNS record for hostedZoneId: {} record: {} and target: {}",
-                hostedZoneId, dnsRecord.getDnsRecord(), dnsRecord.getTarget());
+                                             final InstanceDNSRecord record) {
+        validate(hostedZoneId);
+        validate(record);
+        log.info("Creating DNS record ({}): {} -> {}", hostedZoneId, record.getDnsRecord(), record.getTarget());
         final AmazonRoute53 client = getRoute53Client(awsRegion);
-        if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
-            try {
-                final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
-                        dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.CREATE, true);
-                return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
-                        result.getChangeInfo().getStatus());
-            } catch (InvalidChangeBatchException e) {
-                final String message = e.getLocalizedMessage();
-                log.error("AWS 53 Route service responded with: {}", message);
-                if (message.matches(".*Tried to create resource record set.*but it already exists.*")) {
-                    log.info("DNS Record already exists, API will proceed with this record.");
-                } else {
-                    throw e;
-                }
-            }
+        if (isDnsRecordExists(hostedZoneId, record, client)) {
+            log.info("DNS record already exists ({}): {} ({}) -> {}",
+                    hostedZoneId, record.getDnsRecord(), getRRType(record.getTarget()), record.getTarget());
+            return record.toBuilder().status(InstanceDNSRecordStatus.INSYNC).build();
         }
-        return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
-                InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
+        try {
+            final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
+                    record.getDnsRecord(), record.getTarget(), client, ChangeAction.CREATE, true);
+            return record.toBuilder().status(getStatus(result.getChangeInfo().getStatus())).build();
+        } catch (InvalidChangeBatchException e) {
+            final String message = e.getLocalizedMessage();
+            log.error("AWS 53 Route service responded with: {}", message);
+            if (message.matches(".*Tried to create resource record set.*but it already exists.*")) {
+                log.info("DNS Record already exists, API will proceed with this record.");
+                return record.toBuilder().status(InstanceDNSRecordStatus.INSYNC).build();
+            }
+            throw e;
+        }
     }
 
     public InstanceDNSRecord removeDNSRecord(final AwsRegion awsRegion,
                                              final String hostedZoneId,
-                                             final InstanceDNSRecord dnsRecord) {
-        log.info("Removing DNS record: {} for target: {} in hostedZoneId: {}",
-                dnsRecord.getDnsRecord(), dnsRecord.getTarget(), hostedZoneId);
+                                             final InstanceDNSRecord record) {
+        validate(hostedZoneId);
+        validate(record);
+        log.info("Removing DNS record ({}): {} -> {}", hostedZoneId, record.getDnsRecord(), record.getTarget());
         final AmazonRoute53 client = getRoute53Client(awsRegion);
-        if (!isDnsRecordExists(hostedZoneId, dnsRecord, client)) {
-            log.info("DNS record: {} type: {} for target: {} in hostedZoneId: {} doesn't exists",
-                    dnsRecord.getDnsRecord(), getRRType(dnsRecord.getTarget()), dnsRecord.getTarget(), hostedZoneId);
-            return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
-                    InstanceDNSRecord.DNSRecordStatus.INSYNC.name());
-        } else {
-            final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
-                    dnsRecord.getDnsRecord(), dnsRecord.getTarget(), client, ChangeAction.DELETE, false);
-            return buildInstanceDNSRecord(dnsRecord.getDnsRecord(), dnsRecord.getTarget(),
-                    result.getChangeInfo().getStatus());
+        if (!isDnsRecordExists(hostedZoneId, record, client)) {
+            log.info("DNS record doesn't exist ({}): {} ({}) -> {}",
+                    hostedZoneId, record.getDnsRecord(), getRRType(record.getTarget()), record.getTarget());
+            return record.toBuilder().status(InstanceDNSRecordStatus.NOOP).build();
         }
+        final ChangeResourceRecordSetsResult result = performChangeRequest(hostedZoneId,
+                record.getDnsRecord(), record.getTarget(), client, ChangeAction.DELETE, false);
+        return record.toBuilder().status(getStatus(result.getChangeInfo().getStatus())).build();
+    }
 
+    private void validate(final String hostedZoneId) {
+        Assert.notNull(hostedZoneId, "hostedZoneId cannot be null");
+    }
+
+    private void validate(final InstanceDNSRecord record) {
+        Assert.notNull(record, "DNS record is missing");
+        Assert.isTrue(StringUtils.isNotBlank(record.getDnsRecord()), "DNS record source is missing");
+        Assert.isTrue(StringUtils.isNotBlank(record.getTarget()), "DNS record target is missing");
+        Assert.notNull(record.getFormat(), "DNS record size is missing");
+        Assert.isTrue(record.getFormat() == InstanceDNSRecordFormat.ABSOLUTE, "DNS record should be absolute");
     }
 
     private AmazonRoute53 getRoute53Client(final AwsRegion awsRegion) {
@@ -119,19 +129,11 @@ public class Route53Helper {
                         || resourceRecord.equalsIgnoreCase(dnsRecord.getDnsRecord() + "."));
     }
 
-    private InstanceDNSRecord buildInstanceDNSRecord(final String dnsRecord,
-                                                     final String target, final String status) {
-        return new InstanceDNSRecord(dnsRecord, target, getStatus(status));
-    }
-
-    private InstanceDNSRecord.DNSRecordStatus getStatus(final String status) {
+    private InstanceDNSRecordStatus getStatus(final String status) {
         switch (status) {
-            case "PENDING":
-                return InstanceDNSRecord.DNSRecordStatus.PENDING;
-            case "INSYNC":
-                return InstanceDNSRecord.DNSRecordStatus.INSYNC;
-            default:
-                return InstanceDNSRecord.DNSRecordStatus.NO_OP;
+            case "PENDING": return InstanceDNSRecordStatus.PENDING;
+            case "INSYNC": return InstanceDNSRecordStatus.INSYNC;
+            default: return InstanceDNSRecordStatus.NOOP;
         }
     }
 

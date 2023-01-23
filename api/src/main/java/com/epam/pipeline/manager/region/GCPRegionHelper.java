@@ -71,8 +71,10 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
         originalRegion.setMountObjectStorageRule(updatedRegion.getMountObjectStorageRule());
         originalRegion.setMountFileStorageRule(updatedRegion.getMountFileStorageRule());
         originalRegion.setMountCredentialsRule(updatedRegion.getMountCredentialsRule());
-        originalRegion.setGlobalDistributionUrl(updatedRegion.getGlobalDistributionUrl());
         originalRegion.setStorageLifecycleServiceProperties(updatedRegion.getStorageLifecycleServiceProperties());
+        originalRegion.setGlobalDistributionUrl(updatedRegion.getGlobalDistributionUrl());
+        originalRegion.setDnsHostedZoneId(updatedRegion.getDnsHostedZoneId());
+        originalRegion.setDnsHostedZoneBase(updatedRegion.getDnsHostedZoneBase());
         return originalRegion;
     }
 

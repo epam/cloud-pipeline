@@ -72,6 +72,10 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     private static final MountStorageRule UPDATED_MOUNT_FILE_STORAGE_RULE = MountStorageRule.ALL;
     private static final String GLOBAL_DISTRIBUTION_URL = "globalDistributionUrl";
     private static final String UPDATED_GLOBAL_DISTRIBUTION_URL = "updatedGlobalDistributionUrl";
+    private static final String DNS_HOSTED_ZONE_ID = "dnsHostedZoneId";
+    private static final String UPDATED_DNS_HOSTED_ZONE_ID = "updatedDnsHostedZoneId";
+    private static final String DNS_HOSTED_ZONE_BASE = "dnsHostedZoneBase";
+    private static final String UPDATED_DNS_HOSTED_ZONE_BASE = "updatedDnsHostedZoneBase";
     private static final double RAM = 3.75;
     private static final int CPU = 2;
     private static final int GPU = 1;
@@ -205,6 +209,16 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     }
 
     @Test
+    public void createShouldSaveEntityWithDNSHostedZone() {
+        final AwsRegion expectedRegion = getAwsRegion();
+        expectedRegion.setDnsHostedZoneId(DNS_HOSTED_ZONE_ID);
+        expectedRegion.setDnsHostedZoneBase(DNS_HOSTED_ZONE_BASE);
+        final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
+        final AwsRegion actualRegion = loadAndCheckType(createdRegion.getId(), AwsRegion.class);
+        assertRegionEquals(expectedRegion, actualRegion);
+    }
+
+    @Test
     public void createShouldReturnEntityWithGeneratedId() {
         final AwsRegion region = getAwsRegion();
         assertNull(region.getId());
@@ -249,6 +263,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         originRegion.setKmsKeyArn(KMS_KEY_ARN);
         originRegion.setDefault(false);
         originRegion.setGlobalDistributionUrl(GLOBAL_DISTRIBUTION_URL);
+        originRegion.setDnsHostedZoneId(DNS_HOSTED_ZONE_ID);
+        originRegion.setDnsHostedZoneBase(DNS_HOSTED_ZONE_BASE);
         originRegion.setMountObjectStorageRule(MOUNT_OBJECT_STORAGE_RULE);
         originRegion.setMountFileStorageRule(MOUNT_FILE_STORAGE_RULE);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion);
@@ -260,8 +276,10 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         updatedRegion.setKmsKeyArn(UPDATED_KMS_KEY_ARN);
         updatedRegion.setDefault(true);
         updatedRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
-        originRegion.setMountObjectStorageRule(UPDATED_MOUNT_OBJECT_STORAGE_RULE);
-        originRegion.setMountFileStorageRule(UPDATED_MOUNT_FILE_STORAGE_RULE);
+        updatedRegion.setDnsHostedZoneId(UPDATED_DNS_HOSTED_ZONE_ID);
+        updatedRegion.setDnsHostedZoneBase(UPDATED_DNS_HOSTED_ZONE_BASE);
+        updatedRegion.setMountObjectStorageRule(UPDATED_MOUNT_OBJECT_STORAGE_RULE);
+        updatedRegion.setMountFileStorageRule(UPDATED_MOUNT_FILE_STORAGE_RULE);
 
         cloudRegionDao.update(updatedRegion, null);
         final AwsRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AwsRegion.class);
@@ -275,7 +293,9 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         originRegion.setAuthFile(AUTH_FILE);
         originRegion.setAzurePolicy(new AzurePolicy("ipMin", "ipMax"));
         originRegion.setDefault(false);
-        originRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
+        originRegion.setGlobalDistributionUrl(GLOBAL_DISTRIBUTION_URL);
+        originRegion.setDnsHostedZoneId(DNS_HOSTED_ZONE_ID);
+        originRegion.setDnsHostedZoneBase(DNS_HOSTED_ZONE_BASE);
         originRegion.setMountObjectStorageRule(MOUNT_OBJECT_STORAGE_RULE);
         originRegion.setMountFileStorageRule(MOUNT_FILE_STORAGE_RULE);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion, null);
@@ -286,8 +306,10 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         updatedRegion.setAzurePolicy(new AzurePolicy("updatedIpMin", "updatedIpMax"));
         updatedRegion.setDefault(true);
         updatedRegion.setGlobalDistributionUrl(UPDATED_GLOBAL_DISTRIBUTION_URL);
-        originRegion.setMountObjectStorageRule(UPDATED_MOUNT_OBJECT_STORAGE_RULE);
-        originRegion.setMountFileStorageRule(UPDATED_MOUNT_FILE_STORAGE_RULE);
+        updatedRegion.setDnsHostedZoneId(UPDATED_DNS_HOSTED_ZONE_ID);
+        updatedRegion.setDnsHostedZoneBase(UPDATED_DNS_HOSTED_ZONE_BASE);
+        updatedRegion.setMountObjectStorageRule(UPDATED_MOUNT_OBJECT_STORAGE_RULE);
+        updatedRegion.setMountFileStorageRule(UPDATED_MOUNT_FILE_STORAGE_RULE);
 
         cloudRegionDao.update(updatedRegion, null);
         final AzureRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AzureRegion.class);
@@ -349,6 +371,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertThat(expectedRegion.getProvider(), is(actualRegion.getProvider()));
         assertThat(actualRegion, instanceOf(expectedRegion.getClass()));
         assertThat(expectedRegion.getGlobalDistributionUrl(), is(actualRegion.getGlobalDistributionUrl()));
+        assertThat(expectedRegion.getDnsHostedZoneId(), is(actualRegion.getDnsHostedZoneId()));
+        assertThat(expectedRegion.getDnsHostedZoneBase(), is(actualRegion.getDnsHostedZoneBase()));
         assertThat(expectedRegion.getMountObjectStorageRule(), is(actualRegion.getMountObjectStorageRule()));
         assertThat(expectedRegion.getMountFileStorageRule(), is(actualRegion.getMountFileStorageRule()));
     }

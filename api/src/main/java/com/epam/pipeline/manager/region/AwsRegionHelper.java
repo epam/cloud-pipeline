@@ -116,6 +116,8 @@ public class AwsRegionHelper implements CloudRegionHelper<AwsRegion, AbstractClo
         originalRegion.setIamRole(updatedRegion.getIamRole());
         originalRegion.setStorageLifecycleServiceProperties(updatedRegion.getStorageLifecycleServiceProperties());
         originalRegion.setGlobalDistributionUrl(updatedRegion.getGlobalDistributionUrl());
+        originalRegion.setDnsHostedZoneId(updatedRegion.getDnsHostedZoneId());
+        originalRegion.setDnsHostedZoneBase(updatedRegion.getDnsHostedZoneBase());
         return originalRegion;
     }
 

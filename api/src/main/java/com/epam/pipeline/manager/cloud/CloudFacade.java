@@ -96,8 +96,8 @@ public interface CloudFacade {
 
     CloudInstanceState getInstanceState(Long runId);
 
-    InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord dnsRecord);
+    InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord record);
 
-    InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord dnsRecord);
+    InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord record);
 
 }

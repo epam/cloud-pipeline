@@ -48,6 +48,9 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         params.addValue(CloudRegionParameters.MOUNT_STORAGE_RULE.name(), region.getMountObjectStorageRule().name());
         params.addValue(CloudRegionParameters.MOUNT_FILE_STORAGE_RULE.name(), region.getMountFileStorageRule().name());
         params.addValue(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name(), region.getMountCredentialsRule().name());
+        params.addValue(CloudRegionParameters.GLOBAL_DISTRIBUTION_URL.name(), region.getGlobalDistributionUrl());
+        params.addValue(CloudRegionParameters.DNS_HOSTED_ZONE_ID.name(), region.getDnsHostedZoneId());
+        params.addValue(CloudRegionParameters.DNS_HOSTED_ZONE_BASE.name(), region.getDnsHostedZoneBase());
 
         final String slsPropertiesJson = Optional.ofNullable(region.getStorageLifecycleServiceProperties())
                 .map(props -> {
@@ -89,6 +92,10 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
                 rs.getString(CloudRegionParameters.MOUNT_FILE_STORAGE_RULE.name())));
         region.setMountCredentialsRule(MountStorageRule.valueOf(
                 rs.getString(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name())));
+        region.setGlobalDistributionUrl(rs.getString(CloudRegionParameters.GLOBAL_DISTRIBUTION_URL.name()));
+        region.setDnsHostedZoneId(rs.getString(CloudRegionParameters.DNS_HOSTED_ZONE_ID.name()));
+        region.setDnsHostedZoneBase(rs.getString(CloudRegionParameters.DNS_HOSTED_ZONE_BASE.name()));
+
         final String slsJsonString = rs.getString(CloudRegionParameters.STORAGE_LIFECYCLE_SERVICE_PROPERTIES.name());
         if (!rs.wasNull()) {
             region.setStorageLifecycleServiceProperties(
