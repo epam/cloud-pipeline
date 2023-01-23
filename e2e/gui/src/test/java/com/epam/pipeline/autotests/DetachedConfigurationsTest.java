@@ -153,6 +153,7 @@ public class DetachedConfigurationsTest
                     .setName(pathParameterName)
                     .close()
                     .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611)
             )
             .sleep(5, SECONDS)
             .editConfiguration(pipelineDefaultProfile, profile -> {
@@ -160,7 +161,8 @@ public class DetachedConfigurationsTest
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
-                    .click(SAVE);
+                    .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611);
             })
             .sleep(5, SECONDS)
             .editConfiguration(pipelineProfile1611, profile -> {

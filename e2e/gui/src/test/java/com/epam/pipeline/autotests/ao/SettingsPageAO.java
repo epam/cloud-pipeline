@@ -1261,7 +1261,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             searchPreference(preference);
             selectAllAndClearTextField(pref);
             clickAndSendKeysWithSlashes(pref, value);
-            deleteExtraBrackets(pref, 100);
+            deleteExtraBrackets(pref, 150);
             setEyeOption(eyeIsChecked);
             return this;
         }
