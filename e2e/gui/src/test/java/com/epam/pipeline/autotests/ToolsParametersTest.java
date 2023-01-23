@@ -107,6 +107,7 @@ public class ToolsParametersTest
                 .settings()
                 .switchToPreferences()
                 .updateCodeText(launchCapabilities, prefInitialValue[0], parseBoolean(prefInitialValue[1]))
+
                 .saveIfNeeded();
     }
 
@@ -136,7 +137,7 @@ public class ToolsParametersTest
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .clearAndSetJsonToPreference(launchCapabilities,
+                .updateCodeText(launchCapabilities,
                         readResourceFully(CUSTOM_CAPABILITIES_1_JSON), true)
                 .saveIfNeeded();
         logout();
@@ -176,7 +177,7 @@ public class ToolsParametersTest
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .clearAndSetJsonToPreference(launchCapabilities,
+                .updateCodeText(launchCapabilities,
                         readResourceFully(CUSTOM_CAPABILITIES_2_JSON), true)
                 .saveIfNeeded();
         logout();
