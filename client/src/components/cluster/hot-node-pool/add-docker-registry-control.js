@@ -85,11 +85,7 @@ class AddDockerRegistryControl extends React.Component {
   @computed
   get tools () {
     const {dockerRegistries} = this.props;
-    const {dockerImageField} = this.state;
     const result = [];
-    if (!dockerImageField || dockerImageField.length < 3) {
-      return result;
-    }
     if (dockerRegistries.loaded) {
       const {registries = []} = dockerRegistries.value || {};
       for (let r = 0; r < registries.length; r++) {
@@ -128,6 +124,26 @@ class AddDockerRegistryControl extends React.Component {
       }
     }
     return result;
+  }
+
+  get filteredTools () {
+    const {
+      dockerImageField,
+      docker
+    } = this.state;
+    return this.tools.map(
+      (group) => ({
+        ...group,
+        tools: group.tools
+          .filter((tool) => tool.dockerImage === docker ||
+            (
+              dockerImageField &&
+              dockerImageField.length >= 3 &&
+              tool.dockerImage.toLowerCase().includes(dockerImageField.toLowerCase())
+            )
+          )
+      }))
+      .filter((group) => group.tools.length > 0);
   }
 
   getTool = (docker) => {
@@ -244,7 +260,9 @@ class AddDockerRegistryControl extends React.Component {
       this.setState({
         docker: image,
         version: 'latest',
-        versionsSelected: []
+        versionsSelected: [],
+        dockerImageField: undefined,
+        dockerImageVersionField: undefined
       }, this.fetchVersions);
     }
   };
@@ -252,7 +270,8 @@ class AddDockerRegistryControl extends React.Component {
   onChangeDockerVersion = (version) => {
     if (version !== this.state.version) {
       this.setState({
-        version: version
+        version: version,
+        dockerImageVersionField: undefined
       }, this.handleChange);
     }
   };
@@ -290,9 +309,14 @@ class AddDockerRegistryControl extends React.Component {
     const {pending, version, versions, dockerImageVersionField} = this.state;
     if (versions.length > 0) {
       const filteredVersions = versions.filter((v) => {
-        if (dockerImageVersionField && dockerImageVersionField.length) {
-          return v.toLowerCase().includes(dockerImageVersionField.toLowerCase());
+        if (v.toLowerCase() === version.toLowerCase()) {
+          return true;
         }
+        if (dockerImageVersionField && dockerImageVersionField.length) {
+          return v === version ||
+            v.toLowerCase().includes(dockerImageVersionField.toLowerCase());
+        }
+        return false;
       });
       return [
         <span
@@ -311,10 +335,12 @@ class AddDockerRegistryControl extends React.Component {
           style={{width: 200, marginLeft: 5}}
           getPopupContainer={node => node.parentNode}
           showSearch
-          filterOption={(input, option) => (
-            option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
-          )}
-          notFoundContent={!dockerImageVersionField ? 'Start typing' : 'Not found'}
+          filterOption={false}
+          notFoundContent={
+            !dockerImageVersionField
+              ? 'Start typing to filter versions...'
+              : 'Not found'
+          }
         >
           {
             filteredVersions.map((v) => (
@@ -421,9 +447,9 @@ class AddDockerRegistryControl extends React.Component {
       return null;
     }
     const notFoundContent = !dockerImageField
-      ? 'Start typing'
+      ? 'Start typing to filter docker images...'
       : (dockerImageField.length < 3
-        ? 'Enter more symbols' : 'Not found');
+        ? 'Start typing to filter docker images...' : 'Not found');
     return (
       <div
         className={className}
@@ -443,14 +469,12 @@ class AddDockerRegistryControl extends React.Component {
             onFocus={() => this.setState({dockerImageField: undefined})}
             placeholder="Docker image"
             style={{flex: 1}}
-            filterOption={(input, option) =>
-              option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
+            filterOption={false}
             getPopupContainer={node => node.parentNode}
             notFoundContent={notFoundContent}
           >
             {
-              this.tools.map(group => (
+              this.filteredTools.map(group => (
                 <Select.OptGroup
                   key={group.key}
                   label={group.label}

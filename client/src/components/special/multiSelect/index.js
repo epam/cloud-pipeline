@@ -110,7 +110,7 @@ class MultiSelect extends React.Component {
         <div>
           <Input.Search
             disabled={disabled || pending}
-            placeholder="Start typing"
+            placeholder="Start typing to filter versions..."
             className={styles.menuItem}
             onChange={this.onSearch}
             value={this.state.searchString}
