@@ -1276,7 +1276,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             actions().moveToElement(editor).click()
                     .sendKeys(Keys.chord(Keys.CONTROL, "v"))
                     .perform();
-            deleteExtraBrackets(editor, 500);
             setEyeOption(eyeIsChecked);
             return this;
         }

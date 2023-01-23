@@ -106,7 +106,7 @@ public class ToolsParametersTest
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .clearAndSetJsonToPreference(launchCapabilities, prefInitialValue[0], parseBoolean(prefInitialValue[1]))
+                .updateCodeText(launchCapabilities, prefInitialValue[0], parseBoolean(prefInitialValue[1]))
                 .saveIfNeeded();
     }
 
@@ -204,7 +204,7 @@ public class ToolsParametersTest
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .clearAndSetJsonToPreference(launchCapabilities,
+                .updateCodeText(launchCapabilities,
                         readResourceFully(CUSTOM_CAPABILITIES_3_JSON), true)
                 .saveIfNeeded();
         tools().perform(registry, group, tool, tool ->
