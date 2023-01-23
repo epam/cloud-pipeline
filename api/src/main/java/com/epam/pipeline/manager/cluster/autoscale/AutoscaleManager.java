@@ -433,10 +433,12 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             // If we failed to load a matching pipeline run for a pod, we delete it here, since
             // PodMonitor wont't process it either
             log.debug("Trying to clear resources for run {}.", runId);
-            try {
-                runCleaners.forEach(cleaner -> cleaner.cleanResources(runId));
-            } catch (Exception e) {
-                log.error("Error during resources clean up: {}", e.getMessage());
+            for (final RunCleaner cleaner : runCleaners) {
+                try {
+                    cleaner.cleanResources(runId);
+                } catch (Exception e) {
+                    log.error("Error during resources clean up.", e);
+                }
             }
             deletePod(pod, client);
             removeNodeUpTask(runId);

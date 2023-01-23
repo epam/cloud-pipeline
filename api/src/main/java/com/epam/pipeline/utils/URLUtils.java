@@ -19,6 +19,9 @@ package com.epam.pipeline.utils;
 public final class URLUtils {
 
     private static final String SLASH = "/";
+    private static final String HTTP = "http://";
+    private static final String HTTPS = "https://";
+    private static final String PORT_DELIMITER = ":";
 
     private URLUtils() {
         //no op
@@ -31,5 +34,13 @@ public final class URLUtils {
 
     public static String getUrlWithTrailingSlash(String url) {
         return url.endsWith(SLASH) ? url : url + SLASH;
+    }
+
+    public static String getHost(String url) {
+        return url.trim()
+                .replace(HTTP, "")
+                .replace(HTTPS, "")
+                .split(SLASH)[0]
+                .split(PORT_DELIMITER)[0];
     }
 }

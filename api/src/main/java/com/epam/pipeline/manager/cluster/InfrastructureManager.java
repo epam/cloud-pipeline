@@ -18,21 +18,19 @@ package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class InfrastructureManager {
 
-    private CloudFacade cloudFacade;
+    private final CloudFacade cloudFacade;
 
-    public InfrastructureManager(final CloudFacade cloudFacade) {
-        this.cloudFacade = cloudFacade;
-    }
-
-    public InstanceDNSRecord createInstanceDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
-        return cloudFacade.createDNSRecord(regionId, dnsRecord);
+    public InstanceDNSRecord createInstanceDNSRecord(final Long regionId, final InstanceDNSRecord record) {
+        return cloudFacade.createDNSRecord(regionId, record);
     }
 }

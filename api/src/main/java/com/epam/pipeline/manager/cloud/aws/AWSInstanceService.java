@@ -48,6 +48,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -64,11 +65,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     private static final String MANUAL = "manual";
     private static final String ON_DEMAND = "on_demand";
-
-    // This InstanceDNSRecord used when no operation is required, f.e.
-    // when DNS record that doesn't exist asked to be deleted
-    private static final InstanceDNSRecord NO_OP_INSTANCE_DNS_RECORD = new InstanceDNSRecord(
-            "", "", InstanceDNSRecord.DNSRecordStatus.NO_OP);
 
     private final EC2Helper ec2Helper;
     private final PreferenceManager preferenceManager;
@@ -289,29 +285,49 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AwsRegion awsRegion,
-                                                          final InstanceDNSRecord dnsRecord) {
-        if (dnsRecord.getDnsRecord().contains(
-                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
-            return route53Helper
-                    .createDNSRecord(awsRegion, preferenceManager.getPreference(
-                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord);
-        } else {
-            return NO_OP_INSTANCE_DNS_RECORD;
-        }
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AwsRegion region,
+                                                          final InstanceDNSRecord record) {
+        validate(record);
+        log.debug("Creating DNS record {} ({})...", record.getDnsRecord(), record.getTarget());
+        final String zoneId = getHostedZoneId(region);
+        final String zoneBase = getHostedZoneBase(region);
+        return route53Helper.createDNSRecord(region, zoneId, withHostedZoneBase(record, zoneBase));
     }
 
     @Override
-    public InstanceDNSRecord deleteInstanceDNSRecord(final AwsRegion awsRegion,
-                                                     final InstanceDNSRecord dnsRecord) {
-        if (dnsRecord.getDnsRecord().contains(
-                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
-            return route53Helper
-                    .removeDNSRecord(awsRegion, preferenceManager.getPreference(
-                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord);
-        } else {
-            return NO_OP_INSTANCE_DNS_RECORD;
+    public InstanceDNSRecord deleteInstanceDNSRecord(final AwsRegion region,
+                                                     final InstanceDNSRecord record) {
+        validate(record);
+        log.debug("Deleting DNS record {} ({})...", record.getDnsRecord(), record.getTarget());
+        final String zoneId = getHostedZoneId(region);
+        final String zoneBase = getHostedZoneBase(region);
+        if (!StringUtils.contains(record.getDnsRecord(), zoneBase)) {
+            log.debug("Skipping deletion of AWS DNS record because it is not part of host zone {}", zoneBase);
+            return InstanceDNSRecord.EMPTY;
         }
+        return route53Helper.removeDNSRecord(region, zoneId, record);
+    }
+
+    private void validate(final InstanceDNSRecord record) {
+        Assert.notNull(record, "DNS record is missing");
+        Assert.isTrue(StringUtils.isNotBlank(record.getDnsRecord()), "DNS record source is missing");
+        Assert.isTrue(StringUtils.isNotBlank(record.getTarget()), "DNS record target is missing");
+    }
+
+    private String getHostedZoneId(final AwsRegion region) {
+        return Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID)
+                .map(preferenceManager::getPreference)
+                .orElseThrow(() -> new IllegalArgumentException("Host zone id is missing"));
+    }
+
+    private String getHostedZoneBase(final AwsRegion region) {
+        return Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE)
+                .map(preferenceManager::getPreference)
+                .orElseThrow(() -> new IllegalArgumentException("Host zone base is missing"));
+    }
+
+    private InstanceDNSRecord withHostedZoneBase(final InstanceDNSRecord record, final String base) {
+        return new InstanceDNSRecord(record.getDnsRecord() + "." + base, record.getTarget(), record.getStatus());
     }
 
     @Override

@@ -131,7 +131,7 @@ public class Route53Helper {
             case "INSYNC":
                 return InstanceDNSRecord.DNSRecordStatus.INSYNC;
             default:
-                return InstanceDNSRecord.DNSRecordStatus.NO_OP;
+                return InstanceDNSRecord.DNSRecordStatus.NOOP;
         }
     }
 

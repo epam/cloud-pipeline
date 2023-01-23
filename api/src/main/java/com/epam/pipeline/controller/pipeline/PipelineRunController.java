@@ -293,8 +293,8 @@ public class PipelineRunController extends AbstractRestController {
             notes = "Updates pipeline run pretty url.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRun> updateRunServiceUrl(@PathVariable(value = RUN_ID) Long runId,
-                                                   @RequestParam String url) {
+    public Result<PipelineRun> updateRunPrettyUrl(@PathVariable(value = RUN_ID) Long runId,
+                                                  @RequestParam String url) {
         return Result.success(runApiService.updatePrettyUrl(runId, url));
     }
 

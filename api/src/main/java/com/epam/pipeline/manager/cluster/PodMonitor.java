@@ -461,7 +461,13 @@ public class PodMonitor extends AbstractSchedulingManager {
 
         private void cleanRunResources(final PipelineRun run) {
             LOGGER.debug("Clearing resources for run {}.", run.getId());
-            cleaners.forEach(cleaner -> cleaner.cleanResources(run));
+            for (final RunCleaner cleaner : cleaners) {
+                try {
+                    cleaner.cleanResources(run);
+                } catch (Exception e) {
+                    LOGGER.error("Error during resources clean up", e);
+                }
+            }
         }
 
         private void savePodStatus(PipelineRun run, Pod pod, KubernetesClient client) {
