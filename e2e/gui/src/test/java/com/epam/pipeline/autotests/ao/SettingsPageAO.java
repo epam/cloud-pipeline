@@ -1391,7 +1391,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public PreferencesAO save() {
-            click(SAVE);
+//            click(SAVE);
+            get(SAVE).doubleClick();
             get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
             return this;
         }
@@ -1399,7 +1400,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public PreferencesAO saveIfNeeded() {
             actions().moveToElement($(By.id("edit-preference-form-ok-button")))
                      .perform();
-            sleep(10, SECONDS);
+            sleep(4, SECONDS);
             if(get(SAVE).isEnabled()) {
                 save();
             }

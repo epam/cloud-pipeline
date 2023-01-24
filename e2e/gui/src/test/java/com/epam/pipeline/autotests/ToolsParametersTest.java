@@ -107,7 +107,6 @@ public class ToolsParametersTest
                 .settings()
                 .switchToPreferences()
                 .updateCodeText(launchCapabilities, prefInitialValue[0], parseBoolean(prefInitialValue[1]))
-
                 .saveIfNeeded();
     }
 
