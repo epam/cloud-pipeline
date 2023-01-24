@@ -1400,7 +1400,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public PreferencesAO saveIfNeeded() {
             actions().moveToElement($(By.id("edit-preference-form-ok-button")))
                      .perform();
-            sleep(4, SECONDS);
+            sleep(10, SECONDS);
             if(get(SAVE).isEnabled()) {
                 save();
             }
