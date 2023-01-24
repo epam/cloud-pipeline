@@ -759,6 +759,8 @@ class AWSRegionForm extends React.Component {
       'mountStorageRule',
       'mountFileStorageRule',
       'mountCredentialsRule',
+      'dnsHostedZoneBase',
+      'dnsHostedZoneId',
       'globalDistributionUrl'
     ],
     AZURE: [
@@ -781,6 +783,8 @@ class AWSRegionForm extends React.Component {
       'mountStorageRule',
       'mountFileStorageRule',
       'mountCredentialsRule',
+      'dnsHostedZoneBase',
+      'dnsHostedZoneId',
       'globalDistributionUrl'
     ],
     GCP: [
@@ -798,6 +802,8 @@ class AWSRegionForm extends React.Component {
       'mountStorageRule',
       'mountFileStorageRule',
       'mountCredentialsRule',
+      'dnsHostedZoneBase',
+      'dnsHostedZoneId',
       'policy',
       {
         key: 'backupDuration',
@@ -961,6 +967,8 @@ class AWSRegionForm extends React.Component {
       check('mountStorageRule', checkStringValue) ||
       check('mountFileStorageRule', checkStringValue) ||
       check('mountCredentialsRule', checkStringValue) ||
+      check('dnsHostedZoneBase', checkStringValue) ||
+      check('dnsHostedZoneId', checkStringValue) ||
       check('policy', checkJSONValue) ||
       check('storageLifecycleServiceProperties', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
