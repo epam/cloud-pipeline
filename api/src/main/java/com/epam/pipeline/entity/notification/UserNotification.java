@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.entity.notification;
 
-import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.security.acl.AclClass;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,17 +31,14 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "user_notification", schema = "pipeline")
-public class UserNotification extends AbstractSecuredEntity {
+public class UserNotification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-
     @Column(name = "user_id")
     private Long userId;
-
     private String subject;
-
     private String text;
     @Column(name = "created_date")
     private LocalDateTime createdDateTime;
@@ -51,10 +46,4 @@ public class UserNotification extends AbstractSecuredEntity {
     private Boolean isRead;
     @Column(name = "read_date")
     private LocalDateTime readDateTime;
-
-    private AclClass aclClass = AclClass.USER_NOTIFICATION;
-    @Override
-    public AbstractSecuredEntity getParent() {
-        return null;
-    }
 }

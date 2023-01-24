@@ -32,8 +32,7 @@ public enum AclClass {
     CLOUD_REGION,
     PIPELINE_USER(false),
     ROLE(false),
-    CATEGORICAL_ATTRIBUTE,
-    USER_NOTIFICATION;
+    CATEGORICAL_ATTRIBUTE;
 
     private final boolean supportsEntityManager;
 
