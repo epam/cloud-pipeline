@@ -1584,7 +1584,8 @@ class AWSRegionForm extends React.Component {
             >
               <Form.Item
                 className={classNames(
-                  styles.mountRulesFormItem,
+                  styles.sectionFormItem,
+                  styles.mountRules,
                   this.getFieldClassName('mountStorageRule')
                 )}
                 label="Object storages"
@@ -1605,7 +1606,8 @@ class AWSRegionForm extends React.Component {
               </Form.Item>
               <Form.Item
                 className={classNames(
-                  styles.mountRulesFormItem,
+                  styles.sectionFormItem,
+                  styles.mountRules,
                   this.getFieldClassName('mountFileStorageRule')
                 )}
                 label="File storages"
@@ -1626,7 +1628,8 @@ class AWSRegionForm extends React.Component {
               </Form.Item>
               <Form.Item
                 className={classNames(
-                  styles.mountRulesFormItem,
+                  styles.sectionFormItem,
+                  styles.mountRules,
                   this.getFieldClassName('mountCredentialsRule')
                 )}
                 label="Credentials"
@@ -1643,6 +1646,45 @@ class AWSRegionForm extends React.Component {
                     <Select.Option value="CLOUD">Same cloud</Select.Option>
                     <Select.Option value="ALL">All</Select.Option>
                   </Select>
+                )}
+              </Form.Item>
+            </AWSRegionForm.Section>
+            <AWSRegionForm.Section
+              title="DNS hosted zone:"
+              layout={this.formItemLayout}
+            >
+              <Form.Item
+                className={classNames(
+                  styles.sectionFormItem,
+                  styles.dnsHostedZone,
+                  this.getFieldClassName('dnsHostedZoneBase')
+                )}
+                label="Base"
+              >
+                {getFieldDecorator('dnsHostedZoneBase', {
+                  initialValue: this.props.region.dnsHostedZoneBase
+                })(
+                  <Input
+                    size="small"
+                    disabled={this.props.pending}
+                  />
+                )}
+              </Form.Item>
+              <Form.Item
+                className={classNames(
+                  styles.sectionFormItem,
+                  styles.dnsHostedZone,
+                  this.getFieldClassName('dnsHostedZoneId')
+                )}
+                label="Id"
+              >
+                {getFieldDecorator('dnsHostedZoneId', {
+                  initialValue: this.props.region.dnsHostedZoneId
+                })(
+                  <Input
+                    size="small"
+                    disabled={this.props.pending}
+                  />
                 )}
               </Form.Item>
             </AWSRegionForm.Section>
