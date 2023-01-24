@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 import os
 import json
 import glob
@@ -20,10 +21,8 @@ import requests
 from subprocess import check_output, CalledProcessError
 import urllib3
 from time import sleep
-import datetime
 import time
 from multiprocessing.pool import ThreadPool as Pool
-
 
 CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
 
@@ -126,7 +125,7 @@ class ServiceEndpoint:
                 self.additional = additional
 
 def do_log(msg):
-        print('[{}] {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
+        print('[{}] {}'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
 
 def call_api(method_url, data=None):
         result = None
@@ -161,7 +160,7 @@ def call_api(method_url, data=None):
 
 def log_task_event(task_name, message, run_id, instance, status="RUNNING"):
         do_log("Log run log: " + message)
-        now = datetime.datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+        now = datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
         date = now[0:len(now) - 3]
         log_entry = json.dumps({"runId": run_id,
                              "date": date,
@@ -445,7 +444,6 @@ def append_additional_endpoints(tool_endpoints, run_details):
                                 overridden_endpoints_count += removed_endpoints_count
                         tool_endpoints.append(json.dumps(tool_endpoint))
         return tool_endpoints, overridden_endpoints_count
-
 
 def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, tool_endpoints):
         non_matching_tool_endpoints = []
