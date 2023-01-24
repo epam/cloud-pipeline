@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
-import os
-import json
 import glob
+import json
+import os
 import re
-import requests
-from subprocess import check_output, CalledProcessError
-import urllib3
-from time import sleep
-import time
+import subprocess
+from datetime import datetime
 from multiprocessing.pool import ThreadPool as Pool
+
+import requests
+import time
+import urllib3
 
 CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
 
@@ -158,7 +158,7 @@ def call_api(method_url, data=None):
 
                 if n < NUMBER_OF_RETRIES - 1:
                         do_log('Sleep for {} sec and perform API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 2, NUMBER_OF_RETRIES))
-                        sleep(SECS_TO_WAIT_BEFORE_RETRY)
+                        time.sleep(SECS_TO_WAIT_BEFORE_RETRY)
                 else:
                         do_log('All attempts failed. API call failed')
         return result
@@ -817,10 +817,10 @@ def check_nginx_config():
         test_config_command = 'nginx -c %s -t' % nginx_root_config_path
 
         try:
-                check_output(test_config_command, shell=True)
+                subprocess.check_output(test_config_command, shell=True)
                 do_log('Adding new route ... OK')
                 return True
-        except CalledProcessError as e:
+        except subprocess.CalledProcessError as e:
                 do_log('Adding new route ... NOT OK (%s)' % e.returncode)
                 return False
 
@@ -890,7 +890,7 @@ for n in range(NUMBER_OF_RETRIES):
             break
         else:
             do_log('Sleep for {} sec and perform kube API call again ({}/{})'.format(SECS_TO_WAIT_BEFORE_RETRY, n + 1, NUMBER_OF_RETRIES))
-            sleep(SECS_TO_WAIT_BEFORE_RETRY)
+            time.sleep(SECS_TO_WAIT_BEFORE_RETRY)
 
 if not edge_kube_service_object:
     do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'
@@ -979,6 +979,7 @@ for update_route in routes_to_update:
         if shared_users_sids_to_check != shared_users_sids_to_update or shared_groups_sids_to_check != shared_groups_sids_to_update:
                 do_log('Deleting modified route {}'.format(path_to_update_route))
                 os.remove(path_to_update_route)
+                remove_custom_domain_all(path_to_update_route)
                 routes_current.remove(update_route)
                 routes_were_updated = True
 
@@ -1041,7 +1042,7 @@ for added_route in routes_to_add:
 # TODO: Add error handling, if non-zero is returned - restore previous state
 if len(routes_to_add) > 0 or len(routes_to_delete) or routes_were_updated:
         do_log('Reloading nginx config to enable non custom DNS runs')
-        check_output('nginx -s reload', shell=True)
+        subprocess.check_output('nginx -s reload', shell=True)
 
 # For all added entries - call API and set Service URL property for the run:
 # -- Get ServiceExternalIP from the EDGE-labeled service description
@@ -1071,7 +1072,7 @@ if len(runs_with_custom_dns) > 0:
         # TODO: Add error handling, if non-zero is returned - restore previous state
         if len(routes_to_add) > 0 or len(routes_to_delete) or routes_were_updated:
                 do_log('Reloading nginx config to enable custom DNS runs')
-                check_output('nginx -s reload', shell=True)
+                subprocess.check_output('nginx -s reload', shell=True)
 
         for run_id in service_url_dict:
                 if run_id in runs_with_custom_dns:
