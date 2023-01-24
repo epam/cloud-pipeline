@@ -67,6 +67,18 @@ public class UserNotificationController extends AbstractRestController {
         return Result.success(notificationApiService.findByUserId(userId));
     }
 
+    @GetMapping("/message/my")
+    @ApiOperation(
+            value = "Gets current user's notifications.",
+            notes = "Gets current user's notifications.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<List<UserNotification>> findMy() {
+        return Result.success(notificationApiService.findMy());
+    }
+
     @DeleteMapping("/message/{messageId}")
     @ApiOperation(
             value = "Deletes a custom user notification.",

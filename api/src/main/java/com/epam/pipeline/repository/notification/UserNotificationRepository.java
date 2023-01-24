@@ -22,7 +22,7 @@ import org.springframework.data.repository.CrudRepository;
 import java.time.LocalDateTime;
 
 public interface UserNotificationRepository extends CrudRepository<UserNotification, Long> {
-    Iterable<UserNotification> findByUserId(Long userId);
-    void deleteByCreatedDateLessThan(LocalDateTime date);
+    Iterable<UserNotification> findByUserIdOrderByCreatedDateTimeDesc(Long userId);
+    void deleteByCreatedDateTimeLessThan(LocalDateTime date);
     void deleteByUserId(Long userId);
 }

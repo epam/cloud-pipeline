@@ -16,15 +16,21 @@
 
 package com.epam.pipeline.manager.notification;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.notification.UserNotification;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +42,9 @@ import java.util.stream.StreamSupport;
 public class UserNotificationManager {
     private final UserNotificationRepository userNotificationRepository;
     private final PreferenceManager preferenceManager;
+    private final AuthManager authManager;
+    private final UserManager userManager;
+    private final MessageHelper messageHelper;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public UserNotification save(final UserNotification notification) {
@@ -61,12 +70,20 @@ public class UserNotificationManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void cleanUp(final LocalDateTime date) {
-        userNotificationRepository.deleteByCreatedDateLessThan(date);
+        userNotificationRepository.deleteByCreatedDateTimeLessThan(date);
     }
 
     public List<UserNotification> findByUserId(final Long userId) {
-        return StreamSupport.stream(userNotificationRepository.findByUserId(userId).spliterator(), false)
+        return StreamSupport.stream(userNotificationRepository
+                .findByUserIdOrderByCreatedDateTimeDesc(userId).spliterator(), false)
                 .collect(Collectors.toList());
+    }
+
+    public List<UserNotification> findMy() {
+        final String currentUser = authManager.getAuthorizedUser();
+        final PipelineUser user = userManager.loadUserByName(currentUser);
+        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, user));
+        return findByUserId(user.getId());
     }
 
     @Scheduled(fixedDelayString = "${scheduled.notifications.cleanup.sec:86400}")
@@ -77,7 +94,7 @@ public class UserNotificationManager {
 
     private void setUp(final UserNotification notification) {
         if (notification.getId() == null) {
-            notification.setCreatedDate(LocalDateTime.now());
+            notification.setCreatedDateTime(LocalDateTime.now());
             notification.setIsRead(false);
         }
     }

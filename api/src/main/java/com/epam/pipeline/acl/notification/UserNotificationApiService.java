@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.notification.UserNotification;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -31,17 +32,21 @@ public class UserNotificationApiService {
 
     private final UserNotificationManager notificationManager;
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ACL_ENTITY_OWNER)
     public UserNotification save(final UserNotification notification) {
         return notificationManager.save(notification);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PostAuthorize(AclExpressions.ACL_ENTITY_OWNER)
     public List<UserNotification> findByUserId(final Long userId) {
         return notificationManager.findByUserId(userId);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public List<UserNotification> findMy() {
+        return notificationManager.findMy();
+    }
+
+    @PreAuthorize(AclExpressions.ACL_ENTITY_OWNER)
     public void delete(final Long notificationId) {
         notificationManager.delete(notificationId);
     }
