@@ -84,17 +84,21 @@
   line-height: 32px;
 }
 
-.mount-rules-form-item {
+.section-form-item {
   display: flex;
   flex-wrap: nowrap;
   margin-bottom: 2px;
 }
 
-.mount-rules-form-item div[class~="ant-form-item-label"] {
+.section-form-item div[class~="ant-form-item-control-wrapper"] {
+  width: auto;
+  flex-grow: 1;
+}
+
+.section-form-item.mount-rules div[class~="ant-form-item-label"] {
   width: 100px;
 }
 
-.mount-rules-form-item div[class~="ant-form-item-control-wrapper"] {
-  width: auto;
-  flex-grow: 1;
+.section-form-item.dns-hosted-zone div[class~="ant-form-item-label"] {
+  width: 44px;
 }
