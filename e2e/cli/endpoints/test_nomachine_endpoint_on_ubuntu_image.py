@@ -12,20 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from utils import *
+import logging
+
+from .utils import terminate_node_with_retry, run_test
 
 
 class TestNoMachineEndpoints(object):
-    pipeline_id = None
-    run_ids = []
-    nodes = set()
-    state = FailureIndicator()
-    test_case = ''
 
-    @classmethod
-    def setup_class(cls):
-        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
-                            format='%(levelname)s %(asctime)s %(module)s:%(message)s')
+    nodes = set()
+    test_case = ''
 
     @classmethod
     def teardown_class(cls):
@@ -33,28 +28,22 @@ class TestNoMachineEndpoints(object):
             terminate_node_with_retry(node)
             logging.info("Node %s was terminated" % node)
 
-    @pipe_test
     def test_nomachine_endpoint_on_ubuntu_16_image(self):
         self.test_case = 'TC-EDGE-2'
         run_id, node_name = run_test("library/ubuntu:16.04",
-                                                      "echo {test_case} && sleep infinity".format(
-                                                          test_case=self.test_case),
-                                                      no_machine=True,
-                                                      endpoints_structure={
-                                                          "NoMachine": "pipeline-{run_id}-8089-0"
-                                                      })
-        self.run_ids.append(run_id)
+                                     "echo {test_case} && sleep infinity".format(test_case=self.test_case),
+                                     no_machine=True,
+                                     endpoints_structure={
+                                         "NoMachine": "pipeline-{run_id}-8089-0"
+                                     })
         self.nodes.add(node_name)
 
-    @pipe_test
     def test_nomachine_endpoint_on_ubuntu_18_image(self):
         self.test_case = 'TC-EDGE-3'
-        run_id, node_name  = run_test("library/ubuntu:18.04",
-                                                      "echo {test_case} && sleep infinity".format(
-                                                          test_case=self.test_case),
-                                                      no_machine=True,
-                                                      endpoints_structure={
-                                                          "NoMachine": "pipeline-{run_id}-8089-0"
-                                                      })
-        self.run_ids.append(run_id)
+        run_id, node_name = run_test("library/ubuntu:18.04",
+                                     "echo {test_case} && sleep infinity".format(test_case=self.test_case),
+                                     no_machine=True,
+                                     endpoints_structure={
+                                         "NoMachine": "pipeline-{run_id}-8089-0"
+                                     })
         self.nodes.add(node_name)

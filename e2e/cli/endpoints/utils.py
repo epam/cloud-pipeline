@@ -12,10 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..utils.pipeline_utils import *
+import json
+import logging
 import os
+import subprocess
+import time
+
+from ..utils.pipeline_utils import get_endpoint_urls, run_tool, wait_for_instance_creation, wait_for_node_up, \
+    get_node_name_from_cluster_state, wait_for_run_initialized, wait_for_service_urls, stop_pipe_with_retry
 
 MAX_REPETITIONS = 200
+
 
 def get_tool_info(tool, max_retry=100):
 
@@ -165,7 +172,7 @@ def follow_service_url(url, max_rep_count, check=lambda x: "HTTP/1.1 200" in x):
     while rep < max_rep_count:
         if result:
             return result
-        sleep(5)
+        time.sleep(5)
         rep = rep + 1
         result = curl_service_url(url, token, check)
     return False

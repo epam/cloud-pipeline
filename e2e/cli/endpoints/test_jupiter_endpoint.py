@@ -12,20 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from utils import *
+import logging
+import time
+
+from .utils import terminate_node_with_retry, run_test
 
 
 class TestJupiterEndpoints(object):
-    pipeline_id = None
-    run_ids = []
-    nodes = set()
-    state = FailureIndicator()
-    test_case = ''
 
-    @classmethod
-    def setup_class(cls):
-        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
-                            format='%(levelname)s %(asctime)s %(module)s:%(message)s')
+    nodes = set()
+    test_case = ''
 
     @classmethod
     def teardown_class(cls):
@@ -33,43 +29,37 @@ class TestJupiterEndpoints(object):
             terminate_node_with_retry(node)
             logging.info("Node %s was terminated" % node)
 
-    @pipe_test
     def test_jupiter_endpoint(self):
         self.test_case = 'TC-EDGE-12'
         run_id, node_name = run_test("library/jupyter-lab",
-                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      endpoints_structure={
-                                                          "JupyterLab": "pipeline-{run_id}-8888-0"
-                                                      })
-        self.run_ids.append(run_id)
+                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                     endpoints_structure={
+                                         "JupyterLab": "pipeline-{run_id}-8888-0"
+                                     })
         self.nodes.add(node_name)
 
-    @pipe_test
     def test_jupiter_endpoint_friendly_url(self):
         self.test_case = 'TC-EDGE-13'
         run_id, node_name = run_test("library/jupyter-lab",
-                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url='friendly',
-                                                      endpoints_structure={
-                                                          "JupyterLab": "friendly",
-                                                      })
-        self.run_ids.append(run_id)
+                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                     friendly_url='friendly',
+                                     endpoints_structure={
+                                         "JupyterLab": "friendly",
+                                     })
         self.nodes.add(node_name)
         # Sleep 1 min to be sure that edge is reloaded
-        sleep(60)
+        time.sleep(60)
 
-    @pipe_test
     def test_jupiter_and_no_machine_endpoint_friendly_url(self):
         self.test_case = 'TC-EDGE-14'
         run_id, node_name = run_test("library/jupyter-lab",
-                                                      "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                                      friendly_url='friendly',
-                                                      no_machine=True,
-                                                      endpoints_structure={
-                                                          "JupyterLab": "friendly-JupyterLab",
-                                                          "NoMachine": "friendly-NoMachine"
-                                                      })
-        self.run_ids.append(run_id)
+                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
+                                     friendly_url='friendly',
+                                     no_machine=True,
+                                     endpoints_structure={
+                                         "JupyterLab": "friendly-JupyterLab",
+                                         "NoMachine": "friendly-NoMachine"
+                                     })
         self.nodes.add(node_name)
         # Sleep 1 min to be sure that edge is reloaded
-        sleep(60)
+        time.sleep(60)

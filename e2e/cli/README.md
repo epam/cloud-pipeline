@@ -10,8 +10,16 @@ is specified in `CP_PROVIDER` environment variable:
 - `GS` for Google cloud provider.
 
 ```bash
-cd buckets
-pytest -s -v
+WORKDIR_ROOT="$PWD"
+pip install -r "$WORKDIR_ROOT/e2e/cli/requirements.txt"
+pip install -r "$WORKDIR_ROOT/pipe-cli/requirements.txt"
+cd "$WORKDIR_ROOT/workflows/pipe-common"
+python setup.py sdist
+cd "$WORKDIR_ROOT/workflows/pipe-common/dist"
+pip install pipeline-1.0.tar.gz
+cd "$WORKDIR_ROOT/e2e/cli"
+export PYTHONPATH="$WORKDIR_ROOT/pipe-cli:$WORKDIR_ROOT/e2e/cli:$PYTHONPATH"
+pytest -s -vv --html="$WORKDIR_ROOT/e2e/cli/report.html" buckets
 ```
 
 ### Credentials
