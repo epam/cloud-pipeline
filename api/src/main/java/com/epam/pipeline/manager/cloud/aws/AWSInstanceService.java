@@ -291,26 +291,26 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AwsRegion awsRegion,
+                                                          final InstanceDNSRecord dnsRecord) {
         if (dnsRecord.getDnsRecord().contains(
                 preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
             return route53Helper
-                    .createDNSRecord(preferenceManager.getPreference(
-                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
-                    );
+                    .createDNSRecord(awsRegion, preferenceManager.getPreference(
+                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord);
         } else {
             return NO_OP_INSTANCE_DNS_RECORD;
         }
     }
 
     @Override
-    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord deleteInstanceDNSRecord(final AwsRegion awsRegion,
+                                                     final InstanceDNSRecord dnsRecord) {
         if (dnsRecord.getDnsRecord().contains(
                 preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
             return route53Helper
-                    .removeDNSRecord(preferenceManager.getPreference(
-                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord
-                    );
+                    .removeDNSRecord(awsRegion, preferenceManager.getPreference(
+                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord);
         } else {
             return NO_OP_INSTANCE_DNS_RECORD;
         }
