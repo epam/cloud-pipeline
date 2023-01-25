@@ -165,22 +165,32 @@ def call_api(method_url, data=None):
         return result
 
 
-def log_task_event(task_name, message, run_id, instance, status="RUNNING"):
-        do_log("Log run log: " + message)
-        now = datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
-        date = now[0:len(now) - 3]
-        log_entry = json.dumps({"runId": run_id,
-                             "date": date,
-                             "status": status,
-                             "logText": message,
-                             "taskName": task_name,
-                             "instance": instance})
-        call_api(os.path.join(api_url, "run/{run_id}/log".format(run_id=run_id)), data=log_entry)
+# todo: Use RunLogger from pipe commons instead
+class RunLogger:
 
+        def __init__(self, run_id, task_name):
+                self.run_id = run_id
+                self.task_name = task_name
 
-def update_run_status(run_id, status):
-        do_log("Update run status: run_id {} status {}".format(run_id, status))
-        call_api(os.path.join(api_url, "run/{run_id}/status".format(run_id=run_id)), data=json.dumps({"status": status}))
+        def info(self, message):
+                self._log(message=message, status='RUNNING')
+
+        def warning(self, message):
+                self._log(message='\033[93m' + message + '\033[0m', status='RUNNING')
+
+        def success(self, message):
+                self._log(message='\033[92m' + message + '\033[0m', status='SUCCESS')
+
+        def _log(self, message, status):
+                do_log("Log run log: " + message)
+                now = datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+                date = now[0:len(now) - 3]
+                log_entry = json.dumps({"runId": self.run_id,
+                                        "date": date,
+                                        "status": status,
+                                        "logText": message,
+                                        "taskName": self.task_name})
+                call_api(os.path.join(api_url, "run/{run_id}/log".format(run_id=self.run_id)), data=log_entry)
 
 
 def run_sids_to_str(run_sids, is_principal):
@@ -193,7 +203,8 @@ def parse_pretty_url(pretty):
                 pretty_obj = json.loads(pretty)
                 if not pretty_obj:
                         return None
-        except:
+        # todo: Use only specific exception types
+        except Exception:
                 pretty_obj = { 'path': pretty }
 
         pretty_domain = None
@@ -670,6 +681,8 @@ def load_pods_for_runs_with_endpoints():
 
 
 def create_dns_record(service_spec, edge_region_id, edge_region_name):
+        run_logger = RunLogger(run_id=service_spec["run_id"], task_name='CreateDNSRecord')
+
         dns_custom_record = EDGE_DNS_RECORD_FORMAT.format(job_name=service_spec["edge_location"],
                                                           region_name=edge_region_name)
         dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD)
@@ -680,20 +693,18 @@ def create_dns_record(service_spec, edge_region_id, edge_region_name):
                 'target': edge_service_external_ip,
                 'format': 'RELATIVE'
         })
+
+        run_logger.info('Creating DNS record {}...'.format(dns_custom_record))
         dns_record_create_response = call_api(dns_record_create, data) or {}
         dns_record_create_response_payload = dns_record_create_response.get('payload', {})
         dns_record_status = dns_record_create_response_payload.get('status')
         dns_record_domain = dns_record_create_response_payload.get('dnsRecord')
 
-        if dns_record_status != "INSYNC":
-                log_task_event("CreateDNSRecord",
-                               "Fail to create DNS record for the run",
-                               service_spec["run_id"],
-                               service_spec["pod_id"],
-                               "FAILURE")
-                update_run_status(service_spec["run_id"], "FAILURE")
-                raise ValueError("Couldn't create DNS record for: {}, bad response from API"
-                                 .format(service_spec["run_id"]))
+        if dns_record_status != 'INSYNC':
+                run_logger.warning('Failed to create DNS record {}'.format(dns_custom_record))
+                raise ValueError('Fail to create DNS record {} for run #{}'
+                                 .format(dns_custom_record, service_spec["run_id"]))
+        run_logger.success('Created DNS record {}'.format(dns_record_domain))
 
         service_spec["custom_domain"] = dns_record_domain
         service_spec["edge_location"] = None
@@ -704,7 +715,7 @@ def create_service_dns_record(service_spec, added_route, edge_region_id, edge_re
                 create_dns_record(service_spec, edge_region_id, edge_region_name)
                 return added_route, True
         except ValueError as e:
-                do_log(e.message)
+                do_log(str(e))
                 return added_route, False
 
 def create_service_location(service_spec, added_route, service_url_dict, edge_region_id):
