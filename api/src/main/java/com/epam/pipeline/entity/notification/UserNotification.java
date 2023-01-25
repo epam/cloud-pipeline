@@ -41,9 +41,9 @@ public class UserNotification {
     private String subject;
     private String text;
     @Column(name = "created_date")
-    private LocalDateTime createdDateTime;
+    private LocalDateTime createdDate;
     @Column(name = "is_read")
     private Boolean isRead;
     @Column(name = "read_date")
-    private LocalDateTime readDateTime;
+    private LocalDateTime readDate;
 }

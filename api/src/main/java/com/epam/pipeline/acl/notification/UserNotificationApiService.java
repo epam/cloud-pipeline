@@ -18,9 +18,7 @@ package com.epam.pipeline.acl.notification;
 
 import com.epam.pipeline.entity.notification.UserNotification;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
-import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -32,12 +30,12 @@ public class UserNotificationApiService {
 
     private final UserNotificationManager notificationManager;
 
-    @PreAuthorize(AclExpressions.ACL_ENTITY_OWNER)
+    @PreAuthorize("hasRole('ADMIN') OR @notificationPermissionManager.hasPermission(#notification)")
     public UserNotification save(final UserNotification notification) {
         return notificationManager.save(notification);
     }
 
-    @PostAuthorize(AclExpressions.ACL_ENTITY_OWNER)
+    @PreAuthorize("hasRole('ADMIN') OR @notificationPermissionManager.hasPermissionByUserId(#userId)")
     public List<UserNotification> findByUserId(final Long userId) {
         return notificationManager.findByUserId(userId);
     }
@@ -46,7 +44,7 @@ public class UserNotificationApiService {
         return notificationManager.findMy();
     }
 
-    @PreAuthorize(AclExpressions.ACL_ENTITY_OWNER)
+    @PreAuthorize("hasRole('ADMIN') OR @notificationPermissionManager.hasPermission(#notificationId)")
     public void delete(final Long notificationId) {
         notificationManager.delete(notificationId);
     }

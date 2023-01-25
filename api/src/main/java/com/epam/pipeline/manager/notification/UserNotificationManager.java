@@ -70,12 +70,12 @@ public class UserNotificationManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void cleanUp(final LocalDateTime date) {
-        userNotificationRepository.deleteByCreatedDateTimeLessThan(date);
+        userNotificationRepository.deleteByCreatedDateLessThan(date);
     }
 
     public List<UserNotification> findByUserId(final Long userId) {
         return StreamSupport.stream(userNotificationRepository
-                .findByUserIdOrderByCreatedDateTimeDesc(userId).spliterator(), false)
+                .findByUserIdOrderByCreatedDateDesc(userId).spliterator(), false)
                 .collect(Collectors.toList());
     }
 
@@ -94,7 +94,7 @@ public class UserNotificationManager {
 
     private void setUp(final UserNotification notification) {
         if (notification.getId() == null) {
-            notification.setCreatedDateTime(LocalDateTime.now());
+            notification.setCreatedDate(LocalDateTime.now());
             notification.setIsRead(false);
         }
     }
