@@ -1997,6 +1997,28 @@ fi
 ######################################################
 
 ######################################################
+# Setup "EFA" support
+######################################################
+
+echo "Check if AWS EFA support is needed"
+echo "-"
+if [ "$CP_CAP_EFA_ENABLED" == "true" ]; then
+    echo "EFA support is requested, proceeding with installation..."
+    _LSPCI_INSTALL_COMMAND=
+    get_install_command_by_current_distr _LSPCI_INSTALL_COMMAND "pciutils"
+    eval "$_LSPCI_INSTALL_COMMAND"
+    if [ `lspci | grep -E "EFA|efa|Elastic Fabric Adapter" | wc -l` -gt 0 ]; then
+          efa_setup
+    else
+        echo "AWS EFA device cannot be found, drivers won't be installed"
+    fi
+else
+    echo "EFA support is not requested"
+fi
+
+######################################################
+
+######################################################
 # Setup "Singularity" support
 ######################################################
 

@@ -17,5 +17,9 @@
     },
     "CP_NODE_SSH_PORT": {
         "argumentName": "--node_ssh_port"
+    },
+    "CP_CAP_EFA_ENABLED": {
+        "argumentName": "--performance_network",
+        "type": "BOOLEAN"
     }
 }

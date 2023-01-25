@@ -1,11 +1,10 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
- *
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,28 +21,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
 import java.util.Map;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class NetworkConfiguration {
+public class AMIConfiguration {
 
-    private Long regionId;
-    private String name;
+    private String platform;
 
-    @JsonProperty("default")
-    private Boolean defaultRegion;
+    @JsonProperty("instance_mask")
+    private String instanceMask;
+    private String ami;
 
-    @JsonProperty("networks")
-    private Map<String, String> allowedNetworks;
+    @JsonProperty("run_parameters")
+    private Map<String, Object> runParameters;
 
-    @JsonProperty("security_group_ids")
-    private List<String> securityGroups;
 
-    private List<AMIConfiguration> amis;
-
-    private List<SwapConfiguration> swap;
 }

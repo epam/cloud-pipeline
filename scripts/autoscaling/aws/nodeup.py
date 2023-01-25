@@ -15,6 +15,7 @@
 import argparse
 import base64
 import socket
+import random
 from datetime import datetime, timedelta
 from time import sleep
 import boto3
@@ -388,50 +389,42 @@ def get_specified_subnet(subnet, availability_zone):
     return subnet
 
 
+def get_random_subnet(ec2):
+    subnets = ec2.describe_subnets()
+    if "Subnets" in subnets:
+        return random.choice(subnets['Subnets'])['SubnetId']
+    return None
+
+
 def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type,
                  is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_client,
                  global_distribution_url, pre_pull_images, instance_additional_spec,
-                 availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port):
+                 availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token,
                                             global_distribution_url, swap_size, pre_pull_images, node_ssh_port)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
-                                            user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated)
+                                            user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
-                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated)
+                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network)
     return ins_id, ins_ip
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, pool_id, user_data_script, num_rep, time_rep, swap_size,
                            kube_client, instance_additional_spec, availability_zone, security_groups, subnet,
-                           network_interface, is_dedicated):
+                           network_interface, is_dedicated, performance_network):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     additional_args = instance_additional_spec if instance_additional_spec else {}
 
     subnet_id = None
     az_name = None
-    if network_interface:
-        if subnet:
-            pipe_log('- Network interface specified. Desired subnet id {} will be ignored'.format(subnet))
-        network_interface, subnet_id, az_name = fetch_network_interface_info(ec2, network_interface, availability_zone, allowed_networks)
-        additional_args.update({
-            "NetworkInterfaces": [
-                {
-                    "DeviceIndex": 0,
-                    "NetworkInterfaceId": network_interface
-                }
-            ]
-        })
-    elif subnet:
-        additional_args.update({
-            'SubnetId': get_specified_subnet(subnet, availability_zone),
-            'SecurityGroupIds': get_security_groups(aws_region, security_groups)
-        })
+    if subnet:
+        subnet_id = get_specified_subnet(subnet, availability_zone)
     elif allowed_networks and len(allowed_networks) > 0:
         if availability_zone:
             pipe_log('- Desired availability zone {} was specified, trying to use it'.format(availability_zone))
@@ -445,6 +438,39 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             az_name = allowed_networks.items()[az_num][0]
             subnet_id = allowed_networks.items()[az_num][1]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
+
+
+    if network_interface:
+        if subnet_id:
+            pipe_log('- Network interface specified. Desired subnet id {} and performance network config will be ignored.'.format(subnet_id))
+        network_interface, subnet_id, az_name = fetch_network_interface_info(ec2, network_interface, availability_zone, allowed_networks)
+        additional_args.update({
+            "NetworkInterfaces": [
+                {
+                    "DeviceIndex": 0,
+                    "NetworkInterfaceId": network_interface
+                }
+            ]
+        })
+    elif performance_network:
+        pipe_log('- Performance network requested.')
+        if not subnet or not subnet_id:
+            pipe_log('- Subnet is not specified, trying to get a random one...')
+            subnet_id = get_random_subnet(ec2)
+            pipe_log('- Subnet: {} will be used.'.format(subnet_id))
+
+        additional_args.update({
+            "NetworkInterfaces": [
+                {
+                    'DeleteOnTermination': True,
+                    'DeviceIndex': 0,
+                    'SubnetId': subnet_id if subnet_id else get_random_subnet(ec2),
+                    'Groups': get_security_groups(aws_region, security_groups),
+                    'InterfaceType': 'efa'
+                }
+            ]
+        })
+    elif subnet_id:
         additional_args.update({
             'SubnetId': subnet_id,
             'SecurityGroupIds': get_security_groups(aws_region, security_groups)
@@ -452,7 +478,6 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     else:
         pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
         additional_args.update({'SecurityGroupIds': get_security_groups(aws_region, security_groups)})
-    response = {}
 
     if is_dedicated:
         additional_args.update({
@@ -461,6 +486,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             }
         })
 
+    response = {}
     try:
         response = ec2.run_instances(
             ImageId=ins_img,
@@ -1033,7 +1059,7 @@ def exit_if_spot_unavailable(run_id, last_status):
 def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size, kube_client,
                        instance_additional_spec, availability_zone, security_groups, subnet, network_interface,
-                       is_dedicated):
+                       is_dedicated, performance_network):
     pipe_log('Creating spot request')
 
     pipe_log('- Checking spot prices for current region...')
@@ -1062,9 +1088,17 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
             'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_size),
         }
+
+    subnet_id = None
+    if subnet:
+        subnet_id = get_specified_subnet(subnet, availability_zone)
+    elif allowed_networks and cheapest_zone in allowed_networks:
+        subnet_id = allowed_networks[cheapest_zone]
+        pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, cheapest_zone))
+
     if network_interface:
-        if subnet:
-            pipe_log('- Network interface specified. Desired subnet id {} will be ignored'.format(subnet))
+        if subnet_id:
+            pipe_log('- Network interface specified. Desired subnet id {} will be ignored'.format(subnet_id))
         network_interface, subnet_id, az_name = fetch_network_interface_info(ec2, network_interface, availability_zone, allowed_networks)
         specifications.update({
             "NetworkInterfaces": [
@@ -1074,17 +1108,31 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
                 }
             ],
         })
-    elif subnet:
+    elif performance_network:
+        pipe_log('- Performance network requested.')
+        if not subnet or not subnet_id:
+            pipe_log('- Subnet is not specified, trying to get a random one...')
+            subnet_id = get_random_subnet(ec2)
+            pipe_log('- Subnet: {} will be used.'.format(subnet_id))
+
+        specifications.update({
+            "NetworkInterfaces": [
+                {
+                    'DeleteOnTermination': True,
+                    'DeviceIndex': 0,
+                    'SubnetId': subnet_id if subnet_id else get_random_subnet(ec2),
+                    'Groups': get_security_groups(aws_region, security_groups),
+                    'InterfaceType': 'efa'
+                }
+            ]
+        })
+    elif subnet_id:
         specifications.update({
             'SubnetId': get_specified_subnet(subnet, availability_zone),
             'SecurityGroupIds': get_security_groups(aws_region, security_groups)
         })
-    elif allowed_networks and cheapest_zone in allowed_networks:
-        subnet_id = allowed_networks[cheapest_zone]
-        pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, cheapest_zone))
-        specifications['SubnetId'] = subnet_id
-        specifications['SecurityGroupIds'] = get_security_groups(aws_region, security_groups)
-        specifications['Placement'] = { 'AvailabilityZone': cheapest_zone }
+        if cheapest_zone:
+            specifications['Placement'] = { 'AvailabilityZone': cheapest_zone }
     else:
         pipe_log('- Networks list NOT found or cheapest zone can not be determined, default subnet in a random AZ will be used')
         specifications['SecurityGroupIds'] = get_security_groups(aws_region, security_groups)
@@ -1350,6 +1398,7 @@ def main():
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--availability_zone", type=str, required=False)
     parser.add_argument("--network_interface", type=str, required=False)
+    parser.add_argument("--performance_network", type=bool, required=False)
     parser.add_argument("--subnet_id", type=str, required=False)
     parser.add_argument("--security_groups", type=str, required=False)
     parser.add_argument("--dedicated", type=bool, required=False)
@@ -1381,6 +1430,7 @@ def main():
     region_id = args.region_id
     availability_zone = args.availability_zone
     network_interface = args.network_interface
+    performance_network = args.performance_network
     security_groups = args.security_groups
     subnet = args.subnet_id
     is_dedicated = args.dedicated if args.dedicated else False
@@ -1476,7 +1526,7 @@ def main():
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
-                                          availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port)
+                                          availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
