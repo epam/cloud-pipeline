@@ -49,10 +49,9 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -76,10 +75,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class DockerContainerOperationManager {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DockerContainerOperationManager.class);
 
     private static final Pattern GROUP_AND_IMAGE = Pattern.compile("^(.*)\\/(.*)$");
 
@@ -224,7 +222,7 @@ public class DockerContainerOperationManager {
             Assert.state(isFinished && sshConnection.exitValue() == 0,
                     messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_COMMIT_FAILED, run.getId()));
         } catch (IllegalStateException | IllegalArgumentException | IOException e) {
-            LOGGER.error(e.getMessage());
+            log.error(e.getMessage());
             updatePipelineRunCommitStatus(run, CommitStatus.FAILURE);
             throw new CmdExecutionException(COMMIT_COMMAND_DESCRIPTION, e);
         } catch (InterruptedException e) {
@@ -259,7 +257,7 @@ public class DockerContainerOperationManager {
             Assert.state(isFinished && sshConnection.exitValue() == 0,
                     messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
         } catch (IllegalStateException | IllegalArgumentException | IOException e) {
-            LOGGER.error(e.getMessage());
+            log.error(e.getMessage());
             throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -287,7 +285,7 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.PAUSED);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), PAUSE_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(PAUSE_COMMAND_DESCRIPTION, e);
@@ -314,7 +312,7 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.RUNNING);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
@@ -363,7 +361,7 @@ public class DockerContainerOperationManager {
         final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
                 startInstanceResult.getMessage());
         addRunLog(run, msg, RESUME_RUN_TASK);
-        LOGGER.warn(msg);
+        log.warn(msg);
         run.setStatus(TaskStatus.PAUSED);
         // set stateReasonMessage here only for NotificationAspect, this status won't be persisted in DB,
         // but would be passed to aspect and used for RunStatus update
@@ -385,7 +383,7 @@ public class DockerContainerOperationManager {
                 kubePipelineNodeUserName + "@" + ip,
                 commandToExecute
         );
-        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_EXECUTE_COMMIT_RUN_PIPELINES, sshCommand));
+        log.info(messageHelper.getMessage(MessageConstants.INFO_EXECUTE_COMMIT_RUN_PIPELINES, sshCommand));
         return Runtime.getRuntime().exec(sshCommand);
     }
 
@@ -396,7 +394,7 @@ public class DockerContainerOperationManager {
     }
 
     private void failRunAndTerminateNode(PipelineRun run, Exception e) {
-        LOGGER.error(e.getMessage());
+        log.error(e.getMessage());
         run.setEndDate(DateUtils.now());
         run.setStatus(TaskStatus.FAILURE);
         runManager.updatePipelineStatus(run);
@@ -444,27 +442,33 @@ public class DockerContainerOperationManager {
     }
 
     private boolean startInstanceIfNeed(final PipelineRun run, final String nodeId, final Long regionId) {
-        final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
-        validateInstanceState(cloudInstanceState);
-        switch (cloudInstanceState) {
-            case STOPPED:
-                final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(regionId, nodeId);
-                if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
-                    rollbackRunToPausedState(run, startInstanceResult);
+        try {
+            final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
+            validateInstanceState(cloudInstanceState);
+            switch (cloudInstanceState) {
+                case STOPPED:
+                    final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(regionId, nodeId);
+                    if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
+                        rollbackRunToPausedState(run, startInstanceResult);
+                        return false;
+                    }
+                    break;
+                case STOPPING:
+                    rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
+                            messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
                     return false;
-                }
-                break;
-            case STOPPING:
-                rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
-                        messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
-                return false;
-            case TERMINATED:
-                throw new IllegalStateException(messageHelper
-                        .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
-            default:
-                break;
+                case TERMINATED:
+                    throw new IllegalStateException(messageHelper
+                            .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
+                default:
+                    break;
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("An error occurred during cloud instance start: " + e.getMessage(), e);
+            addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
+            return false;
         }
-        return true;
     }
 
     private boolean launchPauseRunScript(final PipelineRun run) throws IOException, InterruptedException {
