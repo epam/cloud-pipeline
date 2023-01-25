@@ -34,7 +34,7 @@ import java.time.LocalDateTime;
 public class UserNotification {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(name = "user_id")
     private Long userId;
