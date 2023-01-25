@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.notification;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
+@Builder
 @Table(name = "user_notification", schema = "pipeline")
 public class UserNotification {
 

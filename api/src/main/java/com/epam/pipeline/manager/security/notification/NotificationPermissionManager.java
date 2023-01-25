@@ -33,15 +33,18 @@ public class NotificationPermissionManager {
     private final UserManager userManager;
 
     public boolean hasPermission(final UserNotification userNotification) {
+        if (userNotification.getId() != null) {
+            return hasPermissionById(userNotification.getId());
+        }
         return hasPermissionByUserId(userNotification.getUserId());
     }
 
-    public boolean hasPermission(final Long notificationId) {
+    public boolean hasPermissionById(final Long notificationId) {
         final UserNotification userNotification = repository.findOne(notificationId);
         if (userNotification == null) {
             return false;
         }
-        return hasPermission(userNotification);
+        return hasPermissionByUserId(userNotification.getUserId());
     }
 
     public boolean hasPermissionByUserId(final Long userId) {

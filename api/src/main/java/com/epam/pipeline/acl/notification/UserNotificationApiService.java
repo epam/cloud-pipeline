@@ -44,7 +44,7 @@ public class UserNotificationApiService {
         return notificationManager.findMy();
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @notificationPermissionManager.hasPermission(#notificationId)")
+    @PreAuthorize("hasRole('ADMIN') OR @notificationPermissionManager.hasPermissionById(#notificationId)")
     public void delete(final Long notificationId) {
         notificationManager.delete(notificationId);
     }

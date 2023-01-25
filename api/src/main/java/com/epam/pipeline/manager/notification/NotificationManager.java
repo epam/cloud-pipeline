@@ -612,7 +612,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     public void saveNotifications(final List<NotificationMessage> messages) {
         monitoringNotificationDao.createMonitoringNotifications(messages);
         final List<UserNotification> userNotifications = messages.stream()
-                .map(this::toUserNotification)
+                .map(this::toUserNotifications)
+                .flatMap(List::stream)
                 .collect(Collectors.toList());
         userNotificationManager.save(userNotifications);
     }
@@ -620,7 +621,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     @Transactional(propagation = Propagation.REQUIRED)
     public void saveNotification(final NotificationMessage message) {
         monitoringNotificationDao.createMonitoringNotification(message);
-        userNotificationManager.save(toUserNotification(message));
+        userNotificationManager.save(toUserNotifications(message));
     }
 
     private List<Long> mapRecipientsToUserIds(final List<? extends Sid> recipients) {
@@ -968,15 +969,18 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         return settings;
     }
 
-    private UserNotification toUserNotification(final NotificationMessage message) {
+    private List<UserNotification> toUserNotifications(final NotificationMessage message) {
         final String subject = StringUtils.isBlank(message.getSubject()) ?
                 message.getTemplate().getSubject() : message.getSubject();
         final String body = StringUtils.isBlank(message.getBody()) ?
                 message.getTemplate().getSubject() : message.getBody();
-        final UserNotification userNotification = new UserNotification();
-        userNotification.setUserId(message.getToUserId());
-        userNotification.setSubject(subject);
-        userNotification.setText(body);
-        return userNotification;
+        final List<Long> userIds = ListUtils.emptyIfNull(message.getCopyUserIds());
+        userIds.add(message.getToUserId());
+        return userIds.stream().map(u -> UserNotification.builder()
+                .userId(u)
+                .subject(subject)
+                .text(body)
+                .build()
+        ).collect(Collectors.toList());
     }
 }
