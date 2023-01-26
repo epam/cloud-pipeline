@@ -51,6 +51,7 @@ EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
+EDGE_DNS_RECORD_FORMAT = os.getenv('CP_EDGE_DNS_RECORD_FORMAT', '{job_name}.{region_name}')
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
 EDGE_INSTANCE_IP = 'CP_EDGE_INSTANCE_IP'
 RUN_ID = 'runid'
@@ -654,7 +655,8 @@ def load_pods_for_runs_with_endpoints():
 
 
 def create_dns_record(service_spec, edge_region_id, edge_region_name):
-        dns_custom_record = service_spec["edge_location"] + "." + edge_region_name
+        dns_custom_record = EDGE_DNS_RECORD_FORMAT.format(job_name=service_spec["edge_location"],
+                                                          region_name=edge_region_name)
         dns_record_create = os.path.join(api_url, API_POST_DNS_RECORD)
         if edge_region_id:
                 dns_record_create += "?regionId=" + edge_region_id
