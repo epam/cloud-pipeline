@@ -649,6 +649,21 @@ class Analysis {
     return this.analysisOutputImages
       .find(o => o.originalModuleId === aModule.id);
   };
+
+  getMissingInputs = () => {
+    return this.pipeline ? this.pipeline.getMissingInputs() : [];
+  }
+
+  correctInputsForModules = (correctedInputs = {}) => {
+    const corrected = this.pipeline
+      ? this.pipeline.correctInputsForModules(correctedInputs)
+      : false;
+    if (corrected) {
+      this.changed = true;
+      this.analysisRequested = true;
+    }
+    return corrected;
+  };
 }
 
 export {Analysis};

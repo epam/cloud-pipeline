@@ -21,10 +21,11 @@ import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import OpenPipelineModal from './modals/open-pipeline-modal';
 import CellProfilerPipeline from './pipeline';
 import AddModulesButton from './add-modules-button';
+import OpenPipelineModal from './modals/open-pipeline-modal';
 import SavePipelineModal from './modals/save-pipeline-modal';
+import CorrectInputsModal from './modals/correct-inputs-modal';
 import SelectionInfo from './selection-info';
 import SimilarJobWarning from './components/similar-job-warning';
 import styles from './cell-profiler.css';
@@ -34,7 +35,8 @@ class CellProfiler extends React.Component {
     managementActionsVisible: false,
     openPipelineModalVisible: false,
     savePipelineOptions: undefined,
-    similarJobs: []
+    similarJobs: [],
+    missingInputsCorrection: undefined
   };
 
   get analysisDisabled () {
@@ -126,6 +128,21 @@ class CellProfiler extends React.Component {
       closeModal();
       if (analysis) {
         analysis.loadPipeline(pipelineFile);
+        const missingInputs = analysis.getMissingInputs();
+        if (missingInputs.length && analysis.pipeline.channels.length > 0) {
+          const inputs = [...new Set([
+            ...missingInputs,
+            ...analysis.pipeline.channels
+          ])].sort();
+          this.setState({
+            missingInputsCorrection: {
+              inputs,
+              availableInputs: analysis.pipeline.channels
+            }
+          });
+        } else {
+          analysis.correctInputsForModules();
+        }
       }
     };
     const handleVisibility = (visible) => this.setState({managementActionsVisible: visible});
@@ -271,6 +288,30 @@ class CellProfiler extends React.Component {
     }
   }
 
+  correctMissingInputs = (correction = {}) => {
+    this.setState({
+      missingInputsCorrection: undefined
+    });
+    const {
+      analysis
+    } = this.props;
+    if (analysis) {
+      analysis.correctInputsForModules(correction);
+    }
+  };
+
+  closeMissingInputsCorrectionModal = () => {
+    this.setState({
+      missingInputsCorrection: undefined
+    });
+    const {
+      analysis
+    } = this.props;
+    if (analysis) {
+      analysis.correctInputsForModules();
+    }
+  };
+
   render () {
     const {
       analysis,
@@ -283,7 +324,8 @@ class CellProfiler extends React.Component {
       return null;
     }
     const {
-      similarJobs = []
+      similarJobs = [],
+      missingInputsCorrection
     } = this.state;
     return (
       <div
@@ -385,6 +427,13 @@ class CellProfiler extends React.Component {
           onCancel={this.cancelRunSimilarJob}
           onSubmit={this.runSimilarJob}
           onOpenSimilar={this.openSimilarJob}
+        />
+        <CorrectInputsModal
+          visible={!!missingInputsCorrection}
+          inputs={missingInputsCorrection ? missingInputsCorrection.inputs : []}
+          availableInputs={missingInputsCorrection ? missingInputsCorrection.availableInputs : []}
+          onCancel={this.closeMissingInputsCorrectionModal}
+          onCorrect={this.correctMissingInputs}
         />
       </div>
     );

@@ -422,7 +422,9 @@ export async function getBatchJobs (filters = {}) {
     payload.tags[tag] = value;
   };
   appendTag(HCS_ANALISYS_TAG, true);
-  payload.partialParameters = `${CELLPROFILER_API_BATCH_FILE_NAME}=${source}`;
+  if (source) {
+    payload.partialParameters = `${CELLPROFILER_API_BATCH_FILE_NAME}=${source}`;
+  }
   if (pipeline) {
     appendTag('analysisPipeline', pipeline);
   }

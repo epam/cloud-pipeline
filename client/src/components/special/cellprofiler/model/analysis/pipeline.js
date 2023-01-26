@@ -401,6 +401,18 @@ class AnalysisPipeline {
     }
     return undefined;
   }
+
+  getMissingInputs = () => (this.modules || [])
+    .map((aModule) => aModule.getMissingInputs())
+    .reduce((r, c) => ([...r, ...c]), []);
+
+  correctInputsForModules = (correctedInputs = {}) => {
+    let corrected = false;
+    this.modules.forEach((aModule) => {
+      corrected = aModule.correctInputsForModules(correctedInputs) || corrected;
+    });
+    return corrected;
+  };
 }
 
 export {AnalysisPipeline};
