@@ -45,6 +45,8 @@ class DataStorageLifecycleManager:
     def load_items(self):
         items = DataStorageLifecycle.load_hierarchy(self.storage_id, self.path, self.is_file)
         self.items = {}
+        if not items:
+            return
         for item in items:
             self.items.update({item.path: item})
         self.sorted_paths = sorted([item.path for item in items], key=len, reverse=True)
