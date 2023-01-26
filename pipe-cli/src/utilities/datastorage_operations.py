@@ -21,6 +21,8 @@ import click
 import datetime
 import prettytable
 import sys
+
+from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
 
@@ -642,6 +644,12 @@ class DataStorageOperations(object):
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                transfer_results, clean=clean)
         except Exception as e:
+            if isinstance(e, ClientError) \
+                    and e.message and 'InvalidObjectState' in e.message and 'storage class' in e.message:
+                if not quiet:
+                    click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
+                               .format(full_path))
+                return transfer_results, fail_after_exception
             if on_failures == AllowedFailuresValues.FAIL:
                 err_msg = u'File transferring has failed {}. Exiting...'.format(full_path)
                 logging.warn(err_msg)
