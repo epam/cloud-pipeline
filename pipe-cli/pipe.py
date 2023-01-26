@@ -1075,7 +1075,7 @@ def mvtodir(name, directory):
               help="Option for configuring storage summary details listing mode. Possible values: "
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
-@click.option('-g', '--show-archive', is_flag=True, help='')
+@click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @common_options
 def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
     """Lists storage contents
