@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,14 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 
+import java.io.StringWriter;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,6 +68,9 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
+import org.apache.velocity.tools.generic.NumberTool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -95,6 +103,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
     private static final double PERCENT = 100.0;
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
+    private static final String MESSAGE_TAG = "message";
 
     @Autowired
     private UserManager userManager;
@@ -970,17 +979,43 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     }
 
     private List<UserNotification> toUserNotifications(final NotificationMessage message) {
-        final String subject = StringUtils.isBlank(message.getSubject()) ?
-                message.getTemplate().getSubject() : message.getSubject();
-        final String body = StringUtils.isBlank(message.getBody()) ?
-                message.getTemplate().getSubject() : message.getBody();
+        final Optional<NotificationTemplate> template = Optional.ofNullable(message.getTemplate());
+        final String subject = template.map(NotificationTemplate::getSubject).orElse(message.getSubject());
+        final String body = template.map(NotificationTemplate::getBody).orElse(message.getBody());
+
+        final VelocityContext velocityContext = getVelocityContext(message);
+        velocityContext.put("numberTool", new NumberTool());
+
+        final StringWriter subjectOut = new StringWriter();
+        final StringWriter bodyOut = new StringWriter();
+
+        Velocity.evaluate(velocityContext, subjectOut, MESSAGE_TAG + message.hashCode(), subject);
+        Velocity.evaluate(velocityContext, bodyOut, MESSAGE_TAG + message.hashCode(), body);
+
+        final String formattedSubject = subjectOut.toString();
+        final String formattedBody = bodyOut.toString();
+
         final List<Long> userIds = ListUtils.emptyIfNull(message.getCopyUserIds());
         userIds.add(message.getToUserId());
         return userIds.stream().map(u -> UserNotification.builder()
                 .userId(u)
-                .subject(subject)
-                .text(body)
+                .subject(formattedSubject)
+                .text(formattedBody)
                 .build()
         ).collect(Collectors.toList());
+    }
+
+    private VelocityContext getVelocityContext(final NotificationMessage message) {
+        final VelocityContext velocityContext = new VelocityContext();
+        velocityContext.put("templateParameters", message.getTemplateParameters());
+
+        final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        velocityContext.put("calendar", calendar);
+
+        final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        velocityContext.put("dateFormat", dateFormat);
+
+        return velocityContext;
     }
 }

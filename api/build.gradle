@@ -252,6 +252,7 @@ dependencies {
 
     //Template engine
     compile group: 'org.apache.velocity', name: 'velocity', version: '1.7'
+    compile group: 'org.apache.velocity', name: 'velocity-tools', version: '2.0'
 }
 
 // >>>>> processes profiles
