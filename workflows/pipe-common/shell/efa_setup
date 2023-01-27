@@ -40,9 +40,9 @@ fi
 EFA_SETUP_DIR="/opt/"
 
 cd $EFA_SETUP_DIR
-curl -O https://s3-us-west-2.amazonaws.com/aws-efa-installer/aws-efa-installer-latest.tar.gz \
-    && tar -xf aws-efa-installer-latest.tar.gz \
-    && rm -rf aws-efa-installer-latest.tar.gz \
+curl -O "${GLOBAL_DISTRIBUTION_URL}tools/efa/aws-efa-installer-1.21.0.tar.gz" \
+    && tar -xf aws-efa-installer-1.21.0.tar.gz \
+    && rm -rf aws-efa-installer-1.21.0.tar.gz \
     && cd aws-efa-installer \
     && ./efa_installer.sh -y --skip-kmod --skip-limit-conf --no-verify &> /dev/null
 
