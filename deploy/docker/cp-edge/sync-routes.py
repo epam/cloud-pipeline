@@ -59,7 +59,7 @@ RUN_ID = 'runid'
 API_UPDATE_SVC = 'run/{run_id}/serviceUrl?region={region}'
 API_GET_RUNS_LIST_DETAILS = 'runs?runIds={run_ids}'
 API_POST_DNS_RECORD = 'cluster/dnsrecord'
-API_GET_DEFAULT_EDGE_REGION_PREF = 'preferences/default.edge.region'
+API_GET_PREF = 'preferences/{preference_name}'
 NUMBER_OF_RETRIES = 10
 SECS_TO_WAIT_BEFORE_RETRY = 15
 STUB_LOCATION_CONFIG_EXTENSION = '.stub.loc.conf'
@@ -803,12 +803,9 @@ def update_svc_url_for_run(run_id, edge_region_name):
 
 
 def find_preference(api_preference_query, preference_name):
-        load_method = os.path.join(api_url, api_preference_query)
-        response = call_api(load_method)
-        if response and "payload" in response and "name" in response["payload"] \
-                and response["payload"]["name"] == preference_name and "value" in response["payload"]:
-                return response["payload"]["value"]
-        return None
+        load_method = os.path.join(api_url, api_preference_query.format(preference_name=preference_name))
+        response = call_api(load_method) or {}
+        return str(response.get('payload', {}).get('value'))
 
 
 def write_stub_location_configuration(path_to_route, service_location, service_spec, has_custom_domain):
@@ -900,8 +897,8 @@ else:
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False
 
-edge_region_name = os.getenv('CP_EDGE_REGION') or find_preference(API_GET_DEFAULT_EDGE_REGION_PREF, 'default.edge.region')
-edge_region_id = os.getenv('CP_EDGE_REGION_ID')
+edge_region_name = os.getenv('CP_EDGE_REGION') or find_preference(API_GET_PREF, 'default.edge.region')
+edge_region_id = os.getenv('CP_EDGE_REGION_ID') or find_preference(API_GET_PREF, 'default.edge.region.id')
 
 # Try to get edge_service_external_ip and edge_service_port for service labels several times before get it from
 # service spec IP and nodePort because it is possible that we will do it while redeploy and label just doesn't
