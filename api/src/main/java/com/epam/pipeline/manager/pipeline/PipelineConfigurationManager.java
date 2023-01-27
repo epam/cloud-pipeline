@@ -111,7 +111,7 @@ public class PipelineConfigurationManager {
 
         getParametersFromNetworkConfig(runVO.getInstanceType(), runVO.getCloudRegionId())
                 .forEach((key, parameter) -> {
-                    if(configuration.getParameters().containsKey(key)) {
+                    if(!configuration.getParameters().containsKey(key)) {
                         configuration.getParameters().put(key, parameter);
                     }
                 });
