@@ -46,7 +46,8 @@ SVC_URL_TMPL = '{{ ' \
                '"customDNS": {is_custom_dns}, ' \
                '"regionId": {region_id} ' \
                '}}'
-EDGE_ROUTE_LOCATION_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
+ROUTE_ID_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
+ROUTE_ID_PATTERN = '^(.*)-(\d+)-(\d+)$'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
@@ -259,13 +260,13 @@ def add_custom_domain(domain, location_block, is_external_app=False):
         # Check if the location_block already added to the domain config
         existing_loc = substr_indices(domain_path_lines, location_block_include)
         if existing_loc:
-                do_log('Location block {} already exists for domain {}'.format(location_block, domain))
+                do_log('-> Location block {} already exists for domain {}'.format(location_block, domain))
                 return
 
         # If it's a new location entry - add it to the domain config after the {edge_route_location_block} line
         insert_loc = substr_indices(domain_path_lines, '# {edge_route_location_block}')
         if not insert_loc:
-                do_log('Cannot find an insert location in the domain config {}'.format(domain_path))
+                do_log('-> Cannot find an insert location in the domain config {}'.format(domain_path))
                 return
         domain_path_lines.insert(insert_loc[-1] + 1, location_block_include)
 
@@ -291,7 +292,7 @@ def remove_custom_domain(domain, location_block, is_external_app=False):
         if (not is_external_app and domain_path != api_domain_path and sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
                 # If no more location block exist in the domain - delete the config file
                 # Do not delete if this is an "external application", where the server block is managed externally
-                do_log('No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
+                do_log('-> No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
                 os.remove(domain_path)
         else:
                 # Save the domain config back to file
@@ -301,14 +302,14 @@ def remove_custom_domain(domain, location_block, is_external_app=False):
 def remove_custom_domain_all(location_block):
         if api_domain_name:
                 if remove_custom_domain(api_domain_name, location_block, is_external_app=False):
-                        do_log('Removed {} location block from the API domain config {}'.format(location_block, api_domain_path))
+                        do_log('-> Removed {} location block from the API domain config {}'.format(location_block, api_domain_path))
         for domains_root_path in [ nginx_domains_path, external_apps_domains_path ]:
                 domain_path_list = [f for f in glob.glob(domains_root_path + '/*' + nginx_custom_domain_config_ext)]
                 for domain_path in domain_path_list:
                         custom_domain = os.path.basename(domain_path).replace(nginx_custom_domain_config_ext, '')
                         is_external_app = domains_root_path == external_apps_domains_path
                         if remove_custom_domain(custom_domain, location_block, is_external_app=is_external_app):
-                                do_log('Removed {} location block from {} domain config'.format(location_block, custom_domain))
+                                do_log('-> Removed {} location block from {} domain config'.format(location_block, custom_domain))
 
 def search_custom_domain_cert(domain):
         domain_cert_list = [f for f in glob.glob(pki_search_path + '/*' + pki_search_suffix_cert)]
@@ -326,14 +327,14 @@ def search_custom_domain_cert(domain):
                 cert_path = os.path.join(pki_search_path, cert_name + pki_search_suffix_cert)
                 key_path = os.path.join(pki_search_path, cert_name + pki_search_suffix_key)
                 if not os.path.isfile(key_path):
-                        do_log('Certificate for {} is found at {}, but a key does not exist at {}'.format(domain, cert_path, key_path))
+                        do_log('-> Certificate for {} is found at {}, but a key does not exist at {}'.format(domain, cert_path, key_path))
                         key_path = None
         if not cert_path or not key_path:
                 cert_path = pki_default_cert
                 key_path = pki_default_cert_key
 
-        do_log('Certificate:Key for {} will be used: {}:{}'.format(domain, cert_path, key_path))
-        return (cert_path, key_path)
+        do_log('-> Certificate:Key for {} will be used: {}:{}'.format(domain, cert_path, key_path))
+        return cert_path, key_path
 
 def read_system_endpoints():
         system_endpoints = {}
@@ -559,7 +560,6 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
                                 endpoint = json.loads(endpoints_data[i])
-                                create_dns_record = str(endpoint["customDNS"]).lower() == 'true' if "customDNS" in endpoint.keys() else False
                                 if endpoint["nginx"]:
                                         port = endpoint["nginx"]["port"]
                                         path = endpoint["nginx"].get("path", "")
@@ -567,11 +567,13 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         is_default_endpoint = endpoint.get("isDefault", False)
                                         is_ssl_backend = endpoint.get("sslBackend", False)
                                         is_same_tab = endpoint.get("sameTab", False)
+                                        create_dns_record = endpoint.get("customDNS", False)
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
+                                        edge_location_id = ROUTE_ID_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
                                         if not pretty_url or (has_explicit_endpoint_num and not is_system_endpoint_name(endpoint)):
-                                                edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
+                                                edge_location = edge_location_id
                                         else:
                                                 pretty_url_path = pretty_url["path"]
                                                 if endpoints_count == 1:
@@ -583,12 +585,11 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                         else:
                                                                 edge_location = pretty_url_suffix
 
-                                        if pretty_url and pretty_url['domain']:
-                                                edge_location_id = '{}-{}.inc'.format(pretty_url['domain'], edge_location.replace('/', '-') if edge_location else None)
-                                        elif create_dns_record:
-                                                edge_location_id = '{}.inc'.format(edge_location)
+
+                                        if (pretty_url and pretty_url['domain']) or create_dns_record:
+                                                edge_location_path = edge_location_id + '.inc'
                                         else:
-                                                edge_location_id = '{}.loc'.format(edge_location)
+                                                edge_location_path = edge_location_id + '.loc'
 
                                         if EDGE_INSTANCE_IP in additional:
                                                 additional = additional.replace(EDGE_INSTANCE_IP, "")
@@ -619,26 +620,28 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 if default_attribute['search_pattern'].lower() not in additional.lower():
                                                         additional = additional + default_attribute['value']
 
-
-                                        service_list[edge_location_id] = {"pod_id": pod_id,
-                                                                        "pod_ip": target_ip,
-                                                                        "pod_owner": pod_owner,
-                                                                        "shared_users_sids": shared_users_sids,
-                                                                        "shared_groups_sids": shared_groups_sids,
-                                                                        "service_name": service_name,
-                                                                        "is_default_endpoint": is_default_endpoint,
-                                                                        "is_ssl_backend": is_ssl_backend,
-                                                                        "is_same_tab": is_same_tab,
-                                                                        "edge_num": i,
-                                                                        "edge_location": edge_location,
-                                                                        "custom_domain": pretty_url['domain'] if pretty_url and 'domain' in pretty_url and pretty_url['domain'] else None,
-                                                                        "edge_target": edge_target,
-                                                                        "run_id": pod_run_id,
-                                                                        "additional" : additional,
-                                                                        "sensitive": sensitive,
-                                                                        "create_dns_record": create_dns_record,
-                                                                        "cloudRegionId": cloud_region_id,
-                                                                        "external_app": is_external_app}
+                                        service_list[edge_location_id] = {
+                                                "edge_location_path": edge_location_path,
+                                                "pod_id": pod_id,
+                                                "pod_ip": target_ip,
+                                                "pod_owner": pod_owner,
+                                                "shared_users_sids": shared_users_sids,
+                                                "shared_groups_sids": shared_groups_sids,
+                                                "service_name": service_name,
+                                                "is_default_endpoint": is_default_endpoint,
+                                                "is_ssl_backend": is_ssl_backend,
+                                                "is_same_tab": is_same_tab,
+                                                "edge_num": i,
+                                                "edge_location": edge_location,
+                                                "custom_domain": pretty_url.get('domain') if pretty_url else None,
+                                                "edge_target": edge_target,
+                                                "run_id": pod_run_id,
+                                                "additional": additional,
+                                                "sensitive": sensitive,
+                                                "create_dns_record": create_dns_record,
+                                                "cloudRegionId": cloud_region_id,
+                                                "external_app": is_external_app
+                                        }
                 else:
                         do_log('No endpoints required for the tool {}'.format(docker_image))
         else:
@@ -708,15 +711,17 @@ def create_dns_record(service_spec, edge_region_id, edge_region_name):
         service_spec["edge_location"] = None
 
 
-def create_service_dns_record(service_spec, added_route, edge_region_id, edge_region_name):
+def create_service_dns_record(service_spec, route, edge_region_id, edge_region_name):
         try:
+                do_log('Creating DNS record for {}'.format(route))
                 create_dns_record(service_spec, edge_region_id, edge_region_name)
-                return added_route, True
+                do_log("Creating DNS record for {} ... OK ".format(route))
+                return route
         except ValueError as e:
-                do_log(str(e))
-                return added_route, False
+                do_log("Creating DNS record for {} ... NOT OK ({})".format(route, str(e)))
+                return None
 
-def create_service_location(service_spec, added_route, service_url_dict, edge_region_id):
+def create_service_location(service_spec, service_url_dict, edge_region_id):
         has_custom_domain = service_spec["custom_domain"] is not None
         service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip
         service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
@@ -749,11 +754,11 @@ def create_service_location(service_spec, added_route, service_url_dict, edge_re
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                                 .replace('{additional}', service_spec["additional"])
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
-        path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
+        path_to_route = os.path.join(nginx_sites_path, service_spec.get('edge_location_path') + '.conf')
         if service_spec["sensitive"]:
-                do_log('Adding new sensitive route: ' + path_to_route)
+                do_log('Adding new sensitive route ' + path_to_route)
         else:
-                do_log('Adding new route: ' + path_to_route)
+                do_log('Adding new route ' + path_to_route)
         with open(path_to_route, "w") as added_route_file:
                 added_route_file.write(nginx_route_definition)
                 if nginx_sensitive_route_definitions:
@@ -761,7 +766,7 @@ def create_service_location(service_spec, added_route, service_url_dict, edge_re
                                 added_route_file.write(nginx_sensitive_route_definition)
 
         if has_custom_domain:
-                do_log('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
+                do_log('Adding new route {} to server block {}'.format(path_to_route, service_hostname))
                 add_custom_domain(service_hostname, path_to_route, is_external_app=service_spec['external_app'])
 
         check_route(path_to_route, service_location, service_spec, has_custom_domain, service_hostname)
@@ -777,25 +782,24 @@ def create_service_location(service_spec, added_route, service_url_dict, edge_re
                                           region_id=edge_region_id or 'null')
         run_id = service_spec['run_id']
         if run_id in service_url_dict:
-                service_url = service_url_dict[run_id] + ',' + service_url
+                service_url = service_url_dict[run_id] + ',\n' + service_url
         service_url_dict[run_id] = service_url
 
 
 def update_svc_url_for_run(run_id, edge_region_name):
-        if run_id in service_url_dict:
-                # make array of json objects
-                service_urls_json = '[' + service_url_dict[run_id] + ']'
-                update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id, region=edge_region_name))
-                do_log('Assigning #{} with service url {}'.format(run_id, service_urls_json))
-                data = json.dumps({'serviceUrl': service_urls_json})
-                response_data = call_api(update_svc_method, data=data)
-                if response_data:
-                        do_log('Assigning #{} with service url ... OK'.format(run_id))
-                else:
-                        do_log('Assigning #{} with service url ... NOT OK.'.format(run_id))
-        else:
+        service_url = service_url_dict.get(run_id)
+        if not service_url:
                 do_log('Assigning #{} with service url has been skipped '
                        'because the corresponding service url has not been found.'.format(run_id))
+                return
+        do_log('Assigning #{} with service url \n{}'.format(run_id, service_url))
+        update_svc_method = os.path.join(api_url, API_UPDATE_SVC.format(run_id=run_id, region=edge_region_name))
+        data = json.dumps({'serviceUrl': ('[' + service_url + ']')})
+        response_data = call_api(update_svc_method, data=data)
+        if response_data:
+                do_log('Assigning #{} with service url ... OK'.format(run_id))
+        else:
+                do_log('Assigning #{} with service url ... NOT OK.'.format(run_id))
 
 
 def find_preference(api_preference_query, preference_name):
@@ -820,13 +824,17 @@ def write_stub_location_configuration(path_to_route, service_location, service_s
         path_to_stub = path_to_route.replace(path_to_route_extension, stub_extension)
         with open(path_to_stub, "w") as stub_file:
                 stub_file.write(nginx_route_definition)
-        do_log('Adding new stub route: ' + path_to_stub)
+        do_log('Adding new stub route ' + path_to_stub)
         return path_to_stub
+
+
+def reload_nginx_config():
+        do_log('Reloading nginx...')
+        subprocess.check_output('nginx -s reload', shell=True)
 
 
 def check_nginx_config():
         test_config_command = 'nginx -c %s -t' % nginx_root_config_path
-
         try:
                 subprocess.check_output(test_config_command, shell=True)
                 do_log('Adding new route ... OK')
@@ -859,6 +867,27 @@ def check_route(path_to_route, service_location, service_spec, has_custom_domain
 
         do_log('Deleting invalid stub route...')
         os.remove(path_to_stub)
+
+def get_pods(routes):
+        for route in routes:
+                match = re.match(ROUTE_ID_PATTERN, route)
+                if not match:
+                        do_log('Detected inccorrectly formatted route {}'.format(route))
+                        continue
+                pod_id = match.group(1)
+                if not pod_id:
+                        do_log('Detected inccorrectly formatted route {}'.format(route))
+                        continue
+                yield pod_id
+
+def get_pod(route):
+        pods = set(get_pods([route]))
+        return pods.pop() if pods else None
+
+
+def get_affected_routes(involved_routes, all_routes):
+        involved_pods = set(get_pods(involved_routes))
+        return set(route for route in all_routes if get_pod(route) in involved_pods)
 
 
 do_log('============ Started iteration ============')
@@ -914,8 +943,8 @@ if not edge_service_external_ip:
 if not edge_service_port:
     do_log('Getting EDGE service host port from nodePort')
     edge_service_port = edge_kube_service_object['ports'][0]['nodePort']
-do_log('EDGE service: {}:{}'.format(edge_service_external_ip, edge_service_port))
-do_log('EDGE region: {} #{}'.format(edge_region_name, edge_region_id or 'undefined'))
+do_log('EDGE: {}:{} ({} #{})'.format(edge_service_external_ip, edge_service_port,
+                                     edge_region_name, edge_region_id or 'undefined'))
 
 pods_with_endpoints = load_pods_for_runs_with_endpoints()
 runs_with_endpoints = get_active_runs(pods_with_endpoints)
@@ -932,9 +961,8 @@ for pod_spec in pods_with_endpoints:
 
         services_list.update(get_service_list(runs_with_endpoints, pod_id, pod_run_id, pod_ip))
 
-do_log('Found {} interactive runs'.format(len(services_list)))
-
-routes_kube = set([x for x in services_list])
+routes_expected = set(services_list.keys())
+do_log('Found {} expected routes'.format(len(routes_expected)))
 
 # Find out existing routes from /etc/nginx/sites-enabled
 nginx_modules_list = {}
@@ -942,78 +970,77 @@ for x in os.listdir(nginx_sites_path):
         location_config_path = os.path.join(nginx_sites_path, x)
         if '.conf' in x and os.path.isfile(location_config_path):
                 if location_config_path.endswith(STUB_LOCATION_CONFIG_EXTENSION):
+                        do_log('Deleting stub route ' + location_config_path)
                         os.remove(location_config_path)
-                        do_log('Deleting stub route: ' + location_config_path)
                         continue
                 if location_config_path.endswith(STUB_CUSTOM_DOMAIN_EXTENSION):
+                        do_log('Deleting custom domain stub route ' + location_config_path)
                         os.remove(location_config_path)
-                        do_log('Deleting custom domain stub route: ' + location_config_path)
                         remove_custom_domain_all(location_config_path)
                         continue
-                nginx_modules_list[x.replace('.conf', '')] = x
-routes_current = set([x for x in nginx_modules_list])
+                nginx_modules_list[x.replace('.loc.conf', '').replace('.inc.conf', '')] = x
 
-# For each of the routes that exist in both Pods and NGINX we shall check, whether routes shall be updated
-# If they do not match - nginx config will be deleted, thus it will be further recreated during "add" step
-# For now only users/groups sharing is checked
-routes_to_update = routes_current.intersection(routes_kube)
-do_log('Found {} existing routes, these routes will be updated if changed'.format(len(routes_to_update)))
+routes_actual = set(nginx_modules_list.keys())
+do_log('Found {} actual routes'.format(len(routes_actual)))
 
-routes_were_updated = False
-for update_route in routes_to_update:
-        path_to_update_route = os.path.join(nginx_sites_path, nginx_modules_list[update_route])
+routes_to_check = routes_actual & routes_expected
+routes_to_add = routes_expected - routes_actual
+routes_to_delete = routes_actual - routes_expected
+do_log('Found {} existing routes, these routes will be checked'.format(len(routes_to_check)))
+do_log('Found {} missing routes, these routes will be created'.format(len(routes_to_add)))
+do_log('Found {} expired routes, these routes will be deleted'.format(len(routes_to_delete)))
 
-        do_log('Checking existing route {}'.format(path_to_update_route))
-        with open(path_to_update_route) as update_route_file:
-                update_route_file_contents = update_route_file.read()
+# All routes that exist in both Nginx and API are checked, whether the routes shall be updated or kept untouched.
+# If some routes differ then they are deleted and created from scratch.
+# Currently only modified sharing users/groups are checked.
+routes_to_update = set()
+for route in routes_to_check:
+        path_to_route = os.path.join(nginx_sites_path, nginx_modules_list[route])
+
+        do_log('Checking route {}'.format(path_to_route))
+        with open(path_to_route) as route_file:
+                route_file_contents = route_file.read()
 
         shared_users_sids_to_check = ""
         shared_groups_sids_to_check = ""
-        for update_route_search_results in re.finditer(r"shared_with_users\s{1,}\"(.+?)\";|shared_with_groups\s{1,}\"(.+?)\";", update_route_file_contents):
-                g1 = update_route_search_results.group(1)
-                g2 = update_route_search_results.group(2)
+        for route_search_results in re.finditer(r"shared_with_users\s{1,}\"(.+?)\";"
+                                                r"|shared_with_groups\s{1,}\"(.+?)\";",
+                                                route_file_contents):
+                g1 = route_search_results.group(1)
+                g2 = route_search_results.group(2)
                 shared_users_sids_to_check = g1 if g1 else shared_users_sids_to_check
                 shared_groups_sids_to_check = g2 if g2 else shared_groups_sids_to_check
 
-        service_spec = services_list[update_route]
+        service_spec = services_list[route]
         shared_users_sids_to_update = service_spec["shared_users_sids"]
         shared_groups_sids_to_update = service_spec["shared_groups_sids"]
 
         if shared_users_sids_to_check != shared_users_sids_to_update:
                 do_log('Detected different shared users. Actual: "{}". Expected: "{}"'
                        .format(shared_users_sids_to_check, shared_users_sids_to_update))
-        if shared_groups_sids_to_check != shared_groups_sids_to_update:
+                routes_to_update.add(route)
+        elif shared_groups_sids_to_check != shared_groups_sids_to_update:
                 do_log('Detected different shared groups. Actual: "{}". Expected: "{}"'
                        .format(shared_groups_sids_to_check, shared_groups_sids_to_update))
+                routes_to_update.add(route)
 
-        # If nginx config and settings from API do not match - delete nginx config
-        if shared_users_sids_to_check != shared_users_sids_to_update or shared_groups_sids_to_check != shared_groups_sids_to_update:
-                do_log('Deleting modified route {}'.format(path_to_update_route))
-                os.remove(path_to_update_route)
-                remove_custom_domain_all(path_to_update_route)
-                routes_current.remove(update_route)
-                routes_were_updated = True
+do_log('Found {} changed routes, these routes will be replaced'.format(len(routes_to_update)))
 
-# Perform merge of the existing routes and pods
-routes_to_delete = routes_current - routes_kube
-do_log('Found {} expired routes, these routes will be deleted'.format(len(routes_to_delete)))
-routes_to_add = routes_kube - routes_current
-do_log('Found {} missing routes, these routes will be created'.format(len(routes_to_add)))
+# If a single route of a pod is added/deleted/updated then all other routes of the same pod are replaced.
+# Otherwise, the generated service url will have missing/extra endpoints.
+routes_to_replace = get_affected_routes(routes_to_add | routes_to_delete | routes_to_update, routes_to_check)
+routes_to_affect = routes_to_replace - routes_to_update
+do_log('Found {} affected routes, these routes will be replaced'.format(len(routes_to_affect)))
 
-# For each of the routes that are not present in the list of pods - delete files from /etc/nginx/sites-enabled
-for obsolete_route in routes_to_delete:
-        path_to_route = os.path.join(nginx_sites_path, nginx_modules_list[obsolete_route])
-        do_log('Deleting expired route {}'.format(path_to_route))
+routes_to_add |= routes_to_replace
+routes_to_delete |= routes_to_replace
+
+do_log("Deleting {} routes...".format(len(routes_to_delete)))
+for route in routes_to_delete:
+        path_to_route = os.path.join(nginx_sites_path, nginx_modules_list[route])
+        do_log('Deleting route {}'.format(path_to_route))
         os.remove(path_to_route)
         remove_custom_domain_all(path_to_route)
-
-
-
-# For each of the entries in the template of the new Pods we shall build nginx route in /etc/nginx/sites-enabled
-# -- File name of the route: {PodID}-{svc-port-N}-{N}
-# -- location /{PodID}-{svc-port-N}-{N}/ {
-# --    proxy_pass http://{PodIP}:{svc-port-N}/;
-# -- }
 
 with open(nginx_loc_module_template, 'r') as nginx_loc_module_template_file:
     nginx_loc_module_template_contents = nginx_loc_module_template_file.read()
@@ -1031,59 +1058,53 @@ with open(nginx_loc_module_stub_template, 'r') as stub_template_file:
 # loop through all routes that we need to create, if this route doesn't have option to create custom DNS record
 # we handle it in the main thread, if custom DNS record should be created, since it consume some time ~ 20 sec,
 # we put it to the separate collection to handle it at the end.
-service_url_dict = {}
-runs_with_custom_dns = set()
-dns_route_results = []
-for added_route in routes_to_add:
-        service_spec = services_list[added_route]
-
+regular_routes_to_add, dns_routes_to_configure = [], []
+for route in routes_to_add:
+        service_spec = services_list[route]
         if service_spec["create_dns_record"] and not service_spec["custom_domain"]:
-                runs_with_custom_dns.add(service_spec["run_id"])
-                dns_route_results.append(dns_services_pool.apply_async(create_service_dns_record,
-                                                                       (service_spec, added_route,
-                                                                        edge_region_id, edge_region_name)))
+                dns_routes_to_configure.append(route)
         else:
-                create_service_location(service_spec, added_route, service_url_dict, edge_region_id)
+                regular_routes_to_add.append(route)
 
-# reload nginx first time to enable all urls with out custom dns with "nginx -s reload"
-# TODO: Add error handling, if non-zero is returned - restore previous state
-if routes_to_add or routes_to_delete or routes_were_updated:
-        do_log('Reloading nginx config to enable non custom DNS runs')
-        subprocess.check_output('nginx -s reload', shell=True)
+service_url_dict = {}
 
-# For all added entries - call API and set Service URL property for the run:
-# -- Get ServiceExternalIP from the EDGE-labeled service description
-# -- http://{ServiceExternalIP}/{PodID}-{svc-port-N}-{N}
+do_log("Creating {} routes for regular endpoints...".format(len(regular_routes_to_add)))
+for route in regular_routes_to_add:
+        service_spec = services_list[route]
+        create_service_location(service_spec, service_url_dict, edge_region_id)
+
+dns_route_runs = set()
+dns_route_results = []
+do_log("Creating {} configurations for dns endpoints...".format(len(dns_routes_to_configure)))
+for route in dns_routes_to_configure:
+        service_spec = services_list[route]
+        dns_route_runs.add(service_spec["run_id"])
+        dns_route_results.append(dns_services_pool.apply_async(
+                create_service_dns_record,
+                (service_spec, route, edge_region_id, edge_region_name)))
+
+if regular_routes_to_add or routes_to_delete:
+        reload_nginx_config()
 
 for run_id in service_url_dict:
-        if run_id not in runs_with_custom_dns:
+        if run_id not in dns_route_runs:
                 update_svc_url_for_run(run_id, edge_region_name)
 
+dns_services_pool.close()
+dns_services_pool.join()
+dns_routes_to_add = set(result.get() for result in dns_route_results if result.get())
 
-# Here we check all future on completion, only if at least one exist
-if runs_with_custom_dns:
-        do_log("Creating DNS routes asynchronously...")
-        dns_services_pool.close()
-        dns_services_pool.join()
-        do_log("Created DNS routes.")
+do_log("Creating {} routes for dns endpoints...".format(len(dns_routes_to_add)))
+for route in dns_routes_to_add:
+        service_spec = services_list[route]
+        create_service_location(service_spec, service_url_dict, edge_region_id)
 
-        #after all async tasks are done - merge results in order to update svc_url for such runs
-        for dns_result in dns_route_results:
-                route, success = dns_result.get()
-                do_log("Created DNS route is {}: {}".format('OK' if success else 'NOT OK', route))
-                if success:
-                        service_spec = services_list[route]
-                        create_service_location(service_spec, route, service_url_dict, edge_region_id)
+if dns_routes_to_add:
+        reload_nginx_config()
 
-        # reload nginx second time for custom dns services
-        # TODO: Add error handling, if non-zero is returned - restore previous state
-        if routes_to_add or routes_to_delete or routes_were_updated:
-                do_log('Reloading nginx config to enable custom DNS runs')
-                subprocess.check_output('nginx -s reload', shell=True)
-
-        for run_id in service_url_dict:
-                if run_id in runs_with_custom_dns:
-                        update_svc_url_for_run(run_id, edge_region_name)
+for run_id in service_url_dict:
+        if run_id in dns_route_runs:
+                update_svc_url_for_run(run_id, edge_region_name)
 
 do_log('============ Done iteration ============')
 do_log('')
