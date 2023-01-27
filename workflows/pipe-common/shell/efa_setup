@@ -47,7 +47,7 @@ curl -O "${GLOBAL_DISTRIBUTION_URL}tools/efa/aws-efa-installer-1.21.0.tar.gz" \
     && ./efa_installer.sh -y --skip-kmod --skip-limit-conf --no-verify &> /dev/null
 
 if [ $? -ne 0 ]; then
-  echo "Problems with installing EFA Driver"
+  pipe_log_fail "Problems with installing EFA Driver" "$EFA_SETUP_TASK"
   exit 1
 fi
 
@@ -55,7 +55,7 @@ export PATH="$PATH:/opt/amazon/efa/bin/"
 
 fi_info -p efa -t FI_EP_RDM
 if [ $? -ne 0 ]; then
-  echo "Problems with checking EFA Driver after installation"
+  pipe_log_fail "Problems with checking EFA Driver after installation" "$EFA_SETUP_TASK"
   exit 1
 fi
 
