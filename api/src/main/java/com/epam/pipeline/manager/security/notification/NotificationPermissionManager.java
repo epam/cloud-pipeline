@@ -24,6 +24,8 @@ import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationPermissionManager {
@@ -33,6 +35,9 @@ public class NotificationPermissionManager {
     private final UserManager userManager;
 
     public boolean hasPermission(final UserNotification userNotification) {
+        if (Objects.nonNull(userNotification.getId())) {
+            return hasPermission(userNotification.getId());
+        }
         return hasPermissionByUserId(userNotification.getUserId());
     }
 

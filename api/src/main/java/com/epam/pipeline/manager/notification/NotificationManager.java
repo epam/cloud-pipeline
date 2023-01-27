@@ -51,7 +51,6 @@ import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.notification.UserNotification;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -125,9 +124,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Autowired
     private DataStorageManager dataStorageManager;
-
-    @Autowired
-    private UserNotificationManager userNotificationManager;
 
     private final AntPathMatcher matcher = new AntPathMatcher();
 
@@ -589,7 +585,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 MessageConstants.ERROR_NOTIFICATION_RECEIVER_NOT_SPECIFIED));
 
         final NotificationMessage message = toMessage(messageVO);
-        saveNotification(toMessage(messageVO));
+        saveNotification(message);
         return message;
     }
 
@@ -611,16 +607,11 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     @Transactional(propagation = Propagation.REQUIRED)
     public void saveNotifications(final List<NotificationMessage> messages) {
         monitoringNotificationDao.createMonitoringNotifications(messages);
-        final List<UserNotification> userNotifications = messages.stream()
-                .map(this::toUserNotification)
-                .collect(Collectors.toList());
-        userNotificationManager.save(userNotifications);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void saveNotification(final NotificationMessage message) {
         monitoringNotificationDao.createMonitoringNotification(message);
-        userNotificationManager.save(toUserNotification(message));
     }
 
     private List<Long> mapRecipientsToUserIds(final List<? extends Sid> recipients) {
@@ -805,9 +796,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final List<NotificationMessage> messages = filtered.stream()
                 .map(run -> buildMessageForLongPausedRun(run, ccUsers, settings, pipelineOwners))
                 .collect(Collectors.toList());
-        monitoringNotificationDao.createMonitoringNotifications(messages);
         saveNotifications(messages);
-
         return filtered;
     }
 
@@ -966,17 +955,5 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return null;
         }
         return settings;
-    }
-
-    private UserNotification toUserNotification(final NotificationMessage message) {
-        final String subject = StringUtils.isBlank(message.getSubject()) ?
-                message.getTemplate().getSubject() : message.getSubject();
-        final String body = StringUtils.isBlank(message.getBody()) ?
-                message.getTemplate().getSubject() : message.getBody();
-        final UserNotification userNotification = new UserNotification();
-        userNotification.setUserId(message.getToUserId());
-        userNotification.setSubject(subject);
-        userNotification.setText(body);
-        return userNotification;
     }
 }
