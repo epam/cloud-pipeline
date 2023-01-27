@@ -80,7 +80,7 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         self.delimiter = StorageOperations.PATH_SEPARATOR
 
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                   show_all=False):
+                   show_all=False, show_archive=False):
         prefix = StorageOperations.get_prefix(relative_path)
         blobs_generator = self.service.list_blobs(self.bucket.path,
                                                   prefix=prefix if relative_path else None,

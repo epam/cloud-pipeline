@@ -394,7 +394,7 @@ class GsListingManager(GsManager, AbstractListingManager):
         self.show_versions = show_versions
 
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                   show_all=False):
+                   show_all=False, show_archive=False):
         prefix = StorageOperations.get_prefix(relative_path)
         bucket = self.client.bucket(self.bucket.path)
         blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None,

@@ -21,6 +21,8 @@ import click
 import datetime
 import prettytable
 import sys
+
+from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
 
@@ -300,7 +302,7 @@ class DataStorageOperations(object):
         manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
-    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended):
+    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):
         """Lists storage contents
         """
         if path:
@@ -313,10 +315,14 @@ class DataStorageOperations(object):
             if root_bucket is None:
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
+            if show_archive and root_bucket.type != 'S3':
+                click.echo('Error: --show-archive option is not available for this provider.', err=True)
+                sys.exit(1)
             else:
                 relative_path = original_path if original_path != '/' else ''
                 cls.__print_data_storage_contents(root_bucket, relative_path, show_details, recursive,
-                                                  page_size=page, show_versions=show_versions, show_all=show_all)
+                                                  page_size=page, show_versions=show_versions, show_all=show_all,
+                                                  show_archive=show_archive)
         else:
             # If no argument is specified - list brief details of all buckets
             cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all,
@@ -427,14 +433,15 @@ class DataStorageOperations(object):
 
     @classmethod
     def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
-                                      show_versions=False, show_all=False, show_extended=False):
+                                      show_versions=False, show_all=False, show_extended=False, show_archive=False):
 
         items = []
         header = None
         if bucket_model is not None:
             wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(bucket_model, relative_path)
             manager = wrapper.get_list_manager(show_versions=show_versions)
-            items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
+            items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all,
+                                       show_archive=show_archive)
         else:
             hidden_object_manager = HiddenObjectManager()
             # If no argument is specified - list brief details of all buckets
@@ -636,6 +643,12 @@ class DataStorageOperations(object):
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                transfer_results, clean=clean)
         except Exception as e:
+            if isinstance(e, ClientError) \
+                    and e.message and 'InvalidObjectState' in e.message and 'storage class' in e.message:
+                if not quiet:
+                    click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
+                               .format(full_path))
+                return transfer_results, fail_after_exception
             if on_failures == AllowedFailuresValues.FAIL:
                 err_msg = u'File transferring has failed {}. Exiting...'.format(full_path)
                 logging.warn(err_msg)
