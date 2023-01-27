@@ -85,6 +85,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
+import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderApiService;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
@@ -131,6 +132,7 @@ import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
+import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -526,6 +528,12 @@ public class AclTestBeans {
     @MockBean
     protected DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
 
+
+    @MockBean
+    protected UserNotificationManager userNotificationManager;
+
+    @MockBean
+    protected UserNotificationRepository userNotificationRepository;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
