@@ -26,6 +26,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,6 +59,8 @@ public class UserNotificationManager implements NotificationManager {
         userNotification.setUserId(userId);
         userNotification.setSubject(messageText.getSubject());
         userNotification.setText(messageText.getBody());
+        userNotification.setCreatedDate(LocalDateTime.now());
+        userNotification.setIsRead(false);
         return userNotification;
     }
 }
