@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">42m24.63s</div>
+<div class="counter">27m32.97s</div>
 <p>duration</p>
 </div>
 </td>
@@ -76,12 +76,10 @@
 <a name="hotNodePoolInMaintenanceMode - 2423_5"></a>
 <h3 class="failures">hotNodePoolInMaintenanceMode - 2423_5</h3>
 <span class="code">
-<pre>java.lang.AssertionError: Node with runID=36590 should have label with pool test_pool-4599868198414752204 expected [true] but found [false]
-	at org.testng.Assert.fail(Assert.java:93)
-	at org.testng.Assert.failNotEquals(Assert.java:512)
-	at org.testng.Assert.assertTrue(Assert.java:41)
-	at com.epam.pipeline.autotests.ao.ClusterMenuAO.checkNodeContainsHotNodePoolsLabel(ClusterMenuAO.java:301)
-	at com.epam.pipeline.autotests.MaintenanceModeTest.hotNodePoolInMaintenanceMode(MaintenanceModeTest.java:255)
+<pre>java.util.NoSuchElementException
+	at java.util.Optional.orElseThrow(Optional.java:290)
+	at com.epam.pipeline.autotests.ao.HotNodePoolsAO$CreateHotNodePoolAO.addDockerImage(HotNodePoolsAO.java:198)
+	at com.epam.pipeline.autotests.MaintenanceModeTest.hotNodePoolInMaintenanceMode(MaintenanceModeTest.java:247)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -104,8 +102,8 @@
 <span class="code">
 <pre>Element should be visible {By.className: ant-modal-body}
 Element: '&lt;div class=&quot;ant-modal-body&quot; displayed:false&gt;&lt;/div&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1674343856839.91.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1674343856839.91.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1675031648928.90.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1675031648928.90.html
 Timeout: 150 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -137,12 +135,12 @@ Timeout: 150 s.
 <a name="stopRuns"></a>
 <h3 class="failures">stopRuns</h3>
 <span class="code">
-<pre>Element not found {#run-36591-stop-button}
+<pre>Element not found {#run-37129-stop-button}
 Expected: enabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1674343915762.92.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1674343915762.92.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1675031694153.91.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1675031694153.91.html
 Timeout: 5 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-36591-stop-button&quot;}
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-37129-stop-button&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -158,7 +156,7 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest.lambda$stopRuns$1(AbstractSeveralPipelineRunningTest.java:65)
 	at java.util.ArrayList.forEach(ArrayList.java:1259)
 	at com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest.stopRuns(AbstractSeveralPipelineRunningTest.java:63)
-	at sun.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+	at sun.reflect.GeneratedMethodAccessor40.invoke(Unknown Source)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
@@ -170,17 +168,17 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-36591-stop-button&quot;}
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;css selector&quot;,&quot;selector&quot;:&quot;#run-37129-stop-button&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '95cd3545c0b0', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '63e437f4d435', ip: '172.17.0.2', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: ff22f23f4243c9543849da7c38145988
-*** Element info: {Using=css selector, value=#run-36591-stop-button}
+Session ID: 68a7d836155eea071c0c7902fdf16710
+*** Element info: {Using=css selector, value=#run-37129-stop-button}
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -216,37 +214,37 @@ Session ID: ff22f23f4243c9543849da7c38145988
 </thead>
 <tr>
 <td class="success">checkLaunchRunInMaintenanceMode - 2423_2</td>
-<td>8m6.77s</td>
+<td>7m58.36s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkSwitchToMaintenanceModeDuringTheRunCommittingOperation - 2423_3</td>
-<td>1m41.75s</td>
+<td>1m53.23s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkSwitchToMaintenanceModeDuringTheRunPausingAndResumingOperation - 2423_4</td>
-<td>12m46.22s</td>
+<td>12m14.35s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">hotNodePoolInMaintenanceMode - 2423_5</td>
-<td>14m55.24s</td>
+<td>26.983s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">maintenanceModeNotification - 2423_1</td>
-<td>1m2.91s</td>
+<td>1m16.61s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">restorePreferences</td>
-<td>2m52.78s</td>
+<td>2m58.38s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">stopRuns</td>
-<td>58.959s</td>
+<td>45.061s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -254,11 +252,9 @@ Session ID: ff22f23f4243c9543849da7c38145988
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 36589 from [36589]
-Returns latest run with runId 36590 from [36589, 36590]
-Returns latest run with runId 36590 from [36589, 36590]
-Returns latest run with runId 36591 from [36589, 36590, 36591]
-Returns latest run with runId 36592 from [36589, 36590, 36591, 36592]
+<pre>Returns latest run with runId 37128 from [37128]
+Returns latest run with runId 37129 from [37128, 37129]
+Returns latest run with runId 37130 from [37128, 37129, 37130]
 </pre>
 </span>
 </div>
@@ -270,7 +266,7 @@ Returns latest run with runId 36592 from [36589, 36590, 36591, 36592]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 21, 2023 11:57:20 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 29, 2023 11:00:54 PM</p>
 </div>
 </div>
 </body>
