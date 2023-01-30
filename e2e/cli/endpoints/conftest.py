@@ -32,11 +32,11 @@ def teardown_function(runs):
     logging.info("Stopping runs...")
     for run_id in runs:
         try:
-            logging.info("Stopping run #{}...", run_id)
+            logging.info("Stopping run #%s...", run_id)
             stop_pipe_with_retry(run_id)
-            logging.info("Run #{} has been stopped", run_id)
+            logging.info("Run #%s has been stopped", run_id)
         except Exception:
-            logging.exception("Run #{} has not been stopped due to error")
+            logging.exception("Run #%s has not been stopped due to error", run_id)
     runs.clear()
 
 
