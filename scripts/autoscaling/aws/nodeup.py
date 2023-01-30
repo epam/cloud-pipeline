@@ -459,17 +459,23 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             subnet_id = get_random_subnet(ec2)
             pipe_log('- Subnet: {} will be used.'.format(subnet_id))
 
-        additional_args.update({
-            "NetworkInterfaces": [
-                {
-                    'DeleteOnTermination': True,
-                    'DeviceIndex': 0,
-                    'SubnetId': subnet_id if subnet_id else get_random_subnet(ec2),
-                    'Groups': get_security_groups(aws_region, security_groups),
-                    'InterfaceType': 'efa'
-                }
-            ]
-        })
+        if subnet_id:
+            additional_args.update({
+                "NetworkInterfaces": [
+                    {
+                        'DeleteOnTermination': True,
+                        'DeviceIndex': 0,
+                        'SubnetId': subnet_id,
+                        'Groups': get_security_groups(aws_region, security_groups),
+                        'InterfaceType': 'efa'
+                    }
+                ]
+            })
+        else:
+            pipe_log('- Cannot define subnet to be launched in, will skip performance network setup and continue with default options...')
+            pipe_log('- Default subnet in random AZ will be used')
+            additional_args.update({'SecurityGroupIds': get_security_groups(aws_region, security_groups)})
+
     elif subnet_id:
         additional_args.update({
             'SubnetId': subnet_id,
@@ -1115,17 +1121,23 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
             subnet_id = get_random_subnet(ec2)
             pipe_log('- Subnet: {} will be used.'.format(subnet_id))
 
-        specifications.update({
-            "NetworkInterfaces": [
-                {
-                    'DeleteOnTermination': True,
-                    'DeviceIndex': 0,
-                    'SubnetId': subnet_id if subnet_id else get_random_subnet(ec2),
-                    'Groups': get_security_groups(aws_region, security_groups),
-                    'InterfaceType': 'efa'
-                }
-            ]
-        })
+        if subnet_id:
+            specifications.update({
+                "NetworkInterfaces": [
+                    {
+                        'DeleteOnTermination': True,
+                        'DeviceIndex': 0,
+                        'SubnetId': subnet_id,
+                        'Groups': get_security_groups(aws_region, security_groups),
+                        'InterfaceType': 'efa'
+                    }
+                ]
+            })
+        else:
+            pipe_log('- Cannot define subnet to be launched in, will skip performance network setup and continue with default options...')
+            pipe_log('- Default subnet in random AZ will be used')
+            specifications.update({'SecurityGroupIds': get_security_groups(aws_region, security_groups)})
+
     elif subnet_id:
         specifications.update({
             'SubnetId': get_specified_subnet(subnet, availability_zone),
