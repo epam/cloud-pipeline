@@ -19,6 +19,7 @@ package com.epam.pipeline.elasticsearchagent.service.impl.converter.storage;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
+import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -64,6 +65,7 @@ public class StorageFileMapper {
                                           final String content) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             final Map<String, String> tags = MapUtils.emptyIfNull(dataStorageFile.getTags());
+            final Map<String, String> labels = MapUtils.emptyIfNull(dataStorageFile.getLabels());
             jsonBuilder
                     .startObject()
                     .field("lastModified", dataStorageFile.getChanged())
@@ -88,6 +90,9 @@ public class StorageFileMapper {
                     .array("allowed_groups", permissions.getAllowedGroups().toArray())
                     .array("denied_groups", permissions.getDeniedGroups().toArray())
                     .field("content", content);
+            if (labels.containsKey(ESConstants.STORAGE_CLASS_LABEL)) {
+                 jsonBuilder.field("storage_class", labels.get(ESConstants.STORAGE_CLASS_LABEL));
+            }
             for (final Map.Entry<String, String> entry : tags.entrySet()) {
                 if (StringUtils.hasText(tagDelimiter) && StringUtils.hasText(entry.getValue())
                         && entry.getValue().contains(tagDelimiter)) {

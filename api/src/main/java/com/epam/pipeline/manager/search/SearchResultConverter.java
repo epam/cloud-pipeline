@@ -94,9 +94,13 @@ public class SearchResultConverter {
                 .name(dataStorage.getName())
                 .type(dataStorage.getType())
                 .path(path)
-                .size(totalSize)
-                .effectiveSize(effectiveSize)
-                .count(allDocsResponse.getHits().getTotalHits())
+                .totalUsage(
+                        StorageUsage.StorageUsageStats.builder()
+                                .size(totalSize)
+                                .effectiveSize(effectiveSize)
+                                .count(allDocsResponse.getHits().getTotalHits())
+                                .build()
+                )
                 .build();
     }
 

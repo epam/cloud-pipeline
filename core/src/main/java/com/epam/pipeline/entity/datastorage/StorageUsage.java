@@ -19,6 +19,9 @@ package com.epam.pipeline.entity.datastorage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Value;
+
+import java.util.Map;
 
 @AllArgsConstructor
 @Builder
@@ -28,7 +31,15 @@ public class StorageUsage {
     private String name;
     private DataStorageType type;
     private String path;
-    private Long size;
-    private Long effectiveSize;
-    private Long count;
+    private Map<String, StorageUsageStats> usageByStorageClass;
+    private StorageUsageStats totalUsage;
+
+    @Value
+    @Builder
+    @AllArgsConstructor
+    public static class StorageUsageStats {
+        Long size;
+        Long effectiveSize;
+        Long count;
+    }
 }

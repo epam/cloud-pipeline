@@ -320,7 +320,7 @@ public class NFSQuotasMonitor {
 
     private boolean exceedsAbsoluteLimit(final Double originalLimit, final StorageUsage storageUsage) {
         final long limitBytes = (long) (originalLimit * GB_TO_BYTES);
-        return storageUsage.getEffectiveSize() > limitBytes;
+        return storageUsage.getTotalUsage().getEffectiveSize() > limitBytes;
     }
 
     private boolean exceedsPercentageLimit(final NFSDataStorage storage, final Double originalLimit,
@@ -332,7 +332,7 @@ public class NFSQuotasMonitor {
                 return lustreManager.findLustreFS(shareMount)
                     .map(LustreFS::getCapacityGb)
                     .map(maxSize -> convertLustrePercentageLimitToAbsoluteValue(originalLimit, maxSize) * GB_TO_BYTES)
-                    .map(limit -> storageUsage.getEffectiveSize() > limit)
+                    .map(limit -> storageUsage.getTotalUsage().getEffectiveSize() > limit)
                     .orElse(false);
             case NFS:
                 log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN,
