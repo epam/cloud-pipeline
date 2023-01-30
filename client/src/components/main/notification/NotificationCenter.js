@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,55 +16,112 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable, action} from 'mobx';
 import SystemNotification from './SystemNotification';
 import {message, Modal, Button, Row, Icon} from 'antd';
 import moment from 'moment-timezone';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
-import styles from './SystemNotification.css';
+import ReadMessage from '../../../models/notifications/ReadMessage';
+import PreviewNotification from './PreviewNotification';
 import Markdown from '../../special/markdown';
+import styles from './SystemNotification.css';
+
+const MAX_NOTIFICATIONS = 5;
+const NOTIFICATION_BROWSER_PATH = '/settings/profile/notifications';
 
 const PredefinedNotifications = {
   MaintenanceMode: -1
 };
 
-export {PredefinedNotifications};
+const NOTIFICATION_TYPE = {
+  message: 'message',
+  notification: 'notification'
+};
 
-@inject(({notifications}) => ({
-  notifications
+function dateSorter (notificationA, notificationB) {
+  const dateA = moment.utc(notificationA.createdDate);
+  const dateB = moment.utc(notificationB.createdDate);
+  if (dateA > dateB) {
+    return -1;
+  } else if (dateA < dateB) {
+    return 1;
+  }
+  return 0;
+}
+
+function mapMessage (message) {
+  return {
+    title: message.subject,
+    body: message.text,
+    createdDate: message.createdDate,
+    isRead: message.isRead,
+    userId: message.userId,
+    notificationId: `message_${message.id}`,
+    type: NOTIFICATION_TYPE.message
+  };
+}
+
+function unMapMessage (message) {
+  return {
+    subject: message.title,
+    text: message.body,
+    createdDate: message.createdDate,
+    isRead: message.isRead,
+    userId: message.userId,
+    id: message.notificationId.split('message_').pop()
+  };
+}
+
+@inject(({notifications, messages}) => ({
+  notifications,
+  messages
 }))
 @inject('preferences')
 @observer
 export default class NotificationCenter extends React.Component {
   static propTypes = {
-    delaySeconds: PropTypes.number
+    delaySeconds: PropTypes.number,
+    router: PropTypes.object,
+    disableNotifications: PropTypes.bool
   };
 
   state = {
     notificationsState: [],
     hiddenNotifications: [],
-    initialized: false
+    initialized: false,
+    previewNotification: null
   };
+
+  @observable _visibleTop;
+
+  @computed
+  get visibleTop () {
+    return this._visibleTop;
+  }
+
+  @computed
+  get messages () {
+    const {messages} = this.props;
+    if (!messages.loaded || !this.state.initialized) {
+      return [];
+    }
+    return [...(messages.value || [])]
+      .filter(message => !message.isRead)
+      .map(mapMessage)
+      .sort(dateSorter);
+  }
 
   @computed
   get notifications () {
     if (!this.props.notifications.loaded || !this.state.initialized) {
       return [];
     }
-    let sortedNotifications = (this.props.notifications.value || []).sort((a, b) => {
-      const dateA = moment.utc(a.createdDate);
-      const dateB = moment.utc(b.createdDate);
-      if (dateA > dateB) {
-        return -1;
-      } else if (dateA < dateB) {
-        return 1;
-      }
-      return 0;
-    });
     const {systemMaintenanceMode, systemMaintenanceModeBanner} = this.props.preferences;
+    const notifications = [...(this.props.notifications.value || [])];
     if (systemMaintenanceMode && systemMaintenanceModeBanner) {
-      sortedNotifications.unshift({
+      notifications.unshift({
         blocking: false,
         body: systemMaintenanceModeBanner,
         createdDate: '',
@@ -74,13 +131,31 @@ export default class NotificationCenter extends React.Component {
         title: 'Maintenance mode'
       });
     }
-    return sortedNotifications;
+    return notifications.sort(dateSorter);
+  }
+
+  @computed
+  get allNotifications () {
+    return [...this.notifications, ...this.messages];
   }
 
   @computed
   get nonBlockingNotifications () {
-    return this.notifications.filter(n => !n.blocking);
+    return this.allNotifications
+      .filter(n => !n.blocking);
   }
+
+  get notificationsToShow () {
+    const {hiddenNotifications} = this.state;
+    return this.nonBlockingNotifications
+      .filter(n => !hiddenNotifications.find(({id}) => id === n.notificationId))
+      .slice(0, MAX_NOTIFICATIONS);
+  }
+
+  @action
+  setVisibleTop = (top) => {
+    this._visibleTop = top;
+  };
 
   getHiddenNotifications = () => {
     const hiddenNotificationsInStorageStr = localStorage.getItem('hidden_notifications');
@@ -98,29 +173,41 @@ export default class NotificationCenter extends React.Component {
   };
 
   notificationIsVisible = (notification) => {
-    const [state] = this.getHiddenNotifications()
-      .filter(n => n.id === notification.notificationId &&
+    const isHidden = !!this.getHiddenNotifications()
+      .find(n => n.id === notification.notificationId &&
       n.createdDate === notification.createdDate);
-    const [infoState] = this.state.notificationsState
-      .filter(n => n.id === notification.notificationId && n.height !== undefined);
-    return !state && !!infoState;
+    const state = this.state.notificationsState
+      .find(n => n.id === notification.notificationId && n.height !== undefined);
+    return !isHidden && !!state;
   };
 
   getPositioningInfo = (notification, index) => {
     if (this.notificationIsVisible(notification)) {
+      const notifications = this.notificationsToShow;
+      const padding = 80;
       let top = SystemNotification.margin;
-      const notifications = this.notifications;
+      let remainingHeight = window.innerHeight - padding;
+      let doesFit = true;
       for (let i = 0; i < index; i++) {
         const notificationItem = notifications[i];
         const [state] = this.state.notificationsState
           .filter(n => n.id === notificationItem.notificationId);
-        if (this.notificationIsVisible(notificationItem) && state && state.height !== undefined) {
+        if (
+          this.notificationIsVisible(notificationItem) &&
+          state &&
+          state.height !== undefined
+        ) {
           top += state.height + SystemNotification.margin;
+          remainingHeight -= state.height + SystemNotification.margin;
+          doesFit = remainingHeight >= state.height;
+          if (doesFit) {
+            this.setVisibleTop(top + state.height + SystemNotification.margin);
+          }
         }
       }
       return {
         top,
-        visible: true
+        visible: doesFit
       };
     } else {
       return {
@@ -144,12 +231,32 @@ export default class NotificationCenter extends React.Component {
     this.setState({notificationsState});
   };
 
-  onCloseNotification = (notification) => {
+  readMessage = async (notification) => {
+    if (!notification) {
+      return null;
+    }
+    const {messages} = this.props;
+    const request = new ReadMessage();
+    const payload = unMapMessage(notification);
+    payload.isRead = true;
+    payload.readDate = moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS');
+    await request.send(payload);
+    if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      messages.fetch();
+    }
+  };
+
+  onCloseNotification = async (notification) => {
     const hidden = this.state.hiddenNotifications;
     hidden.push({
       id: notification.notificationId,
       createdDate: notification.createdDate
     });
+    if (notification.type === NOTIFICATION_TYPE.message) {
+      this.readMessage(notification);
+    }
     if (notification.blocking) {
       let hiddenNotificationsInStorage = [];
       const hiddenNotificationsInStorageStr = localStorage.getItem('hidden_notifications');
@@ -210,6 +317,15 @@ export default class NotificationCenter extends React.Component {
     this.setState({hiddenNotifications: hidden});
   };
 
+  onShowAllClick = () => {
+    const {router} = this.props;
+    router && router.push(NOTIFICATION_BROWSER_PATH);
+  };
+
+  onReadAllClick = () => {
+    // todo: wait for API
+  };
+
   renderSeverityIcon = (notification) => {
     switch (notification.severity) {
       case 'INFO':
@@ -234,6 +350,60 @@ export default class NotificationCenter extends React.Component {
     }
   };
 
+  renderShowAllButton = () => {
+    const {hiddenNotifications} = this.state;
+    const hiddenAmount = this.nonBlockingNotifications
+      .filter(n => !hiddenNotifications.find(({id}) => id === n.notificationId))
+      .length - MAX_NOTIFICATIONS;
+    if (hiddenAmount <= 0) {
+      return null;
+    }
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          right: 0,
+          width: '300px',
+          top: this.visibleTop,
+          marginRight: '20px',
+          padding: '5px',
+          zIndex: 1000
+        }}
+        className="cp-notification"
+      >
+        <span>
+          {`+${hiddenAmount} notifications`}
+        </span>
+        <a
+          onClick={this.onShowAllClick}
+          style={{marginLeft: '10px'}}
+        >
+          show all
+        </a>
+        <a
+          onClick={this.onReadAllClick}
+          style={{marginLeft: '10px', paddingLeft: '10px'}}
+          className={classNames(
+            'cp-divider',
+            'left'
+          )}
+        >
+          read all
+        </a>
+      </div>
+    );
+  };
+
+  openPreviewNotification = (notification) => {
+    this.setState({previewNotification: notification});
+  };
+
+  closePreviewNotification = () => {
+    const {previewNotification} = this.state;
+    this.onCloseNotification(previewNotification);
+    this.setState({previewNotification: null});
+  };
+
   render () {
     const filterBlockingNotification = (notification) => {
       const [state] = this.getHiddenNotifications()
@@ -241,22 +411,32 @@ export default class NotificationCenter extends React.Component {
         n.createdDate === notification.createdDate);
       return notification.blocking && !state;
     };
-    const blockingNotification = this.notifications.filter(filterBlockingNotification)[0];
+    const blockingNotification = this.allNotifications.filter(filterBlockingNotification)[0];
+    if (this.props.disableNotifications) {
+      return null;
+    }
     return (
       <div id="notification-center" style={{position: 'absolute'}}>
         {
-          this.nonBlockingNotifications
+          this.notificationsToShow
             .map((notification, index) => {
               return (
                 <SystemNotification
                   {...this.getPositioningInfo(notification, index)}
                   onClose={this.onCloseNotification}
                   onHeightInitialized={this.onHeightInitialized}
-                  key={notification.notificationId}
-                  notification={notification} />
+                  key={notification.notificationId || notification.createdDate}
+                  notification={notification}
+                  type={notification.type}
+                  onClick={notification.type === NOTIFICATION_TYPE.message
+                    ? this.openPreviewNotification
+                    : undefined
+                  }
+                />
               );
             })
         }
+        {this.renderShowAllButton()}
         <Modal
           title={
             blockingNotification
@@ -287,6 +467,19 @@ export default class NotificationCenter extends React.Component {
             ) : null
           }
         </Modal>
+        {this.state.previewNotification ? (
+          <Modal
+            onCancel={this.closePreviewNotification}
+            footer={false}
+            title={(<b>{this.state.previewNotification.title}</b>)}
+            visible
+          >
+            <PreviewNotification
+              text={this.state.previewNotification.body}
+              sanitize
+            />
+          </Modal>
+        ) : null}
       </div>
     );
   }
@@ -327,3 +520,9 @@ export default class NotificationCenter extends React.Component {
     }
   };
 }
+
+export {
+  PredefinedNotifications,
+  NOTIFICATION_TYPE,
+  NOTIFICATION_BROWSER_PATH
+};

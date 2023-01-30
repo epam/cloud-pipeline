@@ -27,7 +27,7 @@
   right: 0;
   top: 0;
   text-align: justify;
-  transition: all 250ms ease;
+  transition: all 450ms ease-in-out;
 }
 
 .notification {

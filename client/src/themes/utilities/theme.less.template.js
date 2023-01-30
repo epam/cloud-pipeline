@@ -2707,6 +2707,9 @@ export default `
 @THEME .cp-setting-critical {
   color: @color-red;
 }
+@THEME .cp-setting-message {
+  color: @primary-color;
+}
 @THEME .cp-settings-table thead,
 @THEME .cp-settings-table thead th {
   color: @table-head-color;

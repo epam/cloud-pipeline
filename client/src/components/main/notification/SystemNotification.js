@@ -19,13 +19,13 @@ import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Row, Icon} from 'antd';
 import classNames from 'classnames';
-import styles from './SystemNotification.css';
-import Markdown from '../../special/markdown';
 import displayDate from '../../../utils/displayDate';
+import PreviewNotification from './PreviewNotification';
+import {NOTIFICATION_TYPE} from './NotificationCenter';
+import styles from './SystemNotification.css';
 
 @observer
 export default class SystemNotification extends React.Component {
-
   static margin = 10;
 
   state = {
@@ -48,7 +48,8 @@ export default class SystemNotification extends React.Component {
     onHeightInitialized: PropTypes.func,
     visible: PropTypes.bool,
     top: PropTypes.number,
-    onClose: PropTypes.func
+    onClose: PropTypes.func,
+    onClick: PropTypes.func
   };
 
   changeHeight = (div) => {
@@ -87,13 +88,26 @@ export default class SystemNotification extends React.Component {
     }
   };
 
-  onClose = () => {
+  onClose = (event) => {
+    event && event.stopPropagation();
     if (this.props.onClose) {
       this.props.onClose(this.props.notification);
     }
   };
 
+  onClick = () => {
+    const {onClick, notification} = this.props;
+    onClick && onClick(notification);
+  };
+
   renderSeverityIcon = () => {
+    if (this.props.notification.type === NOTIFICATION_TYPE.message) {
+      return (
+        <Icon
+          className="cp-setting-message"
+          type="mail" />
+      );
+    }
     switch (this.props.notification.severity) {
       case 'INFO':
         return (
@@ -129,7 +143,14 @@ export default class SystemNotification extends React.Component {
             'cp-notification'
           )
         }
-        style={{right: -350, top: SystemNotification.margin, display: 'flex', flexDirection: 'row'}}
+        style={{
+          right: -350,
+          top: window.innerHeight / 2,
+          display: 'flex',
+          flexDirection: 'row',
+          cursor: this.props.onClick ? 'pointer' : 'default'
+        }}
+        onClick={this.onClick}
       >
         <div className={styles.iconColumn}>
           {this.renderSeverityIcon()}
@@ -147,12 +168,14 @@ export default class SystemNotification extends React.Component {
               onClick={this.onClose}
               style={{cursor: 'pointer', marginLeft: 5, marginTop: 5}} />
           </Row>
-          <Row>
-            <span className={styles.body}>
-              <Markdown
-                md={this.props.notification.body}
-              />
-            </span>
+          <Row style={{
+            maxHeight: 250,
+            overflow: 'hidden'
+          }}>
+            <PreviewNotification
+              text={this.props.notification.body}
+              sanitize={this.props.notification.type === NOTIFICATION_TYPE.message}
+            />
           </Row>
           <Row type="flex" justify="end">
             <span
