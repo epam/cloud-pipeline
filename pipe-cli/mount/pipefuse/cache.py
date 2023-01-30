@@ -193,7 +193,8 @@ class CachingListingFileSystemClient(FileSystemClientDecorator):
                     mtime=time.mktime(datetime.now(tz=tzlocal()).timetuple()),
                     ctime=None,
                     contenttype=None,
-                    is_dir=True)
+                    is_dir=True,
+                    storage_class=None)
 
     def ls(self, path, depth=1):
         return self._ls_as_dict(path, depth).values()

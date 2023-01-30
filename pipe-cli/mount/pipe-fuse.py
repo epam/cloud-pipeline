@@ -67,6 +67,7 @@ from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
 from pipefuse.webdav import WebDavClient, ResilientWebDavFileSystemClient
 from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributesCache, \
     ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
+from pipefuse.archived import ArchivedFilesFilterFileSystemClient
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 _allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
@@ -119,6 +120,7 @@ def start(mountpoint, webdav, bucket,
         bucket_type = bucket_object.type
         if bucket_type == CloudType.S3:
             client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size, storage_path=bucket)
+            client = ArchivedFilesFilterFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
         elif bucket_type == CloudType.GS:
             client = GoogleStorageLowLevelFileSystemClient(bucket_name, pipe=pipe, chunk_size=chunk_size,
                                                            storage_path=bucket)

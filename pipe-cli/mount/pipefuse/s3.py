@@ -132,6 +132,7 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
+        self.bucket_object = pipe.get_storage(bucket)
         self._s3 = self._generate_s3_client(storage_path, pipe)
         self._chunk_size = chunk_size
         self._min_chunk = 1
@@ -140,9 +141,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         self._max_part_size = 5 * GB
 
     def _generate_s3_client(self, bucket, pipe):
-        bucket_object = pipe.get_storage(bucket)
-        session = self._generate_aws_session(bucket, pipe, bucket_object)
-        return session.client('s3', config=Config(), region_name=bucket_object.region_name)
+        session = self._generate_aws_session(bucket, pipe, self.bucket_object)
+        return session.client('s3', config=Config(), region_name=self.bucket_object.region_name)
 
     def _generate_aws_session(self, bucket, pipe, bucket_object):
         def refresh():
@@ -213,7 +213,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                     mtime=time.mktime(datetime.now(tz=tzlocal()).timetuple()),
                     ctime=None,
                     contenttype='',
-                    is_dir=True)
+                    is_dir=True,
+                    storage_class=None)
 
     def get_file_name(self, file, prefix, recursive):
         return file['Key'] if recursive else fuseutils.get_item_name(file['Key'], prefix=prefix)
@@ -224,7 +225,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                     mtime=time.mktime(file['LastModified'].astimezone(tzlocal()).timetuple()),
                     ctime=None,
                     contenttype='',
-                    is_dir=False)
+                    is_dir=False,
+                    storage_class=file['StorageClass'])
 
     def upload(self, buf, path):
         with io.BytesIO(bytearray(buf)) as body:
