@@ -495,6 +495,9 @@ public class SystemPreferences {
 
     public static final StringPreference DEFAULT_EDGE_REGION = new StringPreference(
             "default.edge.region", "eu-central", CLUSTER_GROUP, pass);
+    public static final IntPreference DEFAULT_EDGE_REGION_ID = new IntPreference(
+            "default.edge.region.id", 1, CLUSTER_GROUP, isGreaterThan(0L), true);
+
     public static final ObjectPreference<Map<String, RuntimeParameter>> CLUSTER_RUN_PARAMETERS_MAPPING =
             new ObjectPreference<>("cluster.run.parameters.mapping", null,
                     new TypeReference<Map<String, RuntimeParameter>>() {}, CLUSTER_GROUP,
