@@ -19,22 +19,22 @@ EFA_SETUP_TASK=EFASupport
 pipe_log_info "Started AWS EFA Driver setup" "$EFA_SETUP_TASK"
 
 if [ -z "$CP_USE_HOST_NETWORK" ]; then
-  pipe_log_warn "CP_USE_HOST_NETWORK is not set. EFA capability may work unexpectedly or doesn't work at all!"
+  pipe_log_warn "CP_USE_HOST_NETWORK is not set. EFA capability may work unexpectedly or doesn't work at all!" "$EFA_SETUP_TASK"
 fi
 
 if [ -z "$CP_NODE_SSH_PORT" ]; then
-  pipe_log_warn "CP_NODE_SSH_PORT is not set. EFA capability may work unexpectedly or doesn't work at all!"
+  pipe_log_warn "CP_NODE_SSH_PORT is not set. EFA capability may work unexpectedly or doesn't work at all!" "$EFA_SETUP_TASK"
   if [ "$CP_USE_HOST_NETWORK" != "" ]; then
-    pipe_log_warn "CP_USE_HOST_NETWORK is set, but CP_NODE_SSH_PORT doesn't, so ssh to the run can be misconfigured and doesn't work!"
+    pipe_log_warn "CP_USE_HOST_NETWORK is set, but CP_NODE_SSH_PORT doesn't, so ssh to the run can be misconfigured and doesn't work!" "$EFA_SETUP_TASK"
   fi
 fi
 
 if [ -z "$CP_CAP_TARGET_SUBNET_ID" ]; then
-  pipe_log_warn "CP_CAP_TARGET_SUBNET_ID is not set. EFA capability may work unexpectedly or doesn't work at all!"
+  pipe_log_warn "CP_CAP_TARGET_SUBNET_ID is not set. EFA capability may work unexpectedly or doesn't work at all!" "$EFA_SETUP_TASK"
 fi
 
 if [ -z "$CP_CAP_TARGET_SECURITY_GROUPS" ]; then
-  pipe_log_warn "CP_CAP_TARGET_SECURITY_GROUPS is not set. EFA capability may work unexpectedly or doesn't work at all!"
+  pipe_log_warn "CP_CAP_TARGET_SECURITY_GROUPS is not set. EFA capability may work unexpectedly or doesn't work at all!" "$EFA_SETUP_TASK"
 fi
 
 EFA_SETUP_DIR="/opt/"
