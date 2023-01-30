@@ -19,8 +19,9 @@ import time
 
 import pytest
 
-from .utils import terminate_node_with_retry, get_tool_info, update_tool_info, run_test
+from .utils import get_tool_info, update_tool_info, run_test
 from ..common_utils.entity_managers import UtilsManager
+from ..utils.pipeline_utils import terminate_node_with_retry
 
 
 class TestRStudioEndpoints(object):

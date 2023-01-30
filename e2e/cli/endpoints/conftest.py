@@ -14,7 +14,7 @@
 
 import logging
 
-from .utils import get_log_filename
+from ..utils.pipeline_utils import get_log_filename
 
 
 def pytest_sessionstart(session):

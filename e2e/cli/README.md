@@ -1,5 +1,19 @@
 # CP CLI integration tests
 
+## Local tests
+
+```bash
+# go to cloud pipeline repository root directory
+WORKDIR_ROOT="$PWD"
+pip install -r "$WORKDIR_ROOT/e2e/cli/requirements.txt"
+pip install -r "$WORKDIR_ROOT/pipe-cli/requirements.txt"
+cd "$WORKDIR_ROOT/workflows/pipe-common"
+python setup.py sdist
+cd "$WORKDIR_ROOT/workflows/pipe-common/dist"
+pip install pipeline-1.0.tar.gz
+export PYTHONPATH="$WORKDIR_ROOT/pipe-cli:$WORKDIR_ROOT/e2e/cli:$PYTHONPATH"
+```
+
 ## Storage tests
 
 CP CLI integration storage tests can be launched with all supported cloud providers. Cloud provider
@@ -10,16 +24,22 @@ is specified in `CP_PROVIDER` environment variable:
 - `GS` for Google cloud provider.
 
 ```bash
-WORKDIR_ROOT="$PWD"
-pip install -r "$WORKDIR_ROOT/e2e/cli/requirements.txt"
-pip install -r "$WORKDIR_ROOT/pipe-cli/requirements.txt"
-cd "$WORKDIR_ROOT/workflows/pipe-common"
-python setup.py sdist
-cd "$WORKDIR_ROOT/workflows/pipe-common/dist"
-pip install pipeline-1.0.tar.gz
 cd "$WORKDIR_ROOT/e2e/cli"
-export PYTHONPATH="$WORKDIR_ROOT/pipe-cli:$WORKDIR_ROOT/e2e/cli:$PYTHONPATH"
 pytest -s -vv --html="$WORKDIR_ROOT/e2e/cli/report.html" buckets
+```
+
+## Endpoints tests
+
+```bash
+export API=""
+export API_TOKEN=""
+export CP_PROVIDER="EC2"
+export TEST_PREFIX="dev"
+export CP_TEST_INSTANCE_TYPE="m5.large"
+export CP_TEST_PRICE_TYPE="spot"
+
+cd "$WORKDIR_ROOT/e2e/cli"
+pytest -s -vv --html="$WORKDIR_ROOT/e2e/cli/report.html" endpoints
 ```
 
 ### Credentials

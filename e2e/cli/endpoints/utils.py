@@ -167,20 +167,21 @@ def check_service_url_structure(url, pattern, checker):
 
 def follow_service_url(url, max_rep_count, check=lambda x: "HTTP/1.1 200" in x):
     token = os.environ['API_TOKEN']
-    result = curl_service_url(url, token, check)
+    output = curl_service_url(url, token)
     rep = 0
     while rep < max_rep_count:
-        if result:
-            return result
+        if check(output):
+            logging.info('Service url is accessible: {}', url)
+            return True
+        logging.warning('Service url is NOT accessible: {} ({})', url, output)
         time.sleep(5)
-        rep = rep + 1
-        result = curl_service_url(url, token, check)
+        rep += 1
+        output = curl_service_url(url, token)
     return False
 
 
-def curl_service_url(url, token, check):
+def curl_service_url(url, token):
     command = ['curl', '-H', 'Authorization: Bearer {}'.format(token), '-k', '-L', '-s', '-I', url]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     process.wait()
-    result = ''.join(process.stdout.readlines())
-    return check(result)
+    return ''.join(process.stdout.readlines())

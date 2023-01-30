@@ -15,7 +15,8 @@
 import logging
 import time
 
-from .utils import terminate_node_with_retry, run_test
+from .utils import run_test
+from ..utils.pipeline_utils import terminate_node_with_retry
 
 
 class TestJupiterEndpoints(object):
