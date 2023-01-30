@@ -12,249 +12,244 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import re
-import time
 
 import pytest
 
-from .utils import run_test
-from ..utils.pipeline_utils import terminate_node_with_retry
+from .utils import run_tool_with_endpoints, assert_run_with_endpoints
 
 
-class TestRStudioEndpoints(object):
+def test_rstudio_endpoint(runs, test_case='TC-EDGE-4'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh")
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "pipeline-{run_id}-8788-0"
+                              })
 
-    nodes = set()
-    test_case = ''
 
-    @classmethod
-    def teardown_class(cls):
-        for node in cls.nodes:
-            terminate_node_with_retry(node)
-            logging.info("Node %s was terminated" % node)
+def test_rstudio_and_no_machine_endpoint(runs, test_case='TC-EDGE-5'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "pipeline-{run_id}-8788-0",
+                                  "NoMachine": "pipeline-{run_id}-8089-0"
+                              })
 
-    def test_rstudio_endpoint(self):
-        self.test_case = 'TC-EDGE-4'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     endpoints_structure={
-                                         "RStudio": "pipeline-{run_id}-8788-0"
-                                     })
-        self.nodes.add(node_name)
 
-    def test_rstudio_and_no_machine_endpoint(self):
-        self.test_case = 'TC-EDGE-5'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     endpoints_structure={
-                                         "RStudio": "pipeline-{run_id}-8788-0",
-                                         "NoMachine": "pipeline-{run_id}-8089-0"
-                                     }, no_machine=True)
-        self.nodes.add(node_name)
+def test_rstudio_endpoint_friendly_url(runs, test_case='TC-EDGE-6'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     friendly_url="friendly")
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "friendly"
+                              })
 
-    def test_rstudio_endpoint_friendly_url(self):
-        self.test_case = 'TC-EDGE-6'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
+
+def test_rstudio_and_no_machine_endpoint_friendly_url(runs, test_case='TC-EDGE-7'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
                                      friendly_url="friendly",
-                                     endpoints_structure={
-                                         "RStudio": "friendly"
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "friendly-RStudio",
+                                  "NoMachine": "friendly-NoMachine"
+                              })
 
-    def test_rstudio_and_no_machine_endpoint_friendly_url(self):
-        self.test_case = 'TC-EDGE-7'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
+
+@pytest.mark.skip(reason="Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+def test_rstudio_endpoint_friendly_domain_url(runs, test_case='TC-EDGE-8'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     friendly_url="friendly.com")
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "https://friendly.com:\\d*",
+                              },
+                              url_checker=lambda u, p: bool(re.compile(p).match(u)))
+
+
+@pytest.mark.skip(reason="Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+def test_rstudio_and_no_machine_endpoint_friendly_domain_url(runs, test_case='TC-EDGE-9'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     friendly_url="friendly.com",
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "https://friendly.com.*/RStudio",
+                                  "NoMachine": "https://friendly.com.*/NoMachine"
+                              },
+                              url_checker=lambda u, p: bool(re.compile(p).match(u)))
+
+
+def test_rstudio_endpoint_friendly_domain_and_endpoint_url(runs, test_case='TC-EDGE-10'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     friendly_url="friendly.com/friendly")
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "https://friendly.com.*/friendly",
+                              },
+                              url_checker=lambda u, p: bool(re.compile(p).match(u)),
+                              check_access=False)
+
+
+def test_rstudio_and_no_machine_endpoint_friendly_domain_and_endpoint_url(runs, test_case='TC-EDGE-11'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     friendly_url="friendly.com/friendly",
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "https://friendly.com.*/friendly-RStudio",
+                                  "NoMachine": "https://friendly.com.*/friendly-NoMachine"
+                              },
+                              url_checker=lambda u, p: bool(re.compile(p).match(u)),
+                              check_access=False)
+
+
+def test_rstudio_spark_endpoints(runs, test_case='TC-EDGE-17'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     spark=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "pipeline-{run_id}-8788-0",
+                                  "SparkUI": "pipeline-{run_id}-8088-1000",
+                              })
+
+
+def test_rstudio_spark_nomachine_endpoints(runs, test_case='TC-EDGE-18'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     spark=True,
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "pipeline-{run_id}-8788-0",
+                                  "SparkUI": "pipeline-{run_id}-8088-1000",
+                                  "NoMachine": "pipeline-{run_id}-8089-0"
+                              })
+
+
+def test_rstudio_spark_endpoints_friendly_url(runs, test_case='TC-EDGE-19'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
                                      friendly_url="friendly",
-                                     no_machine=True,
-                                     endpoints_structure={
-                                         "RStudio": "friendly-RStudio",
-                                         "NoMachine": "friendly-NoMachine"
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
+                                     spark=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "friendly-RStudio",
+                                  "SparkUI": "friendly-SparkUI",
+                              })
 
-    def test_rstudio_endpoint_friendly_domain_url(self):
-        self.test_case = 'TC-EDGE-8'
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     friendly_url="friendly.com",
-                                     url_checker=lambda u, p: bool(re.compile(p).match(u)),
-                                     endpoints_structure={
-                                         "RStudio": "https://friendly.com:\\d*",
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
 
-    def test_rstudio_and_no_machine_endpoint_friendly_domain_url(self):
-        self.test_case = 'TC-EDGE-9'
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     friendly_url="friendly.com",
-                                     url_checker=lambda u, p: bool(re.compile(p).match(u)),
-                                     endpoints_structure={
-                                         "RStudio": "https://friendly.com.*/RStudio",
-                                         "NoMachine": "https://friendly.com.*/NoMachine"
-                                     }, no_machine=True)
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
-
-    def test_rstudio_endpoint_friendly_domain_and_endpoint_url(self):
-        self.test_case = 'TC-EDGE-10'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     friendly_url="friendly.com/friendly",
-                                     check_access=False,
-                                     url_checker=lambda u, p: bool(re.compile(p).match(u)),
-                                     endpoints_structure={
-                                         "RStudio": "https://friendly.com.*/friendly",
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
-
-    def test_rstudio_and_no_machine_endpoint_friendly_domain_and_endpoint_url(self):
-        self.test_case = 'TC-EDGE-11'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     friendly_url="friendly.com/friendly",
-                                     check_access=False,
-                                     no_machine=True,
-                                     url_checker=lambda u, p: bool(re.compile(p).match(u)),
-                                     endpoints_structure={
-                                         "RStudio": "https://friendly.com.*/friendly-RStudio",
-                                         "NoMachine": "https://friendly.com.*/friendly-NoMachine"
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
-
-    def test_rstudio_spark_endpoints(self):
-        self.test_case = 'TC-EDGE-17'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     spark=True,
-                                     endpoints_structure={
-                                         "RStudio": "pipeline-{run_id}-8788-0",
-                                         "SparkUI": "pipeline-{run_id}-8088-1000",
-
-                                     })
-        self.nodes.add(node_name)
-
-    def test_rstudio_spark_nomachine_endpoints(self):
-        self.test_case = 'TC-EDGE-18'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     spark=True,
-                                     no_machine=True,
-                                     endpoints_structure={
-                                         "RStudio": "pipeline-{run_id}-8788-0",
-                                         "SparkUI": "pipeline-{run_id}-8088-1000",
-                                         "NoMachine": "pipeline-{run_id}-8089-0"
-                                     })
-        self.nodes.add(node_name)
-
-    def test_rstudio_spark_endpoints_friendly_url(self):
-        self.test_case = 'TC-EDGE-19'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     spark=True,
+def test_rstudio_spark_nomachine_endpoints_friendly_url(runs, test_case='TC-EDGE-20'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
                                      friendly_url="friendly",
-                                     endpoints_structure={
-                                         "RStudio": "friendly-RStudio",
-                                         "SparkUI": "friendly-SparkUI",
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
-
-    def test_rstudio_spark_nomachine_endpoints_friendly_url(self):
-        self.test_case = 'TC-EDGE-20'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
                                      spark=True,
-                                     no_machine=True,
-                                     friendly_url="friendly",
-                                     endpoints_structure={
-                                         "RStudio": "friendly-RStudio",
-                                         "SparkUI": "friendly-SparkUI",
-                                         "NoMachine": "friendly-NoMachine"
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "friendly-RStudio",
+                                  "SparkUI": "friendly-SparkUI",
+                                  "NoMachine": "friendly-NoMachine"
+                              })
 
-    def test_rstudio_spark_endpoints_friendly_domain_url(self):
-        self.test_case = 'TC-EDGE-21'
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     spark=True,
+
+@pytest.mark.skip(reason="Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+def test_rstudio_spark_endpoints_friendly_domain_url(runs, test_case='TC-EDGE-21'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
                                      friendly_url="friendly.com",
-                                     url_checker=lambda u, p: bool(re.compile(p).match(u)),
-                                     endpoints_structure={
-                                         "RStudio": "https://friendly.com.*/RStudio",
-                                         "SparkUI": "https://friendly.com.*/SparkUI",
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
+                                     spark=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "https://friendly.com.*/RStudio",
+                                  "SparkUI": "https://friendly.com.*/SparkUI",
+                              },
+                              url_checker=lambda u, p: bool(re.compile(p).match(u)))
 
-    def test_rstudio_spark_no_machine_endpoint_friendly_domain_url(self):
-        self.test_case = 'TC-EDGE-22'
-        pytest.skip("Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     spark=True,
+
+@pytest.mark.skip(reason="Can't be run now, because pipe-cli can't configure friendly_url=friendly.com as a domain")
+def test_rstudio_spark_no_machine_endpoint_friendly_domain_url(runs, test_case='TC-EDGE-22'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
                                      friendly_url="friendly.com",
-                                     url_checker=lambda u, p: bool(re.compile(p).match(u)),
-                                     endpoints_structure={
-                                         "RStudio": "https://friendly.com.*/RStudio",
-                                         "NoMachine": "https://friendly.com.*/NoMachine",
-                                         "SparkUI": "https://friendly.com.*/SparkUI"
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
-
-    def test_rstudio_spark_endpoints_friendly_domain_and_url(self):
-        self.test_case = 'TC-EDGE-23'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     friendly_url="friendly.com/friendly",
-                                     check_access=False,
                                      spark=True,
-                                     url_checker=lambda u, p: bool(re.compile(p).match(u)),
-                                     endpoints_structure={
-                                         "RStudio": "https://friendly.com.*/friendly-RStudio",
-                                         "SparkUI": "https://friendly.com.*/friendly-SparkUI",
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "https://friendly.com.*/RStudio",
+                                  "NoMachine": "https://friendly.com.*/NoMachine",
+                                  "SparkUI": "https://friendly.com.*/SparkUI"
+                              },
+                              url_checker=lambda u, p: bool(re.compile(p).match(u)))
 
-    def test_rstudio_spark_no_machine_endpoint_friendly_domain_and_url(self):
-        self.test_case = 'TC-EDGE-24'
-        run_id, node_name = run_test("library/rstudio",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
+
+def test_rstudio_spark_endpoints_friendly_domain_and_url(runs, test_case='TC-EDGE-23'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
                                      friendly_url="friendly.com/friendly",
-                                     check_access=False,
+                                     spark=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "https://friendly.com.*/friendly-RStudio",
+                                  "SparkUI": "https://friendly.com.*/friendly-SparkUI",
+                              },
+                              url_checker=lambda u, p: bool(re.compile(p).match(u)),
+                              check_access=False)
+
+
+def test_rstudio_spark_no_machine_endpoint_friendly_domain_and_url(runs, test_case='TC-EDGE-24'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/rstudio:latest",
+                                     command="/start.sh",
+                                     friendly_url="friendly.com/friendly",
                                      spark=True,
-                                     no_machine=True,
-                                     url_checker=lambda u, p: bool(re.compile(p).match(u)),
-                                     endpoints_structure={
-                                         "RStudio": "https://friendly.com.*/friendly-RStudio",
-                                         "NoMachine": "https://friendly.com.*/friendly-NoMachine",
-                                         "SparkUI": "https://friendly.com.*/friendly-SparkUI",
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "RStudio": "https://friendly.com.*/friendly-RStudio",
+                                  "NoMachine": "https://friendly.com.*/friendly-NoMachine",
+                                  "SparkUI": "https://friendly.com.*/friendly-SparkUI",
+                              },
+                              url_checker=lambda u, p: bool(re.compile(p).match(u)),
+                              check_access=False)

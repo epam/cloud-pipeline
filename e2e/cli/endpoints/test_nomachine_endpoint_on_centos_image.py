@@ -12,51 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-
-from .utils import run_test
-from ..utils.pipeline_utils import terminate_node_with_retry
+from .utils import run_tool_with_endpoints, assert_run_with_endpoints
 
 
-class TestNoMachineEndpoints(object):
+def test_nomachine_endpoint_on_centos_image(runs, test_case='TC-EDGE-1'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/centos:7",
+                                     command="sleep infinity",
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "NoMachine": "pipeline-{run_id}-8089-0"
+                              })
 
-    nodes = set()
-    test_case = ''
 
-    @classmethod
-    def teardown_class(cls):
-        for node in cls.nodes:
-            terminate_node_with_retry(node)
-            logging.info("Node %s was terminated" % node)
+def test_spark_endpoint_on_centos_image(runs, test_case='TC-EDGE-15'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/centos:7",
+                                     command="sleep infinity",
+                                     spark=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "SparkUI": "pipeline-{run_id}-8088-1000"
+                              })
 
-    def test_nomachine_endpoint_on_centos_image(self):
-        self.test_case = 'TC-EDGE-1'
-        run_id, node_name = run_test("library/centos:7",
-                                     "echo {test_case} && sleep infinity".format(test_case=self.test_case),
-                                     no_machine=True,
-                                     endpoints_structure={
-                                         "NoMachine": "pipeline-{run_id}-8089-0"
-                                     })
-        self.nodes.add(node_name)
 
-    def test_spark_endpoint_on_centos_image(self):
-        self.test_case = 'TC-EDGE-15'
-        run_id, node_name = run_test("library/centos:7",
-                                     "echo {test_case} && sleep infinity".format(test_case=self.test_case),
+def test_spark_and_no_machine_endpoint_on_centos_image(runs, test_case='TC-EDGE-16'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/centos:7",
+                                     command="sleep infinity",
                                      spark=True,
-                                     endpoints_structure={
-                                         "SparkUI": "pipeline-{run_id}-8088-1000"
-                                     })
-        self.nodes.add(node_name)
-
-    def test_spark_and_no_machine_endpoint_on_centos_image(self):
-        self.test_case = 'TC-EDGE-16'
-        run_id, node_name = run_test("library/centos:7",
-                                     "echo {test_case} && sleep infinity".format(test_case=self.test_case),
-                                     spark=True,
-                                     no_machine=True,
-                                     endpoints_structure={
-                                         "NoMachine": "pipeline-{run_id}-8089-0",
-                                         "SparkUI": "pipeline-{run_id}-8088-1000"
-                                     })
-        self.nodes.add(node_name)
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "NoMachine": "pipeline-{run_id}-8089-0",
+                                  "SparkUI": "pipeline-{run_id}-8088-1000"
+                              })

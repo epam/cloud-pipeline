@@ -12,39 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-
-from .utils import run_test
-from ..utils.pipeline_utils import terminate_node_with_retry
+from .utils import run_tool_with_endpoints, assert_run_with_endpoints
 
 
-class TestNoMachineEndpoints(object):
+def test_nomachine_endpoint_on_ubuntu_16_image(runs, test_case='TC-EDGE-2'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/ubuntu:16.04",
+                                     command="sleep infinity",
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "NoMachine": "pipeline-{run_id}-8089-0"
+                              })
 
-    nodes = set()
-    test_case = ''
 
-    @classmethod
-    def teardown_class(cls):
-        for node in cls.nodes:
-            terminate_node_with_retry(node)
-            logging.info("Node %s was terminated" % node)
-
-    def test_nomachine_endpoint_on_ubuntu_16_image(self):
-        self.test_case = 'TC-EDGE-2'
-        run_id, node_name = run_test("library/ubuntu:16.04",
-                                     "echo {test_case} && sleep infinity".format(test_case=self.test_case),
-                                     no_machine=True,
-                                     endpoints_structure={
-                                         "NoMachine": "pipeline-{run_id}-8089-0"
-                                     })
-        self.nodes.add(node_name)
-
-    def test_nomachine_endpoint_on_ubuntu_18_image(self):
-        self.test_case = 'TC-EDGE-3'
-        run_id, node_name = run_test("library/ubuntu:18.04",
-                                     "echo {test_case} && sleep infinity".format(test_case=self.test_case),
-                                     no_machine=True,
-                                     endpoints_structure={
-                                         "NoMachine": "pipeline-{run_id}-8089-0"
-                                     })
-        self.nodes.add(node_name)
+def test_nomachine_endpoint_on_ubuntu_18_image(runs, test_case='TC-EDGE-3'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image="library/ubuntu:18.04",
+                                     command="sleep infinity",
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "NoMachine": "pipeline-{run_id}-8089-0"
+                              })

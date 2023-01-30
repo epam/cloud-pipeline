@@ -12,55 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import time
-
-from .utils import run_test
-from ..utils.pipeline_utils import terminate_node_with_retry
+from .utils import run_tool_with_endpoints, assert_run_with_endpoints
 
 
-class TestJupiterEndpoints(object):
+def test_jupiter_endpoint(runs, test_case='TC-EDGE-12'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image='library/jupyter-lab',
+                                     command='/start.sh')
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "JupyterLab": "pipeline-{run_id}-8888-0"
+                              })
 
-    nodes = set()
-    test_case = ''
 
-    @classmethod
-    def teardown_class(cls):
-        for node in cls.nodes:
-            terminate_node_with_retry(node)
-            logging.info("Node %s was terminated" % node)
+def test_jupiter_endpoint_friendly_url(runs, test_case='TC-EDGE-13'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image='library/jupyter-lab',
+                                     command='/start.sh',
+                                     friendly_url='friendly')
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "JupyterLab": "friendly"
+                              })
 
-    def test_jupiter_endpoint(self):
-        self.test_case = 'TC-EDGE-12'
-        run_id, node_name = run_test("library/jupyter-lab",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     endpoints_structure={
-                                         "JupyterLab": "pipeline-{run_id}-8888-0"
-                                     })
-        self.nodes.add(node_name)
 
-    def test_jupiter_endpoint_friendly_url(self):
-        self.test_case = 'TC-EDGE-13'
-        run_id, node_name = run_test("library/jupyter-lab",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
+def test_jupiter_and_no_machine_endpoint_friendly_url(runs, test_case='TC-EDGE-14'):
+    run_id = run_tool_with_endpoints(test_case=test_case,
+                                     image='library/jupyter-lab',
+                                     command='/start.sh',
                                      friendly_url='friendly',
-                                     endpoints_structure={
-                                         "JupyterLab": "friendly",
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
-
-    def test_jupiter_and_no_machine_endpoint_friendly_url(self):
-        self.test_case = 'TC-EDGE-14'
-        run_id, node_name = run_test("library/jupyter-lab",
-                                     "echo {test_case} && /start.sh".format(test_case=self.test_case),
-                                     friendly_url='friendly',
-                                     no_machine=True,
-                                     endpoints_structure={
-                                         "JupyterLab": "friendly-JupyterLab",
-                                         "NoMachine": "friendly-NoMachine"
-                                     })
-        self.nodes.add(node_name)
-        # Sleep 1 min to be sure that edge is reloaded
-        time.sleep(60)
+                                     no_machine=True)
+    runs.add(run_id)
+    assert_run_with_endpoints(run_id,
+                              endpoints_structure={
+                                  "JupyterLab": "friendly-JupyterLab",
+                                  "NoMachine": "friendly-NoMachine"
+                              })

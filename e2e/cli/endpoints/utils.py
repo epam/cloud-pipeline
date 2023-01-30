@@ -18,8 +18,8 @@ import os
 import subprocess
 import time
 
-from ..utils.pipeline_utils import get_endpoint_urls, run_tool, wait_for_instance_creation, wait_for_node_up, \
-    get_node_name_from_cluster_state, wait_for_run_initialized, wait_for_service_urls, stop_pipe_with_retry
+from ..utils.pipeline_utils import get_endpoint_urls, run_tool, \
+    wait_for_run_initialized, wait_for_service_urls, stop_pipe_with_retry
 
 MAX_REPETITIONS = 200
 
@@ -67,27 +67,22 @@ def update_tool_info(tool, max_retry=100):
         raise RuntimeError("Can't update tool info from API")
 
 
-def run_test(tool, command, endpoints_structure, url_checker=None, check_access=True, friendly_url=None,
-             no_machine=False, spark=False, custom_dns_endpoints=0):
-    run_id, node_name = run(tool, command, no_machine=no_machine, spark=spark, friendly_url=friendly_url)
+def assert_run_with_endpoints(run_id, endpoints_structure, url_checker=None, check_access=True, custom_dns_endpoints=0):
+    wait_run_with_endpoints(run_id)
     edge_services = get_edge_services()
     # calculate number of endpoints should be generated regarding to existing edges
     number_of_endpoints = custom_dns_endpoints + (len(endpoints_structure) - custom_dns_endpoints) * len(edge_services)
-    try:
-        endpoints = get_endpoint_urls(run_id)
-        check_for_number_of_endpoints(endpoints, number_of_endpoints)
-        for endpoint in endpoints:
-            url = endpoint["url"]
-            name = endpoint["name"]
-            region = endpoint["region"]
-            pattern = endpoints_structure[name].format(run_id=run_id)
-            structure_is_fine = check_service_url_structure(url, pattern, checker=url_checker)
-            assert structure_is_fine, "service url: {}, has wrong format.".format(url)
-            is_accessible = not check_access or follow_service_url(url, 100)
-            assert is_accessible, "service url: {} : {} : {}, is not accessible.".format(name, region, url)
-        return run_id, node_name
-    finally:
-        stop_pipe_with_retry(run_id)
+    endpoints = get_endpoint_urls(run_id)
+    check_for_number_of_endpoints(endpoints, number_of_endpoints)
+    for endpoint in endpoints:
+        url = endpoint["url"]
+        name = endpoint["name"]
+        region = endpoint["region"]
+        pattern = endpoints_structure[name].format(run_id=run_id)
+        structure_is_fine = check_service_url_structure(url, pattern, checker=url_checker)
+        assert structure_is_fine, "service url: {}, has wrong format.".format(url)
+        is_accessible = not check_access or follow_service_url(url, 100)
+        assert is_accessible, "service url: {} : {} : {}, is not accessible.".format(name, region, url)
 
 
 def get_edge_services(max_retry=100):
@@ -113,12 +108,15 @@ def get_edge_services(max_retry=100):
     raise RuntimeError("Can't load edges info from API")
 
 
-def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spark=False, friendly_url=None,
-        test_case=None):
+def run_tool_with_endpoints(image,
+                            command="sleep infinity",
+                            no_machine=False, spark=False, friendly_url=None,
+                            test_case=None):
     args = ["-id", "50",
             "-pt", "on-demand",
-            "-cmd", command.format(test_case=test_case),
-            "-di", image, "-np"]
+            "-cmd", command,
+            "-di", image, "-np",
+            "CP_TEST_CASE", test_case or "None"]
 
     if friendly_url:
         args.append("--friendly-url")
@@ -135,24 +133,19 @@ def run(image, command="echo {test_case}; sleep infinity", no_machine=False, spa
         args.append("CP_CAP_SPARK")
         args.append('boolean?true')
 
-    node_name = None
     (run_id, _) = run_tool(*args)
+    return run_id
+
+
+def wait_run_with_endpoints(run_id):
     try:
-        logging.info("Pipeline run with ID %s." % run_id)
-        wait_for_instance_creation(run_id, MAX_REPETITIONS)
-        logging.info("Instance %s created." % run_id)
-
-        node_state = wait_for_node_up(run_id, MAX_REPETITIONS)
-        node_name = get_node_name_from_cluster_state(node_state)
-        logging.info("Used node %s." % node_name)
-
         wait_for_run_initialized(run_id, MAX_REPETITIONS)
         wait_for_service_urls(run_id, MAX_REPETITIONS / 4)
         logging.info("Pipeline %s has initialized successfully." % run_id)
-    except BaseException as e:
+    except Exception:
+        logging.exception("Run #%s has failed to initialize", run_id)
         stop_pipe_with_retry(run_id)
-        raise e
-    return run_id, node_name
+        raise
 
 
 def check_for_number_of_endpoints(urls, number_of_endpoints):
@@ -171,9 +164,9 @@ def follow_service_url(url, max_rep_count, check=lambda x: "HTTP/1.1 200" in x):
     rep = 0
     while rep < max_rep_count:
         if check(output):
-            logging.info('Service url is accessible: {}', url)
+            logging.info('Service url is accessible: %s', url)
             return True
-        logging.warning('Service url is NOT accessible: {} ({})', url, output)
+        logging.warning('Service url is NOT yet accessible: %s (%s)', url, output)
         time.sleep(5)
         rep += 1
         output = curl_service_url(url, token)
@@ -182,6 +175,4 @@ def follow_service_url(url, max_rep_count, check=lambda x: "HTTP/1.1 200" in x):
 
 def curl_service_url(url, token):
     command = ['curl', '-H', 'Authorization: Bearer {}'.format(token), '-k', '-L', '-s', '-I', url]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    process.wait()
-    return ''.join(process.stdout.readlines())
+    return subprocess.check_output(command, stderr=subprocess.STDOUT)

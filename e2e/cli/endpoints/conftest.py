@@ -14,9 +14,32 @@
 
 import logging
 
-from ..utils.pipeline_utils import get_log_filename
+import pytest
+
+from ..utils.pipeline_utils import get_log_filename, stop_pipe_with_retry
+
+runs_container = set()
 
 
-def pytest_sessionstart(session):
+@pytest.fixture(scope='function')
+def runs():
+    return runs_container
+
+
+@pytest.fixture(scope='function', autouse=True)
+def teardown_function(runs):
+    yield
+    logging.info("Stopping runs...")
+    for run_id in runs:
+        try:
+            logging.info("Stopping run #{}...", run_id)
+            stop_pipe_with_retry(run_id)
+            logging.info("Run #{} has been stopped", run_id)
+        except Exception:
+            logging.exception("Run #{} has not been stopped due to error")
+    runs.clear()
+
+
+def pytest_sessionstart():
     logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                         format='%(levelname)s %(asctime)s %(module)s: %(message)s')
