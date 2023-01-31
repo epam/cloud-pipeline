@@ -48,9 +48,28 @@ function get_installed_nm_version {
 function update_nm {
   nm_version=$1
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
-    yum downgrade -y nomachine.rpm && \
-    yum install -y nomachine.rpm && \
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm
+    if [ $? -ne 0 ]; then
+      return 1
+    fi
+    
+    # First try to downgrade to the target version, if it's lower then a current
+    local _downgrade_result=1
+    yum downgrade -y nomachine.rpm
+    _downgrade_result=$?
+
+    # And install a target version:
+    # - If it was downgraded in a previous step - nothing happens
+    # - Otherwise it will be installed
+    local _install_result=1
+    yum install -y nomachine.rpm
+    _install_result=$?
+
+    # If both operations failed - fail the installation
+    if [ $_downgrade_result -ne 0 ] && [ $_install_result -ne 0 ]; then
+      return 1
+    fi
+
     rm -f nomachine.rpm
   else
     wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
