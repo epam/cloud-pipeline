@@ -59,6 +59,15 @@ function removeAttributes (html, attributesToRemove) {
   }
 }
 
+/**
+ * Remove tags (script by default)
+ * and attributes (every on-handler and attributes that can be executable,
+ * "SRC=javascript:", for example) from html string.
+ * You can include any additional tags and attributes to {options}.
+ * @param {string} string - html string.
+ * @param {object} options - options object.
+ * @returns {string} - return sanitized html string.
+ */
 function sanitizeHTMLString (string, options = {}) {
   try {
     const {

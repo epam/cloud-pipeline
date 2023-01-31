@@ -30,17 +30,9 @@
   transition: all 450ms ease-in-out;
 }
 
-.notification {
-
-}
-
 .title {
   font-weight: bold;
   font-size: larger;
-}
-
-.body {
-
 }
 
 .icon-column {

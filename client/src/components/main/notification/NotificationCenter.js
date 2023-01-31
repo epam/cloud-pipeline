@@ -94,11 +94,17 @@ export default class NotificationCenter extends React.Component {
     previewNotification: null
   };
 
-  @observable _visibleTop;
+  @observable _visibleTop = 0;
+  @observable _notificationsOnScreen = 0;
 
   @computed
   get visibleTop () {
     return this._visibleTop;
+  }
+
+  @computed
+  get notificationsOnScreen () {
+    return this._notificationsOnScreen;
   }
 
   @computed
@@ -153,8 +159,9 @@ export default class NotificationCenter extends React.Component {
   }
 
   @action
-  setVisibleTop = (top) => {
-    this._visibleTop = top;
+  setVisibleNotificationsInfo = (visibleTop, notifications) => {
+    this._visibleTop = visibleTop;
+    this._notificationsOnScreen = notifications;
   };
 
   getHiddenNotifications = () => {
@@ -188,7 +195,10 @@ export default class NotificationCenter extends React.Component {
       let top = SystemNotification.margin;
       let remainingHeight = window.innerHeight - padding;
       let doesFit = true;
-      for (let i = 0; i < index; i++) {
+      let visibleTop = 0;
+      let notificationsOnScreen = 0;
+      for (let i = 0; i <= index; i++) {
+        const prevItemsProcessing = index !== i;
         const notificationItem = notifications[i];
         const [state] = this.state.notificationsState
           .filter(n => n.id === notificationItem.notificationId);
@@ -197,14 +207,18 @@ export default class NotificationCenter extends React.Component {
           state &&
           state.height !== undefined
         ) {
-          top += state.height + SystemNotification.margin;
-          remainingHeight -= state.height + SystemNotification.margin;
-          doesFit = remainingHeight >= state.height;
+          if (prevItemsProcessing) {
+            top += state.height + SystemNotification.margin;
+          }
+          remainingHeight = window.innerHeight - top - state.height;
+          doesFit = remainingHeight >= padding;
           if (doesFit) {
-            this.setVisibleTop(top + state.height + SystemNotification.margin);
+            notificationsOnScreen += 1;
+            visibleTop = top + state.height + SystemNotification.margin;
           }
         }
       }
+      this.setVisibleNotificationsInfo(visibleTop, notificationsOnScreen);
       return {
         top,
         visible: doesFit
@@ -354,13 +368,14 @@ export default class NotificationCenter extends React.Component {
     const {hiddenNotifications} = this.state;
     const hiddenAmount = this.nonBlockingNotifications
       .filter(n => !hiddenNotifications.find(({id}) => id === n.notificationId))
-      .length - MAX_NOTIFICATIONS;
+      .length - this.notificationsOnScreen;
     if (hiddenAmount <= 0) {
       return null;
     }
     return (
       <div
         style={{
+          transition: 'top 0.45s ease-in-out',
           position: 'fixed',
           right: 0,
           width: '300px',

@@ -145,7 +145,7 @@ export default class SystemNotification extends React.Component {
         }
         style={{
           right: -350,
-          top: window.innerHeight / 2,
+          top: window.innerHeight,
           display: 'flex',
           flexDirection: 'row',
           cursor: this.props.onClick ? 'pointer' : 'default'
@@ -155,7 +155,15 @@ export default class SystemNotification extends React.Component {
         <div className={styles.iconColumn}>
           {this.renderSeverityIcon()}
         </div>
-        <Row type="flex" style={{flex: 1, display: 'flex', flexDirection: 'column', wordBreak: 'break-word'}}>
+        <Row
+          type="flex"
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            wordBreak: 'break-word'
+          }}
+        >
           <Row type="flex" style={{
             marginBottom: 5,
             display: 'flex',
