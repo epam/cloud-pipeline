@@ -146,7 +146,7 @@ class GitLab(object):
             'username': userName.encode('utf8').replace(' ', '_'),
             'email': email.encode('utf8'),
             'password': password,
-            'confirm': 'no'
+            'skip_confirmation': True
         }
         return self.call(
             'users',
