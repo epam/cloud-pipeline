@@ -86,7 +86,8 @@ def start(mountpoint, webdav, bucket,
           xattrs_include_prefixes, xattrs_exclude_prefixes,
           xattrs_cache_ttl, xattrs_cache_size,
           disabled_operations, default_mode,
-          mount_options, threads=False, monitoring_delay=600, recording=False):
+          mount_options, threads=False, monitoring_delay=600, recording=False,
+          show_archived=False):
     try:
         os.makedirs(mountpoint)
     except OSError as e:
@@ -120,7 +121,8 @@ def start(mountpoint, webdav, bucket,
         bucket_type = bucket_object.type
         if bucket_type == CloudType.S3:
             client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size, storage_path=bucket)
-            client = ArchivedFilesFilterFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
+            if not show_archived:
+                client = ArchivedFilesFilterFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
         elif bucket_type == CloudType.GS:
             client = GoogleStorageLowLevelFileSystemClient(bucket_name, pipe=pipe, chunk_size=chunk_size,
                                                            storage_path=bucket)
@@ -344,6 +346,7 @@ if __name__ == '__main__':
     parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.")
     parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
                         help="Delay between path lock monitoring cycles.")
+    parser.add_argument("--show-archived", type=bool, default=False, help="Show archived files.")
     args = parser.parse_args()
 
     if args.xattrs_include_prefixes and args.xattrs_exclude_prefixes:
@@ -379,7 +382,8 @@ if __name__ == '__main__':
               xattrs_cache_ttl=args.xattrs_cache_ttl, xattrs_cache_size=args.xattrs_cache_size,
               disabled_operations=args.disabled_operations,
               default_mode=args.mode, mount_options=parse_mount_options(args.options),
-              threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
+              threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording,
+              show_archived=args.show_archived)
     except Exception:
         logging.exception('Unhandled error')
         traceback.print_exc()
