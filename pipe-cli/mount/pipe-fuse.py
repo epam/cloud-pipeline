@@ -346,7 +346,7 @@ if __name__ == '__main__':
     parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.")
     parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
                         help="Delay between path lock monitoring cycles.")
-    parser.add_argument("--show-archived", type=bool, default=False, help="Show archived files.")
+    parser.add_argument("--show-archived", action='store_true', help="Show archived files.")
     args = parser.parse_args()
 
     if args.xattrs_include_prefixes and args.xattrs_exclude_prefixes:
