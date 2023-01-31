@@ -39,7 +39,7 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
         storage_lifecycle = None
         result = []
         for item in items:
-            if item.storage_class != 'STANDARD':
+            if item.storage_class is not None and item.storage_class != 'STANDARD':
                 path = self._normalize_path(path)
                 if storage_lifecycle is None:
                     storage_lifecycle = self._get_storage_lifecycle(path)
