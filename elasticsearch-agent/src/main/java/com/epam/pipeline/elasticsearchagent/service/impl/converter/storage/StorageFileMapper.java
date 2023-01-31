@@ -21,11 +21,16 @@ import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.utils.FileContentUtils;
+import com.epam.pipeline.utils.StreamUtils;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -38,6 +43,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +58,7 @@ public class StorageFileMapper {
 
     private static final String DELIMITER = "/";
     private static final String DEFAULT_MOUNT_POINT = "/cloud-data";
+    public static final String STANDARD_TIER = "STANDARD";
 
     private final Map<String, Set<String>> hiddenMasks = new HashMap<>();
     private final Map<String, Set<String>> indexContentMasks = new HashMap<>();
@@ -93,6 +100,13 @@ public class StorageFileMapper {
             if (labels.containsKey(ESConstants.STORAGE_CLASS_LABEL)) {
                  jsonBuilder.field("storage_class", labels.get(ESConstants.STORAGE_CLASS_LABEL));
             }
+
+            if (MapUtils.isNotEmpty(dataStorageFile.getVersions())) {
+                jsonBuilder.field("versions",
+                        calculateVersionSizes(dataStorageFile.getVersions())
+                );
+            }
+
             for (final Map.Entry<String, String> entry : tags.entrySet()) {
                 if (StringUtils.hasText(tagDelimiter) && StringUtils.hasText(entry.getValue())
                         && entry.getValue().contains(tagDelimiter)) {
@@ -106,6 +120,23 @@ public class StorageFileMapper {
         } catch (IOException e) {
             throw new AmazonS3Exception("An error occurred while creating document: ", e);
         }
+    }
+
+    private List<Map<String, Object>> calculateVersionSizes(Map<String, AbstractDataStorageItem> versions) {
+        return StreamUtils.grouped(
+                versions.values().stream().map(v -> (DataStorageFile) v),
+                Comparator.comparing(v -> v.getLabels().getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER))
+        ).map(tierVersions -> {
+            final String tier = tierVersions.stream().findFirst()
+                    .map(v -> v.getLabels().get(ESConstants.STORAGE_CLASS_LABEL))
+                    .orElse(STANDARD_TIER);
+            final long totalSize = tierVersions.stream().collect(Collectors.summarizingLong(DataStorageFile::getSize)).getSum();
+            HashMap<String, Object> result = new HashMap<>();
+            result.put("size", totalSize);
+            result.put("tier", tier);
+            result.put("count", versions.size());
+            return result;
+        }).collect(Collectors.toList());
     }
 
     // This method construct mount path assuming that default mount point is /cloud-data/,
