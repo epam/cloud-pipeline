@@ -174,7 +174,11 @@ export default class SystemNotification extends React.Component {
               id="notification-close-button"
               type="close"
               onClick={this.onClose}
-              style={{cursor: 'pointer', marginLeft: 5, marginTop: 5}} />
+              style={{
+                cursor: 'pointer',
+                padding: '5px 0 0 10px'
+              }}
+            />
           </Row>
           <Row style={{
             maxHeight: 250,

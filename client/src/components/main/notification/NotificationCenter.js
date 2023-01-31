@@ -195,10 +195,9 @@ export default class NotificationCenter extends React.Component {
       let top = SystemNotification.margin;
       let remainingHeight = window.innerHeight - padding;
       let doesFit = true;
-      let visibleTop = 0;
       let notificationsOnScreen = 0;
       for (let i = 0; i <= index; i++) {
-        const prevItemsProcessing = index !== i;
+        const itemToRenderProcessing = index === i;
         const notificationItem = notifications[i];
         const [state] = this.state.notificationsState
           .filter(n => n.id === notificationItem.notificationId);
@@ -207,18 +206,17 @@ export default class NotificationCenter extends React.Component {
           state &&
           state.height !== undefined
         ) {
-          if (prevItemsProcessing) {
-            top += state.height + SystemNotification.margin;
-          }
           remainingHeight = window.innerHeight - top - state.height;
           doesFit = remainingHeight >= padding;
           if (doesFit) {
+            top = itemToRenderProcessing
+              ? top
+              : top + state.height + SystemNotification.margin;
             notificationsOnScreen += 1;
-            visibleTop = top + state.height + SystemNotification.margin;
           }
         }
       }
-      this.setVisibleNotificationsInfo(visibleTop, notificationsOnScreen);
+      this.setVisibleNotificationsInfo(top, notificationsOnScreen);
       return {
         top,
         visible: doesFit
