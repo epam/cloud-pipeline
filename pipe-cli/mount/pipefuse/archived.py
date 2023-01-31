@@ -13,6 +13,7 @@
 # limitations under the License.
 import collections
 import logging
+from future.utils import iteritems
 
 from pipefuse.fsclient import FileSystemClientDecorator
 
@@ -61,7 +62,7 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
 
     @staticmethod
     def _file_restored(file_path, storage_lifecycle):
-        for path, item in storage_lifecycle:
+        for path, item in iteritems(storage_lifecycle):
             if path == file_path or file_path.startswith(path):
                 if not item:
                     return False
