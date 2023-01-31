@@ -48,7 +48,8 @@ function dateSorter (notificationA, notificationB) {
   } else if (dateA < dateB) {
     return 1;
   }
-  return 0;
+  return notificationA.notificationId
+    .localeCompare(notificationB.notificationId);
 }
 
 function mapMessage (message) {
@@ -94,12 +95,15 @@ export default class NotificationCenter extends React.Component {
     previewNotification: null
   };
 
-  @observable _visibleTop = 0;
+  @observable _notificationsBottomBound = 0;
   @observable _notificationsOnScreen = 0;
 
+  layoutInfoTimeout;
+  resizeTimeout;
+
   @computed
-  get visibleTop () {
-    return this._visibleTop;
+  get notificationsBottomBound () {
+    return this._notificationsBottomBound;
   }
 
   @computed
@@ -159,9 +163,14 @@ export default class NotificationCenter extends React.Component {
   }
 
   @action
-  setVisibleNotificationsInfo = (visibleTop, notifications) => {
-    this._visibleTop = visibleTop;
-    this._notificationsOnScreen = notifications;
+  setVisibleNotificationsInfo = (notificationsBottomBound, notifications) => {
+    if (this.layoutInfoTimeout) {
+      clearTimeout(this.layoutInfoTimeout);
+    }
+    this.layoutInfoTimeout = setTimeout(() => {
+      this._notificationsBottomBound = notificationsBottomBound;
+      this._notificationsOnScreen = notifications;
+    }, 100);
   };
 
   getHiddenNotifications = () => {
@@ -193,11 +202,12 @@ export default class NotificationCenter extends React.Component {
       const notifications = this.notificationsToShow;
       const padding = 80;
       let top = SystemNotification.margin;
+      let bottom = SystemNotification.margin;
       let remainingHeight = window.innerHeight - padding;
       let doesFit = true;
       let notificationsOnScreen = 0;
       for (let i = 0; i <= index; i++) {
-        const itemToRenderProcessing = index === i;
+        const previouslyRenderedItem = i !== index;
         const notificationItem = notifications[i];
         const [state] = this.state.notificationsState
           .filter(n => n.id === notificationItem.notificationId);
@@ -209,14 +219,17 @@ export default class NotificationCenter extends React.Component {
           remainingHeight = window.innerHeight - top - state.height;
           doesFit = remainingHeight >= padding;
           if (doesFit) {
-            top = itemToRenderProcessing
+            top = previouslyRenderedItem
+              ? top + state.height + SystemNotification.margin
+              : top;
+            bottom = previouslyRenderedItem
               ? top
               : top + state.height + SystemNotification.margin;
             notificationsOnScreen += 1;
           }
         }
       }
-      this.setVisibleNotificationsInfo(top, notificationsOnScreen);
+      this.setVisibleNotificationsInfo(bottom, notificationsOnScreen);
       return {
         top,
         visible: doesFit
@@ -247,7 +260,6 @@ export default class NotificationCenter extends React.Component {
     if (!notification) {
       return null;
     }
-    const {messages} = this.props;
     const request = new ReadMessage();
     const payload = unMapMessage(notification);
     payload.isRead = true;
@@ -256,7 +268,9 @@ export default class NotificationCenter extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
-      messages.fetch();
+      // Additional messages fetching seems unnecessary at the moment,
+      // closed messages remain hidden via component state.
+      // this.props.messages.fetch();
     }
   };
 
@@ -377,7 +391,7 @@ export default class NotificationCenter extends React.Component {
           position: 'fixed',
           right: 0,
           width: '300px',
-          top: this.visibleTop,
+          top: this.notificationsBottomBound,
           marginRight: '20px',
           padding: '5px',
           zIndex: 1000
@@ -510,7 +524,25 @@ export default class NotificationCenter extends React.Component {
         initialized: true
       });
     }
+    window.addEventListener('resize', this.refreshLayout);
   }
+
+  componentWillUnmount () {
+    window.removeEventListener('resize', this.refreshLayout);
+    clearTimeout(this.resizeTimeout);
+    clearTimeout(this.layoutInfoTimeout);
+  }
+
+  refreshLayout = () => {
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+    }
+    this.resizeTimeout = setTimeout(() => {
+      this.setState({
+        initialized: true
+      });
+    }, 500);
+  };
 
   onFetched = (notifications) => {
     const activeNotifications = (notifications.value || []).map(n => n);

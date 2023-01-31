@@ -95,9 +95,11 @@ export default class SystemNotification extends React.Component {
     }
   };
 
-  onClick = () => {
+  onClick = (event) => {
     const {onClick, notification} = this.props;
-    onClick && onClick(notification);
+    if (!/^a$/i.test(event.target.tagName)) {
+      onClick && onClick(notification);
+    }
   };
 
   renderSeverityIcon = () => {
