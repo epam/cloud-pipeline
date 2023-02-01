@@ -23,6 +23,8 @@ from threading import RLock
 import datetime
 import errno
 import time
+
+from botocore.exceptions import ClientError
 from dateutil.tz import tzlocal
 from fuse import FuseOSError, Operations
 
@@ -364,7 +366,11 @@ class ResilientFS(ChainingService):
                 raise FuseOSError(errno.ENODATA)
             except InvalidOperationException:
                 raise FuseOSError(errno.EINVAL)
-            except Exception:
+            except Exception as e:
+                err_msg = str(e)
+                if isinstance(e, ClientError) \
+                        and err_msg and 'InvalidObjectState' in err_msg and 'storage class' in err_msg:
+                    raise FuseOSError(errno.EACCES)
                 logging.exception('Uncaught exception from underlying file system.')
                 raise FuseOSError(errno.EINVAL)
         return _wrapped_attr
