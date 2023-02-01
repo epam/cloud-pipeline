@@ -78,6 +78,6 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
     @staticmethod
     def _folder_restored(folder_path, storage_lifecycle):
         for path in storage_lifecycle:
-            if path.startswith(folder_path):
+            if folder_path.startswith(path):
                 return True
         return False
