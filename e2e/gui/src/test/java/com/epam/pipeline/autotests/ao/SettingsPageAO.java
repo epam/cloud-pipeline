@@ -1392,7 +1392,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public PreferencesAO save() {
 //            click(SAVE);
-            get(SAVE).doubleClick();
+//            get(SAVE).doubleClick();
+            actions().moveToElement(get(SAVE)).perform();
+            get(SAVE).pressEnter();
             get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
             return this;
         }
