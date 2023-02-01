@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -547,6 +547,9 @@ public class SystemPreferences {
     public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
             "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
 
+    public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
+            "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
