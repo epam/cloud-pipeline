@@ -68,6 +68,7 @@ from pipefuse.webdav import WebDavClient, ResilientWebDavFileSystemClient
 from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributesCache, \
     ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
 from pipefuse.archived import ArchivedFilesFilterFileSystemClient
+from pipefuse.storageclassfilter import StorageClassFilterFileSystemClient
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 _allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
@@ -87,7 +88,7 @@ def start(mountpoint, webdav, bucket,
           xattrs_cache_ttl, xattrs_cache_size,
           disabled_operations, default_mode,
           mount_options, threads=False, monitoring_delay=600, recording=False,
-          show_archived=False):
+          show_archived=False, storage_class_exclude=None):
     try:
         os.makedirs(mountpoint)
     except OSError as e:
@@ -129,6 +130,8 @@ def start(mountpoint, webdav, bucket,
         else:
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
         client = StorageHighLevelFileSystemClient(client)
+    if storage_class_exclude:
+        client = StorageClassFilterFileSystemClient(client, classes=storage_class_exclude)
     if recording:
         client = RecordingFileSystemClient(client)
     if bucket_type in [CloudType.S3, CloudType.GS]:
@@ -347,6 +350,8 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
                         help="Delay between path lock monitoring cycles.")
     parser.add_argument("--show-archived", action='store_true', help="Show archived files.")
+    parser.add_argument("--storage-class-exclude", type=str, required=False,
+                        help="Comma-separated values with storage classes shall be excluded.")
     args = parser.parse_args()
 
     if args.xattrs_include_prefixes and args.xattrs_exclude_prefixes:
@@ -383,7 +388,7 @@ if __name__ == '__main__':
               disabled_operations=args.disabled_operations,
               default_mode=args.mode, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording,
-              show_archived=args.show_archived)
+              show_archived=args.show_archived, storage_class_exclude=args.storage_class_exclude)
     except Exception:
         logging.exception('Unhandled error')
         traceback.print_exc()

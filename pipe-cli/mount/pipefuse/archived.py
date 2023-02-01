@@ -11,10 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import collections
-import logging
-from future.utils import iteritems
 
+import logging
 from pipefuse.fsclient import FileSystemClientDecorator
 
 PATH_SEPARATOR = '/'
@@ -37,16 +35,19 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
 
     def ls(self, path, depth=1):
         items = self._inner.ls(path, depth)
-        storage_lifecycle = None
+        restored_paths = None
         result = []
+        folder_restored = False
         for item in items:
             if not item.is_dir and item.storage_class != 'STANDARD':
                 path = self._normalize_path(path)
-                if storage_lifecycle is None:
-                    storage_lifecycle = self._get_storage_lifecycle(path)
-                file_path = path + item.name
-                if not self._file_restored(file_path, storage_lifecycle):
-                    continue
+                if restored_paths is None:
+                    restored_paths = self._get_restored_paths(path)
+                    folder_restored = self._folder_restored(path, restored_paths)
+                if not folder_restored:
+                    file_path = path + item.name
+                    if not restored_paths.__contains__(file_path):
+                        continue
             result.append(item)
         return result
 
@@ -60,28 +61,23 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
             path = path + PATH_SEPARATOR
         return path
 
-    @staticmethod
-    def _file_restored(file_path, storage_lifecycle):
-        for path, item in iteritems(storage_lifecycle):
-            if path == file_path or file_path.startswith(path):
-                if not item:
-                    return False
-                return item.status == 'SUCCEEDED'
-        return False
-
-    def _get_storage_lifecycle(self, path):
+    def _get_restored_paths(self, path):
         try:
             response = self._pipe.get_storage_lifecycle(self._bucket, path)
-            items = {}
+            items = set()
             if not response:
-                return {}
+                return items
             for item in response:
-                items.update({item.path: item})
-            sorted_paths = sorted([item.path for item in response], key=len, reverse=True)
-            sorted_results = collections.OrderedDict()
-            for path in sorted_paths:
-                sorted_results.update({path: items.get(path)})
-            return sorted_results
+                if item.status and item.status == 'SUCCEEDED':
+                    items.update(item.path)
+            return items
         except Exception as e:
             logging.info(e)
-            return {}
+            return set()
+
+    @staticmethod
+    def _folder_restored(folder_path, storage_lifecycle):
+        for path in storage_lifecycle:
+            if path.startswith(folder_path):
+                return True
+        return False
