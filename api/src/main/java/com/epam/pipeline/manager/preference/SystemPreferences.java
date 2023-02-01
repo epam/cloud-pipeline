@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -615,6 +615,9 @@ public class SystemPreferences {
     public static final IntPreference  LAUNCH_UID_SEED = new IntPreference("launch.uid.seed", 70000,
             LAUNCH_GROUP, pass, true);
 
+    public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
+            "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",

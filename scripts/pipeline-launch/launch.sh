@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -373,8 +373,52 @@ function configure_package_manager_pip {
     echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
 }
 
-# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
-function configure_package_manager {
+function run_pre_common_commands {
+      preference_value="$(get_pipe_preference_low_level "launch.pre.common.commands" "{}")"
+      linux_commands=$(echo "$preference_value" | jq -r '.linux' | grep -v "^null$")
+      if [ -z "$linux_commands" ]; then
+        echo "Additional commands for Linux distribution were not found."
+        return
+      fi
+      os_commands=$(echo "$linux_commands" | jq -r ".$CP_OS" | grep -v "^null$")
+      if [ -z "$os_commands" ]; then
+        echo "Additional commands for $CP_OS were not found."
+        return
+      fi
+      os_ver_commands=$(echo "$os_commands" | jq -r ".[\"$CP_VER\"]" | grep -v "^null$")
+      os_default_commands=$(echo "$os_commands" | jq -r ".default" | grep -v "^null$")
+      if [ -z "$os_ver_commands" ] && [ -z "$os_default_commands" ] ; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      if [ "$os_ver_commands" ] && [ "$os_default_commands" ]; then
+        commands=$( echo "$os_default_commands" "$os_ver_commands" | jq -s '.[0] * .[1]' | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      elif [ "$os_ver_commands" ]; then
+        commands=$( echo "$os_ver_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      else
+        commands=$( echo "$os_default_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      fi
+      declare -a command_list="($commands)"
+      if [ ${#command_list[@]} -eq 0 ]; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      echo "${#command_list[@]} additional commands were found for $CP_OS:$CP_VER"
+      SUCCESS_COMMANDS_NUM=0
+      for command in "${command_list[@]}"; do
+        eval "$command"
+        PRE_COMMAND_RESULT=$?
+        if [ "$PRE_COMMAND_RESULT" -ne 0 ]; then
+          echo "[WARN] '$command' command done with exit code $PRE_COMMAND_RESULT, review any issues above."
+        else
+          SUCCESS_COMMANDS_NUM=$((SUCCESS_COMMANDS_NUM+1))
+        fi
+      done
+      echo "$SUCCESS_COMMANDS_NUM out of ${#command_list[@]} additional commands were successfully executed for $CP_OS:$CP_VER"
+}
+
+# This function define the distribution name and version
+function define_distro_name_and_version {
       # Get the distro name and version
       CP_OS=
       CP_VER=
@@ -401,10 +445,12 @@ function configure_package_manager {
             CP_OS=$(uname -s)
             CP_VER=$(uname -r)
       fi
-
       export CP_OS
       export CP_VER
+}
 
+# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
+function configure_package_manager {
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
             echo "deb [check-valid-until=no] http://cdn-fastly.deb.debian.org/debian jessie main" > /etc/apt/sources.list.d/jessie.list
@@ -928,6 +974,32 @@ fi
 export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
 echo "Using global distribution $GLOBAL_DISTRIBUTION_URL..."
 
+# Check jq is installed
+if ! jq --version > /dev/null 2>&1; then
+    echo "Installing jq"
+    # check curl or wget commands
+    _JQ_INSTALL_RESULT=
+    if check_installed "wget"; then
+      wget -q --no-check-certificate "${GLOBAL_DISTRIBUTION_URL}tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
+      _JQ_INSTALL_RESULT=$?
+    elif check_installed "curl"; then
+      curl -s -k "${GLOBAL_DISTRIBUTION_URL}tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq
+      _JQ_INSTALL_RESULT=$?
+    else
+      echo "[ERROR] 'wget' or 'curl' commands not found to install 'jq'."
+    fi
+    if [ "$_JQ_INSTALL_RESULT" -ne 0 ]; then
+      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
+    fi
+    chmod +x /usr/bin/jq
+fi
+
+# Define the name and version of the distribution
+define_distro_name_and_version
+
+# Invoke any additional commands for the distribution
+run_pre_common_commands
+
 # Perform any distro/version specific package manage configuration
 configure_package_manager
 
@@ -989,16 +1061,6 @@ fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
 check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH; };
-
-# Check jq is installed
-if ! jq --version > /dev/null 2>&1; then
-    echo "Installing jq"
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
-    if [ $? -ne 0 ]; then
-      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
-    fi
-    chmod +x /usr/bin/jq
-fi
 
 ######################################################
 # Configure the dependencies if needed
