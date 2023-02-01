@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -333,6 +333,50 @@ function upgrade_installed_packages {
       return $?
 }
 
+function run_pre_common_commands {
+      preference_value="$(get_pipe_preference_low_level "launch.pre.common.commands" "{}")"
+      linux_commands=$(echo "$preference_value" | jq -r '.linux' | grep -v "^null$")
+      if [ -z "$linux_commands" ]; then
+        echo "Additional commands for Linux distribution were not found."
+        return
+      fi
+      os_commands=$(echo "$linux_commands" | jq -r ".$CP_OS" | grep -v "^null$")
+      if [ -z "$os_commands" ]; then
+        echo "Additional commands for $CP_OS were not found."
+        return
+      fi
+      os_ver_commands=$(echo "$os_commands" | jq -r ".[\"$CP_VER\"]" | grep -v "^null$")
+      os_default_commands=$(echo "$os_commands" | jq -r ".default" | grep -v "^null$")
+      if [ -z "$os_ver_commands" ] && [ -z "$os_default_commands" ] ; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      if [ "$os_ver_commands" ] && [ "$os_default_commands" ]; then
+        commands=$( echo "$os_default_commands" "$os_ver_commands" | jq -s '.[0] * .[1]' | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      elif [ "$os_ver_commands" ]; then
+        commands=$( echo "$os_ver_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      else
+        commands=$( echo "$os_default_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      fi
+      declare -a command_list="($commands)"
+      if [ ${#command_list[@]} -eq 0 ]; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      echo "${#command_list[@]} additional commands were found for $CP_OS:$CP_VER"
+      SUCCESS_COMMANDS_NUM=0
+      for command in "${command_list[@]}"; do
+        eval "$command"
+        PRE_COMMAND_RESULT=$?
+        if [ "$PRE_COMMAND_RESULT" -ne 0 ]; then
+          echo "[WARN] '$command' command done with exit code $PRE_COMMAND_RESULT, review any issues above."
+        else
+          SUCCESS_COMMANDS_NUM=$((SUCCESS_COMMANDS_NUM+1))
+        fi
+      done
+      echo "$SUCCESS_COMMANDS_NUM out of ${#command_list[@]} additional commands were successfully executed for $CP_OS:$CP_VER"
+}
+
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
 function configure_package_manager {
       # Get the distro name and version
@@ -629,6 +673,29 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function get_pipe_preference_low_level() {
+    # Returns Cloud Pipeline preference value similarly to get_pipe_preference
+    # but doesn't require pipe commons to be installed. Therefore can be used
+    # safely anywhere in launch.sh.
+    local _preference="$1"
+    local _default_value="$2"
+
+    _value="$(curl -X GET \
+                   --insecure \
+                   -s \
+                   --max-time 30 \
+                   --header "Accept: application/json" \
+                   --header "Authorization: Bearer $API_TOKEN" \
+                   "$API/preferences/$_preference" \
+        | jq -r '.payload.value // empty')"
+
+    if [ "$?" == "0" ] && [ "$_value" ]; then
+        echo "$_value"
+    else
+        echo "$_default_value"
+    fi
+}
+
 function configureHyperThreading() {
     mount -o rw,remount /sys
     if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
@@ -728,6 +795,29 @@ if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
 
+# Check jq is installed
+if ! jq --version > /dev/null 2>&1; then
+    echo "Installing jq"
+    # check curl or wget commands
+    _JQ_INSTALL_RESULT=
+    if check_installed "wget"; then
+      wget -q --no-check-certificate "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
+      _JQ_INSTALL_RESULT=$?
+    elif check_installed "curl"; then
+      curl -s -k "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq
+      _JQ_INSTALL_RESULT=$?
+    else
+      echo "[ERROR] 'wget' or 'curl' commands not found to install 'jq'."
+    fi
+    if [ "$_JQ_INSTALL_RESULT" -ne 0 ]; then
+      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
+    fi
+    chmod +x /usr/bin/jq
+fi
+
+# Invoke any additional commands for the distribution
+run_pre_common_commands
+
 # Perform any distro/version specific package manage configuration
 configure_package_manager
 
@@ -789,16 +879,6 @@ fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
 check_python_module_installed "pip --version" || { curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | $CP_PYTHON2_PATH; };
-
-# Check jq is installed
-if ! jq --version > /dev/null 2>&1; then
-    echo "Installing jq"
-    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
-    if [ $? -ne 0 ]; then
-      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
-    fi
-    chmod +x /usr/bin/jq
-fi
 
 ######################################################
 # Configure the dependencies if needed
