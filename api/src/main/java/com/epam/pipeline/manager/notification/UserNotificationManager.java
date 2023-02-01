@@ -87,7 +87,7 @@ public class UserNotificationManager {
     }
 
     public PagedResult<List<UserNotification>> findMy(final Boolean isRead, final int pageNum, final int pageSize) {
-       return findByUserId(getPipelineUserId(), isRead, pageNum, pageSize);
+        return findByUserId(getPipelineUserId(), isRead, pageNum, pageSize);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -95,7 +95,7 @@ public class UserNotificationManager {
         userNotificationRepository.readAll(getPipelineUserId(), LocalDateTime.now());
     }
 
-    @Scheduled(fixedDelayString = "${scheduled.notifications.cleanup.sec:10}")
+    @Scheduled(fixedDelayString = "${scheduled.notifications.cleanup.sec:86400}")
     public void cleanUp() {
         final Integer expPeriod = preferenceManager.getPreference(SystemPreferences.SYSTEM_NOTIFICATIONS_EXP_PERIOD);
         cleanUp(LocalDateTime.now().minusDays(expPeriod));
