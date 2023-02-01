@@ -816,6 +816,8 @@ public class SystemPreferences {
             "system.usage.users.store.days", 365, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_NOTIFICATIONS_EXP_PERIOD = new IntPreference(
             "system.notifications.exp.period", null, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_NOTIFICATIONS_ENABLE = new BooleanPreference(
+            "system.notifications.enable", false, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
