@@ -17,14 +17,15 @@ SETLOCAL
 
 set all_args=%*
 set first_arg=%1
-set update_bat=pipe-cli-update.bat
+set sys_executable=%~dp0
+set update_bat=%sys_executable%pipe-cli-update.bat
 
 if "%first_arg%" == "update" (
     set "CP_CLI_UPDATE_WRAPPER=true"
-	pipe-cli.exe %all_args%
+	%sys_executable%pipe-cli.exe %all_args%
     if exist %update_bat% (
 	    %update_bat%
 	)
 ) else (
-	pipe-cli.exe %all_args%
+	%sys_executable%pipe-cli.exe %all_args%
 )
