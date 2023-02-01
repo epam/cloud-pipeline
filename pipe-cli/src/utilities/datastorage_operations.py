@@ -644,8 +644,9 @@ class DataStorageOperations(object):
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                transfer_results, clean=clean)
         except Exception as e:
+            err_msg = str(e)
             if isinstance(e, ClientError) \
-                    and e.message and 'InvalidObjectState' in e.message and 'storage class' in e.message:
+                    and err_msg and 'InvalidObjectState' in err_msg and 'storage class' in err_msg:
                 if not quiet:
                     click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
                                .format(full_path))
