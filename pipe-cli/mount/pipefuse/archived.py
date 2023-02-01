@@ -64,13 +64,13 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
     def _get_restored_paths(self, path):
         try:
             response = self._pipe.get_storage_lifecycle(self._bucket, path)
-            items = set()
+            items = []
             if not response:
-                return items
+                return set()
             for item in response:
                 if item.status and item.status == 'SUCCEEDED':
-                    items.update(item.path)
-            return items
+                    items.append(item.path)
+            return set(items)
         except Exception as e:
             logging.info(e)
             return set()
