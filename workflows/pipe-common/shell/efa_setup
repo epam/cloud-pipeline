@@ -37,6 +37,12 @@ if [ -z "$CP_CAP_TARGET_SECURITY_GROUPS" ]; then
   pipe_log_warn "CP_CAP_TARGET_SECURITY_GROUPS is not set. EFA capability may work unexpectedly or doesn't work at all!" "$EFA_SETUP_TASK"
 fi
 
+if [ -z "$CP_CAP_EFA_ADDITIONAL_ARGS" ]; then
+  pipe_log_info "CP_CAP_EFA_ADDITIONAL_ARGS is not set. will use default configuration!" "$EFA_SETUP_TASK"
+  export CP_CAP_EFA_ADDITIONAL_ARGS="--skip-kmod --skip-limit-conf --no-verify"
+fi
+pipe_log_info "Setting CP_CAP_EFA_ADDITIONAL_ARGS to: '$CP_CAP_EFA_ADDITIONAL_ARGS'." "$EFA_SETUP_TASK"
+
 EFA_SETUP_DIR="/opt/"
 
 cd $EFA_SETUP_DIR
@@ -44,19 +50,22 @@ curl -O "${GLOBAL_DISTRIBUTION_URL}tools/efa/aws-efa-installer-1.21.0.tar.gz" \
     && tar -xf aws-efa-installer-1.21.0.tar.gz \
     && rm -rf aws-efa-installer-1.21.0.tar.gz \
     && cd aws-efa-installer \
-    && ./efa_installer.sh -y --skip-kmod --skip-limit-conf --no-verify &> /dev/null
+    && ./efa_installer.sh -y $CP_CAP_EFA_ADDITIONAL_ARGS &>> /var/log/efa-install.log
 
 if [ $? -ne 0 ]; then
   pipe_log_fail "Problems with installing EFA Driver" "$EFA_SETUP_TASK"
+  echo "Problems with installing EFA Driver" >> /var/log/efa-install.log
   exit 1
 fi
 
-export PATH="$PATH:/opt/amazon/efa/bin/"
 
-fi_info -p efa -t FI_EP_RDM
+echo "Checking EFA connectivity..." >> /var/log/efa-install.log
+/opt/amazon/efa/bin/fi_info -p efa -t FI_EP_RDM &>> /var/log/efa-install.log
 if [ $? -ne 0 ]; then
   pipe_log_fail "Problems with checking EFA Driver after installation" "$EFA_SETUP_TASK"
+  echo "Problems with checking EFA Driver after installation" >> /var/log/efa-install.log
   exit 1
 fi
 
+echo "AWS EFA successfully installed" >> /var/log/efa-install.log
 pipe_log_success "AWS EFA successfully installed" "$EFA_SETUP_TASK"
