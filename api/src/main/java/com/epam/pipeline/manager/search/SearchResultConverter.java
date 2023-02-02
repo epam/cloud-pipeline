@@ -95,7 +95,7 @@ public class SearchResultConverter {
     private Map<String, StorageUsage.StorageUsageStats> buildStorageUsageStatsByStorageTier(
             final MultiSearchResponse.Item[] responses) {
 
-        final List<String> storageTiers = Arrays.stream(responses).map(
+        final List<String> storageClasses = Arrays.stream(responses).map(
                 r -> Optional.ofNullable(r.getResponse())
                         .map(SearchResponse::getAggregations)
                         .map(aggregations -> aggregations.<ParsedTerms>get(STORAGE_SIZE_BY_TIER_AGG_NAME).getBuckets())
@@ -103,7 +103,7 @@ public class SearchResultConverter {
                 ).flatMap(Collection::stream).map(MultiBucketsAggregation.Bucket::getKeyAsString)
                 .distinct().collect(Collectors.toList());
 
-        return storageTiers.stream().map(tier -> {
+        return storageClasses.stream().map(storageClass -> {
             final StorageUsage.StorageUsageStats.StorageUsageStatsBuilder storageUsageStats =
                     StorageUsage.StorageUsageStats.builder();
 
@@ -112,18 +112,18 @@ public class SearchResultConverter {
             final Pair<Long, Long> effectiveCurrentSizeAndCount;
             final Pair<Long, Long> effectiveOldVersionSizeAndCount;
             if (responses.length > 2) {
-                totalCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, tier, 0);
-                effectiveCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, tier, 1);
-                totalOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, tier, 2);
-                effectiveOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, tier, 3);
+                totalCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 0);
+                effectiveCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 1);
+                totalOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 2);
+                effectiveOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 3);
             } else {
-                totalCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, tier, 0);
+                totalCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 0);
                 effectiveCurrentSizeAndCount = totalCurrentSizeAndCount;
-                totalOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, tier, 1);
+                totalOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 1);
                 effectiveOldVersionSizeAndCount = totalOldVersionSizeAndCount;
             }
             return storageUsageStats
-                    .storageClass(tier)
+                    .storageClass(storageClass)
                     .size(totalCurrentSizeAndCount.getRight()).count(totalCurrentSizeAndCount.getLeft())
                     .effectiveSize(effectiveCurrentSizeAndCount.getRight()).effectiveCount(effectiveCurrentSizeAndCount.getLeft())
                     .oldVersionsSize(totalOldVersionSizeAndCount.getRight())

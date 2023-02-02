@@ -108,34 +108,13 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             final TemporaryCredentials credentials = credentialsSupplier.get();
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
 
-                if (dataStorage.isVersioningEnabled()) {
-                    final Stream<DataStorageFile> files = fileManager.versions(
-                                    dataStorage.getRoot(),
-                                    Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
-                                    credentialsSupplier
-                            );
-                    StreamUtils.grouped(
-                            StreamUtils.chunked(files, bulkLoadTagsSize)
-                                    .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
-                                    .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath()))),
-                            Comparator.comparing(AbstractDataStorageItem::getPath))
-                        .filter(CollectionUtils::isNotEmpty)
-                        .map(versions -> createIndexRequest(
-                                versions, dataStorage, permissionsContainer, indexName, credentials.getRegion())
-                        ).forEach(requestContainer::add);
-                } else {
-                    final Stream<DataStorageFile> files = fileManager
-                            .files(dataStorage.getRoot(),
-                                    Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
-                                    credentialsSupplier);
-                    StreamUtils.chunked(files, bulkLoadTagsSize)
-                            .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
-                            .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())))
-                            .map(file -> createIndexRequest(
-                                    file, dataStorage, permissionsContainer, indexName, credentials.getRegion(),
-                                    findFileContent(dataStorage, file.getPath()))
-                            ).forEach(requestContainer::add);
-                }
+                final Stream<DataStorageFile> files = dataStorage.isVersioningEnabled()
+                        ? loadFileWithVersions(dataStorage, credentialsSupplier)
+                        : loadFiles(dataStorage, credentialsSupplier);
+                files.map(file -> createIndexRequest(
+                        file, dataStorage, permissionsContainer, indexName, credentials.getRegion(),
+                        findFileContent(dataStorage, file.getPath()))
+                ).forEach(requestContainer::add);
             }
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
@@ -150,6 +129,40 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         }
     }
 
+    private Stream<DataStorageFile> loadFiles(final AbstractDataStorage dataStorage,
+                                              final Supplier<TemporaryCredentials> credentialsSupplier) {
+        return StreamUtils.chunked(
+                        fileManager.files(dataStorage.getRoot(),
+                                Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
+                                credentialsSupplier), bulkLoadTagsSize
+                ).flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
+                .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())));
+    }
+
+    private Stream<DataStorageFile> loadFileWithVersions(final AbstractDataStorage dataStorage,
+                                                         final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final Stream<DataStorageFile> files = fileManager.versions(
+                        dataStorage.getRoot(),
+                        Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
+                credentialsSupplier
+                );
+        return StreamUtils.grouped(
+                        StreamUtils.chunked(files, bulkLoadTagsSize)
+                                .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
+                                .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath()))),
+                        Comparator.comparing(AbstractDataStorageItem::getPath))
+                .filter(CollectionUtils::isNotEmpty)
+                .map(versions -> {
+                    final DataStorageFile file = versions.get(0);
+                    file.setVersions(
+                            versions.stream().skip(1).collect(
+                                    Collectors.toMap(DataStorageFile::getVersion, v -> v)
+                            )
+                    );
+                    return file;
+                });
+    }
+
     private IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
         return new IndexRequestContainer(requests -> elasticsearchServiceClient.sendRequests(indexName, requests),
                 bulkInsertSize);
@@ -162,8 +175,6 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         action.setId(dataStorage.getId());
         action.setList(true);
         action.setListVersion(true);
-        action.setRead(true);
-        action.setReadVersion(true);
         return cloudPipelineAPIClient
                 .generateTemporaryCredentials(Collections.singletonList(action));
     }
@@ -189,23 +200,6 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer, getDocumentType(), tagDelimiter, content));
-    }
-
-    private IndexRequest createIndexRequest(final List<DataStorageFile> fileVersions,
-                                            final AbstractDataStorage dataStorage,
-                                            final PermissionsContainer permissionsContainer,
-                                            final String indexName,
-                                            final String region) {
-        final DataStorageFile file = fileVersions.get(0);
-        file.setVersions(
-                fileVersions.stream().skip(1).collect(Collectors.toMap(DataStorageFile::getVersion, v -> v))
-        );
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE).source(
-                fileMapper.fileToDocument(
-                        file, dataStorage, region, permissionsContainer,
-                        getDocumentType(), tagDelimiter, findFileContent(dataStorage, file.getPath())
-                )
-        );
     }
 
     private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,
