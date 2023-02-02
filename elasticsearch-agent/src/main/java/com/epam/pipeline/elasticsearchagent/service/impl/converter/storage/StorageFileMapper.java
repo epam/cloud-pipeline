@@ -96,10 +96,8 @@ public class StorageFileMapper {
                     .array("denied_users", permissions.getDeniedUsers().toArray())
                     .array("allowed_groups", permissions.getAllowedGroups().toArray())
                     .array("denied_groups", permissions.getDeniedGroups().toArray())
-                    .field("content", content);
-            if (labels.containsKey(ESConstants.STORAGE_CLASS_LABEL)) {
-                 jsonBuilder.field("storage_class", labels.get(ESConstants.STORAGE_CLASS_LABEL));
-            }
+                    .field("content", content)
+                    .field("storage_class", labels.getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER));
 
             if (MapUtils.isNotEmpty(dataStorageFile.getVersions())) {
                 jsonBuilder.field("versions",
@@ -133,7 +131,7 @@ public class StorageFileMapper {
             final long totalSize = tierVersions.stream().collect(Collectors.summarizingLong(DataStorageFile::getSize)).getSum();
             HashMap<String, Object> result = new HashMap<>();
             result.put("size", totalSize);
-            result.put("tier", tier);
+            result.put("storage_class", tier);
             result.put("count", versions.size());
             return result;
         }).collect(Collectors.toList());

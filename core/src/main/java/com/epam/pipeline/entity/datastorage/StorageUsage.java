@@ -31,15 +31,18 @@ public class StorageUsage {
     private String name;
     private DataStorageType type;
     private String path;
-    private Map<String, StorageUsageStats> usageByStorageClass;
-    private StorageUsageStats totalUsage;
+    private Map<String, StorageUsageStats> usage;
 
     @Value
     @Builder
     @AllArgsConstructor
     public static class StorageUsageStats {
+        String storageClass;
         Long size;
         Long effectiveSize;
+        Long oldVersionsSize;
+        Long oldVersionsEffectiveSize;
         Long count;
+        Long effectiveCount;
     }
 }
