@@ -1391,8 +1391,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public PreferencesAO save() {
-//            click(SAVE);
-//            get(SAVE).doubleClick();
+        /* click(SAVE) method has been replaced by pressEnter() method due to the problem of pressing
+           the Save button at case of big size json or a lot of preferences on the page for current Chromium version
+        */
             actions().moveToElement(get(SAVE)).perform();
             get(SAVE).pressEnter();
             get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
