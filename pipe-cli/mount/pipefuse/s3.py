@@ -299,7 +299,9 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         logging.info('Downloading tags for %s...' % path)
         try:
             response = self._s3.get_object_tagging(Bucket=self.bucket, Key=path) or {}
-            return {tag.get('Key'): tag.get('Value') for tag in response.get('TagSet', [])}
+            tags = {tag.get('Key'): tag.get('Value') for tag in response.get('TagSet', [])}
+            source_file = self._get_archived_file(path)
+            return tags if not source_file else self._add_lifecycle_status_attribute(tags, source_file)
         except Exception:
             logging.debug('No tags have been found for %s' % path, exc_info=True)
             return {}
@@ -327,3 +329,16 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
             del tags[name]
         self.remove_xattrs(path)
         self.upload_xattrs(path, tags)
+
+    def _get_archived_file(self, path):
+        files = self.ls(path, depth=1)
+        if not files or len(files) != 1:
+            return None
+        source_file = files[0]
+        if not source_file or source_file.is_dir or not source_file.storage_class:
+            return None
+        return source_file if source_file.storage_class != 'STANDARD' else None
+
+    def _add_lifecycle_status_attribute(self, tags, source_file):
+        tags.update({'system.lifecycle.status': source_file.storage_class})
+        return tags
