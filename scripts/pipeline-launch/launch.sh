@@ -704,6 +704,29 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function get_pipe_preference_low_level() {
+    # Returns Cloud Pipeline preference value similarly to get_pipe_preference
+    # but doesn't require pipe commons to be installed. Therefore can be used
+    # safely anywhere in launch.sh.
+    local _preference="$1"
+    local _default_value="$2"
+
+    _value="$(curl -X GET \
+                   --insecure \
+                   -s \
+                   --max-time 30 \
+                   --header "Accept: application/json" \
+                   --header "Authorization: Bearer $API_TOKEN" \
+                   "$API/preferences/$_preference" \
+        | jq -r '.payload.value // empty')"
+
+    if [ "$?" == "0" ] && [ "$_value" ]; then
+        echo "$_value"
+    else
+        echo "$_default_value"
+    fi
+}
+
 function configureHyperThreading() {
     mount -o rw,remount /sys
     if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
