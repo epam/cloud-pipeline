@@ -16,6 +16,7 @@ import logging
 from pipefuse.fsclient import FileSystemClientDecorator
 
 PATH_SEPARATOR = '/'
+_ALL_ERRORS = Exception
 
 
 class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
@@ -68,10 +69,10 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
             if not response:
                 return set()
             for item in response:
-                if item.status and item.status == 'SUCCEEDED':
+                if item.is_restored():
                     items.append(item.path)
             return set(items)
-        except Exception as e:
+        except _ALL_ERRORS as e:
             logging.info(e)
             return set()
 
@@ -81,3 +82,56 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
             if folder_path.startswith(path):
                 return True
         return False
+
+
+class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
+
+    def __init__(self, inner, pipe, bucket):
+        """
+        Adds storage class attribute
+
+        :param inner: Decorating file system client.
+        :param pipe: Cloud Pipeline API client.
+        :param bucket: Bucket object.
+        """
+        super(ArchivedAttributesFileSystemClient, self).__init__(inner)
+        self._inner = inner
+        self._pipe = pipe
+        self._bucket = bucket
+
+    def download_xattrs(self, path):
+        try:
+            tags = self._inner.download_xattrs(path)
+            source_file = self._get_archived_file(path)
+            return tags if not source_file else self._add_lifecycle_status_attribute(tags, source_file,
+                                                                                     self._get_storage_lifecycle(path))
+        except _ALL_ERRORS as e:
+            logging.debug(e)
+            return {}
+
+    def _get_archived_file(self, path):
+        files = self._inner.ls(path, depth=1)
+        if not files or len(files) != 1:
+            return None
+        source_file = files[0]
+        if not source_file or source_file.is_dir or not source_file.storage_class:
+            return None
+        return source_file if source_file.storage_class != 'STANDARD' else None
+
+    @staticmethod
+    def _add_lifecycle_status_attribute(tags, source_file, lifecycle):
+        if not lifecycle:
+            return tags
+        tag_value = source_file.storage_class
+        if lifecycle.is_restored():
+            retired_till = (' till ' + lifecycle.restored_till) if lifecycle.restored_till else ''
+            tag_value = '%s (Restored%s)' % (source_file.storage_class, retired_till)
+        tags.update({'user.system.lifecycle.status': tag_value})
+        return tags
+
+    def _get_storage_lifecycle(self, path, is_folder=False):
+        try:
+            return self._pipe.get_storage_last_lifecycle(self._bucket, path, is_folder)
+        except _ALL_ERRORS as e:
+            logging.info(e)
+            return None
