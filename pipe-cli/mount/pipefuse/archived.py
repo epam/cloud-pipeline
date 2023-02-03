@@ -16,7 +16,6 @@ import logging
 from pipefuse.fsclient import FileSystemClientDecorator
 
 PATH_SEPARATOR = '/'
-_ALL_ERRORS = Exception
 
 
 class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
@@ -72,8 +71,8 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
                 if item.is_restored():
                     items.append(item.path)
             return set(items)
-        except _ALL_ERRORS as e:
-            logging.info(e)
+        except Exception:
+            logging.exception('Storage lifecycle retrieving has failed')
             return set()
 
     @staticmethod
@@ -105,8 +104,8 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
             source_file = self._get_archived_file(path)
             return tags if not source_file else self._add_lifecycle_status_attribute(tags, source_file,
                                                                                      self._get_storage_lifecycle(path))
-        except _ALL_ERRORS as e:
-            logging.debug(e)
+        except Exception:
+            logging.debug('Download archived tags has failed')
             return {}
 
     def _get_archived_file(self, path):
@@ -132,6 +131,6 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
     def _get_storage_lifecycle(self, path, is_folder=False):
         try:
             return self._pipe.get_storage_last_lifecycle(self._bucket, path, is_folder)
-        except _ALL_ERRORS as e:
-            logging.info(e)
+        except Exception:
+            logging.exception('Storage last lifecycle retrieving has failed')
             return None

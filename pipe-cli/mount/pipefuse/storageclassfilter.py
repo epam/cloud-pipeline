@@ -26,7 +26,7 @@ class StorageClassFilterFileSystemClient(FileSystemClientDecorator):
         """
         super(StorageClassFilterFileSystemClient, self).__init__(inner)
         self._inner = inner
-        self._storage_classes = self._parse_storage_classes(classes)
+        self._storage_classes = classes
 
     def ls(self, path, depth=1):
         return filter(self._filter_storage_classes, self._inner.ls(path, depth))
@@ -35,9 +35,3 @@ class StorageClassFilterFileSystemClient(FileSystemClientDecorator):
         if item.is_dir:
             return True
         return item.storage_class not in self._storage_classes
-
-    @staticmethod
-    def _parse_storage_classes(classes):
-        if not classes:
-            return []
-        return [value.strip() for value in str(classes).split(',')]

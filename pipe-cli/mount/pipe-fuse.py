@@ -351,8 +351,8 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
                         help="Delay between path lock monitoring cycles.")
     parser.add_argument("--show-archived", action='store_true', help="Show archived files.")
-    parser.add_argument("--storage-class-exclude", type=str, required=False,
-                        help="Comma-separated values with storage classes shall be excluded.")
+    parser.add_argument("--storage-class-exclude", type=str, required=False, action="append", default=[],
+                        help="Storage classes that shall be excluded from listing.")
     args = parser.parse_args()
 
     if args.xattrs_include_prefixes and args.xattrs_exclude_prefixes:
