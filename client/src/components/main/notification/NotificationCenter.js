@@ -122,7 +122,7 @@ export default class NotificationCenter extends React.Component {
   }
 
   @computed
-  get notifications () {
+  get systemNotifications () {
     if (!this.props.notifications.loaded || !this.state.initialized) {
       return [];
     }
@@ -144,7 +144,7 @@ export default class NotificationCenter extends React.Component {
 
   @computed
   get allNotifications () {
-    return [...this.notifications, ...this.userNotifications];
+    return [...this.systemNotifications, ...this.userNotifications];
   }
 
   @computed
