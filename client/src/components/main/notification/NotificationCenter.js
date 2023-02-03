@@ -112,7 +112,7 @@ export default class NotificationCenter extends React.Component {
   @computed
   get userNotifications () {
     const {userNotifications} = this.props;
-    if (!userNotifications.loaded || !this.state.initialized) {
+    if (!userNotifications.loaded || !this.state.initialized || !this.userNotificationsEnabled) {
       return [];
     }
     return [...(userNotifications.value || [])]
@@ -384,20 +384,20 @@ export default class NotificationCenter extends React.Component {
     }
   };
 
-  renderShowAllButton = () => {
+  renderControls = () => {
     const {hiddenNotifications} = this.state;
     const hiddenAmount = this.nonBlockingNotifications
       .filter(n => !hiddenNotifications.find(({id}) => id === n.notificationId))
       .length - this.notificationsOnScreen;
-    if (hiddenAmount <= 0) {
-      return null;
-    }
+    const controlsHidden = !this.userNotificationsEnabled || hiddenAmount <= 0;
     return (
       <div
         style={{
-          transition: 'top 0.45s ease-in-out',
+          transition: 'top 0.45s ease-in-out, right 0.45s ease-in-out',
           position: 'fixed',
-          right: 0,
+          right: controlsHidden ? -350 : 0,
+          visibility: controlsHidden ? 'hidden' : 'visible',
+          pointerEvents: controlsHidden ? 'none' : 'all',
           width: '300px',
           top: this.notificationsBottomBound,
           marginRight: '20px',
@@ -447,9 +447,6 @@ export default class NotificationCenter extends React.Component {
       return notification.blocking && !state;
     };
     const blockingNotification = this.allNotifications.filter(filterBlockingNotification)[0];
-    if (!this.userNotificationsEnabled) {
-      return null;
-    }
     return (
       <div id="notification-center" style={{position: 'absolute'}}>
         {
@@ -471,7 +468,7 @@ export default class NotificationCenter extends React.Component {
               );
             })
         }
-        {this.renderShowAllButton()}
+        {this.renderControls()}
         <Modal
           title={
             blockingNotification
