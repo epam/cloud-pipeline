@@ -23,6 +23,39 @@ elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
     ES_JAVA_OPTS=""; echo "$CP_AZURE_STORAGE_KEY" | bin/elasticsearch-keystore add azure.client.default.key -f
 fi
 
+export CP_SEARCH_ELK_INTERNAL_HOST="${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}"
+export CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT="${CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT:-30092}"
+
+if [[ -z "$ES_NODE_NAME" ]]; then
+  echo "Elasticsearch node name is missing (ES_NODE_NAME). Exiting..."
+  exit 1
+fi
+
+if [[ "$ES_NODE_NAME" == *-0 ]]; then
+  echo "Configuring master/data/ingest node..."
+  export ES_MASTER_NODE="true"
+else
+  echo "Configuring data/ingest node..."
+  export ES_MASTER_NODE="false"
+fi
+export ES_DATA_NODE="true"
+export ES_INGEST_NODE="true"
+
+cat <<EOF >/usr/share/elasticsearch/config/elasticsearch.yml
+cluster.name: "search-elk-cluster"
+network.host: 0.0.0.0
+
+discovery.zen.minimum_master_nodes: 1
+discovery.zen.ping.unicast.hosts: "$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT"
+
+node.master: "$ES_MASTER_NODE"
+node.data: "$ES_DATA_NODE"
+node.ingest: "$ES_INGEST_NODE"
+
+path.logs: /usr/share/elasticsearch/logs
+path.data: /usr/share/elasticsearch/data/$ES_NODE_NAME
+EOF
+
 # Configure ES Java heap size
 _HEAP_SIZE="${CP_SEARCH_ELK_HEAP_SIZE:-4g}"
 sed -i "s/Xms1g/Xms$_HEAP_SIZE/g" /usr/share/elasticsearch/config/jvm.options

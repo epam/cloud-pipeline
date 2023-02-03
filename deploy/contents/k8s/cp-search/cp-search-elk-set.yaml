@@ -1,10 +1,14 @@
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: cp-search-elk
   namespace: default
 spec:
-  replicas: 1
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-search-elk: "true"
+  serviceName: "cp-search-elk"
+  replicas: 2
   template:
     metadata:
       namespace: default
@@ -13,26 +17,27 @@ spec:
     spec:
       nodeSelector:
         cloud-pipeline/cp-search-elk: "true"
-      tolerations:
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
       containers:
         - name: cp-search-elk
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-$CP_VERSION
           securityContext:
             privileged: true
-          imagePullPolicy: "IfNotPresent"
-          command: ["bash"]
-          args: ["-c", "/init.sh"]
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: [ "bash" ]
+          args: [ "-c", "/init.sh" ]
           env:
-          - name: ES_JAVA_OPTS
-            value: "-Xmx4g -Xms4g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
+            - name: ES_JAVA_OPTS
+              value: "-Xms4g -Xmx4g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
+            - name: ES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           envFrom:
-          - configMapRef:
-              name: cp-config-global
+            - configMapRef:
+                name: cp-config-global
           volumeMounts:
-            - mountPath: /var/lib/elasticsearch
-              name: search-elk-data
+            - name: search-elk-data
+              mountPath: "/usr/share/elasticsearch/data"
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
@@ -46,9 +51,7 @@ spec:
       volumes:
         - name: search-elk-data
           hostPath:
-            path: /opt/search-elk/data
+            path: "/opt/search-elk/data-cluster"
         - name: cp-cloud-credentials
           secret:
             secretName: cp-cloud-credentials
-      imagePullSecrets:
-        - name: cp-distr-docker-registry-secret
