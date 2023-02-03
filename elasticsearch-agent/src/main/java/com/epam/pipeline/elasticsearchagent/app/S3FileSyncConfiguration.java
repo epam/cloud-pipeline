@@ -40,6 +40,8 @@ public class S3FileSyncConfiguration {
     private String indexName;
     @Value("${sync.s3-file.index.mapping}")
     private String indexSettingsPath;
+    @Value("${sync.s3-file.index.include.versions:false}")
+    private Boolean includeVersions;
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
     @Value("${sync.s3-file.bulk.load.tags.size:100}")
@@ -64,7 +66,8 @@ public class S3FileSyncConfiguration {
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.S3,
                 SearchDocumentType.S3_FILE,
-                tagDelimiter);
+                tagDelimiter,
+                includeVersions);
     }
 
 }

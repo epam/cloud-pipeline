@@ -74,7 +74,7 @@ public class ObjectStorageIndexTest {
             1000,
             DataStorageType.GS,
             SearchDocumentType.GS_FILE,
-            ";");
+            ";", false);
 
     @Test
     public void shouldAddZeroFilesToRequestContainer() {

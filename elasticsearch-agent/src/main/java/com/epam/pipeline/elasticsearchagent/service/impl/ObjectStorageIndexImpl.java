@@ -76,6 +76,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     @Getter
     private final SearchDocumentType documentType;
     private final String tagDelimiter;
+    private final boolean includeVersions;
+
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Override
@@ -108,7 +110,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             final TemporaryCredentials credentials = credentialsSupplier.get();
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
 
-                final Stream<DataStorageFile> files = dataStorage.isVersioningEnabled()
+                final Stream<DataStorageFile> files = dataStorage.isVersioningEnabled() && includeVersions
                         ? loadFileWithVersions(dataStorage, credentialsSupplier)
                         : loadFiles(dataStorage, credentialsSupplier);
                 files.map(file -> createIndexRequest(
