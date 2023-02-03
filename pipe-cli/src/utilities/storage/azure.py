@@ -22,6 +22,7 @@ from threading import Lock
 import time
 from datetime import timedelta, datetime
 
+from src.model.data_storage_usage_model import StorageUsage
 from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
@@ -93,13 +94,11 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         prefix = StorageOperations.get_prefix(relative_path)
         blobs_generator = self.service.list_blobs(self.bucket.path,
                                                   prefix=prefix if relative_path else None)
-        size = 0
-        count = 0
+        storage_usage = StorageUsage()
         for blob in blobs_generator:
             if type(blob) == Blob:
-                size += blob.properties.content_length
-                count += 1
-        return [self.delimiter.join([self.bucket.path, relative_path]), count, size]
+                storage_usage.add_item(AbstractListingManager.STANDARD_TIER, blob.properties.content_length)
+        return [self.delimiter.join([self.bucket.path, relative_path]), storage_usage]
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
@@ -110,7 +109,7 @@ class AzureListingManager(AzureManager, AbstractListingManager):
             if type(blob) == Blob:
                 size = blob.properties.content_length
                 name = blob.name
-                accumulator.add_path(name, size)
+                accumulator.add_path(name, AbstractListingManager.STANDARD_TIER, size)
         return accumulator.get_tree()
 
     def _to_storage_item(self, blob):
