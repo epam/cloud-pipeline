@@ -370,6 +370,7 @@ class ResilientFS(ChainingService):
                 err_msg = str(e)
                 if isinstance(e, ClientError) \
                         and err_msg and 'InvalidObjectState' in err_msg and 'storage class' in err_msg:
+                    logging.exception('Failed to access archived file. This file shall be restored first.')
                     raise FuseOSError(errno.EACCES)
                 logging.exception('Uncaught exception from underlying file system.')
                 raise FuseOSError(errno.EINVAL)
