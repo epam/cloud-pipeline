@@ -46,7 +46,7 @@ function dateSorter (a, b) {
   }
 };
 
-@inject('messages')
+@inject('userNotifications')
 @observer
 export default class NotificationBrowser extends React.Component {
   state = {
@@ -56,32 +56,52 @@ export default class NotificationBrowser extends React.Component {
   }
 
   @computed
-  get messages () {
-    const {messages} = this.props;
-    if (!messages || !messages.loaded) {
+  get notifications () {
+    const {userNotifications} = this.props;
+    if (!userNotifications || !userNotifications.loaded) {
       return [];
     }
-    return [...(messages.value || [])].sort(dateSorter);
+    return [...(userNotifications.value || [])].sort(dateSorter);
   }
 
   @computed
-  get filteredMessages () {
+  get filtered () {
     const {unreadOnly} = this.state;
     if (unreadOnly) {
-      return this.unreadMessages;
+      return this.unreadNotifications;
     }
-    return this.messages;
+    return this.notifications;
   }
 
   @computed
-  get unreadMessages () {
-    return this.messages.filter(message => !message.isRead);
+  get unreadNotifications () {
+    return this.notifications.filter(message => !message.isRead);
+  }
+
+  @computed
+  get notificationsEnabled () {
+    const {userNotifications} = this.props;
+    if (userNotifications) {
+      return userNotifications.visible;
+    }
+    return false;
   }
 
   changeUnreadOnlyFilter = (event) => {
     this.setState({
       unreadOnly: event.target.checked
     });
+  };
+
+  toggleNotifications = (event) => {
+    const {userNotifications} = this.props;
+    if (!userNotifications) {
+      return null;
+    }
+    if (event.target.checked) {
+      return userNotifications.hideNotifications();
+    }
+    return userNotifications.showNotifications();
   };
 
   previewNotification = (notification) => {
@@ -92,7 +112,7 @@ export default class NotificationBrowser extends React.Component {
 
   readNotification = async (notification) => {
     if (!notification.isRead) {
-      const {messages} = this.props;
+      const {userNotifications} = this.props;
       const request = new ReadMessage();
       const payload = {...notification};
       payload.isRead = true;
@@ -101,7 +121,7 @@ export default class NotificationBrowser extends React.Component {
       if (request.error) {
         message.error(request.error, 5);
       } else {
-        messages.fetch();
+        userNotifications.fetch();
       }
     }
     this.setState({previewNotification: null});
@@ -161,7 +181,7 @@ export default class NotificationBrowser extends React.Component {
 
   renderNotifications = () => {
     const {currentPage, unreadOnly} = this.state;
-    const slicedData = this.filteredMessages
+    const slicedData = this.filtered
       .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     const emptyPlaceholder = (
       <div className={styles.emptyPlaceholder}>
@@ -177,7 +197,10 @@ export default class NotificationBrowser extends React.Component {
               styles.notificationGridRow,
               'cp-divider',
               'bottom',
-              {'cp-disabled': notification.isRead}
+              {
+                'cp-table-element-dimmed': notification.isRead,
+                'cp-table-element': !notification.isRead
+              }
             )}
             key={notification.id}
             onClick={() => this.previewNotification(notification)}
@@ -235,14 +258,23 @@ export default class NotificationBrowser extends React.Component {
       previewNotification
     } = this.state;
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+      >
         <b className={styles.title}>
           Notifications list
         </b>
         <div className={styles.controlsRow}>
           <Button
             onClick={this.readAllNotifications}
-            disabled={this.unreadMessages.length === 0}
+            disabled={this.unreadNotifications.length === 0}
             size="small"
             style={{marginRight: '15px'}}
           >
@@ -252,7 +284,13 @@ export default class NotificationBrowser extends React.Component {
             checked={unreadOnly}
             onChange={this.changeUnreadOnlyFilter}
           >
-            Show only unread messages
+            Show only unread notifications
+          </Checkbox>
+          <Checkbox
+            checked={!this.notificationsEnabled}
+            onChange={this.toggleNotifications}
+          >
+            Hide notifications
           </Checkbox>
         </div>
         {this.renderNotifications()}
@@ -260,7 +298,7 @@ export default class NotificationBrowser extends React.Component {
           className={styles.pagination}
           current={currentPage}
           onChange={this.onPageChange}
-          total={this.filteredMessages.length}
+          total={this.filtered.length}
           pageSize={PAGE_SIZE}
           size="small"
         />

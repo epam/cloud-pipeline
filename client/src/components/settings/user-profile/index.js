@@ -79,11 +79,6 @@ export default class UserProfile extends React.Component {
         )
       });
     }
-    sections.push({
-      key: 'notifications',
-      title: 'NOTIFICATIONS',
-      render: () => (<NotificationBrowser />)
-    });
     return sections;
   };
 

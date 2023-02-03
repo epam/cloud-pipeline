@@ -14,22 +14,43 @@
  * limitations under the License.
  */
 
+import {action, computed, observable} from 'mobx';
 import Remote from '../basic/Remote';
 import continuousFetch from '../../utils/continuous-fetch';
 
 const FETCH_INTERVAL_SECONDS = 60;
 
-class CurrentUserMessages extends Remote {
+class CurrentUserNotifications extends Remote {
+  @observable _hideNotifications;
+
   constructor () {
     super();
     this.url = '/user-notification/message/my';
+    this._hideNotifications = localStorage.getItem('hideNotifications') === 'true';
     continuousFetch({
       request: this,
       intervalMS: FETCH_INTERVAL_SECONDS * 1000
     });
   }
 
+  @computed
+  get visible () {
+    return !this._hideNotifications;
+  }
+
+  @action
+  showNotifications () {
+    localStorage.setItem('hideNotifications', false);
+    this._hideNotifications = false;
+  }
+
+  @action
+  hideNotifications () {
+    localStorage.setItem('hideNotifications', true);
+    this._hideNotifications = true;
+  }
+
   onFetched;
 }
 
-export default new CurrentUserMessages();
+export default new CurrentUserNotifications();

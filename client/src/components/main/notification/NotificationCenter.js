@@ -29,7 +29,6 @@ import Markdown from '../../special/markdown';
 import styles from './SystemNotification.css';
 
 const MAX_NOTIFICATIONS = 5;
-const NOTIFICATION_BROWSER_PATH = '/settings/profile/notifications';
 
 const PredefinedNotifications = {
   MaintenanceMode: -1
@@ -75,17 +74,16 @@ function unMapMessage (message) {
   };
 }
 
-@inject(({notifications, messages}) => ({
+@inject(({notifications, userNotifications, preferences}) => ({
   notifications,
-  messages
+  userNotifications,
+  preferences
 }))
 @inject('preferences')
 @observer
 export default class NotificationCenter extends React.Component {
   static propTypes = {
-    delaySeconds: PropTypes.number,
-    router: PropTypes.object,
-    disableNotifications: PropTypes.bool
+    delaySeconds: PropTypes.number
   };
 
   state = {
@@ -112,12 +110,12 @@ export default class NotificationCenter extends React.Component {
   }
 
   @computed
-  get messages () {
-    const {messages} = this.props;
-    if (!messages.loaded || !this.state.initialized) {
+  get userNotifications () {
+    const {userNotifications} = this.props;
+    if (!userNotifications.loaded || !this.state.initialized) {
       return [];
     }
-    return [...(messages.value || [])]
+    return [...(userNotifications.value || [])]
       .filter(message => !message.isRead)
       .map(mapMessage)
       .sort(dateSorter);
@@ -146,7 +144,7 @@ export default class NotificationCenter extends React.Component {
 
   @computed
   get allNotifications () {
-    return [...this.notifications, ...this.messages];
+    return [...this.notifications, ...this.userNotifications];
   }
 
   @computed
@@ -160,6 +158,15 @@ export default class NotificationCenter extends React.Component {
     return this.nonBlockingNotifications
       .filter(n => !hiddenNotifications.find(({id}) => id === n.notificationId))
       .slice(0, MAX_NOTIFICATIONS);
+  }
+
+  @computed
+  get userNotificationsEnabled () {
+    const {userNotifications, preferences} = this.props;
+    if (userNotifications.loaded && preferences.loaded) {
+      return preferences.userNotificationsEnabled && userNotifications.visible;
+    }
+    return false;
   }
 
   @action
@@ -268,9 +275,9 @@ export default class NotificationCenter extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
-      // Additional messages fetching seems unnecessary at the moment,
-      // closed messages remain hidden via component state.
-      // this.props.messages.fetch();
+      // Additional userNotifications fetching seems unnecessary at the moment,
+      // closed userNotifications remain hidden via component state.
+      // this.props.userNotifications.fetch();
     }
   };
 
@@ -343,9 +350,10 @@ export default class NotificationCenter extends React.Component {
     this.setState({hiddenNotifications: hidden});
   };
 
-  onShowAllClick = () => {
-    const {router} = this.props;
-    router && router.push(NOTIFICATION_BROWSER_PATH);
+  onHideAllClick = (event) => {
+    event && event.preventDefault();
+    const {userNotifications} = this.props;
+    userNotifications && userNotifications.hideNotifications();
   };
 
   onReadAllClick = () => {
@@ -402,10 +410,10 @@ export default class NotificationCenter extends React.Component {
           {`+${hiddenAmount} notifications`}
         </span>
         <a
-          onClick={this.onShowAllClick}
-          style={{marginLeft: '10px'}}
+          onClick={this.onHideAllClick}
+          style={{paddingLeft: '10px'}}
         >
-          show all
+          hide
         </a>
         <a
           onClick={this.onReadAllClick}
@@ -439,7 +447,7 @@ export default class NotificationCenter extends React.Component {
       return notification.blocking && !state;
     };
     const blockingNotification = this.allNotifications.filter(filterBlockingNotification)[0];
-    if (this.props.disableNotifications) {
+    if (!this.userNotificationsEnabled) {
       return null;
     }
     return (
@@ -568,6 +576,5 @@ export default class NotificationCenter extends React.Component {
 
 export {
   PredefinedNotifications,
-  NOTIFICATION_TYPE,
-  NOTIFICATION_BROWSER_PATH
+  NOTIFICATION_TYPE
 };

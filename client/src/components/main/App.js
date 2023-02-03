@@ -21,7 +21,7 @@ import {observer, Provider, inject} from 'mobx-react';
 import {observable} from 'mobx';
 import styles from './App.css';
 import Navigation from './navigation/Navigation';
-import NotificationCenter, {NOTIFICATION_BROWSER_PATH} from './notification/NotificationCenter';
+import NotificationCenter from './notification/NotificationCenter';
 import searchStyles from '../search/search.css';
 import {SearchDialog} from '../search';
 import roleModel from '../../utils/roleModel';
@@ -40,11 +40,6 @@ export default class App extends Component {
   @observable info = {
     searchFormVisible: false
   };
-
-  get disableNotifications () {
-    return this.props.router &&
-    this.props.router.location.pathname === NOTIFICATION_BROWSER_PATH;
-  }
 
   searchDialog;
 
@@ -142,8 +137,6 @@ export default class App extends Component {
           {content}
           <NotificationCenter
             delaySeconds={2}
-            router={this.props.router}
-            disableNotifications={this.disableNotifications}
           />
         </div>
       </LocaleProvider>

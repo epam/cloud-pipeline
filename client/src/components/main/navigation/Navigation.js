@@ -23,7 +23,7 @@ import {SERVER} from '../../../config';
 import {Button, Icon, message, Popover, Tooltip} from 'antd';
 import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
-import RunsCounterMenuItem from './RunsCounterMenuItem';
+import CounterMenuItem from './CounterMenuItem';
 import SupportMenu from './support-menu';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
@@ -31,7 +31,7 @@ import {Pages} from '../../../utils/ui-navigation';
 import invalidateEdgeTokens from '../../../utils/invalidate-edge-tokens';
 import ApplicationVersion from './application-version';
 
-@inject('uiNavigation', 'impersonation')
+@inject('uiNavigation', 'impersonation', 'preferences')
 @observer
 export default class Navigation extends React.Component {
   static propTypes = {
@@ -49,6 +49,15 @@ export default class Navigation extends React.Component {
   state = {
     versionInfoVisible: false
   };
+
+  @computed
+  get notificationsEnabled () {
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return preferences.userNotificationsEnabled;
+    }
+    return false;
+  }
 
   @computed
   get navigationItems () {
@@ -79,6 +88,8 @@ export default class Navigation extends React.Component {
   navigate = ({key}) => {
     if (key === 'runs') {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+    } else if (key === 'notifications') {
+      this.props.router.push(`/notifications`);
     } else if (key === 'logout') {
       invalidateEdgeTokens()
         .then(() => {
@@ -178,13 +189,26 @@ export default class Navigation extends React.Component {
           );
         } else if (navigationItem.key === 'runs') {
           return (
-            <RunsCounterMenuItem
+            <CounterMenuItem
               key={navigationItem.key}
+              mode={navigationItem.key}
               tooltip={this.getNavigationItemTitle(navigationItem.title)}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
               onClick={() => this.navigate({key: navigationItem.key})}
               icon={navigationItem.icon} />
           );
+        } else if (navigationItem.key === 'notifications') {
+          return this.notificationsEnabled ? (
+            <CounterMenuItem
+              key={navigationItem.key}
+              mode={navigationItem.key}
+              tooltip={this.getNavigationItemTitle(navigationItem.title)}
+              className={this.menuItemClassSelector(navigationItem, activeTabPath)}
+              onClick={() => this.navigate({key: navigationItem.key})}
+              icon={navigationItem.icon}
+              maxCount={99}
+            />
+          ) : null;
         } else if (navigationItem.isLink) {
           return (
             <Link

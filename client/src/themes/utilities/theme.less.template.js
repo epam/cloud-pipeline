@@ -886,6 +886,13 @@ export default `
   background-color: @card-background-color;
   color: @application-color-disabled;
 }
+@THEME .cp-table-element-dimmed {
+  background-color: @card-background-color;
+  color: @application-color-disabled;
+}
+@THEME .cp-table-element-dimmed:hover {
+  background-color: @table-element-hover-background-color;
+}
 @THEME .ant-table-row-expand-icon {
   border-color: @table-border-color;
   background: inherit;

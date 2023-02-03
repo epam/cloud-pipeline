@@ -17,7 +17,8 @@
 .container {
   display: flex;
   flex-direction: column;
-  padding-left: 5px;
+  height: 100%;
+  padding: 10px;
 }
 
 .title {
@@ -35,9 +36,10 @@
 .notification-grid-row {
   display: grid;
   grid: "status title body date readDate" 35px
-        / 55px 200px 1fr 135px 135px;
+        / 55px 1fr 3fr 135px 135px;
   padding: 10px 0;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .notification-cell {

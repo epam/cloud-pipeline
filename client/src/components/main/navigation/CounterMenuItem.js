@@ -15,32 +15,72 @@
  */
 
 import React from 'react';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {Icon, Button, Tooltip} from 'antd';
 import PropTypes from 'prop-types';
 
-@inject('counter')
+@inject('counter', 'userNotifications')
 @observer
-export default class RunsCounterMenuItem extends React.Component {
+export default class CounterMenuItem extends React.Component {
   static propTypes = {
     onClick: PropTypes.func,
     icon: PropTypes.string,
     className: PropTypes.string,
     highlightedClassName: PropTypes.string,
-    tooltip: PropTypes.string
+    tooltip: PropTypes.string,
+    maxCount: PropTypes.number
   };
+
+  @computed
+  get userNotificationsCount () {
+    const {userNotifications} = this.props;
+    if (!userNotifications.loaded) {
+      return 0;
+    }
+    return (userNotifications.value || [])
+      .filter(notification => !notification.isRead)
+      .length;
+  }
+
+  @computed
+  get counter () {
+    const {mode} = this.props;
+    if (mode === 'runs') {
+      return this.props.counter;
+    }
+    if (mode === 'notifications') {
+      return {
+        value: this.userNotificationsCount
+      };
+    }
+    return null;
+  }
+
+  renderCount = () => {
+    const {maxCount} = this.props;
+    if (maxCount && this.counter && this.counter.value > maxCount) {
+      return `${maxCount}+`;
+    }
+    return this.counter.value;
+  };
+
   render () {
     return (
-      <Tooltip overlay={this.props.tooltip} placement="right" mouseEnterDelay={0.5}>
+      <Tooltip
+        overlay={this.props.tooltip}
+        placement="right"
+        mouseEnterDelay={0.5}
+      >
         <Button
           id="navigation-button-runs"
           className={
             classNames(
               this.props.className,
-              'cp-runs-menu-item',
               {
-                active: this.props.counter && this.props.counter.value > 0
+                'cp-runs-menu-item': this.props.mode === 'runs',
+                active: this.props.mode === 'runs' && this.counter && this.counter.value > 0
               }
             )
           }
@@ -50,10 +90,10 @@ export default class RunsCounterMenuItem extends React.Component {
             type={this.props.icon}
           />
           {
-            this.props.counter &&
-            this.props.counter.value > 0 &&
+            this.counter &&
+            this.counter.value > 0 &&
             <span>
-              {this.props.counter.value}
+              {this.renderCount()}
             </span>
           }
         </Button>
