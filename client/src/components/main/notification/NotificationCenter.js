@@ -74,12 +74,7 @@ function unMapMessage (message) {
   };
 }
 
-@inject(({notifications, userNotifications, preferences}) => ({
-  notifications,
-  userNotifications,
-  preferences
-}))
-@inject('preferences')
+@inject('notifications', 'userNotifications', 'preferences')
 @observer
 export default class NotificationCenter extends React.Component {
   static propTypes = {
