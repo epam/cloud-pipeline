@@ -105,7 +105,7 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
             return tags if not source_file else self._add_lifecycle_status_attribute(tags, source_file,
                                                                                      self._get_storage_lifecycle(path))
         except Exception:
-            logging.debug('Download archived tags has failed')
+            logging.exception('Download archived tags has failed')
             return {}
 
     def _get_archived_file(self, path):
