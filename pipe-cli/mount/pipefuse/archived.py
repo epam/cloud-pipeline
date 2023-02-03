@@ -117,16 +117,20 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
             return None
         return source_file if source_file.storage_class != 'STANDARD' else None
 
+    def _add_lifecycle_status_attribute(self, tags, source_file, lifecycle):
+        tag_value = self._get_storage_class_tag_value(lifecycle, source_file.storage_class)
+        if tag_value:
+            tags.update({'user.system.lifecycle.status': tag_value})
+        return tags
+
     @staticmethod
-    def _add_lifecycle_status_attribute(tags, source_file, lifecycle):
-        if not lifecycle:
-            return tags
-        tag_value = source_file.storage_class
+    def _get_storage_class_tag_value(lifecycle, storage_class):
+        if not lifecycle or not storage_class:
+            return storage_class
         if lifecycle.is_restored():
             retired_till = (' till ' + lifecycle.restored_till) if lifecycle.restored_till else ''
-            tag_value = '%s (Restored%s)' % (source_file.storage_class, retired_till)
-        tags.update({'user.system.lifecycle.status': tag_value})
-        return tags
+            return '%s (Restored%s)' % (storage_class, retired_till)
+        return storage_class
 
     def _get_storage_lifecycle(self, path, is_folder=False):
         try:
