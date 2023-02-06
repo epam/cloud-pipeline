@@ -11,14 +11,10 @@ public class GroupingIterator<T> implements Iterator<List<T>> {
 
     private final PeekingIterator<T> iterator;
     private final Comparator<T> comparator;
-    private final List<T> group;
-
-    private T head;
 
     public GroupingIterator(Iterator<T> iterator, Comparator<T> comparator) {
         this.iterator = new PeekingIterator<>(iterator);
         this.comparator = comparator;
-        this.group = new ArrayList<>();
     }
 
     @Override
@@ -28,11 +24,9 @@ public class GroupingIterator<T> implements Iterator<List<T>> {
 
     @Override
     public List<T> next() {
-        group.clear();
-        if (hasNext()) {
-            head = iterator.next();
-            group.add(head);
-        }
+        List<T> group = new ArrayList<>();
+        T head = iterator.next();
+        group.add(head);
         while (iterator.hasNext() && comparator.compare(head, iterator.peek()) == 0) {
             group.add(iterator.next());
         }

@@ -17,24 +17,20 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
-import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import org.apache.commons.io.FilenameUtils;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
@@ -44,17 +40,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
-public class ObjectStorageIndexTest {
-    
+public class ObjectStorageIndexVersionsTest {
+
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
 
-    private final AbstractDataStorage dataStorage = new GSBucketStorage(
-            1L, "storage", "storage", new StoragePolicy(), null
-    );
     private final Supplier<TemporaryCredentials> temporaryCredentials = () ->
             TemporaryCredentials.builder().region("").build();
-    
+
     @Mock
     private IndexRequestContainer requestContainer;
     @Mock
@@ -65,46 +58,44 @@ public class ObjectStorageIndexTest {
     private ElasticsearchServiceClient elasticsearchServiceClient;
     @Mock
     private ElasticIndexService elasticIndexService;
-    
+
     private ObjectStorageIndexImpl objectStorageIndex;
 
     @BeforeEach
     public void init() {
         objectStorageIndex = spy(
-            new ObjectStorageIndexImpl(
-                cloudPipelineAPIClient,
-                elasticsearchServiceClient,
-                elasticIndexService,
-                fileManager,
-                TEST_NAME,
-                TEST_NAME,
-                1000,
-                1000,
-                DataStorageType.GS,
-                SearchDocumentType.GS_FILE,
-                ";", false)
+                new ObjectStorageIndexImpl(
+                        cloudPipelineAPIClient,
+                        elasticsearchServiceClient,
+                        elasticIndexService,
+                        fileManager,
+                        TEST_NAME,
+                        TEST_NAME,
+                        1000,
+                        1000,
+                        DataStorageType.S3,
+                        SearchDocumentType.S3_FILE,
+                        ";", true)
         );
     }
 
 
     @Test
-    public void shouldAddZeroFilesToRequestContainer() {
-        final List<DataStorageFile> files = Collections.emptyList();
-        verifyRequestContainerState(files, 0);
-    }
-
-    @Test
-    public void shouldAddTwoFilesToRequestContainer() {
-        final List<DataStorageFile> files = Arrays.asList(createFile(TEST_BLOB_NAME_1), createFile(TEST_BLOB_NAME_2));
-        verifyRequestContainerState(files, 2);
-    }
-
-    private void verifyRequestContainerState(final List<DataStorageFile> files, final int numberOfInvocation) {
+    public void shouldGroupFilesByVersions() {
+        StoragePolicy storagePolicy = new StoragePolicy();
+        storagePolicy.setVersioningEnabled(true);
+        AbstractDataStorage dataStorage = new S3bucketDataStorage(
+                1L, "storage", "storage", storagePolicy, null
+        );
+        dataStorage.setStoragePolicy(storagePolicy);
+        final List<DataStorageFile> files = Arrays.asList(
+                createVersion(TEST_BLOB_NAME_1), createVersion(TEST_BLOB_NAME_1), createVersion(TEST_BLOB_NAME_1),
+                createVersion(TEST_BLOB_NAME_2)
+        );
         setUpReturnValues(files);
         objectStorageIndex.indexStorage(dataStorage);
-        verifyNumberOfInsertions(numberOfInvocation);
+        verifyNumberOfInsertions(2);
     }
-
     private void setUpReturnValues(final List<DataStorageFile> files) {
         Mockito.doAnswer(i -> temporaryCredentials.get())
                 .when(cloudPipelineAPIClient).generateTemporaryCredentials(any());
@@ -116,17 +107,19 @@ public class ObjectStorageIndexTest {
                 .when(cloudPipelineAPIClient).loadPermissionsForEntity(any(), any());
 
         Mockito.doAnswer(i -> files.stream())
-               .when(fileManager).files(any(), any(), any());
+                .when(fileManager)
+                .versions(any(), any(), any());
     }
 
     private void verifyNumberOfInsertions(final int numberOfInvocation) {
         verify(requestContainer, times(numberOfInvocation)).add(any());
     }
 
-    private DataStorageFile createFile(final String name) {
+    private DataStorageFile createVersion(final String name) {
         final DataStorageFile file = new DataStorageFile();
         file.setName(FilenameUtils.getName(name));
         file.setPath(name);
+        file.setVersion(UUID.randomUUID().toString());
         file.setSize(1L);
         return file;
     }

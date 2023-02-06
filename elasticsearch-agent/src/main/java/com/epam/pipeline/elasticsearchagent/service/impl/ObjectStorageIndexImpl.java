@@ -165,7 +165,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 });
     }
 
-    private IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
+    IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
         return new IndexRequestContainer(requests -> elasticsearchServiceClient.sendRequests(indexName, requests),
                 bulkInsertSize);
     }

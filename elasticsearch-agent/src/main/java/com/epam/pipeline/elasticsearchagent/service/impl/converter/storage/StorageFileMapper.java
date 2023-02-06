@@ -42,13 +42,9 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -123,15 +119,18 @@ public class StorageFileMapper {
     private List<Map<String, Object>> calculateVersionSizes(Map<String, AbstractDataStorageItem> versions) {
         return StreamUtils.grouped(
                 versions.values().stream().map(v -> (DataStorageFile) v),
-                Comparator.comparing(v -> v.getLabels().getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER))
+                Comparator.comparing(v -> MapUtils.emptyIfNull(v.getLabels())
+                        .getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER)
+                )
         ).map(tierVersions -> {
-            final String tier = tierVersions.stream().findFirst()
-                    .map(v -> v.getLabels().get(ESConstants.STORAGE_CLASS_LABEL))
+            final String storageClass = tierVersions.stream().findFirst()
+                    .map(v -> MapUtils.emptyIfNull(v.getLabels()).get(ESConstants.STORAGE_CLASS_LABEL))
                     .orElse(STANDARD_TIER);
-            final long totalSize = tierVersions.stream().collect(Collectors.summarizingLong(DataStorageFile::getSize)).getSum();
-            HashMap<String, Object> result = new HashMap<>();
+            final long totalSize = tierVersions.stream()
+                    .collect(Collectors.summarizingLong(DataStorageFile::getSize)).getSum();
+            final HashMap<String, Object> result = new HashMap<>();
             result.put("size", totalSize);
-            result.put("storage_class", tier);
+            result.put("storage_class", storageClass);
             result.put("count", versions.size());
             return result;
         }).collect(Collectors.toList());
