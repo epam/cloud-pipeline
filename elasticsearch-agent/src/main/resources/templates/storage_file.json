@@ -8,6 +8,20 @@
         "name": {"type": "text", "store": true, "index": false},
         "lastModified": { "type": "date", "format": "yyyy-MM-dd'T'HH:mm:ss'Z'" },
         "size": { "type": "long" },
+        "storage_class": {"type": "keyword", "store": true},
+        "versions": {
+          "properties": {
+            "tier": {
+              "type": "keyword"
+            },
+            "size": {
+              "type": "long"
+            },
+            "count": {
+              "type": "long"
+            }
+          }
+        },
         "path": { "type": "text", "analyzer": "file_path_analyzer" },
         "storage_id": { "type": "long" },
         "storage_name": { "type": "text" },

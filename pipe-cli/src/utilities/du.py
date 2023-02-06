@@ -13,6 +13,7 @@
 # limitations under the License.
 import click
 
+from src.model.data_storage_usage_model import StorageUsage
 from src.utilities.du_format_type import DuFormatType
 
 from src.api.data_storage import DataStorage
@@ -30,9 +31,9 @@ class DataUsageHelper(object):
         if not storages:
             return None
         for storage in storages:
-            path, count, size = self.__get_storage_usage(storage.path, None)
+            path, usage = self.__get_storage_usage(storage.path, None)
             if path is not None:
-                items.append([path, count, DuFormatType.pretty_value(size, self.format)])
+                items.append([path, usage.get_total_count(), DuFormatType.pretty_value(usage, self.format)])
         return items
 
     def get_cloud_storage_summary(self, root_bucket, relative_path, depth=None):
@@ -40,17 +41,16 @@ class DataUsageHelper(object):
         if depth:
             result_tree = self.__get_summary_with_depth(root_bucket, relative_path, depth)
             for node in result_tree.nodes:
-                size = result_tree[node].data.get_size()
-                count = result_tree[node].data.get_count()
-                items.append([node, count, DuFormatType.pretty_value(size, self.format)])
+                usage = result_tree[node].data
+                items.append([node, usage.get_total_count(), DuFormatType.pretty_value(usage, self.format)])
         else:
-            path, count, size = self.__get_summary(root_bucket, relative_path)
-            items.append([path, count, DuFormatType.pretty_value(size, self.format)])
+            path, usage = self.__get_summary(root_bucket, relative_path)
+            items.append([path, usage.get_total_count(), DuFormatType.pretty_value(usage, self.format)])
         return items
 
     def get_nfs_storage_summary(self, storage_name, relative_path):
-        path, count, size = self.__get_storage_usage(storage_name, relative_path)
-        return [path, count, DuFormatType.pretty_value(size, self.format)]
+        path, usage = self.__get_storage_usage(storage_name, relative_path)
+        return [path, usage.get_total_count(), DuFormatType.pretty_value(usage, self.format)]
 
     @classmethod
     def __get_storage_usage(cls, storage_name, relative_path):
@@ -58,18 +58,20 @@ class DataUsageHelper(object):
             usage = DataStorage.get_storage_usage(storage_name, relative_path)
         except Exception as e:
             click.echo("Failed to load usage for datastorage '%s'. Cause: %s" % (storage_name, str(e)), err=True)
-            return None, None, None
-        size = 0
-        count = 0
-        if 'size' in usage:
-            size = usage['size']
-        if 'count' in usage:
-            count = usage['count']
+            return None, None
+        result = StorageUsage()
+        for tier, stats in usage.get("usage", {}).items():
+            result.populate(
+                tier,
+                stats.get("size", 0), stats.get("count", 0),
+                stats.get("effectiveSize", 0), stats.get("effectiveCount", 0),
+                stats.get("oldVersionsSize", 0), stats.get("oldVersionsEffectiveSize", 0)
+            )
         if not relative_path:
             path = storage_name
         else:
             path = "/".join([storage_name, relative_path])
-        return path, count, size
+        return path, result
 
     @classmethod
     def __get_summary_with_depth(cls, root_bucket, relative_path, depth):

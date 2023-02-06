@@ -24,6 +24,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
 import com.epam.pipeline.elasticsearchagent.service.impl.S3FileManager;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -40,6 +41,8 @@ public class S3FileSyncConfiguration {
     private String indexName;
     @Value("${sync.s3-file.index.mapping}")
     private String indexSettingsPath;
+    @Value("${sync.s3-file.index.include.versions:false}")
+    private Boolean includeVersions;
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
     @Value("${sync.s3-file.enable.tags}")
@@ -58,7 +61,8 @@ public class S3FileSyncConfiguration {
             final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 s3FileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.S3);
+                indexSettingsPath, bulkInsertSize, DataStorageType.S3, includeVersions,
+                SearchDocumentType.S3_FILE);
     }
 
 }

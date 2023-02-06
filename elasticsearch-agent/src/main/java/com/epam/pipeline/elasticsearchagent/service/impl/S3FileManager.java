@@ -15,6 +15,8 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
@@ -24,9 +26,12 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.S3VersionSummary;
 import com.amazonaws.services.s3.model.Tag;
+import com.amazonaws.services.s3.model.VersionListing;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
@@ -34,15 +39,22 @@ import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.utils.StreamUtils;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 
 import java.io.InputStream;
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,6 +75,8 @@ public class S3FileManager implements ObjectStorageFileManager {
 
     private boolean enableTags;
     private StorageFileMapper fileMapper;
+    @Getter
+    private final DataStorageType type = DataStorageType.S3;
 
     public S3FileManager(boolean enableTags) {
         this.enableTags = enableTags;
@@ -104,6 +118,16 @@ public class S3FileManager implements ObjectStorageFileManager {
         client.deleteObject(storage, path);
     }
 
+    @Override
+    public Stream<DataStorageFile> versions(final String storage,
+                                            final String path,
+                                            final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier);
+        return StreamUtils.from(new S3VersionPageIterator(client, storage, path))
+                .flatMap(List::stream)
+                .filter(file -> !file.getDeleteMarker());
+    }
+
     private AmazonS3 getS3Client(final TemporaryCredentials credentials) {
         BasicSessionCredentials sessionCredentials = new BasicSessionCredentials(credentials.getKeyId(),
                 credentials.getAccessKey(), credentials.getToken());
@@ -111,6 +135,15 @@ public class S3FileManager implements ObjectStorageFileManager {
         return AmazonS3ClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(sessionCredentials))
                 .withRegion(credentials.getRegion())
+                .build();
+    }
+
+    private AmazonS3 getS3Client(final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final CloudPipelineRefreshableAWSCredentialsProvider credentialsProvider =
+                new CloudPipelineRefreshableAWSCredentialsProvider(credentialsSupplier);
+        return AmazonS3ClientBuilder.standard()
+                .withCredentials(credentialsProvider)
+                .withRegion(credentialsProvider.getRegion())
                 .build();
     }
 
@@ -193,6 +226,48 @@ public class S3FileManager implements ObjectStorageFileManager {
                         SearchDocumentType.S3_FILE));
     }
 
+    @RequiredArgsConstructor
+    public static class CloudPipelineRefreshableAWSCredentialsProvider implements AWSCredentialsProvider {
+
+        private static final Duration DEFAULT_EXPIRE_DURATION = Duration.ofMinutes(15);
+        private static final DateTimeFormatter TEMPORARY_CREDENTIALS_DATE_TIME_FORMATTER =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+
+        private final Supplier<TemporaryCredentials> credentialsSupplier;
+
+        private AWSCredentials credentials;
+        private ZonedDateTime expiration;
+        private String region;
+
+        @Override
+        public AWSCredentials getCredentials() {
+            if (isCredentialsExpired()) {
+                refresh();
+            }
+            return credentials;
+        }
+
+        private boolean isCredentialsExpired() {
+            return credentials == null
+                    || Duration.between(ZonedDateTime.now(), expiration).compareTo(DEFAULT_EXPIRE_DURATION) < 0;
+        }
+
+        @Override
+        public void refresh() {
+            final TemporaryCredentials temporaryCredentials = credentialsSupplier.get();
+            credentials = new BasicSessionCredentials(temporaryCredentials.getKeyId(),
+                    temporaryCredentials.getAccessKey(),
+                    temporaryCredentials.getToken());
+            expiration = ZonedDateTime.parse(temporaryCredentials.getExpirationTime(),
+                    TEMPORARY_CREDENTIALS_DATE_TIME_FORMATTER);
+            region = temporaryCredentials.getRegion();
+        }
+
+        public String getRegion() {
+            getCredentials();
+            return region;
+        }
+    }
 
     @RequiredArgsConstructor
     public static class S3PageIterator implements Iterator<List<DataStorageFile>> {
@@ -242,4 +317,64 @@ public class S3FileManager implements ObjectStorageFileManager {
         }
     }
 
+    @RequiredArgsConstructor
+    private static class S3VersionPageIterator implements Iterator<List<DataStorageFile>> {
+
+        private final AmazonS3 client;
+        private final String bucket;
+        private final String path;
+
+        private String nextKeyMarker;
+        private String nextVersionIdMarker;
+        private List<DataStorageFile> items;
+
+        @Override
+        public boolean hasNext() {
+            return items == null
+                    || StringUtils.isNotBlank(nextKeyMarker)
+                    || StringUtils.isNotBlank(nextVersionIdMarker);
+        }
+
+        @Override
+        public List<DataStorageFile> next() {
+            final VersionListing versionListing = client.listVersions(new ListVersionsRequest()
+                    .withBucketName(bucket)
+                    .withPrefix(path)
+                    .withKeyMarker(nextKeyMarker)
+                    .withVersionIdMarker(nextVersionIdMarker));
+            if (versionListing.isTruncated()) {
+                nextKeyMarker = versionListing.getNextKeyMarker();
+                nextVersionIdMarker = versionListing.getNextVersionIdMarker();
+            } else {
+                nextKeyMarker = null;
+                nextVersionIdMarker = null;
+            }
+            items = versionListing.getVersionSummaries()
+                    .stream()
+                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(),
+                            ESConstants.HIDDEN_FILE_NAME.toLowerCase()))
+                    .filter(file -> !StringUtils.endsWithIgnoreCase(file.getKey(), S3FileManager.DELIMITER))
+                    .map(this::convertToStorageFile)
+                    .collect(Collectors.toList());
+            return items;
+        }
+
+        private DataStorageFile convertToStorageFile(final S3VersionSummary summary) {
+            final DataStorageFile file = new DataStorageFile();
+            file.setName(FilenameUtils.getName(summary.getKey()));
+            file.setPath(summary.getKey());
+            file.setSize(summary.getSize());
+            if (summary.getVersionId() != null && !summary.getVersionId().equals("null")) {
+                file.setVersion(summary.getVersionId());
+            }
+            file.setChanged(ESConstants.FILE_DATE_FORMAT.format(summary.getLastModified()));
+            file.setDeleteMarker(summary.isDeleteMarker());
+            final Map<String, String> labels = new HashMap<>();
+            labels.put("LATEST", BooleanUtils.toStringTrueFalse(summary.isLatest()));
+            Optional.ofNullable(summary.getStorageClass())
+                    .ifPresent(it -> labels.put(ESConstants.STORAGE_CLASS_LABEL, it));
+            file.setLabels(labels);
+            return file;
+        }
+    }
 }

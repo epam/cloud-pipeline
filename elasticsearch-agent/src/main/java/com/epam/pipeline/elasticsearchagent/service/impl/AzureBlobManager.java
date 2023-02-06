@@ -22,6 +22,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.Stora
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.microsoft.azure.storage.blob.AnonymousCredentials;
@@ -33,6 +34,7 @@ import com.microsoft.azure.storage.blob.StorageURL;
 import com.microsoft.azure.storage.blob.models.BlobItem;
 import com.microsoft.azure.storage.blob.models.ContainerListBlobFlatSegmentResponse;
 import io.reactivex.Single;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +46,8 @@ import org.elasticsearch.action.index.IndexRequest;
 import java.net.URL;
 import java.sql.Date;
 import java.util.Collections;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.HIDDEN_FILE_NAME;
@@ -55,6 +59,8 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     private static final String BLOB_URL_FORMAT = "https://%s.blob.core.windows.net%s";
     private static final int LIST_PAGE_SIZE = 1000;
     private final StorageFileMapper fileMapper = new StorageFileMapper();
+    @Getter
+    private final DataStorageType type = DataStorageType.AZ;
 
     public void listAndIndexFiles(final String indexName,
                                   final AbstractDataStorage storage,
@@ -68,6 +74,13 @@ public class AzureBlobManager implements ObjectStorageFileManager {
         unwrap(containerURL.listBlobsFlatSegment(null, options)
                 .flatMap(response -> listBlobs(options, containerURL, response, indexContainer,
                         storage, credentials.getRegion(), permissions, indexName)));
+    }
+
+    @Override
+    public Stream<DataStorageFile> versions(final String storage,
+                                            final String path,
+                                            final Supplier<TemporaryCredentials> credentialsSupplier) {
+        throw new UnsupportedOperationException();
     }
 
     private ContainerURL buildContainerUrl(final AbstractDataStorage storage,

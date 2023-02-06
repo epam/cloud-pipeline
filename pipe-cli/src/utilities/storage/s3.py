@@ -15,6 +15,7 @@
 from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 
+from src.model.data_storage_usage_model import StorageUsage
 from src.utilities.datastorage_lifecycle_manager import DataStorageLifecycleManager
 from src.utilities.encoding_utilities import to_string, to_ascii, is_safe_chars
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
@@ -496,7 +497,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 for file in page['Contents']:
                     name = self.get_file_name(file, prefix, True)
                     size = file['Size']
-                    accumulator.add_path(name, size)
+                    tier = file['StorageClass']
+                    accumulator.add_path(name, tier, size)
             if not page['IsTruncated']:
                 break
         return accumulator.get_tree()
@@ -514,17 +516,16 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
 
-        total_size = 0
-        total_objects = 0
+        storage_usage = StorageUsage()
 
         for page in page_iterator:
             if 'Contents' in page:
                 for file in page['Contents']:
-                    total_size += file['Size']
-                    total_objects += 1
+                    if self.prefix_match(file, relative_path):
+                        storage_usage.add_item(file["StorageClass"], file['Size'])
             if not page['IsTruncated']:
                 break
-        return delimiter.join([self.bucket.bucket.path, relative_path]), total_objects, total_size
+        return delimiter.join([self.bucket.bucket.path, relative_path]), storage_usage
 
     @classmethod
     def prefix_match(cls, page_file, relative_path=None):

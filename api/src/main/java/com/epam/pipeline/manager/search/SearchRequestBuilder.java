@@ -42,6 +42,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 
@@ -65,6 +66,7 @@ public class SearchRequestBuilder {
 
     private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
     private static final String SIZE_FIELD = "size";
+    private static final String STORAGE_SIZE_BY_TIER_AGG_NAME = "sizeSumByTier";
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
     private static final String ES_DOC_ID_FIELD = "_id";
@@ -109,21 +111,39 @@ public class SearchRequestBuilder {
     public MultiSearchRequest buildStorageSumRequest(final Long storageId, final DataStorageType storageType,
                                                      final String path, final boolean allowNoIndex,
                                                      final Set<String> storageSizeMasks) {
+        final String searchIndex = String.format(
+                ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId
+        );
         final MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
-        multiSearchRequest.add(buildSumAggRequest(storageId, storageType, path, allowNoIndex, null));
-        if (CollectionUtils.isNotEmpty(storageSizeMasks)) {
-            multiSearchRequest.add(buildSumAggRequest(storageId, storageType, path, allowNoIndex, storageSizeMasks));
-        }
+        //requests to get size and effective size (if applicable) for current version of files across all storage tiers
+        populateMSearchRequest(path, allowNoIndex, storageSizeMasks, searchIndex, multiSearchRequest,
+                "storage_class", "size");
+        //requests to get size and effective size (if applicable) for old versions of files across all storage tiers
+        populateMSearchRequest(path, allowNoIndex, storageSizeMasks, searchIndex, multiSearchRequest,
+                "versions.storage_class", "versions.size");
         return multiSearchRequest;
     }
 
-    private SearchRequest buildSumAggRequest(final Long storageId, final DataStorageType storageType,
-                                             final String path, final boolean allowNoIndex,
+    private void populateMSearchRequest(final String path, final boolean allowNoIndex,
+                                        final Set<String> storageSizeMasks, final String searchIndex,
+                                        final MultiSearchRequest multiSearchRequest, final String groupBy,
+                                        final String aggregateBy) {
+        multiSearchRequest.add(
+                buildSumAggRequest(searchIndex, path, groupBy, aggregateBy, allowNoIndex, null));
+        if (CollectionUtils.isNotEmpty(storageSizeMasks)) {
+            multiSearchRequest.add(
+                    buildSumAggRequest(searchIndex, path, groupBy, aggregateBy, allowNoIndex, storageSizeMasks));
+        }
+    }
+
+    private SearchRequest buildSumAggRequest(final String searchIndex, final String path, final String groupedBy,
+                                             final String aggregateBy, final boolean allowNoIndex,
                                              final Set<String> storageSizeMasks) {
-        final String searchIndex =
-            String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId);
-        final SumAggregationBuilder sizeSumAggregator = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
-                .field(SIZE_FIELD);
+
+
+        final TermsAggregationBuilder sizeSumAggregator = AggregationBuilders
+                .terms(STORAGE_SIZE_BY_TIER_AGG_NAME).field(groupedBy)
+                .subAggregation(AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(aggregateBy));
         final BoolQueryBuilder fileFilteringQuery = QueryBuilders.boolQuery();
         CollectionUtils.emptyIfNull(storageSizeMasks)
             .forEach(mask -> fileFilteringQuery.mustNot(QueryBuilders.wildcardQuery(NAME_FIELD, mask)));

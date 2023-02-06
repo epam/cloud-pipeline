@@ -21,6 +21,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.Stora
 import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.google.api.services.storage.StorageScopes;
@@ -30,6 +31,7 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageClass;
 import com.google.cloud.storage.StorageOptions;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -44,12 +46,16 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 
 @Slf4j
 public class GsBucketFileManager implements ObjectStorageFileManager {
     private final StorageFileMapper fileMapper = new StorageFileMapper();
+    @Getter
+    private final DataStorageType type = DataStorageType.GS;
 
     static {
         TimeZone tz = TimeZone.getTimeZone("UTC");
@@ -69,6 +75,13 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
                                         credentials,
                                         permissionsContainer,
                                         indexName));
+    }
+
+    @Override
+    public Stream<DataStorageFile> versions(final String storage,
+                                            final String path,
+                                            final Supplier<TemporaryCredentials> credentialsSupplier) {
+        throw new UnsupportedOperationException();
     }
 
     Iterable<Blob> getAllBlobsFromStorage(final AbstractDataStorage dataStorage,

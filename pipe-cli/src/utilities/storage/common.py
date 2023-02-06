@@ -292,6 +292,8 @@ class AbstractTransferManager:
 class AbstractListingManager:
     __metaclass__ = ABCMeta
 
+    STANDARD_TIER = "STANDARD"
+
     @abstractmethod
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
                    show_all=False, show_archive=False):
