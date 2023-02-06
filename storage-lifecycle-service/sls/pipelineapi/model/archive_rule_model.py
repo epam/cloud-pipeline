@@ -41,13 +41,14 @@ class StorageLifecycleRuleProlongation:
 
 class StorageLifecycleNotification:
 
-    def __init__(self, notify_before_days, prolong_days, recipients, enabled, subject, body):
+    def __init__(self, notify_before_days, prolong_days, recipients, enabled, subject, body, notify_users):
         self.notify_before_days = notify_before_days
         self.prolong_days = prolong_days
         self.recipients = recipients
         self.enabled = enabled
         self.subject = subject
         self.body = body
+        self.notify_users = notify_users
 
 
 class StorageLifecycleRule:
@@ -183,5 +184,7 @@ class LifecycleRuleParser:
             if "recipients" in notification_json else default_notification.recipients,
             enabled=notification_json["enabled"] if "enabled" in notification_json else default_notification.enabled,
             subject=notification_json["subject"] if "subject" in notification_json else default_notification.subject,
-            body=notification_json["body"] if "body" in notification_json else default_notification.body
+            body=notification_json["body"] if "body" in notification_json else default_notification.body,
+            notify_users=notification_json["notifyUsers"]
+            if "notifyUsers" in notification_json else default_notification.notify_users
         )

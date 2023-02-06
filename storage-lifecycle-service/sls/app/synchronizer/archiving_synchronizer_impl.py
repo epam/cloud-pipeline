@@ -18,6 +18,7 @@ import datetime
 import os
 import re
 
+from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
 from sls.app.model.sync_event_model import StorageLifecycleRuleActionItems
 from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation
@@ -368,6 +369,9 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                     loaded_role = self.pipeline_api_client.load_role_by_name(recipient["name"])
                     if loaded_role and "users" in loaded_role:
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
+            if rule.notification.notify_users:
+                storage_users = StoragePermissionsManager(self.pipeline_api_client, storage.id).get_users()
+                cc_users.extend(storage_users)
 
             _to_user = next(iter(cc_users), None)
             is_date_expired = self._is_action_date_expired(notification_properties)
