@@ -36,6 +36,8 @@ import {
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
+import moment from 'moment-timezone';
+import pipelineRun from '../../models/pipelines/PipelineRun';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
 import ToolUpdate from '../../models/tools/ToolUpdate';
@@ -73,6 +75,7 @@ import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import VersionScanResult from './elements/VersionScanResult';
 import {
   submitsRun,
+  openReRunForm,
   modifyPayloadForAllowedInstanceTypes,
   run,
   runPipelineActions
@@ -86,11 +89,23 @@ import PlatformIcon from './platform-icon';
 import HiddenObjects from '../../utils/hidden-objects';
 import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
 import Markdown from '../special/markdown';
+import RunTable from '../runs/RunTable';
+import PipelineHistory from '../pipelines/version/history/PipelineHistory';
 import {applyUserCapabilities} from '../pipelines/launch/form/utilities/run-capabilities';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
 const DEFAULT_FILE_SIZE_KB = 50;
+const HISTORY_PAGE_SIZE = 20;
+const HISTORY_DEFAULT_RUN_STATUSES = [
+  'SUCCESS',
+  'FAILURE',
+  'RUNNING',
+  'STOPPED',
+  'PAUSING',
+  'PAUSED',
+  'RESUMING'
+];
 
 @localization.localizedComponent
 @submitsRun
@@ -130,7 +145,15 @@ export default class Tool extends localization.LocalizedReactComponent {
     versionFilterValue: undefined
   };
 
+  runTable;
+
   @observable defaultVersionSettings;
+  @observable _runFilter;
+
+  @computed
+  get runFilter () {
+    return this._runFilter;
+  }
 
   @computed
   get awsRegions () {
@@ -203,6 +226,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (this.registries.length > 0 && this.props.tool.loaded) {
       return this.registries
         .find(r => r.id === this.props.tool.value.registryId);
+    }
+    return null;
+  }
+
+  @computed
+  get toolImage () {
+    if (this.props.tool.loaded) {
+      return `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
     }
     return null;
   }
@@ -1234,11 +1265,97 @@ export default class Tool extends localization.LocalizedReactComponent {
     );
   };
 
+  initializeRunTable = (control) => {
+    this.runTable = control;
+  };
+
+  initializeRunFilter = () => {
+    const filterParams = {
+      page: 1,
+      pageSize: HISTORY_PAGE_SIZE,
+      dockerImages: [this.toolImage],
+      userModified: false,
+      statuses: HISTORY_DEFAULT_RUN_STATUSES
+    };
+    this._runFilter = pipelineRun.runFilter(filterParams, true);
+  };
+
+  handleTableChange (pagination, filter) {
+    const {current, pageSize} = pagination;
+    let modified = false;
+    const statuses = filter.statuses && filter.statuses.length > 0
+      ? filter.statuses
+      : HISTORY_DEFAULT_RUN_STATUSES;
+    if (statuses && statuses.length > 0) {
+      modified = true;
+    }
+    const owners = filter.owners ? filter.owners : undefined;
+    if (owners && owners.length > 0) {
+      modified = true;
+    }
+    const startDateFrom = filter.started && filter.started.length === 1
+      ? moment(filter.started[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS') : undefined;
+    if (startDateFrom) {
+      modified = true;
+    }
+    const endDateTo = filter.completed && filter.completed.length === 1
+      ? moment(filter.completed[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS') : undefined;
+    if (endDateTo) {
+      modified = true;
+    }
+    const params = {
+      page: current,
+      pageSize,
+      dockerImages: [this.toolImage],
+      statuses,
+      owners,
+      startDateFrom,
+      endDateTo,
+      userModified: modified
+    };
+    this.runFilter.filter(params, true);
+  };
+
+  reloadTable = () => {
+    this.runFilter.fetch();
+  };
+
+  onSelectRun = ({id}) => {
+    this.props.router.push(`/run/${id}`);
+  };
+
+  launchPipeline = (run) => {
+    return openReRunForm(run, this.props);
+  };
+
+  renderToolHistory = () => {
+    return (
+      <RunTable
+        onInitialized={this.initializeRunTable}
+        useFilter
+        className={styles.runTable}
+        loading={this.runFilter.pending}
+        dataSource={this.runFilter.value}
+        pagination={{
+          total: this.runFilter.total,
+          pageSize: HISTORY_PAGE_SIZE
+        }}
+        hideColumns={['pipelineName', 'parentRunId']}
+        reloadTable={this.reloadTable}
+        launchPipeline={this.launchPipeline}
+        onSelect={this.onSelectRun}
+        dockerImagesDisabled
+        handleTableChange={::this.handleTableChange}
+      />
+    );
+  };
+
   renderToolContent = () => {
     switch (this.props.section) {
       case 'description': return this.renderDescription();
       case 'versions': return this.renderVersions();
       case 'settings': return this.renderToolSettings();
+      case 'history': return this.renderToolHistory();
     }
     return undefined;
   };
@@ -1394,6 +1511,9 @@ export default class Tool extends localization.LocalizedReactComponent {
         </MenuHorizontal.Item>
         <MenuHorizontal.Item key="settings">
           SETTINGS
+        </MenuHorizontal.Item>
+        <MenuHorizontal.Item key="history">
+          HISTORY
         </MenuHorizontal.Item>
       </MenuHorizontal>
     );
@@ -2085,6 +2205,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     );
   }
 
+  componentWillReceiveProps (nextProps) {
+    if (nextProps.toolId !== this.props.toolId) {
+      if (this.runTable) {
+        this.runTable.clearState();
+      }
+    }
+  }
+
   componentDidUpdate () {
     if (this.hasPendingScanning && !this.props.versions.isUpdating) {
       this.props.versions.startInterval();
@@ -2094,6 +2222,9 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (!this.defaultVersionSettings && this.defaultTag) {
       this.defaultVersionSettings = new LoadToolVersionSettings(this.props.tool.value.id, this.defaultTag);
       this.defaultVersionSettings.fetch();
+    }
+    if (this.props.tool.loaded && !this.runFilter) {
+      this.initializeRunFilter();
     }
   }
 
