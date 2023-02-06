@@ -17,19 +17,15 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
-import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import org.apache.commons.io.FilenameUtils;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
@@ -45,9 +41,10 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 public class ObjectStorageIndexTest {
-    
+
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
+    public static final int BULK_SIZE = 1000;
 
     private final AbstractDataStorage dataStorage = new GSBucketStorage(
             1L, "storage", "storage", new StoragePolicy(), null
@@ -78,8 +75,8 @@ public class ObjectStorageIndexTest {
                 fileManager,
                 TEST_NAME,
                 TEST_NAME,
-                1000,
-                1000,
+                BULK_SIZE,
+                BULK_SIZE,
                 DataStorageType.GS,
                 SearchDocumentType.GS_FILE,
                 ";", false)

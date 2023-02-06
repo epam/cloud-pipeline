@@ -22,28 +22,28 @@ public class GroupingIteratorTest {
     }
 
     @Parameterized.Parameters
-    public static Collection<Object[]> data() {
+    public static Collection<Object[]> provideData() {
         return Arrays.asList(new Object[][] {
-                {
-                        new Integer[]{1, 1, 1, 2, 3},
-                        3,
-                        new Integer[]{3, 1, 1}
-                },
-                {
-                        new Integer[]{1, 2, 2, 3},
-                        3,
-                        new Integer[]{1, 2, 1}
-                },
-                {
-                        new Integer[]{1, 2, 3},
-                        3,
-                        new Integer[]{1, 1, 1}
-                },
-                {
-                        new Integer[]{},
-                        0,
-                        new Integer[]{0}
-                }
+            {
+                new Integer[]{1, 1, 1, 2, 3},
+                3,
+                new Integer[]{3, 1, 1}
+            },
+            {
+                new Integer[]{1, 2, 2, 3},
+                3,
+                new Integer[]{1, 2, 1}
+            },
+            {
+                new Integer[]{1, 2, 3},
+                3,
+                new Integer[]{1, 1, 1}
+            },
+            {
+                new Integer[]{},
+                0,
+                new Integer[]{0}
+            }
         });
     }
 

@@ -48,7 +48,14 @@ import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -96,12 +103,12 @@ public class SearchResultConverter {
             final MultiSearchResponse.Item[] responses) {
 
         final List<String> storageClasses = Arrays.stream(responses).map(
-                r -> Optional.ofNullable(r.getResponse())
-                        .map(SearchResponse::getAggregations)
-                        .map(aggregations -> aggregations.<ParsedTerms>get(STORAGE_SIZE_BY_TIER_AGG_NAME).getBuckets())
-                        .orElse(Collections.emptyList())
-                ).flatMap(Collection::stream).map(MultiBucketsAggregation.Bucket::getKeyAsString)
-                .distinct().collect(Collectors.toList());
+            r -> Optional.ofNullable(r.getResponse())
+                    .map(SearchResponse::getAggregations)
+                    .map(aggregations -> aggregations.<ParsedTerms>get(STORAGE_SIZE_BY_TIER_AGG_NAME).getBuckets())
+                    .orElse(Collections.emptyList())
+            ).flatMap(Collection::stream).map(MultiBucketsAggregation.Bucket::getKeyAsString)
+            .distinct().collect(Collectors.toList());
 
         return storageClasses.stream().map(storageClass -> {
             final StorageUsage.StorageUsageStats.StorageUsageStatsBuilder storageUsageStats =
@@ -125,7 +132,8 @@ public class SearchResultConverter {
             return storageUsageStats
                     .storageClass(storageClass)
                     .size(totalCurrentSizeAndCount.getRight()).count(totalCurrentSizeAndCount.getLeft())
-                    .effectiveSize(effectiveCurrentSizeAndCount.getRight()).effectiveCount(effectiveCurrentSizeAndCount.getLeft())
+                    .effectiveSize(effectiveCurrentSizeAndCount.getRight())
+                    .effectiveCount(effectiveCurrentSizeAndCount.getLeft())
                     .oldVersionsSize(totalOldVersionSizeAndCount.getRight())
                     .oldVersionsEffectiveSize(effectiveOldVersionSizeAndCount.getRight()).build();
         }).collect(Collectors.toMap(StorageUsage.StorageUsageStats::getStorageClass, s -> s));

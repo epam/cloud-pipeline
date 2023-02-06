@@ -44,6 +44,7 @@ public class ObjectStorageIndexVersionsTest {
 
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
+    public static final int BULK_SIZE = 1000;
 
     private final Supplier<TemporaryCredentials> temporaryCredentials = () ->
             TemporaryCredentials.builder().region("").build();
@@ -71,8 +72,8 @@ public class ObjectStorageIndexVersionsTest {
                         fileManager,
                         TEST_NAME,
                         TEST_NAME,
-                        1000,
-                        1000,
+                        BULK_SIZE,
+                        BULK_SIZE,
                         DataStorageType.S3,
                         SearchDocumentType.S3_FILE,
                         ";", true)

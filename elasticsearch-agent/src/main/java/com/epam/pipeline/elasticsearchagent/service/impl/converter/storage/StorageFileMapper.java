@@ -28,9 +28,6 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.utils.FileContentUtils;
 import com.epam.pipeline.utils.StreamUtils;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Value;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -42,7 +39,6 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
