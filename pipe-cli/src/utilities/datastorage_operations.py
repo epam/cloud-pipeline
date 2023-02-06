@@ -549,14 +549,14 @@ class DataStorageOperations(object):
 
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
-                      custom_options=None, quiet=False, threading=False, mode=700, timeout=1000):
+                      custom_options=None, quiet=False, threading=False, mode=700, timeout=1000, show_archive=False):
         if not file and not bucket:
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
                                log_file=log_file, log_level=log_level,  threading=threading,
-                               mode=mode, timeout=timeout)
+                               mode=mode, timeout=timeout, show_archive=show_archive)
 
     @classmethod
     def umount_storage(cls, mountpoint, quiet=False):
@@ -643,8 +643,9 @@ class DataStorageOperations(object):
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                transfer_results, clean=clean)
         except Exception as e:
+            err_msg = str(e)
             if isinstance(e, ClientError) \
-                    and e.message and 'InvalidObjectState' in e.message and 'storage class' in e.message:
+                    and err_msg and 'InvalidObjectState' in err_msg and 'storage class' in err_msg:
                 if not quiet:
                     click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
                                .format(full_path))
