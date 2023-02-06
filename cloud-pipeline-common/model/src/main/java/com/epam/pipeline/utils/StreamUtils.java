@@ -25,7 +25,7 @@ public final class StreamUtils {
         return from(IteratorUtils.chunked(stream.iterator(), chunkSize));
     }
 
-    public static <T> Stream<List<T>> grouped(final Stream<T> stream, Comparator<T> comparator) {
+    public static <T> Stream<List<T>> grouped(final Stream<T> stream, final Comparator<T> comparator) {
         return from(IteratorUtils.grouped(stream.iterator(), comparator));
     }
 

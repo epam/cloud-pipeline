@@ -16,7 +16,7 @@ public final class IteratorUtils {
         return new ChunkedIterator<>(iterator, chunkSize);
     }
 
-    public static <T> Iterator<List<T>> grouped(Iterator<T> iterator, Comparator<T> comparator) {
+    public static <T> Iterator<List<T>> grouped(final Iterator<T> iterator, final Comparator<T> comparator) {
         return new GroupingIterator<>(iterator, comparator);
     }
 }

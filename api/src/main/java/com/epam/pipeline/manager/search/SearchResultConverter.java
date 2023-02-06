@@ -67,8 +67,6 @@ public class SearchResultConverter {
 
     private static final String STORAGE_SIZE_BY_TIER_AGG_NAME = "sizeSumByTier";
 
-    public static final String STANDARD_TIER = "STANDARD";
-
     public SearchResult buildResult(final SearchResponse searchResult,
                                     final String aggregation,
                                     final String typeFieldName,
@@ -288,7 +286,7 @@ public class SearchResultConverter {
 
     private MultiSearchResponse.Item[] tryExtractAllResponses(final MultiSearchResponse searchResponse,
                                                               final MultiSearchRequest searchRequest) {
-        int batchSize = searchRequest.requests().size();
+        final int batchSize = searchRequest.requests().size();
         final MultiSearchResponse.Item[] items = Optional.ofNullable(searchResponse)
             .map(MultiSearchResponse::getResponses)
             .filter(searchResponses -> ArrayUtils.getLength(searchResponses) > 0)

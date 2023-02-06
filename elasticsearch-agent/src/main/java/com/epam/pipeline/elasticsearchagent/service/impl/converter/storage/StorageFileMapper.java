@@ -40,7 +40,12 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -112,7 +117,7 @@ public class StorageFileMapper {
         }
     }
 
-    private List<Map<String, Object>> calculateVersionSizes(Map<String, AbstractDataStorageItem> versions) {
+    private List<Map<String, Object>> calculateVersionSizes(final Map<String, AbstractDataStorageItem> versions) {
         return StreamUtils.grouped(
                 versions.values().stream().map(v -> (DataStorageFile) v),
                 Comparator.comparing(v -> MapUtils.emptyIfNull(v.getLabels())

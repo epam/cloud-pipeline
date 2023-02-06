@@ -49,9 +49,9 @@ public class GroupingIteratorTest {
 
     @Test
     public void iteratorShouldGroupObjects() {
-        GroupingIterator<Integer> groupingIterator = new GroupingIterator<>(
+        final GroupingIterator<Integer> groupingIterator = new GroupingIterator<>(
                 IteratorUtils.arrayIterator(data), Integer::compareTo);
-        List<List<Integer>> result = new ArrayList<>();
+        final List<List<Integer>> result = new ArrayList<>();
         groupingIterator.forEachRemaining(result::add);
         Assert.assertEquals(expectedSize.intValue(), result.size());
         for (int i = 0; i < result.size(); i++) {
