@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.notification;
 
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.entity.notification.UserNotification;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import lombok.RequiredArgsConstructor;
@@ -36,12 +37,19 @@ public class UserNotificationApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @notificationPermissionManager.hasPermissionByUserId(#userId)")
-    public List<UserNotification> findByUserId(final Long userId) {
-        return notificationManager.findByUserId(userId);
+    public PagedResult<List<UserNotification>> findByUserId(final Long userId,
+                                               final Boolean isRead,
+                                               final int pageNum,
+                                               final int pageSize) {
+        return notificationManager.findByUserId(userId, isRead, pageNum, pageSize);
     }
 
-    public List<UserNotification> findMy() {
-        return notificationManager.findMy();
+    public PagedResult<List<UserNotification>> findMy(final Boolean isRead, final int pageNum, final int pageSize) {
+        return notificationManager.findMy(isRead, pageNum, pageSize);
+    }
+
+    public void readAll() {
+        notificationManager.readAll();
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @notificationPermissionManager.hasPermission(#notificationId)")

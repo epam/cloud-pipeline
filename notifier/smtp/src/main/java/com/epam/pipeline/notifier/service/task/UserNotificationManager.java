@@ -24,6 +24,7 @@ import com.epam.pipeline.notifier.service.TemplateService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
@@ -34,12 +35,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserNotificationManager implements NotificationManager {
 
+    @Value(value = "${notification.enable.ui}")
+    private boolean isEnabled;
+
     private final UserNotificationRepository notificationRepository;
     private final TemplateService templateService;
 
     @Override
     @Transactional
     public void notifySubscribers(final NotificationMessage message) {
+        if (!isEnabled) {
+            return;
+        }
         notificationRepository.save(toUserNotifications(message));
     }
 

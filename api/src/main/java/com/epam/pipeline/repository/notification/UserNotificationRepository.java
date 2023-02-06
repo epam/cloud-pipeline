@@ -17,12 +17,21 @@
 package com.epam.pipeline.repository.notification;
 
 import com.epam.pipeline.entity.notification.UserNotification;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.time.LocalDateTime;
 
-public interface UserNotificationRepository extends CrudRepository<UserNotification, Long> {
-    Iterable<UserNotification> findByUserIdOrderByCreatedDateDesc(Long userId);
+public interface UserNotificationRepository extends PagingAndSortingRepository<UserNotification, Long> {
+    Page<UserNotification> findByUserIdAndIsReadOrderByCreatedDateDesc(Long userId, boolean isRead, Pageable pageable);
+    Page<UserNotification> findByUserIdOrderByCreatedDateDesc(Long userId, Pageable pageable);
     void deleteByCreatedDateLessThan(LocalDateTime date);
     void deleteByUserId(Long userId);
+
+    @Modifying
+    @Query("update UserNotification set isRead = true, readDate = ?2 where userId = ?1")
+    void readAll(Long userId, LocalDateTime readDate);
 }
