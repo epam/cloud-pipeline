@@ -180,11 +180,14 @@ class PipelineAPI:
     TOOL_VERSIONS_URL = 'tool/{tool_id}/tags'
     ENABLE_TOOL_URL = 'tool/register'
     UPDATE_TOOL_URL = 'tool/update'
+    DELETE_TOOL_URL = 'tool/delete'
     RUN_URL = 'run'
     GET_RUN_URL = '/run/{}'
     GET_TASK_URL = '/run/{}/task?taskName={}'
     FILTER_RUNS = 'run/filter'
+    TERMINATE_RUN = "run/{}/terminate"
     DATA_STORAGE_URL = "/datastorage"
+    DATA_STORAGE_LOAD_ALL_URL = "/datastorage/loadAll"
     DATA_STORAGE_RULES_URL = "datastorage/rule/load"
     REGISTRY_CERTIFICATES_URL = "dockerRegistry/loadCerts"
     REGISTRY_LOAD_ALL_URL = "dockerRegistry/loadTree"
@@ -245,6 +248,8 @@ class PipelineAPI:
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL = '/datastorage/{id}/tags/batch/delete'
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
     DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
+    DATA_STORAGE_LIST_ITEMS_URL = "/datastorage/{id}/list"
+    DATA_STORAGE_DELETE_URL = '/datastorage/{id}/delete'
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
     GRANT_PERMISSIONS_URL = "/grant"
 
@@ -1284,3 +1289,53 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
+
+    def get_permissions(self, entity_id, entity):
+        try:
+            params = {"id": entity_id, "aclClass": entity}
+            result = requests.get(str(self.api_url) + self.GRANT_PERMISSIONS_URL,
+                                  headers=self.header, params=params, verify=False)
+            if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
+                raise RuntimeError('Failed to load permissions. API response: {}'.format(result.json()['message']))
+            payload = result['payload'] if 'payload' in result else None
+            return payload['permissions'] if 'permissions' in payload else None
+        except Exception as e:
+            raise RuntimeError("Failed to load permissions. \n {}".format(e))
+
+    def terminate_run(self, run_id):
+        try:
+            requests.post(str(self.api_url) + self.TERMINATE_RUN.format(run_id), headers=self.header, verify=False)
+        except Exception as e:
+            raise RuntimeError("Failed to terminate run. \n {}".format(e))
+
+    def data_storage_load_all(self):
+        try:
+            result = requests.get(str(self.api_url) + self.DATA_STORAGE_LOAD_ALL_URL, headers=self.header, verify=False)
+            if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
+                raise RuntimeError('Failed to load data storages. API response: {}'.format(result.json()['message']))
+            return result.json()['payload']
+        except Exception as e:
+            raise RuntimeError("Failed to load data storages. \n {}".format(e))
+
+    def load_pipelines_by_owners(self, owners, statuses):
+        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'owners': owners, 'statuses': statuses}
+        result = requests.post(str(self.api_url) + self.FILTER_RUNS,
+                               data=json.dumps(request), headers=self.header, verify=False)
+        if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
+            raise RuntimeError(result.json()['message'])
+        return result.json()['payload']['elements']
+
+    def delete_tool(self, tool):
+        result = requests.post(str(self.api_url) + self.DELETE_TOOL_URL, data=tool.to_json(),
+                               headers=self.header, verify=False)
+        if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
+            raise RuntimeError('Failed to delete tool {}. API response: {}'.format(tool.registry, tool.image, result.json()['message']))
+
+    def load_datastorage_items(self, storage_id):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id),
+                http_method="get"
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
