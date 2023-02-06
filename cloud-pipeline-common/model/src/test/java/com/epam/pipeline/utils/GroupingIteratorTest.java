@@ -6,19 +6,22 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 @RunWith(Parameterized.class)
 public class GroupingIteratorTest {
 
     private final Integer[] data;
     private final Integer expectedSize;
-    private final Integer[] groupedSizes;
+    private final Integer[] groupSizes;
 
-    public GroupingIteratorTest(Integer[] data, Integer expectedSize, Integer[] groupedSizes) {
+    public GroupingIteratorTest(final Integer[] data, final Integer expectedSize, final Integer[] groupSizes) {
         this.data = data;
         this.expectedSize = expectedSize;
-        this.groupedSizes = groupedSizes;
+        this.groupSizes = groupSizes;
     }
 
     @Parameterized.Parameters
@@ -55,7 +58,7 @@ public class GroupingIteratorTest {
         groupingIterator.forEachRemaining(result::add);
         Assert.assertEquals(expectedSize.intValue(), result.size());
         for (int i = 0; i < result.size(); i++) {
-            Assert.assertEquals(groupedSizes[i].intValue(), result.get(i).size());
+            Assert.assertEquals(groupSizes[i].intValue(), result.get(i).size());
         }
     }
 
