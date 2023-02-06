@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.entity.notification.UserNotification;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -26,6 +27,9 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -34,8 +38,6 @@ import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Service
 @RequiredArgsConstructor
@@ -73,17 +75,24 @@ public class UserNotificationManager {
         userNotificationRepository.deleteByCreatedDateLessThan(date);
     }
 
-    public List<UserNotification> findByUserId(final Long userId) {
-        return StreamSupport.stream(userNotificationRepository
-                .findByUserIdOrderByCreatedDateDesc(userId).spliterator(), false)
-                .collect(Collectors.toList());
+    public PagedResult<List<UserNotification>> findByUserId(final Long userId,
+                                                            final Boolean isRead,
+                                                            final int pageNum,
+                                                            final int pageSize) {
+        final Pageable pageable = new PageRequest(Math.max(pageNum, 0), pageSize > 0 ? pageSize : 10);
+        final Page<UserNotification> notifications = isRead == null ?
+                userNotificationRepository.findByUserIdOrderByCreatedDateDesc(userId, pageable) :
+                userNotificationRepository.findByUserIdAndIsReadOrderByCreatedDateDesc(userId, isRead, pageable);
+        return new PagedResult<>(notifications.getContent(), (int) notifications.getTotalElements());
     }
 
-    public List<UserNotification> findMy() {
-        final String currentUser = authManager.getAuthorizedUser();
-        final PipelineUser user = userManager.loadUserByName(currentUser);
-        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, user));
-        return findByUserId(user.getId());
+    public PagedResult<List<UserNotification>> findMy(final Boolean isRead, final int pageNum, final int pageSize) {
+        return findByUserId(getPipelineUserId(), isRead, pageNum, pageSize);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void readAll() {
+        userNotificationRepository.readAll(getPipelineUserId(), LocalDateTime.now());
     }
 
     @Scheduled(fixedDelayString = "${scheduled.notifications.cleanup.sec:86400}")
@@ -97,5 +106,12 @@ public class UserNotificationManager {
             notification.setCreatedDate(LocalDateTime.now());
             notification.setIsRead(false);
         }
+    }
+
+    private Long getPipelineUserId() {
+        final String currentUser = authManager.getAuthorizedUser();
+        final PipelineUser user = userManager.loadUserByName(currentUser);
+        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, user));
+        return user.getId();
     }
 }

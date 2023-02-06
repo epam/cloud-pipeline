@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.notification;
 
 import com.epam.pipeline.acl.notification.UserNotificationApiService;
 import com.epam.pipeline.controller.AbstractRestController;
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.notification.UserNotification;
 import io.swagger.annotations.ApiOperation;
@@ -29,8 +30,10 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -55,6 +58,19 @@ public class UserNotificationController extends AbstractRestController {
         return Result.success(notificationApiService.save(userNotification));
     }
 
+    @PutMapping("/message/readAll")
+    @ApiOperation(
+            value = "Mark all user notifications as read.",
+            notes = "Mark all user notifications as read.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<Boolean> readAll() {
+        notificationApiService.readAll();
+        return Result.success();
+    }
+
     @GetMapping("/message/{userId}")
     @ApiOperation(
             value = "Gets user notifications.",
@@ -63,8 +79,11 @@ public class UserNotificationController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
     )
-    public Result<List<UserNotification>> findByUserId(@PathVariable final Long userId) {
-        return Result.success(notificationApiService.findByUserId(userId));
+    public Result<PagedResult<List<UserNotification>>> findByUserId(@PathVariable final Long userId,
+                                                       @RequestParam final Boolean isRead,
+                                                       @RequestParam final int pageNum,
+                                                       @RequestParam final int pageSize) {
+        return Result.success(notificationApiService.findByUserId(userId, isRead, pageNum, pageSize));
     }
 
     @GetMapping("/message/my")
@@ -75,8 +94,10 @@ public class UserNotificationController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
     )
-    public Result<List<UserNotification>> findMy() {
-        return Result.success(notificationApiService.findMy());
+    public Result<PagedResult<List<UserNotification>>> findMy(@RequestParam final Boolean isRead,
+                                                              @RequestParam final int pageNum,
+                                                              @RequestParam final int pageSize) {
+        return Result.success(notificationApiService.findMy(isRead, pageNum, pageSize));
     }
 
     @DeleteMapping("/message/{messageId}")
