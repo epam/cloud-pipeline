@@ -29,7 +29,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.MultiSearchRequest;
@@ -86,11 +85,10 @@ public class SearchManager {
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
                                         final boolean allowNoIndex, final Set<String> storageSizeMasks) {
         try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
-            final MultiSearchRequest request = requestBuilder.buildStorageSumRequest(
+            final MultiSearchRequest searchRequest = requestBuilder.buildStorageSumRequest(
                     dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks);
-            final MultiSearchResponse searchResponse = client.msearch(request, RequestOptions.DEFAULT);
-            final int responsesExpected = CollectionUtils.isEmpty(storageSizeMasks) ? 1 : 2;
-            return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path, responsesExpected);
+            final MultiSearchResponse searchResponse = client.msearch(searchRequest, RequestOptions.DEFAULT);
+            return resultConverter.buildStorageUsageResponse(searchRequest, searchResponse, dataStorage, path);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);

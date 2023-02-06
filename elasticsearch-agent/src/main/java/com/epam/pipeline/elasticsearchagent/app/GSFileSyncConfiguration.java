@@ -65,7 +65,7 @@ public class GSFileSyncConfiguration {
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.GS,
                 SearchDocumentType.GS_FILE,
-                tagDelimiter);
+                tagDelimiter, false);
     }
 
 }

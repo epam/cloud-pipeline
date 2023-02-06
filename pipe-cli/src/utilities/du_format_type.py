@@ -31,12 +31,16 @@ class DuFormatType(object):
             return 'Kb'
 
     @staticmethod
-    def pretty_value(value, type):
-        if type in DuFormatType.__gb():
+    def pretty_value(usage, measurement_type):
+        return DuFormatType.pretty_size_value(usage.get_total_size(), measurement_type)
+
+    @staticmethod
+    def pretty_size_value(value, measurement_type):
+        if measurement_type in DuFormatType.__gb():
             return DuFormatType.__to_string(value / float(1 << 30))
-        if type in DuFormatType.__mb():
+        if measurement_type in DuFormatType.__mb():
             return DuFormatType.__to_string(value / float(1 << 20))
-        if type in DuFormatType.__kb():
+        if measurement_type in DuFormatType.__kb():
             return DuFormatType.__to_string(value / float(1 << 10))
 
     @staticmethod

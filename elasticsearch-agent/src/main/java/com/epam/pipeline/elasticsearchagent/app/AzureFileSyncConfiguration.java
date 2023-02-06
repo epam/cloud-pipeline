@@ -69,6 +69,6 @@ public class AzureFileSyncConfiguration {
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.AZ,
                 SearchDocumentType.AZ_BLOB_FILE,
-                tagDelimiter);
+                tagDelimiter, false);
     }
 }

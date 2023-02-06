@@ -29,8 +29,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
@@ -40,18 +40,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
-public class ObjectStorageIndexTest {
+public class ObjectStorageIndexVersionsTest {
 
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
     public static final int BULK_SIZE = 1000;
 
-    private final AbstractDataStorage dataStorage = new GSBucketStorage(
-            1L, "storage", "storage", new StoragePolicy(), null
-    );
     private final Supplier<TemporaryCredentials> temporaryCredentials = () ->
             TemporaryCredentials.builder().region("").build();
-    
+
     @Mock
     private IndexRequestContainer requestContainer;
     @Mock
@@ -62,46 +59,44 @@ public class ObjectStorageIndexTest {
     private ElasticsearchServiceClient elasticsearchServiceClient;
     @Mock
     private ElasticIndexService elasticIndexService;
-    
+
     private ObjectStorageIndexImpl objectStorageIndex;
 
     @BeforeEach
     public void init() {
         objectStorageIndex = spy(
-            new ObjectStorageIndexImpl(
-                cloudPipelineAPIClient,
-                elasticsearchServiceClient,
-                elasticIndexService,
-                fileManager,
-                TEST_NAME,
-                TEST_NAME,
-                BULK_SIZE,
-                BULK_SIZE,
-                DataStorageType.GS,
-                SearchDocumentType.GS_FILE,
-                ";", false)
+                new ObjectStorageIndexImpl(
+                        cloudPipelineAPIClient,
+                        elasticsearchServiceClient,
+                        elasticIndexService,
+                        fileManager,
+                        TEST_NAME,
+                        TEST_NAME,
+                        BULK_SIZE,
+                        BULK_SIZE,
+                        DataStorageType.S3,
+                        SearchDocumentType.S3_FILE,
+                        ";", true)
         );
     }
 
 
     @Test
-    public void shouldAddZeroFilesToRequestContainer() {
-        final List<DataStorageFile> files = Collections.emptyList();
-        verifyRequestContainerState(files, 0);
-    }
-
-    @Test
-    public void shouldAddTwoFilesToRequestContainer() {
-        final List<DataStorageFile> files = Arrays.asList(createFile(TEST_BLOB_NAME_1), createFile(TEST_BLOB_NAME_2));
-        verifyRequestContainerState(files, 2);
-    }
-
-    private void verifyRequestContainerState(final List<DataStorageFile> files, final int numberOfInvocation) {
+    public void shouldGroupFilesByVersions() {
+        StoragePolicy storagePolicy = new StoragePolicy();
+        storagePolicy.setVersioningEnabled(true);
+        AbstractDataStorage dataStorage = new S3bucketDataStorage(
+                1L, "storage", "storage", storagePolicy, null
+        );
+        dataStorage.setStoragePolicy(storagePolicy);
+        final List<DataStorageFile> files = Arrays.asList(
+                createVersion(TEST_BLOB_NAME_1), createVersion(TEST_BLOB_NAME_1), createVersion(TEST_BLOB_NAME_1),
+                createVersion(TEST_BLOB_NAME_2)
+        );
         setUpReturnValues(files);
         objectStorageIndex.indexStorage(dataStorage);
-        verifyNumberOfInsertions(numberOfInvocation);
+        verifyNumberOfInsertions(2);
     }
-
     private void setUpReturnValues(final List<DataStorageFile> files) {
         Mockito.doAnswer(i -> temporaryCredentials.get())
                 .when(cloudPipelineAPIClient).generateTemporaryCredentials(any());
@@ -113,17 +108,19 @@ public class ObjectStorageIndexTest {
                 .when(cloudPipelineAPIClient).loadPermissionsForEntity(any(), any());
 
         Mockito.doAnswer(i -> files.stream())
-               .when(fileManager).files(any(), any(), any());
+                .when(fileManager)
+                .versions(any(), any(), any());
     }
 
     private void verifyNumberOfInsertions(final int numberOfInvocation) {
         verify(requestContainer, times(numberOfInvocation)).add(any());
     }
 
-    private DataStorageFile createFile(final String name) {
+    private DataStorageFile createVersion(final String name) {
         final DataStorageFile file = new DataStorageFile();
         file.setName(FilenameUtils.getName(name));
         file.setPath(name);
+        file.setVersion(UUID.randomUUID().toString());
         file.setSize(1L);
         return file;
     }
