@@ -59,8 +59,10 @@ import java.util.stream.Collectors;
 public class SearchResultConverter {
 
     private static final String STORAGE_SIZE_AGG_NAME = "sizeSum";
-
     private static final String STORAGE_SIZE_BY_TIER_AGG_NAME = "sizeSumByTier";
+    private static final String STANDARD_TIER = "STANDARD";
+    private static final long ZERO = 0L;
+
 
     public SearchResult buildResult(final SearchResponse searchResult,
                                     final String aggregation,
@@ -81,12 +83,25 @@ public class SearchResultConverter {
         final MultiSearchResponse.Item[] responses = tryExtractAllResponses(searchResponse, searchRequest);
         final Map<String, StorageUsage.StorageUsageStats> statsByTiers = buildStorageUsageStatsByStorageTier(responses);
 
+        final Optional<StorageUsage.StorageUsageStats> standardUsageOp =
+                Optional.ofNullable(statsByTiers.get(STANDARD_TIER));
         return StorageUsage.builder()
                 .id(dataStorage.getId())
                 .name(dataStorage.getName())
                 .type(dataStorage.getType())
                 .path(path)
-                .usage(statsByTiers).build();
+                .size(
+                    standardUsageOp.map(StorageUsage.StorageUsageStats::getSize).orElse(ZERO))
+                .oldVersionsSize(
+                        standardUsageOp.map(StorageUsage.StorageUsageStats::getOldVersionsSize).orElse(ZERO))
+                .count(standardUsageOp.map(StorageUsage.StorageUsageStats::getCount).orElse(ZERO))
+                .effectiveSize(
+                    standardUsageOp.map(StorageUsage.StorageUsageStats::getEffectiveSize).orElse(ZERO))
+                .oldVersionsEffectiveSize(
+                        standardUsageOp.map(StorageUsage.StorageUsageStats::getOldVersionsEffectiveSize).orElse(ZERO))
+                .effectiveCount(standardUsageOp.map(StorageUsage.StorageUsageStats::getEffectiveCount).orElse(ZERO))
+                .usage(statsByTiers)
+                .build();
     }
 
     private Map<String, StorageUsage.StorageUsageStats> buildStorageUsageStatsByStorageTier(
@@ -139,7 +154,7 @@ public class SearchResultConverter {
                         new Double(
                                 bucket.getAggregations().<ParsedSum>get(STORAGE_SIZE_AGG_NAME).getValue()
                         ).longValue())
-                ).orElse(ImmutablePair.of(0L, 0L));
+                ).orElse(ImmutablePair.of(ZERO, ZERO));
     }
 
     private Map<SearchDocumentType, Long> buildAggregates(final Aggregations aggregations,

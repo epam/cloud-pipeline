@@ -31,6 +31,13 @@ public class StorageUsage {
     private String name;
     private DataStorageType type;
     private String path;
+    private Long size;
+    private Long effectiveSize;
+    private Long oldVersionsSize;
+    private Long oldVersionsEffectiveSize;
+    private Long count;
+    private Long effectiveCount;
+
     private Map<String, StorageUsageStats> usage;
 
     @Value

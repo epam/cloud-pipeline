@@ -112,6 +112,7 @@ public final class DatastorageCreatorUtils {
     public static final TypeReference<Result<FileShareMount>> FILE_SHARE_MOUNT_TYPE =
             new TypeReference<Result<FileShareMount>>() { };
     private static final String TEST_PATH = "localhost:root/test";
+    private static final long ZERO_SIZE = 0L;
 
     private DatastorageCreatorUtils() {
 
@@ -235,7 +236,8 @@ public final class DatastorageCreatorUtils {
     }
 
     public static StorageUsage getStorageUsage() {
-        return new StorageUsage(ID, TEST_STRING, DataStorageType.S3, TEST_PATH, Collections.emptyMap());
+        return new StorageUsage(ID, TEST_STRING, DataStorageType.S3, TEST_PATH,
+                ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, Collections.emptyMap());
     }
 
     public static StorageMountPath getDefaultStorageMountPath() {
