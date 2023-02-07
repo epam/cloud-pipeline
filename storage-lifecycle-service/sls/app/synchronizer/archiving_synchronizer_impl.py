@@ -371,7 +371,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
             if rule.notification.notify_users:
                 storage_users = StoragePermissionsManager(self.pipeline_api_client, storage.id).get_users()
-                cc_users.extend(storage_users)
+                cc_users.extend([user_name for user_name in storage_users if not cc_users.__contains__(user_name)])
 
             _to_user = next(iter(cc_users), None)
             is_date_expired = self._is_action_date_expired(notification_properties)

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from six import iteritems
 
 from sls.app.cp_api_interface import CloudPipelineDataSource
 
@@ -24,27 +25,31 @@ class StoragePermissionsManager:
         self._storage_id = storage_id
 
     def get_users(self):
-        users = []
+        users_with_permissions = {}  # {user_name: permission_mask}
+        rw_users_from_roles = []  # [user_name]
         for storage_permission in self._get_storage_permissions():
             sid = storage_permission.get('sid')
             mask = storage_permission.get('mask')
             if not sid or not mask:
-                continue
-            if not self._has_read_or_write_permission(int(mask)):
                 continue
             name = sid.get('name')
             if not name:
                 continue
             principal = sid.get('principal')
             if principal:
-                users.append(name)
+                users_with_permissions.update({name: mask})
+                continue
+            if not self._has_read_or_write_permission(int(mask)):
                 continue
             role_name = str(name).upper()
             for role_user in self._get_role_users(role_name):
                 user = role_user.get('userName')
                 if user:
-                    users.append(user)
-        return users
+                    rw_users_from_roles.append(user)
+        users = [user_name for user_name in rw_users_from_roles if users_with_permissions.get(user_name) is None]
+        users.extend([user_name for user_name, mask in iteritems(users_with_permissions)
+                      if self._has_read_or_write_permission(int(mask))])
+        return set(users)
 
     def _get_storage_permissions(self):
         entity = self._api.load_entity_permissions(self._storage_id, DATA_STORAGE)
