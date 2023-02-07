@@ -419,8 +419,11 @@ public class DockerContainerOperationManager {
     }
 
     private void removeUtilizationLevelTags(final PipelineRun run) {
+        final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
         Stream.of(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH)
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH,
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_LOW + suffix,
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix)
             .filter(run::hasTag)
             .forEach(run::removeTag);
     }
