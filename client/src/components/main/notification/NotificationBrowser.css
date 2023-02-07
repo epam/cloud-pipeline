@@ -33,6 +33,10 @@
   margin: 10px 0;
 }
 
+.controls-row .control:not(:last-child) {
+  margin-right: 10px;
+}
+
 .notification-grid-row {
   display: grid;
   grid: "status title body date readDate" 35px

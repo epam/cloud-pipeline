@@ -15,8 +15,8 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {observer, inject} from 'mobx-react';
+import {computed, observable} from 'mobx';
 import moment from 'moment-timezone';
 import {
   Button,
@@ -24,15 +24,26 @@ import {
   Icon,
   Checkbox,
   Modal,
-  message
+  message,
+  Select,
+  Spin
 } from 'antd';
 import classNames from 'classnames';
 import ReadMessage from '../../../models/notifications/ReadMessage';
+import CurrentUserNotificationsPaging
+  from '../../../models/notifications/CurrentUserNotificationsPaging';
+import ReadAllUserNotifications
+  from '../../../models/notifications/ReadAllUserNotifications';
 import displayDate from '../../../utils/displayDate';
 import PreviewNotification from './PreviewNotification';
 import styles from './NotificationBrowser.css';
 
 const PAGE_SIZE = 10;
+
+const MODES = {
+  read: 'Read messages',
+  new: 'New messages'
+};
 
 function dateSorter (a, b) {
   const dateA = moment.utc(a.createdDate);
@@ -50,32 +61,34 @@ function dateSorter (a, b) {
 @observer
 export default class NotificationBrowser extends React.Component {
   state = {
-    currentPage: 1,
-    unreadOnly: false,
-    previewNotification: null
+    currentPage: 0,
+    previewNotification: null,
+    pending: false,
+    mode: MODES.new
+  }
+
+  @observable
+  _notifications;
+
+  componentDidMount () {
+    const {currentPage, mode} = this.state;
+    this.fetchPage(currentPage, mode === MODES.read);
   }
 
   @computed
   get notifications () {
-    const {userNotifications} = this.props;
-    if (!userNotifications || !userNotifications.loaded) {
+    if (!this._notifications) {
       return [];
     }
-    return [...(userNotifications.value || [])].sort(dateSorter);
+    return [...(this._notifications.elements || [])].sort(dateSorter);
   }
 
   @computed
-  get filtered () {
-    const {unreadOnly} = this.state;
-    if (unreadOnly) {
-      return this.unreadNotifications;
+  get totalNotifications () {
+    if (!this._notifications) {
+      return 0;
     }
-    return this.notifications;
-  }
-
-  @computed
-  get unreadNotifications () {
-    return this.notifications.filter(message => !message.isRead);
+    return this._notifications.totalCount;
   }
 
   @computed
@@ -87,13 +100,14 @@ export default class NotificationBrowser extends React.Component {
     return false;
   }
 
-  changeUnreadOnlyFilter = (event) => {
-    this.setState({
-      unreadOnly: event.target.checked
+  changeMode = (description) => {
+    this.setState({mode: description}, () => {
+      const {currentPage, mode} = this.state;
+      this.fetchPage(currentPage, mode === MODES.read);
     });
   };
 
-  toggleNotifications = (event) => {
+  togglePopupNotifications = (event) => {
     const {userNotifications} = this.props;
     if (!userNotifications) {
       return null;
@@ -108,27 +122,67 @@ export default class NotificationBrowser extends React.Component {
     this.setState({previewNotification: notification});
   };
 
-  onPageChange = page => this.setState({currentPage: page});
+  onPageChange = page => {
+    this.setState({currentPage: page - 1}, () => {
+      const {currentPage, mode} = this.state;
+      this.fetchPage(currentPage, mode === MODES.read);
+    });
+  };
 
-  readNotification = async (notification) => {
+  readNotification = (notification) => {
     if (!notification.isRead) {
-      const {userNotifications} = this.props;
-      const request = new ReadMessage();
-      const payload = {...notification};
-      payload.isRead = true;
-      payload.readDate = moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS');
-      await request.send(payload);
-      if (request.error) {
-        message.error(request.error, 5);
-      } else {
-        userNotifications.fetch();
-      }
+      this.setState({pending: true}, async () => {
+        const {currentPage, mode} = this.state;
+        const {userNotifications} = this.props;
+        const request = new ReadMessage();
+        const payload = {...notification};
+        payload.isRead = true;
+        payload.readDate = moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS');
+        await request.send(payload);
+        if (request.error) {
+          message.error(request.error, 5);
+        } else {
+          this.fetchPage(currentPage, mode === MODES.read);
+          userNotifications.fetch();
+        }
+      });
     }
     this.setState({previewNotification: null});
   };
 
   readAllNotifications = () => {
-    // todo: wait for API
+    this.setState({pending: true}, async () => {
+      const {userNotifications} = this.props;
+      const {currentPage, mode} = this.state;
+      const request = new ReadAllUserNotifications();
+      await request.send();
+      if (request.error) {
+        message.error(request.error, 5);
+      }
+      this.fetchPage(currentPage, mode === MODES.read);
+      userNotifications.fetch();
+    });
+  };
+
+  fetchPage = (page, isRead) => {
+    this.setState({pending: true}, async () => {
+      const request = new CurrentUserNotificationsPaging(
+        page,
+        PAGE_SIZE,
+        isRead
+      );
+      await request.fetch();
+      if (request.error) {
+        message.error(request.error, 5);
+      }
+      this._notifications = request.value;
+      this.setState({pending: false});
+    });
+  };
+
+  refreshPage = () => {
+    const {currentPage, mode} = this.state;
+    this.fetchPage(currentPage, mode === MODES.read);
   };
 
   renderHeader = () => {
@@ -180,73 +234,79 @@ export default class NotificationBrowser extends React.Component {
   };
 
   renderNotifications = () => {
-    const {currentPage, unreadOnly} = this.state;
-    const slicedData = this.filtered
-      .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const {mode, pending} = this.state;
     const emptyPlaceholder = (
       <div className={styles.emptyPlaceholder}>
-        {unreadOnly ? 'No new notifications' : 'Notifications not found'}
+        {MODES[mode] === MODES.new
+          ? 'Notifications not found'
+          : 'No new notifications'
+        }
       </div>
     );
     return (
       <div className={styles.notificationsContainer}>
         {this.renderHeader()}
-        {slicedData.length > 0 ? slicedData.map(notification => (
-          <div
-            className={classNames(
-              styles.notificationGridRow,
-              'cp-divider',
-              'bottom',
-              {
-                'cp-table-element-dimmed': notification.isRead,
-                'cp-table-element': !notification.isRead
-              }
-            )}
-            key={notification.id}
-            onClick={() => this.previewNotification(notification)}
-          >
-            <div className={classNames(
-              styles.notificationCell,
-              styles.notificationStatus
-            )}>
-              <Icon
-                className={notification.isRead
-                  ? 'cp-disabled'
-                  : 'cp-setting-message'
-                }
-                type="mail"
-              />
-            </div>
-            <b className={classNames(
-              styles.notificationCell,
-              styles.notificationTitle
-            )}>
-              {notification.subject}
-            </b>
-            <div className={classNames(
-              styles.notificationCell,
-              styles.notificationBody
-            )}>
-              <PreviewNotification
-                text={notification.text}
-                sanitize
-                className={styles.mdPreviewEllipsis}
-              />
-            </div>
-            <div className={classNames(
-              styles.notificationCell,
-              styles.notificationDate
-            )}>
-              {displayDate(notification.createdDate, 'YYYY-MM-DD HH:mm:ss')}
-            </div>
-            <div className={classNames(
-              styles.notificationCell,
-              styles.notificationReadDate
-            )}>
-              {displayDate(notification.readDate, 'YYYY-MM-DD HH:mm:ss')}
-            </div>
-          </div>
-        )) : emptyPlaceholder}
+        <Spin spinning={pending}>
+          {this.notifications.length > 0
+            ? this.notifications.map(notification => (
+              <div
+                className={classNames(
+                  styles.notificationGridRow,
+                  'cp-divider',
+                  'bottom',
+                  {
+                    'cp-table-element-dimmed': notification.isRead,
+                    'cp-table-element': !notification.isRead
+                  }
+                )}
+                key={notification.id}
+                onClick={() => this.previewNotification(notification)}
+              >
+                <div className={classNames(
+                  styles.notificationCell,
+                  styles.notificationStatus
+                )}>
+                  <Icon
+                    className={notification.isRead
+                      ? 'cp-disabled'
+                      : 'cp-setting-message'
+                    }
+                    type="mail"
+                  />
+                </div>
+                <b className={classNames(
+                  styles.notificationCell,
+                  styles.notificationTitle
+                )}>
+                  {notification.subject}
+                </b>
+                <div className={classNames(
+                  styles.notificationCell,
+                  styles.notificationBody
+                )}>
+                  <PreviewNotification
+                    text={notification.text}
+                    sanitize
+                    className={styles.mdPreviewEllipsis}
+                  />
+                </div>
+                <div className={classNames(
+                  styles.notificationCell,
+                  styles.notificationDate
+                )}>
+                  {displayDate(notification.createdDate, 'YYYY-MM-DD HH:mm:ss')}
+                </div>
+                <div className={classNames(
+                  styles.notificationCell,
+                  styles.notificationReadDate
+                )}>
+                  {displayDate(notification.readDate, 'YYYY-MM-DD HH:mm:ss')}
+                </div>
+              </div>
+            ))
+            : emptyPlaceholder
+          }
+        </Spin>
       </div>
     );
   };
@@ -254,8 +314,9 @@ export default class NotificationBrowser extends React.Component {
   render () {
     const {
       currentPage,
-      unreadOnly,
-      previewNotification
+      mode,
+      previewNotification,
+      pending
     } = this.state;
     return (
       <div
@@ -272,35 +333,59 @@ export default class NotificationBrowser extends React.Component {
           Notifications list
         </b>
         <div className={styles.controlsRow}>
+          <Select
+            value={mode}
+            style={{width: 130}}
+            onChange={this.changeMode}
+            size="small"
+            disabled={pending}
+            className={styles.control}
+          >
+            {Object.values(MODES).map((description) => (
+              <Select.Option
+                value={description}
+                key={description}
+              >
+                {description}
+              </Select.Option>
+            ))}
+          </Select>
           <Button
             onClick={this.readAllNotifications}
-            disabled={this.unreadNotifications.length === 0}
             size="small"
-            style={{marginRight: '15px'}}
+            disabled={pending}
+            className={styles.control}
+            style={{padding: '0 15px'}}
           >
             Read all
           </Button>
-          <Checkbox
-            checked={unreadOnly}
-            onChange={this.changeUnreadOnlyFilter}
+          <Button
+            size="small"
+            onClick={this.refreshPage}
+            disabled={pending}
+            className={styles.control}
           >
-            Show only unread notifications
-          </Checkbox>
+            <Icon type="reload" />
+          </Button>
           <Checkbox
             checked={!this.notificationsEnabled}
-            onChange={this.toggleNotifications}
+            onChange={this.togglePopupNotifications}
+            disabled={pending}
+            className={styles.control}
+            style={{marginLeft: 10}}
           >
-            Hide notifications
+            Hide pop-up notifications
           </Checkbox>
         </div>
         {this.renderNotifications()}
         <Pagination
           className={styles.pagination}
-          current={currentPage}
+          current={currentPage + 1}
           onChange={this.onPageChange}
-          total={this.filtered.length}
+          total={this.totalNotifications}
           pageSize={PAGE_SIZE}
           size="small"
+          disabled={pending}
         />
         {previewNotification ? (
           <Modal

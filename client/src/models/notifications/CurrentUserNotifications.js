@@ -18,14 +18,17 @@ import {action, computed, observable} from 'mobx';
 import Remote from '../basic/Remote';
 import continuousFetch from '../../utils/continuous-fetch';
 
+const DEFAULT_PAGE_NUM = 0;
+const DEFAULT_PAGE_SIZE = 20;
 const FETCH_INTERVAL_SECONDS = 60;
 
 class CurrentUserNotifications extends Remote {
   @observable _hideNotifications;
 
-  constructor () {
+  constructor (pageNum, pageSize, isRead = false) {
     super();
-    this.url = '/user-notification/message/my';
+    const params = `isRead=${isRead}&pageNum=${pageNum}&pageSize=${pageSize}`;
+    this.url = `/user-notification/message/my?${params}`;
     this._hideNotifications = localStorage.getItem('hideNotifications') === 'true';
     continuousFetch({
       request: this,
@@ -53,4 +56,10 @@ class CurrentUserNotifications extends Remote {
   onFetched;
 }
 
-export default new CurrentUserNotifications();
+export {DEFAULT_PAGE_SIZE};
+
+export default new CurrentUserNotifications(
+  DEFAULT_PAGE_NUM,
+  DEFAULT_PAGE_SIZE,
+  false
+);

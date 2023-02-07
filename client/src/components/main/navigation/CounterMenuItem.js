@@ -39,7 +39,7 @@ export default class CounterMenuItem extends React.Component {
     if (!userNotifications.loaded) {
       return 0;
     }
-    return (userNotifications.value || [])
+    return (userNotifications.value.elements || [])
       .filter(notification => !notification.isRead)
       .length;
   }

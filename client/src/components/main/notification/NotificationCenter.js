@@ -23,6 +23,8 @@ import SystemNotification from './SystemNotification';
 import {message, Modal, Button, Row, Icon} from 'antd';
 import moment from 'moment-timezone';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
+import {DEFAULT_PAGE_SIZE} from '../../../models/notifications/CurrentUserNotifications';
+import ReadAllUserNotifications from '../../../models/notifications/ReadAllUserNotifications';
 import ReadMessage from '../../../models/notifications/ReadMessage';
 import PreviewNotification from './PreviewNotification';
 import Markdown from '../../special/markdown';
@@ -90,9 +92,11 @@ export default class NotificationCenter extends React.Component {
 
   @observable _notificationsBottomBound = 0;
   @observable _notificationsOnScreen = 0;
+  @observable readUserNotifications = 0;
 
   layoutInfoTimeout;
   resizeTimeout;
+  fetchNotificationsTimeout;
 
   @computed
   get notificationsBottomBound () {
@@ -110,7 +114,7 @@ export default class NotificationCenter extends React.Component {
     if (!userNotifications.loaded || !this.state.initialized || !this.userNotificationsEnabled) {
       return [];
     }
-    return [...(userNotifications.value || [])]
+    return [...(userNotifications.value.elements || [])]
       .filter(message => !message.isRead)
       .map(mapMessage)
       .sort(dateSorter);
@@ -135,6 +139,15 @@ export default class NotificationCenter extends React.Component {
       });
     }
     return notifications.sort(dateSorter);
+  }
+
+  @computed
+  get unreadCount () {
+    const {userNotifications} = this.props;
+    if (userNotifications.loaded) {
+      return userNotifications.value.totalCount - this.readUserNotifications;
+    }
+    return 0;
   }
 
   @computed
@@ -262,18 +275,18 @@ export default class NotificationCenter extends React.Component {
     if (!notification) {
       return null;
     }
+    const padding = 5;
+    const force = DEFAULT_PAGE_SIZE - this.readUserNotifications <= MAX_NOTIFICATIONS + padding;
     const request = new ReadMessage();
     const payload = unMapMessage(notification);
     payload.isRead = true;
     payload.readDate = moment.utc().format('YYYY-MM-DD HH:mm:ss.SSS');
+    this.readUserNotifications += 1;
     await request.send(payload);
     if (request.error) {
       message.error(request.error, 5);
-    } else {
-      // Additional userNotifications fetching seems unnecessary at the moment,
-      // closed userNotifications remain hidden via component state.
-      // this.props.userNotifications.fetch();
     }
+    this.fetchUserNotifications(force);
   };
 
   onCloseNotification = async (notification) => {
@@ -351,8 +364,14 @@ export default class NotificationCenter extends React.Component {
     userNotifications && userNotifications.hideNotifications();
   };
 
-  onReadAllClick = () => {
-    // todo: wait for API
+  onReadAllClick = async () => {
+    const {userNotifications} = this.props;
+    const request = new ReadAllUserNotifications();
+    await request.send();
+    if (request.error) {
+      message.error(request.error, 5);
+    }
+    userNotifications.fetchPage();
   };
 
   renderSeverityIcon = (notification) => {
@@ -402,7 +421,7 @@ export default class NotificationCenter extends React.Component {
         className="cp-notification"
       >
         <span>
-          {`+${hiddenAmount} notifications`}
+          {`+${this.unreadCount - this.notificationsOnScreen} notifications`}
         </span>
         <a
           onClick={this.onHideAllClick}
@@ -531,7 +550,26 @@ export default class NotificationCenter extends React.Component {
     window.removeEventListener('resize', this.refreshLayout);
     clearTimeout(this.resizeTimeout);
     clearTimeout(this.layoutInfoTimeout);
+    clearTimeout(this.fetchNotificationsTimeout);
   }
+
+  fetchUserNotifications = (force = false) => {
+    if (this.fetchNotificationsTimeout) {
+      clearTimeout(this.fetchNotificationsTimeout);
+    }
+    if (force) {
+      return this.props.userNotifications.fetchPage()
+        .then(() => {
+          this.readUserNotifications = 0;
+        });
+    }
+    this.fetchNotificationsTimeout = setTimeout(() => {
+      this.props.userNotifications.fetchPage()
+        .then(() => {
+          this.readUserNotifications = 0;
+        });
+    }, 1500);
+  };
 
   refreshLayout = () => {
     if (this.resizeTimeout) {
