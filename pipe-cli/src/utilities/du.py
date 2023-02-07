@@ -13,29 +13,59 @@
 # limitations under the License.
 import click
 
-from src.model.data_storage_usage_model import StorageUsage
-from src.utilities.du_format_type import DuFormatter
+from src.model.datastorage_usage_model import StorageUsage
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_wrapper import DataStorageWrapper
 
 
+class DataUsageCommand(object):
+    def __init__(self, storage_name, relative_path, depth, perform_on_cloud, output_mode, generation, size_format):
+        self.storage_name = storage_name
+        self.relative_path = relative_path
+        self.depth = depth
+        self.perform_on_cloud = perform_on_cloud
+        self.output_mode = output_mode
+        self.generation = generation
+        self.size_format = size_format
+
+    def validate(self):
+        if self.depth and not self.storage_name:
+            click.echo("Error: bucket path must be provided with --depth option", err=True)
+            return False
+
+        if self.depth and not self.perform_on_cloud:
+            click.echo("Using --cloud, because --depth is used", err=True)
+            self.perform_on_cloud = True
+
+        if self.storage_name:
+            if not self.relative_path or self.relative_path == "/":
+                self.relative_path = ''
+
+        if not self.storage_name and self.relative_path:
+            raise RuntimeError('--relative-path could be used only with storage')
+
+
 class DataUsageHelper(object):
 
-    def __init__(self, mode, format):
-        self.mode = mode
-        self.format = format
+    def fetch_data(self, du_command):
+        storage = DataStorage.get(du_command.storage_name)
+        if storage is None:
+            raise RuntimeError('Storage "{}" was not found'.format(du_command.storage_name))
+        if storage.type.lower() == 'nfs':
+            if du_command.depth:
+                raise RuntimeError('--depth option is not supported for NFS storages')
 
-    def get_total_summary(self):
-        items = []
-        storages = list(DataStorage.list())
-        if not storages:
-            return None
-        for storage in storages:
-            path, usage = self.__get_storage_usage(storage.path, None)
-            if path is not None:
-                items.append([path, usage.get_total_count(), DuFormatter.pretty_value(usage, self.mode, self.format)])
-        return items
+        storage_to_fetch = [storage] if storage else list(DataStorage.list())
+        for _storage in storage_to_fetch:
+            if du_command.perform_on_cloud and _storage.type != "nfs":
+                return self.get_cloud_storage_summary(_storage.path, du_command.relative_path, du_command.depth)
+            else:
+                return self.get_storage_summary(_storage.path, du_command.relative_path)
+
+    def get_storage_summary(self, storage_name, relative_path):
+        path, usage = self.__get_storage_usage(storage_name, relative_path)
+        return [path, usage]
 
     def get_cloud_storage_summary(self, root_bucket, relative_path, depth=None):
         items = []
@@ -43,15 +73,11 @@ class DataUsageHelper(object):
             result_tree = self.__get_summary_with_depth(root_bucket, relative_path, depth)
             for node in result_tree.nodes:
                 usage = result_tree[node].data
-                items.append([node, usage.get_total_count(), DuFormatter.pretty_value(usage, self.mode, self.format)])
+                items.append([node, usage])
         else:
             path, usage = self.__get_summary(root_bucket, relative_path)
-            items.append([path, usage.get_total_count(), DuFormatter.pretty_value(usage, self.mode, self.format)])
+            items.append([path, usage])
         return items
-
-    def get_nfs_storage_summary(self, storage_name, relative_path):
-        path, usage = self.__get_storage_usage(storage_name, relative_path)
-        return [path, usage.get_total_count(), DuFormatter.pretty_value(usage, self.mode, self.format)]
 
     @classmethod
     def __get_storage_usage(cls, storage_name, relative_path):

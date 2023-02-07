@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-class DuFormatter(object):
+class DuOutputFormatter(object):
 
     @staticmethod
     def __mb():
@@ -28,6 +28,10 @@ class DuFormatter(object):
         return ['K', 'KB', 'Kb']
 
     @staticmethod
+    def possible_size_types():
+        return DuOutputFormatter.__mb() + DuOutputFormatter.__gb() + DuOutputFormatter.__kb()
+
+    @staticmethod
     def __brief():
         return ['brief', 'b', 'B']
 
@@ -36,38 +40,50 @@ class DuFormatter(object):
         return ['full', 'f', 'F']
 
     @staticmethod
-    def possible_size_types():
-        return DuFormatter.__mb() + DuFormatter.__gb() + DuFormatter.__kb()
-
-    @staticmethod
     def possible_modes():
-        return DuFormatter.__brief() + DuFormatter.__full()
+        return DuOutputFormatter.__brief() + DuOutputFormatter.__full()
 
     @staticmethod
-    def pretty_type(type):
-        if type not in DuFormatter.possible_size_types():
-            raise RuntimeError("Type '%s' is not supported yet" % type)
-        if type in DuFormatter.__gb():
+    def __all():
+        return ['all', 'a', 'A']
+
+    @staticmethod
+    def __current():
+        return ['current', 'c', 'C']
+
+    @staticmethod
+    def __old():
+        return ['old', 'o', 'O']
+
+    @staticmethod
+    def possible_generations():
+        return DuOutputFormatter.__all() + DuOutputFormatter.__current() + DuOutputFormatter.__old()
+
+    @staticmethod
+    def pretty_size(size_format):
+        if size_format not in DuOutputFormatter.possible_size_types():
+            raise RuntimeError("Type '%s' is not supported yet" % size_format)
+        if size_format in DuOutputFormatter.__gb():
             return 'Gb'
-        if type in DuFormatter.__mb():
+        if size_format in DuOutputFormatter.__mb():
             return 'Mb'
-        if type in DuFormatter.__kb():
+        if size_format in DuOutputFormatter.__kb():
             return 'Kb'
 
     @staticmethod
     def pretty_value(usage, output_mode, measurement_type):
 
         def _build_pretty_value(value, optional_value):
-            if output_mode in DuFormatter.__full():
-                _prettified = DuFormatter.pretty_size_value(value, measurement_type)
+            if output_mode in DuOutputFormatter.__full():
+                _prettified = DuOutputFormatter.pretty_size_value(value, measurement_type)
                 if optional_value > 0:
-                    _prettified += " ({})".format(DuFormatter.pretty_size_value(optional_value, measurement_type))
+                    _prettified += " ({})".format(DuOutputFormatter.pretty_size_value(optional_value, measurement_type))
                 return _prettified
             else:
-                return DuFormatter.pretty_size_value(value, measurement_type)
+                return DuOutputFormatter.pretty_size_value(value, measurement_type)
 
         prettified_data = {}
-        if output_mode in DuFormatter.__full():
+        if output_mode in DuOutputFormatter.__full():
             prettified_data["Total size"] = \
                 _build_pretty_value(usage.get_total_size(), usage.get_total_old_versions_size())
             for storage_tier, stats in usage.get_usage().items():
@@ -78,12 +94,12 @@ class DuFormatter(object):
 
     @staticmethod
     def pretty_size_value(value, measurement_type):
-        if measurement_type in DuFormatter.__gb():
-            return DuFormatter.__to_string(value / float(1 << 30))
-        if measurement_type in DuFormatter.__mb():
-            return DuFormatter.__to_string(value / float(1 << 20))
-        if measurement_type in DuFormatter.__kb():
-            return DuFormatter.__to_string(value / float(1 << 10))
+        if measurement_type in DuOutputFormatter.__gb():
+            return DuOutputFormatter.__to_string(value / float(1 << 30))
+        if measurement_type in DuOutputFormatter.__mb():
+            return DuOutputFormatter.__to_string(value / float(1 << 20))
+        if measurement_type in DuOutputFormatter.__kb():
+            return DuOutputFormatter.__to_string(value / float(1 << 10))
 
     @staticmethod
     def __to_string(value):
