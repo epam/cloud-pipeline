@@ -96,6 +96,7 @@ public class UserNotificationManager {
     }
 
     @Scheduled(fixedDelayString = "${scheduled.notifications.cleanup.sec:86400}")
+    @Transactional(propagation = Propagation.REQUIRED)
     public void cleanUp() {
         final Integer expPeriod = preferenceManager.getPreference(SystemPreferences.SYSTEM_NOTIFICATIONS_EXP_PERIOD);
         cleanUp(LocalDateTime.now().minusDays(expPeriod));
