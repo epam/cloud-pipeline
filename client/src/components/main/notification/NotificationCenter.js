@@ -371,7 +371,7 @@ export default class NotificationCenter extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     }
-    userNotifications.fetchPage();
+    userNotifications.fetch();
   };
 
   renderSeverityIcon = (notification) => {
@@ -558,13 +558,13 @@ export default class NotificationCenter extends React.Component {
       clearTimeout(this.fetchNotificationsTimeout);
     }
     if (force) {
-      return this.props.userNotifications.fetchPage()
+      return this.props.userNotifications.fetch()
         .then(() => {
           this.readUserNotifications = 0;
         });
     }
     this.fetchNotificationsTimeout = setTimeout(() => {
-      this.props.userNotifications.fetchPage()
+      this.props.userNotifications.fetch()
         .then(() => {
           this.readUserNotifications = 0;
         });
