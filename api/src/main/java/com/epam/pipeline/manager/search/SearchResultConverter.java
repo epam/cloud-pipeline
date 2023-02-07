@@ -91,32 +91,25 @@ public class SearchResultConverter {
         final MultiSearchResponse.Item[] responses = tryExtractAllResponses(searchResponse, searchRequest);
         final Map<String, StorageUsage.StorageUsageStats> statsByTiers = buildStorageUsageStatsByStorageTier(responses);
 
+        final Optional<StorageUsage.StorageUsageStats> standardUsageOp =
+                Optional.ofNullable(statsByTiers.get(STANDARD_TIER));
         return StorageUsage.builder()
                 .id(dataStorage.getId())
                 .name(dataStorage.getName())
                 .type(dataStorage.getType())
                 .path(path)
                 .size(
-                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
-                            .map(StorageUsage.StorageUsageStats::getSize)
-                            .orElse(ZERO))
-                .effectiveSize(
-                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
-                            .map(StorageUsage.StorageUsageStats::getEffectiveSize)
-                            .orElse(ZERO))
+                    standardUsageOp.map(StorageUsage.StorageUsageStats::getSize).orElse(ZERO))
                 .oldVersionsSize(
-                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
-                            .map(StorageUsage.StorageUsageStats::getOldVersionsSize)
-                            .orElse(ZERO))
+                        standardUsageOp.map(StorageUsage.StorageUsageStats::getOldVersionsSize).orElse(ZERO))
+                .count(standardUsageOp.map(StorageUsage.StorageUsageStats::getCount).orElse(ZERO))
+                .effectiveSize(
+                    standardUsageOp.map(StorageUsage.StorageUsageStats::getEffectiveSize).orElse(ZERO))
                 .oldVersionsEffectiveSize(
-                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
-                            .map(StorageUsage.StorageUsageStats::getOldVersionsEffectiveSize)
-                            .orElse(ZERO))
-                .count(
-                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
-                            .map(StorageUsage.StorageUsageStats::getCount)
-                            .orElse(ZERO))
-                .usage(statsByTiers).build();
+                        standardUsageOp.map(StorageUsage.StorageUsageStats::getOldVersionsEffectiveSize).orElse(ZERO))
+                .effectiveCount(standardUsageOp.map(StorageUsage.StorageUsageStats::getEffectiveCount).orElse(ZERO))
+                .usage(statsByTiers)
+                .build();
     }
 
     private Map<String, StorageUsage.StorageUsageStats> buildStorageUsageStatsByStorageTier(

@@ -36,6 +36,8 @@ public class StorageUsage {
     private Long oldVersionsSize;
     private Long oldVersionsEffectiveSize;
     private Long count;
+    private Long effectiveCount;
+
     private Map<String, StorageUsageStats> usage;
 
     @Value
