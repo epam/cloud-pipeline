@@ -13,39 +13,7 @@
 # limitations under the License.
 
 
-class DuFormatType(object):
-
-    @staticmethod
-    def possible_types():
-        return DuFormatType.__mb() + DuFormatType.__gb() + DuFormatType.__kb()
-
-    @staticmethod
-    def pretty_type(type):
-        if type not in DuFormatType.possible_types():
-            raise RuntimeError("Type '%s' is not supported yet" % type)
-        if type in DuFormatType.__gb():
-            return 'Gb'
-        if type in DuFormatType.__mb():
-            return 'Mb'
-        if type in DuFormatType.__kb():
-            return 'Kb'
-
-    @staticmethod
-    def pretty_value(usage, measurement_type):
-        return DuFormatType.pretty_size_value(usage.get_total_size(), measurement_type)
-
-    @staticmethod
-    def pretty_size_value(value, measurement_type):
-        if measurement_type in DuFormatType.__gb():
-            return DuFormatType.__to_string(value / float(1 << 30))
-        if measurement_type in DuFormatType.__mb():
-            return DuFormatType.__to_string(value / float(1 << 20))
-        if measurement_type in DuFormatType.__kb():
-            return DuFormatType.__to_string(value / float(1 << 10))
-
-    @staticmethod
-    def __to_string(value):
-        return "%.1f" % value
+class DuFormatter(object):
 
     @staticmethod
     def __mb():
@@ -58,3 +26,65 @@ class DuFormatType(object):
     @staticmethod
     def __kb():
         return ['K', 'KB', 'Kb']
+
+    @staticmethod
+    def __brief():
+        return ['brief', 'b', 'B']
+
+    @staticmethod
+    def __full():
+        return ['full', 'f', 'F']
+
+    @staticmethod
+    def possible_size_types():
+        return DuFormatter.__mb() + DuFormatter.__gb() + DuFormatter.__kb()
+
+    @staticmethod
+    def possible_modes():
+        return DuFormatter.__brief() + DuFormatter.__full()
+
+    @staticmethod
+    def pretty_type(type):
+        if type not in DuFormatter.possible_size_types():
+            raise RuntimeError("Type '%s' is not supported yet" % type)
+        if type in DuFormatter.__gb():
+            return 'Gb'
+        if type in DuFormatter.__mb():
+            return 'Mb'
+        if type in DuFormatter.__kb():
+            return 'Kb'
+
+    @staticmethod
+    def pretty_value(usage, output_mode, measurement_type):
+
+        def _build_pretty_value(value, optional_value):
+            if output_mode in DuFormatter.__full():
+                _prettified = DuFormatter.pretty_size_value(value, measurement_type)
+                if optional_value > 0:
+                    _prettified += " ({})".format(DuFormatter.pretty_size_value(optional_value, measurement_type))
+                return _prettified
+            else:
+                return DuFormatter.pretty_size_value(value, measurement_type)
+
+        prettified_data = {}
+        if output_mode in DuFormatter.__full():
+            prettified_data["Total size"] = \
+                _build_pretty_value(usage.get_total_size(), usage.get_total_old_versions_size())
+            for storage_tier, stats in usage.get_usage().items():
+                prettified_data[storage_tier] = _build_pretty_value(stats.size, stats.old_versions_size)
+        else:
+            prettified_data["Total size"] = _build_pretty_value(usage.get_total_size(), 0)
+        return prettified_data
+
+    @staticmethod
+    def pretty_size_value(value, measurement_type):
+        if measurement_type in DuFormatter.__gb():
+            return DuFormatter.__to_string(value / float(1 << 30))
+        if measurement_type in DuFormatter.__mb():
+            return DuFormatter.__to_string(value / float(1 << 20))
+        if measurement_type in DuFormatter.__kb():
+            return DuFormatter.__to_string(value / float(1 << 10))
+
+    @staticmethod
+    def __to_string(value):
+        return "%.1f" % value

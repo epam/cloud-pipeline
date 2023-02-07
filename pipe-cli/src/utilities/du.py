@@ -14,7 +14,7 @@
 import click
 
 from src.model.data_storage_usage_model import StorageUsage
-from src.utilities.du_format_type import DuFormatType
+from src.utilities.du_format_type import DuFormatter
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_wrapper import DataStorageWrapper
@@ -22,7 +22,8 @@ from src.model.data_storage_wrapper import DataStorageWrapper
 
 class DataUsageHelper(object):
 
-    def __init__(self, format):
+    def __init__(self, mode, format):
+        self.mode = mode
         self.format = format
 
     def get_total_summary(self):
@@ -33,7 +34,7 @@ class DataUsageHelper(object):
         for storage in storages:
             path, usage = self.__get_storage_usage(storage.path, None)
             if path is not None:
-                items.append([path, usage.get_total_count(), DuFormatType.pretty_value(usage, self.format)])
+                items.append([path, usage.get_total_count(), DuFormatter.pretty_value(usage, self.mode, self.format)])
         return items
 
     def get_cloud_storage_summary(self, root_bucket, relative_path, depth=None):
@@ -42,15 +43,15 @@ class DataUsageHelper(object):
             result_tree = self.__get_summary_with_depth(root_bucket, relative_path, depth)
             for node in result_tree.nodes:
                 usage = result_tree[node].data
-                items.append([node, usage.get_total_count(), DuFormatType.pretty_value(usage, self.format)])
+                items.append([node, usage.get_total_count(), DuFormatter.pretty_value(usage, self.mode, self.format)])
         else:
             path, usage = self.__get_summary(root_bucket, relative_path)
-            items.append([path, usage.get_total_count(), DuFormatType.pretty_value(usage, self.format)])
+            items.append([path, usage.get_total_count(), DuFormatter.pretty_value(usage, self.mode, self.format)])
         return items
 
     def get_nfs_storage_summary(self, storage_name, relative_path):
         path, usage = self.__get_storage_usage(storage_name, relative_path)
-        return [path, usage.get_total_count(), DuFormatType.pretty_value(usage, self.format)]
+        return [path, usage.get_total_count(), DuFormatter.pretty_value(usage, self.mode, self.format)]
 
     @classmethod
     def __get_storage_usage(cls, storage_name, relative_path):

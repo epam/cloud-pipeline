@@ -33,7 +33,7 @@ from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
-from src.utilities.du_format_type import DuFormatType
+from src.utilities.du_format_type import DuFormatter
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
@@ -1257,12 +1257,17 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @storage.command('du')
 @click.argument('name', required=False)
 @click.option('-p', '--relative-path', required=False, help='Relative path')
+@click.option('-m', '--mode', help='Output mode [brief/full]. '
+                                   '"brief" - reports only summary. '
+                                   '"full" - reports information divided by Storage Class, '
+                                   'also provides information regarding old versions size (in brackets)',
+              type=click.Choice(DuFormatter.possible_modes()), required=False, default='brief')
 @click.option('-f', '--format', help='Format for size [G/M/K]',
-              type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
+              type=click.Choice(DuFormatter.possible_size_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
 @common_options
-def du(name, relative_path, format, depth):
-    DataStorageOperations.du(name, relative_path, format, depth)
+def du(name, relative_path, mode, format, depth):
+    DataStorageOperations.du(name, relative_path, mode, format, depth)
 
 
 @storage.command('restore')

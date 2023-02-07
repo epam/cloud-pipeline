@@ -16,6 +16,7 @@ import logging
 import multiprocessing
 import os
 import platform
+from collections import OrderedDict
 
 import click
 import datetime
@@ -32,11 +33,11 @@ from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.du import DataUsageHelper
-from src.utilities.du_format_type import DuFormatType
+from src.utilities.du_format_type import DuFormatter
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
-from src.utilities.storage.common import TransferResult
+from src.utilities.storage.common import TransferResult, AbstractListingManager
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
@@ -372,18 +373,43 @@ class DataStorageOperations(object):
         DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
 
     @classmethod
-    def du(cls, storage_name, relative_path=None, format='M', depth=None):
+    def du(cls, storage_name, relative_path=None, mode='brief', format='M', depth=None):
+
+        def build_header(_items):
+            _header = OrderedDict([
+                ("Storage", "Storage"),
+                ("Files count", "Files count"),
+                ("Total size", "Total size (%s)" % DuFormatter.pretty_type(format))
+            ])
+            possible_additional_columns = set()
+            for _item in _items:
+                possible_additional_columns.update(_item[2].keys())
+            for _column in possible_additional_columns:
+                if _column not in _header:
+                    _header.update({
+                        _column: _column + " (%s)" % DuFormatter.pretty_type(format)
+                    })
+            return _header
+
+        def build_row(_header, _item):
+            _row = [_item[0], _item[1]]
+            _additional_columns_dict = _item[2]
+            for _header_column in _header.keys()[2:]:
+                _row.append(_additional_columns_dict.get(_header_column, ""))
+            return _row
+
+        def configure_table(_table, _header):
+            _table.field_names = _header.values()
+            _table.align = "r"
+            _table.align['Storage'] = 'l'
+            _table.border = False
+            _table.padding_width = 2
+
         if depth and not storage_name:
             click.echo("Error: bucket path must be provided with --depth option", err=True)
             sys.exit(1)
-        du_helper = DataUsageHelper(format)
+        du_helper = DataUsageHelper(mode, format)
         items_table = prettytable.PrettyTable()
-        fields = ["Storage", "Files count", "Size (%s)" % DuFormatType.pretty_type(format)]
-        items_table.field_names = fields
-        items_table.align = "l"
-        items_table.border = False
-        items_table.padding_width = 2
-        items_table.align['Size'] = 'r'
         if storage_name:
             if not relative_path or relative_path == "/":
                 relative_path = ''
@@ -393,18 +419,26 @@ class DataStorageOperations(object):
             if storage.type.lower() == 'nfs':
                 if depth:
                     raise RuntimeError('--depth option is not supported for NFS storages')
-                items_table.add_row(du_helper.get_nfs_storage_summary(storage_name, relative_path))
+                summary = du_helper.get_nfs_storage_summary(storage_name, relative_path)
+                header = build_header(summary)
+                configure_table(items_table, header)
+                items_table.add_row(build_row(header, summary))
             else:
-                for item in du_helper.get_cloud_storage_summary(storage, relative_path, depth):
-                    items_table.add_row(item)
+                listed_items = du_helper.get_cloud_storage_summary(storage, relative_path, depth)
+                header = build_header(listed_items)
+                configure_table(items_table, header)
+                for item in listed_items:
+                    items_table.add_row(build_row(header, item))
         else:
             # If no argument is specified - list all buckets
             items = du_helper.get_total_summary()
+            header = build_header(items)
+            configure_table(items_table, header)
             if items is None:
                 click.echo("No datastorages available.")
                 sys.exit(0)
             for item in items:
-                items_table.add_row(item)
+                items_table.add_row(build_row(header, item))
         click.echo(items_table)
         click.echo()
 
