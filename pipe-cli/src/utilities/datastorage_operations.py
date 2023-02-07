@@ -32,7 +32,7 @@ from src.api.folder import Folder
 from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
-from src.utilities.du import DataUsageHelper, DataUsageCommand
+from src.utilities.du import DataUsageHelper, DataUsageCommand, DuOutput
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
@@ -380,6 +380,7 @@ class DataStorageOperations(object):
             # Bad input
             sys.exit(22)
         du_leafs = DataUsageHelper().fetch_data(du_command)
+        click.echo(DuOutput.format_table(du_command, du_leafs))
         click.echo()
 
     @classmethod
