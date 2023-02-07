@@ -40,6 +40,10 @@ public final class DateUtils {
         return LocalDateTime.now(Clock.systemUTC());
     }
 
+    public static String nowUTCStr() {
+        return DATE_TIME_FORMATTER.format(nowUTC());
+    }
+
     public static LocalDateTime convertDateToLocalDateTime(final Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
     }

@@ -42,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -217,12 +218,19 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     .stream()
                     .filter(r -> runsIdToNotify.contains(r.getId()))
                     .filter(r -> !r.hasTag(UTILIZATION_LEVEL_HIGH))
-                    .peek(r -> r.addTag(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING));
+                    .peek(r -> {
+                        r.addTag(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
+                        Optional.ofNullable(getTimestampTag(UTILIZATION_LEVEL_HIGH))
+                                .ifPresent(tag -> r.addTag(tag, DateUtils.nowUTCStr()));
+                    });
             final Stream<PipelineRun> runsToRemoveTag = running.values()
                     .stream()
                     .filter(r -> !runsIdToNotify.contains(r.getId()))
                     .filter(r -> r.hasTag(UTILIZATION_LEVEL_HIGH))
-                    .peek(r -> r.removeTag(UTILIZATION_LEVEL_HIGH));
+                    .peek(r -> {
+                        r.removeTag(UTILIZATION_LEVEL_HIGH);
+                        r.removeTag(getTimestampTag(UTILIZATION_LEVEL_HIGH));
+                    });
             return Stream.concat(runsToAddTag, runsToRemoveTag).collect(Collectors.toList());
         }
 
@@ -332,6 +340,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             }
             if (Objects.isNull(run.getLastIdleNotificationTime())) {
                 run.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
+                Optional.ofNullable(getTimestampTag(UTILIZATION_LEVEL_LOW))
+                        .ifPresent(tag -> run.addTag(tag, DateUtils.nowUTCStr()));
                 runsToUpdateTags.add(run);
                 run.setLastIdleNotificationTime(DateUtils.nowUTC());
                 runsToUpdateNotificationTime.add(run);
@@ -349,6 +359,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                           final List<PipelineRun> runsToUpdateTags) {
             run.setLastIdleNotificationTime(null);
             run.removeTag(UTILIZATION_LEVEL_LOW);
+            run.removeTag(getTimestampTag(UTILIZATION_LEVEL_LOW));
             runsToUpdateNotificationTime.add(run);
             runsToUpdateTags.add(run);
         }
@@ -442,6 +453,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             } else {
                 notificationManager.notifyLongPausedRuns(pausedRuns);
             }
+        }
+
+        private String getTimestampTag(final String tagName) {
+            final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
+            return StringUtils.isNotEmpty(suffix) ? tagName + suffix : null;
         }
     }
 }
