@@ -64,8 +64,10 @@ import java.util.stream.Collectors;
 public class SearchResultConverter {
 
     private static final String STORAGE_SIZE_AGG_NAME = "sizeSum";
-
     private static final String STORAGE_SIZE_BY_TIER_AGG_NAME = "sizeSumByTier";
+    private static final String STANDARD_TIER = "STANDARD";
+    private static final long ZERO = 0L;
+
 
     public SearchResult buildResult(final SearchResponse searchResult,
                                     final String aggregation,
@@ -94,6 +96,26 @@ public class SearchResultConverter {
                 .name(dataStorage.getName())
                 .type(dataStorage.getType())
                 .path(path)
+                .size(
+                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
+                            .map(StorageUsage.StorageUsageStats::getSize)
+                            .orElse(ZERO))
+                .effectiveSize(
+                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
+                            .map(StorageUsage.StorageUsageStats::getEffectiveSize)
+                            .orElse(ZERO))
+                .oldVersionsSize(
+                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
+                            .map(StorageUsage.StorageUsageStats::getOldVersionsSize)
+                            .orElse(ZERO))
+                .oldVersionsEffectiveSize(
+                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
+                            .map(StorageUsage.StorageUsageStats::getOldVersionsEffectiveSize)
+                            .orElse(ZERO))
+                .count(
+                    Optional.ofNullable(statsByTiers.get(STANDARD_TIER))
+                            .map(StorageUsage.StorageUsageStats::getCount)
+                            .orElse(ZERO))
                 .usage(statsByTiers).build();
     }
 
@@ -147,7 +169,7 @@ public class SearchResultConverter {
                         new Double(
                                 bucket.getAggregations().<ParsedSum>get(STORAGE_SIZE_AGG_NAME).getValue()
                         ).longValue())
-                ).orElse(ImmutablePair.of(0L, 0L));
+                ).orElse(ImmutablePair.of(ZERO, ZERO));
     }
 
     public FacetedSearchResult buildFacetedResult(final SearchResponse response, final String typeFieldName,
