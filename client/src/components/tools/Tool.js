@@ -87,6 +87,7 @@ import HiddenObjects from '../../utils/hidden-objects';
 import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
 import Markdown from '../special/markdown';
 import {applyUserCapabilities} from '../pipelines/launch/form/utilities/run-capabilities';
+import ToolHistory from './ToolHistory';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
@@ -203,6 +204,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (this.registries.length > 0 && this.props.tool.loaded) {
       return this.registries
         .find(r => r.id === this.props.tool.value.registryId);
+    }
+    return null;
+  }
+
+  @computed
+  get toolImage () {
+    if (this.props.tool.loaded) {
+      return `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
     }
     return null;
   }
@@ -743,6 +752,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.admin;
   };
 
+  historyAvailableForUser = () => {
+    if (!this.props.tool.loaded) {
+      return false;
+    }
+    return roleModel.writeAllowed(this.props.tool.value) ||
+      roleModel.executeAllowed(this.props.tool.value);
+  };
+
   getVersionScanningInfo = (item) => {
     if (/^windows$/i.test(item.platform)) {
       return null;
@@ -1234,11 +1251,24 @@ export default class Tool extends localization.LocalizedReactComponent {
     );
   };
 
+  renderToolHistory = () => {
+    if (!this.props.tool.loaded || !this.historyAvailableForUser()) {
+      return undefined;
+    }
+    return (
+      <ToolHistory
+        image={this.toolImage}
+        router={this.props.router}
+      />
+    );
+  };
+
   renderToolContent = () => {
     switch (this.props.section) {
       case 'description': return this.renderDescription();
       case 'versions': return this.renderVersions();
       case 'settings': return this.renderToolSettings();
+      case 'history': return this.renderToolHistory();
     }
     return undefined;
   };
@@ -1395,6 +1425,13 @@ export default class Tool extends localization.LocalizedReactComponent {
         <MenuHorizontal.Item key="settings">
           SETTINGS
         </MenuHorizontal.Item>
+        {
+          this.historyAvailableForUser() && (
+            <MenuHorizontal.Item key="history">
+              HISTORY
+            </MenuHorizontal.Item>
+          )
+        }
       </MenuHorizontal>
     );
   };
@@ -2094,6 +2131,13 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (!this.defaultVersionSettings && this.defaultTag) {
       this.defaultVersionSettings = new LoadToolVersionSettings(this.props.tool.value.id, this.defaultTag);
       this.defaultVersionSettings.fetch();
+    }
+    if (
+      this.props.tool.loaded &&
+      !this.historyAvailableForUser() &&
+      /^history$/i.test(this.props.section)
+    ) {
+      this.props.router.push(`/tool/${this.props.toolId}`);
     }
   }
 
