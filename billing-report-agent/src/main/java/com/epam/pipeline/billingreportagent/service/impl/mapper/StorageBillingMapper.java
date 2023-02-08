@@ -24,11 +24,15 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -64,10 +68,16 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .field("object_storage_type", billingInfo.getObjectStorageType()) // Object storage type: S3 / AZ / GS
                 .field("file_storage_type", billingInfo.getFileStorageType()) // File storage type: NFS / SMB / LUSTRE
                 .field("storage_created_date", asString(storage.getCreatedDate()))
-
                 .field("usage_bytes", billingInfo.getUsageBytes())
                 .field("usage_bytes_avg", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost());
+
+            if (MapUtils.isNotEmpty(billingInfo.getBillingDetails())) {
+                // Detailed costs and sizes by Storage Class and file versions
+                jsonBuilder.field("billing_details", billingInfo.getBillingDetails()
+                        .entrySet().stream().map(bd -> ImmutablePair.of(bd.getKey(), bd.getValue().asMap()))
+                        .collect(Collectors.toMap(Pair::getKey, Pair::getValue)));
+            }
 
             return buildUserContent(container.getOwner(), jsonBuilder)
                     .endObject();

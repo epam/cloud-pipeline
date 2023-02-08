@@ -18,6 +18,8 @@
         "file_storage_type": { "type": "keyword" },
         "storage_created_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
 
+        "storage_class": { "type": "keyword" },
+        "current_version": { "type": "boolean" },
         "usage_bytes": { "type": "long" },
         "usage_bytes_avg": { "type": "long" },
         "cost": { "type": "long" },

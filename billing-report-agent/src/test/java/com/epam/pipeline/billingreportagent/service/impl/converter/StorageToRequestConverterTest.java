@@ -45,18 +45,20 @@ import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.text.Text;
-import org.elasticsearch.common.xcontent.DeprecationHandler;
-import org.elasticsearch.common.xcontent.NamedXContentRegistry;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.common.xcontent.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
+import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,10 +98,27 @@ public class StorageToRequestConverterTest {
     private static final Long TEST_AZURE_FILES_MOUNT_ID = 3L;
 
     private static final long BYTES_IN_1_GB = 1L << 30;
-    private static final String SIZE_SUM_SEARCH = "sizeSumSearch";
+
     private static final String REGION_FIELD = "storage_region";
 
-    private static final String VALUE_RESULT_PATTERN_JSON = "{\"value\" : \"%d\"}";
+    private static final String CURRENT_OBJECTS_RESULT_PATTERN_JSON = "{" +
+            "         \"doc_count_error_upper_bound\":0," +
+            "         \"sum_other_doc_count\":0," +
+            "         \"buckets\":[" +
+            "            {" +
+            "               \"key\":\"STANDARD\"," +
+            "               \"doc_count\":1," +
+            "               \"sum#" + StorageToBillingRequestConverter.STORAGE_SIZE_AGG_NAME + "\":{" +
+            "                  \"value\":\"%d\"" +
+            "               }" +
+            "            }" +
+            "         ]" +
+            "   }";
+    private static final String OLD_VERSION_RESULT_JSON = "{" +
+            "         \"doc_count_error_upper_bound\":0," +
+            "         \"sum_other_doc_count\":0," +
+            "         \"buckets\":[]" +
+            "   }";
     private static final String UNKNOWN_REGION = "unknownRegion";
     private static final String USER_NAME = "TestUser";
     private static final String GROUP_1 = "TestGroup1";
@@ -114,7 +133,13 @@ public class StorageToRequestConverterTest {
     private static final BigDecimal TIER_1_STORAGE_1_GB_DAILY_PRICE = BigDecimal.TEN;
     private static final BigDecimal TIER_2_STORAGE_1_GB_DAILY_PRICE = BigDecimal.valueOf(5);
     private static final BigDecimal OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE = BigDecimal.ONE;
+    private static final BigDecimal ARCHIVE_1_GB_DAILY_PRICE = BigDecimal.ONE;
+    private static final BigDecimal US_EAST_2_ARCHIVE_1_GB_DAILY_PRICE = BigDecimal.TEN;
+
+
     private static final BigDecimal AZ_NFS_STORAGE_1_GB_DAILY_PRICE = BigDecimal.valueOf(2);
+    public static final String STORAGE_CLASS = "STANDARD";
+    public static final String ARCHIVE_CLASS = "GLACIER";
 
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(USER_NAME)
@@ -243,9 +268,19 @@ public class StorageToRequestConverterTest {
             .add(OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE.multiply(BigDecimal.valueOf(storageUsedTier3)));
 
         final long dailyCostForTotalSize =
-            s3Converter.calculateDailyCost(totalSize * BYTES_IN_1_GB, Regions.US_EAST_2.getName(), syncDate);
+            s3Converter.calculateDailyCost(
+                    totalSize * BYTES_IN_1_GB, STORAGE_CLASS, Regions.US_EAST_2.getName(), syncDate);
 
         Assert.assertEquals(expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForTotalSize);
+
+        final BigDecimal usEast2expectedPrice = US_EAST_2_ARCHIVE_1_GB_DAILY_PRICE
+                .multiply(BigDecimal.valueOf(totalSize));
+
+        final long dailyCostForArchiveTotalSize =
+                s3Converter.calculateDailyCost(
+                        totalSize * BYTES_IN_1_GB, ARCHIVE_CLASS, Regions.US_EAST_2.getName(), syncDate);
+
+        Assert.assertEquals(usEast2expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForArchiveTotalSize);
     }
 
     @Test
@@ -333,15 +368,33 @@ public class StorageToRequestConverterTest {
                      storageDailyPriceGb.scaleByPowerOfTen(2).longValue());
     }
 
+    private static List<NamedXContentRegistry.Entry> getDefaultNamedXContents() {
+        Map<String, ContextParser<Object, ? extends Aggregation>> map = new HashMap<>();
+        map.put(TopHitsAggregationBuilder.NAME, (p, c) -> ParsedTopHits.fromXContent(p, (String) c));
+        map.put(StringTerms.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
+        map.put("sum", (p, c) -> ParsedSum.fromXContent(p, (String) c));
+        return map.entrySet().stream()
+                .map(entry -> new NamedXContentRegistry.Entry(
+                        Aggregation.class, new ParseField(entry.getKey()), entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
     private void createElasticsearchSearchContext(final Long storageSize,
                                                   final boolean isEmptyResponse,
                                                   final String region) throws IOException {
-        final XContentParser parser =
-            XContentType.JSON.xContent().createParser(NamedXContentRegistry.EMPTY,
+        XContentParser parser =
+            XContentType.JSON.xContent().createParser(new NamedXContentRegistry(getDefaultNamedXContents()),
                                                       DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                                                      String.format(VALUE_RESULT_PATTERN_JSON, storageSize));
-        final ParsedSum sumAgg = ParsedSum.fromXContent(parser, SIZE_SUM_SEARCH);
-        final Aggregations aggregations = new Aggregations(Collections.singletonList(sumAgg));
+                                                      String.format(CURRENT_OBJECTS_RESULT_PATTERN_JSON, storageSize));
+        ParsedTerms objectAgg = ParsedStringTerms.fromXContent(
+                parser, StorageToBillingRequestConverter.OBJECT_SIZE_AGG_NAME);
+        parser =
+                XContentType.JSON.xContent().createParser(NamedXContentRegistry.EMPTY,
+                        DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                        OLD_VERSION_RESULT_JSON);
+        ParsedTerms versionAgg = ParsedStringTerms.fromXContent(
+                parser, StorageToBillingRequestConverter.VERSION_SIZE_AGG_NAME);
+        final Aggregations aggregations = new Aggregations(Arrays.asList(objectAgg, versionAgg));
         final SearchHit hit = new SearchHit(DOC_ID,
                                             StringUtils.EMPTY,
                                             new Text(StringUtils.EMPTY),
@@ -378,23 +431,28 @@ public class StorageToRequestConverterTest {
 
     private StoragePricingService createTieredStoragePricing() {
         final StoragePricing pricingUsEast1 = new StoragePricing();
-        pricingUsEast1.addPrice(new StoragePricingEntity(0L,
+        pricingUsEast1.addPrice(STORAGE_CLASS, new StoragePricingEntity(0L,
                                                          STORAGE_LIMIT_TIER_1 * BYTES_IN_1_GB,
                                                          OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE
                                                              .multiply(DAYS_IN_SYNC_MONTH)));
+        pricingUsEast1.addPrice(ARCHIVE_CLASS, new StoragePricingEntity(0L,
+                Long.MAX_VALUE, ARCHIVE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
         final StoragePricing pricingUsEast2 = new StoragePricing();
         final long endRangeBytesTier1 = STORAGE_LIMIT_TIER_1 * BYTES_IN_1_GB;
         final long endRangeBytesTier2 = STORAGE_LIMIT_TIER_2 * BYTES_IN_1_GB;
-        pricingUsEast2.addPrice(new StoragePricingEntity(0L,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricingEntity(0L,
                                                          endRangeBytesTier1,
                                                          TIER_1_STORAGE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
-        pricingUsEast2.addPrice(new StoragePricingEntity(endRangeBytesTier1,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricingEntity(endRangeBytesTier1,
                                                          endRangeBytesTier2,
                                                          TIER_2_STORAGE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
-        pricingUsEast2.addPrice(new StoragePricingEntity(endRangeBytesTier2,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricingEntity(endRangeBytesTier2,
                                                          Long.MAX_VALUE,
                                                          OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE
                                                              .multiply(DAYS_IN_SYNC_MONTH)));
+        pricingUsEast2.addPrice(ARCHIVE_CLASS, new StoragePricingEntity(0L,
+                Long.MAX_VALUE,
+                US_EAST_2_ARCHIVE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
 
         final Map<String, StoragePricing> testPriceList = new HashMap<>();
         testPriceList.put(Regions.US_EAST_1.getName(), pricingUsEast1);
@@ -408,7 +466,7 @@ public class StorageToRequestConverterTest {
     private StoragePricingService createAzureNfsPricing() {
         final StoragePricing pricingAzureNfs = new StoragePricing();
         pricingAzureNfs
-            .addPrice(new StoragePricingEntity(0L,
+            .addPrice(STORAGE_CLASS, new StoragePricingEntity(0L,
                                                Long.MAX_VALUE,
                                                AZ_NFS_STORAGE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
         final Map<String, StoragePricing> testPriceListAzureNfs = new HashMap<>();
