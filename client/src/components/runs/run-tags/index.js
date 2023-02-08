@@ -16,25 +16,48 @@
 
 import React from 'react';
 import {Popover, Row} from 'antd';
+import {inject, observer} from 'mobx-react';
 import AdaptedLink from '../../special/AdaptedLink';
 import styles from './run-tags.css';
+import moment from 'moment-timezone';
+import RunTagDatePopover from './run-tag-date-popover';
 
 const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
-const KNOWN_TAGS_REGEXP = [
-  /^idle$/i,
-  /^pressure$/i
+const KNOWN_TAGS = [
+  'idle',
+  'pressure'
 ];
 
 const isInstanceLink = (tag) => {
-  return KNOWN_TAGS_REGEXP.some(t => t.test(tag));
+  return KNOWN_TAGS.some(t => t.toLowerCase() === (tag || '').toLowerCase());
 };
 
-const isKnownTag = (tag) => {
-  return KNOWN_TAGS_REGEXP.some(t => t.test(tag));
+const isKnownTag = (tag, preferenes) => {
+  return KNOWN_TAGS.some(t => t.toLowerCase() === (tag || '').toLowerCase());
 };
 
-const skipTag = (tag, tags) => {
-  return `${tags[tag]}` === 'false' || /^alias$/i.test(tag);
+const isKnownTagWithDateSuffix = (tag, preferences) => {
+  const suffix = preferences.systemRunTagDateSuffix;
+  const knownTagsWithDateSuffix = KNOWN_TAGS.map((knownTag) => `${knownTag}${suffix}`);
+  return knownTagsWithDateSuffix.some(t => t.toLowerCase() === (tag || '').toLowerCase());
+};
+
+const getDateInfo = (tags, tag, preferences) => {
+  const suffix = preferences.systemRunTagDateSuffix;
+  const tagName = `${tag}${suffix}`;
+  if (Object.prototype.hasOwnProperty.call(tags, tagName)) {
+    const since = moment.utc(tags[tagName]);
+    if (since.isValid()) {
+      return since;
+    }
+  }
+  return undefined;
+};
+
+const skipTag = (tag, tags, preferences) => {
+  return `${tags[tag]}` === 'false' ||
+    /^alias$/i.test(tag) ||
+    isKnownTagWithDateSuffix(tag, preferences);
 };
 
 function Tag (
@@ -44,7 +67,11 @@ function Tag (
     value,
     instance,
     location,
-    theme
+    theme,
+    onMouseEnter,
+    onMouseLeave,
+    onClick,
+    onFocus
   }
 ) {
   let display = value;
@@ -59,6 +86,10 @@ function Tag (
         theme ? styles[`${theme}Theme`] : undefined,
         className
       ].filter(Boolean).join(' ')}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
+      onFocus={onFocus}
     >
       {(display || '').toUpperCase()}
     </span>
@@ -71,6 +102,10 @@ function Tag (
         to={instanceLink}
         location={location}
         className={styles.link}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={onClick}
+        onFocus={onFocus}
       >
         {element}
       </AdaptedLink>
@@ -79,7 +114,7 @@ function Tag (
   return element;
 }
 
-export default function RunTags (
+function RunTagsComponent (
   {
     className,
     location,
@@ -87,7 +122,8 @@ export default function RunTags (
     overflow,
     tagClassName,
     run,
-    theme
+    theme,
+    preferences
   }
 ) {
   if (!run) {
@@ -101,21 +137,27 @@ export default function RunTags (
   for (let tag in tags) {
     if (
       Object.prototype.hasOwnProperty.call(tags, tag) &&
-      !skipTag(tag, tags) &&
-      (!onlyKnown || isKnownTag(tag))
+      !skipTag(tag, tags, preferences) &&
+      (!onlyKnown || isKnownTag(tag, preferences))
     ) {
+      const info = getDateInfo(tags, tag, preferences);
       result.push({
-        isKnown: isKnownTag(tag),
+        isKnown: isKnownTag(tag, preferences),
         element: (
-          <Tag
-            className={tagClassName}
+          <RunTagDatePopover
+            date={info}
             key={tag}
             tag={tag}
-            value={tags[tag]}
-            instance={instance}
-            location={location}
-            theme={theme}
-          />
+          >
+            <Tag
+              className={tagClassName}
+              tag={tag}
+              value={tags[tag]}
+              instance={instance}
+              location={location}
+              theme={theme}
+            />
+          </RunTagDatePopover>
         )
       });
     }
@@ -170,7 +212,9 @@ export default function RunTags (
   );
 }
 
-RunTags.shouldDisplayTags = function (run, onlyKnown = false) {
+const RunTags = inject('preferences')(observer(RunTagsComponent));
+
+RunTags.shouldDisplayTags = function (run, preferences, onlyKnown = false) {
   if (!run) {
     return false;
   }
@@ -181,11 +225,13 @@ RunTags.shouldDisplayTags = function (run, onlyKnown = false) {
   for (let tag in tags) {
     if (
       Object.prototype.hasOwnProperty.call(tags, tag) &&
-      !skipTag(tag, tags) &&
-      (!onlyKnown || isKnownTag(tag))
+      !skipTag(tag, tags, preferences) &&
+      (!onlyKnown || isKnownTag(tag, preferences))
     ) {
       return true;
     }
   }
   return false;
 };
+
+export default RunTags;

@@ -325,6 +325,11 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
+  @computed
+  get systemRunTagDateSuffix () {
+    return this.getPreferenceValue('system.run.tag.date.suffix') || '_date';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
