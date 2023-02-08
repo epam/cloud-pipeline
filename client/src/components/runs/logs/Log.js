@@ -547,7 +547,7 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const details = [];
     if (instance) {
-      if (RunTags.shouldDisplayTags(run, true)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences, true)) {
         details.push({
           key: 'tags',
           value: (
@@ -731,7 +731,7 @@ class Logs extends localization.LocalizedReactComponent {
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance) {
-      if (RunTags.shouldDisplayTags(run)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences)) {
         const {routing: {location}} = this.props;
         details.push({
           key: 'Tags',

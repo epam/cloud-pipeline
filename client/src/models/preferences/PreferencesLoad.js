@@ -450,6 +450,11 @@ class PreferencesLoad extends Remote {
     return Number(value);
   }
 
+  @computed
+  get systemRunTagDateSuffix () {
+    return this.getPreferenceValue('system.run.tag.date.suffix') || '_date';
+  }
+
   /**
    * @typedef {object} DownloadCommandTemplate
    * @property {string} template
