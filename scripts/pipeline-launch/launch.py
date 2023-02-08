@@ -222,7 +222,7 @@ try:
     _extract_archive(os.path.join(pipe_dir, 'pipe.zip'), os.path.dirname(pipe_dir))
 
     logger.info('Configuring pipe...')
-    subprocess.check_call(f'powershell -Command "pipe.bat configure --api \'{api_url}\''
+    subprocess.check_call(f'powershell -Command "pipe configure --api \'{api_url}\''
                           f'                                        --auth-token \'{api_token}\''
                           f'                                        --timezone local'
                           f'                                        --proxy pac"')
@@ -334,7 +334,7 @@ try:
                      user=owner)
 
     logger.info('Configuring node SSH server proxy...')
-    subprocess.check_call(f'powershell -Command "pipe.bat tunnel start --direct -lp 22 -rp 22 --trace '
+    subprocess.check_call(f'powershell -Command "pipe tunnel start --direct -lp 22 -rp 22 --trace '
                           f'-l {_escape_backslashes(os.path.join(run_dir, "ssh_proxy.log"))} '
                           f'{node_ip}"')
 
