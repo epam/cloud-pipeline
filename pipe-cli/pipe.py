@@ -1257,12 +1257,13 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @storage.command('du')
 @click.argument('name', required=False)
 @click.option('-p', '--relative-path', required=False, help='Relative path')
-@click.option('-c', '--cloud', required=False, type=bool, default=False, help='Get data from directly from the cloud')
+@click.option('-c', '--cloud', required=False, type=bool, default=False,
+              help='Force to get data directly from the cloud.')
 @click.option('-o', '--output-mode', help='Output mode [brief/full]. '
                                           '"brief(b)" - reports in format Storage size/Archive size. '
                                           '"full(f)" - reports in format divided by Storage Class.',
               type=click.Choice(DuOutput.possible_modes()), required=False, default='brief')
-@click.option('-g', '--generation', help='Output mode [all/current/old]. '
+@click.option('-g', '--generation', help='File generation to inspect [all/current/old]. '
                                          '"all(a)" - reports sum of sizes for current and old file versions. '
                                          '"current(c)" - reports size of current file versions only. '
                                          '"old(o)" - reports size of old file versions only. ',
