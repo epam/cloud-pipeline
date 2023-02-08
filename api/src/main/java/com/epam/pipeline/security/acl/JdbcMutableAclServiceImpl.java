@@ -71,12 +71,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Autowired
     private MessageHelper messageHelper;
+    private AclCache aclCache;
 
     public JdbcMutableAclServiceImpl(DataSource dataSource, LookupStrategy lookupStrategy,
             AclCache aclCache) {
         super(dataSource, lookupStrategy, aclCache);
         setClassIdentityQuery(CLASS_IDENTITY_QUERY);
         setSidIdentityQuery(SID_IDENTITY_QUERY);
+        this.aclCache = aclCache;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -204,6 +206,10 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
         final MutableAcl aclFolder = getOrCreateObjectIdentity(entity);
         aclFolder.setOwner(createOrGetSid(owner, true));
         updateAcl(aclFolder);
+    }
+
+    public void putInCache(final MutableAcl acl) {
+        aclCache.putInCache(acl);
     }
 
     public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {
