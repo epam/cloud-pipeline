@@ -752,6 +752,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.admin;
   };
 
+  historyAvailableForUser = () => {
+    if (!this.props.tool.loaded) {
+      return false;
+    }
+    return roleModel.writeAllowed(this.props.tool.value) ||
+      roleModel.executeAllowed(this.props.tool.value);
+  };
+
   getVersionScanningInfo = (item) => {
     if (/^windows$/i.test(item.platform)) {
       return null;
@@ -1244,7 +1252,7 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   renderToolHistory = () => {
-    if (!this.props.tool.loaded) {
+    if (!this.props.tool.loaded || !this.historyAvailableForUser()) {
       return undefined;
     }
     return (
@@ -1417,9 +1425,13 @@ export default class Tool extends localization.LocalizedReactComponent {
         <MenuHorizontal.Item key="settings">
           SETTINGS
         </MenuHorizontal.Item>
-        <MenuHorizontal.Item key="history">
-          HISTORY
-        </MenuHorizontal.Item>
+        {
+          this.historyAvailableForUser() && (
+            <MenuHorizontal.Item key="history">
+              HISTORY
+            </MenuHorizontal.Item>
+          )
+        }
       </MenuHorizontal>
     );
   };
@@ -2119,6 +2131,13 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (!this.defaultVersionSettings && this.defaultTag) {
       this.defaultVersionSettings = new LoadToolVersionSettings(this.props.tool.value.id, this.defaultTag);
       this.defaultVersionSettings.fetch();
+    }
+    if (
+      this.props.tool.loaded &&
+      !this.historyAvailableForUser() &&
+      /^history$/i.test(this.props.section)
+    ) {
+      this.props.router.push(`/tool/${this.props.toolId}`);
     }
   }
 

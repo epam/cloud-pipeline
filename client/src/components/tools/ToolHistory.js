@@ -163,7 +163,7 @@ export default class ToolHistory extends React.Component {
   }
 }
 
-ToolHistory.PropTypes = {
+ToolHistory.propTypes = {
   image: PropTypes.string.isRequired,
   router: PropTypes.object
 };
