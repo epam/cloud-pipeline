@@ -33,7 +33,7 @@ from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
-from src.utilities.du import DuOutput
+from src.utilities.datastorage_du_operation import DuOutput
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
@@ -1257,7 +1257,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @storage.command('du')
 @click.argument('name', required=False)
 @click.option('-p', '--relative-path', required=False, help='Relative path')
-@click.option('-c', '--cloud', required=False, type=bool, default=False,
+@click.option('-c', '--cloud', required=False, is_flag=True, default=False,
               help='Force to get data directly from the cloud.')
 @click.option('-o', '--output-mode', help='Output mode [brief/full]. '
                                           '"brief(b)" - reports in format Storage size/Archive size. '
@@ -1268,12 +1268,12 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
                                          '"current(c)" - reports size of current file versions only. '
                                          '"old(o)" - reports size of old file versions only. ',
               type=click.Choice(DuOutput.possible_generations()), required=False, default='all')
-@click.option('-f', '--size-format', help='Format for size [G/M/K]',
+@click.option('-f', '--format', help='Format for size [G/M/K]',
               type=click.Choice(DuOutput.possible_size_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
 @common_options
-def du(name, relative_path, depth, cloud, output_mode, generation, size_format):
-    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, size_format)
+def du(name, relative_path, depth, cloud, output_mode, generation, format):
+    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format)
 
 
 @storage.command('restore')

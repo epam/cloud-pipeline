@@ -22,6 +22,7 @@ from src.model.data_storage_wrapper import DataStorageWrapper
 
 
 class DataUsageCommand(object):
+
     def __init__(self, storage_name, relative_path, depth, perform_on_cloud, output_mode, generation, size_format):
         self.storage_name = storage_name
         self.relative_path = relative_path
@@ -81,7 +82,7 @@ class DataUsageHelper(object):
         items = []
         if depth:
             result_tree = self.__get_summary_with_depth(root_bucket, relative_path, depth)
-            for node in result_tree.nodes:
+            for node in sorted(result_tree.nodes):
                 usage = result_tree[node].data
                 items.append([node, usage])
         else:
@@ -184,7 +185,7 @@ class DuOutput(object):
 
         def build_header():
             _header = [
-                "Storage", "Files count", "Storage size (%s)" % DuOutput.pretty_size(du_command.size_format)
+                "Storage", "Files count", "Size (%s)" % DuOutput.pretty_size(du_command.size_format)
             ]
             if du_command.output_mode in DuOutput.__brief():
                 _header.append("Archive size (%s)" % DuOutput.pretty_size(du_command.size_format))
