@@ -77,7 +77,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
     onSelect: PropTypes.func,
     useFilter: PropTypes.bool,
     versionsDisabled: PropTypes.bool,
-    ownersDisabled: PropTypes.bool
+    ownersDisabled: PropTypes.bool,
+    dockerImagesDisabled: PropTypes.bool,
+    hideColumns: PropTypes.arrayOf(PropTypes.string)
   };
 
   state = {
@@ -480,7 +482,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
 
   getDockerImageFilter = () => {
     const parameter = 'dockerImages';
-    if (this.dockerImages && this.dockerImages.length > 1) {
+    if (
+      !this.props.dockerImagesDisabled &&
+      this.dockerImages &&
+      this.dockerImages.length > 1
+    ) {
       const clear = () => {
         this.state[parameter].value = [];
         this.state[parameter].searchString = null;
@@ -930,6 +936,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
   };
 
   getColumns = () => {
+    const {hideColumns} = this.props;
     const statusesFilter = this.props.useFilter ? this.getStatusesFilter() : {};
     const parentRunFilter = this.props.useFilter ? this.getInputFilter('parentRunIds', 'Parent run id') : {};
     const pipelineFilter = this.props.useFilter ? this.getPipelinesFilter() : {};
@@ -1260,7 +1267,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       actionsPauseRunColumn,
       actionsRunColumn,
       actionsLogColumn
-    ];
+    ].filter(column => !(hideColumns || []).includes(column.dataIndex));
   };
 
   prepareSourceItem = (item) => {

@@ -510,3 +510,7 @@
   height: 1px;
   margin: 5px 0;
 }
+
+.run-table {
+  overflow-y: auto;
+}
