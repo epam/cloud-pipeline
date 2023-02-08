@@ -134,7 +134,8 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
 
     def _get_storage_lifecycle(self, path, is_folder=False):
         try:
-            return self._pipe.get_storage_last_lifecycle(self._bucket, path, is_folder)
+            lifecycle_items = self._pipe.get_storage_lifecycle(self._bucket, path, is_folder)
+            return None if not lifecycle_items or len(lifecycle_items) == 0 else lifecycle_items[0]
         except Exception:
             logging.exception('Storage last lifecycle retrieving has failed')
             return None
