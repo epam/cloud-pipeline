@@ -22,6 +22,7 @@ import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
 import {mergeUserRoleAttributes} from '../../../../../utils/attributes/merge-user-role-attributes';
 import fetchToolDefaultParameters from './fetch-tool-default-parameters';
+import preferences from '../../../../../models/preferences/PreferencesLoad';
 import styles from './run-capabilities.css';
 
 export const RUN_CAPABILITIES = {
@@ -457,6 +458,11 @@ class RunCapabilities extends React.Component {
       const selectable = this.capabilityIsRequired(capability.value)
         ? mode === RUN_CAPABILITIES_MODE.edit
         : true;
+      if (!capability.custom &&
+        preferences.hiddenRunCapabilities.includes(capability.name)
+      ) {
+        return null;
+      };
       if (capabilities.length === 0) {
         return (
           <MenuItem
