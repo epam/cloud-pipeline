@@ -19,13 +19,6 @@ import PropTypes from 'prop-types';
 import {Popover} from 'antd';
 import moment from 'moment-timezone';
 
-function capitalized (string) {
-  if (!string) {
-    return string;
-  }
-  return string.slice(0, 1).toUpperCase().concat(string.slice(1).toLowerCase());
-}
-
 const SECOND = 1;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
@@ -49,17 +42,17 @@ function getDurationPresentation (duration) {
   const parts = [];
   const stopIndex = durationStops.findIndex((aStop) => aStop.value <= duration);
   if (stopIndex === -1) {
-    return `Less than minute`;
+    return `Less than a minute`;
   }
   const stop = durationStops[stopIndex];
   if (duration >= 2 * stop.value) {
-    return getDurationPresentationByUnit(duration, 2 * stop.value, stop.label);
+    return getDurationPresentationByUnit(duration, stop.value, stop.label);
   }
   if (duration >= stop.value) {
     parts.push(`1 ${stop.label}`);
-    const rest = duration - DAY;
+    const rest = duration - stop.value;
     parts.push(getDurationPresentationByUnit(rest, stop.details, stop.detailsLabel));
-    return parts.join(', ');
+    return parts.filter((part) => !!part && part.length > 0).join(', ');
   }
   return getDurationPresentation(duration, SECOND, 'second');
 }
@@ -81,8 +74,7 @@ class RunTagDatePopover extends React.PureComponent {
   render () {
     const {
       children,
-      date,
-      tag
+      date
     } = this.props;
     if (!date) {
       return children;
@@ -97,7 +89,7 @@ class RunTagDatePopover extends React.PureComponent {
         onVisibleChange={this.onVisibilityChanged}
         content={(
           <div>
-            {capitalized(tag)} for {getDurationPresentation(duration)}
+            {getDurationPresentation(duration)}
           </div>
         )}
       >
