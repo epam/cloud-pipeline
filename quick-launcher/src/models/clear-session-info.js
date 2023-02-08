@@ -2,6 +2,7 @@ import parseStoragePlaceholder from './parse-storage-placeholder';
 import whoAmI from './cloud-pipeline-api/who-am-i';
 import processString from './process-string';
 import removeStorageFolder from "./cloud-pipeline-api/remove-storage-folder";
+import asArray from "./utilities/as-array";
 
 export default function clearSessionInfo (
   application,
@@ -20,10 +21,14 @@ export default function clearSessionInfo (
           const user = userPayload?.payload;
           const dataStorageId = parseStoragePlaceholder(appSettings.sessionInfoStorage, undefined, user);
           if (!Number.isNaN(Number(dataStorageId))) {
-            let path = processString(appSettings.sessionInfoPath, options);
-            if (path.startsWith('/')) {
-              path = path.slice(1);
-            }
+            const path = asArray(appSettings.sessionInfoPath)
+              .map((folder) => {
+                let result = processString(folder, options);
+                if (result.startsWith('/')) {
+                  result = result.slice(1);
+                }
+                return result;
+              })
             console.log('Removing path', path, 'at storage:', dataStorageId);
             removeStorageFolder(
               dataStorageId,
