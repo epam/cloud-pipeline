@@ -203,8 +203,9 @@ public class InstanceOfferManager {
      * Returns all instance types that are allowed on a system-wide level for all regions.
      */
     public List<InstanceType> getAllowedInstanceTypes() {
+        final String allowed = preferenceManager.getPreference(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
         return getAllInstanceTypes().stream()
-                .filter(offer -> isInstanceTypeAllowed(offer.getName()))
+                .filter(offer -> isInstanceTypeAllowed(offer.getName(), allowed))
                 .collect(toList());
     }
 
@@ -215,8 +216,9 @@ public class InstanceOfferManager {
      */
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
         final boolean isSpot = isSpotRequest(spot);
+        final String allowed = preferenceManager.getPreference(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
         return getAllInstanceTypes(defaultRegionIfNull(regionId), isSpot).stream()
-                .filter(offer -> isInstanceTypeAllowed(offer.getName()))
+                .filter(offer -> isInstanceTypeAllowed(offer.getName(), allowed))
                 .collect(toList());
     }
 
@@ -227,8 +229,9 @@ public class InstanceOfferManager {
      */
     public List<InstanceType> getAllowedToolInstanceTypes(final Long regionId, final Boolean spot) {
         final boolean isSpot = isSpotRequest(spot);
+        final String allowed = preferenceManager.getPreference(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER);
         return getAllInstanceTypes(defaultRegionIfNull(regionId), isSpot).stream()
-                .filter(offer -> isToolInstanceTypeAllowed(offer.getName()))
+                .filter(offer -> isInstanceTypeAllowed(offer.getName(), allowed))
                 .collect(toList());
     }
 
@@ -391,19 +394,6 @@ public class InstanceOfferManager {
         requestVO.setRegionId(regionId);
         List<InstanceOffer> offers = instanceOfferDao.loadInstanceOffers(requestVO);
         return cloudFacade.getPriceForDisk(regionId, offers, instanceDisk, instanceType, spot);
-    }
-
-    private boolean isInstanceTypeAllowed(final String instanceType) {
-        return isInstanceTypeAllowed(instanceType, SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
-    }
-
-    private boolean isToolInstanceTypeAllowed(final String instanceType) {
-        return isInstanceTypeAllowed(instanceType, SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER);
-    }
-
-    private boolean isInstanceTypeAllowed(final String instanceType,
-                                          final AbstractSystemPreference.StringPreference patternPreference) {
-        return isInstanceTypeAllowed(instanceType, preferenceManager.getPreference(patternPreference));
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType, final String pattern) {
