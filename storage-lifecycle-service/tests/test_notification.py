@@ -22,7 +22,7 @@ from sls.pipelineapi.model.archive_rule_model import StorageLifecycleNotificatio
 
 class TestNotificationPositive(unittest.TestCase):
 
-    enabled_notification = StorageLifecycleNotification(7, 7, [], True, "", "")
+    enabled_notification = StorageLifecycleNotification(7, 7, [], True, "", "", False)
     completed_execution = StorageLifecycleRuleExecution(
         1, 1, sls.app.synchronizer.archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS, "/",
         "GLACIER", datetime.datetime.now())
@@ -70,8 +70,8 @@ class TestNotificationPositive(unittest.TestCase):
 
 class TestNotificationNegative(unittest.TestCase):
 
-    enabled_notification = StorageLifecycleNotification(7, 7, [], True, "", "")
-    disabled_notification = StorageLifecycleNotification(None, None, None, False, None, None)
+    enabled_notification = StorageLifecycleNotification(7, 7, [], True, "", "", False)
+    disabled_notification = StorageLifecycleNotification(None, None, None, False, None, None, False)
     running_execution = StorageLifecycleRuleExecution(
         1, 1, sls.app.synchronizer.archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, "/",
         "GLACIER", datetime.datetime.now())

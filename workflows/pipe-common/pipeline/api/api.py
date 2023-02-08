@@ -247,6 +247,7 @@ class PipelineAPI:
     DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
     GRANT_PERMISSIONS_URL = "/grant"
+    PERMISSION_URL = "/permissions"
 
     # Pipeline API default header
 
@@ -1284,3 +1285,12 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
+
+    def get_entity_permissions(self, entity_id, entity_class):
+        request_url = '%s?id=%s&aclClass=%s' % (self.PERMISSION_URL, str(entity_id), entity_class)
+        try:
+            return self._request(endpoint=request_url, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
+                entity_class, str(entity_id), str(e)))
+
