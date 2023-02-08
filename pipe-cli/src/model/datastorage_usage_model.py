@@ -22,10 +22,13 @@ class StorageUsage(object):
         return self.usage.keys()
 
     def get_total_count(self):
-        return sum([item.effective_count for item in self.usage.values()])
+        return sum([item.count for item in self.usage.values()])
 
     def get_total_size(self):
-        return sum([item.effective_size for item in self.usage.values()])
+        return sum([item.size for item in self.usage.values()])
+
+    def get_total_old_versions_size(self):
+        return sum([item.old_versions_size for item in self.usage.values()])
 
 
 class StorageUsageItem(object):

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from treelib import Tree
-from src.model.data_storage_usage_model import StorageUsage
+from src.model.datastorage_usage_model import StorageUsage
 
 
 class StorageUsageAccumulator(object):
