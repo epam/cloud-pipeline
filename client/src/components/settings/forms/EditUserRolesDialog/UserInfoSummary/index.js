@@ -161,8 +161,6 @@ export default class UserInfoSummary extends React.Component {
                 group,
                 name: tool.image.split('/').pop()
               });
-            } else {
-              console.log(tool);
             }
           }
         }
