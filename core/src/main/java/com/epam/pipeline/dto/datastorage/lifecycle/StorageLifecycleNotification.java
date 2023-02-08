@@ -34,4 +34,5 @@ public class StorageLifecycleNotification {
     Boolean enabled;
     String subject;
     String body;
+    Boolean notifyUsers;
 }

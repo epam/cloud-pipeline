@@ -234,7 +234,17 @@ class PipelineAPI:
     NOTIFICATION_TEMPLATE_URL = 'notification/template'
     LIFECYCLE_RESTORE_ACTION_URL = "/datastorage/{id}/lifecycle/restore"
     LIFECYCLE_RESTORE_ACTION_FILTER_URL = "/datastorage/{id}/lifecycle/restore/filter"
-
+    DATA_STORAGE_PATH_SIZE_URL = '/datastorage/path/size'
+    SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL = '/datastorage/tags/search'
+    DATA_STORAGE_ITEM_TAG_LIST_URL = '/datastorage/{id}/tags/list?path={path}&showVersions={show_versions}'
+    DATA_STORAGE_ITEM_TAGS_BATCH_UPSERT_URL = '/datastorage/{id}/tags/batch/upsert'
+    DATA_STORAGE_ITEM_TAGS_BATCH_INSERT_URL = '/datastorage/{id}/tags/batch/insert'
+    DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL = '/datastorage/{id}/tags/batch/delete'
+    DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
+    DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
+    CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
+    GRANT_PERMISSIONS_URL = "/grant"
+    PERMISSION_URL = "/permissions"
 
     # Pipeline API default header
 
@@ -1135,3 +1145,43 @@ class PipelineAPI:
             raise RuntimeError(
                 "Failed to update lifecycle restore actions for storage: '{}', action: '{}'.".format(
                     str(datastorage_id), restore_action), "Error message: {}".format(str(e.message)))
+
+    def get_paths_size(self, paths):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.DATA_STORAGE_PATH_SIZE_URL,
+                                        data=json.dumps(paths), method='post')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed get size for paths: '{}'. Error message: {}".format(','.join(paths), str(e.message)))
+
+    def load_categorical_attributes_dictionary(self):
+        try:
+            return self._request(endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+
+    def upsert_categorical_attribute(self, attribute):
+        try:
+            return self._request(
+                endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="post", data=attribute
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+
+    def grant_permissions(self, permissions_object):
+        try:
+            return self._request(
+                endpoint=self.GRANT_PERMISSIONS_URL, http_method="post", data=permissions_object
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
+
+    def get_entity_permissions(self, entity_id, entity_class):
+        request_url = '%s?id=%s&aclClass=%s' % (self.PERMISSION_URL, str(entity_id), entity_class)
+        try:
+            return self._request(endpoint=request_url, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
+                entity_class, str(entity_id), str(e)))
+
