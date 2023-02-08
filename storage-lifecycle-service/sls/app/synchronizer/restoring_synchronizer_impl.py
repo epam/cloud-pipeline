@@ -13,6 +13,7 @@
 # limitations under the License.
 from collections import OrderedDict
 
+from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
 from sls.pipelineapi.model.restore_action_model import StorageLifecycleRestoreAction
 
@@ -193,6 +194,10 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                     loaded_role = self.pipeline_api_client.load_role_by_name(recipient["name"])
                     if loaded_role and "users" in loaded_role:
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
+
+            if action.notification.notify_users:
+                storage_users = StoragePermissionsManager(self.pipeline_api_client, storage.id).get_users()
+                cc_users.extend([user_name for user_name in storage_users if not cc_users.__contains__(user_name)])
 
             _to_user = next(iter(cc_users), None)
             return notification.template.subject, notification.template.body, _to_user, cc_users, \

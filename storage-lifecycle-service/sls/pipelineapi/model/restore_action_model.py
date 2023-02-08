@@ -18,9 +18,10 @@ from sls.util.date_utils import parse_timestamp
 
 class StorageLifecycleRestoreNotification:
 
-    def __init__(self, enabled, recipients):
+    def __init__(self, enabled, recipients, notify_users):
         self.enabled = enabled
         self.recipients = recipients
+        self.notify_users = notify_users
 
     @staticmethod
     def parse_from_dict(obj_dict):
@@ -28,6 +29,7 @@ class StorageLifecycleRestoreNotification:
             raise RuntimeError("Lifecycle restore notification object doesn't have 'enabled' flag!")
         enabled = obj_dict["enabled"]
         recipients = None
+        notify_users = False
         if obj_dict["enabled"]:
             if "recipients" not in obj_dict or len(obj_dict["recipients"]) < 1:
                 raise RuntimeError("Lifecycle restore notification object with 'enabled' = true, "
@@ -36,7 +38,8 @@ class StorageLifecycleRestoreNotification:
                 if "name" not in recipient or "principal" not in recipient:
                     raise RuntimeError("Wrong format of 'recipient' object, should have 'name' and 'principal'")
             recipients = obj_dict["recipients"]
-        return StorageLifecycleRestoreNotification(enabled, recipients)
+            notify_users = obj_dict.get('notifyUsers', False)
+        return StorageLifecycleRestoreNotification(enabled, recipients, notify_users)
 
 
 class StorageLifecycleRestoreAction:

@@ -30,4 +30,5 @@ import java.util.List;
 public class StorageRestoreActionNotification {
     private Boolean enabled;
     private List<SidImpl> recipients;
+    private Boolean notifyUsers;
 }
