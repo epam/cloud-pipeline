@@ -15,7 +15,7 @@
 from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 
-from src.model.data_storage_usage_model import StorageUsage
+from src.model.datastorage_usage_model import StorageUsage
 from src.utilities.datastorage_lifecycle_manager import DataStorageLifecycleManager
 from src.utilities.encoding_utilities import to_string, to_ascii, is_safe_chars
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter

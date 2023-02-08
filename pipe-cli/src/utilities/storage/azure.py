@@ -22,7 +22,7 @@ from threading import Lock
 import time
 from datetime import timedelta, datetime
 
-from src.model.data_storage_usage_model import StorageUsage
+from src.model.datastorage_usage_model import StorageUsage
 from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
