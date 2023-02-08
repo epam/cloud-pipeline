@@ -14,28 +14,31 @@
 
 import logging
 import os
-import time
+import subprocess
 from datetime import datetime, timedelta
 
 from pipeline.api import PipelineAPI, APIError
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
-from pipeline.utils.ssh import LocalExecutor, LoggingExecutor
 
-PIPE_STORAGE_CP = "pipe storage cp"
+
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 NFS_TYPE = "NFS"
+
+PAUSED = "PAUSED"
+RUNNING = "RUNNING"
+
 
 def cleanup_users():
     api_url = os.environ['API']
     run_id = os.environ['RUN_ID']
 
-    cleanup_timeout = int(os.getenv('CP_CAP_CLEANUP_USERS_TIMEOUT_DAYS', '60'))
-    dry_run = bool(os.getenv('CP_CAP_DRY_RUN', 'true'))
+    cleanup_timeout = int(os.getenv('CP_CLEANUP_USERS_TIMEOUT_DAYS', '60'))
+    dry_run = _extract_boolean_parameter('CP_DRY_RUN', 'true')
 
-    logging_directory = os.getenv('CP_CAP_CLEANUP_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
-    logging_level = os.getenv('CP_CAP_CLEANUP_USERS_LOGGING_LEVEL', 'ERROR')
-    logging_level_local = os.getenv('CP_CAP_CLEANUP_USERS_LOGGING_LEVEL_LOCAL', 'DEBUG')
-    logging_format = os.getenv('CP_CAP_CLEANUP_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    logging_directory = os.getenv('CP_CLEANUP_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
+    logging_level = os.getenv('CP_CLEANUP_USERS_LOGGING_LEVEL', 'ERROR')
+    logging_level_local = os.getenv('CP_CLEANUP_USERS_LOGGING_LEVEL_LOCAL', 'DEBUG')
+    logging_format = os.getenv('CP_CLEANUP_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
 
     logging.basicConfig(level=logging_level_local, format=logging_format,
                         filename=os.path.join(logging_directory, 'cleanup_users.log'))
@@ -46,106 +49,119 @@ def cleanup_users():
     logger = LevelLogger(level=logging_level, inner=logger)
     logger = LocalLogger(inner=logger)
 
-    while True:
-        try:
-            time.sleep(cleanup_timeout)
-            logger.info('Starting users cleanup...')
-            logger.info('Loading blocked users...')
-            users = _get_blocked_users(api)
-            logger.info('Loaded {} blocked users.'.format(len(users)))
-            if len(users) > 0:
-                _cleanup_paused_instances(api, logger, users, dry_run)
-                _cleanup_running_instances(api, logger, users, dry_run)
-                _cleanup_tools(api, logger, users, dry_run)
-                _cleanup_storages(api, logger, users, dry_run)
-        except KeyboardInterrupt:
-            logger.warning('Interrupted.')
-            break
-        except Exception:
-            logger.warning('Users cleanup has failed.', trace=True)
-        except BaseException:
-            logger.error('Users cleanup has failed completely.', trace=True)
-            raise
+    # while True:
+    try:
+        # time.sleep(cleanup_timeout)
+        logger.info('Starting users cleanup...')
+        logger.info('Loading blocked users...')
+        users = api.load_users()
+        blocked_users = [user for user in users if user.get('blocked')]
+        logger.info('Loaded {} blocked users.'.format(len(blocked_users)))
+        if len(blocked_users) > 0:
+            _cleanup_paused_instances(api, logger, blocked_users, dry_run)
+            _cleanup_running_instances(api, logger, blocked_users, dry_run)
+            _cleanup_tools(api, logger, blocked_users, dry_run)
+            _cleanup_storages(api, logger, users, blocked_users, dry_run)
+    except KeyboardInterrupt:
+        logger.warning('Interrupted.')
+        # break
+    except Exception:
+        logger.warning('Users cleanup has failed.', trace=True)
+    except BaseException:
+        logger.error('Users cleanup has failed completely.', trace=True)
+        raise
+
+
+def _extract_boolean_parameter(name, default='false'):
+    parameter = os.getenv(name, default)
+    return parameter.lower() == 'true'
+
 
 def _clean_up(user, exp_days):
-    return datetime.today() > datetime.strptime(user['blockDate'], DATE_FORMAT) + timedelta(exp_days)
+    return datetime.today() > datetime.strptime(user['blockDate'], DATE_FORMAT) + timedelta(exp_days) \
+        if 'blockDate' in user.keys() else False
 
-def _get_blocked_users(api):
-    users = api.load_users()
-    return list(filter(lambda user: user['blocked'], users))
 
 def _get_file_data_storages(data_storages):
-    return list(filter(lambda ds: ds['type'] == NFS_TYPE, data_storages))
+    return [storage for storage in data_storages if storage.get('type') == NFS_TYPE]
+
 
 def _get_cleanup_users(users, exp_date):
-    return list(filter(lambda u: _clean_up(u, exp_date), users))
+    return [user for user in users if _clean_up(user, exp_date)]
+
 
 def _flatten(data):
     return [item for sublist in data for item in sublist]
 
-def _get_by_key(list_of_dict, key):
-    new_list_of_dict = []
-    for item in list_of_dict:
-        if key in item.keys():
-            new_list_of_dict.append(item[key])
-    return new_list_of_dict
 
 def _get_tools(registries):
-    groups = _get_by_key(registries, 'groups')
-    tools = _get_by_key(_flatten(groups), 'tools')
+    groups = [registry.get('groups') for registry in registries]
+    groups = _flatten(groups)
+    tools = [group.get('tools') for group in groups if group.get('tools') is not None]
     return _flatten(tools)
 
+
 def _cleanup_paused_instances(api, logger, users, dry_run):
-    exp_days = os.getenv('CP_CAP_PAUSED_EXP_DAYS')
+    exp_days = os.getenv('CP_PAUSED_EXP_DAYS')
     if exp_days is None:
+        logger.info('CP_PAUSED_EXP_DAYS not defined. Paused instances cleanup skipped...')
         return
+    logger.info('Paused instances cleanup...')
     exp_days = int(exp_days)
     paused_instances_users = _get_cleanup_users(users, exp_days)
     if len(paused_instances_users) == 0:
         return
-    user_names = [u['userName'] for u in paused_instances_users]
+    user_names = [u.get('userName') for u in paused_instances_users]
     logger.info('Loading paused instances...')
-    pipelines = api.load_pipelines_by_owners(user_names, list(api.TaskStatus.PAUSED))
-    logger.info('Processing paused instances...')
-    for pipeline in pipelines:
+    runs = api.load_pipelines_by_owners(user_names, [PAUSED])
+    logger.info('Loaded {} paused instances.'.format(len(runs)))
+    for run in runs:
         try:
+            logger.debug('Processing paused instance {}.'.format(run.get('id')))
             if not dry_run:
-                api.terminate_run(pipeline['id'])
-            logger.info('Paused instance {} terminated.'.format(pipeline['id'])
+                api.terminate_run(run.get('id'))
+            logger.info('Paused instance {} terminated.'.format(run.get('id')))
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
         except Exception:
-            logger.warning('Paused instances cleanup has failed.', trace=True)
+            logger.warning('Paused instances cleanup has failed.')
     logger.info('Finishing paused instances cleanup...')
 
+
 def _cleanup_running_instances(api, logger, users, dry_run):
-    exp_days = os.getenv('CP_CAP_RUNNING_EXP_DAYS')
+    exp_days = os.getenv('CP_RUNNING_EXP_DAYS')
     if exp_days is None:
+        logger.info('CP_RUNNING_EXP_DAYS not defined. Running instances cleanup skipped...')
         return
+    logger.info('Running instances cleanup...')
     exp_days = int(exp_days)
     running_instances_users = _get_cleanup_users(users, exp_days)
     if len(running_instances_users) == 0:
         return
-    user_names = [u['userName'] for u in running_instances_users]
+    user_names = [u.get('userName') for u in running_instances_users]
     logger.info('Loading running instances...')
-    pipelines = api.load_pipelines_by_owners(user_names, list(api.TaskStatus.RUNNING))
-    logger.info('Processing running instances...')
-    for pipeline in pipelines:
+    runs = api.load_pipelines_by_owners(user_names, [RUNNING])
+    logger.info('Loaded {} running instances.'.format(len(runs)))
+    if len(runs) > 0:
+        logger.info('Processing running instances...')
+    for run in runs:
         try:
             if not dry_run:
-                api.stop_pipeline(pipeline['id'])
-            logger.info('Running instance {} stopped.'.format(pipeline['id']))
+                api.stop_run(run.get('id'))
+            logger.info('Running instance {} stopped.'.format(run.get('id')))
         except KeyboardInterrupt:
-            logger.warning('Interrupted.')
+            logger.warning('Interrupted.', trace=True)
             raise
         except Exception:
-            logger.warning('Running instances cleanup has failed.', trace=True)
+            logger.warning('Running instances cleanup has failed.')
     logger.info('Finishing running instances cleanup...')
 
+
 def _cleanup_tools(api, logger, users, dry_run):
-    exp_days = os.getenv('CP_CAP_TOOL_EXP_DAYS')
+    exp_days = os.getenv('CP_TOOL_EXP_DAYS')
     if exp_days is None:
+        logger.info('CP_TOOL_EXP_DAYS not defined. Tools cleanup skipped...')
         return
     exp_days = int(exp_days)
     tools_users = _get_cleanup_users(users, exp_days)
@@ -154,82 +170,158 @@ def _cleanup_tools(api, logger, users, dry_run):
     logger.info('Loading tools...')
     registries = api.docker_registry_load_all()
     tools = _get_tools(registries)
-    logger.info('Processing tools...')
-    for tool in tools:
+    blocked_user_names = [user.get('userName') for user in tools_users]
+    blocked_users_tools = [tool for tool in tools if tool.get('owner') in blocked_user_names]
+    logger.info('Loaded {} tools.'.format(len(blocked_users_tools)))
+    if len(blocked_users_tools) > 0:
+        logger.info('Processing tools...')
+    for tool in blocked_users_tools:
         try:
-            if tool['owner'] in tools_users:
-                permissions = api.get_permissions(tool['id'], 'TOOL')
-                if permissions is None:
-                    if not dry_run:
-                        api.delete_tool(tool['image'])
-                    logger.info('Tool {} deleted.'.format(tool['id']))
-                else:
-                    logger.info('Tool {} was not deleted because it is shared with other users.'.format(tool['id']))
+            logger.info('Processing tool {}, id {}'.format(tool.get('image'), tool.get('id')))
+            logger.info('Checking permissions')
+            permissions = api.get_permissions(tool.get('id'), 'TOOL')
+            if permissions is not None:
+                logger.info('Tool was not deleted because it is shared with other users.')
+                continue
+            logger.info('Checking links')
+            if _is_parent(tool.get('id'), tools):
+                logger.info('Tool was not deleted because it has linked tool(s).')
+                continue
+            logger.info('Removing')
+            if not dry_run:
+                api.delete_tool(tool.get('image'))
+            logger.info('Tool deleted.')
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
         except Exception:
-            logger.warning('Tools cleanup has failed.', trace=True)
+            logger.warning('Tool cleanup has failed.')
     logger.info('Finishing tools cleanup...')
 
-def _cleanup_storages(api, logger, users, dry_run):
+
+def _cleanup_storages(api, logger, users, blocked_users, dry_run):
+    default_exp_days = os.getenv('CP_DATASTORAGE_DEFAULT_EXP_DAYS')
+    general_exp_days = os.getenv('CP_DATASTORAGE_GENERAL_EXP_DAYS')
+    if default_exp_days is None and general_exp_days is None:
+        return
     logger.info('Loading data storages...')
     storages = api.data_storage_load_all()
-    logger.info('Processing data storages...')
-    file_storages = _get_file_data_storages(storages)
+    blocked_user_names = [user.get('userName') for user in blocked_users]
+    blocked_user_storages = [storage for storage in storages if storage.get('owner') in blocked_user_names]
+    file_storages = _get_file_data_storages(blocked_user_storages)
+    logger.info('Loaded {} file storages.'.format(len(file_storages)))
+    if len(file_storages) > 0:
+        logger.info('Processing data storages...')
     for storage in file_storages:
         try:
-            user = next(filter(lambda u: u['userName'] == storage['owner'], users))
-            if _is_home_storage(users, storage['id']):
-                _cleanup_home_datastorage(api, logger, storage, user, dry_run)
+            logger.info('Processing storage id {}, path {}'.format(storage.get('id'), storage.get('path')))
+            logger.info('Checking permissions')
+            permissions = api.get_permissions(storage.get('id'), 'DATA_STORAGE')
+            if permissions is not None:
+                logger.info("Storage won't be deleted because it is shared with other users.")
+                continue
+            logger.info('Checking shared copies')
+            if _has_shared_copy(storages, storage):
+                logger.info("Storage won't be deleted because it has shared copy.")
+                continue
+            owner = [user for user in users if user.get('userName') == storage.get('owner')].pop(0)
+            default_storage_users = _get_default_storage_users(users, storage.get('id'))
+            if len(default_storage_users) > 0:
+                logger.info('Storage {} is default storage'.format(storage.get('id')))
+                _cleanup_default_datastorage(api, logger, storage, owner, default_storage_users, dry_run,
+                                             default_exp_days)
             else:
-                _cleanup_general_datastorage(api, logger, storage, user, dry_run)
+                logger.info('Storage {} is general storage'.format(storage.get('id')))
+                _cleanup_general_datastorage(api, logger, storage, owner, dry_run, general_exp_days)
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
         except Exception:
-            logger.warning('Data storage cleanup has failed.', trace=True)
+            logger.warning('Data storage cleanup has failed.')
     logger.info('Finishing data storages cleanup...')
+
+
+def _has_shared_copy(storages, storage):
+    path = storage.get('path').split(':').pop(1)
+    copies = [s for s in storages if path in s.get('path') and s.get('id') != storage.get('id')]
+    return len(copies) > 0
+
+
+def _is_parent(tool_id, tools):
+    links = [t for t in tools if t.get('link') == tool_id]
+    return len(links) > 0
+
 
 def _is_home_storage(users, storage_id):
     return storage_id in [u['defaultStorageId'] for u in users]
 
-def _replace_datastorage_content(logger, source, target):
-    executor = LocalExecutor()
-    executor = LoggingExecutor(logger=logger, inner=executor)
-    executor.execute('{} "{}" "{}" --recursive --force --quiet'.format(PIPE_STORAGE_CP, source, target))
 
-def _cleanup_home_datastorage(api, logger, storage, user, dry_run):
-    exp_days = os.getenv('CP_CAP_DATASTORE_DEFAULT_EXP_DAYS')
+def _get_default_storage_users(users, storage_id):
+    return [user for user in users if user.get('defaultStorageId') == storage_id]
+
+
+def _execute_command(cmd):
+    process = subprocess.Popen(cmd)
+    exit_code = process.wait()
+    return exit_code
+
+
+def _replace_datastorage_content(logger, folder, storage):
+    result = _execute_command("/bin/mount -t nfs {} {}".format(folder, storage))
+    if result == 0:
+        logger.info('Mounted')
+    else:
+        logger.info('Not mounted')
+        return False
+    result = _execute_command('{} "{}" "{}" --recursive --force --quiet'.format(PIPE_STORAGE_CP, storage, folder))
+    if result == 0:
+        logger.info('Copied')
+    else:
+        logger.info('Not copied')
+        return False
+    result = _execute_command("/bin/unmount {}".format(folder))
+    if result == 0:
+        logger.info('Unmounted')
+    else:
+        logger.info('Not unmounted')
+        return False
+    return True
+
+
+def _cleanup_default_datastorage(api, logger, storage, user, default_storage_users, dry_run, exp_days):
     if exp_days is None:
+        logger.info('CP_DATASTORAGE_DEFAULT_EXP_DAYS not defined. Storage {} cleanup skipped...'.format(storage.get('id')))
         return
-    if not _clean_up(user, exp_days):
+    if not _clean_up(user, int(exp_days)):
+        logger.info('Not time to cleanup. Storage {} cleanup skipped...'.format(storage.get('id')))
         return
-    storage_items = api.load_datastorage_items(storage['id'])
-    if 'payload' in storage_items.keys():
+    storage_items = api.load_datastorage_items(storage.get('id'))
+    if storage_items is not None:
         dedicated_bucket = os.getenv('CP_DEDICATED_BUCKET')
         if dedicated_bucket is None:
+            logger.info('CP_DEDICATED_BUCKET not defined. Storage {} cleanup skipped...'.format(storage.get('id')))
             return
-        else:
-            if not dry_run:
-                _replace_datastorage_content(logger, storage['path'], dedicated_bucket)
-                api.delete_datastorage(storage['id'], False)
-            logger.info('Datastorage {} deleted.'.format(storage['id']))
-    else:
-        api.delete_datastorage(storage['id'], False)
-        logger.info('Datastorage {} deleted.'.format(storage['id']))
-
-def _cleanup_general_datastorage(api, logger, storage, user, dry_run):
-    exp_days = os.getenv('CP_CAP_DATASTORE_GENERAL_EXP_DAYS')
-    if exp_days is None:
-        return
-    if not _clean_up(user, exp_days):
-        return
-    permissions = api.get_permissions(storage['id'], 'DATA_STORAGE')
-    if permissions is None:
         if not dry_run:
-            api.delete_datastorage(storage['id'], False)
-        logger.info('Datastorage {} deleted.'.format(storage['id']))
+            result = _replace_datastorage_content(logger, storage.get('path'), dedicated_bucket)
+            if not result:
+                logger.warning("Data backup failed, storage can't be deleted.")
+                return
+    for default_storage_user in default_storage_users:
+        api.delete_user_home_storage(default_storage_user.get('id'))
+    api.delete_datastorage(storage.get('id'), False)
+    logger.info('Datastorage {} deleted.'.format(storage.get('id')))
+
+
+def _cleanup_general_datastorage(api, logger, storage, user, dry_run, exp_days):
+    if exp_days is None:
+        logger.info('CP_DATASTORAGE_GENERAL_EXP_DAYS not defined. Storage {} cleanup skipped...'.format(storage.get('id')))
+        return
+    if not _clean_up(user, int(exp_days)):
+        return
+    if not dry_run:
+        api.delete_datastorage(storage.get('id'), False)
+    logger.info('Datastorage {} deleted.'.format(storage.get('id')))
+
 
 if __name__ == '__main__':
     cleanup_users()

@@ -185,7 +185,7 @@ class PipelineAPI:
     GET_RUN_URL = '/run/{}'
     GET_TASK_URL = '/run/{}/task?taskName={}'
     FILTER_RUNS = 'run/filter'
-    TERMINATE_RUN = "run/{}/terminate"
+    TERMINATE_RUN = 'run/{}/terminate'
     DATA_STORAGE_URL = "/datastorage"
     DATA_STORAGE_LOAD_ALL_URL = "/datastorage/loadAll"
     DATA_STORAGE_RULES_URL = "datastorage/rule/load"
@@ -1290,52 +1290,56 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
 
-    def get_permissions(self, entity_id, entity):
+    def get_permissions(self, entity_id, entity_class):
         try:
-            params = {"id": entity_id, "aclClass": entity}
-            result = requests.get(str(self.api_url) + self.GRANT_PERMISSIONS_URL,
-                                  headers=self.header, params=params, verify=False)
-            if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
-                raise RuntimeError('Failed to load permissions. API response: {}'.format(result.json()['message']))
-            payload = result['payload'] if 'payload' in result else None
-            return payload['permissions'] if 'permissions' in payload else None
+            result = self._request(endpoint='/grant?id={}&aclClass={}'
+                                   .format(entity_id, entity_class), http_method="get")
+            return result['permissions'] if 'permissions' in result else None
         except Exception as e:
-            raise RuntimeError("Failed to load permissions. \n {}".format(e))
+            raise RuntimeError("Failed to load permissions, entity_id: {} error: {}".format(entity_id, str(e.message)))
 
     def terminate_run(self, run_id):
         try:
-            requests.post(str(self.api_url) + self.TERMINATE_RUN.format(run_id), headers=self.header, verify=False)
+            return self._request(endpoint=self.TERMINATE_RUN.format(str(run_id)), http_method="post")
         except Exception as e:
             raise RuntimeError("Failed to terminate run. \n {}".format(e))
 
     def data_storage_load_all(self):
         try:
-            result = requests.get(str(self.api_url) + self.DATA_STORAGE_LOAD_ALL_URL, headers=self.header, verify=False)
-            if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
-                raise RuntimeError('Failed to load data storages. API response: {}'.format(result.json()['message']))
-            return result.json()['payload']
+            return self._request(endpoint=self.DATA_STORAGE_LOAD_ALL_URL, http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load data storages. \n {}".format(e))
 
     def load_pipelines_by_owners(self, owners, statuses):
-        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'owners': owners, 'statuses': statuses}
-        result = requests.post(str(self.api_url) + self.FILTER_RUNS,
-                               data=json.dumps(request), headers=self.header, verify=False)
-        if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
-            raise RuntimeError(result.json()['message'])
-        return result.json()['payload']['elements']
+        try:
+            data = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'owners': owners, 'statuses': statuses}
+            result = self._request(endpoint=self.FILTER_RUNS, http_method="post", data=data)
+            return result['elements'] if 'elements' in result else []
+        except Exception as e:
+            raise RuntimeError("Failed to load pipelines \n {}".format(e))
 
-    def delete_tool(self, tool):
-        result = requests.post(str(self.api_url) + self.DELETE_TOOL_URL, data=tool.to_json(),
-                               headers=self.header, verify=False)
-        if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
-            raise RuntimeError('Failed to delete tool {}. API response: {}'.format(tool.registry, tool.image, result.json()['message']))
+    def delete_tool(self, image):
+        try:
+            return self._request(endpoint='/tool/delete?image={}'.format(image), http_method="delete")
+        except Exception as e:
+            raise RuntimeError("Failed to delete tool \n {}".format(e))
 
     def load_datastorage_items(self, storage_id):
         try:
-            return self._request(
-                endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id),
-                http_method="get"
-            )
+            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
+
+    def delete_user_home_storage(self, user_id):
+        try:
+            return self._request(endpoint='/user/{}'.format(str(user_id)), http_method="put", data={})
+        except Exception as e:
+            raise RuntimeError("Failed to delete user home storage '{}'.".format(user_id))
+
+    def stop_run(self, run_id):
+        try:
+            data = {'status': 'STOPPED', 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}
+            return self._request(endpoint='run/{}/status'.format(str(run_id)), http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to stop run. \n {}".format(e))
+
