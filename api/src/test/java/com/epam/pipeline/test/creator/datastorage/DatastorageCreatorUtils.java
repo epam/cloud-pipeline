@@ -262,7 +262,7 @@ public final class DatastorageCreatorUtils {
 
     public static StorageUsage getStorageUsage() {
         return new StorageUsage(ID, TEST_STRING, DataStorageType.S3, TEST_PATH,
-                ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, Collections.emptyMap());
+                ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, ZERO_SIZE, null);
     }
 
     public static StorageMountPath getDefaultStorageMountPath() {
