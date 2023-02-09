@@ -17,7 +17,8 @@ import os
 import subprocess
 from datetime import datetime, timedelta
 
-from pipeline.api import PipelineAPI, APIError
+from pipeline.api import PipelineAPI
+import pipeline.common
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
 
 
@@ -55,10 +56,15 @@ def cleanup_users():
     try:
         # time.sleep(cleanup_timeout)
         logger.info('Starting users cleanup...')
+        if dry_run:
+            logger.info('Running in dry run mode. No actual changes will be made.')
+        else:
+            logger.info('Running in active mode. User assets will be deleted.')
         logger.info('Loading blocked users...')
         users = api.load_users()
         blocked_users = [user for user in users if user.get('blocked')]
-        logger.info('Loaded {} blocked users.'.format(len(blocked_users)))
+        logger.info('Loaded {} blocked users: {}'.format(len(blocked_users),
+                                                         ', '.join([user.get('userName') for user in blocked_users])))
         if len(blocked_users) > 0:
             _cleanup_paused_instances(api, logger, blocked_users, dry_run)
             _cleanup_running_instances(api, logger, blocked_users, dry_run)
@@ -223,38 +229,42 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run):
         try:
             storage_id = storage.get('id')
             logger.debug('Processing storage id {}, path {}'.format(storage_id, storage.get('path')))
-            logger.debug('Checking permissions')
+            logger.debug('Checking permissions for storage {}'.format(storage_id))
             permissions = api.get_permissions(storage_id, 'DATA_STORAGE')
             if permissions is not None:
-                logger.debug("Storage won't be deleted because it is shared with other users.")
+                logger.debug("Storage {} won't be deleted because it is shared with other users.".format(storage_id))
                 continue
-            logger.debug('Checking shared copies')
-            if _has_shared_copy(storages, storage):
-                logger.debug("Storage won't be deleted because it has shared copy.")
+            logger.debug('Storage {} is not shared with any users'.format(storage_id))
+            logger.debug('Checking child storages for storage {}'.format(storage_id))
+            child_storages = _has_shared_copy(storages, storage)
+            if child_storages:
+                logger.debug("Storage {} won't be deleted because it has child storage(s): {}"
+                             .format(storage_id, ', '.join([s.get('path') for s in child_storages])))
                 continue
+            logger.debug('Storage {} doesn\'t have any child storages'.format(storage_id))
             owner = [user for user in users if user.get('userName') == storage.get('owner')].pop(0)
             default_storage_users = _get_default_storage_users(users, storage_id)
             if len(default_storage_users) > 0:
-                logger.debug('Storage {} is default storage'.format(storage_id))
+                logger.debug('Storage {} is a default home storage for user(s) {}'
+                             .format(storage_id, ','.join([user.get('userName') for user in default_storage_users])))
                 _cleanup_default_datastorage(api, logger, storage, owner, default_storage_users, dry_run,
                                              default_exp_days)
             else:
-                logger.debug('Storage {} is general storage'.format(storage_id))
+                logger.debug('Storage {} is owned by {}'.format(storage_id, storage.get('owner')))
                 _cleanup_general_datastorage(api, logger, storage, owner, dry_run, general_exp_days)
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
-        except Exception:
-            logger.warning('Data storage cleanup has failed.')
+        except Exception as e:
+            logger.error('Data storage cleanup has failed: {}'.format(e.message))
     logger.info('Finishing data storages cleanup...')
 
 
 def _has_shared_copy(storages, storage):
     path = '{}/'.format(storage.get('path'))
-    copies = [s for s in storages if path in s.get('path')
-              and s.get('id') != storage.get('id')
-              and s.get('owner') != storage.get('owner')]
-    return len(copies) > 0
+    copies = [s for s in storages if s.get('path').startswith(path)
+              and s.get('id') != storage.get('id')]
+    return copies
 
 
 def _is_parent(tool_id, tools):
@@ -276,65 +286,90 @@ def _execute_command(cmd):
     return exit_code
 
 
-def _replace_datastorage_content(logger, storage, mount_point, dedicated_bucket):
-    result = _execute_command("/bin/mount -t nfs {} {}".format(storage, mount_point))
-    if result == 0:
-        logger.debug('Mounted')
+def _replace_datastorage_content(logger, storage, mount_point, destination):
+    if not os.path.exists(mount_point):
+        os.makedirs(mount_point)
+    logger.debug('Mounting {} to {}'.format(storage, mount_point))
+    cmd = '/bin/mount -t nfs -o ro {} {}'.format(storage, mount_point)
+    logger.debug('Executing "{}"'.format(cmd))
+    exit_code, stdout, stderr = pipeline.common.execute_cmd_command_and_get_stdout_stderr(cmd)
+    if exit_code == 0:
+        logger.debug('Mounted {} successfully'.format(storage))
     else:
-        logger.debug('Not mounted')
+        logger.debug('Failed to mount {} to {}: {}'.format(storage, mount_point, str(stderr)))
         return False
-    result = _execute_command('{} "{}" "{}" --recursive --force --quiet'.format(PIPE_STORAGE_CP, mount_point,
-                                                                                dedicated_bucket))
-    if result == 0:
-        logger.debug('Copied')
+
+    logger.debug('Transferring data from {} to {}'.format(mount_point, destination))
+    cmd = '{} "{}" "{}" --recursive --force --quiet'.format(PIPE_STORAGE_CP, mount_point,
+                                                                                destination)
+    logger.debug('Executing "{}"'.format(cmd))
+    exit_code, stdout, stderr = pipeline.common.execute_cmd_command_and_get_stdout_stderr(cmd)
+    if exit_code == 0:
+        logger.debug('Successfully copied data from {} to {}'.format(mount_point, destination))
     else:
-        logger.debug('Not copied')
+        logger.debug('Failed to copy data from {} to {}: {}'.format(mount_point, destination, str(stderr)))
         return False
-    result = _execute_command("/bin/umount {}".format(mount_point))
-    if result == 0:
-        logger.debug('Unmounted')
+
+    logger.debug('Unmounting storage from {}'.format(mount_point))
+    cmd = '/bin/umount {}'.format(mount_point)
+    logger.debug('Executing "{}"'.format(cmd))
+    exit_code, stdout, stderr = pipeline.common.execute_cmd_command_and_get_stdout_stderr(cmd)
+    if exit_code == 0:
+        logger.debug('Successfully unmounted {}'.format(mount_point))
     else:
-        logger.debug('Not unmounted')
+        logger.debug('Failed to umount {}: {}'.format(mount_point, str(stderr)))
         return False
     return True
 
 
 def _cleanup_default_datastorage(api, logger, storage, user, default_storage_users, dry_run, exp_days):
+    storage_id = storage.get('id')
     if exp_days is None:
-        logger.debug('CP_DATASTORAGE_DEFAULT_EXP_DAYS not defined. Storage {} cleanup skipped...'.format(storage.get('id')))
+        logger.debug('CP_DATASTORAGE_DEFAULT_EXP_DAYS not defined. Storage {} cleanup skipped...'.format(storage_id))
         return
     if not _clean_up(user, int(exp_days)):
-        logger.debug('Not time to cleanup. Storage {} cleanup skipped...'.format(storage.get('id')))
+        logger.debug('Storage cleanup timeout doesn\'t exceed yet. Storage {} cleanup skipped...'.format(storage_id))
         return
-    storage_items = api.load_datastorage_items(storage.get('id'))
+    logger.debug('Storage {} is eligible for deletion. Checking storage content'.format(storage_id))
+    storage_items = api.load_datastorage_items(storage_id)
     if storage_items is not None:
-        logger.debug('Storage {} has content to backup.'.format(storage.get('id')))
+        logger.debug('Storage {} has content to backup.'.format(storage_id))
         dedicated_bucket = os.getenv('CP_DEDICATED_BUCKET')
-        mount_path = os.getenv('CP_MOUNT_POINT')
+        mount_path = os.getenv('CP_MOUNT_POINT', '/opt/mount/')
         if dedicated_bucket is None:
-            logger.debug('CP_DEDICATED_BUCKET not defined. Storage {} cleanup skipped...'.format(storage.get('id')))
+            logger.debug('CP_DEDICATED_BUCKET not defined. Storage {} cleanup skipped...'.format(storage_id))
             return
+        source = os.path.join(mount_path, str(storage.get('id')))
+        destination = '{}/{}/'.format(dedicated_bucket.rstrip('/'), str(storage.get('id')))
+        logger.debug('Copying storage content from {} to {}'.format(storage.get('path'), destination))
         if not dry_run:
-            result = _replace_datastorage_content(logger, storage.get('path'), mount_path, dedicated_bucket)
+            result = _replace_datastorage_content(logger, storage.get('path'), source, destination)
             if not result:
-                logger.warning("Data backup failed, storage can't be deleted.")
+                logger.warning("Data backup failed, storage {} can't be deleted.".format(storage_id))
                 return
-    for default_storage_user in default_storage_users:
-        api.delete_user_home_storage(default_storage_user.get('id'))
-    api.delete_datastorage(storage.get('id'), False)
-    logger.debug('Datastorage {} deleted.'.format(storage.get('id')))
+    logger.debug('Cleaning user default storage attribute {} for users {} '.format(storage_id,
+                                                                                   ','.join([user.get('userName') for user in default_storage_users])))
+    if not dry_run:
+        for default_storage_user in default_storage_users:
+            api.delete_user_home_storage(default_storage_user.get('id'))
+    logger.debug('Deleting storage {}'.format(storage_id))
+    if not dry_run:
+        api.delete_datastorage(storage_id, False)
+    logger.debug('Datastorage {} deleted successfully'.format(storage_id))
 
 
 def _cleanup_general_datastorage(api, logger, storage, user, dry_run, exp_days):
+    storage_id = storage.get('id')
     if exp_days is None:
-        logger.debug('CP_DATASTORAGE_GENERAL_EXP_DAYS not defined. Storage {} cleanup skipped...'.format(storage.get('id')))
+        logger.debug('CP_DATASTORAGE_GENERAL_EXP_DAYS not defined. Storage {} cleanup skipped...'.format(storage_id))
         return
     if not _clean_up(user, int(exp_days)):
-        logger.debug('Not time to cleanup. Storage {} cleanup skipped...'.format(storage.get('id')))
+        logger.debug('Storage cleanup timeout doesn\'t exceed yet. Storage {} cleanup skipped...'.format(storage_id))
         return
+    logger.debug('Deleting storage {}'.format(storage_id))
     if not dry_run:
         api.delete_datastorage(storage.get('id'), False)
-    logger.debug('Datastorage {} deleted.'.format(storage.get('id')))
+    logger.debug('Datastorage {} deleted.'.format(storage_id))
 
 
 if __name__ == '__main__':
