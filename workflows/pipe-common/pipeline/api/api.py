@@ -187,7 +187,7 @@ class PipelineAPI:
     FILTER_RUNS = 'run/filter'
     TERMINATE_RUN = 'run/{}/terminate'
     DATA_STORAGE_URL = "/datastorage"
-    DATA_STORAGE_LOAD_ALL_URL = "/datastorage/loadAll"
+    DATA_STORAGE_LOAD_ALL_URL = "datastorage/loadAll"
     DATA_STORAGE_RULES_URL = "datastorage/rule/load"
     REGISTRY_CERTIFICATES_URL = "dockerRegistry/loadCerts"
     REGISTRY_LOAD_ALL_URL = "dockerRegistry/loadTree"
@@ -248,7 +248,7 @@ class PipelineAPI:
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL = '/datastorage/{id}/tags/batch/delete'
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
     DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
-    DATA_STORAGE_LIST_ITEMS_URL = "/datastorage/{id}/list"
+    DATA_STORAGE_LIST_ITEMS_URL = "datastorage/{id}/list"
     DATA_STORAGE_DELETE_URL = '/datastorage/{id}/delete'
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
     GRANT_PERMISSIONS_URL = "/grant"
@@ -1292,7 +1292,7 @@ class PipelineAPI:
 
     def get_permissions(self, entity_id, entity_class):
         try:
-            result = self._request(endpoint='/grant?id={}&aclClass={}'
+            result = self._request(endpoint='grant?id={}&aclClass={}'
                                    .format(entity_id, entity_class), http_method="get")
             return result['permissions'] if 'permissions' in result else None
         except Exception as e:
@@ -1320,7 +1320,7 @@ class PipelineAPI:
 
     def delete_tool(self, image):
         try:
-            return self._request(endpoint='/tool/delete?image={}'.format(image), http_method="delete")
+            return self._request(endpoint='tool/delete?image={}'.format(image), http_method="delete")
         except Exception as e:
             raise RuntimeError("Failed to delete tool \n {}".format(e))
 
@@ -1332,7 +1332,7 @@ class PipelineAPI:
 
     def delete_user_home_storage(self, user_id):
         try:
-            return self._request(endpoint='/user/{}'.format(str(user_id)), http_method="put", data={})
+            return self._request(endpoint='user/{}'.format(str(user_id)), http_method="put", data={})
         except Exception as e:
             raise RuntimeError("Failed to delete user home storage '{}'.".format(user_id))
 

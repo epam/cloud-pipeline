@@ -117,10 +117,11 @@ def _cleanup_paused_instances(api, logger, users, dry_run):
     logger.debug('Loaded {} paused instances.'.format(len(runs)))
     for run in runs:
         try:
-            logger.debug('Processing paused instance {}.'.format(run.get('id')))
+            run_id = run.get('id')
+            logger.debug('Processing paused instance {}.'.format(run_id))
             if not dry_run:
-                api.terminate_run(run.get('id'))
-            logger.debug('Paused instance {} terminated.'.format(run.get('id')))
+                api.terminate_run(run_id)
+            logger.debug('Paused instance {} terminated.'.format(run_id))
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
@@ -147,9 +148,10 @@ def _cleanup_running_instances(api, logger, users, dry_run):
         logger.debug('Processing running instances...')
     for run in runs:
         try:
+            run_id = run.get('id')
             if not dry_run:
-                api.stop_run(run.get('id'))
-            logger.debug('Running instance {} stopped.'.format(run.get('id')))
+                api.stop_run(run_id)
+            logger.debug('Running instance {} stopped.'.format(run_id))
         except KeyboardInterrupt:
             logger.warning('Interrupted.', trace=True)
             raise
@@ -178,20 +180,21 @@ def _cleanup_tools(api, logger, users, dry_run):
         logger.debug('Processing tools...')
     for tool in blocked_users_tools:
         try:
-            logger.debug('Processing tool {}, id {}'.format(tool.get('image'), tool.get('id')))
+            tool_id = tool.get('id')
+            logger.debug('Processing tool {}, id {}'.format(tool.get('image'), tool_id))
             logger.debug('Checking permissions')
-            permissions = api.get_permissions(tool.get('id'), 'TOOL')
+            permissions = api.get_permissions(tool_id, 'TOOL')
             if permissions is not None:
                 logger.debug("Tool  won't be deleted because it is shared with other users.")
                 continue
             logger.debug('Checking links')
-            if _is_parent(tool.get('id'), tools):
-                logger.info("Tool won't be deleted because it has linked tool(s).")
+            if _is_parent(tool_id, tools):
+                logger.debug("Tool {} won't be deleted because it has linked tool(s).".format(tool_id))
                 continue
-            logger.debug('Removing')
+            logger.debug('Removing tool {}'.format(tool_id))
             if not dry_run:
                 api.delete_tool(tool.get('image'))
-            logger.debug('Tool deleted.')
+            logger.debug('Tool {} deleted.'.format(tool_id))
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
@@ -216,9 +219,10 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run):
         logger.debug('Processing data storages...')
     for storage in file_storages:
         try:
-            logger.debug('Processing storage id {}, path {}'.format(storage.get('id'), storage.get('path')))
+            storage_id = storage.get('id')
+            logger.debug('Processing storage id {}, path {}'.format(storage_id, storage.get('path')))
             logger.debug('Checking permissions')
-            permissions = api.get_permissions(storage.get('id'), 'DATA_STORAGE')
+            permissions = api.get_permissions(storage_id, 'DATA_STORAGE')
             if permissions is not None:
                 logger.debug("Storage won't be deleted because it is shared with other users.")
                 continue
@@ -227,13 +231,13 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run):
                 logger.debug("Storage won't be deleted because it has shared copy.")
                 continue
             owner = [user for user in users if user.get('userName') == storage.get('owner')].pop(0)
-            default_storage_users = _get_default_storage_users(users, storage.get('id'))
+            default_storage_users = _get_default_storage_users(users, storage_id)
             if len(default_storage_users) > 0:
-                logger.debug('Storage {} is default storage'.format(storage.get('id')))
+                logger.debug('Storage {} is default storage'.format(storage_id))
                 _cleanup_default_datastorage(api, logger, storage, owner, default_storage_users, dry_run,
                                              default_exp_days)
             else:
-                logger.debug('Storage {} is general storage'.format(storage.get('id')))
+                logger.debug('Storage {} is general storage'.format(storage_id))
                 _cleanup_general_datastorage(api, logger, storage, owner, dry_run, general_exp_days)
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
@@ -244,8 +248,10 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run):
 
 
 def _has_shared_copy(storages, storage):
-    path = storage.get('path').split(':').pop(1)
-    copies = [s for s in storages if path in s.get('path') and s.get('id') != storage.get('id')]
+    path = '{}/'.format(storage.get('path'))
+    copies = [s for s in storages if path in s.get('path')
+              and s.get('id') != storage.get('id')
+              and s.get('owner') != storage.get('owner')]
     return len(copies) > 0
 
 
