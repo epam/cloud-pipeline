@@ -214,6 +214,7 @@ def _cleanup_tools(api, logger, users, dry_run):
 def _cleanup_storages(api, logger, users, blocked_users, dry_run):
     default_exp_days = os.getenv('CP_DATASTORAGE_DEFAULT_EXP_DAYS')
     general_exp_days = os.getenv('CP_DATASTORAGE_GENERAL_EXP_DAYS')
+    delete_content = _extract_boolean_parameter('CP_DELETE_STORAGE_CONTENT', 'true')
     if default_exp_days is None and general_exp_days is None:
         return
     logger.info('Running data storages cleanup...')
@@ -248,10 +249,10 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run):
                 logger.debug('Storage {} is a default home storage for user(s) {}'
                              .format(storage_id, ','.join([user.get('userName') for user in default_storage_users])))
                 _cleanup_default_datastorage(api, logger, storage, owner, default_storage_users, dry_run,
-                                             default_exp_days)
+                                             default_exp_days, delete_content)
             else:
                 logger.debug('Storage {} is owned by {}'.format(storage_id, storage.get('owner')))
-                _cleanup_general_datastorage(api, logger, storage, owner, dry_run, general_exp_days)
+                _cleanup_general_datastorage(api, logger, storage, owner, dry_run, general_exp_days, delete_content)
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
@@ -322,7 +323,7 @@ def _replace_datastorage_content(logger, storage, mount_point, destination):
     return True
 
 
-def _cleanup_default_datastorage(api, logger, storage, user, default_storage_users, dry_run, exp_days):
+def _cleanup_default_datastorage(api, logger, storage, user, default_storage_users, dry_run, exp_days, delete_content):
     storage_id = storage.get('id')
     if exp_days is None:
         logger.debug('CP_DATASTORAGE_DEFAULT_EXP_DAYS not defined. Storage {} cleanup skipped...'.format(storage_id))
@@ -354,11 +355,11 @@ def _cleanup_default_datastorage(api, logger, storage, user, default_storage_use
             api.delete_user_home_storage(default_storage_user.get('id'))
     logger.debug('Deleting storage {}'.format(storage_id))
     if not dry_run:
-        api.delete_datastorage(storage_id, False)
+        api.delete_datastorage(storage_id, delete_content)
     logger.debug('Datastorage {} deleted successfully'.format(storage_id))
 
 
-def _cleanup_general_datastorage(api, logger, storage, user, dry_run, exp_days):
+def _cleanup_general_datastorage(api, logger, storage, user, dry_run, exp_days, delete_content):
     storage_id = storage.get('id')
     if exp_days is None:
         logger.debug('CP_DATASTORAGE_GENERAL_EXP_DAYS not defined. Storage {} cleanup skipped...'.format(storage_id))
@@ -368,7 +369,7 @@ def _cleanup_general_datastorage(api, logger, storage, user, dry_run, exp_days):
         return
     logger.debug('Deleting storage {}'.format(storage_id))
     if not dry_run:
-        api.delete_datastorage(storage.get('id'), False)
+        api.delete_datastorage(storage.get('id'), delete_content)
     logger.debug('Datastorage {} deleted.'.format(storage_id))
 
 
