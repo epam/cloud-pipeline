@@ -505,6 +505,16 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
+  @computed
+  get maintenanceToolEnabled () {
+    return this.getPreferenceValue('ui.run.maintenance.tool.enabled') || true;
+  }
+
+  @computed
+  get maintenancePipelineEnabled () {
+    return this.getPreferenceValue('ui.run.maintenance.pipeline.enabled') || true;
+  }
+
   /**
    * @typedef {object} DownloadCommandTemplate
    * @property {string} template
