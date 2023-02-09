@@ -98,7 +98,7 @@ class StorageSize extends React.PureComponent {
         acc.total += (effectiveSize || size) + (oldVersionsEffectiveSize || oldVersionsSize);
         acc.previousTotal += oldVersionsEffectiveSize || oldVersionsSize;
         return acc;
-      }, {total: 0, previous: 0})
+      }, {total: 0, previousTotal: 0})
       : null;
     return {
       size: sizes.size || 0,
