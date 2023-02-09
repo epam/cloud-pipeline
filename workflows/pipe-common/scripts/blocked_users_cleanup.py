@@ -196,7 +196,7 @@ def _cleanup_tools(api, logger, users, dry_run):
                 logger.debug("Tool  won't be deleted because it is shared with other users.")
                 continue
             logger.debug('Checking links')
-            if _is_parent(tool_id, tools):
+            if _is_parent(tools, tool):
                 logger.debug("Tool {} won't be deleted because it has linked tool(s).".format(tool_id))
                 continue
             logger.debug('Removing tool {}'.format(tool_id))
@@ -267,8 +267,9 @@ def _has_shared_copy(storages, storage):
     return copies
 
 
-def _is_parent(tool_id, tools):
-    links = [t for t in tools if t.get('link') == tool_id]
+def _is_parent(tools, tool):
+    links = [t for t in tools if t.get('link') == tool.get('id')
+             and t.get('owner') != tool.get('owner')]
     return len(links) > 0
 
 
