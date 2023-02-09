@@ -47,7 +47,7 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
                     restored_paths = self._get_restored_paths(path)
                     folder_restored = self._folder_restored(path, restored_paths)
                 if not folder_restored:
-                    file_path = path + item.name
+                    file_path = path + item.name if path.endswith(PATH_SEPARATOR) else path
                     if not restored_paths.__contains__(file_path):
                         continue
             result.append(item)
