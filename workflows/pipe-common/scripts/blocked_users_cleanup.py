@@ -24,6 +24,8 @@ from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 NFS_TYPE = "NFS"
 
+PIPE_STORAGE_CP = "pipe storage cp"
+
 PAUSED = "PAUSED"
 RUNNING = "RUNNING"
 
@@ -242,8 +244,8 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run):
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
-        except Exception:
-            logger.warning('Data storage cleanup has failed.')
+        # except Exception:
+        #     logger.warning('Data storage cleanup has failed.')
     logger.info('Finishing data storages cleanup...')
 
 
@@ -274,24 +276,25 @@ def _execute_command(cmd):
     return exit_code
 
 
-def _replace_datastorage_content(logger, folder, storage):
+def _replace_datastorage_content(logger, storage, folder):
+    print('mount')
     result = _execute_command("/bin/mount -t nfs {} {}".format(folder, storage))
     if result == 0:
-        logger.info('Mounted')
+        logger.debug('Mounted')
     else:
-        logger.info('Not mounted')
+        logger.debug('Not mounted')
         return False
     result = _execute_command('{} "{}" "{}" --recursive --force --quiet'.format(PIPE_STORAGE_CP, storage, folder))
     if result == 0:
-        logger.info('Copied')
+        logger.debug('Copied')
     else:
-        logger.info('Not copied')
+        logger.debug('Not copied')
         return False
-    result = _execute_command("/bin/unmount {}".format(folder))
+    result = _execute_command("/bin/umount {}".format(folder))
     if result == 0:
-        logger.info('Unmounted')
+        logger.debug('Unmounted')
     else:
-        logger.info('Not unmounted')
+        logger.debug('Not unmounted')
         return False
     return True
 
@@ -305,6 +308,7 @@ def _cleanup_default_datastorage(api, logger, storage, user, default_storage_use
         return
     storage_items = api.load_datastorage_items(storage.get('id'))
     if storage_items is not None:
+        logger.debug('Storage {} has content to backup.'.format(storage.get('id')))
         dedicated_bucket = os.getenv('CP_DEDICATED_BUCKET')
         if dedicated_bucket is None:
             logger.debug('CP_DEDICATED_BUCKET not defined. Storage {} cleanup skipped...'.format(storage.get('id')))
