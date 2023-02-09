@@ -18,7 +18,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {message, Tooltip, Icon} from 'antd';
+import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
+import {STORAGE_CLASSES} from '../../pipelines/browser/data-storage';
 import DataStoragePathUsage from '../../../models/dataStorage/DataStoragePathUsage';
 import DataStoragePathUsageUpdate from '../../../models/dataStorage/DataStoragePathUsageUpdate';
 import displaySize from '../../../utils/displaySize';
@@ -58,9 +60,10 @@ function InfoTooltip ({size}) {
 @observer
 class StorageSize extends React.PureComponent {
   state = {
-    realSize: undefined,
-    effectiveSize: undefined
+    expandDetails: false
   };
+
+  @observable info;
 
   componentDidMount () {
     this.updateStorageSize();
@@ -75,7 +78,42 @@ class StorageSize extends React.PureComponent {
     }
   }
 
-  updateStorageSize () {
+  @computed
+  get usageInfo () {
+    if (!this.info) {
+      return null;
+    }
+    const sizes = this.info.usage && this.info.usage[STORAGE_CLASSES.standard]
+      ? this.info.usage[STORAGE_CLASSES.standard]
+      : this.info;
+    const archivedClasses = Object.values(this.info.usage || {})
+      .filter(({storageClass}) => storageClass !== STORAGE_CLASSES.standard);
+    const archivedSizes = archivedClasses && archivedClasses.length
+      ? archivedClasses.reduce((acc, {
+        size = 0,
+        effectiveSize = 0,
+        oldVersionsSize = 0,
+        oldVersionsEffectiveSize = 0
+      }) => {
+        acc.total += effectiveSize || size;
+        acc.previous += oldVersionsEffectiveSize || oldVersionsSize;
+        return acc;
+      }, {total: 0, previous: 0})
+      : null;
+    return {
+      size: sizes.size || 0,
+      effective: sizes.effectiveSize || 0,
+      previous: sizes.oldVersionsEffectiveSize || sizes.oldVersionsSize || 0,
+      archiveSize: archivedSizes
+        ? archivedSizes.total
+        : 0,
+      archivePrevious: archivedSizes
+        ? archivedSizes.previous
+        : 0
+    };
+  }
+
+  updateStorageSize = async () => {
     const {
       storage,
       storageId
@@ -86,31 +124,15 @@ class StorageSize extends React.PureComponent {
     }
     if (id !== undefined) {
       const request = new DataStoragePathUsage(id);
-      request
-        .fetch()
-        .then(() => {
-          if (request.loaded && request.value && request.value.size) {
-            const size = {
-              realSize: request.value.size,
-              effectiveSize: request.value.effectiveSize
-            };
-            return Promise.resolve(size);
-          }
-          return Promise.resolve();
-        })
-        .then((size) => {
-          this.setState({
-            realSize: size ? size.realSize : undefined,
-            effectiveSize: size ? size.effectiveSize : undefined
-          });
-        });
-    } else {
-      this.setState({
-        realSize: undefined,
-        effectiveSize: undefined
-      });
+      await request.fetch();
+      if (request.error) {
+        message.error(request.error, 5);
+      }
+      if (request.value && request.value.size) {
+        this.info = request.value;
+      }
     }
-  }
+  };
 
   refreshSize = async () => {
     const {
@@ -135,31 +157,76 @@ class StorageSize extends React.PureComponent {
     }
   };
 
+  toggleDetails = (event, expanded) => {
+    event && event.preventDefault();
+    this.setState({expandDetails: expanded});
+  };
+
+  renderDetails = () => {
+    const {expandDetails} = this.state;
+    return (
+      <div className={classNames(
+        styles.detailsContainer,
+        expandDetails ? styles.expanded : styles.collapsed
+      )}>
+        Details
+      </div>
+    );
+  };
+
   render () {
-    const {realSize, effectiveSize} = this.state;
     const {className, style} = this.props;
-    if (realSize) {
-      const size = effectiveSize || realSize;
+    const {expandDetails} = this.state;
+    if (this.usageInfo) {
+      const {
+        size,
+        effective,
+        previous,
+        archiveSize,
+        archivePrevious
+      } = this.usageInfo;
+      const totalSize = displaySize(
+        (effective || size) + previous,
+        (effective || size) + previous > 1024
+      );
+      const previousVersionsSize = displaySize(previous, previous > 1024);
+      const totalArchiveSize = displaySize(
+        archiveSize + archivePrevious,
+        archiveSize + archivePrevious > 1024
+      );
+      const archivePreviousVersionsSize = displaySize(
+        archivePrevious,
+        archivePrevious > 1024
+      );
       return (
         <div
           className={
             classNames(
-              styles.storageSize,
+              styles.storageSizeContainer,
               'cp-text',
               className
             )
           }
           style={style}
         >
-          <span>
-            Storage size: {displaySize(size, size > 1024)}
+          <div className={styles.storageSize}>
+            <span>
+              Storage size: {`${totalSize} (${previousVersionsSize})`}
+            </span>
+            <InfoTooltip size={{size, effective}} />
+          </div>
+          <span className={styles.storageSize}>
+            Archive size: {`${totalArchiveSize} (${archivePreviousVersionsSize})`}
+            <a
+              className={styles.refreshButton}
+              onClick={this.refreshSize}
+            >
+              Re-index
+            </a>
           </span>
-          <InfoTooltip size={{realSize, effectiveSize}} />
-          <a
-            className={styles.refreshButton}
-            onClick={this.refreshSize}
-          >
-            Re-index
+          {this.renderDetails()}
+          <a onClick={event => this.toggleDetails(event, !expandDetails)}>
+            {expandDetails ? 'Hide details' : 'Show details'}
           </a>
         </div>
       );

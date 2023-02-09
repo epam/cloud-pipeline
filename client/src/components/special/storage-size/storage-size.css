@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,31 @@
  *  limitations under the License.
  */
 
-.storage-size {
+.storage-size-container {
   padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
 }
 
-.storage-size span + .refresh-button {
+.refresh-button {
   margin-left: 5px;
 }
 
-.storage-size .refresh-button:hover {
+.refresh-button:hover {
   text-decoration: underline;
+}
+
+.details-container {
+  transition: all 0.15s ease;
+  overflow: hidden;
+}
+
+.details-container.expanded {
+  visibility: visible;
+  max-height: 300px;
+}
+
+.details-container.collapsed {
+  visibility: hidden;
+  max-height: 0;
 }
