@@ -40,7 +40,7 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
         restored_paths = None
         result = []
         folder_restored = False
-        is_file = not path.endswith(PATH_SEPARATOR)
+        is_file = not path.endswith(os.path.sep)
         for item in items:
             if not item.is_dir and item.storage_class != 'STANDARD':
                 path = self._normalize_path(path)
