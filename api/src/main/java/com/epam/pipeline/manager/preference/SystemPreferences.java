@@ -632,6 +632,11 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
     public static final StringPreference UI_MY_COSTS_DISCLAIMER = new StringPreference("ui.my.costs.disclaimer",
             "", UI_GROUP, pass);
+    public static final BooleanPreference UI_MAINTENANCE_PIPELINE_ENABLED = new BooleanPreference(
+            "ui.run.maintenance.pipeline.enabled", true, UI_GROUP, pass);
+    public static final BooleanPreference UI_MAINTENANCE_TOOL_ENABLED = new BooleanPreference(
+            "ui.run.maintenance.tool.enabled", true, UI_GROUP, pass);
+
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
@@ -785,10 +790,6 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
             "system.maintenance.mode.banner",
             "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
-    public static final BooleanPreference SYSTEM_MAINTENANCE_PIPELINE_ENABLED = new BooleanPreference(
-            "system.run.maintenance.pipeline.enabled", true, SYSTEM_GROUP, pass);
-    public static final BooleanPreference SYSTEM_MAINTENANCE_TOOL_ENABLED = new BooleanPreference(
-            "system.run.maintenance.tool.enabled", true, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USAGE_USERS_MONITOR_DELAY = new IntPreference(
             "system.usage.users.monitor.delay", 300000, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_USAGE_USERS_MONITOR_ENABLE = new BooleanPreference(
