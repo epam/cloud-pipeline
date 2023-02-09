@@ -244,8 +244,8 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run):
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
-        # except Exception:
-        #     logger.warning('Data storage cleanup has failed.')
+        except Exception:
+            logger.warning('Data storage cleanup has failed.')
     logger.info('Finishing data storages cleanup...')
 
 
@@ -276,21 +276,21 @@ def _execute_command(cmd):
     return exit_code
 
 
-def _replace_datastorage_content(logger, storage, folder):
-    print('mount')
-    result = _execute_command("/bin/mount -t nfs {} {}".format(folder, storage))
+def _replace_datastorage_content(logger, storage, mount_point, dedicated_bucket):
+    result = _execute_command("/bin/mount -t nfs {} {}".format(storage, mount_point))
     if result == 0:
         logger.debug('Mounted')
     else:
         logger.debug('Not mounted')
         return False
-    result = _execute_command('{} "{}" "{}" --recursive --force --quiet'.format(PIPE_STORAGE_CP, storage, folder))
+    result = _execute_command('{} "{}" "{}" --recursive --force --quiet'.format(PIPE_STORAGE_CP, mount_point,
+                                                                                dedicated_bucket))
     if result == 0:
         logger.debug('Copied')
     else:
         logger.debug('Not copied')
         return False
-    result = _execute_command("/bin/umount {}".format(folder))
+    result = _execute_command("/bin/umount {}".format(mount_point))
     if result == 0:
         logger.debug('Unmounted')
     else:
@@ -310,11 +310,12 @@ def _cleanup_default_datastorage(api, logger, storage, user, default_storage_use
     if storage_items is not None:
         logger.debug('Storage {} has content to backup.'.format(storage.get('id')))
         dedicated_bucket = os.getenv('CP_DEDICATED_BUCKET')
+        mount_path = os.getenv('CP_MOUNT_POINT')
         if dedicated_bucket is None:
             logger.debug('CP_DEDICATED_BUCKET not defined. Storage {} cleanup skipped...'.format(storage.get('id')))
             return
         if not dry_run:
-            result = _replace_datastorage_content(logger, storage.get('path'), dedicated_bucket)
+            result = _replace_datastorage_content(logger, storage.get('path'), mount_path, dedicated_bucket)
             if not result:
                 logger.warning("Data backup failed, storage can't be deleted.")
                 return
