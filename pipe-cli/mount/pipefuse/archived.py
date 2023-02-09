@@ -57,8 +57,6 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
             return PATH_SEPARATOR
         if not path.startswith(PATH_SEPARATOR):
             path = PATH_SEPARATOR + path
-        if path != PATH_SEPARATOR and not path.endswith(PATH_SEPARATOR):
-            path = path + PATH_SEPARATOR
         return path
 
     def _get_restored_paths(self, path):
@@ -132,9 +130,9 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
             return '%s (Restored%s)' % (storage_class, retired_till)
         return storage_class
 
-    def _get_storage_lifecycle(self, path, is_folder=False):
+    def _get_storage_lifecycle(self, path, is_file=True):
         try:
-            lifecycle_items = self._pipe.get_storage_lifecycle(self._bucket, path, is_folder)
+            lifecycle_items = self._pipe.get_storage_lifecycle(self._bucket, path, is_file)
             return None if not lifecycle_items or len(lifecycle_items) == 0 else lifecycle_items[0]
         except Exception:
             logging.exception('Storage last lifecycle retrieving has failed')
