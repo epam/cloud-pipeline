@@ -40,14 +40,15 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
         restored_paths = None
         result = []
         folder_restored = False
+        is_file = not path.endswith(PATH_SEPARATOR)
         for item in items:
             if not item.is_dir and item.storage_class != 'STANDARD':
                 path = self._normalize_path(path)
                 if restored_paths is None:
-                    restored_paths = self._get_restored_paths(path)
+                    restored_paths = self._get_restored_paths(path, is_file)
                     folder_restored = self._folder_restored(path, restored_paths)
                 if not folder_restored:
-                    file_path = path + item.name if path.endswith(PATH_SEPARATOR) else path
+                    file_path = path if is_file else path + item.name
                     if not restored_paths.__contains__(file_path):
                         continue
             result.append(item)
@@ -61,9 +62,9 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
             path = PATH_SEPARATOR + path
         return path
 
-    def _get_restored_paths(self, path):
+    def _get_restored_paths(self, path, is_file=False):
         try:
-            response = self._pipe.get_storage_lifecycle(self._bucket, path)
+            response = self._pipe.get_storage_lifecycle(self._bucket, path, is_file)
             items = []
             if not response:
                 return set()
