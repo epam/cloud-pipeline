@@ -20,25 +20,22 @@
   flex-direction: column;
 }
 
-.refresh-button {
-  margin-left: 5px;
+.controls-button:not(:first-child) {
+  margin-left: 10px;
 }
 
-.refresh-button:hover {
+.controls-button:hover {
   text-decoration: underline;
 }
 
 .details-container {
-  transition: all 0.15s ease;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.details-container.expanded {
-  visibility: visible;
-  max-height: 300px;
-}
-
-.details-container.collapsed {
-  visibility: hidden;
-  max-height: 0;
+.detail {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

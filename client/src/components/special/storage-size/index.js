@@ -60,7 +60,7 @@ function InfoTooltip ({size}) {
 @observer
 class StorageSize extends React.PureComponent {
   state = {
-    expandDetails: false
+    showDetailedInfo: false
   };
 
   @observable info;
@@ -104,12 +104,23 @@ class StorageSize extends React.PureComponent {
       size: sizes.size || 0,
       effective: sizes.effectiveSize || 0,
       previous: sizes.oldVersionsEffectiveSize || sizes.oldVersionsSize || 0,
-      archiveSize: archivedSizes
+      archiveSizeTotal: archivedSizes
         ? archivedSizes.total
         : 0,
-      archivePrevious: archivedSizes
+      archivePreviousTotal: archivedSizes
         ? archivedSizes.previous
-        : 0
+        : 0,
+      details: [
+        Object.values(this.info.usage || {})
+          .find(({storageClass}) => storageClass === STORAGE_CLASSES.standard),
+        ...Object.values(this.info.usage || {})
+          .filter(({storageClass}) => storageClass !== STORAGE_CLASSES.standard)
+      ].filter(Boolean)
+        .map(archived => ({
+          size: archived.effectiveSize || archived.size || 0,
+          previous: archived.oldVersionsEffectiveSize || archived.oldVersionsSize || 0,
+          storageClass: archived.storageClass
+        }))
     };
   }
 
@@ -157,47 +168,100 @@ class StorageSize extends React.PureComponent {
     }
   };
 
-  toggleDetails = (event, expanded) => {
+  toggleDetails = (event, showDetailedInfo) => {
     event && event.preventDefault();
-    this.setState({expandDetails: expanded});
+    this.setState({showDetailedInfo});
   };
 
-  renderDetails = () => {
-    const {expandDetails} = this.state;
+  renderInfo = () => {
+    const {
+      size,
+      effective,
+      previous,
+      archiveSizeTotal,
+      archivePreviousTotal
+    } = this.usageInfo;
+    const totalSize = displaySize(
+      (effective || size) + previous,
+      (effective || size) + previous > 1024
+    );
+    const previousVersionsSize = displaySize(previous, previous > 1024);
+    const totalArchiveSize = displaySize(
+      archiveSizeTotal + archivePreviousTotal,
+      archiveSizeTotal + archivePreviousTotal > 1024
+    );
+    const archivePreviousVersionsSize = displaySize(
+      archivePreviousTotal,
+      archivePreviousTotal > 1024
+    );
     return (
-      <div className={classNames(
-        styles.detailsContainer,
-        expandDetails ? styles.expanded : styles.collapsed
-      )}>
-        Details
+      <div className={styles.detailsContainer}>
+        <div className={styles.storageSize}>
+          <span className={styles.detail}>
+            Storage size: {`${totalSize} (${previousVersionsSize})`}
+          </span>
+          <InfoTooltip size={{size, effective}} />
+        </div>
+        <span className={styles.detail}>
+          Archive size: {`${totalArchiveSize} (${archivePreviousVersionsSize})`}
+        </span>
+      </div>
+    );
+  };
+
+  renderDetailedInfo = () => {
+    const {details} = this.usageInfo;
+    const getHeading = (storageClass) => {
+      let storageStatus = 'Archive';
+      if (storageClass === STORAGE_CLASSES.standard) {
+        storageStatus = 'Storage';
+      }
+      const formattedName = `${storageClass[0].toUpperCase()}${storageClass
+        .substring(1)
+        .toLowerCase()}`.replace('_', ' ');
+      return `${storageStatus} size (${formattedName})`;
+    };
+    return (
+      <div className={styles.detailsContainer}>
+        {details.map(({storageClass, size, previous}) => (
+          <span
+            key={storageClass}
+            className={styles.detail}
+          >
+            {/* eslint-disable-next-line max-len */}
+            {`${getHeading(storageClass)}: ${displaySize(size, size > 1024)} (${displaySize(previous, previous > 1024)})`}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  renderControls = () => {
+    const {showDetailedInfo} = this.state;
+    return (
+      <div>
+        {this.usageInfo?.details?.length > 0 ? (
+          <a
+            className={styles.controlsButton}
+            onClick={event => this.toggleDetails(event, !showDetailedInfo)}
+          >
+            {showDetailedInfo ? 'Hide details' : 'Show details'}
+          </a>
+        ) : null}
+        <a
+          className={styles.controlsButton}
+          onClick={this.refreshSize}
+        >
+          Re-index
+        </a>
       </div>
     );
   };
 
   render () {
     const {className, style} = this.props;
-    const {expandDetails} = this.state;
+    const {showDetailedInfo} = this.state;
     if (this.usageInfo) {
-      const {
-        size,
-        effective,
-        previous,
-        archiveSize,
-        archivePrevious
-      } = this.usageInfo;
-      const totalSize = displaySize(
-        (effective || size) + previous,
-        (effective || size) + previous > 1024
-      );
-      const previousVersionsSize = displaySize(previous, previous > 1024);
-      const totalArchiveSize = displaySize(
-        archiveSize + archivePrevious,
-        archiveSize + archivePrevious > 1024
-      );
-      const archivePreviousVersionsSize = displaySize(
-        archivePrevious,
-        archivePrevious > 1024
-      );
       return (
         <div
           className={
@@ -209,25 +273,11 @@ class StorageSize extends React.PureComponent {
           }
           style={style}
         >
-          <div className={styles.storageSize}>
-            <span>
-              Storage size: {`${totalSize} (${previousVersionsSize})`}
-            </span>
-            <InfoTooltip size={{size, effective}} />
-          </div>
-          <span className={styles.storageSize}>
-            Archive size: {`${totalArchiveSize} (${archivePreviousVersionsSize})`}
-            <a
-              className={styles.refreshButton}
-              onClick={this.refreshSize}
-            >
-              Re-index
-            </a>
-          </span>
-          {this.renderDetails()}
-          <a onClick={event => this.toggleDetails(event, !expandDetails)}>
-            {expandDetails ? 'Hide details' : 'Show details'}
-          </a>
+          {showDetailedInfo
+            ? this.renderDetailedInfo()
+            : this.renderInfo()
+          }
+          {this.renderControls()}
         </div>
       );
     }
