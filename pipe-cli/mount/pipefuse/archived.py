@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import logging
+import os
+
 from pipefuse.fsclient import FileSystemClientDecorator
 
 PATH_SEPARATOR = '/'
@@ -57,6 +59,8 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
             return PATH_SEPARATOR
         if not path.startswith(PATH_SEPARATOR):
             path = PATH_SEPARATOR + path
+        if path != PATH_SEPARATOR and not path.endswith(PATH_SEPARATOR):
+            path = path + PATH_SEPARATOR
         return path
 
     def _get_restored_paths(self, path):
@@ -107,11 +111,16 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
             return {}
 
     def _get_archived_file(self, path):
-        files = self._inner.ls(path, depth=1)
+        dir_path = os.path.dirname(path)
+        file_name = os.path.basename(dir_path)
+        items = self._inner.ls(dir_path, depth=1)
+        if not items:
+            return None
+        files = [item for item in items if not item.is_dir and item.name == file_name]
         if not files or len(files) != 1:
             return None
         source_file = files[0]
-        if not source_file or source_file.is_dir or not source_file.storage_class:
+        if not source_file or not source_file.storage_class:
             return None
         return source_file if source_file.storage_class != 'STANDARD' else None
 
