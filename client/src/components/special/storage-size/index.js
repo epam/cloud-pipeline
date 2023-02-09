@@ -96,7 +96,7 @@ class StorageSize extends React.PureComponent {
         oldVersionsEffectiveSize = 0
       }) => {
         acc.total += (effectiveSize || size) + (oldVersionsEffectiveSize || oldVersionsSize);
-        acc.previous += oldVersionsEffectiveSize || oldVersionsSize;
+        acc.previousTotal += oldVersionsEffectiveSize || oldVersionsSize;
         return acc;
       }, {total: 0, previous: 0})
       : null;
@@ -108,7 +108,7 @@ class StorageSize extends React.PureComponent {
         ? archivedSizes.total
         : 0,
       archivePreviousTotal: archivedSizes
-        ? archivedSizes.previous
+        ? archivedSizes.previousTotal
         : 0,
       details: [
         Object.values(this.info.usage || {})
@@ -187,8 +187,8 @@ class StorageSize extends React.PureComponent {
     );
     const previousVersionsSize = displaySize(previous, previous > 1024);
     const totalArchiveSize = displaySize(
-      archiveSizeTotal + archivePreviousTotal,
-      archiveSizeTotal + archivePreviousTotal > 1024
+      archiveSizeTotal,
+      archiveSizeTotal > 1024
     );
     const archivePreviousVersionsSize = displaySize(
       archivePreviousTotal,
