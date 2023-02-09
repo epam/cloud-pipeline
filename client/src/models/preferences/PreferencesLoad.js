@@ -22,6 +22,16 @@ const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
+export const RUN_CAPABILITIES = {
+  dinD: 'DinD',
+  singularity: 'Singularity',
+  systemD: 'SystemD',
+  noMachine: 'NoMachine',
+  module: 'Module',
+  disableHyperThreading: 'Disable Hyper-Threading',
+  dcv: 'NICE DCV'
+};
+
 class PreferencesLoad extends Remote {
   constructor () {
     super();
@@ -302,6 +312,13 @@ class PreferencesLoad extends Remote {
             .filter(o => o.length);
         };
         const mapCapability = ([key, entry]) => {
+          if (
+            typeof entry === 'boolean' ||
+            entry.visible === false ||
+            Object.keys(RUN_CAPABILITIES).includes(key)
+          ) {
+            return undefined;
+          }
           const {
             capabilities = {}
           } = entry;
@@ -322,7 +339,8 @@ class PreferencesLoad extends Remote {
         };
         return Object
           .entries(capabilities || {})
-          .map(mapCapability);
+          .map(mapCapability)
+          .filter(Boolean);
       } catch (e) {
         console.warn(
           'Error parsing "launch.capabilities" preference:',
@@ -457,6 +475,33 @@ class PreferencesLoad extends Remote {
 
   @computed
   get hiddenRunCapabilities () {
+    const value = this.getPreferenceValue('launch.capabilities');
+    if (value) {
+      try {
+        const capabilities = JSON.parse(value);
+        const getCapabilityByKey = (key) => {
+          const capabilityKey = Object
+            .keys(RUN_CAPABILITIES)
+            .find((aKey) => aKey.toLowerCase() === (key || '').toLowerCase());
+          if (capabilityKey) {
+            return RUN_CAPABILITIES[capabilityKey];
+          }
+          return undefined;
+        };
+        return Object
+          .entries(capabilities || {})
+          .filter(([, value]) => (typeof value === 'boolean' && !value) ||
+            (typeof value === 'object' && !value.visible)
+          )
+          .map(([key]) => getCapabilityByKey(key))
+          .filter(Boolean);
+      } catch (e) {
+        console.warn(
+          'Error parsing "launch.capabilities" preference:',
+          e
+        );
+      }
+    }
     return [];
   }
 
