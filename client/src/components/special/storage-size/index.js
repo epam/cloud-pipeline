@@ -95,7 +95,7 @@ class StorageSize extends React.PureComponent {
         oldVersionsSize = 0,
         oldVersionsEffectiveSize = 0
       }) => {
-        acc.total += effectiveSize || size;
+        acc.total += (effectiveSize || size) + (oldVersionsEffectiveSize || oldVersionsSize);
         acc.previous += oldVersionsEffectiveSize || oldVersionsSize;
         return acc;
       }, {total: 0, previous: 0})
@@ -229,7 +229,7 @@ class StorageSize extends React.PureComponent {
             className={styles.detail}
           >
             {/* eslint-disable-next-line max-len */}
-            {`${getHeading(storageClass)}: ${displaySize(size, size > 1024)} (${displaySize(previous, previous > 1024)})`}
+            {`${getHeading(storageClass)}: ${displaySize(size + previous, size + previous > 1024)} (${displaySize(previous, previous > 1024)})`}
           </span>
         ))}
       </div>
