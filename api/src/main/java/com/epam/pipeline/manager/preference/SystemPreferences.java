@@ -608,6 +608,10 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
     public static final StringPreference UI_MY_COSTS_DISCLAIMER = new StringPreference("ui.my.costs.disclaimer",
             "", UI_GROUP, pass);
+    public static final BooleanPreference UI_MAINTENANCE_PIPELINE_ENABLED = new BooleanPreference(
+            "ui.run.maintenance.pipeline.enabled", true, UI_GROUP, pass);
+    public static final BooleanPreference UI_MAINTENANCE_TOOL_ENABLED = new BooleanPreference(
+            "ui.run.maintenance.tool.enabled", true, UI_GROUP, pass);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
