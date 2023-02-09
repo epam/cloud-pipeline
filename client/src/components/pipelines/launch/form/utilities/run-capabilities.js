@@ -22,17 +22,10 @@ import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
 import {mergeUserRoleAttributes} from '../../../../../utils/attributes/merge-user-role-attributes';
 import fetchToolDefaultParameters from './fetch-tool-default-parameters';
+import {RUN_CAPABILITIES} from '../../../../../models/preferences/PreferencesLoad';
 import styles from './run-capabilities.css';
 
-export const RUN_CAPABILITIES = {
-  dinD: 'DinD',
-  singularity: 'Singularity',
-  systemD: 'SystemD',
-  noMachine: 'NoMachine',
-  module: 'Module',
-  disableHyperThreading: 'Disable Hyper-Threading',
-  dcv: 'NICE DCV'
-};
+export {RUN_CAPABILITIES};
 
 export const RUN_CAPABILITIES_PARAMETERS = {
   [RUN_CAPABILITIES.dinD]: CP_CAP_DIND_CONTAINER,
@@ -454,6 +447,12 @@ class RunCapabilities extends React.Component {
       const selectable = this.capabilityIsRequired(capability.value)
         ? mode === RUN_CAPABILITIES_MODE.edit
         : true;
+      if (
+        !capability.custom &&
+        this.props.preferences.hiddenRunCapabilities.includes(capability.value)
+      ) {
+        return null;
+      }
       if (capabilities.length === 0) {
         return (
           <MenuItem
