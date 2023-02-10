@@ -15,7 +15,7 @@
         "storage_class": {"type": "keyword", "store": true},
         "versions": {
           "properties": {
-            "tier": {
+            "storage_class": {
               "type": "keyword"
             },
             "size": {
