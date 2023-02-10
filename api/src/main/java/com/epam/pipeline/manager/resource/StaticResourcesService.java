@@ -69,8 +69,9 @@ public class StaticResourcesService {
                 throw new InvalidPathException(
                         messageHelper.getMessage(MessageConstants.ERROR_STATIC_RESOURCES_FOLDER_PATH));
             }
+            // TODO: Special error on archived content?
             final List<AbstractDataStorageItem> items = dataStorageManager.getDataStorageItems(storage.getId(),
-                    ProviderUtils.withTrailingDelimiter(filePath), false, null, null).getResults();
+                    ProviderUtils.withTrailingDelimiter(filePath), false, null, null, false).getResults();
             final String templatePath = preferenceManager.getPreference(
                     SystemPreferences.STATIC_RESOURCES_FOLDER_TEMPLATE_PATH);
             final String html = buildHtml(items, templatePath, filePath);

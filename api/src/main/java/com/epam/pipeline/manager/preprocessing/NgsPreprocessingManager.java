@@ -372,7 +372,8 @@ public class NgsPreprocessingManager {
     private boolean checkPathExistence(final Long dataStorageId, final String path) {
         try {
             // if we can list it, it should exist
-            storageManager.getDataStorageItems(dataStorageId, path, false, 1, null);
+            // TODO: do we need to check archived?
+            storageManager.getDataStorageItems(dataStorageId, path, false, 1, null, false);
             return true;
         } catch (RuntimeException e) {
             log.debug("Fail to list storage", e);

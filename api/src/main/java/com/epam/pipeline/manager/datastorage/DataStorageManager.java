@@ -24,6 +24,10 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePath;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreStatus;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -72,6 +76,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ObjectNotFoundException;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
@@ -209,7 +214,6 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
-
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -517,8 +521,9 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadRootDataStorages();
     }
 
-    public DataStorageListing getDataStorageItems(final Long dataStorageId,
-            final String path, Boolean showVersion, Integer pageSize, String marker) {
+    public DataStorageListing getDataStorageItems(final Long dataStorageId, final String path,
+                                                  final Boolean showVersion, final Integer pageSize,
+                                                  final String marker, final boolean showArchived) {
         AbstractDataStorage dataStorage = load(dataStorageId);
         if (showVersion) {
             Assert.isTrue(dataStorage.isVersioningEnabled(), messageHelper
@@ -526,6 +531,11 @@ public class DataStorageManager implements SecuredEntityManager {
         }
         Assert.isTrue(pageSize == null || pageSize > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+        if (!showArchived && DataStorageType.S3.equals(dataStorage.getType())) {
+            final DataStorageLifecycleRestoredListingContainer restoredListing = loadRestoredPaths(dataStorage, path);
+            return storageProviderManager.getRestoredItems(dataStorage, path, showVersion, pageSize, marker,
+                    restoredListing);
+        }
         return storageProviderManager.getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
@@ -744,7 +754,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                                               final String path,
                                                               final Boolean showVersion) {
         final List<AbstractDataStorageItem> dataStorageItems = getDataStorageItems(dataStorageId, path, showVersion,
-                null, null).getResults();
+                null, null, false).getResults();
         if (CollectionUtils.isEmpty(dataStorageItems)) {
             return null;
         }
@@ -1391,5 +1401,60 @@ public class DataStorageManager implements SecuredEntityManager {
             return String.join(PipelineStringUtils.DASH,
                                sharedPathNamePrefix, SHARED_STORAGE_SUFFIX, Long.toString(latestMirrorNumber + 1));
         }
+    }
+
+    private DataStorageLifecycleRestoredListingContainer loadRestoredPaths(final AbstractDataStorage storage,
+                                                                           final String path) {
+        final String normalizedPath = ProviderUtils.delimiterIfEmpty(ProviderUtils.withLeadingDelimiter(path));
+        final List<StorageRestoreAction> restoredItems = loadSucceededRestoreActions(storage, path);
+
+        if (CollectionUtils.isEmpty(restoredItems)) {
+            return DataStorageLifecycleRestoredListingContainer.builder()
+                    .folderRestored(false)
+                    .restoredFiles(Collections.emptyList())
+                    .build();
+        }
+        final boolean parentFolderRestored = restoredItems.stream()
+                .filter(action -> StorageRestorePathType.FOLDER.equals(action.getType()))
+                .map(StorageRestoreAction::getPath)
+                .map(restoredPath -> ProviderUtils.DELIMITER.equals(restoredPath)
+                        ? restoredPath : ProviderUtils.withoutTrailingDelimiter(restoredPath))
+                .anyMatch(normalizedPath::startsWith);
+        if (parentFolderRestored) {
+            return DataStorageLifecycleRestoredListingContainer.builder()
+                    .folderRestored(true)
+                    .restoredFiles(Collections.emptyList())
+                    .build();
+        }
+        return DataStorageLifecycleRestoredListingContainer.builder()
+                .folderRestored(false)
+                .restoredFiles(getRestoredFilePaths(restoredItems))
+                .build();
+    }
+
+    private List<String> getRestoredFilePaths(final List<StorageRestoreAction> restoredItems) {
+        return ListUtils.emptyIfNull(restoredItems).stream()
+                .filter(action -> StorageRestorePathType.FILE.equals(action.getType()))
+                .map(StorageRestoreAction::getPath)
+                .collect(Collectors.toList());
+    }
+
+    private List<StorageRestoreAction> loadSucceededRestoreActions(final AbstractDataStorage storage,
+                                                                   final String path) {
+        final List<StorageRestoreAction> restoredItems = ListUtils.emptyIfNull(storageLifecycleRestoreManager
+                        .loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
+                                .path(path)
+                                .type(StorageRestorePathType.FOLDER)
+                                .build(), false)).stream()
+                .filter(action -> StorageRestoreStatus.SUCCEEDED.equals(action.getStatus()))
+                .collect(Collectors.toList());
+        ListUtils.emptyIfNull(storageLifecycleRestoreManager
+                        .loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
+                                .path(path)
+                                .type(StorageRestorePathType.FILE)
+                                .build(), false)).stream()
+                .filter(action -> StorageRestoreStatus.SUCCEEDED.equals(action.getStatus()))
+                .forEach(restoredItems::add);
+        return restoredItems;
     }
 }
