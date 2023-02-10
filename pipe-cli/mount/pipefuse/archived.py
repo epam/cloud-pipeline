@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import logging
+import os
+
 from pipefuse.fsclient import FileSystemClientDecorator
 
 PATH_SEPARATOR = '/'
@@ -38,14 +40,15 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
         restored_paths = None
         result = []
         folder_restored = False
+        is_file = not path.endswith(PATH_SEPARATOR)
         for item in items:
             if not item.is_dir and item.storage_class != 'STANDARD':
                 path = self._normalize_path(path)
                 if restored_paths is None:
-                    restored_paths = self._get_restored_paths(path)
+                    restored_paths = self._get_restored_paths(path, is_file)
                     folder_restored = self._folder_restored(path, restored_paths)
                 if not folder_restored:
-                    file_path = path + item.name
+                    file_path = path if is_file else path + item.name
                     if not restored_paths.__contains__(file_path):
                         continue
             result.append(item)
@@ -57,13 +60,11 @@ class ArchivedFilesFilterFileSystemClient(FileSystemClientDecorator):
             return PATH_SEPARATOR
         if not path.startswith(PATH_SEPARATOR):
             path = PATH_SEPARATOR + path
-        if path != PATH_SEPARATOR and not path.endswith(PATH_SEPARATOR):
-            path = path + PATH_SEPARATOR
         return path
 
-    def _get_restored_paths(self, path):
+    def _get_restored_paths(self, path, is_file=False):
         try:
-            response = self._pipe.get_storage_lifecycle(self._bucket, path)
+            response = self._pipe.get_storage_lifecycle(self._bucket, path, is_file)
             items = []
             if not response:
                 return set()
@@ -109,13 +110,13 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
             return {}
 
     def _get_archived_file(self, path):
-        files = self._inner.ls(path, depth=1)
+        items = self._inner.ls(path, depth=1)
+        if not items:
+            return None
+        files = [item for item in items if not item.is_dir and item.storage_class and item.storage_class != 'STANDARD']
         if not files or len(files) != 1:
             return None
-        source_file = files[0]
-        if not source_file or source_file.is_dir or not source_file.storage_class:
-            return None
-        return source_file if source_file.storage_class != 'STANDARD' else None
+        return files[0]
 
     def _add_lifecycle_status_attribute(self, tags, source_file, lifecycle):
         tag_value = self._get_storage_class_tag_value(lifecycle, source_file.storage_class)
@@ -132,9 +133,10 @@ class ArchivedAttributesFileSystemClient(FileSystemClientDecorator):
             return '%s (Restored%s)' % (storage_class, retired_till)
         return storage_class
 
-    def _get_storage_lifecycle(self, path, is_folder=False):
+    def _get_storage_lifecycle(self, path, is_file=True):
         try:
-            return self._pipe.get_storage_last_lifecycle(self._bucket, path, is_folder)
+            lifecycle_items = self._pipe.get_storage_lifecycle(self._bucket, path, is_file)
+            return None if not lifecycle_items or len(lifecycle_items) == 0 else lifecycle_items[0]
         except Exception:
             logging.exception('Storage last lifecycle retrieving has failed')
             return None

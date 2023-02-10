@@ -167,17 +167,6 @@ class CloudPipelineClient:
             raise RuntimeError(response_data['message'])
         return None
 
-    def get_storage_last_lifecycle(self, bucket, path, is_folder):
-        logging.info('Getting storage last lifecycle for data storage #%s' % bucket.id)
-        request_url = '/datastorage/%s/lifecycle/restore/effective?path=%s&pathType=%s' \
-                      % (str(bucket.id), path, 'FOLDER' if is_folder else 'FILE')
-        response_data = self._get(request_url)
-        if 'payload' in response_data:
-            return StorageLifecycle.load(response_data['payload'])
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        return None
-
     def _check_write_allowed(self, bucket):
         try:
             self.get_temporary_credentials(bucket)
