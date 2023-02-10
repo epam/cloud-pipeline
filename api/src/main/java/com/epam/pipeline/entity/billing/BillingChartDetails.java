@@ -16,20 +16,9 @@
 
 package com.epam.pipeline.entity.billing;
 
-import lombok.Builder;
-import lombok.Value;
-
-import java.time.LocalDateTime;
 import java.util.Map;
 
-@Value
-@Builder
-public class BillingChartInfo<T extends BillingChartDetails> {
+public interface BillingChartDetails {
 
-    Map<String, String> groupingInfo;
-    LocalDateTime periodStart;
-    LocalDateTime periodEnd;
-    T costDetails;
-    Long cost;
-    Long accumulatedCost;
+    BillingChartDetailsType getType();
 }

@@ -19,17 +19,28 @@ package com.epam.pipeline.entity.billing;
 import lombok.Builder;
 import lombok.Value;
 
-import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.List;
 
-@Value
 @Builder
-public class BillingChartInfo<T extends BillingChartDetails> {
+@Value
+public class StorageBillingChartDetails implements BillingChartDetails {
+    
+    BillingChartDetailsType type = BillingChartDetailsType.DATASTORAGE_BILLING;
+    
+    List<StorageBillingDetails> byStorageClass;
+    
+    @Override
+    public BillingChartDetailsType getType() {
+        return BillingChartDetailsType.DATASTORAGE_BILLING;
+    }
 
-    Map<String, String> groupingInfo;
-    LocalDateTime periodStart;
-    LocalDateTime periodEnd;
-    T costDetails;
-    Long cost;
-    Long accumulatedCost;
+    @Value
+    @Builder
+    public static class StorageBillingDetails {
+        String storageClass;
+        Long cost;
+        Long size;
+        Long oldVersionCost;
+        Long oldVersionSize;
+    }
 }
