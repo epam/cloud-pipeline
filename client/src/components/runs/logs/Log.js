@@ -706,7 +706,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   renderRunSchedule = (instance, run) => {
-    const {runSchedule} = this.props;
+    const {runSchedule, preferences} = this.props;
     const {scheduleSaveInProgress} = this.state;
     const allowEditing = roleModel.isOwner(run) &&
       !(run.nodeCount > 0) &&
@@ -715,6 +715,12 @@ class Logs extends localization.LocalizedReactComponent {
       ![Statuses.failure, Statuses.stopped, Statuses.success].includes(run.status);
 
     if (!allowEditing && this.runSchedule.length === 0) {
+      return null;
+    }
+    if (this.run.pipelineName && !preferences.maintenancePipelineEnabled) {
+      return null;
+    }
+    if (!preferences.maintenanceToolEnabled) {
       return null;
     }
     return (
