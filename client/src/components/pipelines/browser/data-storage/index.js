@@ -2569,3 +2569,5 @@ export default class DataStorage extends React.Component {
     }
   };
 }
+
+export {STORAGE_CLASSES};
