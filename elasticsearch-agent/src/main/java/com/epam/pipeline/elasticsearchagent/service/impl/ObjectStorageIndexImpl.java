@@ -22,6 +22,7 @@ import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -35,6 +36,7 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,6 +47,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,6 +76,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     @Getter
     private final SearchDocumentType documentType;
     private final String tagDelimiter;
+    private final boolean includeVersions;
+
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Override
@@ -104,16 +109,14 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             final Supplier<TemporaryCredentials> credentialsSupplier = () -> getTemporaryCredentials(dataStorage);
             final TemporaryCredentials credentials = credentialsSupplier.get();
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
-                final Stream<DataStorageFile> files = fileManager
-                        .files(dataStorage.getRoot(),
-                                Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
-                                credentialsSupplier);
-                StreamUtils.chunked(files, bulkLoadTagsSize)
-                        .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
-                        .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())))
-                        .map(file -> createIndexRequest(file, dataStorage, permissionsContainer, indexName,
-                                credentials.getRegion(), findFileContent(dataStorage, file.getPath())))
-                        .forEach(requestContainer::add);
+
+                final Stream<DataStorageFile> files = dataStorage.isVersioningEnabled() && includeVersions
+                        ? loadFileWithVersions(dataStorage, credentialsSupplier)
+                        : loadFiles(dataStorage, credentialsSupplier);
+                files.map(file -> createIndexRequest(
+                        file, dataStorage, permissionsContainer, indexName, credentials.getRegion(),
+                        findFileContent(dataStorage, file.getPath()))
+                ).forEach(requestContainer::add);
             }
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
@@ -128,7 +131,41 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         }
     }
 
-    private IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
+    private Stream<DataStorageFile> loadFiles(final AbstractDataStorage dataStorage,
+                                              final Supplier<TemporaryCredentials> credentialsSupplier) {
+        return StreamUtils.chunked(
+                        fileManager.files(dataStorage.getRoot(),
+                                Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
+                                credentialsSupplier), bulkLoadTagsSize
+                ).flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
+                .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())));
+    }
+
+    private Stream<DataStorageFile> loadFileWithVersions(final AbstractDataStorage dataStorage,
+                                                         final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final Stream<DataStorageFile> files = fileManager.versions(
+                        dataStorage.getRoot(),
+                        Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
+                credentialsSupplier
+                );
+        return StreamUtils.grouped(
+                        StreamUtils.chunked(files, bulkLoadTagsSize)
+                                .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
+                                .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath()))),
+                        Comparator.comparing(AbstractDataStorageItem::getPath))
+                .filter(CollectionUtils::isNotEmpty)
+                .map(versions -> {
+                    final DataStorageFile file = versions.get(0);
+                    file.setVersions(
+                            versions.stream().skip(1).collect(
+                                    Collectors.toMap(DataStorageFile::getVersion, v -> v)
+                            )
+                    );
+                    return file;
+                });
+    }
+
+    IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
         return new IndexRequestContainer(requests -> elasticsearchServiceClient.sendRequests(indexName, requests),
                 bulkInsertSize);
     }
@@ -139,6 +176,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         action.setBucketName(dataStorage.getPath());
         action.setId(dataStorage.getId());
         action.setList(true);
+        action.setListVersion(true);
         return cloudPipelineAPIClient
                 .generateTemporaryCredentials(Collections.singletonList(action));
     }

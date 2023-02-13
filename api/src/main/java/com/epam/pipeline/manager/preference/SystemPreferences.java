@@ -712,6 +712,10 @@ public class SystemPreferences {
             "", UI_GROUP, pass);
     public static final StringPreference UI_STORAGE_STATIC_PREVIEW_MASK =
             new StringPreference("ui.storage.static.preview.mask", "html,htm", UI_GROUP, pass, true);
+    public static final BooleanPreference UI_MAINTENANCE_PIPELINE_ENABLED = new BooleanPreference(
+            "ui.run.maintenance.pipeline.enabled", true, UI_GROUP, pass);
+    public static final BooleanPreference UI_MAINTENANCE_TOOL_ENABLED = new BooleanPreference(
+            "ui.run.maintenance.tool.enabled", true, UI_GROUP, pass);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
@@ -787,6 +791,9 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_LIMIT_LOG_LINES = new IntPreference(
             "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
+
+    public static final StringPreference SYSTEM_RUN_TAG_DATE_SUFFIX = new StringPreference(
+            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, pass);
 
     /**
      * Level of CPU load, below which a Run is considered `idle`
@@ -890,7 +897,6 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
             "system.maintenance.mode.banner",
             "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
-
     public static final IntPreference SYSTEM_USAGE_USERS_MONITOR_DELAY = new IntPreference(
             "system.usage.users.monitor.delay", 300000, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_USAGE_USERS_MONITOR_ENABLE = new BooleanPreference(

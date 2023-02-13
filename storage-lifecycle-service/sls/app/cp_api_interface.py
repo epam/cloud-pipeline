@@ -56,5 +56,8 @@ class CloudPipelineDataSource:
     def load_regions(self):
         pass
 
+    def load_entity_permissions(self, entity_id, entity_class):
+        pass
+
     def _load_default_lifecycle_rule_notification(self):
         pass

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import SubSettings from '../sub-settings';
 import ProfileSettings from './profile';
@@ -24,7 +24,6 @@ import roleModel from '../../../utils/roleModel';
 import UserInfoSummary from '../forms/EditUserRolesDialog/UserInfoSummary';
 
 @roleModel.authenticationInfo
-@inject('preferences')
 @observer
 export default class UserProfile extends React.Component {
   @computed
@@ -36,17 +35,6 @@ export default class UserProfile extends React.Component {
       return this.props.authenticatedUserInfo.value;
     }
     return undefined;
-  }
-
-  @computed
-  get billingEnabled () {
-    const {preferences} = this.props;
-    if (preferences && preferences.loaded) {
-      const isBillingPrivilegedUser = roleModel.isManager.billing(this);
-      return (!isBillingPrivilegedUser && preferences.billingEnabled) ||
-        (isBillingPrivilegedUser && preferences.billingAdminsEnabled);
-    }
-    return false;
   }
 
   getSections = () => {
@@ -67,17 +55,15 @@ export default class UserProfile extends React.Component {
         />
       )
     });
-    if (this.billingEnabled) {
-      sections.push({
-        key: 'statistics',
-        title: 'STATISTICS',
-        render: () => (
-          <UserInfoSummary
-            user={this.user}
-          />
-        )
-      });
-    }
+    sections.push({
+      key: 'statistics',
+      title: 'STATISTICS',
+      render: () => (
+        <UserInfoSummary
+          user={this.user}
+        />
+      )
+    });
     return sections;
   };
 

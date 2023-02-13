@@ -205,7 +205,7 @@ export default class PipelineRunPreview extends React.Component {
       const {instance, sensitive} = run;
       const details = [];
       if (instance) {
-        if (RunTags.shouldDisplayTags(run, true)) {
+        if (RunTags.shouldDisplayTags(run, this.props.preferences, true)) {
           details.push({
             key: 'Tags',
             value: (

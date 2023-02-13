@@ -31,6 +31,9 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.text.Text;
@@ -39,12 +42,14 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +63,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SearchResultConverter {
 
-    private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
+    private static final String STORAGE_SIZE_AGG_NAME = "sizeSum";
+    private static final String STORAGE_SIZE_BY_TIER_AGG_NAME = "sizeSumByTier";
+    private static final String STANDARD_TIER = "STANDARD";
+    private static final long ZERO = 0L;
+
 
     public SearchResult buildResult(final SearchResponse searchResult,
                                     final String aggregation,
@@ -75,29 +84,85 @@ public class SearchResultConverter {
                 .build();
     }
 
-    public StorageUsage buildStorageUsageResponse(final MultiSearchResponse searchResponse,
-                                                  final AbstractDataStorage dataStorage, final String path,
-                                                  final int responsesExpected) {
-        final MultiSearchResponse.Item[] responses = tryExtractAllResponses(searchResponse, responsesExpected);
-        final SearchResponse allDocsResponse = tryExtractResponse(responses, 0);
-        final Long totalSize = extractSizeAggregationFromResponse(allDocsResponse);
-        final Long effectiveSize;
-        if (responses.length != 1) {
-            final SearchResponse effectiveDocsResponse = tryExtractResponse(responses, 1);
-            effectiveSize = extractSizeAggregationFromResponse(effectiveDocsResponse);
-        } else {
-            effectiveSize = totalSize;
-        }
+    public StorageUsage buildStorageUsageResponse(final MultiSearchRequest searchRequest,
+                                                  final MultiSearchResponse searchResponse,
+                                                  final AbstractDataStorage dataStorage,
+                                                  final String path) {
+        final MultiSearchResponse.Item[] responses = tryExtractAllResponses(searchResponse, searchRequest);
+        final Map<String, StorageUsage.StorageUsageStats> statsByTiers = buildStorageUsageStatsByStorageTier(responses);
 
+        final Optional<StorageUsage.StorageUsageStats> standardUsageOp =
+                Optional.ofNullable(statsByTiers.get(STANDARD_TIER));
         return StorageUsage.builder()
                 .id(dataStorage.getId())
                 .name(dataStorage.getName())
                 .type(dataStorage.getType())
                 .path(path)
-                .size(totalSize)
-                .effectiveSize(effectiveSize)
-                .count(allDocsResponse.getHits().getTotalHits())
+                .size(
+                    standardUsageOp.map(StorageUsage.StorageUsageStats::getSize).orElse(ZERO))
+                .oldVersionsSize(
+                        standardUsageOp.map(StorageUsage.StorageUsageStats::getOldVersionsSize).orElse(ZERO))
+                .count(standardUsageOp.map(StorageUsage.StorageUsageStats::getCount).orElse(ZERO))
+                .effectiveSize(
+                    standardUsageOp.map(StorageUsage.StorageUsageStats::getEffectiveSize).orElse(ZERO))
+                .oldVersionsEffectiveSize(
+                        standardUsageOp.map(StorageUsage.StorageUsageStats::getOldVersionsEffectiveSize).orElse(ZERO))
+                .effectiveCount(standardUsageOp.map(StorageUsage.StorageUsageStats::getEffectiveCount).orElse(ZERO))
+                .usage(statsByTiers)
                 .build();
+    }
+
+    private Map<String, StorageUsage.StorageUsageStats> buildStorageUsageStatsByStorageTier(
+            final MultiSearchResponse.Item[] responses) {
+
+        final List<String> storageClasses = Arrays.stream(responses).map(
+            r -> Optional.ofNullable(r.getResponse())
+                    .map(SearchResponse::getAggregations)
+                    .map(aggregations -> aggregations.<ParsedTerms>get(STORAGE_SIZE_BY_TIER_AGG_NAME).getBuckets())
+                    .orElse(Collections.emptyList())
+            ).flatMap(Collection::stream).map(MultiBucketsAggregation.Bucket::getKeyAsString)
+            .distinct().collect(Collectors.toList());
+
+        return storageClasses.stream().map(storageClass -> {
+            final StorageUsage.StorageUsageStats.StorageUsageStatsBuilder storageUsageStats =
+                    StorageUsage.StorageUsageStats.builder();
+
+            final Pair<Long, Long> totalCurrentSizeAndCount;
+            final Pair<Long, Long> totalOldVersionSizeAndCount;
+            final Pair<Long, Long> effectiveCurrentSizeAndCount;
+            final Pair<Long, Long> effectiveOldVersionSizeAndCount;
+            if (responses.length > 2) {
+                totalCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 0);
+                effectiveCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 1);
+                totalOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 2);
+                effectiveOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 3);
+            } else {
+                totalCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 0);
+                effectiveCurrentSizeAndCount = totalCurrentSizeAndCount;
+                totalOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 1);
+                effectiveOldVersionSizeAndCount = totalOldVersionSizeAndCount;
+            }
+            return storageUsageStats
+                    .storageClass(storageClass)
+                    .size(totalCurrentSizeAndCount.getRight()).count(totalCurrentSizeAndCount.getLeft())
+                    .effectiveSize(effectiveCurrentSizeAndCount.getRight())
+                    .effectiveCount(effectiveCurrentSizeAndCount.getLeft())
+                    .oldVersionsSize(totalOldVersionSizeAndCount.getRight())
+                    .oldVersionsEffectiveSize(effectiveOldVersionSizeAndCount.getRight()).build();
+        }).collect(Collectors.toMap(StorageUsage.StorageUsageStats::getStorageClass, s -> s));
+    }
+
+    private ImmutablePair<Long, Long> extractSizeAndCountFromResponse(
+            final MultiSearchResponse.Item[] responses, final String tier, final int requestType) {
+        return Optional.ofNullable(tryExtractResponse(responses, requestType))
+                .map(SearchResponse::getAggregations).map(a -> a.<ParsedTerms>get(STORAGE_SIZE_BY_TIER_AGG_NAME))
+                .map(bkts -> bkts.getBucketByKey(tier))
+                .map(bucket -> ImmutablePair.of(
+                        bucket.getDocCount(),
+                        new Double(
+                                bucket.getAggregations().<ParsedSum>get(STORAGE_SIZE_AGG_NAME).getValue()
+                        ).longValue())
+                ).orElse(ImmutablePair.of(ZERO, ZERO));
     }
 
     public FacetedSearchResult buildFacetedResult(final SearchResponse response, final String typeFieldName,
@@ -235,17 +300,18 @@ public class SearchResultConverter {
     }
 
     private MultiSearchResponse.Item[] tryExtractAllResponses(final MultiSearchResponse searchResponse,
-                                                              final int responsesExpected) {
+                                                              final MultiSearchRequest searchRequest) {
+        final int batchSize = searchRequest.requests().size();
         final MultiSearchResponse.Item[] items = Optional.ofNullable(searchResponse)
             .map(MultiSearchResponse::getResponses)
             .filter(searchResponses -> ArrayUtils.getLength(searchResponses) > 0)
             .orElseThrow(() -> new SearchException(
                 "Empty multi-search response from ES, unable to calculate storage consumption."));
         final int responsesCount = items.length;
-        if (responsesExpected != items.length) {
+        if (batchSize != items.length) {
             throw new SearchException(String.format(
                 "Unexpected number of responses during storage size calculation: %d expected, but %d found.",
-                responsesExpected, responsesCount));
+                    batchSize, responsesCount));
         }
         return items;
     }
@@ -264,10 +330,4 @@ public class SearchResultConverter {
         return responseItem.getResponse();
     }
 
-    private Long extractSizeAggregationFromResponse(final SearchResponse searchResponse) {
-        return Optional.ofNullable(searchResponse.getAggregations())
-            .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
-            .map(result -> new Double(result.getValue()).longValue())
-            .orElse(0L);
-    }
 }

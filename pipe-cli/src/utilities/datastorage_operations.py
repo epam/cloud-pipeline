@@ -16,6 +16,7 @@ import logging
 import multiprocessing
 import os
 import platform
+from collections import OrderedDict
 
 import click
 import datetime
@@ -31,8 +32,7 @@ from src.api.folder import Folder
 from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
-from src.utilities.du import DataUsageHelper
-from src.utilities.du_format_type import DuFormatType
+from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
@@ -372,40 +372,15 @@ class DataStorageOperations(object):
         DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
 
     @classmethod
-    def du(cls, storage_name, relative_path=None, format='M', depth=None):
-        if depth and not storage_name:
-            click.echo("Error: bucket path must be provided with --depth option", err=True)
-            sys.exit(1)
-        du_helper = DataUsageHelper(format)
-        items_table = prettytable.PrettyTable()
-        fields = ["Storage", "Files count", "Size (%s)" % DuFormatType.pretty_type(format)]
-        items_table.field_names = fields
-        items_table.align = "l"
-        items_table.border = False
-        items_table.padding_width = 2
-        items_table.align['Size'] = 'r'
-        if storage_name:
-            if not relative_path or relative_path == "/":
-                relative_path = ''
-            storage = DataStorage.get(storage_name)
-            if storage is None:
-                raise RuntimeError('Storage "{}" was not found'.format(storage_name))
-            if storage.type.lower() == 'nfs':
-                if depth:
-                    raise RuntimeError('--depth option is not supported for NFS storages')
-                items_table.add_row(du_helper.get_nfs_storage_summary(storage_name, relative_path))
-            else:
-                for item in du_helper.get_cloud_storage_summary(storage, relative_path, depth):
-                    items_table.add_row(item)
-        else:
-            # If no argument is specified - list all buckets
-            items = du_helper.get_total_summary()
-            if items is None:
-                click.echo("No datastorages available.")
-                sys.exit(0)
-            for item in items:
-                items_table.add_row(item)
-        click.echo(items_table)
+    def du(cls, storage_name, relative_path=None, depth=None, perform_on_cloud=False,
+           output_mode='brief', generation="all", size_format='M'):
+        du_command = DataUsageCommand(storage_name, relative_path, depth,
+                                      perform_on_cloud, output_mode, generation, size_format)
+        if not du_command.validate():
+            # Bad input
+            sys.exit(22)
+        du_leafs = DataUsageHelper().fetch_data(du_command)
+        click.echo(DuOutput.format_table(du_command, du_leafs))
         click.echo()
 
     @classmethod
@@ -550,14 +525,14 @@ class DataStorageOperations(object):
 
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
-                      custom_options=None, quiet=False, threading=False, mode=700, timeout=1000):
+                      custom_options=None, quiet=False, threading=False, mode=700, timeout=1000, show_archive=False):
         if not file and not bucket:
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
                                log_file=log_file, log_level=log_level,  threading=threading,
-                               mode=mode, timeout=timeout)
+                               mode=mode, timeout=timeout, show_archive=show_archive)
 
     @classmethod
     def umount_storage(cls, mountpoint, quiet=False):
@@ -644,8 +619,9 @@ class DataStorageOperations(object):
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                transfer_results, clean=clean)
         except Exception as e:
+            err_msg = str(e)
             if isinstance(e, ClientError) \
-                    and e.message and 'InvalidObjectState' in e.message and 'storage class' in e.message:
+                    and err_msg and 'InvalidObjectState' in err_msg and 'storage class' in err_msg:
                 if not quiet:
                     click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
                                .format(full_path))

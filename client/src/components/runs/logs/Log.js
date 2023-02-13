@@ -59,6 +59,7 @@ import {
 } from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
+import evaluateFullDuration from '../../../utils/evaluateFullDuration';
 import displayDate from '../../../utils/displayDate';
 import displayDuration from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
@@ -547,7 +548,7 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const details = [];
     if (instance) {
-      if (RunTags.shouldDisplayTags(run, true)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences, true)) {
         details.push({
           key: 'tags',
           value: (
@@ -702,7 +703,7 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   renderRunSchedule = (instance, run) => {
-    const {runSchedule} = this.props;
+    const {runSchedule, preferences} = this.props;
     const {scheduleSaveInProgress} = this.state;
     const allowEditing = roleModel.isOwner(run) &&
       !(run.nodeCount > 0) &&
@@ -711,6 +712,12 @@ class Logs extends localization.LocalizedReactComponent {
       ![Statuses.failure, Statuses.stopped, Statuses.success].includes(run.status);
 
     if (!allowEditing && this.runSchedule.length === 0) {
+      return null;
+    }
+    if (this.run.pipelineName && !preferences.maintenancePipelineEnabled) {
+      return null;
+    }
+    if (!preferences.maintenanceToolEnabled) {
       return null;
     }
     return (
@@ -731,7 +738,7 @@ class Logs extends localization.LocalizedReactComponent {
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance) {
-      if (RunTags.shouldDisplayTags(run)) {
+      if (RunTags.shouldDisplayTags(run, this.props.preferences)) {
         const {routing: {location}} = this.props;
         details.push({
           key: 'Tags',
@@ -984,6 +991,7 @@ class Logs extends localization.LocalizedReactComponent {
 
   renderContentPlainMode () {
     const {runId} = this.props.params;
+    const {timings} = this.state;
     const selectedTask = this.props.task ? this.getTaskUrl(this.props.task) : null;
     let Tasks;
 
@@ -999,11 +1007,20 @@ class Logs extends localization.LocalizedReactComponent {
               to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
               location={location}
               task={task}
-              timings={this.state.timings} />
+              timings={timings} />
           </Menu.Item>);
       }
       );
     }
+
+    const SwitchTimingsButton = (
+      <div className={styles.timingBtn}>
+        <a onClick={this.switchTimings}>
+          <Icon style={{fontSize: 18}}
+            type={timings ? 'clock-circle' : 'clock-circle-o'} />
+        </a>
+      </div>
+    );
 
     return (
       <Row type="flex" style={{flex: 1}}>
@@ -1022,6 +1039,7 @@ class Logs extends localization.LocalizedReactComponent {
             zIndex: 1
           }}>
           <div style={{display: 'flex', flex: 1, height: '100%', overflowY: 'auto'}}>
+            {SwitchTimingsButton}
             <Menu
               selectedKeys={selectedTask ? [selectedTask] : []}
               mode="inline"
@@ -1342,12 +1360,12 @@ class Logs extends localization.LocalizedReactComponent {
     let SSHButton;
     let FSBrowserButton;
     let ExportLogsButton;
-    let SwitchTimingsButton;
     let ShowLaunchCommandsButton;
     let SwitchModeButton;
     let CommitStatusButton;
     let dockerImage;
     let ResumeFailureReason;
+    let ShowMonitorButton;
 
     let selectedTask = null;
     if (this.props.task) {
@@ -1613,6 +1631,11 @@ class Logs extends localization.LocalizedReactComponent {
           }
           return cents / 100;
         };
+        const runValue = this.props.run.value || {
+          computePricePerHour: 0,
+          diskPricePerHour: 0,
+          workersPrice: 0
+        };
         price = (
           <tr>
             <th>Estimated price:</th>
@@ -1620,8 +1643,9 @@ class Logs extends localization.LocalizedReactComponent {
               <JobEstimatedPriceInfo>
                 {
                   adjustPrice(
-                    evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour +
-                    (this.props.run.value.workersPrice || 0)
+                    evaluateRunDuration(runValue) * (runValue.computePricePerHour || 0) +
+                    evaluateFullDuration(runValue) * (runValue.diskPricePerHour || 0) +
+                    (runValue.workersPrice || 0)
                   ).toFixed(2)
                 }
                 $
@@ -1910,7 +1934,6 @@ class Logs extends localization.LocalizedReactComponent {
         switchModeUrl += `/${selectedTask}`;
       }
 
-      SwitchTimingsButton = <a onClick={this.switchTimings}>{this.state.timings ? 'HIDE TIMINGS' : 'SHOW TIMINGS'}</a>;
       if (this.runPayload) {
         ShowLaunchCommandsButton = (
           <a
@@ -1924,6 +1947,18 @@ class Logs extends localization.LocalizedReactComponent {
         <AdaptedLink to={switchModeUrl} location={location}>
           {this.props.params.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
+
+      const parts = [
+        startDate && `from=${encodeURIComponent(startDate)}`,
+        endDate && `to=${encodeURIComponent(endDate)}`
+      ].filter(Boolean);
+      const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+
+      ShowMonitorButton = (
+        <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
+          MONITOR
+        </Link>
+      );
     }
 
     return (
@@ -1976,7 +2011,7 @@ class Logs extends localization.LocalizedReactComponent {
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {SwitchTimingsButton}{SwitchModeButton}{ShowLaunchCommandsButton}
+              {SwitchModeButton}{ShowLaunchCommandsButton}{ShowMonitorButton}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>

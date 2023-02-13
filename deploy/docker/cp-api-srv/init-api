@@ -120,7 +120,7 @@ function sign_and_publish_pipe_win_distribution() {
     unzip -p "$jar_path" BOOT-INF/classes/static/pipe.zip >pipe.zip
     unzip -qq pipe.zip
     rm -f pipe.zip
-    sign_win_executable "pipe/pipe.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    sign_win_executable "pipe/pipe-cli.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
     sign_win_executable "pipe/ntlmaps/ntlmaps.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
     zip -q -r "$output_dir/pipe.zip" pipe
     rm -rf pipe

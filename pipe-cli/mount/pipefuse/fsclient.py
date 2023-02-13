@@ -17,7 +17,7 @@ from collections import namedtuple
 
 from pipefuse.chain import ChainingService
 
-File = namedtuple('File', ['name', 'size', 'mtime', 'ctime', 'contenttype', 'is_dir'])
+File = namedtuple('File', ['name', 'size', 'mtime', 'ctime', 'contenttype', 'is_dir', 'storage_class'])
 
 
 class FileSystemOperationException(RuntimeError):

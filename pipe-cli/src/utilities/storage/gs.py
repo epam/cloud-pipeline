@@ -24,6 +24,7 @@ from requests.adapters import HTTPAdapter
 from s3transfer import TransferConfig, MultipartUploader, OSUtils, MultipartDownloader
 from urllib3.connection import VerifiedHTTPSConnection
 
+from src.model.datastorage_usage_model import StorageUsage
 from src.utilities.encoding_utilities import to_string
 
 try:
@@ -432,12 +433,10 @@ class GsListingManager(GsManager, AbstractListingManager):
         bucket = self.client.bucket(self.bucket.path)
         blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None)
 
-        size = 0
-        count = 0
+        storage_usage = StorageUsage()
         for blob in blobs_iterator:
-            size += blob.size
-            count += 1
-        return [StorageOperations.PATH_SEPARATOR.join([self.bucket.path, relative_path]), count, size]
+            storage_usage.add_item(AbstractListingManager.STANDARD_TIER, blob.size)
+        return [StorageOperations.PATH_SEPARATOR.join([self.bucket.path, relative_path]), storage_usage]
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
@@ -449,7 +448,7 @@ class GsListingManager(GsManager, AbstractListingManager):
         for blob in blobs_iterator:
             size = blob.size
             name = blob.name
-            accumulator.add_path(name, size)
+            accumulator.add_path(name, AbstractListingManager.STANDARD_TIER, size)
         return accumulator.get_tree()
 
     def _to_storage_file(self, blob):
