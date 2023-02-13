@@ -39,3 +39,34 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.detailed-info-grid-row {
+  display: grid;
+  grid: "class size previous total" 30px
+        / 1fr 120px 120px 100px;
+}
+
+.detailed-info-grid-row .cell,
+.detailed-info-grid-row .heading-cell {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detailed-info-grid-row .storage-class {
+  grid-area: class;
+}
+
+.detailed-info-grid-row .size {
+  grid-area: size;
+}
+
+.detailed-info-grid-row .previous {
+  grid-area: previous;
+}
+
+.detailed-info-grid-row .total {
+  grid-area: total;
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {message, Tooltip, Icon} from 'antd';
+import {
+  message,
+  Tooltip,
+  Icon,
+  Modal
+} from 'antd';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {STORAGE_CLASSES} from '../../pipelines/browser/data-storage';
@@ -26,20 +31,35 @@ import DataStoragePathUsageUpdate from '../../../models/dataStorage/DataStorageP
 import displaySize from '../../../utils/displaySize';
 import styles from './storage-size.css';
 
+const STORAGE_DESCRIPTION = {
+  STANDARD: 'Standard',
+  GLACIER: 'Glacier',
+  GLACIER_IR: 'Glacier IR',
+  DEEP_ARCHIVE: 'Deep archive'
+};
+
 const REFRESH_REQUESTED_MESSAGE =
   'Storage size refresh has been requested. Please wait a couple of minutes.';
 
 function InfoTooltip ({size}) {
   const {realSize, effectiveSize} = size;
 
-  if (!effectiveSize || effectiveSize === realSize) {
-    return null;
-  }
-
   const tooltip = (
     <div>
-      <div>Effective size: {displaySize(effectiveSize, effectiveSize > 1024)}</div>
-      <div>Real size: {displaySize(realSize, realSize > 1024)}</div>
+      <p>
+        {/* eslint-disable-next-line max-len */}
+        First number shows sum of the Current and Previous versioned objects volume within a storage class. A number in the parenthesis shows Previous versioned objects volume only.
+      </p>
+      {effectiveSize && effectiveSize !== realSize ? (
+        <div style={{marginTop: 10}}>
+          <div>
+            Effective size: {displaySize(effectiveSize, effectiveSize > 1024)}
+          </div>
+          <div>
+            Real size: {displaySize(realSize, realSize > 1024)}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 
@@ -55,7 +75,8 @@ function InfoTooltip ({size}) {
       />
     </Tooltip>
   );
-}
+};
+
 @inject('preferences')
 @observer
 class StorageSize extends React.PureComponent {
@@ -168,9 +189,14 @@ class StorageSize extends React.PureComponent {
     }
   };
 
-  toggleDetails = (event, showDetailedInfo) => {
+  showDetailedInfo = (event) => {
     event && event.preventDefault();
-    this.setState({showDetailedInfo});
+    this.setState({showDetailedInfo: true});
+  };
+
+  closeDetailedInfo = (event) => {
+    event && event.preventDefault();
+    this.setState({showDetailedInfo: false});
   };
 
   renderInfo = () => {
@@ -196,9 +222,15 @@ class StorageSize extends React.PureComponent {
     );
     return (
       <div className={styles.detailsContainer}>
-        <div className={styles.storageSize}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'nowrap',
+            alignItems: 'center'
+          }}
+        >
           <span className={styles.detail}>
-            Storage size: {`${totalSize} (${previousVersionsSize})`}
+            {STORAGE_DESCRIPTION.STANDARD} size: {`${totalSize} (${previousVersionsSize})`}
           </span>
           <InfoTooltip size={{size, effective}} />
         </div>
@@ -209,43 +241,110 @@ class StorageSize extends React.PureComponent {
     );
   };
 
-  renderDetailedInfo = () => {
+  renderDetailedInfoModal = () => {
+    const {showDetailedInfo} = this.state;
     const {details} = this.usageInfo;
-    const getHeading = (storageClass) => {
-      let storageStatus = 'Archive';
-      if (storageClass === STORAGE_CLASSES.standard) {
-        storageStatus = 'Storage';
+    const convertBytesToGb = (bytes) => {
+      const minimalValue = 0.01;
+      const Gb = bytes / Math.pow(1024, 3);
+      if (Gb > 0 && Gb < minimalValue) {
+        return `< ${minimalValue}`;
       }
-      const formattedName = `${storageClass[0].toUpperCase()}${storageClass
-        .substring(1)
-        .toLowerCase()}`.replace('_', ' ');
-      return `${storageStatus} size (${formattedName})`;
+      return Gb.toFixed(2);
     };
-    return (
-      <div className={styles.detailsContainer}>
-        {details.map(({storageClass, size, previous}) => (
-          <span
-            key={storageClass}
-            className={styles.detail}
-          >
-            {/* eslint-disable-next-line max-len */}
-            {`${getHeading(storageClass)}: ${displaySize(size + previous, size + previous > 1024)} (${displaySize(previous, previous > 1024)})`}
-          </span>
-        ))}
+    const heading = (
+      <div
+        className={classNames(
+          styles.detailedInfoGridRow,
+          'cp-divider',
+          'bottom'
+        )}
+      >
+        <b className={classNames(
+          styles.headingCell,
+          styles.storageClass
+        )}>
+          Storage class
+        </b>
+        <b className={classNames(
+          styles.headingCell,
+          styles.size
+        )}>
+          Current ver. (Gb)
+        </b>
+        <b className={classNames(
+          styles.headingCell,
+          styles.previous
+        )}>
+          Previous ver. (Gb)
+        </b>
+        <b className={classNames(
+          styles.headingCell,
+          styles.total
+        )}>
+          Total (Gb)
+        </b>
       </div>
+    );
+    return (
+      <Modal
+        onCancel={this.closeDetailedInfo}
+        visible={showDetailedInfo}
+        footer={false}
+        title="Usage details"
+        width={600}
+      >
+        <div className={styles.detailsContainer}>
+          {heading}
+          {details.map(({storageClass, size, previous}) => (
+            <div
+              key={storageClass}
+              className={classNames(
+                styles.detailedInfoGridRow,
+                'cp-divider',
+                'bottom'
+              )}
+            >
+              <div className={classNames(
+                styles.storageClass,
+                styles.cell
+              )}>
+                {STORAGE_DESCRIPTION[storageClass] || storageClass}
+              </div>
+              <div className={classNames(
+                styles.size,
+                styles.cell
+              )}>
+                {convertBytesToGb(size)}
+              </div>
+              <div className={classNames(
+                styles.previous,
+                styles.cell
+              )}>
+                {convertBytesToGb(previous)}
+              </div>
+              <div className={classNames(
+                styles.total,
+                styles.cell
+              )}>
+                {convertBytesToGb(size + previous)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Modal>
     );
   };
 
   renderControls = () => {
-    const {showDetailedInfo} = this.state;
     return (
       <div>
         {this.usageInfo?.details?.length > 0 ? (
           <a
             className={styles.controlsButton}
-            onClick={event => this.toggleDetails(event, !showDetailedInfo)}
+            onClick={this.showDetailedInfo}
           >
-            {showDetailedInfo ? 'Hide details' : 'Show details'}
+            Show details
           </a>
         ) : null}
         <a
@@ -260,7 +359,6 @@ class StorageSize extends React.PureComponent {
 
   render () {
     const {className, style} = this.props;
-    const {showDetailedInfo} = this.state;
     if (this.usageInfo) {
       return (
         <div
@@ -273,11 +371,9 @@ class StorageSize extends React.PureComponent {
           }
           style={style}
         >
-          {showDetailedInfo
-            ? this.renderDetailedInfo()
-            : this.renderInfo()
-          }
+          {this.renderInfo()}
           {this.renderControls()}
+          {this.renderDetailedInfoModal()}
         </div>
       );
     }
