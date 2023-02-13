@@ -20,6 +20,10 @@
   flex-direction: column;
 }
 
+.storage-size {
+  padding: 4px 6px;
+}
+
 .controls-button:not(:first-child) {
   margin-left: 10px;
 }
@@ -32,6 +36,18 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.standard-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.standard-detail-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .detail {

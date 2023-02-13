@@ -21,7 +21,8 @@ import {
   message,
   Tooltip,
   Icon,
-  Modal
+  Modal,
+  Spin
 } from 'antd';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
@@ -41,22 +42,29 @@ const STORAGE_DESCRIPTION = {
 const REFRESH_REQUESTED_MESSAGE =
   'Storage size refresh has been requested. Please wait a couple of minutes.';
 
-function InfoTooltip ({size}) {
-  const {realSize, effectiveSize} = size;
+function InfoTooltip ({sizes, isNFS}) {
+  const {size, effective} = sizes;
+  const showEffectiveSizeDisclaimer = effective && effective !== size;
+
+  if (isNFS && !showEffectiveSizeDisclaimer) {
+    return null;
+  }
 
   const tooltip = (
     <div>
-      <p>
-        {/* eslint-disable-next-line max-len */}
-        First number shows sum of the Current and Previous versioned objects volume within a storage class. A number in the parenthesis shows Previous versioned objects volume only.
-      </p>
-      {effectiveSize && effectiveSize !== realSize ? (
+      {!isNFS ? (
+        <p>
+          {/* eslint-disable-next-line max-len */}
+          First number shows sum of the Current and Previous versioned objects volume within a storage class. A number in the parenthesis shows Previous versioned objects volume only.
+        </p>
+      ) : null}
+      {showEffectiveSizeDisclaimer ? (
         <div style={{marginTop: 10}}>
           <div>
-            Effective size: {displaySize(effectiveSize, effectiveSize > 1024)}
+            Effective size: {displaySize(effective, effective > 1024)}
           </div>
           <div>
-            Real size: {displaySize(realSize, realSize > 1024)}
+            Real size: {displaySize(size, size > 1024)}
           </div>
         </div>
       ) : null}
@@ -145,6 +153,23 @@ class StorageSize extends React.PureComponent {
     };
   }
 
+  @computed
+  get hasArchivedData () {
+    const {storage} = this.props;
+    if (!storage || !this.usageInfo) {
+      return false;
+    }
+    return !this.isNFS && (
+      this.usageInfo.archiveSizeTotal > 0 ||
+      this.usageInfo.archivePreviousTotal > 0
+    );
+  }
+
+  get isNFS () {
+    const {storage = {}} = this.props;
+    return (storage.type || '').toUpperCase() === 'NFS';
+  }
+
   updateStorageSize = async () => {
     const {
       storage,
@@ -160,8 +185,10 @@ class StorageSize extends React.PureComponent {
       if (request.error) {
         message.error(request.error, 5);
       }
-      if (request.value && request.value.size) {
+      if (request.value) {
         this.info = request.value;
+      } else {
+        this.info = null;
       }
     }
   };
@@ -220,23 +247,29 @@ class StorageSize extends React.PureComponent {
       archivePreviousTotal,
       archivePreviousTotal > 1024
     );
+    const previousVersionsInfo = this.isNFS
+      ? ''
+      : ` (${previousVersionsSize})`;
     return (
       <div className={styles.detailsContainer}>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'nowrap',
-            alignItems: 'center'
-          }}
-        >
-          <span className={styles.detail}>
-            {STORAGE_DESCRIPTION.STANDARD} size: {`${totalSize} (${previousVersionsSize})`}
-          </span>
-          <InfoTooltip size={{size, effective}} />
+        <div className={styles.standardContainer}>
+          <div
+            className={styles.standardDetailRow}
+            style={{marginRight: this.isNFS ? 5 : 0}}
+          >
+            <span className={styles.detail}>
+              {STORAGE_DESCRIPTION.STANDARD} size: {`${totalSize}${previousVersionsInfo}`}
+            </span>
+            <InfoTooltip isNFS={this.isNFS} sizes={{size, effective}} />
+          </div>
+          {this.isNFS ? this.renderControls() : null}
         </div>
-        <span className={styles.detail}>
-          Archive size: {`${totalArchiveSize} (${archivePreviousVersionsSize})`}
-        </span>
+        {this.hasArchivedData ? (
+          <span className={styles.detail}>
+            Archive size: {`${totalArchiveSize} (${archivePreviousVersionsSize})`}
+          </span>
+        ) : null}
+        {this.isNFS ? null : this.renderControls()}
       </div>
     );
   };
@@ -339,7 +372,7 @@ class StorageSize extends React.PureComponent {
   renderControls = () => {
     return (
       <div>
-        {this.usageInfo?.details?.length > 0 ? (
+        {this.hasArchivedData && this.usageInfo?.details?.length > 0 ? (
           <a
             className={styles.controlsButton}
             onClick={this.showDetailedInfo}
@@ -359,7 +392,7 @@ class StorageSize extends React.PureComponent {
 
   render () {
     const {className, style} = this.props;
-    if (this.usageInfo) {
+    if (this.usageInfo && this.usageInfo.size) {
       return (
         <div
           className={
@@ -372,7 +405,6 @@ class StorageSize extends React.PureComponent {
           style={style}
         >
           {this.renderInfo()}
-          {this.renderControls()}
           {this.renderDetailedInfoModal()}
         </div>
       );
