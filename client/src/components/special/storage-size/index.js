@@ -392,7 +392,10 @@ class StorageSize extends React.PureComponent {
 
   render () {
     const {className, style} = this.props;
-    if (this.usageInfo && this.usageInfo.size) {
+    if (
+      this.usageInfo &&
+      (this.usageInfo.size || this.usageInfo.archiveSizeTotal)
+    ) {
       return (
         <div
           className={
