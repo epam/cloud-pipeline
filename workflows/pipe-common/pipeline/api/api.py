@@ -180,11 +180,14 @@ class PipelineAPI:
     TOOL_VERSIONS_URL = 'tool/{tool_id}/tags'
     ENABLE_TOOL_URL = 'tool/register'
     UPDATE_TOOL_URL = 'tool/update'
+    DELETE_TOOL_URL = 'tool/delete'
     RUN_URL = 'run'
     GET_RUN_URL = '/run/{}'
     GET_TASK_URL = '/run/{}/task?taskName={}'
     FILTER_RUNS = 'run/filter'
+    TERMINATE_RUN = 'run/{}/terminate'
     DATA_STORAGE_URL = "/datastorage"
+    DATA_STORAGE_LOAD_ALL_URL = "datastorage/loadAll"
     DATA_STORAGE_RULES_URL = "datastorage/rule/load"
     REGISTRY_CERTIFICATES_URL = "dockerRegistry/loadCerts"
     REGISTRY_LOAD_ALL_URL = "dockerRegistry/loadTree"
@@ -245,6 +248,8 @@ class PipelineAPI:
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL = '/datastorage/{id}/tags/batch/delete'
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
     DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
+    DATA_STORAGE_LIST_ITEMS_URL = "datastorage/{id}/list"
+    DATA_STORAGE_DELETE_URL = '/datastorage/{id}/delete'
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
     GRANT_PERMISSIONS_URL = "/grant"
     PERMISSION_URL = "/permissions"
@@ -1285,6 +1290,59 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
+
+    def get_permissions(self, entity_id, entity_class):
+        try:
+            result = self._request(endpoint='grant?id={}&aclClass={}'
+                                   .format(entity_id, entity_class), http_method="get")
+            return result['permissions'] if 'permissions' in result else None
+        except Exception as e:
+            raise RuntimeError("Failed to load permissions, entity_id: {} error: {}".format(entity_id, str(e.message)))
+
+    def terminate_run(self, run_id):
+        try:
+            return self._request(endpoint=self.TERMINATE_RUN.format(str(run_id)), http_method="post")
+        except Exception as e:
+            raise RuntimeError("Failed to terminate run. \n {}".format(e))
+
+    def data_storage_load_all(self):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LOAD_ALL_URL, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load data storages. \n {}".format(e))
+
+    def load_pipelines_by_owners(self, owners, statuses):
+        try:
+            data = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'owners': owners, 'statuses': statuses}
+            result = self._request(endpoint=self.FILTER_RUNS, http_method="post", data=data)
+            return result['elements'] if 'elements' in result else []
+        except Exception as e:
+            raise RuntimeError("Failed to load pipelines \n {}".format(e))
+
+    def delete_tool(self, image):
+        try:
+            return self._request(endpoint='tool/delete?image={}'.format(image), http_method="delete")
+        except Exception as e:
+            raise RuntimeError("Failed to delete tool \n {}".format(e))
+
+    def load_datastorage_items(self, storage_id):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
+
+    def delete_user_home_storage(self, user_id):
+        try:
+            return self._request(endpoint='user/{}'.format(str(user_id)), http_method="put", data={})
+        except Exception as e:
+            raise RuntimeError("Failed to delete user home storage '{}'.".format(user_id))
+
+    def stop_run(self, run_id):
+        try:
+            data = {'status': 'STOPPED', 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}
+            return self._request(endpoint='run/{}/status'.format(str(run_id)), http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to stop run. \n {}".format(e))
 
     def get_entity_permissions(self, entity_id, entity_class):
         request_url = '%s?id=%s&aclClass=%s' % (self.PERMISSION_URL, str(entity_id), entity_class)
