@@ -59,6 +59,7 @@ import {
 } from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
+import evaluateFullDuration from '../../../utils/evaluateFullDuration';
 import displayDate from '../../../utils/displayDate';
 import displayDuration from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
@@ -1630,6 +1631,11 @@ class Logs extends localization.LocalizedReactComponent {
           }
           return cents / 100;
         };
+        const runValue = this.props.run.value || {
+          computePricePerHour: 0,
+          diskPricePerHour: 0,
+          workersPrice: 0
+        };
         price = (
           <tr>
             <th>Estimated price:</th>
@@ -1637,8 +1643,9 @@ class Logs extends localization.LocalizedReactComponent {
               <JobEstimatedPriceInfo>
                 {
                   adjustPrice(
-                    evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour +
-                    (this.props.run.value.workersPrice || 0)
+                    evaluateRunDuration(runValue) * (runValue.computePricePerHour || 0) +
+                    evaluateFullDuration(runValue) * (runValue.diskPricePerHour || 0) +
+                    (runValue.workersPrice || 0)
                   ).toFixed(2)
                 }
                 $
