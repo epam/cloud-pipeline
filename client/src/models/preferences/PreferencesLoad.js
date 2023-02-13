@@ -379,6 +379,24 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
+  @computed
+  get maintenanceToolEnabled () {
+    const value = this.getPreferenceValue('ui.run.maintenance.tool.enabled');
+    if (value === undefined) {
+      return true;
+    }
+    return /^true$/i.test(value);
+  }
+
+  @computed
+  get maintenancePipelineEnabled () {
+    const value = this.getPreferenceValue('ui.run.maintenance.pipeline.enabled');
+    if (value === undefined) {
+      return true;
+    }
+    return /^true$/i.test(value);
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
