@@ -80,6 +80,7 @@ public class AWSPriceListReader {
         offer.setOperatingSystem(record.get("operating system"));
         offer.setProductFamily(parseProductFamily(record.get("product family")));
         offer.setVolumeType(record.get("volume type"));
+        offer.setVolumeApiName(record.get("volume api name"));
         offer.setVCPU(parseInteger(record.get("vcpu")));
         offer.setGpu(parseInteger(record.get("gpu")));
         offer.setInstanceFamily(record.get("instance family"));
