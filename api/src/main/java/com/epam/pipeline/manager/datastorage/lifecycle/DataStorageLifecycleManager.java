@@ -39,6 +39,7 @@ import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRu
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -432,7 +433,8 @@ public class DataStorageLifecycleManager {
             return;
         }
 
-        Assert.notEmpty(notification.getRecipients(),
+        Assert.isTrue(CollectionUtils.isNotEmpty(notification.getRecipients()) ||
+                        Boolean.TRUE.equals(notification.getNotifyUsers()),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_NOTIFICATION_RECIPIENTS_NOT_PROVIDED));
         Assert.isTrue(notification.getProlongDays() == null || notification.getProlongDays() > 0,
