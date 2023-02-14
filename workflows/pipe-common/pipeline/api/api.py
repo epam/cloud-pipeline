@@ -246,6 +246,7 @@ class PipelineAPI:
     DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
     DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
     DATA_STORAGE_LIST_ITEMS_URL = "datastorage/{id}/list"
+    DATA_STORAGE_LIST_ITEMS_PAGE_URL = "datastorage/{id}/list/page?pageSize={page}"
     DATA_STORAGE_DELETE_URL = '/datastorage/{id}/delete'
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
     GRANT_PERMISSIONS_URL = "/grant"
@@ -1021,7 +1022,11 @@ class PipelineAPI:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLE_BY_NAME.format(name))
         except Exception as e:
             raise RuntimeError("Failed to load role by name '{}'.", "Error message: {}".format(str(name),
+
                                                                                                str(e.message)))
+
+    def load_users(self):
+        return self._request('GET', 'users') or []
 
     def get_edge_external_url(self, region=None):
         endpoint = 'cluster/edge/externalUrl'
@@ -1219,6 +1224,13 @@ class PipelineAPI:
     def load_datastorage_items(self, storage_id):
         try:
             return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
+
+    def load_datastorage_items_page(self, storage_id, page_size=10):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_PAGE_URL
+                                 .format(id=storage_id, page=page_size), http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
 

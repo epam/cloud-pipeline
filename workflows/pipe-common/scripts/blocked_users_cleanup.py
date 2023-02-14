@@ -254,8 +254,8 @@ def _cleanup_paused_instances(api, logger, users, dry_run, notifier):
                 api.terminate_run(run_id)
                 notifier.add(Event(run_id, None, RUN_TYPE, run.get('owner'), 'TERMINATED', ''))
             else:
-                notifier.add(Event(Event(run_id, None, RUN_TYPE, run.get('owner'),
-                                         'TO BE TERMINATED', 'Skipped due to dry run')))
+                notifier.add(Event(run_id, None, RUN_TYPE, run.get('owner'), 'TO BE TERMINATED',
+                                   'Skipped due to dry run'))
             logger.debug('Paused instance {} terminated.'.format(run_id))
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
@@ -290,8 +290,8 @@ def _cleanup_running_instances(api, logger, users, dry_run, notifier):
                 api.stop_run(run_id)
                 notifier.add(Event(run_id, None, RUN_TYPE, run.get('owner'), 'STOPPED', ''))
             else:
-                notifier.add(Event(Event(run_id, None, RUN_TYPE, run.get('owner'),
-                                         'TO BE STOPPED', 'Skipped due to dry run')))
+                notifier.add(Event(run_id, None, RUN_TYPE, run.get('owner'),
+                                         'TO BE STOPPED', 'Skipped due to dry run'))
             logger.debug('Running instance {} stopped.'.format(run_id))
         except KeyboardInterrupt:
             logger.warning('Interrupted.', trace=True)
@@ -343,8 +343,8 @@ def _cleanup_tools(api, logger, users, dry_run, notifier):
                 api.delete_tool(tool.get('image'))
                 notifier.add(Event(tool_id, tool.get('image'), TOOL_TYPE, tool.get('owner'), DELETED, ''))
             else:
-                notifier.add(Event(Event(tool_id, tool.get('image'), TOOL_TYPE, tool.get('owner'),
-                                   'TO BE DELETED', 'Skipped due to dry run')))
+                notifier.add(Event(tool_id, tool.get('image'), TOOL_TYPE, tool.get('owner'),
+                                   'TO BE DELETED', 'Skipped due to dry run'))
             logger.debug('Tool {} deleted.'.format(tool_id))
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
@@ -422,7 +422,7 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run, notifier):
             if len(default_storage_users) > 0:
                 _cleanup_default_datastorage(api, logger, storage, default_storage_users, dry_run, delete_content, notifier)
             else:
-                _cleanup_general_datastorage(api, logger, storage, dry_run, delete_content, notifier)
+                _cleanup_default_datastorage(api, logger, storage, [], dry_run, delete_content, notifier)
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             raise
@@ -498,8 +498,8 @@ def _replace_datastorage_content(logger, storage, mount_point, destination):
 def _cleanup_default_datastorage(api, logger, storage, default_storage_users, dry_run, delete_content, notifier):
     storage_id = storage.get('id')
     logger.debug('Storage {} is eligible for deletion. Checking storage content'.format(storage_id))
-    storage_items = api.load_datastorage_items(storage_id)
-    if storage_items is not None:
+    storage_items = api.load_datastorage_items_page(storage_id)
+    if 'results' in storage_items and storage_items['results']:
         logger.debug('Storage {} has content to backup.'.format(storage_id))
         dedicated_bucket = os.getenv('CP_DEDICATED_BUCKET')
         mount_path = os.getenv('CP_MOUNT_POINT', '/opt/mount/')
@@ -516,11 +516,12 @@ def _cleanup_default_datastorage(api, logger, storage, default_storage_users, dr
                 notifier.add(Event(storage.get('id'), storage.get('name'), STORAGE_TYPE, storage.get('owner'), 'ERROR',
                                    "Data backup failed"))
                 return
-    logger.debug('Cleaning user default storage attribute {} for users {} '.format(storage_id,
-                                                                                   ','.join([user.get('userName') for user in default_storage_users])))
-    if not dry_run:
-        for default_storage_user in default_storage_users:
-            api.delete_user_home_storage(default_storage_user.get('id'))
+    if default_storage_users:
+        logger.debug('Cleaning user default storage attribute {} for users {} '.format(storage_id,
+                                                                                       ','.join([user.get('userName') for user in default_storage_users])))
+        if not dry_run:
+            for default_storage_user in default_storage_users:
+                api.delete_user_home_storage(default_storage_user.get('id'))
     logger.debug('Deleting storage {}'.format(storage_id))
     if not dry_run:
         api.delete_datastorage(storage_id, delete_content)
