@@ -714,10 +714,10 @@ class Logs extends localization.LocalizedReactComponent {
     if (!allowEditing && this.runSchedule.length === 0) {
       return null;
     }
-    if (this.run.pipelineName && !preferences.maintenancePipelineEnabled) {
+    if (this.run.pipelineId && !preferences.maintenancePipelineEnabled) {
       return null;
     }
-    if (!preferences.maintenanceToolEnabled) {
+    if (!this.run.pipelineId && !preferences.maintenanceToolEnabled) {
       return null;
     }
     return (
