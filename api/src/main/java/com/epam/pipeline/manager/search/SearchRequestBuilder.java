@@ -64,9 +64,9 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.SEARCH_ELAS
 @RequiredArgsConstructor
 public class SearchRequestBuilder {
 
-    private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
     private static final String SIZE_FIELD = "size";
     private static final String STORAGE_SIZE_BY_TIER_AGG_NAME = "sizeSumByTier";
+    private static final String STORAGE_SIZE_AGG_NAME = "sizeSum";
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
     private static final String ES_DOC_ID_FIELD = "_id";
