@@ -161,6 +161,7 @@ class LifeCycleEditModal extends React.Component {
     };
     return stringFieldModified('notification.body', notification.body) ||
       stringFieldModified('notification.disabled', !notification.enabled) ||
+      stringFieldModified('notification.notifyUsers', notification.notifyUsers) ||
       stringFieldModified('notification.notifyBeforeDays', notification.notifyBeforeDays) ||
       stringFieldModified('notification.prolongDays', notification.prolongDays) ||
       stringFieldModified('notification.subject', notification.subject) ||
