@@ -835,6 +835,9 @@ public class S3Helper {
                 }
             }
             req.setContinuationToken(listing.getNextContinuationToken());
+            if (pageSize != null) {
+                req.setMaxKeys(pageSize - items.size());
+            }
         } while(listing.isTruncated() && (pageSize == null || items.size() < pageSize));
         String returnToken = listing.isTruncated() ? previous : null;
         return new DataStorageListing(returnToken, items);
@@ -919,10 +922,10 @@ public class S3Helper {
                 if (file == null) {
                     continue;
                 }
-                final String fileName = file.getName();
                 if (filterNotRestored(file, file.getPath(), restoredListing)) {
                     continue;
                 }
+                final String fileName = file.getName();
                 if (maskingEnabled) {
                     final String fileNameWithFolderPrefix = requestPath + fileName;
                     if (compareStrings(fileNameWithFolderPrefix, latestMarker) > 0) {
@@ -1312,6 +1315,7 @@ public class S3Helper {
     }
 
     private boolean isArchived(final DataStorageFile item) {
-        return !STANDARD_STORAGE_CLASS.equals(MapUtils.emptyIfNull(item.getLabels()).get(STORAGE_CLASS));
+        final String storageClass = MapUtils.emptyIfNull(item.getLabels()).get(STORAGE_CLASS);
+        return !StringUtils.isNullOrEmpty(storageClass) && !STANDARD_STORAGE_CLASS.equals(storageClass);
     }
 }
