@@ -149,11 +149,16 @@ public class SearchResultConverter {
         return Optional.ofNullable(tryExtractResponse(responses, requestType))
                 .map(SearchResponse::getAggregations).map(a -> a.<ParsedTerms>get(STORAGE_SIZE_BY_TIER_AGG_NAME))
                 .map(bkts -> bkts.getBucketByKey(tier))
-                .map(bucket -> ImmutablePair.of(
-                        bucket.getDocCount(),
-                        new Double(
-                                bucket.getAggregations().<ParsedSum>get(STORAGE_SIZE_AGG_NAME).getValue()
-                        ).longValue())
+                .map(bucket -> {
+                        long size = Optional.ofNullable(bucket.getAggregations())
+                                .map(agg -> agg.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
+                                .map(ParsedSum::getValue)
+                                .orElse(0.0)
+                                .longValue();
+                        return ImmutablePair.of(
+                                    bucket.getDocCount(),
+                                    size);
+                        }
                 ).orElse(ImmutablePair.of(ZERO, ZERO));
     }
 
