@@ -28,6 +28,7 @@ import lombok.Value;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -38,11 +39,11 @@ public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage>
     private StorageType resourceStorageType;
     private DataStorageType objectStorageType;
     private MountType fileStorageType;
-    private Map<String, StorageBillingInfoDetails> billingDetails;
+    private List<StorageBillingInfoDetails> billingDetails;
 
     @Builder
     public StorageBillingInfo(final LocalDate date, final AbstractDataStorage storage, final Long cost,
-                              final Long usageBytes, final Map<String, StorageBillingInfoDetails> billingDetails,
+                              final Long usageBytes, final List<StorageBillingInfoDetails> billingDetails,
                               final StorageType resourceStorageType, final DataStorageType objectStorageType,
                               final MountType fileStorageType) {
         super(date, storage, cost, ResourceType.STORAGE);
@@ -68,8 +69,8 @@ public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage>
                     put("storage_class", storageClass);
                     put("cost", cost);
                     put("usage_bytes", usageBytes);
-                    put("old_version_usage_bytes", oldVersionUsageBytes);
                     put("old_version_cost", oldVersionCost);
+                    put("old_version_usage_bytes", oldVersionUsageBytes);
                 }
             };
         }

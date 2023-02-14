@@ -543,11 +543,12 @@ public class StorageToRequestConverterTest {
         if (MapUtils.isNotEmpty(billingDetails)) {
             final Object billingDetailsObj = fieldMap.get("billing_details");
             Assert.assertNotNull(billingDetailsObj);
-            final Map<String, Object> billingDetailsFormResponse = (Map<String, Object>) billingDetailsObj;
+            final List<Map<String, Object>> billingDetailsFormResponse = (List<Map<String, Object>>) billingDetailsObj;
             billingDetails.forEach((sc, d) -> {
-                final Object storageBillingInfoDetailsObj = billingDetailsFormResponse.get(sc);
+                final Map<String, Object> storageBillingInfoDetailsObj = billingDetailsFormResponse.stream()
+                        .filter(scb -> scb.get("storage_class").equals(sc)).findFirst().orElse(Collections.emptyMap());
                 Assert.assertNotNull(billingDetailsObj);
-                final Map<String, Object> detailsFromResponse = (Map<String, Object>) storageBillingInfoDetailsObj;
+                final Map<String, Object> detailsFromResponse = storageBillingInfoDetailsObj;
                 Assert.assertEquals(d.getCost(), getLongValue(detailsFromResponse.get("cost")));
                 Assert.assertEquals(d.getUsageBytes(), getLongValue(detailsFromResponse.get("usage_bytes")));
                 Assert.assertEquals(d.getOldVersionCost(),

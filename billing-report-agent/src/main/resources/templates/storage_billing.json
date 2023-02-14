@@ -17,9 +17,25 @@
         "object_storage_type": { "type": "keyword" },
         "file_storage_type": { "type": "keyword" },
         "storage_created_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
-
-        "storage_class": { "type": "keyword" },
-        "current_version": { "type": "boolean" },
+        "billing_details": {
+          "properties": {
+            "storage_class": {
+              "type": "keyword"
+            },
+            "cost": {
+              "type": "long"
+            },
+            "old_version_cost": {
+              "type": "long"
+            },
+            "usage_bytes": {
+              "type": "long"
+            },
+            "old_version_usage_bytes": {
+              "type": "long"
+            }
+          }
+        },
         "usage_bytes": { "type": "long" },
         "usage_bytes_avg": { "type": "long" },
         "cost": { "type": "long" },

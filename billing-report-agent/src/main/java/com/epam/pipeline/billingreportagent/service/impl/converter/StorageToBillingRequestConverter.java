@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -237,76 +238,75 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                         .resourceStorageType(storageType)
                         .objectStorageType(objectStorageType)
                         .fileStorageType(fileStorageType);
-        final Map<String, StorageBillingInfo.StorageBillingInfoDetails> details = buildBillingDetails(
+        final List<StorageBillingInfo.StorageBillingInfoDetails> details = buildBillingDetails(
                 storageSizes, regionLocation, billingDate);
         billing.billingDetails(details)
-            .cost(details.values().stream()
+            .cost(details.stream()
                 .map(dc -> dc.getCost() + dc.getOldVersionCost())
                 .reduce(0L, Long::sum)
             )
-            .usageBytes(details.values().stream()
+            .usageBytes(details.stream()
                 .map(dc -> dc.getUsageBytes() + dc.getOldVersionUsageBytes())
                 .reduce(0L, Long::sum)
             );
         return billing.build();
     }
 
-    private Map<String, StorageBillingInfo.StorageBillingInfoDetails> buildBillingDetails(
+    private List<StorageBillingInfo.StorageBillingInfoDetails> buildBillingDetails(
             final Map<Boolean, Map<String, Long>> storageSizes,
             final String regionLocation, final LocalDate billingDate) {
-        final Map<String, StorageBillingInfo.StorageBillingInfoDetails> current =
+        final List<StorageBillingInfo.StorageBillingInfoDetails> current =
                 buildBillingDetails(storageSizes.get(true), true, regionLocation, billingDate);
-        final Map<String, StorageBillingInfo.StorageBillingInfoDetails> oldVersions =
+        final List<StorageBillingInfo.StorageBillingInfoDetails> oldVersions =
                 buildBillingDetails(storageSizes.get(false), false, regionLocation, billingDate);
         return mergeBillingDetailsMaps(current, oldVersions);
     }
 
-    private Map<String, StorageBillingInfo.StorageBillingInfoDetails> mergeBillingDetailsMaps(
-            final Map<String, StorageBillingInfo.StorageBillingInfoDetails> left,
-            final Map<String, StorageBillingInfo.StorageBillingInfoDetails> right) {
-        if (MapUtils.isEmpty(left) || MapUtils.isEmpty(right)) {
-            return MapUtils.isNotEmpty(right)
+    private List<StorageBillingInfo.StorageBillingInfoDetails> mergeBillingDetailsMaps(
+            final List<StorageBillingInfo.StorageBillingInfoDetails> left,
+            final List<StorageBillingInfo.StorageBillingInfoDetails> right) {
+        if (CollectionUtils.isEmpty(left) || CollectionUtils.isEmpty(right)) {
+            return CollectionUtils.isNotEmpty(right)
                     ? right
-                    : MapUtils.isNotEmpty(left) ? left : Collections.emptyMap();
+                    : CollectionUtils.isNotEmpty(left) ? left : Collections.emptyList();
         }
-        return Stream.concat(left.keySet().stream(), right.keySet().stream())
+        return Stream.concat(left.stream(), right.stream())
+                .map(StorageBillingInfo.StorageBillingInfoDetails::getStorageClass)
                 .distinct()
-                .map(storageClass -> ImmutablePair.of(
-                        storageClass, mergeBillingDetails(left.get(storageClass), right.get(storageClass)))
-                ).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+                .map(storageClass -> mergeBillingDetails(
+                        left.stream().filter(bd -> storageClass.equals(bd.getStorageClass())).findFirst(),
+                        right.stream().filter(bd -> storageClass.equals(bd.getStorageClass())).findFirst()
+                        )
+                ).collect(Collectors.toList());
     }
 
     private StorageBillingInfo.StorageBillingInfoDetails mergeBillingDetails(
-            final StorageBillingInfo.StorageBillingInfoDetails left,
-            final StorageBillingInfo.StorageBillingInfoDetails right) {
+            final Optional<StorageBillingInfo.StorageBillingInfoDetails> leftOp,
+            final Optional<StorageBillingInfo.StorageBillingInfoDetails> rightOp) {
 
         final StorageBillingInfo.StorageBillingInfoDetails.StorageBillingInfoDetailsBuilder result =
                 StorageBillingInfo.StorageBillingInfoDetails.builder();
-        if (left == null || right == null) {
-            return right != null
-                    ? right
-                    : left != null ? left : result.build();
+        if (!leftOp.isPresent() || !rightOp.isPresent()) {
+            return rightOp.orElseGet(() -> leftOp.orElseGet(result::build));
         }
 
+        StorageBillingInfo.StorageBillingInfoDetails left = leftOp.get();
+        StorageBillingInfo.StorageBillingInfoDetails right = rightOp.get();
+
         return result
-                .cost(left.getCost() + right.getCost())
                 .storageClass(left.getStorageClass())
+                .cost(left.getCost() + right.getCost())
                 .usageBytes(left.getUsageBytes() + right.getUsageBytes())
-                .oldVersionUsageBytes(
-                        left.getOldVersionUsageBytes() +
-                                right.getOldVersionUsageBytes()
-                )
-                .oldVersionCost(
-                        left.getOldVersionCost() + right.getOldVersionCost()
-                )
+                .oldVersionUsageBytes(left.getOldVersionUsageBytes() + right.getOldVersionUsageBytes())
+                .oldVersionCost(left.getOldVersionCost() + right.getOldVersionCost())
                 .build();
     }
 
-    private Map<String, StorageBillingInfo.StorageBillingInfoDetails> buildBillingDetails(
+    private List<StorageBillingInfo.StorageBillingInfoDetails> buildBillingDetails(
         final Map<String, Long> sizesByStorageType, final boolean isCurrentObject,
         final String regionLocation, final LocalDate billingDate) {
         if (sizesByStorageType == null) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
         return sizesByStorageType.entrySet()
             .stream()
@@ -323,23 +323,18 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                             size, storagePricing.getDefaultPriceGb(storageClass), billingDate);
                 }
                 return ImmutablePair.of(storageClass, ImmutablePair.of(size, cost));
-            }).collect(
-                Collectors.toMap(
-                    Pair::getKey,
-                    stats -> {
-                        StorageBillingInfo.StorageBillingInfoDetails.StorageBillingInfoDetailsBuilder builder
-                                = StorageBillingInfo.StorageBillingInfoDetails.builder()
-                                .storageClass(stats.getKey());
-                        if (isCurrentObject) {
-                            builder.usageBytes(stats.getValue().getKey()).cost(stats.getValue().getValue());
-                        } else {
-                            builder.oldVersionUsageBytes(stats.getValue().getKey())
-                                    .oldVersionCost(stats.getValue().getValue());
-                        }
-                        return builder.build();
-                    }
-                )
-            );
+            }).map(stats -> {
+                StorageBillingInfo.StorageBillingInfoDetails.StorageBillingInfoDetailsBuilder builder
+                        = StorageBillingInfo.StorageBillingInfoDetails.builder()
+                        .storageClass(stats.getKey());
+                if (isCurrentObject) {
+                    builder.usageBytes(stats.getValue().getKey()).cost(stats.getValue().getValue());
+                } else {
+                    builder.oldVersionUsageBytes(stats.getValue().getKey())
+                            .oldVersionCost(stats.getValue().getValue());
+                }
+                return builder.build();
+            }).collect(Collectors.toList());
     }
 
     private DataStorageType getObjectStorageType(final EntityContainer<AbstractDataStorage> storageContainer) {
