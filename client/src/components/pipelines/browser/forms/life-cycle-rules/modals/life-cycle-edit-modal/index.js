@@ -362,7 +362,7 @@ class LifeCycleEditModal extends React.Component {
         visible={visible}
         onCancel={this.onCancel}
         title={`${createNewRule ? 'Create' : 'Edit'} transition rule`}
-        width="70%"
+        width="90%"
         style={{maxWidth: '1100px', top: 20}}
         footer={
           <Row type="flex" justify="end">
