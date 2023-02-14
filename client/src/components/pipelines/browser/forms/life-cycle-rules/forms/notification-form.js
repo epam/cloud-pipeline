@@ -38,21 +38,21 @@ import styles from './life-cycle-forms.css';
 const columnLayout = {
   labelCol: {
     xs: {span: 24},
-    sm: {span: 6}
+    sm: {span: 10}
   },
   wrapperCol: {
     xs: {span: 24},
-    sm: {span: 14}
+    sm: {span: 10}
   }
 };
 const fullWidthLayout = {
   labelCol: {
     xs: {span: 24},
-    sm: {span: 3}
+    sm: {span: 5}
   },
   wrapperCol: {
     xs: {span: 24},
-    sm: {span: 19}
+    sm: {span: 17}
   }
 };
 
@@ -319,26 +319,6 @@ class NotificationForm extends React.Component {
         </Row>
         <Row>
           <Form.Item
-            className={styles.formItem}
-            style={{marginLeft: 10}}
-          >
-            {getFieldDecorator('notification.notifyUsers', {
-              valuePropName: 'checked',
-              initialValue: rule.notification && rule.notification.notifyUsers !== undefined
-                ? rule.notification.notifyUsers
-                : false
-            })(
-              <Checkbox
-                disabled={notificationsDisabled || pending}
-                onChange={this.checkRequiredFields}
-              >
-                Storage users
-              </Checkbox>
-            )}
-          </Form.Item>
-        </Row>
-        <Row>
-          <Form.Item
             {...fullWidthLayout}
             className={styles.formItem}
             label="Recipients"
@@ -360,6 +340,28 @@ class NotificationForm extends React.Component {
                 popupContainerFn={() => this.notifyFormContainer}
                 onChange={this.checkRequiredFields}
               />
+            )}
+          </Form.Item>
+        </Row>
+        <Row>
+          <Form.Item
+            {...fullWidthLayout}
+            className={styles.formItem}
+            label=" "
+            colon={false}
+          >
+            {getFieldDecorator('notification.notifyUsers', {
+              valuePropName: 'checked',
+              initialValue: rule.notification && rule.notification.notifyUsers !== undefined
+                ? rule.notification.notifyUsers
+                : false
+            })(
+              <Checkbox
+                disabled={notificationsDisabled || pending}
+                onChange={this.checkRequiredFields}
+              >
+                Storage users
+              </Checkbox>
             )}
           </Form.Item>
         </Row>
