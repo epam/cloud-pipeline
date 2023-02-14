@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
-import static org.openqa.selenium.By.className;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -285,15 +284,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class CreateNotificationPopup extends PopupAO<CreateNotificationPopup, SystemEventsAO> implements AccessObject<CreateNotificationPopup>{
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                    entry(TITLE, context().find(className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
-                    entry(TITLE_FIELD, context().find(className("edit-notification-form-title-container")).find(className("ant-input-lg"))),
-                    entry(BODY, context().find(className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
-                    entry(BODY_FIELD, context().find(className("edit-notification-form-body-container")).find(byId("body"))),
-                    entry(SEVERITY, context().find(className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
-                    entry(SEVERITY_COMBOBOX, context().find(className("edit-notification-form-severity-container")).find(className("ant-select-selection-selected-value"))),
-                    entry(STATE, context().find(className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
-                    entry(STATE_CHECKBOX, context().find(className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
-                    entry(ACTIVE_LABEL, context().find(className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
+                    entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
+                    entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
+                    entry(BODY, context().find(By.className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
+                    entry(BODY_FIELD, context().find(By.className("edit-notification-form-body-container")).find(byId("body"))),
+                    entry(SEVERITY, context().find(By.className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
+                    entry(SEVERITY_COMBOBOX, context().find(By.className("edit-notification-form-severity-container")).find(By.className("ant-select-selection-selected-value"))),
+                    entry(STATE, context().find(By.className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
+                    entry(STATE_CHECKBOX, context().find(By.className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
+                    entry(ACTIVE_LABEL, context().find(By.className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
                     entry(CANCEL, context().find(byId("edit-notification-form-cancel-button"))),
                     entry(CREATE, context().find(byId("edit-notification-form-create-button")))
             );
@@ -379,15 +378,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public class EditNotificationPopup extends CreateNotificationPopup {
 
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                    entry(TITLE, context().find(className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
-                    entry(TITLE_FIELD, context().find(className("edit-notification-form-title-container")).find(className("ant-input-lg"))),
-                    entry(BODY, context().find(className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
-                    entry(BODY_FIELD, context().find(className("edit-notification-form-body-container")).find(byId("body"))),
-                    entry(SEVERITY, context().find(className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
-                    entry(SEVERITY_COMBOBOX, context().find(className("edit-notification-form-severity-container")).find(className("ant-select-selection-selected-value"))),
-                    entry(STATE, context().find(className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
-                    entry(STATE_CHECKBOX, context().find(className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
-                    entry(ACTIVE_LABEL, context().find(className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
+                    entry(TITLE, context().find(By.className("edit-notification-form-title-container")).find(byXpath("//label[contains(@title, 'Title')]"))),
+                    entry(TITLE_FIELD, context().find(By.className("edit-notification-form-title-container")).find(By.className("ant-input-lg"))),
+                    entry(BODY, context().find(By.className("edit-notification-form-body-container")).find(byXpath("//label[contains(@title, 'Body')]"))),
+                    entry(BODY_FIELD, context().find(By.className("edit-notification-form-body-container")).find(byId("body"))),
+                    entry(SEVERITY, context().find(By.className("edit-notification-form-severity-container")).find(byXpath("//label[contains(@title, 'Severity')]"))),
+                    entry(SEVERITY_COMBOBOX, context().find(By.className("edit-notification-form-severity-container")).find(By.className("ant-select-selection-selected-value"))),
+                    entry(STATE, context().find(By.className("edit-notification-form-state-container")).find(byXpath("//label[contains(@title, 'State')]"))),
+                    entry(STATE_CHECKBOX, context().find(By.className("edit-notification-form-state-container")).find(byClassName("ant-checkbox"))),
+                    entry(ACTIVE_LABEL, context().find(By.className("edit-notification-form-state-container")).find(byXpath(".//*[text() = 'Active']"))),
                     entry(CANCEL, context().find(byId("edit-notification-form-cancel-button"))),
                     entry(SAVE, context().find(byId("edit-notification-form-save-button")))
             );
@@ -745,10 +744,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                 public class EditUserPopup extends PopupAO<EditUserPopup, UsersTabAO> implements AccessObject<EditUserPopup> {
                     private final SelenideElement element = context().find(byText("Add role or group:"))
-                            .closest(".ant-row-flex").find(className("ant-select-allow-clear"));
+                            .closest(".ant-row-flex").find(By.className("ant-select-allow-clear"));
                     public final Map<Primitive, SelenideElement> elements = initialiseElements(
                             entry(SEARCH, element),
-                            entry(SEARCH_INPUT, element.find(className("ant-select-search__field"))),
+                            entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
                             entry(ADD_KEY, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
@@ -801,7 +800,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
 
                     public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
-                        if ($(className(format("role-%s", value))).exists()) {
+                        if ($(By.className(format("role-%s", value))).exists()) {
                             return this;
                         }
                         return addRoleOrGroup(value);
