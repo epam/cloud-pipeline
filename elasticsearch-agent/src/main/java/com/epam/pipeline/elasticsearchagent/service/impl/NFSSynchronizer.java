@@ -248,6 +248,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                     .field("storage_name", storageName)
                     .field("id", path)
                     .field("name", path)
+                    .field("storage_class", "STANDARD")
                     .field("parentId", storageId);
 
             jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
