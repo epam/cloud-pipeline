@@ -26,6 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Composition class to aggregate prices from more than 1 price list loader.
+ * */
 @Slf4j
 public class AwsPriceStorageListComposerLoader implements StoragePriceListLoader {
 
