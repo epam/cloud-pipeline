@@ -127,7 +127,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     private Optional<Pair<String, StoragePricing>> mergeRegionPrices(
             final List<Pair<String, StoragePricing>> entries) {
         return ListUtils.emptyIfNull(entries).stream().findAny().map(Map.Entry::getKey).map(r -> {
-            StoragePricing pricing = new StoragePricing();
+            final StoragePricing pricing = new StoragePricing();
             entries.stream()
                     .map(Map.Entry::getValue)
                     .flatMap(storagePricing -> storagePricing.getPrices().entrySet().stream())
@@ -154,13 +154,14 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             });
     }
 
-    private static String matchStorageClass(AwsPricingCard price) {
+    private static String matchStorageClass(final AwsPricingCard price) {
         return Optional.ofNullable(price.getProduct().getAttributes().get(VOLUME_TYPE_KEY)).map(
                 PRICE_LIST_STORAGE_CLASS_MAPPING::get
         ).orElse(null);
     }
 
-    private StoragePricing convertAwsPricing(String storageClass, final Map<String, AwsPriceDimensions> allPrices) {
+    private StoragePricing convertAwsPricing(final String storageClass,
+                                             final Map<String, AwsPriceDimensions> allPrices) {
         final StoragePricing pricing = new StoragePricing();
         final List<AwsPriceRate> rates = CollectionUtils.emptyIfNull(allPrices.values()).stream()
             .map(AwsPriceDimensions::getPriceDimensions)
@@ -185,7 +186,8 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         return pricing;
     }
 
-    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName, final PriceLoadingMode mode) {
+    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName,
+                                                     final PriceLoadingMode mode) {
         switch (mode) {
             case API:
                 return getAwsPricingCardsViaApi(awsStorageServiceName);
@@ -301,7 +303,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         }
     }
 
-    String readStringFromURL(String url) throws IOException {
+    String readStringFromURL(final String url) throws IOException {
         try (InputStream inputStream = new URL(url).openStream()) {
             return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         }

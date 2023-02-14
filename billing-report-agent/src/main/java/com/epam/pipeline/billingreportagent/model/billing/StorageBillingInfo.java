@@ -27,9 +27,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -62,17 +60,5 @@ public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage>
         long cost;
         long oldVersionUsageBytes;
         long oldVersionCost;
-
-        public Map<String, Object> asMap() {
-            return new HashMap<String, Object>() {
-                {
-                    put("storage_class", storageClass);
-                    put("cost", cost);
-                    put("usage_bytes", usageBytes);
-                    put("old_version_cost", oldVersionCost);
-                    put("old_version_usage_bytes", oldVersionUsageBytes);
-                }
-            };
-        }
     }
 }

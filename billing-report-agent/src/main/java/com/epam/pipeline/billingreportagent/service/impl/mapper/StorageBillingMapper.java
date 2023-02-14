@@ -29,6 +29,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -73,7 +75,7 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
             if (CollectionUtils.isNotEmpty(billingInfo.getBillingDetails())) {
                 // Detailed costs and sizes by Storage Class and file versions
                 jsonBuilder.field("billing_details", billingInfo.getBillingDetails()
-                        .stream().map(StorageBillingInfo.StorageBillingInfoDetails::asMap)
+                        .stream().map(this::mapBillingDetails)
                         .collect(Collectors.toList()));
             }
 
@@ -82,6 +84,16 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for data storage: ", e);
         }
+    }
+
+    public Map<String, Object> mapBillingDetails(final StorageBillingInfo.StorageBillingInfoDetails details) {
+        final Map<String, Object> detailsDict = new HashMap<>();
+        detailsDict.put("storage_class", details.getStorageClass());
+        detailsDict.put("cost", details.getCost());
+        detailsDict.put("usage_bytes", details.getUsageBytes());
+        detailsDict.put("old_version_cost", details.getOldVersionCost());
+        detailsDict.put("old_version_usage_bytes", details.getOldVersionUsageBytes());
+        return detailsDict;
     }
 }
 
