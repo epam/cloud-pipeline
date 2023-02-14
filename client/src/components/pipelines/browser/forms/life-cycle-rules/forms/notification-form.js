@@ -106,7 +106,6 @@ class NotificationForm extends React.Component {
     return undefined;
   }
 
-  @computed
   get notifyUsers () {
     const {form} = this.props;
     return form.getFieldValue('notification.notifyUsers');
