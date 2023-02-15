@@ -2712,7 +2712,7 @@ export default `
 @THEME .markdown h6 {
   margin: 2px 0;
 }
-@THEME .markdown p {
+@THEME .markdown:not(.no-margin-markdown) p {
   margin: 5px 0;
 }
 @THEME .markdown p a {
