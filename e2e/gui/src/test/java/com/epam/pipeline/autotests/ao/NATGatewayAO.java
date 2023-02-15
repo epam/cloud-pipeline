@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -313,7 +313,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 entry(SERVER_NAME, context().find(byAttribute("placeholder", "Server name"))),
                 entry(PORT, context().find(byText("Port:"))
                         .closest(".dd-route-modal__form-item-container")
-                        .find(".dd-route-modal__form-item").find("input")),
+                        .find(".dd-route-modal__form-item")),
                 entry(COMMENT, context().find(byAttribute("placeholder", "Comment"))),
                 entry(SPECIFY_IP, context().find(elementWithText(byClassName("ant-checkbox-wrapper"),
                         "Specify IP address"))),
@@ -355,8 +355,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
 
          public NATAddRouteAO addMorePorts(final String port, int portNumber) {
              context().findAll(By.className("cp-nat-route-port-control")).get(portNumber - 1)
-                     .find(".ant-form-item-control")
-                     .find("input")
+                     .find(".dd-route-modal__form-item")
                      .shouldBe(visible)
                      .setValue(port);
              return this;

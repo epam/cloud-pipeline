@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,10 +134,10 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
             assertEquals(icons.size(), 3);
             final Condition iconCondition1 = Condition.cssClass(format("anticon-%s", icons.get(0).getIcon()));
             supportButtonAO
-                    .checkSupportButtonIcon(iconCondition1);
+                    .checkSupportButtonIcon(icons.get(0), iconCondition1);
             final Condition iconCondition2 = Condition.attribute("src", icons.get(1).getIcon());
             supportButtonAO
-                    .checkSupportButtonIcon(iconCondition2);
+                    .checkSupportButtonIcon(icons.get(1), iconCondition2);
             supportButtonAO.checkSupportButtonContent(icons.get(0), iconCondition1);
             supportButtonAO.checkSupportButtonContent(icons.get(1), iconCondition2);
 
@@ -148,11 +148,14 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
                     .validateUserName(user.login);
             final Condition iconCondition3 = Condition.cssClass(format("anticon-%s", icons.get(2).getIcon()));
             supportButtonAO
-                    .checkSupportButtonIcon(iconCondition3);
+                    .checkSupportButtonIcon(icons.get(2), iconCondition3);
             supportButtonAO.checkSupportButtonContent(icons.get(2), iconCondition3);
         } finally {
             logoutIfNeeded();
-            loginAs(admin);
+            loginAs(admin)
+                    .settings()
+                    .switchToMyProfile()
+                    .validateUserName(admin.login);
             navigationMenu()
                     .settings()
                     .switchToPreferences()

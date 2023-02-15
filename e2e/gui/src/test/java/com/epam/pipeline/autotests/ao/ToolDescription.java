@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 
@@ -97,6 +98,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     private void showMetadata(final By attribute) {
+        $(byId("run-latest-menu-button")).waitUntil(visible, DEFAULT_TIMEOUT);
         click(SHOW_METADATA);
         ensure(attributesMenu, appears);
         performIf(showAttributes, visible,

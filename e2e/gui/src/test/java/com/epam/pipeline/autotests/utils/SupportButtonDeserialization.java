@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,9 @@ public class SupportButtonDeserialization extends StdDeserializer<SupportButton>
         final JsonNode node = p.getCodec().readTree(p);
         final List<SupportButton.Icon> icons = new LinkedList<>();
         node.fields().forEachRemaining(n -> n.getValue().fields().forEachRemaining(f -> {
-            if (!f.getKey().matches("icon[0-9]*")) {
-                return;
-            }
             final SupportButton.Icon icon = new SupportButton.Icon();
             icon.setIcon(f.getValue().get("icon").asText());
+            icon.setName(f.getKey());
             final String content = f.getValue().get("content").asText().replaceAll("<br>", "\n");
             icon.setContent(content);
             icons.add(icon);
