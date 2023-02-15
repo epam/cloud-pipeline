@@ -275,7 +275,7 @@ class LifeCycleEditModal extends React.Component {
                 ...(transitionDate && {
                   transitionDate: moment(transitionDate).format('YYYY-MM-DD')
                 }),
-                ...(transitionAfterDays && {transitionAfterDays})
+                ...(transitionAfterDays !== undefined && {transitionAfterDays})
               };
             });
         }
