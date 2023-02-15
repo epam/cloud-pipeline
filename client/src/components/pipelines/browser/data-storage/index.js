@@ -157,7 +157,8 @@ export default class DataStorage extends React.Component {
     previewModal: null,
     previewAvailable: false,
     previewPending: false,
-    restorePending: false
+    restorePending: false,
+    browseArchivedFiles: false
   };
 
   @observable storage = new DataStorageListing({
@@ -282,18 +283,27 @@ export default class DataStorage extends React.Component {
       this.storage.info.storagePolicy.versioningEnabled;
   }
 
-  @computed
-  get lifeCycleRestoreEnabled () {
-    const {authenticatedUserInfo} = this.props;
-    return authenticatedUserInfo.loaded &&
-      authenticatedUserInfo.value &&
-      this.storage.infoLoaded &&
-      this.storage.info &&
-      (
-        this.storage.isOwner ||
-        authenticatedUserInfo.value.admin
-      ) &&
-      /^s3$/i.test(this.storage.info.storageType || this.storage.info.type);
+  get userLifeCyclePermissions () {
+    if (!this.storage.infoLoaded || !this.storage.info) {
+      return {read: false, write: false};
+    }
+    const isS3 = /^s3$/i.test(
+      this.storage.info.storageType ||
+      this.storage.info.type
+    );
+    const readAllowed = roleModel.readAllowed(this.storage.info);
+    const writeAllowed = roleModel.writeAllowed(this.storage.info);
+    return {
+      read: (
+        roleModel.isOwner(this.storage.info) ||
+        roleModel.isManager.archiveManager(this) ||
+        roleModel.isManager.archiveReader(this)
+      ) && readAllowed && isS3,
+      write: (
+        roleModel.isOwner(this.storage.info) ||
+        roleModel.isManager.archiveManager(this)
+      ) && writeAllowed && isS3
+    };
   }
 
   get showVersions () {
@@ -753,6 +763,12 @@ export default class DataStorage extends React.Component {
       restoreDialogVisible: false,
       lifeCycleRestoreMode: undefined
     });
+  };
+
+  toggleBrowseArchivedFiles = () => {
+    this.setState(prevState => ({
+      browseArchivedFiles: !prevState.browseArchivedFiles
+    }));
   };
 
   restoreFiles = (payload) => {
@@ -1914,6 +1930,7 @@ export default class DataStorage extends React.Component {
     };
 
     const title = () => {
+      const {browseArchivedFiles} = this.state;
       return (
         <Row
           className={styles.storageActions}
@@ -1939,20 +1956,32 @@ export default class DataStorage extends React.Component {
                 Clear selection
               </Button>
             }
+            {(this.userLifeCyclePermissions.read ||
+              this.userLifeCyclePermissions.write) ? (
+                <Checkbox
+                  id="browse-archived-files"
+                  checked={browseArchivedFiles}
+                  onClick={this.toggleBrowseArchivedFiles}
+                  style={{marginLeft: 10}}
+                >
+                  Browse archived files
+                </Checkbox>
+              ) : null}
             {
               this.versionControlsEnabled
                 ? (
                   <Checkbox
                     checked={this.showVersions}
                     onChange={this.showFilesVersionsChanged}
-                    style={{marginLeft: 10}}>
+                    style={{marginLeft: 10}}
+                  >
                     Show files versions
                   </Checkbox>
                 ) : undefined
             }
           </div>
           <div style={{paddingRight: 8}}>
-            {this.lifeCycleRestoreEnabled && this.restorableItems.length > 0 ? (
+            {this.userLifeCyclePermissions.write && this.restorableItems.length > 0 ? (
               <Button
                 id="restore-button"
                 size="small"
@@ -2335,8 +2364,11 @@ export default class DataStorage extends React.Component {
                   path={this.props.path}
                   onClickRestore={() => this.openRestoreFilesDialog('folder')}
                   restoreInfo={this.lifeCycleRestoreInfo}
-                  restoreEnabled={this.lifeCycleRestoreEnabled}
-                  visible={!this.state.selectedFile}
+                  restoreEnabled={this.userLifeCyclePermissions.write}
+                  visible={!this.state.selectedFile && (
+                    this.userLifeCyclePermissions.read ||
+                    this.userLifeCyclePermissions.write
+                  )}
                 />,
                 <StorageSize storage={this.storage.info} />
               ]}
