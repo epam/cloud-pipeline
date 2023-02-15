@@ -553,7 +553,7 @@ public class SystemPreferences {
 
     public static final ObjectPreference<List<Map<String, Object>>> LAUNCH_DISK_THRESHOLDS = new ObjectPreference<>(
             "launch.job.disk.size.thresholds", null, new TypeReference<List<Map<String, Object>>>() {},
-            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<Map<String, Object>>>() {}), true);
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
