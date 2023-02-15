@@ -1129,7 +1129,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
 
     elif subnet_id:
         specifications.update({
-            'SubnetId': get_specified_subnet(subnet, availability_zone),
+            'SubnetId': subnet_id,
             'SecurityGroupIds': get_security_groups(aws_region, security_groups)
         })
         if cheapest_zone:
