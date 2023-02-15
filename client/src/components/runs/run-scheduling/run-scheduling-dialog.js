@@ -53,6 +53,7 @@ export default class RunScheduleDialog extends React.Component {
       actions.resume,
       actions.run
     ])),
+    showActionType: PropTypes.bool,
     rules: PropTypes.array,
     visible: PropTypes.bool,
     disabled: PropTypes.bool,
@@ -196,8 +197,14 @@ export default class RunScheduleDialog extends React.Component {
       rules[i].action = value;
       this.setState({rules});
     };
-    const {availableActions} = this.props;
-    if (!availableActions || availableActions.length < 2) {
+    const {
+      availableActions,
+      showActionType
+    } = this.props;
+    if (
+      (!availableActions || availableActions.length < 2) &&
+      !showActionType
+    ) {
       return null;
     }
     return (

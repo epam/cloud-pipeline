@@ -380,22 +380,34 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
-  @computed
-  get maintenanceToolEnabled () {
-    const value = this.getPreferenceValue('ui.run.maintenance.tool.enabled');
-    if (value === undefined) {
-      return true;
+  getJobMaintenanceConfigurationRules (preference) {
+    const value = this.getPreferenceValue(preference);
+    const defaultSettings = {
+      pause: true,
+      resume: true
+    };
+    try {
+      return {
+        ...defaultSettings,
+        ...JSON.parse(value)
+      };
+    } catch (e) {
+      console.warn(
+        `Error parsing "${preference}" preference:`,
+        e
+      );
     }
-    return /^true$/i.test(value);
+    return defaultSettings;
   }
 
   @computed
-  get maintenancePipelineEnabled () {
-    const value = this.getPreferenceValue('ui.run.maintenance.pipeline.enabled');
-    if (value === undefined) {
-      return true;
-    }
-    return /^true$/i.test(value);
+  get toolJobMaintenanceConfiguration () {
+    return this.getJobMaintenanceConfigurationRules('ui.run.maintenance.tool.enabled');
+  }
+
+  @computed
+  get pipelineJobMaintenanceConfiguration () {
+    return this.getJobMaintenanceConfigurationRules('ui.run.maintenance.pipeline.enabled');
   }
 
   @computed
