@@ -128,7 +128,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         final String root = chunks[0];
         final String path = chunks.length > 1 ?
                 StringUtils.join(Arrays.copyOfRange(chunks, 1, chunks.length), DELIMITER) : StringUtils.EMPTY;
-        final Stream<DataStorageFile> files = fileManager.versions(root, path, credentialsSupplier);
+        final Stream<DataStorageFile> files = fileManager.versions(root, path, credentialsSupplier, true);
         return StreamUtils.grouped(
                         files,
                         Comparator.comparing(AbstractDataStorageItem::getPath))

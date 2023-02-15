@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.search.SearchDocument;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -45,9 +46,9 @@ import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -81,7 +82,8 @@ public class SearchResultConverter {
                                                   final AbstractDataStorage dataStorage,
                                                   final String path) {
         final MultiSearchResponse.Item[] responses = tryExtractAllResponses(searchResponse, searchRequest);
-        final Map<String, StorageUsage.StorageUsageStats> statsByTiers = buildStorageUsageStatsByStorageTier(responses);
+        final Map<String, StorageUsage.StorageUsageStats> statsByTiers =
+                buildStorageUsageStatsByStorageTier(dataStorage.getType(), responses);
 
         final Optional<StorageUsage.StorageUsageStats> standardUsageOp =
                 Optional.ofNullable(statsByTiers.get(STANDARD_TIER));
@@ -105,46 +107,49 @@ public class SearchResultConverter {
     }
 
     private Map<String, StorageUsage.StorageUsageStats> buildStorageUsageStatsByStorageTier(
-            final MultiSearchResponse.Item[] responses) {
+            final DataStorageType dataStorageType, final MultiSearchResponse.Item[] responses) {
 
-        final List<String> storageClasses = Arrays.stream(responses).map(
-            r -> Optional.ofNullable(r.getResponse())
-                    .map(SearchResponse::getAggregations)
-                    .map(aggregations -> aggregations.<ParsedTerms>get(STORAGE_SIZE_BY_TIER_AGG_NAME).getBuckets())
-                    .orElse(Collections.emptyList())
-            ).flatMap(Collection::stream).map(MultiBucketsAggregation.Bucket::getKeyAsString)
-            .distinct().collect(Collectors.toList());
+        final Set<String> storageClasses = dataStorageType.getStorageClasses();
 
         return storageClasses.stream().map(storageClass -> {
             final StorageUsage.StorageUsageStats.StorageUsageStatsBuilder storageUsageStats =
                     StorageUsage.StorageUsageStats.builder();
 
             final Pair<Long, Long> totalCurrentSizeAndCount;
-            final Pair<Long, Long> totalOldVersionSizeAndCount;
             final Pair<Long, Long> effectiveCurrentSizeAndCount;
-            final Pair<Long, Long> effectiveOldVersionSizeAndCount;
-            if (responses.length > 2) {
-                totalCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 0);
-                effectiveCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 1);
-                totalOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 2);
-                effectiveOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 3);
+            final Long totalOldVersionSize;
+            final Long effectiveOldVersionSize;
+            if (responses.length > 1) {
+                totalCurrentSizeAndCount = extractSizeAndCountForCurrentFileVersion(responses, storageClass, 0);
+                effectiveCurrentSizeAndCount = extractSizeAndCountForCurrentFileVersion(responses, storageClass, 1);
+                totalOldVersionSize = extractSizeOldFileVersion(responses, storageClass, 0);
+                effectiveOldVersionSize = extractSizeOldFileVersion(responses, storageClass, 1);
             } else {
-                totalCurrentSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 0);
+                totalCurrentSizeAndCount = extractSizeAndCountForCurrentFileVersion(responses, storageClass, 0);
                 effectiveCurrentSizeAndCount = totalCurrentSizeAndCount;
-                totalOldVersionSizeAndCount = extractSizeAndCountFromResponse(responses, storageClass, 1);
-                effectiveOldVersionSizeAndCount = totalOldVersionSizeAndCount;
+                totalOldVersionSize = extractSizeOldFileVersion(responses, storageClass, 0);
+                effectiveOldVersionSize = totalOldVersionSize;
             }
             return storageUsageStats
                     .storageClass(storageClass)
                     .size(totalCurrentSizeAndCount.getRight()).count(totalCurrentSizeAndCount.getLeft())
                     .effectiveSize(effectiveCurrentSizeAndCount.getRight())
                     .effectiveCount(effectiveCurrentSizeAndCount.getLeft())
-                    .oldVersionsSize(totalOldVersionSizeAndCount.getRight())
-                    .oldVersionsEffectiveSize(effectiveOldVersionSizeAndCount.getRight()).build();
-        }).collect(Collectors.toMap(StorageUsage.StorageUsageStats::getStorageClass, s -> s));
+                    .oldVersionsSize(totalOldVersionSize)
+                    .oldVersionsEffectiveSize(effectiveOldVersionSize).build();
+        }).filter(stats -> stats.getSize() > 0 || stats.getOldVersionsSize() > 0 || stats.getCount() > 0)
+        .collect(Collectors.toMap(StorageUsage.StorageUsageStats::getStorageClass, s -> s));
     }
 
-    private ImmutablePair<Long, Long> extractSizeAndCountFromResponse(
+    private Long extractSizeOldFileVersion(
+            final MultiSearchResponse.Item[] responses, final String storageClass, final int requestType) {
+        return Optional.ofNullable(tryExtractResponse(responses, requestType))
+                .map(SearchResponse::getAggregations)
+                .map(a -> a.<ParsedSum>get(String.format("ov_%s_size_agg", storageClass.toLowerCase(Locale.ROOT))))
+                .map(a -> Double.valueOf(a.getValue()).longValue()).orElse(ZERO);
+    }
+
+    private ImmutablePair<Long, Long> extractSizeAndCountForCurrentFileVersion(
             final MultiSearchResponse.Item[] responses, final String tier, final int requestType) {
         return Optional.ofNullable(tryExtractResponse(responses, requestType))
                 .map(SearchResponse::getAggregations).map(a -> a.<ParsedTerms>get(STORAGE_SIZE_BY_TIER_AGG_NAME))

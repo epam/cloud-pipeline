@@ -9,20 +9,9 @@
         "lastModified": { "type": "date", "format": "yyyy-MM-dd'T'HH:mm:ss'Z'" },
         "size": { "type": "long" },
         "storage_class": {"type": "keyword", "store": true},
-        "versions": {
-          "properties": {
-            "storage_class": {
-              "type": "keyword"
-            },
-            "size": {
-              "type": "long"
-            },
-            "count": {
-              "type": "long"
-            }
-          }
-        },
-        "path": { "type": "text", "analyzer": "file_path_analyzer" },
+        "path": { "type": "text", "analyzer": "file_path_analyzer", "fields": { "keyword": { "type": "keyword" } } },
+        "cloud_path": { "type": "keyword", "index": false },
+        "mount_path": { "type": "keyword", "index": false },
         "storage_id": { "type": "long" },
         "storage_name": { "type": "text" },
         "storage_region": { "type": "keyword" },
@@ -34,6 +23,21 @@
       }
     }
   },
+  "dynamic_templates": [
+    {
+      "metadata": {
+        "match_mapping_type": "string",
+        "mapping": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type":  "keyword"
+            }
+          }
+        }
+      }
+    }
+  ],
   "settings": {
     "index": {
       "number_of_shards" : 1,

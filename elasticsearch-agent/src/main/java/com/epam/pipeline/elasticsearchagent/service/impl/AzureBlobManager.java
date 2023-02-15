@@ -79,7 +79,8 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     @Override
     public Stream<DataStorageFile> versions(final String storage,
                                             final String path,
-                                            final Supplier<TemporaryCredentials> credentialsSupplier) {
+                                            final Supplier<TemporaryCredentials> credentialsSupplier,
+                                            final boolean showDeleted) {
         throw new UnsupportedOperationException();
     }
 

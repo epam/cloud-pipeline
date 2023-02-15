@@ -32,11 +32,11 @@ public class StorageUsage {
     private DataStorageType type;
     private String path;
     private Long size;
+    private Long count;
     private Long effectiveSize;
+    private Long effectiveCount;
     private Long oldVersionsSize;
     private Long oldVersionsEffectiveSize;
-    private Long count;
-    private Long effectiveCount;
 
     private Map<String, StorageUsageStats> usage;
 
@@ -46,10 +46,10 @@ public class StorageUsage {
     public static class StorageUsageStats {
         String storageClass;
         Long size;
+        Long count;
         Long effectiveSize;
+        Long effectiveCount;
         Long oldVersionsSize;
         Long oldVersionsEffectiveSize;
-        Long count;
-        Long effectiveCount;
     }
 }

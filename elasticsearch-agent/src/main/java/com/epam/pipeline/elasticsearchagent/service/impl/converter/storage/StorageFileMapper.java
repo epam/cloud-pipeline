@@ -25,14 +25,15 @@ import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.utils.StreamUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
@@ -64,9 +65,17 @@ public class StorageFileMapper {
                     .field(DOC_TYPE_FIELD, type.name());
 
             if (MapUtils.isNotEmpty(dataStorageFile.getVersions())) {
-                jsonBuilder.field("versions",
-                        calculateVersionSizes(dataStorageFile.getVersions())
-                );
+                final Map<String, ImmutablePair<Long, Integer>> versionSizesByStorageClass =
+                        calculateVersionSizes(dataStorageFile.getVersions());
+                for (String key : versionSizesByStorageClass.keySet()) {
+                    String storageClassKey = key.toLowerCase(Locale.ROOT);
+                    jsonBuilder.field(
+                            String.format("ov_%s_size", storageClassKey),
+                            versionSizesByStorageClass.get(key).getLeft());
+                    jsonBuilder.field(
+                            String.format("ov_%s_count", storageClassKey),
+                            versionSizesByStorageClass.get(key).getRight());
+                }
             }
 
             jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
@@ -81,7 +90,8 @@ public class StorageFileMapper {
         }
     }
 
-    private List<Map<String, Object>> calculateVersionSizes(final Map<String, AbstractDataStorageItem> versions) {
+    private Map<String, ImmutablePair<Long, Integer>> calculateVersionSizes(
+            final Map<String, AbstractDataStorageItem> versions) {
         return StreamUtils.grouped(
                 versions.values().stream().map(v -> (DataStorageFile) v),
                 Comparator.comparing(v -> MapUtils.emptyIfNull(v.getLabels())
@@ -93,11 +103,7 @@ public class StorageFileMapper {
                     .orElse(STANDARD_TIER);
             final long totalSize = tierVersions.stream()
                     .collect(Collectors.summarizingLong(DataStorageFile::getSize)).getSum();
-            final HashMap<String, Object> result = new HashMap<>();
-            result.put("size", totalSize);
-            result.put("storage_class", storageClass);
-            result.put("count", versions.size());
-            return result;
-        }).collect(Collectors.toList());
+            return ImmutablePair.of(storageClass, ImmutablePair.of(totalSize, tierVersions.size()));
+        }).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 }
