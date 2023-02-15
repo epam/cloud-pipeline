@@ -716,10 +716,12 @@ public class SystemPreferences {
             "", UI_GROUP, pass);
     public static final StringPreference UI_STORAGE_STATIC_PREVIEW_MASK =
             new StringPreference("ui.storage.static.preview.mask", "html,htm", UI_GROUP, pass, true);
-    public static final BooleanPreference UI_MAINTENANCE_PIPELINE_ENABLED = new BooleanPreference(
-            "ui.run.maintenance.pipeline.enabled", true, UI_GROUP, pass);
-    public static final BooleanPreference UI_MAINTENANCE_TOOL_ENABLED = new BooleanPreference(
-            "ui.run.maintenance.tool.enabled", true, UI_GROUP, pass);
+    public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_PIPELINE_ENABLED = new ObjectPreference<>(
+            "ui.run.maintenance.pipeline.enabled", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_TOOL_ENABLED = new ObjectPreference<>(
+            "ui.run.maintenance.tool.enabled", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
