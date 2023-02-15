@@ -1406,7 +1406,8 @@ public class DataStorageManager implements SecuredEntityManager {
     private DataStorageLifecycleRestoredListingContainer loadRestoredPaths(final AbstractDataStorage storage,
                                                                            final String path) {
         final String normalizedPath = ProviderUtils.delimiterIfEmpty(ProviderUtils.withLeadingDelimiter(path));
-        final List<StorageRestoreAction> restoredItems = loadSucceededRestoreActions(storage, path);
+        final List<StorageRestoreAction> restoredItems = storageLifecycleRestoreManager
+                .loadSucceededRestoreActions(storage, path);
 
         if (CollectionUtils.isEmpty(restoredItems)) {
             return DataStorageLifecycleRestoredListingContainer.builder()
@@ -1437,24 +1438,5 @@ public class DataStorageManager implements SecuredEntityManager {
                 .filter(action -> StorageRestorePathType.FILE.equals(action.getType()))
                 .map(StorageRestoreAction::getPath)
                 .collect(Collectors.toList());
-    }
-
-    private List<StorageRestoreAction> loadSucceededRestoreActions(final AbstractDataStorage storage,
-                                                                   final String path) {
-        final List<StorageRestoreAction> restoredItems = ListUtils.emptyIfNull(storageLifecycleRestoreManager
-                        .loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
-                                .path(path)
-                                .type(StorageRestorePathType.FOLDER)
-                                .build(), false)).stream()
-                .filter(action -> StorageRestoreStatus.SUCCEEDED.equals(action.getStatus()))
-                .collect(Collectors.toList());
-        ListUtils.emptyIfNull(storageLifecycleRestoreManager
-                        .loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
-                                .path(path)
-                                .type(StorageRestorePathType.FILE)
-                                .build(), false)).stream()
-                .filter(action -> StorageRestoreStatus.SUCCEEDED.equals(action.getStatus()))
-                .forEach(restoredItems::add);
-        return restoredItems;
     }
 }
