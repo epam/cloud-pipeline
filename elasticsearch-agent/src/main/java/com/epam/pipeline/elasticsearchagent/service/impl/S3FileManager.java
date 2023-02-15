@@ -85,11 +85,12 @@ public class S3FileManager implements ObjectStorageFileManager {
     @Override
     public Stream<DataStorageFile> versions(final String storage,
                                             final String path,
-                                            final Supplier<TemporaryCredentials> credentialsSupplier) {
+                                            final Supplier<TemporaryCredentials> credentialsSupplier,
+                                            final boolean showDeleted) {
         final AmazonS3 client = getS3Client(credentialsSupplier);
         return StreamUtils.from(new S3VersionPageIterator(client, storage, path))
                 .flatMap(List::stream)
-                .filter(file -> !file.getDeleteMarker());
+                .filter(f -> showDeleted || !f.getDeleteMarker());
     }
 
     @Override

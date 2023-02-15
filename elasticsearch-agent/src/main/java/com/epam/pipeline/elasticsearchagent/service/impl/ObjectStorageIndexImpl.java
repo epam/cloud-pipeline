@@ -144,10 +144,11 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private Stream<DataStorageFile> loadFileWithVersions(final AbstractDataStorage dataStorage,
                                                          final Supplier<TemporaryCredentials> credentialsSupplier) {
         final Stream<DataStorageFile> files = fileManager.versions(
-                        dataStorage.getRoot(),
-                        Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
-                credentialsSupplier
-                );
+                dataStorage.getRoot(),
+                Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
+                credentialsSupplier,
+                true
+        );
         return StreamUtils.grouped(
                         StreamUtils.chunked(files, bulkLoadTagsSize)
                                 .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
