@@ -119,12 +119,14 @@ const STORAGE_CLASSES = {
 @inject(({routing}, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
+  const browseArchives = (queryParameters.archives || 'false').toLowerCase() === 'true';
   const openPreview = queryParameters.preview && decodeURIComponent(queryParameters.preview);
   return {
     onReloadTree,
     storageId: params.id,
     path: decodeURIComponent(queryParameters.path || ''),
     showVersions: showVersions,
+    browseArchives: browseArchives,
     restoreInfo: new LifeCycleEffectiveHierarchy(
       params.id,
       decodeURIComponent(queryParameters.path || ''),
@@ -157,8 +159,7 @@ export default class DataStorage extends React.Component {
     previewModal: null,
     previewAvailable: false,
     previewPending: false,
-    restorePending: false,
-    browseArchivedFiles: false
+    restorePending: false
   };
 
   @observable storage = new DataStorageListing({
@@ -313,6 +314,17 @@ export default class DataStorage extends React.Component {
     return this.storage.info.type !== 'NFS' &&
       this.props.showVersions &&
       this.storage.isOwner;
+  }
+
+  get browseArchives () {
+    const {browseArchives} = this.props;
+    if (!this.storage.info) {
+      return false;
+    }
+    return (
+      this.userLifeCyclePermissions.read ||
+      this.userLifeCyclePermissions.write
+    ) && browseArchives;
   }
 
   @computed
@@ -637,6 +649,7 @@ export default class DataStorage extends React.Component {
   navigate = (id, path, options = {}) => {
     const {
       showVersions = this.showVersions,
+      browseArchives = this.browseArchives,
       clearPathMarkers = true
     } = options;
     if (path && path.endsWith('/')) {
@@ -645,7 +658,12 @@ export default class DataStorage extends React.Component {
     this.storage.clearMarkersForPath(path, clearPathMarkers);
     const params = [
       path ? `path=${encodeURIComponent(path)}` : false,
-      `versions=${showVersions}`
+      this.versionControlsEnabled
+        ? `versions=${showVersions}`
+        : null,
+      this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write
+        ? `archives=${browseArchives}`
+        : null
     ].filter(Boolean).join('&');
     this.props.router.push(`/storage/${id}?${params}`);
     this.setState({
@@ -763,12 +781,6 @@ export default class DataStorage extends React.Component {
       restoreDialogVisible: false,
       lifeCycleRestoreMode: undefined
     });
-  };
-
-  toggleBrowseArchivedFiles = () => {
-    this.setState(prevState => ({
-      browseArchivedFiles: !prevState.browseArchivedFiles
-    }));
   };
 
   restoreFiles = (payload) => {
@@ -1689,6 +1701,17 @@ export default class DataStorage extends React.Component {
     this.navigate(this.props.storageId, this.props.path, {showVersions: e.target.checked});
   };
 
+  browseArchivedFilesChanged = (e) => {
+    this.navigate(
+      this.props.storageId,
+      this.props.path,
+      {
+        showVersions: this.props.showVersions,
+        browseArchives: e.target.checked
+      }
+    );
+  };
+
   get isFileSelectedEmpty () {
     if (!this.state.selectedFile) {
       return false;
@@ -1930,7 +1953,6 @@ export default class DataStorage extends React.Component {
     };
 
     const title = () => {
-      const {browseArchivedFiles} = this.state;
       return (
         <Row
           className={styles.storageActions}
@@ -1960,8 +1982,8 @@ export default class DataStorage extends React.Component {
               this.userLifeCyclePermissions.write) ? (
                 <Checkbox
                   id="browse-archived-files"
-                  checked={browseArchivedFiles}
-                  onClick={this.toggleBrowseArchivedFiles}
+                  checked={this.browseArchives}
+                  onClick={this.browseArchivedFilesChanged}
                   style={{marginLeft: 10}}
                 >
                   Browse archived files
