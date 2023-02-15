@@ -718,10 +718,10 @@ class Logs extends localization.LocalizedReactComponent {
     if (!allowEditing && this.runSchedule.length === 0) {
       return null;
     }
-    if (this.run.pipelineId && !preferences.maintenancePipelineEnabled) {
-      return null;
-    }
-    if (!this.run.pipelineId && !preferences.maintenanceToolEnabled) {
+    const configuration = this.run.pipelineId
+      ? preferences.pipelineJobMaintenanceConfiguration
+      : preferences.toolJobMaintenanceConfiguration;
+    if (!configuration.pause && !configuration.resume) {
       return null;
     }
     return (
@@ -729,6 +729,10 @@ class Logs extends localization.LocalizedReactComponent {
         <th className={styles.runScheduleHeader}>Maintenance: </th>
         <td className={styles.runSchedule}>
           <RunSchedulingList
+            availableActions={[
+              configuration.pause ? RunSchedulingList.Actions.pause : false,
+              configuration.resume ? RunSchedulingList.Actions.resume : false
+            ].filter(Boolean)}
             pending={runSchedule.pending || scheduleSaveInProgress}
             onSubmit={this.onRunScheduleSubmit}
             allowEdit={allowEditing}

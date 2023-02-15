@@ -3935,10 +3935,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return null;
     }
     const isPipeline = !!pipeline && !!pipeline.id;
-    if (isPipeline && !preferences.maintenancePipelineEnabled) {
-      return null;
-    }
-    if (!isPipeline && !preferences.maintenanceToolEnabled) {
+    const configuration = isPipeline
+      ? preferences.pipelineJobMaintenanceConfiguration
+      : preferences.toolJobMaintenanceConfiguration;
+    if (!configuration.pause && !configuration.resume) {
       return null;
     }
     const onScheduleSubmit = (rules) => {
@@ -3956,6 +3956,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           allowEdit
           onSubmit={onScheduleSubmit}
           rules={scheduleRules}
+          availableActions={[
+            configuration.pause ? RunSchedulingList.Actions.pause : false,
+            configuration.resume ? RunSchedulingList.Actions.resume : false
+          ].filter(Boolean)}
         />
       </FormItem>
     );
