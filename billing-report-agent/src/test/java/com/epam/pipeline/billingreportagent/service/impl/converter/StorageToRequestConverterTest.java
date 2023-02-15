@@ -496,7 +496,7 @@ public class StorageToRequestConverterTest {
                             String.format(OLD_VERSION_RESULT_JSON, ovSize.getValue())
             );
             oldVersionAggs.add(
-                    ParsedSum.fromXContent(parser, String.format("ov_%s_size_agg", ovSize.getKey()))
+                    ParsedSum.fromXContent(parser, String.format("%s_ov_size_agg", ovSize.getKey()))
             );
         }
 
@@ -537,21 +537,22 @@ public class StorageToRequestConverterTest {
         TestUtils.verifyStringArray(USER_GROUPS, fieldMap.get("groups"));
         if (MapUtils.isNotEmpty(billingDetails)) {
             for (String storageClass : billingDetails.keySet()) {
+                final String storageClassKey = storageClass.toLowerCase(Locale.ROOT);
                 Assert.assertEquals(
                         billingDetails.get(storageClass).getCost(),
-                        getLongValue(fieldMap.get(String.format("%s_cost", storageClass)))
+                        getLongValue(fieldMap.get(String.format("%s_cost", storageClassKey)))
                 );
                 Assert.assertEquals(
                         billingDetails.get(storageClass).getOldVersionCost(),
-                        getLongValue(fieldMap.get(String.format("ov_%s_cost", storageClass)))
+                        getLongValue(fieldMap.get(String.format("%s_ov_cost", storageClassKey)))
                 );
                 Assert.assertEquals(
                         billingDetails.get(storageClass).getUsageBytes(),
-                        getLongValue(fieldMap.get(String.format("%s_usage_bytes", storageClass)))
+                        getLongValue(fieldMap.get(String.format("%s_usage_bytes", storageClassKey)))
                 );
                 Assert.assertEquals(
                         billingDetails.get(storageClass).getOldVersionUsageBytes(),
-                        getLongValue(fieldMap.get(String.format("ov_%s_usage_bytes", storageClass)))
+                        getLongValue(fieldMap.get(String.format("%s_ov_usage_bytes", storageClassKey)))
                 );
             }
         }

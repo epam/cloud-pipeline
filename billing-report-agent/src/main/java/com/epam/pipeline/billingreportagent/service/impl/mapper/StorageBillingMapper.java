@@ -78,11 +78,11 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                     final String storageClass = storageClassDetails.getStorageClass().toLowerCase(Locale.ROOT);
                     jsonBuilder.field(String.format("%s_cost", storageClass), storageClassDetails.getCost());
                     jsonBuilder.field(
-                            String.format("ov_%s_cost", storageClass), storageClassDetails.getOldVersionCost());
-                    jsonBuilder.field(
                             String.format("%s_usage_bytes", storageClass), storageClassDetails.getUsageBytes());
                     jsonBuilder.field(
-                            String.format("ov_%s_usage_bytes", storageClass),
+                            String.format("%s_ov_cost", storageClass), storageClassDetails.getOldVersionCost());
+                    jsonBuilder.field(
+                            String.format("%s_ov_usage_bytes", storageClass),
                             storageClassDetails.getOldVersionUsageBytes()
                     );
                 }

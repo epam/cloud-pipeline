@@ -67,6 +67,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private static final String REGION_FIELD = "storage_region";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
     public static final String STORAGE_CLASS_FIELD = "storage_class";
+    public static final String OLD_VERSION_SIZE_FIELD_TEMPLATE = "ov_%s_size";
 
     private final AbstractEntityMapper<StorageBillingInfo> mapper;
     private final ElasticsearchServiceClient elasticsearchService;
@@ -152,7 +153,8 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                     .subAggregation(AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(SIZE_FIELD));
             final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(currentSizeSumAgg);
             for (String storageClass : storageType.getStorageClasses()) {
-                final String ovSizeFieldName = String.format("ov_%s_size", storageClass.toLowerCase(Locale.ROOT));
+                final String ovSizeFieldName =
+                        String.format(OLD_VERSION_SIZE_FIELD_TEMPLATE, storageClass.toLowerCase(Locale.ROOT));
                 sourceBuilder.aggregation(AggregationBuilders.sum(ovSizeFieldName + "_agg").field(ovSizeFieldName));
             }
             searchRequest.source(sourceBuilder);
@@ -210,7 +212,8 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
         final Map<String, Long> oldVersionsFileSizesByStorageClass = datastorageType.getStorageClasses()
             .stream().map(sc -> {
-                final String ovSizeFieldName = String.format("ov_%s_size", sc.toLowerCase(Locale.ROOT));
+                final String ovSizeFieldName =
+                        String.format(OLD_VERSION_SIZE_FIELD_TEMPLATE, sc.toLowerCase(Locale.ROOT));
                 return ImmutablePair.of(
                         sc,
                         Optional.ofNullable(aggregations.<ParsedSum>get(ovSizeFieldName + "_agg"))
