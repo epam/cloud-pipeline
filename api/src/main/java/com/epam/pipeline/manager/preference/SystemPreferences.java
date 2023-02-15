@@ -619,6 +619,10 @@ public class SystemPreferences {
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
+    public static final ObjectPreference<List<Map<String, Object>>> LAUNCH_DISK_THRESHOLDS = new ObjectPreference<>(
+            "launch.job.disk.size.thresholds", null, new TypeReference<List<Map<String, Object>>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
             "sleep infinity", DTS_GROUP, pass);
