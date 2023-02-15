@@ -29,10 +29,9 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -72,11 +71,21 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .field("usage_bytes_avg", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost());
 
-            if (CollectionUtils.isNotEmpty(billingInfo.getBillingDetails())) {
+            final List<StorageBillingInfo.StorageBillingInfoDetails> billingDetails = billingInfo.getBillingDetails();
+            if (CollectionUtils.isNotEmpty(billingDetails)) {
                 // Detailed costs and sizes by Storage Class and file versions
-                jsonBuilder.field("billing_details", billingInfo.getBillingDetails()
-                        .stream().map(this::mapBillingDetails)
-                        .collect(Collectors.toList()));
+                for (StorageBillingInfo.StorageBillingInfoDetails storageClassDetails : billingDetails) {
+                    final String storageClass = storageClassDetails.getStorageClass().toLowerCase(Locale.ROOT);
+                    jsonBuilder.field(String.format("%s_cost", storageClass), storageClassDetails.getCost());
+                    jsonBuilder.field(
+                            String.format("ov_%s_cost", storageClass), storageClassDetails.getOldVersionCost());
+                    jsonBuilder.field(
+                            String.format("%s_usage_bytes", storageClass), storageClassDetails.getUsageBytes());
+                    jsonBuilder.field(
+                            String.format("ov_%s_usage_bytes", storageClass),
+                            storageClassDetails.getOldVersionUsageBytes()
+                    );
+                }
             }
 
             return buildUserContent(container.getOwner(), jsonBuilder)
@@ -86,14 +95,5 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
         }
     }
 
-    public Map<String, Object> mapBillingDetails(final StorageBillingInfo.StorageBillingInfoDetails details) {
-        final Map<String, Object> detailsDict = new HashMap<>();
-        detailsDict.put("storage_class", details.getStorageClass());
-        detailsDict.put("cost", details.getCost());
-        detailsDict.put("usage_bytes", details.getUsageBytes());
-        detailsDict.put("old_version_cost", details.getOldVersionCost());
-        detailsDict.put("old_version_usage_bytes", details.getOldVersionUsageBytes());
-        return detailsDict;
-    }
 }
 

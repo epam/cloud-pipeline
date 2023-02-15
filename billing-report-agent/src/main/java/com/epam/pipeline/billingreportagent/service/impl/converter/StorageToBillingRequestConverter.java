@@ -63,12 +63,9 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     public static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
     public static final String OBJECT_SIZE_AGG_NAME = "CurrentObjectSizeAggr";
-    public static final String VERSION_SIZE_AGG_NAME = "VersionSizeAggr";
     private static final String SIZE_FIELD = "size";
     private static final String REGION_FIELD = "storage_region";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
-    public static final String VERSIONS_SIZE_FIELD = "versions.size";
-    public static final String VERSIONS_STORAGE_CLASS_FIELD = "versions.storage_class";
     public static final String STORAGE_CLASS_FIELD = "storage_class";
 
     private final AbstractEntityMapper<StorageBillingInfo> mapper;
@@ -153,12 +150,12 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
             final TermsAggregationBuilder currentSizeSumAgg = AggregationBuilders
                     .terms(OBJECT_SIZE_AGG_NAME).field(STORAGE_CLASS_FIELD)
                     .subAggregation(AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(SIZE_FIELD));
-            final TermsAggregationBuilder versionSizeSumAgg = AggregationBuilders
-                    .terms(VERSION_SIZE_AGG_NAME).field(VERSIONS_STORAGE_CLASS_FIELD)
-                    .subAggregation(AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(VERSIONS_SIZE_FIELD));
-            searchRequest.source(
-                    new SearchSourceBuilder().aggregation(currentSizeSumAgg).aggregation(versionSizeSumAgg)
-            );
+            final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(currentSizeSumAgg);
+            for (String storageClass : storageType.getStorageClasses()) {
+                final String ovSizeFieldName = String.format("ov_%s_size", storageClass.toLowerCase(Locale.ROOT));
+                sourceBuilder.aggregation(AggregationBuilders.sum(ovSizeFieldName + "_agg").field(ovSizeFieldName));
+            }
+            searchRequest.source(sourceBuilder);
             return Optional.of(elasticsearchService.search(searchRequest));
         } else {
             return Optional.empty();
@@ -170,7 +167,8 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                               final SearchResponse response,
                                                               final String fullIndex) {
 
-        final Map<Boolean, Map<String, Long>> storageSizes = extractStorageSize(response);
+        final Map<Boolean, Map<String, Long>> storageSizes =
+                extractStorageSize(container.getEntity().getType(), response);
         if (MapUtils.isEmpty(storageSizes)) {
             return Collections.emptyList();
         }
@@ -187,7 +185,8 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                 getDocWriteRequest(fullIndex, container.getOwner(), container.getRegion(), billing));
     }
 
-    private Map<Boolean, Map<String, Long>> extractStorageSize(final SearchResponse response) {
+    private Map<Boolean, Map<String, Long>> extractStorageSize(final DataStorageType datastorageType,
+                                                               final SearchResponse response) {
         final long totalMatches = Optional.ofNullable(response.getHits().getHits())
             .map(hits -> hits.length)
             .orElse(0);
@@ -195,21 +194,32 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         if (totalMatches == 0 || aggregations == null) {
             return Collections.emptyMap();
         }
-        return Stream.of(OBJECT_SIZE_AGG_NAME, VERSION_SIZE_AGG_NAME)
-                .map(agg -> {
-                    boolean current = OBJECT_SIZE_AGG_NAME.equals(agg);
-                    Map<String, Long> sizesByClass = ListUtils.emptyIfNull(
-                            aggregations.<ParsedTerms>get(agg).getBuckets()
-                    ).stream()
-                            .map(b -> {
-                                String storageClass = b.getKeyAsString();
-                                long size = new Double(
-                                        b.getAggregations().<ParsedSum>get(STORAGE_SIZE_AGG_NAME).getValue()
-                                ).longValue();
-                                return ImmutablePair.of(storageClass, size);
-                            }).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
-                    return ImmutablePair.of(current, sizesByClass);
+        final Map<Boolean, Map<String, Long>> results = new HashMap<>();
+
+        final Map<String, Long> currentVersionsFileSizesByStorageClass = ListUtils.emptyIfNull(
+                aggregations.<ParsedTerms>get(OBJECT_SIZE_AGG_NAME).getBuckets()
+        ).stream()
+                .map(b -> {
+                    String storageClass = b.getKeyAsString();
+                    long size = new Double(
+                            b.getAggregations().<ParsedSum>get(STORAGE_SIZE_AGG_NAME).getValue()
+                    ).longValue();
+                    return ImmutablePair.of(storageClass, size);
                 }).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        results.put(true, currentVersionsFileSizesByStorageClass);
+
+        final Map<String, Long> oldVersionsFileSizesByStorageClass = datastorageType.getStorageClasses()
+            .stream().map(sc -> {
+                final String ovSizeFieldName = String.format("ov_%s_size", sc.toLowerCase(Locale.ROOT));
+                return ImmutablePair.of(
+                        sc,
+                        Optional.ofNullable(aggregations.<ParsedSum>get(ovSizeFieldName + "_agg"))
+                                .map(ParsedSum::getValue).orElse((double) 0)
+                                .longValue()
+                );
+        }).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        results.put(false, oldVersionsFileSizesByStorageClass);
+        return results;
     }
 
     private DocWriteRequest getDocWriteRequest(final String fullIndex,

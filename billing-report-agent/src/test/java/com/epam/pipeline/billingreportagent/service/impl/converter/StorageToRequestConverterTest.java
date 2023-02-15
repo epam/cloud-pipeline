@@ -42,8 +42,11 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -75,10 +78,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -116,11 +121,7 @@ public class StorageToRequestConverterTest {
             "            }" +
             "         ]" +
             "   }";
-    private static final String OLD_VERSION_RESULT_JSON = "{" +
-            "         \"doc_count_error_upper_bound\":0," +
-            "         \"sum_other_doc_count\":0," +
-            "         \"buckets\":[]" +
-            "   }";
+    private static final String OLD_VERSION_RESULT_JSON = "{\"value\": %d}";
 
     private static final String CURRENT_OBJECTS_RESULT_PATTERN_WITH_DIFF_STORAGE_CLASSES_JSON = "{" +
             "         \"doc_count_error_upper_bound\":0," +
@@ -141,26 +142,6 @@ public class StorageToRequestConverterTest {
             "               }" +
             "            }" +
             "         ]" +
-            "   }";
-    private static final String OLD_VERSION_RESULT_WITH_DIFF_STORAGE_CLASSES_JSON = "{" +
-            "         \"doc_count_error_upper_bound\":0," +
-            "         \"sum_other_doc_count\":0," +
-            "         \"buckets\":[" +
-            "            {" +
-            "               \"key\":\"STANDARD\"," +
-            "               \"doc_count\":1," +
-            "               \"sum#" + StorageToBillingRequestConverter.STORAGE_SIZE_AGG_NAME + "\":{" +
-            "                  \"value\":\"%d\"" +
-            "               }" +
-            "            }," +
-            "            {" +
-            "               \"key\":\"GLACIER\"," +
-            "               \"doc_count\":5," +
-            "               \"sum#" + StorageToBillingRequestConverter.STORAGE_SIZE_AGG_NAME + "\":{" +
-            "                  \"value\":\"%d\"" +
-            "               }" +
-            "            }" +
-            "           ]" +
             "   }";
 
     private static final String UNKNOWN_REGION = "unknownRegion";
@@ -396,7 +377,7 @@ public class StorageToRequestConverterTest {
         createElasticsearchSearchContext(
                 true, UNKNOWN_REGION,
                 String.format(CURRENT_OBJECTS_RESULT_PATTERN_JSON, 0L),
-                OLD_VERSION_RESULT_JSON
+                Collections.singletonList(ImmutablePair.of(STORAGE_CLASS.toLowerCase(Locale.ROOT), 0L))
         );
         final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer,
                                                                                    TestUtils.COMMON_INDEX_PREFIX,
@@ -411,7 +392,7 @@ public class StorageToRequestConverterTest {
         createElasticsearchSearchContext(
                 false, US_EAST_1,
                 String.format(CURRENT_OBJECTS_RESULT_PATTERN_JSON, 0L),
-                OLD_VERSION_RESULT_JSON
+                Collections.singletonList(ImmutablePair.of(STORAGE_CLASS.toLowerCase(Locale.ROOT), 0L))
         );
         Mockito.when(elasticsearchClient.isIndexExists(Mockito.anyString())).thenReturn(false);
         final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer,
@@ -432,7 +413,7 @@ public class StorageToRequestConverterTest {
         createElasticsearchSearchContext(
                 false, regionName,
                 String.format(CURRENT_OBJECTS_RESULT_PATTERN_JSON, usage),
-                OLD_VERSION_RESULT_JSON
+                Collections.singletonList(ImmutablePair.of(STORAGE_CLASS.toLowerCase(Locale.ROOT), 0L))
         );
         final DocWriteRequest request = converter.convertEntityToRequests(storageContainer,
                                                                           TestUtils.STORAGE_BILLING_PREFIX,
@@ -459,9 +440,16 @@ public class StorageToRequestConverterTest {
                 String.format(CURRENT_OBJECTS_RESULT_PATTERN_WITH_DIFF_STORAGE_CLASSES_JSON,
                         billingDetails.get(STORAGE_CLASS).getUsageBytes(),
                         billingDetails.get(ARCHIVE_CLASS).getUsageBytes()),
-                String.format(OLD_VERSION_RESULT_WITH_DIFF_STORAGE_CLASSES_JSON,
-                        billingDetails.get(STORAGE_CLASS).getOldVersionUsageBytes(),
-                        billingDetails.get(ARCHIVE_CLASS).getOldVersionUsageBytes())
+                Arrays.asList(
+                        ImmutablePair.of(
+                                STORAGE_CLASS.toLowerCase(Locale.ROOT),
+                                billingDetails.get(STORAGE_CLASS).getOldVersionUsageBytes()
+                        ),
+                        ImmutablePair.of(
+                                ARCHIVE_CLASS.toLowerCase(Locale.ROOT),
+                                billingDetails.get(ARCHIVE_CLASS).getOldVersionUsageBytes()
+                        )
+                )
         );
         final Long expectedTotalCost = billingDetails.values().stream()
                 .map(d -> d.getCost() + d.getOldVersionCost()).reduce(0L, Long::sum);
@@ -491,7 +479,8 @@ public class StorageToRequestConverterTest {
 
     private void createElasticsearchSearchContext(final boolean isEmptyResponse, final String region,
                                                   final String currentObjectResponse,
-                                                  final String oldVersionResponse) throws IOException {
+                                                  final List<ImmutablePair<String, Long>> oldVersionResponse
+    ) throws IOException {
         XContentParser parser =
             XContentType.JSON.xContent().createParser(
                     new NamedXContentRegistry(getDefaultNamedXContents()),
@@ -499,14 +488,20 @@ public class StorageToRequestConverterTest {
                     currentObjectResponse);
         ParsedTerms objectAgg = ParsedStringTerms.fromXContent(
                 parser, StorageToBillingRequestConverter.OBJECT_SIZE_AGG_NAME);
-        parser =
-                XContentType.JSON.xContent().createParser(
-                        new NamedXContentRegistry(getDefaultNamedXContents()),
-                        DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                        oldVersionResponse);
-        ParsedTerms versionAgg = ParsedStringTerms.fromXContent(
-                parser, StorageToBillingRequestConverter.VERSION_SIZE_AGG_NAME);
-        final Aggregations aggregations = new Aggregations(Arrays.asList(objectAgg, versionAgg));
+        List<ParsedSum> oldVersionAggs = new ArrayList<>();
+        for (Pair<String, Long> ovSize : oldVersionResponse) {
+            parser = XContentType.JSON.xContent().createParser(
+                            new NamedXContentRegistry(getDefaultNamedXContents()),
+                            DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                            String.format(OLD_VERSION_RESULT_JSON, ovSize.getValue())
+            );
+            oldVersionAggs.add(
+                    ParsedSum.fromXContent(parser, String.format("ov_%s_size_agg", ovSize.getKey()))
+            );
+        }
+
+        final Aggregations aggregations = new Aggregations(
+                ListUtils.union(oldVersionAggs, Collections.singletonList(objectAgg)));
         final SearchHit hit = new SearchHit(DOC_ID,
                                             StringUtils.EMPTY,
                                             new Text(StringUtils.EMPTY),
@@ -541,21 +536,24 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(cost, getLongValue(fieldMap.get("cost")));
         TestUtils.verifyStringArray(USER_GROUPS, fieldMap.get("groups"));
         if (MapUtils.isNotEmpty(billingDetails)) {
-            final Object billingDetailsObj = fieldMap.get("billing_details");
-            Assert.assertNotNull(billingDetailsObj);
-            final List<Map<String, Object>> billingDetailsFormResponse = (List<Map<String, Object>>) billingDetailsObj;
-            billingDetails.forEach((sc, d) -> {
-                final Map<String, Object> storageBillingInfoDetailsObj = billingDetailsFormResponse.stream()
-                        .filter(scb -> scb.get("storage_class").equals(sc)).findFirst().orElse(Collections.emptyMap());
-                Assert.assertNotNull(billingDetailsObj);
-                final Map<String, Object> detailsFromResponse = storageBillingInfoDetailsObj;
-                Assert.assertEquals(d.getCost(), getLongValue(detailsFromResponse.get("cost")));
-                Assert.assertEquals(d.getUsageBytes(), getLongValue(detailsFromResponse.get("usage_bytes")));
-                Assert.assertEquals(d.getOldVersionCost(),
-                        getLongValue(detailsFromResponse.get("old_version_cost")));
-                Assert.assertEquals(d.getOldVersionUsageBytes(),
-                        getLongValue(detailsFromResponse.get("old_version_usage_bytes")));
-            });
+            for (String storageClass : billingDetails.keySet()) {
+                Assert.assertEquals(
+                        billingDetails.get(storageClass).getCost(),
+                        getLongValue(fieldMap.get(String.format("%s_cost", storageClass)))
+                );
+                Assert.assertEquals(
+                        billingDetails.get(storageClass).getOldVersionCost(),
+                        getLongValue(fieldMap.get(String.format("ov_%s_cost", storageClass)))
+                );
+                Assert.assertEquals(
+                        billingDetails.get(storageClass).getUsageBytes(),
+                        getLongValue(fieldMap.get(String.format("%s_usage_bytes", storageClass)))
+                );
+                Assert.assertEquals(
+                        billingDetails.get(storageClass).getOldVersionUsageBytes(),
+                        getLongValue(fieldMap.get(String.format("ov_%s_usage_bytes", storageClass)))
+                );
+            }
         }
     }
 
