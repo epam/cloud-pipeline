@@ -612,10 +612,12 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
     public static final StringPreference UI_MY_COSTS_DISCLAIMER = new StringPreference("ui.my.costs.disclaimer",
             "", UI_GROUP, pass);
-    public static final BooleanPreference UI_MAINTENANCE_PIPELINE_ENABLED = new BooleanPreference(
-            "ui.run.maintenance.pipeline.enabled", true, UI_GROUP, pass);
-    public static final BooleanPreference UI_MAINTENANCE_TOOL_ENABLED = new BooleanPreference(
-            "ui.run.maintenance.tool.enabled", true, UI_GROUP, pass);
+    public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_PIPELINE_ENABLED = new ObjectPreference<>(
+            "ui.run.maintenance.pipeline.enabled", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_TOOL_ENABLED = new ObjectPreference<>(
+            "ui.run.maintenance.tool.enabled", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
