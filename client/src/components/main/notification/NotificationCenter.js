@@ -80,7 +80,8 @@ function unMapMessage (message) {
 @observer
 export default class NotificationCenter extends React.Component {
   static propTypes = {
-    delaySeconds: PropTypes.number
+    delaySeconds: PropTypes.number,
+    disableEmailNotifications: PropTypes.bool
   };
 
   state = {
@@ -170,9 +171,15 @@ export default class NotificationCenter extends React.Component {
 
   @computed
   get userNotificationsEnabled () {
-    const {userNotifications, preferences} = this.props;
+    const {
+      userNotifications,
+      preferences,
+      disableEmailNotifications
+    } = this.props;
     if (userNotifications.loaded && preferences.loaded) {
-      return preferences.userNotificationsEnabled && userNotifications.visible;
+      return !disableEmailNotifications &&
+        preferences.userNotificationsEnabled &&
+        userNotifications.visible;
     }
     return false;
   }

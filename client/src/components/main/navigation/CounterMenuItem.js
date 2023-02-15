@@ -67,6 +67,7 @@ export default class CounterMenuItem extends React.Component {
   };
 
   render () {
+    const {mode = ''} = this.props;
     return (
       <Tooltip
         overlay={this.props.tooltip}
@@ -74,7 +75,7 @@ export default class CounterMenuItem extends React.Component {
         mouseEnterDelay={0.5}
       >
         <Button
-          id="navigation-button-runs"
+          id={`navigation-button-${mode}`}
           className={
             classNames(
               this.props.className,

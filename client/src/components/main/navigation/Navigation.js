@@ -30,6 +30,7 @@ import searchStyles from '../../search/search.css';
 import {Pages} from '../../../utils/ui-navigation';
 import invalidateEdgeTokens from '../../../utils/invalidate-edge-tokens';
 import ApplicationVersion from './application-version';
+import {NOTIFICATION_BROWSER_PATH} from '../notification/NotificationBrowser';
 
 @inject('uiNavigation', 'impersonation', 'preferences')
 @observer
@@ -89,7 +90,7 @@ export default class Navigation extends React.Component {
     if (key === 'runs') {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     } else if (key === 'notifications') {
-      this.props.router.push(`/notifications`);
+      this.props.router.push(NOTIFICATION_BROWSER_PATH);
     } else if (key === 'logout') {
       invalidateEdgeTokens()
         .then(() => {

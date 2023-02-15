@@ -20,7 +20,6 @@ import {computed} from 'mobx';
 import SubSettings from '../sub-settings';
 import ProfileSettings from './profile';
 import AppearanceSettings, {MANAGEMENT_SECTION} from './appearance';
-import NotificationBrowser from '../../../components/main/notification/NotificationBrowser';
 import roleModel from '../../../utils/roleModel';
 import UserInfoSummary from '../forms/EditUserRolesDialog/UserInfoSummary';
 

@@ -22,7 +22,6 @@ import {
   Button,
   Pagination,
   Icon,
-  Checkbox,
   Modal,
   message,
   Select,
@@ -38,7 +37,8 @@ import displayDate from '../../../utils/displayDate';
 import PreviewNotification from './PreviewNotification';
 import styles from './NotificationBrowser.css';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
+const NOTIFICATION_BROWSER_PATH = '/notifications';
 
 const MODES = {
   read: 'Read messages',
@@ -105,17 +105,6 @@ export default class NotificationBrowser extends React.Component {
       const {currentPage, mode} = this.state;
       this.fetchPage(currentPage, mode === MODES.read);
     });
-  };
-
-  togglePopupNotifications = (event) => {
-    const {userNotifications} = this.props;
-    if (!userNotifications) {
-      return null;
-    }
-    if (event.target.checked) {
-      return userNotifications.hideNotifications();
-    }
-    return userNotifications.showNotifications();
   };
 
   previewNotification = (notification) => {
@@ -190,6 +179,7 @@ export default class NotificationBrowser extends React.Component {
       <div
         className={classNames(
           styles.notificationGridRow,
+          styles.header,
           'cp-divider',
           'bottom'
         )}
@@ -246,67 +236,69 @@ export default class NotificationBrowser extends React.Component {
     return (
       <div className={styles.notificationsContainer}>
         {this.renderHeader()}
-        <Spin spinning={pending}>
-          {this.notifications.length > 0
-            ? this.notifications.map(notification => (
-              <div
-                className={classNames(
-                  styles.notificationGridRow,
-                  'cp-divider',
-                  'bottom',
-                  {
-                    'cp-table-element-dimmed': notification.isRead,
-                    'cp-table-element': !notification.isRead
-                  }
-                )}
-                key={notification.id}
-                onClick={() => this.previewNotification(notification)}
-              >
-                <div className={classNames(
-                  styles.notificationCell,
-                  styles.notificationStatus
-                )}>
-                  <Icon
-                    className={notification.isRead
-                      ? 'cp-disabled'
-                      : 'cp-setting-message'
+        <div style={{overflow: 'auto'}}>
+          <Spin spinning={pending}>
+            {this.notifications.length > 0
+              ? this.notifications.map(notification => (
+                <div
+                  className={classNames(
+                    styles.notificationGridRow,
+                    'cp-divider',
+                    'bottom',
+                    {
+                      'cp-table-element-dimmed': notification.isRead,
+                      'cp-table-element': !notification.isRead
                     }
-                    type="mail"
-                  />
+                  )}
+                  key={notification.id}
+                  onClick={() => this.previewNotification(notification)}
+                >
+                  <div className={classNames(
+                    styles.notificationCell,
+                    styles.notificationStatus
+                  )}>
+                    <Icon
+                      className={notification.isRead
+                        ? 'cp-disabled'
+                        : 'cp-setting-message'
+                      }
+                      type="mail"
+                    />
+                  </div>
+                  <b className={classNames(
+                    styles.notificationCell,
+                    styles.notificationTitle
+                  )}>
+                    {notification.subject}
+                  </b>
+                  <div className={classNames(
+                    styles.notificationCell,
+                    styles.notificationBody
+                  )}>
+                    <PreviewNotification
+                      text={notification.text}
+                      sanitize
+                      className={styles.mdPreviewEllipsis}
+                    />
+                  </div>
+                  <div className={classNames(
+                    styles.notificationCell,
+                    styles.notificationDate
+                  )}>
+                    {displayDate(notification.createdDate, 'YYYY-MM-DD HH:mm:ss')}
+                  </div>
+                  <div className={classNames(
+                    styles.notificationCell,
+                    styles.notificationReadDate
+                  )}>
+                    {displayDate(notification.readDate, 'YYYY-MM-DD HH:mm:ss')}
+                  </div>
                 </div>
-                <b className={classNames(
-                  styles.notificationCell,
-                  styles.notificationTitle
-                )}>
-                  {notification.subject}
-                </b>
-                <div className={classNames(
-                  styles.notificationCell,
-                  styles.notificationBody
-                )}>
-                  <PreviewNotification
-                    text={notification.text}
-                    sanitize
-                    className={styles.mdPreviewEllipsis}
-                  />
-                </div>
-                <div className={classNames(
-                  styles.notificationCell,
-                  styles.notificationDate
-                )}>
-                  {displayDate(notification.createdDate, 'YYYY-MM-DD HH:mm:ss')}
-                </div>
-                <div className={classNames(
-                  styles.notificationCell,
-                  styles.notificationReadDate
-                )}>
-                  {displayDate(notification.readDate, 'YYYY-MM-DD HH:mm:ss')}
-                </div>
-              </div>
-            ))
-            : emptyPlaceholder
-          }
-        </Spin>
+              ))
+              : emptyPlaceholder
+            }
+          </Spin>
+        </div>
       </div>
     );
   };
@@ -364,18 +356,10 @@ export default class NotificationBrowser extends React.Component {
             onClick={this.refreshPage}
             disabled={pending}
             className={styles.control}
+            style={{padding: '0 15px'}}
           >
-            <Icon type="reload" />
+            Refresh
           </Button>
-          <Checkbox
-            checked={!this.notificationsEnabled}
-            onChange={this.togglePopupNotifications}
-            disabled={pending}
-            className={styles.control}
-            style={{marginLeft: 10}}
-          >
-            Hide pop-up notifications
-          </Checkbox>
         </div>
         {this.renderNotifications()}
         <Pagination
@@ -404,3 +388,5 @@ export default class NotificationBrowser extends React.Component {
     );
   }
 }
+
+export {NOTIFICATION_BROWSER_PATH};

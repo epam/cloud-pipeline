@@ -23,7 +23,13 @@
 
 .title {
   font-size: large;
-  margin-bottom: 20px;
+  margin-bottom: 5px;
+}
+
+.notifications-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .controls-row {
@@ -34,16 +40,22 @@
 }
 
 .controls-row .control:not(:last-child) {
-  margin-right: 10px;
+  margin-right: 5px;
 }
 
 .notification-grid-row {
   display: grid;
   grid: "status title body date readDate" 35px
-        / 55px 1fr 3fr 135px 135px;
-  padding: 10px 0;
+        / 55px 1fr 2fr 135px 135px;
+  padding: 5px 0;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.notification-grid-row.header {
+  grid-template-rows: 25px;
+  padding: 0;
+  cursor: default;
 }
 
 .notification-cell {
@@ -55,7 +67,7 @@
 
 .notification-cell.header {
   font-weight: bold;
-  font-size: larger;
+  font-size: small;
 }
 
 .notification-status {
