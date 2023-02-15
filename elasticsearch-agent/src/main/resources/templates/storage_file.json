@@ -13,19 +13,6 @@
         "lastModified": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "size": { "type": "long" },
         "storage_class": {"type": "keyword", "store": true},
-        "versions": {
-          "properties": {
-            "storage_class": {
-              "type": "keyword"
-            },
-            "size": {
-              "type": "long"
-            },
-            "count": {
-              "type": "long"
-            }
-          }
-        },
         "path": { "type": "text", "analyzer": "file_path_analyzer", "fields": { "keyword": { "type": "keyword" } } },
         "cloud_path": { "type": "keyword", "index": false },
         "mount_path": { "type": "keyword", "index": false },

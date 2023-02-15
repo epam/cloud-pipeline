@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -109,7 +110,7 @@ public class ObjectStorageIndexVersionsTest {
 
         Mockito.doAnswer(i -> files.stream())
                 .when(fileManager)
-                .versions(any(), any(), any());
+                .versions(any(), any(), any(), anyBoolean());
     }
 
     private void verifyNumberOfInsertions(final int numberOfInvocation) {

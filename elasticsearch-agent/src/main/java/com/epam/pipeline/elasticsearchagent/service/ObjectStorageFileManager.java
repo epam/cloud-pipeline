@@ -37,7 +37,8 @@ public interface ObjectStorageFileManager {
 
     Stream<DataStorageFile> versions(String storage,
                                      String path,
-                                     Supplier<TemporaryCredentials> credentialsSupplier);
+                                     Supplier<TemporaryCredentials> credentialsSupplier,
+                                     boolean showDeleted);
 
     Stream<DataStorageFile> versionsWithNativeTags(String storage,
                                                    String path,

@@ -21,19 +21,26 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Getter
 @RequiredArgsConstructor
 public enum DataStorageType {
-    S3("S3", StorageServiceType.OBJECT_STORAGE),
-    NFS("NFS", StorageServiceType.FILE_SHARE),
-    AZ("AZ", StorageServiceType.OBJECT_STORAGE),
-    GS("GS", StorageServiceType.OBJECT_STORAGE);
+    S3("S3", StorageServiceType.OBJECT_STORAGE,
+            new HashSet<>(Arrays.asList(Constants.STANDARD_STORAGE_CLASS, "GLACIER", "GLACIER_IR", "DEEP_ARCHIVE"))
+    ),
+    NFS("NFS", StorageServiceType.FILE_SHARE, Collections.singleton(Constants.STANDARD_STORAGE_CLASS)),
+    AZ("AZ", StorageServiceType.OBJECT_STORAGE, Collections.singleton(Constants.STANDARD_STORAGE_CLASS)),
+    GS("GS", StorageServiceType.OBJECT_STORAGE, Collections.singleton(Constants.STANDARD_STORAGE_CLASS));
 
     private final String id;
     private final StorageServiceType serviceType;
+    private final Set<String> storageClasses;
+
     private static final Map<String, DataStorageType> ID_MAP = Arrays.stream(values())
             .collect(Collectors.toMap(v -> v.id, v -> v));
     private static final Map<String, DataStorageType> NAMES_MAP = Arrays.stream(values())
@@ -69,5 +76,9 @@ public enum DataStorageType {
             case GCP: return GS;
             default: throw new IllegalArgumentException("Unsupported provider for object storage: " + provider);
         }
+    }
+
+    private static class Constants {
+        public static final String STANDARD_STORAGE_CLASS = "STANDARD";
     }
 }
