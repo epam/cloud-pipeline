@@ -40,12 +40,12 @@ public enum DataStorageType {
 
     private final String id;
     private final Set<String> storageClasses;
-    private static final Map<String, DataStorageType> idMap;
-    private static final Map<String, DataStorageType> namesMap;
+    private static final Map<String, DataStorageType> ID_MAP;
+    private static final Map<String, DataStorageType> NAMES_MAP;
 
     static {
-        idMap = Arrays.stream(values()).collect(Collectors.toMap(v -> v.id, v -> v));
-        namesMap = Arrays.stream(values()).collect(Collectors.toMap(Enum::name, v -> v));
+        ID_MAP = Arrays.stream(values()).collect(Collectors.toMap(v -> v.id, v -> v));
+        NAMES_MAP = Arrays.stream(values()).collect(Collectors.toMap(Enum::name, v -> v));
     }
 
     public static DataStorageType fromServiceType(final CloudProvider provider,
@@ -61,14 +61,14 @@ public enum DataStorageType {
         if (id == null) {
             return null;
         }
-        return idMap.get(id.toUpperCase());
+        return ID_MAP.get(id.toUpperCase());
     }
 
     public static DataStorageType getByName(String name) {
         if (name == null) {
             return null;
         }
-        return namesMap.get(name);
+        return NAMES_MAP.get(name);
     }
 
     public String getId() {
