@@ -63,6 +63,7 @@ import RunCapabilities, {
   checkRequiredCapabilitiesErrors
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 import ToolLayersCheckWarning from './check/tool-layers/warning';
+import DiskSizeWarning from "./warnings/disk-size-warning";
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -1119,6 +1120,11 @@ export class RunConfirmation extends React.Component {
           parameters={this.props.parameters}
           hddSize={this.props.hddSize}
           onDiskSizeChanged={this.props.onChangeHddSize}
+        />
+        <DiskSizeWarning
+          disk={this.props.hddSize}
+          style={{margin: 2}}
+          showIcon
         />
         <SensitiveBucketsWarning
           parameters={this.props.parameters}

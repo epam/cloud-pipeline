@@ -1825,7 +1825,7 @@ class Logs extends localization.LocalizedReactComponent {
         !this.props.run.value.instance.spot) {
         switch (status.toLowerCase()) {
           case 'running':
-            if (canPauseRun(this.props.run.value)) {
+            if (canPauseRun(this.props.run.value, this.props.preferences)) {
               PauseResumeButton = this.maintenanceMode
                 ? getMaintenanceDisabledButton('PAUSE')
                 : <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;

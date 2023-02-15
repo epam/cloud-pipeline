@@ -125,7 +125,7 @@ export default function (
             });
           }
         }
-        if (canPauseRun(run) && run.platform !== 'windows') {
+        if (canPauseRun(run, preferences) && run.platform !== 'windows') {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',
