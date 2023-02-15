@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import logging
-import mutex
 import os
 import subprocess
 from datetime import datetime, timedelta
@@ -80,7 +79,7 @@ EVENT_PATTERN = '''
 '''
 
 
-EMAIL_SUBJECT = '[%s]: Blocked users assets'
+EMAIL_SUBJECT = '[Cloud Pipeline]: Blocked users assets'
 RUN_TYPE = 'RUN'
 TOOL_TYPE = 'TOOL'
 STORAGE_TYPE = 'STORAGE'
@@ -117,7 +116,8 @@ class Event(object):
 
 class Notifier(object):
 
-    def __init__(self, api, deploy_name, notify_users):
+    def __init__(self, api, subject, deploy_name, notify_users):
+        self.subject = subject
         self.notifications = []
         self.api = api
         self.deploy_name = deploy_name
@@ -129,12 +129,25 @@ class Notifier(object):
     def send_notifications(self):
         if not self.notifications or not self.notify_users:
             return
-        self.api.create_notification(EMAIL_SUBJECT % self.deploy_name,
+        notify_users = self.resolve_users()
+        print(str(notify_users))
+        self.api.create_notification(self.subject,
                                      self.build_text(),
-                                     self.notify_users[0],
-                                     copy_users=self.notify_users[1:] if len(
-                                         self.notify_users) > 0 else None,
-                                     )
+                                     notify_users[0],
+                                     copy_users=notify_users[1:] if len(notify_users) > 0 else None)
+
+    def resolve_users(self):
+        result = []
+        for name in self.notify_users:
+            if name.startswith('ROLE_'):
+                result.extend(self.extend_role(name))
+            else:
+                result.append(name)
+        return result
+
+    def extend_role(self, name):
+        users = self.api.load_role_by_name(name).get('users', [])
+        return [str(user.get('userName')) for user in users]
 
     def build_text(self):
         event_str = ''
@@ -148,6 +161,7 @@ class Notifier(object):
 
         return EMAIL_TEMPLATE.format(**{'events': event_str,
                                         'deploy_name': self.deploy_name})
+
 
 
 def cleanup_users():
@@ -172,7 +186,10 @@ def cleanup_users():
     logger = LocalLogger(inner=logger)
 
     notify_users = os.getenv('CP_CLEANUP_NOTIFY_USERS', '').split(',')
-    notifier = Notifier(api, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), notify_users)
+    subject = os.getenv('CP_CLEANUP_EMAIL_SUBJECT', EMAIL_SUBJECT)
+    notifier = Notifier(api, subject, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), notify_users)
+
+    exclude_users = os.getenv('CP_CLEANUP_EXCLUDE_USERS', '').upper().split(',')
 
     # while True:
     try:
@@ -184,7 +201,8 @@ def cleanup_users():
             logger.info('Running in active mode. User assets will be deleted.')
         logger.info('Loading blocked users...')
         users = api.load_users()
-        blocked_users = [user for user in users if user.get('blocked')]
+        blocked_users = [user for user in users
+                         if user.get('blocked') and user.get('userName').upper() not in exclude_users]
         logger.info('Loaded {} blocked users: {}'.format(len(blocked_users),
                                                          ', '.join([user.get('userName') for user in blocked_users])))
         if len(blocked_users) > 0:
