@@ -4045,12 +4045,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderScheduleControl = () => {
-    const {editConfigurationMode, isDetachedConfiguration} = this.props;
+    const {
+      editConfigurationMode,
+      isDetachedConfiguration,
+      preferences,
+      pipeline
+    } = this.props;
     const {launchCluster, scheduleRules} = this.state;
     const isSpot = `${this.getSectionFieldValue(ADVANCED)('is_spot') ||
       this.correctPriceTypeValue(this.getDefaultValue('is_spot'))}` === 'true';
 
     if (editConfigurationMode || isDetachedConfiguration || isSpot || launchCluster) {
+      return null;
+    }
+    const isPipeline = !!pipeline && !!pipeline.id;
+    if (isPipeline && !preferences.maintenancePipelineEnabled) {
+      return null;
+    }
+    if (!isPipeline && !preferences.maintenanceToolEnabled) {
       return null;
     }
     const onScheduleSubmit = (rules) => {
