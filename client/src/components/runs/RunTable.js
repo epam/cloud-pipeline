@@ -744,7 +744,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         case 'resuming':
           return <span id={`run-${record.id}-resuming`}>RESUMING</span>;
         case 'running':
-          if (canPauseRun(record)) {
+          if (canPauseRun(record, this.props.preferences)) {
             const buttonId = `run-${record.id}-pause-button`;
             if (this.maintenanceMode) {
               return getMaintenanceDisabledButton('PAUSE', buttonId);

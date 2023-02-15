@@ -100,7 +100,7 @@ export default function (
             runId: run.id
           });
         }
-        if (canPauseRun(run)) {
+        if (canPauseRun(run, preferences)) {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',

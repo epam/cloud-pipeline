@@ -26,6 +26,7 @@ import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import StopPipeline from '../../../models/pipelines/StopPipeline';
 import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
 import getCommitAllowedForTool from './get-commit-allowed-for-tool';
+import {diskSizeAllowsPause} from './warnings/disk-size-warning';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -76,7 +77,7 @@ export function checkCommitAllowedForTool (dockerImage, dockerRegistries) {
   });
 }
 
-export function canPauseRun (run) {
+export function canPauseRun (run, preferences) {
   // Checks only run state, not user permissions
   const {instance, pipelineRunParameters, podIP, initialized} = run;
   return canStopRun(run) && initialized &&
@@ -85,7 +86,11 @@ export function canPauseRun (run) {
     !(run.parentRunId && run.parentRunId > 0) &&
     (pipelineRunParameters || []).filter(r => {
       return (r.name === 'CP_CAP_AUTOSCALE' && r.value === 'true');
-    }).length === 0;
+    }).length === 0 &&
+    diskSizeAllowsPause(
+      preferences,
+      instance ? instance.nodeDisk : 0
+    );
 }
 
 export function stopRun (parent, callback) {

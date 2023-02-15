@@ -397,6 +397,19 @@ class PreferencesLoad extends Remote {
     return /^true$/i.test(value);
   }
 
+  @computed
+  get launchDiskSizeThresholds () {
+    const value = this.getPreferenceValue('launch.job.disk.size.thresholds');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "launch.job.disk.size.thresholds" preference:', e.message);
+      }
+    }
+    return [];
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
