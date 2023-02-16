@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.ShardSearchFailure;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -157,6 +161,82 @@ public class LogManager {
                 .token(getToken(entries, pagination.getPageSize()))
                 .totalHits(hits.totalHits)
                 .build();
+    }
+
+    public LogFilter getFilters() {
+        final LogFilter result = new LogFilter();
+        final SearchSourceBuilder source = new SearchSourceBuilder()
+                .query(QueryBuilders.boolQuery())
+                .size(0)
+                .aggregation(AggregationBuilders.terms(TYPE).field(TYPE + KEYWORD))
+                .aggregation(AggregationBuilders.terms(SERVICE_NAME)
+                        .field(SERVICE_NAME + KEYWORD))
+                .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD));
+        final SearchRequest request = new SearchRequest()
+                .source(source)
+                .indices(getLogIndices())
+                .indicesOptions(INDICES_OPTIONS);
+        log.debug("Logs request: {} ", request);
+
+        final SearchResponse response = verifyResponse(executeRequest(request));
+        response.getAggregations()
+                .asList()
+                .stream()
+                .map(Terms.class::cast)
+                .forEach(terms -> {
+                    List<String> values = terms.getBuckets().stream()
+                            .map(MultiBucketsAggregation.Bucket::getKey)
+                            .map(Object::toString)
+                            .collect(Collectors.toList());
+
+                    if (HOSTNAME.equals(terms.getName())) {
+                        result.setHostnames(values);
+                    } else if (SERVICE_NAME.equals(terms.getName())) {
+                        result.setServiceNames(values);
+                    } else if (TYPE.equals(terms.getName())) {
+                        result.setTypes(values);
+                    }
+                });
+
+        return result;
+    }
+
+    public void save(final List<LogEntry> logEntries) {
+        final String index = getIndexName();
+        final BulkRequest bulkRequest = new BulkRequest();
+        final List<IndexRequest> indexRequests = logEntries.stream()
+                .map(e -> getIndexRequest(e, index))
+                .collect(Collectors.toList());
+        indexRequests.forEach(bulkRequest::add);
+        try (RestHighLevelClient client = elasticHelper.buildClient()){
+            client.bulk(bulkRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            throw new PipelineException(e);
+        }
+    }
+
+    private String getIndexName() {
+        return getIndexName(indexPrefix, LocalDate.now().format(ELASTIC_DATE_FORMATTER));
+    }
+
+    private IndexRequest getIndexRequest(final LogEntry logEntry, final String index) {
+        final XContentBuilder builder;
+        try {
+            builder = XContentFactory.jsonBuilder()
+                    .startObject()
+                    .field(ID, logEntry.getEventId())
+                    .field(MESSAGE_TIMESTAMP, logEntry.getMessageTimestamp().format(DATE_TIME_FORMATTER))
+                    .field(HOSTNAME, logEntry.getHostname())
+                    .field(SERVICE_NAME, logEntry.getServiceName())
+                    .field(TYPE, logEntry.getType())
+                    .field(USER, logEntry.getUser())
+                    .field(MESSAGE, logEntry.getMessage())
+                    .field(SEVERITY, logEntry.getSeverity())
+                    .endObject();
+        } catch (IOException e) {
+            throw new PipelineException(e);
+        }
+        return new IndexRequest(index).source(builder);
     }
 
     private String[] getLogIndices(final LocalDateTime from, final LocalDateTime to) {
@@ -294,43 +374,5 @@ public class LogManager {
         } catch (IOException e) {
             throw new PipelineException(e);
         }
-    }
-
-    public LogFilter getFilters() {
-        final LogFilter result = new LogFilter();
-        final SearchSourceBuilder source = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery())
-                .size(0)
-                .aggregation(AggregationBuilders.terms(TYPE).field(TYPE + KEYWORD))
-                .aggregation(AggregationBuilders.terms(SERVICE_NAME)
-                        .field(SERVICE_NAME + KEYWORD))
-                .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD));
-        final SearchRequest request = new SearchRequest()
-                .source(source)
-                .indices(getLogIndices())
-                .indicesOptions(INDICES_OPTIONS);
-        log.debug("Logs request: {} ", request);
-
-        final SearchResponse response = verifyResponse(executeRequest(request));
-        response.getAggregations()
-                .asList()
-                .stream()
-                .map(Terms.class::cast)
-                .forEach(terms -> {
-                    List<String> values = terms.getBuckets().stream()
-                            .map(MultiBucketsAggregation.Bucket::getKey)
-                            .map(Object::toString)
-                            .collect(Collectors.toList());
-
-                    if (HOSTNAME.equals(terms.getName())) {
-                        result.setHostnames(values);
-                    } else if (SERVICE_NAME.equals(terms.getName())) {
-                        result.setServiceNames(values);
-                    } else if (TYPE.equals(terms.getName())) {
-                        result.setTypes(values);
-                    }
-                });
-
-        return result;
     }
 }
