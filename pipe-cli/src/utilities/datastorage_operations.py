@@ -44,6 +44,7 @@ from src.utilities.user_operations_manager import UserOperationsManager
 
 FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
+ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
 
 class AllowedUnsafeCharsValues(object):
@@ -321,6 +322,9 @@ class DataStorageOperations(object):
             if show_archive and root_bucket.type != 'S3':
                 click.echo('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)
+            if show_archive and not cls.has_archived_permissions(root_bucket.identifier, root_bucket.owner):
+                click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
+                sys.exit(1)
             else:
                 relative_path = original_path if original_path != '/' else ''
                 cls.__print_data_storage_contents(root_bucket, relative_path, show_details, recursive,
@@ -533,7 +537,7 @@ class DataStorageOperations(object):
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
         if show_archive and not cls.has_archived_permissions(bucket):
-            click.echo('Failed to apply --show-archived option: Permission denied.', err=True)
+            click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
             sys.exit(1)
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
                                log_file=log_file, log_level=log_level,  threading=threading,
@@ -732,14 +736,15 @@ class DataStorageOperations(object):
         return item[0], full_path, relative_path, item[3]
 
     @staticmethod
-    def has_archived_permissions(bucket_identifier):
+    def has_archived_permissions(bucket_identifier, owner=None):
+        user_manager = UserOperationsManager()
+        if user_manager.is_admin():
+            return True
         try:
-            user_manager = UserOperationsManager()
-            if user_manager.is_admin():
-                return True
-            storage = Entity.load_by_id_or_name(bucket_identifier, 'DATA_STORAGE')
-            storage_owner = storage.get('owner')
-            if storage_owner and storage_owner == user_manager.whoami().get('userName'):
+            if not owner:
+                storage = Entity.load_by_id_or_name(bucket_identifier, 'DATA_STORAGE')
+                owner = storage.get('owner')
+            if owner and owner == user_manager.whoami().get('userName'):
                 return True
             user_roles = user_manager.get_all_user_roles()
             if 'ROLE_STORAGE_ARCHIVE_MANAGER' in user_roles or 'ROLE_STORAGE_ARCHIVE_READER' in user_roles:
