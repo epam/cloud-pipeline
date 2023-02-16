@@ -45,78 +45,78 @@ public class DataStorageLifecycleApiService {
     private final DataStorageLifecycleManager storageLifecycleManager;
     private final DataStorageLifecycleRestoreManager restoreManager;
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_READER)
     public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long id, final String path) {
         return storageLifecycleManager.listStorageLifecyclePolicyRules(id, path);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_READER)
     public StorageLifecycleRule loadStorageLifecyclePolicyRule(final Long id, final Long ruleId) {
         return storageLifecycleManager.loadStorageLifecyclePolicyRule(id, ruleId);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public StorageLifecycleRule createStorageLifecyclePolicyRule(final Long id,
                                                                  final StorageLifecycleRule rule) {
         return storageLifecycleManager.createStorageLifecyclePolicyRule(id, rule);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public StorageLifecycleRule updateStorageLifecyclePolicyRule(final Long id,
                                                                  final StorageLifecycleRule rule) {
         return storageLifecycleManager.updateStorageLifecyclePolicyRule(id, rule);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public StorageLifecycleRule prolongStorageLifecyclePolicyRule(final Long id,
                                                                   final Long ruleId, final String path,
                                                                   final Long daysToProlong,
                                                                   final Boolean force) {
         return storageLifecycleManager.prolongLifecyclePolicyRule(id, ruleId, path, daysToProlong, force);
     }
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public StorageLifecycleRule deleteStorageLifecyclePolicyRule(final Long id, final Long ruleId) {
         return storageLifecycleManager.deleteStorageLifecyclePolicyRule(id, ruleId);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public StorageLifecycleRuleExecution createStorageLifecyclePolicyRuleExecution(
             final Long id, final Long ruleId, final StorageLifecycleRuleExecution execution) {
         return storageLifecycleManager.createStorageLifecycleRuleExecution(ruleId, execution);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public StorageLifecycleRuleExecution updateStorageLifecycleRuleExecutionStatus(
             final Long id, final Long executionId, final StorageLifecycleRuleExecutionStatus status) {
         return storageLifecycleManager.updateStorageLifecycleRuleExecutionStatus(executionId, status);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public StorageLifecycleRuleExecution deleteStorageLifecycleRuleExecution(
             final Long id, final Long executionId) {
         return storageLifecycleManager.deleteStorageLifecycleRuleExecution(executionId);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_READER)
     public List<StorageLifecycleRuleExecution> listStorageLifecyclePolicyRuleExecutions(
             final Long id, final Long ruleId, final String path, final StorageLifecycleRuleExecutionStatus status) {
         return storageLifecycleManager.listStorageLifecycleRuleExecutionsForRuleAndPath(ruleId, path, status);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public List<StorageRestoreAction> initiateStorageRestores(final Long id,
                                                               final StorageRestoreActionRequest request) {
         final AbstractDataStorage storage = storageManager.load(id);
         return restoreManager.initiateStorageRestores(storage, request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_MANAGER)
     public StorageRestoreAction updateStorageRestoreAction(final Long id,
                                                            final StorageRestoreAction action) {
         return restoreManager.updateStorageRestoreAction(action);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_READER)
     public List<StorageRestoreAction> filterRestoreStorageActions(final Long id,
                                                                   final StorageRestoreActionSearchFilter filter) {
         if (filter.getDatastorageId() == null) {
@@ -126,7 +126,7 @@ public class DataStorageLifecycleApiService {
         return restoreManager.filterRestoreStorageActions(storage, filter);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_READER)
     public StorageRestoreAction loadEffectiveRestoreStorageAction(final Long id, final String path,
                                                                   final StorageRestorePathType pathType) {
         final AbstractDataStorage storage = storageManager.load(id);
@@ -134,7 +134,7 @@ public class DataStorageLifecycleApiService {
                 storage, StorageRestorePath.builder().type(pathType).path(path).build());
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_READER)
     public List<StorageRestoreAction> loadEffectiveRestoreStorageActionHierarchy(final Long id,
                                                                                  final String path,
                                                                                  final StorageRestorePathType pathType,
