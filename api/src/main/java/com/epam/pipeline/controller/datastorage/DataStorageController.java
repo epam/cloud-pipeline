@@ -191,13 +191,16 @@ public class DataStorageController extends AbstractRestController {
     public Result<List<AbstractDataStorageItem>> getDataStorageItems(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH, required = false) final String path,
-            @RequestParam(defaultValue = FALSE) final Boolean showVersion) {
+            @RequestParam(defaultValue = FALSE) final Boolean showVersion,
+            @RequestParam(defaultValue = FALSE) final boolean showArchived) {
         if (showVersion) {
             return Result.success(dataStorageApiService
-                    .getDataStorageItemsOwner(id, path, showVersion, null, null).getResults());
+                    .getDataStorageItemsOwner(id, path, showVersion, null, null, showArchived)
+                    .getResults());
         } else {
             return Result.success(dataStorageApiService
-                    .getDataStorageItems(id, path, showVersion, null, null).getResults());
+                    .getDataStorageItems(id, path, showVersion, null, null, showArchived)
+                    .getResults());
         }
     }
 
@@ -215,13 +218,14 @@ public class DataStorageController extends AbstractRestController {
             @RequestParam(value = PATH, required = false) final String path,
             @RequestParam(defaultValue = FALSE) final Boolean showVersion,
             @RequestParam(required = false) final Integer pageSize,
-            @RequestParam(required = false) final String marker) {
+            @RequestParam(required = false) final String marker,
+            @RequestParam(defaultValue = FALSE) final boolean showArchived) {
         if (showVersion) {
             return Result.success(dataStorageApiService
-                    .getDataStorageItemsOwner(id, path, showVersion, pageSize, marker));
+                    .getDataStorageItemsOwner(id, path, showVersion, pageSize, marker, showArchived));
         } else {
             return Result.success(dataStorageApiService
-                    .getDataStorageItems(id, path, showVersion, pageSize, marker));
+                    .getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived));
         }
     }
 

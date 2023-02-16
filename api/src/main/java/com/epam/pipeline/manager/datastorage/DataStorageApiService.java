@@ -115,16 +115,20 @@ public class DataStorageApiService {
         return dataStorageManager.loadByPathOrId(identifier);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public DataStorageListing getDataStorageItems(final Long id, final String path,
-            Boolean showVersion, Integer pageSize, String marker) {
-        return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker);
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public DataStorageListing getDataStorageItems(final Long id, final String path, final Boolean showVersion,
+                                                  final Integer pageSize, final String marker,
+                                                  final boolean showArchived) {
+        return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public DataStorageListing getDataStorageItemsOwner(Long id, String path,
-            Boolean showVersion, Integer pageSize, String marker) {
-        return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker);
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public DataStorageListing getDataStorageItemsOwner(final Long id, final String path,
+                                                       final Boolean showVersion, final Integer pageSize,
+                                                       final String marker, final boolean showArchived) {
+        return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)

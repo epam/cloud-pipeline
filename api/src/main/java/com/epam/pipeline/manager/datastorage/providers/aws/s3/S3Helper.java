@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
 import lombok.RequiredArgsConstructor;
@@ -108,6 +109,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
@@ -131,6 +133,10 @@ public class S3Helper {
     private static final String PATH_SHOULD_NOT_BE_EMPTY_MESSAGE = "Path should not be empty";
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
     private static final CannedAccessControlList DEFAULT_CANNED_ACL = CannedAccessControlList.BucketOwnerFullControl;
+    private static final String FOLDER_GLOB_SUFFIX = "/**";
+    private static final String EMPTY_STRING = "";
+    public static final String STANDARD_STORAGE_CLASS = "STANDARD";
+    public static final String STORAGE_CLASS = "StorageClass";
 
     private final MessageHelper messageHelper;
 
@@ -326,9 +332,10 @@ public class S3Helper {
         }
     }
 
-    public DataStorageListing getItems(String bucket, String path, Boolean showVersion,
-            Integer pageSize, String marker, String prefix) {
-        String requestPath = Optional.ofNullable(path).orElse("");
+    public DataStorageListing getItems(final String bucket, final String path, final Boolean showVersion,
+                                       final Integer pageSize, final String marker, final String prefix,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        String requestPath = Optional.ofNullable(path).orElse(EMPTY_STRING);
         AmazonS3 client = getDefaultS3Client();
         if (!StringUtils.isNullOrEmpty(requestPath)) {
             DataStorageItemType type = checkItemType(client, bucket, requestPath, showVersion);
@@ -336,11 +343,46 @@ public class S3Helper {
                 requestPath += ProviderUtils.DELIMITER;
             }
         }
-        DataStorageListing result = showVersion ?
-                listVersions(client, bucket, requestPath, pageSize, marker, prefix) :
-                listFiles(client, bucket, requestPath, pageSize, marker, prefix);
+        DataStorageListing result = showVersion
+                ? listVersions(client, bucket, requestPath, pageSize, marker, prefix, restoredListing)
+                : listFiles(client, bucket, requestPath, pageSize, marker, prefix, restoredListing);
         result.getResults().sort(AbstractDataStorageItem.getStorageItemComparator());
         return result;
+    }
+
+    public Optional<DataStorageFile> findFile(final String bucket, final String path, final String version) {
+        final AmazonS3 client = getDefaultS3Client();
+        return findFile(client, bucket, path, version);
+    }
+
+    private Optional<DataStorageFile> findFile(final AmazonS3 client,
+                                               final String bucket,
+                                               final String path,
+                                               final String version) {
+        try {
+            final GetObjectMetadataRequest metadataRequest = new GetObjectMetadataRequest(bucket, path, version);
+            final ObjectMetadata metadata = client.getObjectMetadata(metadataRequest);
+            final TimeZone tz = TimeZone.getTimeZone("UTC");
+            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+            df.setTimeZone(tz);
+            final DataStorageFile file = new DataStorageFile();
+            file.setName(path);
+            file.setPath(path);
+            file.setSize(metadata.getContentLength());
+            file.setChanged(df.format(metadata.getLastModified()));
+            file.setVersion(metadata.getVersionId());
+            final Map<String, String> labels = new HashMap<>();
+            if (metadata.getStorageClass() != null) {
+                labels.put(STORAGE_CLASS, metadata.getStorageClass());
+            }
+            file.setLabels(labels);
+            return Optional.of(file);
+        } catch (AmazonS3Exception e) {
+            if (e.getStatusCode() == NOT_FOUND) {
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 
     public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path,
@@ -707,8 +749,9 @@ public class S3Helper {
         s3client.setBucketVersioningConfiguration(setBucketVersioningConfigurationRequest);
     }
 
-    private DataStorageListing listFiles(AmazonS3 client, String bucket,
-            String requestPath, Integer pageSize, String marker, String prefix) {
+    private DataStorageListing listFiles(final AmazonS3 client, final String bucket, final String requestPath,
+                                         final Integer pageSize, final String marker, final String prefix,
+                                         final DataStorageLifecycleRestoredListingContainer restoredListing) {
         ListObjectsV2Request req = new ListObjectsV2Request();
         req.setBucketName(bucket);
         req.setPrefix(requestPath);
@@ -734,11 +777,18 @@ public class S3Helper {
                         AbstractS3ObjectWrapper.getWrapper(s3ObjectSummary)
                                 .convertToStorageFile(requestPath, prefix);
                 if (file != null) {
+                    final String fileName = requestPath + file.getName();
+                    if (filterNotRestored(file, fileName, restoredListing)) {
+                        continue;
+                    }
                     previous = getPreviousKey(previous, s3ObjectSummary.getKey());
                     items.add(file);
                 }
             }
             req.setContinuationToken(listing.getNextContinuationToken());
+            if (pageSize != null) {
+                req.setMaxKeys(pageSize - items.size());
+            }
         } while(listing.isTruncated() && (pageSize == null || items.size() < pageSize));
         String returnToken = listing.isTruncated() ? previous : null;
         return new DataStorageListing(returnToken, items);
@@ -763,8 +813,9 @@ public class S3Helper {
         return folder;
     }
 
-    private DataStorageListing listVersions(AmazonS3 client, String bucket,
-            String requestPath, Integer pageSize, String marker, String prefix) {
+    private DataStorageListing listVersions(final AmazonS3 client, final String bucket, final String requestPath,
+                                            final Integer pageSize, final String marker, final String prefix,
+                                            final DataStorageLifecycleRestoredListingContainer restoredListing) {
         ListVersionsRequest request = new ListVersionsRequest()
                 .withBucketName(bucket).withPrefix(requestPath).withDelimiter(ProviderUtils.DELIMITER);
         if (StringUtils.hasValue(marker)) {
@@ -797,7 +848,11 @@ public class S3Helper {
                 if (file == null) {
                     continue;
                 }
-                if (!itemKeys.containsKey(file.getName())) {
+                if (filterNotRestored(file, file.getPath(), restoredListing)) {
+                    continue;
+                }
+                final String fileName = file.getName();
+                if (!itemKeys.containsKey(fileName)) {
                     if (checkListingSize(pageSize, items, itemKeys)) {
                         items.addAll(itemKeys.values());
                         return new DataStorageListing(previous, items);
@@ -1067,5 +1122,15 @@ public class S3Helper {
                                  final boolean isFolder) {
         Assert.isTrue(itemExists(client, bucketName, itemPath, isFolder), messageHelper
                 .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, itemPath, bucketName));
+    }
+
+    private boolean filterNotRestored(final DataStorageFile file, final String fileName,
+                                      final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        return Objects.nonNull(restoredListing) && isArchived(file) && !restoredListing.containsPath(fileName);
+    }
+
+    private boolean isArchived(final DataStorageFile item) {
+        final String storageClass = MapUtils.emptyIfNull(item.getLabels()).get(STORAGE_CLASS);
+        return !StringUtils.isNullOrEmpty(storageClass) && !STANDARD_STORAGE_CLASS.equals(storageClass);
     }
 }

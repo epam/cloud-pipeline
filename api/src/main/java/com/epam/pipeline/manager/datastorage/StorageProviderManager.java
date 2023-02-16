@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.StorageWriteOperation;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -224,5 +225,12 @@ public class StorageProviderManager {
     public String verifyOrDefaultRestoreMode(final AbstractDataStorage dataStorage,
                                              final StorageRestoreActionRequest restoreActionRequest) {
         return getStorageProvider(dataStorage).verifyOrDefaultRestoreMode(restoreActionRequest);
+    }
+
+    public DataStorageListing getRestoredItems(final AbstractDataStorage dataStorage, final String path,
+                                               final Boolean showVersion, final Integer pageSize, final String marker,
+                                               final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        return getStorageProvider(dataStorage)
+                .getItems(dataStorage, path, showVersion, pageSize, marker, restoredListing);
     }
 }

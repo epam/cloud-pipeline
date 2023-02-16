@@ -169,6 +169,9 @@ public class TestApplication {
     @MockBean
     public DataStorageLifecycleManager dataStorageLifecycleManager;
 
+    @MockBean
+    public DataStorageLifecycleRuleRepository dataStorageLifecycleRuleRepository;
+
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {
 
