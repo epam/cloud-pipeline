@@ -68,7 +68,7 @@ public class LogController extends AbstractRestController {
         return Result.success(logApiService.getFilters());
     }
 
-    @PostMapping(value = "/log/save")
+    @PostMapping(value = "/log")
     @ResponseBody
     @ApiOperation(
             value = "Save logs.",
