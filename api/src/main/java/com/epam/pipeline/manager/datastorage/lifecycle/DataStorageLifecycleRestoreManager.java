@@ -198,6 +198,24 @@ public class DataStorageLifecycleRestoreManager {
         dataStoragePathRestoreActionRepository.flush();
     }
 
+    public List<StorageRestoreAction> loadSucceededRestoreActions(final AbstractDataStorage storage,
+                                                                  final String path) {
+        final List<StorageRestoreAction> restoredItems = ListUtils.emptyIfNull(
+                loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
+                        .path(path)
+                        .type(StorageRestorePathType.FOLDER)
+                        .build(), false)).stream()
+                .filter(action -> StorageRestoreStatus.SUCCEEDED.equals(action.getStatus()))
+                .collect(Collectors.toList());
+        ListUtils.emptyIfNull(loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
+                        .path(path)
+                        .type(StorageRestorePathType.FILE)
+                        .build(), false)).stream()
+                .filter(action -> StorageRestoreStatus.SUCCEEDED.equals(action.getStatus()))
+                .forEach(restoredItems::add);
+        return restoredItems;
+    }
+
     protected StorageRestoreActionEntity buildStoragePathRestoreAction(
             final AbstractDataStorage storage, final StorageRestorePath path,
             final String restoreMode, final Long days, final boolean restoreVersions, final boolean force,

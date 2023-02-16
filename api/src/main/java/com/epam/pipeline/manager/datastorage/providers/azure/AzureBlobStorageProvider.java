@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -49,6 +50,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -101,6 +103,16 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker) {
         return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, pageSize, marker);
+    }
+
+    @Override
+    public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
+                                       final Integer pageSize, final String marker,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        if (Objects.nonNull(restoredListing)) {
+            throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+        }
+        return getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
     @Override
