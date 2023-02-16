@@ -71,7 +71,8 @@ public final class AclExpressions {
             + AND + STORAGE_SHARED;
 
     public static final String STORAGE_SHOW_ARCHIVED_PERMISSIONS = "(#showArchived == false OR "
-            + "hasRole('ADMIN') OR hasRole('ROLE_STORAGE_ARCHIVE_MANAGER') OR hasRole('ROLE_STORAGE_ARCHIVE_READER'))";
+            + "hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'OWNER') OR "
+            + "hasRole('ROLE_STORAGE_ARCHIVE_MANAGER') OR hasRole('ROLE_STORAGE_ARCHIVE_READER'))";
 
     public static final String STORAGE_ID_PERMISSIONS =
             "("
