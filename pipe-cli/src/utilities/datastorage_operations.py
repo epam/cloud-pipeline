@@ -28,6 +28,7 @@ from future.utils import iteritems
 from operator import itemgetter
 
 from src.api.data_storage import DataStorage
+from src.api.entity import Entity
 from src.api.folder import Folder
 from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
@@ -39,6 +40,7 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
+from src.utilities.user_operations_manager import UserOperationsManager
 
 FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
@@ -530,6 +532,9 @@ class DataStorageOperations(object):
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
+        if show_archive and not cls.has_archived_permissions(bucket):
+            click.echo('Failed to apply --show-archived option: Permission denied.', err=True)
+            sys.exit(1)
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
                                log_file=log_file, log_level=log_level,  threading=threading,
                                mode=mode, timeout=timeout, show_archive=show_archive)
@@ -725,3 +730,22 @@ class DataStorageOperations(object):
         else:
             logging.warn(u'Ignoring unsafe characters in path {}...'.format(full_path))
         return item[0], full_path, relative_path, item[3]
+
+    @staticmethod
+    def has_archived_permissions(bucket_identifier):
+        try:
+            user_manager = UserOperationsManager()
+            if user_manager.is_admin():
+                return True
+            storage = Entity.load_by_id_or_name(bucket_identifier, 'DATA_STORAGE')
+            storage_owner = storage.get('owner')
+            if storage_owner and storage_owner == user_manager.whoami().get('userName'):
+                return True
+            user_roles = user_manager.get_all_user_roles()
+            if 'ROLE_STORAGE_ARCHIVE_MANAGER' in user_roles or 'ROLE_STORAGE_ARCHIVE_READER' in user_roles:
+                return True
+            return False
+        except RuntimeError as e:
+            if 'Access is denied' in str(e):
+                return False
+            raise e
