@@ -496,7 +496,7 @@ public class StorageToRequestConverterTest {
                             String.format(OLD_VERSION_RESULT_JSON, ovSize.getValue())
             );
             oldVersionAggs.add(
-                    ParsedSum.fromXContent(parser, String.format("%s_ov_size_agg", ovSize.getKey()))
+                    ParsedSum.fromXContent(parser, String.format("ov_%s_size_agg", ovSize.getKey()))
             );
         }
 

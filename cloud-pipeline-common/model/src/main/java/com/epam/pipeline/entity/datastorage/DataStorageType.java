@@ -31,8 +31,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public enum DataStorageType {
     S3(
-            "S3",
-            new HashSet<>(Arrays.asList(Constants.STANDARD_STORAGE_CLASS, "GLACIER", "GLACIER_IR", "DEEP_ARCHIVE"))
+        "S3",
+        new HashSet<>(Arrays.asList(Constants.STANDARD_STORAGE_CLASS,
+                "GLACIER", "GLACIER_IR", "DEEP_ARCHIVE"))
     ),
     NFS("NFS", Collections.singleton(Constants.STANDARD_STORAGE_CLASS)),
     AZ("AZ", Collections.singleton(Constants.STANDARD_STORAGE_CLASS)),

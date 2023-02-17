@@ -67,7 +67,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private static final String REGION_FIELD = "storage_region";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
     public static final String STORAGE_CLASS_FIELD = "storage_class";
-    public static final String OLD_VERSION_SIZE_FIELD_TEMPLATE = "%s_ov_size";
+    public static final String OLD_VERSION_SIZE_FIELD_TEMPLATE = "ov_%s_size";
 
     private final AbstractEntityMapper<StorageBillingInfo> mapper;
     private final ElasticsearchServiceClient elasticsearchService;
