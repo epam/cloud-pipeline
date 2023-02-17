@@ -146,7 +146,10 @@ export default class App extends Component {
             blockInput={activeTabPath === 'run'}
             onVisibilityChanged={this.onSearchControlVisibilityChanged} />
           {content}
-          <NotificationCenter delaySeconds={2} />
+          <NotificationCenter
+            delaySeconds={2}
+            disableEmailNotifications={activeTabPath === 'notifications'}
+          />
         </div>
       </LocaleProvider>
     );

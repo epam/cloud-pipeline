@@ -26,6 +26,7 @@ import {
   fetchCloudPipelineLinks,
   getCloudPipelineLinks
 } from './utilities';
+import sanitizeHTMLString from '../../../utils/sanitizeHTMLString';
 import getMarkdownRenderer, {renderHtml} from './renderer';
 
 export {
@@ -83,6 +84,18 @@ class Markdown extends React.Component {
       );
   }
 
+  get md () {
+    const {
+      md,
+      sanitize,
+      sanitizeOptions
+    } = this.props;
+    if (sanitize) {
+      return sanitizeHTMLString(md, sanitizeOptions);
+    }
+    return md;
+  }
+
   getLink (url) {
     return getCloudPipelineAbsoluteURL(url, this.props);
   }
@@ -91,18 +104,17 @@ class Markdown extends React.Component {
     const {
       className,
       id,
-      md,
       style,
       target,
       onClick
     } = this.props;
-    if (!md) {
+    if (!this.md) {
       return null;
     }
     let html = this.renderer.render(
       this.renderPipelineLinks
-        ? prepareCloudPipelineLinks(md)
-        : md
+        ? prepareCloudPipelineLinks(this.md)
+        : this.md
     );
     if (target) {
       html = processLinks(html, target);
@@ -132,7 +144,12 @@ Markdown.propTypes = {
       icon: PropTypes.bool
     })
   ]),
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  sanitize: PropTypes.bool,
+  sanitizeOptions: PropTypes.shape({
+    tagsToRemove: PropTypes.arrayOf(PropTypes.string),
+    attributesToRemove: PropTypes.arrayOf(PropTypes.string)
+  })
 };
 
 export default Markdown;

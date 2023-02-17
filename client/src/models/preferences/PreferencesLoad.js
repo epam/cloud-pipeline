@@ -289,6 +289,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get userNotificationsEnabled () {
+    return `${this.getPreferenceValue('system.notifications.enable')}` === 'true';
+  }
+
+  @computed
   get storagePolicyBackupVisibleNonAdmins () {
     const value = this.getPreferenceValue('storage.policy.backup.visible.non.admins');
     return value === undefined || `${value}` !== 'false';

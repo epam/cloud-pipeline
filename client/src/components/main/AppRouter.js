@@ -70,6 +70,7 @@ import ToolSettings from '../tools/tool-version/settings';
 import ToolPackages from '../tools/tool-version/packages';
 import ToolHistory from '../tools/tool-version/history';
 import ProjectHistory from '../pipelines/browser/ProjectHistory';
+import NotificationBrowser from './notification/NotificationBrowser';
 
 @inject('history', 'themes')
 @observer
@@ -137,6 +138,7 @@ export default class AppRouter extends React.Component {
               <Route path="storage(/:type)" component={BillingReports.StorageReport} />
             </Route>
           </Route>
+          <Route path="/notifications" component={NotificationBrowser} />
           <Route path="/miew" component={MiewPage} />
           <Route path="/library" component={PipelinesLibrary}>
             <IndexRoute component={FolderBrowser} />

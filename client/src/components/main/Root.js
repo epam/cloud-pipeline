@@ -22,6 +22,7 @@ import GoogleApi from '../../models/google/GoogleApi';
 import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
 import notifications from '../../models/notifications/ActiveNotifications';
+import userNotifications from '../../models/notifications/CurrentUserNotifications';
 import pipelines from '../../models/pipelines/Pipelines';
 import projects from '../../models/folders/FolderProjects';
 import FireCloudMethods from '../../models/firecloud/FireCloudMethods';
@@ -135,6 +136,7 @@ const Root = () =>
       spotToolInstanceTypes,
       onDemandToolInstanceTypes,
       notifications,
+      userNotifications,
       authenticatedUserInfo,
       [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
       impersonation,
