@@ -375,7 +375,7 @@ export default class NotificationCenter extends React.Component {
   onHideAllClick = (event) => {
     event && event.preventDefault();
     const {userNotifications} = this.props;
-    userNotifications && userNotifications.hideNotifications(moment.utc());
+    userNotifications && userNotifications.hideNotifications();
   };
 
   onReadAllClick = async () => {

@@ -15,22 +15,19 @@
  */
 
 import {action, computed, observable} from 'mobx';
-import Remote from '../basic/Remote';
 import moment from 'moment-timezone';
 import continuousFetch from '../../utils/continuous-fetch';
+import CurrentUserNotificationsPaging from './CurrentUserNotificationsPaging';
 
-const DEFAULT_PAGE_NUM = 0;
 const DEFAULT_PAGE_SIZE = 20;
 const FETCH_INTERVAL_SECONDS = 60;
 
-class CurrentUserNotifications extends Remote {
+class CurrentUserNotifications extends CurrentUserNotificationsPaging {
   @observable _hideNotificationsTill;
 
-  constructor (pageNum, pageSize, isRead = false) {
-    super();
-    const params = `isRead=${isRead}&pageNum=${pageNum}&pageSize=${pageSize}`;
-    this.url = `/user-notification/message/my?${params}`;
-    this._hideNotifications = localStorage.getItem('hideNotifications') === 'true';
+  constructor () {
+    super(0, DEFAULT_PAGE_SIZE, false);
+    this.readHideNotificationsTill();
     continuousFetch({
       request: this,
       intervalMS: FETCH_INTERVAL_SECONDS * 1000
@@ -43,11 +40,23 @@ class CurrentUserNotifications extends Remote {
   }
 
   @action
-  hideNotifications (date) {
-    if (date) {
-      const timestamp = moment(date).format('YYYY-MM-DD HH:mm:ss');
-      localStorage.setItem('hideNotificationsTill', timestamp);
-      this._hideNotificationsTill = timestamp;
+  hideNotifications () {
+    const timestamp = moment.utc().format('YYYY-MM-DD HH:mm:ss');
+    localStorage.setItem('hideNotificationsTill', timestamp);
+    this._hideNotificationsTill = timestamp;
+  }
+
+  readHideNotificationsTill () {
+    try {
+      const till = localStorage.getItem('hideNotificationsTill');
+      if (typeof till === 'string') {
+        const date = moment.utc(till);
+        if (date.isValid()) {
+          this._hideNotificationsTill = date.format('YYYY-MM-DD HH:mm:ss');
+        }
+      }
+    } catch (_) {
+      // empty
     }
   }
 
@@ -56,8 +65,4 @@ class CurrentUserNotifications extends Remote {
 
 export {DEFAULT_PAGE_SIZE};
 
-export default new CurrentUserNotifications(
-  DEFAULT_PAGE_NUM,
-  DEFAULT_PAGE_SIZE,
-  false
-);
+export default new CurrentUserNotifications();

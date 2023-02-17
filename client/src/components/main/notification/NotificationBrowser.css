@@ -23,6 +23,7 @@
 
 .title {
   font-size: larger;
+  margin-right: 10px;
 }
 
 .notifications-container {
@@ -31,35 +32,35 @@
   overflow: hidden;
 }
 
-.controls-row {
+.header {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  margin: 10px 0;
+  justify-content: space-between;
+  margin: 5px 0;
 }
 
-.controls-row .control:not(:last-child) {
+.header .control:not(:last-child) {
   margin-right: 5px;
 }
 
 .notification-grid-row {
   display: grid;
-  grid: "status title body date readDate" 35px
-        / 55px 1fr 2fr 135px 135px;
+  grid: "status title body date readDate" 30px / 55px 1fr 2fr 135px 135px;
   padding: 5px 0;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .notification-grid-row.header {
-  grid-template-rows: 25px;
+  grid-template-rows: 20px;
   padding: 0;
   cursor: default;
 }
 
 .notification-cell {
   margin: auto 0;
-  padding: 0 10px;
+  padding: 0 5px;
   max-height: 100%;
   overflow: hidden;
 }
@@ -89,7 +90,7 @@
 }
 
 .notification-read-date {
-  grid-area: readDate
+  grid-area: readDate;
 }
 
 .empty-placeholder {

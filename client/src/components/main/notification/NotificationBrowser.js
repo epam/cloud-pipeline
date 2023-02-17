@@ -309,45 +309,49 @@ export default class NotificationBrowser extends React.Component {
           )
         }
       >
-        <b className={styles.title}>
-          Notifications list
-        </b>
-        <div className={styles.controlsRow}>
-          <Select
-            value={mode}
-            style={{width: 130}}
-            onChange={this.changeMode}
-            size="small"
-            disabled={pending}
-            className={styles.control}
-          >
-            {Object.values(MODES).map((description) => (
-              <Select.Option
-                value={description}
-                key={description}
-              >
-                {description}
-              </Select.Option>
-            ))}
-          </Select>
-          <Button
-            onClick={this.readAllNotifications}
-            size="small"
-            disabled={pending}
-            className={styles.control}
-            style={{padding: '0 15px'}}
-          >
-            Read all
-          </Button>
-          <Button
-            size="small"
-            onClick={this.refreshPage}
-            disabled={pending}
-            className={styles.control}
-            style={{padding: '0 15px'}}
-          >
-            Refresh
-          </Button>
+        <div className={styles.header}>
+          <div>
+            <b className={styles.title}>
+              Notifications list
+            </b>
+            <Select
+              value={mode}
+              style={{width: 130}}
+              onChange={this.changeMode}
+              size="small"
+              disabled={pending}
+              className={styles.control}
+            >
+              {Object.values(MODES).map((description) => (
+                <Select.Option
+                  value={description}
+                  key={description}
+                >
+                  {description}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Button
+              onClick={this.readAllNotifications}
+              size="small"
+              disabled={pending}
+              className={styles.control}
+              style={{padding: '0 15px'}}
+            >
+              Read all
+            </Button>
+            <Button
+              size="small"
+              onClick={this.refreshPage}
+              disabled={pending}
+              className={styles.control}
+              style={{padding: '0 15px'}}
+            >
+              Refresh
+            </Button>
+          </div>
         </div>
         {this.renderNotifications()}
         <Pagination

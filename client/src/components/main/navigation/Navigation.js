@@ -31,7 +31,13 @@ import {Pages} from '../../../utils/ui-navigation';
 import invalidateEdgeTokens from '../../../utils/invalidate-edge-tokens';
 import ApplicationVersion from './application-version';
 
-@inject('uiNavigation', 'impersonation', 'preferences')
+@inject(
+  'uiNavigation',
+  'impersonation',
+  'preferences',
+  'counter',
+  'userNotifications'
+)
 @observer
 export default class Navigation extends React.Component {
   static propTypes = {
@@ -64,6 +70,24 @@ export default class Navigation extends React.Component {
     const {uiNavigation} = this.props;
     return uiNavigation.navigationItems
       .filter(item => !item.hidden);
+  }
+
+  @computed
+  get runsCount () {
+    const {counter} = this.props;
+    if (counter && counter.loaded) {
+      return counter.value || 0;
+    }
+    return 0;
+  }
+
+  @computed
+  get notificationsCount () {
+    const {userNotifications} = this.props;
+    if (userNotifications && userNotifications.loaded) {
+      return userNotifications.value.totalCount || 0;
+    }
+    return 0;
   }
 
   menuItemClassSelector = (navigationItem, activeItem) => {
@@ -185,29 +209,42 @@ export default class Navigation extends React.Component {
               </Tooltip>
             </Link>
           );
-        } else if (navigationItem.key === 'runs') {
+        }
+        if (navigationItem.key === 'runs') {
           return (
             <CounterMenuItem
               key={navigationItem.key}
-              mode={navigationItem.key}
+              id={`navigation-button-${navigationItem.key}`}
               tooltip={this.getNavigationItemTitle(navigationItem.title)}
-              className={this.menuItemClassSelector(navigationItem, activeTabPath)}
+              className={
+                classNames(
+                  this.menuItemClassSelector(navigationItem, activeTabPath),
+                  'cp-runs-menu-item',
+                  {
+                    active: this.runsCount > 0
+                  }
+                )
+              }
               onClick={() => this.navigate(navigationItem)}
-              icon={navigationItem.icon} />
+              icon={navigationItem.icon}
+              count={this.runsCount}
+            />
           );
-        } else if (navigationItem.key === Pages.notifications) {
+        }
+        if (navigationItem.key === Pages.notifications) {
           return this.notificationsEnabled ? (
             <CounterMenuItem
               key={navigationItem.key}
-              mode={navigationItem.key}
+              id={`navigation-button-${navigationItem.key}`}
               tooltip={this.getNavigationItemTitle(navigationItem.title)}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
               onClick={() => this.navigate(navigationItem)}
               icon={navigationItem.icon}
-              maxCount={99}
+              count={this.notificationsCount}
             />
           ) : null;
-        } else if (navigationItem.isLink) {
+        }
+        if (navigationItem.isLink) {
           return (
             <Link
               id={`navigation-button-${navigationItem.key}`}
@@ -226,28 +263,27 @@ export default class Navigation extends React.Component {
               </Tooltip>
             </Link>
           );
-        } else {
-          return (
-            <Tooltip
-              key={navigationItem.key}
-              placement="right"
-              text={this.getNavigationItemTitle(navigationItem.title)}
-              mouseEnterDelay={0.5}
-              overlay={this.getNavigationItemTitle(navigationItem.title)}>
-              <Button
-                id={`navigation-button-${navigationItem.key}`}
-                key={navigationItem.key}
-                className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-                onClick={() => this.navigate(navigationItem)}
-              >
-                <Icon
-                  style={navigationItem.iconStyle}
-                  type={navigationItem.icon}
-                />
-              </Button>
-            </Tooltip>
-          );
         }
+        return (
+          <Tooltip
+            key={navigationItem.key}
+            placement="right"
+            text={this.getNavigationItemTitle(navigationItem.title)}
+            mouseEnterDelay={0.5}
+            overlay={this.getNavigationItemTitle(navigationItem.title)}>
+            <Button
+              id={`navigation-button-${navigationItem.key}`}
+              key={navigationItem.key}
+              className={this.menuItemClassSelector(navigationItem, activeTabPath)}
+              onClick={() => this.navigate(navigationItem)}
+            >
+              <Icon
+                style={navigationItem.iconStyle}
+                type={navigationItem.icon}
+              />
+            </Button>
+          </Tooltip>
+        );
       })
       .filter(Boolean);
     return (
