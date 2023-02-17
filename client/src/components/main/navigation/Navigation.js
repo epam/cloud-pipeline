@@ -30,7 +30,6 @@ import searchStyles from '../../search/search.css';
 import {Pages} from '../../../utils/ui-navigation';
 import invalidateEdgeTokens from '../../../utils/invalidate-edge-tokens';
 import ApplicationVersion from './application-version';
-import {NOTIFICATION_BROWSER_PATH} from '../notification/NotificationBrowser';
 
 @inject('uiNavigation', 'impersonation', 'preferences')
 @observer
@@ -86,11 +85,10 @@ export default class Navigation extends React.Component {
     );
   };
 
-  navigate = ({key}) => {
+  navigate = (navigationItem) => {
+    const {key} = navigationItem;
     if (key === 'runs') {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
-    } else if (key === 'notifications') {
-      this.props.router.push(NOTIFICATION_BROWSER_PATH);
     } else if (key === 'logout') {
       invalidateEdgeTokens()
         .then(() => {
@@ -100,11 +98,10 @@ export default class Navigation extends React.Component {
           }
           window.location = url;
         });
-    } else {
-      const item = this.navigationItems.find(item => item.key === key);
-      if (item && typeof item.action === 'function') {
-        item.action(this.props);
-      }
+    } else if (typeof navigationItem.action === 'function') {
+      navigationItem.action(this.props);
+    } else if (navigationItem.isLink && typeof navigationItem.path === 'string') {
+      this.props.router.push(navigationItem.path);
     }
   };
 
@@ -195,17 +192,17 @@ export default class Navigation extends React.Component {
               mode={navigationItem.key}
               tooltip={this.getNavigationItemTitle(navigationItem.title)}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-              onClick={() => this.navigate({key: navigationItem.key})}
+              onClick={() => this.navigate(navigationItem)}
               icon={navigationItem.icon} />
           );
-        } else if (navigationItem.key === 'notifications') {
+        } else if (navigationItem.key === Pages.notifications) {
           return this.notificationsEnabled ? (
             <CounterMenuItem
               key={navigationItem.key}
               mode={navigationItem.key}
               tooltip={this.getNavigationItemTitle(navigationItem.title)}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-              onClick={() => this.navigate({key: navigationItem.key})}
+              onClick={() => this.navigate(navigationItem)}
               icon={navigationItem.icon}
               maxCount={99}
             />
@@ -241,7 +238,7 @@ export default class Navigation extends React.Component {
                 id={`navigation-button-${navigationItem.key}`}
                 key={navigationItem.key}
                 className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-                onClick={() => this.navigate({key: navigationItem.key})}
+                onClick={() => this.navigate(navigationItem)}
               >
                 <Icon
                   style={navigationItem.iconStyle}

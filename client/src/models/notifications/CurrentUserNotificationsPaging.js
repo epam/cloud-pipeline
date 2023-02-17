@@ -19,8 +19,15 @@ import Remote from '../basic/Remote';
 class CurrentUserNotificationsPaging extends Remote {
   constructor (pageNum, pageSize, isRead = false) {
     super();
-    const params = `isRead=${isRead}&pageNum=${pageNum}&pageSize=${pageSize}`;
-    this.url = `/user-notification/message/my?${params}`;
+    const query = Object
+      .entries({
+        pageNum: pageNum || 0,
+        pageSize: pageSize || 20,
+        isRead: isRead || false
+      })
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
+    this.url = `/user-notification/message/my?${query}`;
   }
 
   onFetched;

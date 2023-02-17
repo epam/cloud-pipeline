@@ -29,16 +29,13 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import ReadMessage from '../../../models/notifications/ReadMessage';
-import CurrentUserNotificationsPaging
-  from '../../../models/notifications/CurrentUserNotificationsPaging';
-import ReadAllUserNotifications
-  from '../../../models/notifications/ReadAllUserNotifications';
+import NotificationsRequest from '../../../models/notifications/CurrentUserNotificationsPaging';
+import ReadAllUserNotifications from '../../../models/notifications/ReadAllUserNotifications';
 import displayDate from '../../../utils/displayDate';
 import PreviewNotification from './PreviewNotification';
 import styles from './NotificationBrowser.css';
 
 const PAGE_SIZE = 20;
-const NOTIFICATION_BROWSER_PATH = '/notifications';
 
 const MODES = {
   read: 'Read messages',
@@ -146,7 +143,7 @@ export default class NotificationBrowser extends React.Component {
 
   fetchPage = (page, isRead) => {
     this.setState({pending: true}, async () => {
-      const request = new CurrentUserNotificationsPaging(
+      const request = new NotificationsRequest(
         page,
         PAGE_SIZE,
         isRead
@@ -379,5 +376,3 @@ export default class NotificationBrowser extends React.Component {
     );
   }
 }
-
-export {NOTIFICATION_BROWSER_PATH};
