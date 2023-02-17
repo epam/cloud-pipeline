@@ -16,6 +16,7 @@
 
 import {action, computed, observable} from 'mobx';
 import Remote from '../basic/Remote';
+import moment from 'moment-timezone';
 import continuousFetch from '../../utils/continuous-fetch';
 
 const DEFAULT_PAGE_NUM = 0;
@@ -23,7 +24,7 @@ const DEFAULT_PAGE_SIZE = 20;
 const FETCH_INTERVAL_SECONDS = 60;
 
 class CurrentUserNotifications extends Remote {
-  @observable _hideNotifications;
+  @observable _hideNotificationsTill;
 
   constructor (pageNum, pageSize, isRead = false) {
     super();
@@ -37,20 +38,17 @@ class CurrentUserNotifications extends Remote {
   }
 
   @computed
-  get visible () {
-    return !this._hideNotifications;
+  get hideNotificationsTill () {
+    return this._hideNotificationsTill;
   }
 
   @action
-  showNotifications () {
-    localStorage.setItem('hideNotifications', false);
-    this._hideNotifications = false;
-  }
-
-  @action
-  hideNotifications () {
-    localStorage.setItem('hideNotifications', true);
-    this._hideNotifications = true;
+  hideNotifications (date) {
+    if (date) {
+      const timestamp = moment(date).format('YYYY-MM-DD HH:mm:ss');
+      localStorage.setItem('hideNotificationsTill', timestamp);
+      this._hideNotificationsTill = timestamp;
+    }
   }
 
   onFetched;

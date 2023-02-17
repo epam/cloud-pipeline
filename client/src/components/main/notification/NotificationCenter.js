@@ -115,8 +115,16 @@ export default class NotificationCenter extends React.Component {
     if (!userNotifications.loaded || !this.state.initialized || !this.userNotificationsEnabled) {
       return [];
     }
+    const dateFrom = userNotifications.hideNotificationsTill !== undefined
+      ? moment.utc(userNotifications.hideNotificationsTill)
+      : undefined;
     return [...(userNotifications.value.elements || [])]
-      .filter(message => !message.isRead)
+      .filter(message => {
+        return !message.isRead && (dateFrom
+          ? moment.utc(message.createdDate) > dateFrom
+          : true
+        );
+      })
       .map(mapMessage)
       .sort(dateSorter);
   }
@@ -178,8 +186,7 @@ export default class NotificationCenter extends React.Component {
     } = this.props;
     if (userNotifications.loaded && preferences.loaded) {
       return !disableEmailNotifications &&
-        preferences.userNotificationsEnabled &&
-        userNotifications.visible;
+        preferences.userNotificationsEnabled;
     }
     return false;
   }
@@ -368,7 +375,7 @@ export default class NotificationCenter extends React.Component {
   onHideAllClick = (event) => {
     event && event.preventDefault();
     const {userNotifications} = this.props;
-    userNotifications && userNotifications.hideNotifications();
+    userNotifications && userNotifications.hideNotifications(moment.utc());
   };
 
   onReadAllClick = async () => {

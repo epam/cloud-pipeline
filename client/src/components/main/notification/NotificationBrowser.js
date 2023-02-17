@@ -91,15 +91,6 @@ export default class NotificationBrowser extends React.Component {
     return this._notifications.totalCount;
   }
 
-  @computed
-  get notificationsEnabled () {
-    const {userNotifications} = this.props;
-    if (userNotifications) {
-      return userNotifications.visible;
-    }
-    return false;
-  }
-
   changeMode = (description) => {
     this.setState({mode: description}, () => {
       const {currentPage, mode} = this.state;
