@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,12 +119,14 @@ const STORAGE_CLASSES = {
 @inject(({routing}, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
+  const showArchives = (queryParameters.archives || 'false').toLowerCase() === 'true';
   const openPreview = queryParameters.preview && decodeURIComponent(queryParameters.preview);
   return {
     onReloadTree,
     storageId: params.id,
     path: decodeURIComponent(queryParameters.path || ''),
-    showVersions: showVersions,
+    showVersions,
+    showArchives,
     restoreInfo: new LifeCycleEffectiveHierarchy(
       params.id,
       decodeURIComponent(queryParameters.path || ''),
@@ -282,18 +284,27 @@ export default class DataStorage extends React.Component {
       this.storage.info.storagePolicy.versioningEnabled;
   }
 
-  @computed
-  get lifeCycleRestoreEnabled () {
-    const {authenticatedUserInfo} = this.props;
-    return authenticatedUserInfo.loaded &&
-      authenticatedUserInfo.value &&
-      this.storage.infoLoaded &&
-      this.storage.info &&
-      (
-        this.storage.isOwner ||
-        authenticatedUserInfo.value.admin
-      ) &&
-      /^s3$/i.test(this.storage.info.storageType || this.storage.info.type);
+  get userLifeCyclePermissions () {
+    if (!this.storage.infoLoaded || !this.storage.info) {
+      return {read: false, write: false};
+    }
+    const isS3 = /^s3$/i.test(
+      this.storage.info.storageType ||
+      this.storage.info.type
+    );
+    const readAllowed = roleModel.readAllowed(this.storage.info);
+    const writeAllowed = roleModel.writeAllowed(this.storage.info);
+    return {
+      read: (
+        roleModel.isOwner(this.storage.info) ||
+        roleModel.isManager.archiveManager(this) ||
+        roleModel.isManager.archiveReader(this)
+      ) && readAllowed && isS3,
+      write: (
+        roleModel.isOwner(this.storage.info) ||
+        roleModel.isManager.archiveManager(this)
+      ) && writeAllowed && isS3
+    };
   }
 
   get showVersions () {
@@ -303,6 +314,17 @@ export default class DataStorage extends React.Component {
     return this.storage.info.type !== 'NFS' &&
       this.props.showVersions &&
       this.storage.isOwner;
+  }
+
+  get showArchives () {
+    const {showArchives} = this.props;
+    if (!this.storage.info) {
+      return false;
+    }
+    return (
+      this.userLifeCyclePermissions.read ||
+      this.userLifeCyclePermissions.write
+    ) && showArchives;
   }
 
   @computed
@@ -627,6 +649,7 @@ export default class DataStorage extends React.Component {
   navigate = (id, path, options = {}) => {
     const {
       showVersions = this.showVersions,
+      showArchives = this.showArchives,
       clearPathMarkers = true
     } = options;
     if (path && path.endsWith('/')) {
@@ -635,7 +658,12 @@ export default class DataStorage extends React.Component {
     this.storage.clearMarkersForPath(path, clearPathMarkers);
     const params = [
       path ? `path=${encodeURIComponent(path)}` : false,
-      `versions=${showVersions}`
+      this.versionControlsEnabled
+        ? `versions=${showVersions}`
+        : null,
+      this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write
+        ? `archives=${showArchives}`
+        : null
     ].filter(Boolean).join('&');
     this.props.router.push(`/storage/${id}?${params}`);
     this.setState({
@@ -1673,6 +1701,17 @@ export default class DataStorage extends React.Component {
     this.navigate(this.props.storageId, this.props.path, {showVersions: e.target.checked});
   };
 
+  showArchivedFilesChanged = (e) => {
+    this.navigate(
+      this.props.storageId,
+      this.props.path,
+      {
+        showVersions: this.props.showVersions,
+        showArchives: e.target.checked
+      }
+    );
+  };
+
   get isFileSelectedEmpty () {
     if (!this.state.selectedFile) {
       return false;
@@ -1939,20 +1978,32 @@ export default class DataStorage extends React.Component {
                 Clear selection
               </Button>
             }
+            {(this.userLifeCyclePermissions.read ||
+              this.userLifeCyclePermissions.write) ? (
+                <Checkbox
+                  id="show-archived-files"
+                  checked={this.showArchives}
+                  onClick={this.showArchivedFilesChanged}
+                  style={{marginLeft: 10}}
+                >
+                  Show archived files
+                </Checkbox>
+              ) : null}
             {
               this.versionControlsEnabled
                 ? (
                   <Checkbox
                     checked={this.showVersions}
                     onChange={this.showFilesVersionsChanged}
-                    style={{marginLeft: 10}}>
+                    style={{marginLeft: 10}}
+                  >
                     Show files versions
                   </Checkbox>
                 ) : undefined
             }
           </div>
           <div style={{paddingRight: 8}}>
-            {this.lifeCycleRestoreEnabled && this.restorableItems.length > 0 ? (
+            {this.userLifeCyclePermissions.write && this.restorableItems.length > 0 ? (
               <Button
                 id="restore-button"
                 size="small"
@@ -2335,8 +2386,11 @@ export default class DataStorage extends React.Component {
                   path={this.props.path}
                   onClickRestore={() => this.openRestoreFilesDialog('folder')}
                   restoreInfo={this.lifeCycleRestoreInfo}
-                  restoreEnabled={this.lifeCycleRestoreEnabled}
-                  visible={!this.state.selectedFile}
+                  restoreEnabled={this.userLifeCyclePermissions.write}
+                  visible={!this.state.selectedFile && (
+                    this.userLifeCyclePermissions.read ||
+                    this.userLifeCyclePermissions.write
+                  )}
                 />,
                 <StorageSize storage={this.storage.info} />
               ]}
@@ -2559,7 +2613,8 @@ export default class DataStorage extends React.Component {
     this.storage.initialize(
       this.props.storageId,
       this.props.path,
-      this.props.showVersions
+      this.props.showVersions,
+      this.props.showArchives
     );
   };
 

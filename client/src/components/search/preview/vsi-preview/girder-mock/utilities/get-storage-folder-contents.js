@@ -23,6 +23,7 @@ export default function getStorageContents (storage, path) {
         storage,
         path,
         false,
+        false,
         2,
         marker
       );
