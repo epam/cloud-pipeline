@@ -24,12 +24,12 @@ import java.util.Map;
 
 @Value
 @Builder
-public class BillingChartInfo<T extends BillingChartDetails> {
+public class BillingChartInfo {
 
     Map<String, String> groupingInfo;
     LocalDateTime periodStart;
     LocalDateTime periodEnd;
-    T costDetails;
+    BillingChartDetails costDetails;
     Long cost;
     Long accumulatedCost;
 }

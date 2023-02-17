@@ -61,6 +61,7 @@ public class BillingApiServiceTest extends AbstractAclTest {
                 Collections.singletonMap("filter", Collections.singletonList("filter")),
                 DateHistogramInterval.DAY,
                 BillingGrouping.BILLING_CENTER,
+                BillingGrouping.BILLING_CENTER.getDefaultOrder(),
                 true,
                 1L,
                 1L

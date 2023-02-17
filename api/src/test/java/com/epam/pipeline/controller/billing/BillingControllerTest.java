@@ -57,7 +57,8 @@ public class BillingControllerTest extends AbstractControllerTest {
     private final BillingChartInfo billingChartInfo = BillingChartInfo.builder().cost(COST).build();
     private final BillingChartRequest billingChartRequest = new BillingChartRequest(
             LocalDate.MIN, LocalDate.MAX, Collections.singletonMap("test", Collections.singletonList("test")),
-            DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER, true, 5L, 1L
+            DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER,
+            BillingGrouping.BILLING_CENTER.getDefaultOrder(), true, 5L, 1L
     );
     private final List<BillingChartInfo> billingChartInfos = Collections.singletonList(billingChartInfo);
 

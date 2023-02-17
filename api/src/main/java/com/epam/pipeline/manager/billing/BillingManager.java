@@ -23,10 +23,10 @@ import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaType;
-import com.epam.pipeline.entity.billing.BillingChartInfo;
-import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.billing.*;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.billing.billingdetails.StorageBillingDetailsHelper;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
@@ -89,13 +89,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -108,7 +102,6 @@ public class BillingManager {
     private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
     private final List<DateHistogramInterval> validIntervals;
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
-
     private final BillingHelper billingHelper;
     private final BillingExportManager billingExportManager;
     private final MessageHelper messageHelper;
@@ -150,7 +143,7 @@ public class BillingManager {
             .collect(Collectors.toList());
     }
 
-    public List<BillingChartInfo<?>> getBillingChartInfo(final BillingChartRequest request) {
+    public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         verifyRequest(request);
         try (RestHighLevelClient elasticsearchClient = elasticHelper.buildClient()) {
             final LocalDate from = request.getFrom();
@@ -162,8 +155,10 @@ public class BillingManager {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
             }
             if (grouping != null) {
+                final BillingGroupingSortOrder order = Optional.ofNullable(request.getOrder())
+                        .orElse(grouping.getDefaultOrder());
                 return getBillingStats(elasticsearchClient.getLowLevelClient(), from, to, filters, grouping,
-                        request.isLoadDetails());
+                        order, request.isLoadDetails());
             }
             throw new IllegalArgumentException("Either interval or grouping parameter has to be specified.");
         } catch (IOException e) {
@@ -171,7 +166,7 @@ public class BillingManager {
         }
     }
 
-    public List<BillingChartInfo<?>> getBillingChartInfoPaginated(final BillingChartRequest request) {
+    public List<BillingChartInfo> getBillingChartInfoPaginated(final BillingChartRequest request) {
         verifyPagingParameters(request);
         return paginateResult(getBillingChartInfo(request),
                               request.getGrouping(),
@@ -246,7 +241,7 @@ public class BillingManager {
         }
     }
 
-    private List<BillingChartInfo<?>> getBillingStats(final RestHighLevelClient elasticsearchClient,
+    private List<BillingChartInfo> getBillingStats(final RestHighLevelClient elasticsearchClient,
                                                    final LocalDate from, final LocalDate to,
                                                    final Map<String, List<String>> filters,
                                                    final DateHistogramInterval interval) {
@@ -284,15 +279,16 @@ public class BillingManager {
         }
     }
 
-    private List<BillingChartInfo<?>> getBillingStats(final RestClient elasticsearchLowLevelClient,
-                                                   final LocalDate from, final LocalDate to,
-                                                   final Map<String, List<String>> filters,
-                                                   final BillingGrouping grouping,
-                                                   final boolean isLoadDetails) {
+    private List<BillingChartInfo> getBillingStats(final RestClient elasticsearchLowLevelClient,
+                                                      final LocalDate from, final LocalDate to,
+                                                      final Map<String, List<String>> filters,
+                                                      final BillingGrouping grouping,
+                                                      final BillingGroupingSortOrder order,
+                                                      final boolean isLoadDetails) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
         final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
             .field(grouping.getCorrespondingField())
-            .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
+            .order(BucketOrder.aggregation(order.getFieldToOrderBy(), order.isDesc()))
             .size(Integer.MAX_VALUE);
         fieldAgg.subAggregation(billingHelper.aggregateCostSum());
         fieldAgg.subAggregation(billingHelper.aggregateLastByDateDoc());
@@ -304,11 +300,13 @@ public class BillingManager {
             fieldAgg.subAggregation(billingHelper.aggregateByStorageUsageGrouping());
             fieldAgg.subAggregation(billingHelper.aggregateStorageUsageTotalSumBucket());
             if (BillingGrouping.STORAGE.equals(grouping)) {
+                StorageBillingDetailsHelper.buildQuery().forEach(fieldAgg::subAggregation);
                 fieldAgg.subAggregation(billingHelper.aggregateLastByDateStorageDoc());
             }
         }
         searchSource.aggregation(fieldAgg);
         searchSource.aggregation(billingHelper.aggregateCostSum());
+
 
         final SearchRequest searchRequest = new SearchRequest()
                 .indicesOptions(IndicesOptions.strictExpandOpen())
@@ -352,14 +350,18 @@ public class BillingManager {
 
     private String buildResponseFilterForGrouping(final String groupingName) {
         final String groupingBuckets = String.format(BillingUtils.FIRST_LEVEL_TERMS_AGG_BUCKETS_PATTERN, groupingName);
-        final List<String> responseFilters = Stream.of(billingHelper.aggregateCostSum().getName(),
-                        billingHelper.aggregateRunUsageSum().getName(),
-                        billingHelper.aggregateUniqueRunsCount().getName(),
-                        billingHelper.aggregateStorageUsageTotalSumBucket().getName(),
-                        billingHelper.aggregateLastByDateDoc().getName())
-            .map(aggName -> String.join(BillingUtils.ES_DOC_FIELDS_SEPARATOR, groupingBuckets,
-                    BillingUtils.ES_WILDCARD + aggName))
-            .collect(Collectors.toList());
+        final List<String> responseFilters =
+            Stream.concat(
+                Stream.of(
+                    billingHelper.aggregateCostSum().getName(),
+                    billingHelper.aggregateRunUsageSum().getName(),
+                    billingHelper.aggregateUniqueRunsCount().getName(),
+                    billingHelper.aggregateStorageUsageTotalSumBucket().getName(),
+                    billingHelper.aggregateLastByDateDoc().getName()
+                ),
+                StorageBillingDetailsHelper.STORAGE_CLASS_AGGREGATION_MASKS.stream()
+            ).map(aggName -> String.join(BillingUtils.ES_DOC_FIELDS_SEPARATOR, groupingBuckets,
+                BillingUtils.ES_WILDCARD + aggName)).collect(Collectors.toList());
         responseFilters.add(groupingBuckets + BillingUtils.ES_DOC_FIELDS_SEPARATOR + BillingUtils.ES_WILDCARD +
                 billingHelper.aggregateLastByDateStorageDoc().getName() + ".hits.hits._source");
         responseFilters.add(String.format(BillingUtils.FIRST_LEVEL_AGG_PATTERN,
@@ -379,7 +381,7 @@ public class BillingManager {
         return map;
     }
 
-    private List<BillingChartInfo<?>> paginateResult(final List<BillingChartInfo<?>> fullResult,
+    private List<BillingChartInfo> paginateResult(final List<BillingChartInfo> fullResult,
                                                   final BillingGrouping grouping,
                                                   final Long pageNum,
                                                   final Long pageSize) {
@@ -396,7 +398,7 @@ public class BillingManager {
                 if (from > resultSize) {
                     return getEmptyGroupingResponse(grouping);
                 }
-                final List<BillingChartInfo<?>> finalBilling = fullResult.subList(from, Math.min(to, resultSize));
+                final List<BillingChartInfo> finalBilling = fullResult.subList(from, Math.min(to, resultSize));
                 final String totalPagesVal = Long.toString((long) Math.ceil(1.0 * resultSize / pageSize));
                 final String pageNumVal = Long.toString(requiredPageNum);
                 finalBilling.forEach(record -> {
@@ -410,7 +412,7 @@ public class BillingManager {
         }
     }
 
-    private List<BillingChartInfo<?>> getEmptyGroupingResponse(final BillingGrouping grouping) {
+    private List<BillingChartInfo> getEmptyGroupingResponse(final BillingGrouping grouping) {
         final Map<String, String> details = new HashMap<>();
         details.put(grouping.name(), emptyValue);
         if (grouping.isRunUsageDetailsRequired()) {
@@ -420,16 +422,16 @@ public class BillingManager {
         if (grouping.isStorageUsageDetailsRequired()) {
             details.put(BillingUtils.STORAGE_USAGE_FIELD, emptyValue);
         }
-        final BillingChartInfo<?> emptyResponse = BillingChartInfo.builder()
+        final BillingChartInfo emptyResponse = BillingChartInfo.builder()
             .groupingInfo(details)
             .build();
         return Collections.singletonList(emptyResponse);
     }
 
-    private List<BillingChartInfo<?>> getBillingChartInfoForGrouping(final LocalDate from, final LocalDate to,
-                                                                  final BillingGrouping grouping,
+    private List<BillingChartInfo> getBillingChartInfoForGrouping(final LocalDate from, final LocalDate to,
+                                                                     final BillingGrouping grouping,
                                                                   final SearchResponse searchResponse,
-                                                                  final boolean isLoadDetails) {
+                                                                     final boolean isLoadDetails) {
         final Aggregations allAggregations = searchResponse.getAggregations();
         if (allAggregations == null) {
             return Collections.emptyList();
@@ -451,17 +453,18 @@ public class BillingManager {
             .collect(Collectors.toList());
     }
 
-    private BillingChartInfo<?> getCostAggregation(final LocalDate from, final LocalDate to,
-                                                final BillingGrouping grouping,
-                                                final String groupValue,
-                                                final Aggregations aggregations,
-                                                final boolean loadDetails) {
+    private BillingChartInfo getCostAggregation(final LocalDate from, final LocalDate to,
+                                                   final BillingGrouping grouping,
+                                                   final String groupValue,
+                                                   final Aggregations aggregations,
+                                                   final boolean loadDetails) {
         final ParsedSum sumAggResult = aggregations.get(BillingUtils.COST_FIELD);
         final long costVal = new Double(sumAggResult.getValue()).longValue();
-        final BillingChartInfo.BillingChartInfoBuilder<?> builder = BillingChartInfo.builder()
+        final BillingChartInfo.BillingChartInfoBuilder builder = BillingChartInfo.builder()
             .periodStart(from.atStartOfDay())
             .periodEnd(to.atTime(LocalTime.MAX))
             .cost(costVal);
+
         final Map<String, String> groupingInfo = new HashMap<>();
         final EntityBillingDetailsLoader detailsLoader = billingDetailsLoaders.get(grouping);
         final Map<String, String> defaultDetails = billingHelper.getLastByDateDocFields(aggregations)
@@ -487,6 +490,7 @@ public class BillingManager {
                 final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
                 groupingInfo.put(BillingUtils.TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));
                 if (BillingGrouping.STORAGE.equals(grouping)) {
+                    builder.costDetails(StorageBillingDetailsHelper.parseResponse(aggregations));
                     final ParsedTopHits hits = aggregations.get(BillingUtils.BUCKET_DOCUMENTS);
                     final String lastStorageUsageValue = Optional.of(hits.getHits())
                         .map(SearchHits::getHits)
@@ -504,15 +508,15 @@ public class BillingManager {
         return builder.build();
     }
 
-    private List<BillingChartInfo<?>> parseHistogram(final DateHistogramInterval interval,
+    private List<BillingChartInfo> parseHistogram(final DateHistogramInterval interval,
                                                   final ParsedDateHistogram histogram) {
         return histogram.getBuckets().stream()
             .map(bucket -> getChartInfo(bucket, interval))
             .collect(Collectors.toList());
     }
 
-    private BillingChartInfo<?> getChartInfo(final Histogram.Bucket bucket, final DateHistogramInterval interval) {
-        final BillingChartInfo.BillingChartInfoBuilder<?> builder = BillingChartInfo.builder()
+    private BillingChartInfo getChartInfo(final Histogram.Bucket bucket, final DateHistogramInterval interval) {
+        final BillingChartInfo.BillingChartInfoBuilder builder = BillingChartInfo.builder()
             .groupingInfo(null);
         final ParsedSum sumAggResult = bucket.getAggregations().get(BillingUtils.COST_FIELD);
         final long costVal = new Double(sumAggResult.getValue()).longValue();

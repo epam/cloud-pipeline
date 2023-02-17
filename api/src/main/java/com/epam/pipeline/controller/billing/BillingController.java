@@ -51,7 +51,7 @@ public class BillingController extends AbstractRestController {
         notes = "Get info for building expenses charts.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<BillingChartInfo<?>>> getBillingChartInfo(@RequestBody final BillingChartRequest request) {
+    public Result<List<BillingChartInfo>> getBillingChartInfo(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getBillingChartInfo(request));
     }
 
@@ -62,7 +62,7 @@ public class BillingController extends AbstractRestController {
         notes = "Get paginated info about billing expenses.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<BillingChartInfo<?>>> getBillingChartInfoPaginated(@RequestBody final BillingChartRequest request) {
+    public Result<List<BillingChartInfo>> getBillingChartInfoPaginated(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getBillingChartInfoPaginated(request));
     }
 
