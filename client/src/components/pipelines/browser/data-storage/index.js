@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,14 +119,14 @@ const STORAGE_CLASSES = {
 @inject(({routing}, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
-  const browseArchives = (queryParameters.archives || 'false').toLowerCase() === 'true';
+  const showArchives = (queryParameters.archives || 'false').toLowerCase() === 'true';
   const openPreview = queryParameters.preview && decodeURIComponent(queryParameters.preview);
   return {
     onReloadTree,
     storageId: params.id,
     path: decodeURIComponent(queryParameters.path || ''),
-    showVersions: showVersions,
-    browseArchives: browseArchives,
+    showVersions,
+    showArchives,
     restoreInfo: new LifeCycleEffectiveHierarchy(
       params.id,
       decodeURIComponent(queryParameters.path || ''),
@@ -316,15 +316,15 @@ export default class DataStorage extends React.Component {
       this.storage.isOwner;
   }
 
-  get browseArchives () {
-    const {browseArchives} = this.props;
+  get showArchives () {
+    const {showArchives} = this.props;
     if (!this.storage.info) {
       return false;
     }
     return (
       this.userLifeCyclePermissions.read ||
       this.userLifeCyclePermissions.write
-    ) && browseArchives;
+    ) && showArchives;
   }
 
   @computed
@@ -649,7 +649,7 @@ export default class DataStorage extends React.Component {
   navigate = (id, path, options = {}) => {
     const {
       showVersions = this.showVersions,
-      browseArchives = this.browseArchives,
+      showArchives = this.showArchives,
       clearPathMarkers = true
     } = options;
     if (path && path.endsWith('/')) {
@@ -662,7 +662,7 @@ export default class DataStorage extends React.Component {
         ? `versions=${showVersions}`
         : null,
       this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write
-        ? `archives=${browseArchives}`
+        ? `archives=${showArchives}`
         : null
     ].filter(Boolean).join('&');
     this.props.router.push(`/storage/${id}?${params}`);
@@ -1701,13 +1701,13 @@ export default class DataStorage extends React.Component {
     this.navigate(this.props.storageId, this.props.path, {showVersions: e.target.checked});
   };
 
-  browseArchivedFilesChanged = (e) => {
+  showArchivedFilesChanged = (e) => {
     this.navigate(
       this.props.storageId,
       this.props.path,
       {
         showVersions: this.props.showVersions,
-        browseArchives: e.target.checked
+        showArchives: e.target.checked
       }
     );
   };
@@ -1981,12 +1981,12 @@ export default class DataStorage extends React.Component {
             {(this.userLifeCyclePermissions.read ||
               this.userLifeCyclePermissions.write) ? (
                 <Checkbox
-                  id="browse-archived-files"
-                  checked={this.browseArchives}
-                  onClick={this.browseArchivedFilesChanged}
+                  id="show-archived-files"
+                  checked={this.showArchives}
+                  onClick={this.showArchivedFilesChanged}
                   style={{marginLeft: 10}}
                 >
-                  Browse archived files
+                  Show archived files
                 </Checkbox>
               ) : null}
             {
@@ -2613,7 +2613,8 @@ export default class DataStorage extends React.Component {
     this.storage.initialize(
       this.props.storageId,
       this.props.path,
-      this.props.showVersions
+      this.props.showVersions,
+      this.props.showArchives
     );
   };
 

@@ -165,6 +165,7 @@ class ObjectStorage {
           id,
           decodeURIComponent(folder),
           false,
+          false,
           50
         );
         request

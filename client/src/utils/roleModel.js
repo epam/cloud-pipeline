@@ -362,7 +362,7 @@ const refreshAuthenticationInfo = async ({props}) => {
 };
 
 const manager = {
-  archiveReader: management('ROLE_STORAGE_ARCHIVE_READER '),
+  archiveReader: management('ROLE_STORAGE_ARCHIVE_READER'),
   archiveManager: management('ROLE_STORAGE_ARCHIVE_MANAGER'),
   pipeline: management('ROLE_PIPELINE_MANAGER'),
   folder: management('ROLE_FOLDER_MANAGER'),
@@ -374,7 +374,7 @@ const manager = {
 };
 
 const isManager = {
-  archiveReader: hasRole('ROLE_STORAGE_ARCHIVE_READER '),
+  archiveReader: hasRole('ROLE_STORAGE_ARCHIVE_READER'),
   archiveManager: hasRole('ROLE_STORAGE_ARCHIVE_MANAGER'),
   pipeline: hasRole('ROLE_PIPELINE_MANAGER'),
   folder: hasRole('ROLE_FOLDER_MANAGER'),

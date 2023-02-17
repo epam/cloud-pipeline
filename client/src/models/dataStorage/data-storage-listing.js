@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,7 @@ class DataStorageListing {
   @observable storageId;
   @observable path;
   @observable showVersions;
+  @observable showArchives;
   @observable markers = {};
   /**
    * Storage info (DataStorage request)
@@ -358,14 +359,28 @@ class DataStorageListing {
   };
 
   @action
-  initialize = (storageId, path, showVersions) => {
+  initialize = (
+    storageId,
+    path,
+    showVersions,
+    showArchives
+  ) => {
     const storageChanged = this.setStorage(storageId);
     const pathChanged = this.setPath(path);
     const showVersionsChanged = this.setShowVersions(showVersions);
-    if (storageChanged || pathChanged || showVersionsChanged) {
+    const showArchivesChanged = this.setShowArchives(showArchives);
+    if (
+      storageChanged ||
+      pathChanged ||
+      showVersionsChanged ||
+      showArchivesChanged
+    ) {
       (this.fetchCurrentPage)();
     }
-    return storageChanged || pathChanged || showVersionsChanged;
+    return storageChanged ||
+    pathChanged ||
+    showVersionsChanged ||
+    showArchivesChanged;
   };
 
   @action
@@ -430,6 +445,18 @@ class DataStorageListing {
   };
 
   @action
+  setShowArchives = (showArchives = false) => {
+    if (this.showArchives === showArchives) {
+      return false;
+    }
+    this._increaseUniqueToken();
+    // We need to clear all markers
+    this.clearMarkers();
+    this.showArchives = showArchives;
+    return true;
+  };
+
+  @action
   fetchCurrentPage = async () => {
     const token = this._increaseUniqueToken();
     const submitChanges = (fn) => {
@@ -453,6 +480,7 @@ class DataStorageListing {
         this.storageId,
         pathCorrected ? decodeURIComponent(pathCorrected) : undefined,
         this.showVersions,
+        this.showArchives,
         this.pageSize,
         marker
       );

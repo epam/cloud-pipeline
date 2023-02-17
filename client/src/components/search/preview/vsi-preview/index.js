@@ -58,6 +58,7 @@ function getFolderContents (storageId, folder) {
       storageId,
       decodeURIComponent(folder),
       false,
+      false,
       50
     );
     request
