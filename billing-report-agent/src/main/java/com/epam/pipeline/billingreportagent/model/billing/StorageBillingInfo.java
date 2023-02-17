@@ -24,8 +24,10 @@ import com.epam.pipeline.entity.datastorage.MountType;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -35,15 +37,28 @@ public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage>
     private StorageType resourceStorageType;
     private DataStorageType objectStorageType;
     private MountType fileStorageType;
+    private List<StorageBillingInfoDetails> billingDetails;
 
     @Builder
     public StorageBillingInfo(final LocalDate date, final AbstractDataStorage storage, final Long cost,
-                              final Long usageBytes, final StorageType resourceStorageType,
-                              final DataStorageType objectStorageType, final MountType fileStorageType) {
+                              final Long usageBytes, final List<StorageBillingInfoDetails> billingDetails,
+                              final StorageType resourceStorageType, final DataStorageType objectStorageType,
+                              final MountType fileStorageType) {
         super(date, storage, cost, ResourceType.STORAGE);
         this.usageBytes = usageBytes;
+        this.billingDetails = billingDetails;
         this.resourceStorageType = resourceStorageType;
         this.objectStorageType = objectStorageType;
         this.fileStorageType = fileStorageType;
+    }
+
+    @Value
+    @Builder
+    public static class StorageBillingInfoDetails {
+        String storageClass;
+        long usageBytes;
+        long cost;
+        long oldVersionUsageBytes;
+        long oldVersionCost;
     }
 }

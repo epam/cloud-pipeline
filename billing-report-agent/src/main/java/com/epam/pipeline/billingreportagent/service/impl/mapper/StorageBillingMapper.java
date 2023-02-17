@@ -24,10 +24,13 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
@@ -64,10 +67,31 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .field("object_storage_type", billingInfo.getObjectStorageType()) // Object storage type: S3 / AZ / GS
                 .field("file_storage_type", billingInfo.getFileStorageType()) // File storage type: NFS / SMB / LUSTRE
                 .field("storage_created_date", asString(storage.getCreatedDate()))
-
                 .field("usage_bytes", billingInfo.getUsageBytes())
                 .field("usage_bytes_avg", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost());
+
+            final List<StorageBillingInfo.StorageBillingInfoDetails> billingDetails = billingInfo.getBillingDetails();
+            if (CollectionUtils.isNotEmpty(billingDetails)) {
+                // Detailed costs and sizes by Storage Class and file versions
+                for (StorageBillingInfo.StorageBillingInfoDetails storageClassDetails : billingDetails) {
+                    final String storageClass = storageClassDetails.getStorageClass().toLowerCase(Locale.ROOT);
+                    jsonBuilder.field(String.format("%s_cost", storageClass), storageClassDetails.getCost());
+                    jsonBuilder.field(
+                            String.format("%s_usage_bytes", storageClass), storageClassDetails.getUsageBytes());
+                    jsonBuilder.field(
+                            String.format("%s_ov_cost", storageClass), storageClassDetails.getOldVersionCost());
+                    jsonBuilder.field(
+                            String.format("%s_ov_usage_bytes", storageClass),
+                            storageClassDetails.getOldVersionUsageBytes()
+                    );
+                    jsonBuilder.field(String.format("%s_total_cost", storageClass),
+                            storageClassDetails.getCost() + storageClassDetails.getOldVersionCost());
+                    jsonBuilder.field(
+                            String.format("%s_total_usage_bytes", storageClass),
+                            storageClassDetails.getUsageBytes() + storageClassDetails.getOldVersionUsageBytes());
+                }
+            }
 
             return buildUserContent(container.getOwner(), jsonBuilder)
                     .endObject();
@@ -75,5 +99,6 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
             throw new IllegalArgumentException("Failed to create elasticsearch document for data storage: ", e);
         }
     }
+
 }
 

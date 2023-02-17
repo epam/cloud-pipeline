@@ -17,19 +17,28 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.utils.StreamUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class StoragePricingService {
 
+    private static final String DEFAULT_STORAGE_CLASS = "STANDARD";
     private final Map<String, StoragePricing> storagePriceListGb = new HashMap<>();
-    private BigDecimal defaultPriceGb;
+    private Map<String, BigDecimal> defaultPriceGbByStorageClass;
     private StoragePriceListLoader priceListLoader;
 
     public StoragePricingService(@NonNull final StoragePriceListLoader priceListLoader) {
@@ -39,7 +48,7 @@ public class StoragePricingService {
 
     public StoragePricingService(final Map<String, StoragePricing> fixedPriceList) {
         this.storagePriceListGb.putAll(fixedPriceList);
-        this.defaultPriceGb = calculateDefaultPriceGb();
+        this.defaultPriceGbByStorageClass = calculateDefaultPriceGb();
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
@@ -48,7 +57,7 @@ public class StoragePricingService {
             if (priceListLoader != null) {
                 final Map<String, StoragePricing> priceList = priceListLoader.loadFullPriceList();
                 storagePriceListGb.putAll(priceList);
-                defaultPriceGb = calculateDefaultPriceGb();
+                defaultPriceGbByStorageClass = calculateDefaultPriceGb();
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -59,20 +68,40 @@ public class StoragePricingService {
 
     public StoragePricing getRegionPricing(final String region) {
         return storagePriceListGb.get(region);
+
     }
 
     public BigDecimal getDefaultPriceGb() {
-        return this.defaultPriceGb;
+        return getDefaultPriceGb(DEFAULT_STORAGE_CLASS);
     }
 
-    private BigDecimal calculateDefaultPriceGb() {
-        return storagePriceListGb.values()
-            .stream()
-            .flatMap(pricing -> pricing.getPrices().stream())
-            .map(StoragePricing.StoragePricingEntity::getPriceCentsPerGb)
-            .filter(price -> !BigDecimal.ZERO.equals(price))
-            .max(Comparator.naturalOrder())
-            .orElseThrow(() -> new IllegalStateException(String.format("No %s storage prices loaded!",
-                                                                       priceListLoader.getProvider().name())));
+    public BigDecimal getDefaultPriceGb(final String storageClass) {
+        return Optional.ofNullable(this.defaultPriceGbByStorageClass.get(storageClass))
+                .orElseGet(() -> defaultPriceGbByStorageClass.get(DEFAULT_STORAGE_CLASS));
+    }
+
+    private Map<String, BigDecimal> calculateDefaultPriceGb() {
+        return StreamUtils.grouped(
+                storagePriceListGb.values()
+                        .stream()
+                        .flatMap(pricing ->
+                                pricing.getStorageClasses().stream()
+                                        .map(sc -> ImmutablePair.of(sc, pricing.getPrices(sc)))
+                        ).sorted(Comparator.comparing(Pair::getKey)),
+                Comparator.comparing(Pair::getKey)
+        ).filter(CollectionUtils::isNotEmpty)
+        .map(allRegionPricesForStorageClass -> {
+            final String sc = allRegionPricesForStorageClass.stream().findAny().map(Pair::getKey).orElse(null);
+            final BigDecimal maxPrice = allRegionPricesForStorageClass.stream().map(Pair::getValue)
+                    .flatMap(Collection::stream)
+                    .map(StoragePricing.StoragePricingEntity::getPriceCentsPerGb)
+                    .filter(price -> !BigDecimal.ZERO.equals(price))
+                    .max(Comparator.naturalOrder()).orElse(null);
+            if (sc == null || maxPrice == null) {
+                return null;
+            }
+            return ImmutablePair.of(sc, maxPrice);
+        }).filter(Objects::nonNull)
+        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 }
