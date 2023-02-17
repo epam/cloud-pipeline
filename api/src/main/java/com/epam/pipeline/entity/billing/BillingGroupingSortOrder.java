@@ -20,12 +20,17 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.tuple.Pair;
 
 @Setter
 @AllArgsConstructor
 public class BillingGroupingSortOrder {
 
-    private static final String DEFAULT_AGGREGATE_TO_SORT_BY = "cost";
+    public static final BillingGroupingSortOrder DEFAULT_SORT_ORDER = new BillingGroupingSortOrder(
+            BillingGroupingSortOrder.BillingGroupingSortField.COST,
+            BillingDetailsOrderAggregate.DEFAULT,
+            true
+    );
 
     @Getter
     @RequiredArgsConstructor
@@ -34,19 +39,23 @@ public class BillingGroupingSortOrder {
     }
 
     private BillingGroupingSortField field;
-    private BillingDetailsAggregate detailsAggregate;
+    private BillingDetailsOrderAggregate detailsAggregate;
     private boolean desc;
 
-    public String getFieldToOrderBy() {
+    public Pair<String, String> getAggregateToOrderBy() {
         switch (field) {
             case COST:
                 return detailsAggregate.getCostAggregate();
             case USAGE:
                 return detailsAggregate.getUsageAggregate();
             default:
-                return DEFAULT_AGGREGATE_TO_SORT_BY;
+                return BillingDetailsOrderAggregate.DEFAULT.getCostAggregate();
         }
 
+    }
+
+    public BillingDetailsOrderAggregate getDetailsAggregate() {
+        return detailsAggregate;
     }
 
     public boolean isDesc() {
