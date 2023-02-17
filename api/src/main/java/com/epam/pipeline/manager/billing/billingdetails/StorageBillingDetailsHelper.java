@@ -10,7 +10,10 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -32,9 +35,9 @@ public class StorageBillingDetailsHelper {
     );
 
     public static List<AggregationBuilder> buildQuery() {
-        return  S3_STORAGE_CLASSES.stream()
-                .map(field -> field.toLowerCase(Locale.ROOT))
-                .flatMap(field -> STORAGE_CLASS_AGGREGATION_TEMPLATES.stream().map(t -> buildAggregation(t, field)))
+        return S3_STORAGE_CLASSES.stream()
+                .map(sc -> sc.toLowerCase(Locale.ROOT))
+                .flatMap(sc -> STORAGE_CLASS_AGGREGATION_TEMPLATES.stream().map(t -> buildSumAggregation(t, sc)))
                 .collect(Collectors.toList());
     }
 
@@ -69,8 +72,12 @@ public class StorageBillingDetailsHelper {
                 .map(ParsedSum::getValue).orElse(0.0).longValue();
     }
 
-    private static SumAggregationBuilder buildAggregation(final String template, final String field) {
-        final String agg = getAggregationField(template, field);
+    private static SumAggregationBuilder buildSumAggregation(final String template, final String storageClass) {
+        final String agg = getAggregationField(template, storageClass);
+        return buildSumAggregation(agg);
+    }
+
+    private static SumAggregationBuilder buildSumAggregation(String agg) {
         return AggregationBuilders.sum(agg).field(agg);
     }
 
