@@ -27,7 +27,7 @@ public class StorageBillingChartDetails implements BillingChartDetails {
     
     BillingChartDetailsType type = BillingChartDetailsType.DATASTORAGE_BILLING;
     
-    List<StorageBillingDetails> byStorageClass;
+    List<StorageBillingDetails> tiers;
     
     @Override
     public BillingChartDetailsType getType() {

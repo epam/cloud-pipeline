@@ -22,18 +22,26 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum BillingGrouping {
-    RESOURCE_TYPE("resource_type", false, false),
-    RUN_INSTANCE_TYPE("instance_type", true, false),
-    RUN_COMPUTE_TYPE("compute_type", false, false),
-    PIPELINE("pipeline", true, false),
-    TOOL("tool", true, false),
-    STORAGE("storage_id", false, true),
-    STORAGE_TYPE("storage_type", false, false),
-    USER("owner", true, true),
-    BILLING_CENTER("billing_center", true, true);
+    RESOURCE_TYPE("resource_type", false, false, Constants.DEFAULT_SORT_ORDER),
+    RUN_INSTANCE_TYPE("instance_type", true, false, Constants.DEFAULT_SORT_ORDER),
+    RUN_COMPUTE_TYPE("compute_type", false, false, Constants.DEFAULT_SORT_ORDER),
+    PIPELINE("pipeline", true, false, Constants.DEFAULT_SORT_ORDER),
+    TOOL("tool", true, false, Constants.DEFAULT_SORT_ORDER),
+    STORAGE("storage_id", false, true, Constants.DEFAULT_SORT_ORDER),
+    STORAGE_TYPE("storage_type", false, false, Constants.DEFAULT_SORT_ORDER),
+    USER("owner", true, true, Constants.DEFAULT_SORT_ORDER),
+    BILLING_CENTER("billing_center", true, true, Constants.DEFAULT_SORT_ORDER);
 
     private final String correspondingField;
     private final boolean runUsageDetailsRequired;
     private final boolean storageUsageDetailsRequired;
+    private final BillingGroupingSortOrder defaultOrder;
 
+    private static class Constants {
+        public static final BillingGroupingSortOrder DEFAULT_SORT_ORDER = new BillingGroupingSortOrder(
+                BillingGroupingSortOrder.BillingGroupingSortField.COST,
+                BillingDetailsAggregate.DEFAULT,
+                true
+        );
+    }
 }

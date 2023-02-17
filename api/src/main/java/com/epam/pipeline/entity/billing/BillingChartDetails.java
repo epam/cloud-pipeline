@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.entity.billing;
 
-import java.util.Map;
-
 public interface BillingChartDetails {
 
     BillingChartDetailsType getType();
