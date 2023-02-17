@@ -98,7 +98,8 @@ public class GcpStoragePriceListLoader implements StoragePriceListLoader{
                 new BigDecimal(currentRate.getUnitPrice().getNanos().doubleValue() / Math.pow(10, 9),
                                new MathContext(PRECISION))
                     .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
-            pricingRanges.addPrice(new StoragePricing.StoragePricingEntity(startRange, endRange, priceCentsPerGb));
+            pricingRanges.addPrice(AwsStoragePriceListLoader.DEFAULT_STORAGE_CLASS,
+                    new StoragePricing.StoragePricingEntity(startRange, endRange, priceCentsPerGb));
         }
         return pricingRanges;
     }

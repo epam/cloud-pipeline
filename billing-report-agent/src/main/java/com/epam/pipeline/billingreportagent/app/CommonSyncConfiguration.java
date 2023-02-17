@@ -21,6 +21,7 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AwsPriceStorageListComposerLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.FileShareMountsService;
@@ -67,6 +68,9 @@ public class CommonSyncConfiguration {
     @Value("${sync.storage.file.index.pattern}")
     private String fileIndexPattern;
 
+    @Value("${sync.storage.historical.billing.generation:false}")
+    private boolean enableStorageHistoricalBillingGeneration;
+
     @Bean
     public BulkRequestSender bulkRequestSender(
             final ElasticsearchServiceClient elasticsearchClient) {
@@ -104,9 +108,20 @@ public class CommonSyncConfiguration {
                                                       String endpointTemplate) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3",
-                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
-                        endpointTemplate));
+                new StoragePricingService(
+                        new AwsPriceStorageListComposerLoader(
+                                new AwsStoragePriceListLoader(
+                                        "AmazonS3",
+                                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                                        endpointTemplate
+                                ),
+                                new AwsStoragePriceListLoader(
+                                        "AmazonS3GlacierDeepArchive",
+                                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                                        endpointTemplate
+                                )
+                        )
+                );
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
@@ -118,7 +133,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.S3);
     }
 
@@ -149,7 +165,7 @@ public class CommonSyncConfiguration {
                         StorageType.FILE_STORAGE,
                         pricingService,
                         fileIndexPattern,
-                        fileShareMountsService),
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.NFS);
     }
 
@@ -172,7 +188,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.GS);
     }
 
@@ -198,7 +215,8 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern),
+                        fileIndexPattern,
+                        enableStorageHistoricalBillingGeneration),
                 DataStorageType.AZ);
     }
 }
