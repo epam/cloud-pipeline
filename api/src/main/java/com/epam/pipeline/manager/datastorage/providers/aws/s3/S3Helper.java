@@ -745,6 +745,9 @@ public class S3Helper {
                 .withId(name)
                 .withFilter(new LifecycleFilter(new LifecyclePrefixPredicate(EMPTY_STRING)))
                 .withNoncurrentVersionExpirationInDays(duration)
+                .withExpiredObjectDeleteMarker(true)
+                .withAbortIncompleteMultipartUpload(
+                        new AbortIncompleteMultipartUpload().withDaysAfterInitiation(duration))
                 .withStatus(BucketLifecycleConfiguration.ENABLED);
     }
 
