@@ -157,24 +157,39 @@ export class DataStorageEditDialog extends React.Component {
       : this.props.isNfsMount;
   }
 
+  get userPermissions () {
+    const {dataStorage} = this.props;
+    if (!dataStorage) {
+      return {read: false, write: false};
+    }
+    const readAllowed = roleModel.readAllowed(dataStorage);
+    const writeAllowed = roleModel.writeAllowed(dataStorage);
+    return {
+      read: (
+        roleModel.isOwner(dataStorage) ||
+        roleModel.isManager.archiveManager(this) ||
+        roleModel.isManager.archiveReader(this)
+      ) && readAllowed,
+      write: (
+        roleModel.isOwner(dataStorage) ||
+        roleModel.isManager.archiveManager(this)
+      ) && writeAllowed
+    };
+  }
+
   @computed
   get transitionRulesAvailable () {
     const {
       dataStorage
     } = this.props;
-    return dataStorage &&
+    return (this.userPermissions.read || this.userPermissions.write) &&
+      dataStorage &&
       dataStorage.id &&
       /^s3$/i.test(dataStorage.storageType || dataStorage.type);
   }
 
-  @computed
   get transitionRulesReadOnly () {
-    const {dataStorage, authenticatedUserInfo} = this.props;
-    if (authenticatedUserInfo.loaded) {
-      const isAdmin = authenticatedUserInfo.value.admin;
-      return !isAdmin && !roleModel.isOwner(dataStorage);
-    }
-    return true;
+    return this.userPermissions.read && !this.userPermissions.write;
   }
 
   @computed

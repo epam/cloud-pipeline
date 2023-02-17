@@ -934,6 +934,7 @@ export default class BucketBrowser extends React.Component {
           this.state.bucket.id,
           this.state.path,
           false,
+          false,
           PAGE_SIZE
         );
       }
@@ -951,6 +952,7 @@ export default class BucketBrowser extends React.Component {
         this.storage = new DataStorageRequest(
           this.state.bucket.id,
           this.state.path,
+          false,
           false,
           PAGE_SIZE
         );
