@@ -101,6 +101,7 @@ public class LogManager {
     private static final String SERVICE_ACCOUNT = "service_account";
     private static final String KEYWORD = ".keyword";
     private static final Period FILEBEAT_TRANSITION_PERIOD = Period.ofDays(1);
+    private static final String INDEX_TYPE = "_doc";
 
     private final GlobalSearchElasticHelper elasticHelper;
     private final MessageHelper messageHelper;
@@ -236,7 +237,7 @@ public class LogManager {
         } catch (IOException e) {
             throw new PipelineException(e);
         }
-        return new IndexRequest(index).source(builder);
+        return new IndexRequest(index, INDEX_TYPE).source(builder);
     }
 
     private String[] getLogIndices(final LocalDateTime from, final LocalDateTime to) {
