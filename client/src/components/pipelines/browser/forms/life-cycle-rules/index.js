@@ -177,35 +177,36 @@ class LifeCycleRules extends React.Component {
   renderRule = (rule) => {
     const {readOnly} = this.props;
     const controls = [
-      <Button
-        className={styles.controlBtn}
-        onClick={() => this.openEditRuleDialog(rule)}
-        size="small"
-        key="edit"
-        disabled={readOnly}
-      >
-        <Icon type="edit" />
-      </Button>,
+      !readOnly && (
+        <Button
+          className={styles.controlBtn}
+          onClick={() => this.openEditRuleDialog(rule)}
+          size="small"
+          key="edit"
+        >
+          <Icon type="edit" />
+        </Button>
+      ),
       <Button
         className={styles.controlBtn}
         onClick={() => this.showHistory(rule)}
         size="small"
         key="history"
-        disabled={readOnly}
       >
         <Icon type="book" />
       </Button>,
-      <Button
-        className={styles.controlBtn}
-        type="danger"
-        onClick={() => this.deleteRule(rule.id)}
-        size="small"
-        key="delete"
-        disabled={readOnly}
-      >
-        <Icon type="delete" />
-      </Button>
-    ];
+      !readOnly && (
+        <Button
+          className={styles.controlBtn}
+          type="danger"
+          onClick={() => this.deleteRule(rule.id)}
+          size="small"
+          key="delete"
+        >
+          <Icon type="delete" />
+        </Button>
+      )
+    ].filter(Boolean);
     const destination = (rule.transitions || [])[0]
       ? DESTINATIONS[(rule.transitions || [])[0].storageClass]
       : '';
