@@ -116,11 +116,10 @@ class NotificationForm extends React.Component {
       const request = new NotificationTemplates();
       await request.fetch();
       this.setState({pending: false}, () => {
-        if (request.error) {
-          return message.error(request.error, 5);
+        if (!request.error) {
+          this.systemTemplate = (request.value || [])
+            .find(template => template.name === TEMPLATE_KEY);
         }
-        this.systemTemplate = (request.value || [])
-          .find(template => template.name === TEMPLATE_KEY);
       });
     });
   };
