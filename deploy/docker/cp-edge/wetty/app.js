@@ -151,24 +151,25 @@ function get_ssh_theme(auth_key) {
     return 'default';
 }
 
-function get_user_attributes_theme(userId, auth_key) {
+function get_user_metadata(user_id, auth_key) {
     const payload = call_api(
         '/metadata/load',
          auth_key,
         'POST',
         [{
             entityClass: 'PIPELINE_USER',
-            entityId: userId
+            entityId: user_id
         }]
     );
     if (payload && payload.length) {
         const {data = {}} = payload[0];
-        const {['ui.ssh.theme']: userDefinedTheme} = data;
-        if (userDefinedTheme && userDefinedTheme.value) {
-            return userDefinedTheme.value;
+        const metadata = {};
+        for (let key in data) {
+            metadata[key] = data[key].value;
         }
+        return metadata;
     }
-    return 'default';
+    return {};
 }
 
 function get_boolean(value) {
@@ -225,6 +226,20 @@ function get_run_sshpass(run_details, auth_key) {
         return parent_run_details.pass;
     } else {
         return run_details.pass;
+    }
+}
+
+function resolve_user_name(user_name, user_name_case) {
+    if (!user_name) {
+        return null;
+    }
+    switch (user_name_case) {
+        case 'lower':
+            return user_name.toLowerCase();
+        case 'upper':
+            return user_name.toUpperCase();
+        default:
+            return user_name;
     }
 }
 
@@ -317,22 +332,26 @@ io.on('connection', function(socket) {
             run_ssh_mode = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key) ? 'root' : 'owner';
         }
     }
+    const run_user_name_case = run_details.parameters['CP_CAP_USER_NAME_CASE'] || 'default';
+    const run_user_name_metadata_key = run_details.parameters['CP_CAP_USER_NAME_METADATA_KEY'] || 'local_user_name';
     const current_user = get_current_user(auth_key);
+    const current_user_metadata = current_user ? get_user_metadata(current_user.id, auth_key) : {};
+    const current_user_login_name = current_user ? current_user.name : undefined;
+    const current_user_local_name = current_user_metadata[run_user_name_metadata_key];
+    const current_user_name = current_user_local_name
+        || (current_user_login_name ? resolve_user_name(current_user_login_name, run_user_name_case) : undefined);
     const platformName = get_platform_name(auth_key);
-    const userDefinedTheme = current_user
-        ? get_user_attributes_theme(current_user.id, auth_key)
-        : undefined;
-    const theme = userDefinedTheme || get_ssh_theme(auth_key);
+    const theme = current_user_metadata['ui.ssh.theme'] || get_ssh_theme(auth_key) || 'default';
     let sshuser;
     let sshpass;
     switch (run_ssh_mode) {
         case 'user':
-            sshuser = current_user.name;
-            sshpass = current_user.name;
+            sshuser = current_user_name;
+            sshpass = sshuser;
             break
         case 'owner':
             sshuser = owner_user_name;
-            sshpass = owner_user_name;
+            sshpass = sshuser;
             break
         case 'owner-sshpass':
             sshuser = owner_user_name;
@@ -343,7 +362,9 @@ io.on('connection', function(socket) {
             sshpass = get_run_sshpass(run_details, auth_key);
             break
     }
-    console_log('Establishing SSH connection to run #' + run_id + ' as ' + sshuser + ' (' + run_ssh_mode + ' mode)...');
+    console_log('Establishing SSH connection to run #' + run_id + ' ' +
+                'as ' + sshuser + ' (' + current_user_login_name + ') ' +
+                'in ' + run_ssh_mode + ' mode...');
     const term = pty.spawn('sshpass', ['-p', sshpass, 'ssh', sshuser + '@' + sshhost,
                                        '-p', sshport,
                                        '-o', 'StrictHostKeyChecking=no',
