@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,13 @@ import java.util.List;
 @Value
 public class StorageBillingChartDetails implements BillingChartDetails {
     
-    BillingChartDetailsType type = BillingChartDetailsType.DATASTORAGE_BILLING;
+    BillingChartDetailsType type = BillingChartDetailsType.STORAGE_BILLING;
     
     List<StorageBillingDetails> tiers;
     
     @Override
     public BillingChartDetailsType getType() {
-        return BillingChartDetailsType.DATASTORAGE_BILLING;
+        return BillingChartDetailsType.STORAGE_BILLING;
     }
 
     @Value
