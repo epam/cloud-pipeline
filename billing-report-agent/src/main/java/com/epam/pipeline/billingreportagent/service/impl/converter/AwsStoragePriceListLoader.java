@@ -74,8 +74,9 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     private static final String US_DOLLAR_CODE = "USD";
     private static final String VOLUME_TYPE_KEY = "volumeType";
 
+    private static final String STANDARD_CLASS = "STANDARD";
     private static final Map<String, String> PRICE_LIST_STORAGE_CLASS_MAPPING = new HashMap<String, String>() {{
-            put("Standard", "STANDARD");
+            put("Standard", STANDARD_CLASS);
             put("Glacier Instant Retrieval", "GLACIER_IR");
             put("Amazon Glacier", "GLACIER");
             put("Glacier Deep Archive", "DEEP_ARCHIVE");
@@ -157,7 +158,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     private static String matchStorageClass(final AwsPricingCard price) {
         return Optional.ofNullable(price.getProduct().getAttributes().get(VOLUME_TYPE_KEY)).map(
                 PRICE_LIST_STORAGE_CLASS_MAPPING::get
-        ).orElse(null);
+        ).orElse(STANDARD_CLASS);
     }
 
     private StoragePricing convertAwsPricing(final String storageClass,
