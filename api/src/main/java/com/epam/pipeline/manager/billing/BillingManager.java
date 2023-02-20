@@ -341,7 +341,8 @@ public class BillingManager {
 
         try {
             return searchForGrouping(elasticsearchLowLevelClient, searchRequest, grouping.getCorrespondingField())
-                    .map(response -> getBillingChartInfoForGrouping(from, to, grouping, response, isLoadDetails, costDetailsRequest))
+                    .map(response -> getBillingChartInfoForGrouping(
+                            from, to, grouping, response, isLoadDetails, costDetailsRequest))
                     .filter(CollectionUtils::isNotEmpty)
                     .orElseGet(() -> getEmptyGroupingResponse(grouping));
         } catch (IOException e) {

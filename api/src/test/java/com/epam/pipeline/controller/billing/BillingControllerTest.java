@@ -53,6 +53,7 @@ public class BillingControllerTest extends AbstractControllerTest {
                                                 "\"interval\":\"1d\"," +
                                                 "\"grouping\":\"BILLING_CENTER\"," +
                                                 "\"loadDetails\":true," +
+                                                "\"order\": {\"field\": \"COST\", \"detailsAggregate\": \"DEFAULT\", \"desc\": true}," +
                                                 "\"pageSize\":5," +
                                                 "\"pageNum\":1}";
     private final BillingChartInfo billingChartInfo = BillingChartInfo.builder().cost(COST).build();

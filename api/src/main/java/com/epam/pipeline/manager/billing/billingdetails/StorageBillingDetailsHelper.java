@@ -2,8 +2,6 @@ package com.epam.pipeline.manager.billing.billingdetails;
 
 import com.epam.pipeline.entity.billing.BillingChartDetails;
 import com.epam.pipeline.entity.billing.StorageBillingChartDetails;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -16,21 +14,22 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class StorageBillingDetailsHelper {
+public final class StorageBillingDetailsHelper {
 
-    private final static List<String> S3_STORAGE_CLASSES =
+    private StorageBillingDetailsHelper() {}
+
+    private static final List<String> S3_STORAGE_CLASSES =
             Arrays.asList("ALL_STORAGE_CLASSES", "STANDARD", "GLACIER", "GLACIER_IR", "DEEP_ARCHIVE");
 
-    private final static String STORAGE_CLASS_COST_TEMPLATE = "%s_cost";
-    private final static String STORAGE_CLASS_USAGE_BYTES_TEMPLATE = "%s_usage_bytes";
-    private final static String STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE = "%s_ov_cost";
-    private final static String STORAGE_CLASS_OLD_VERSIONS_USAGE_BYTES_TEMPLATE = "%s_ov_usage_bytes";
-    private final static List<String> STORAGE_CLASS_AGGREGATION_TEMPLATES =
+    private static final String STORAGE_CLASS_COST_TEMPLATE = "%s_cost";
+    private static final String STORAGE_CLASS_USAGE_BYTES_TEMPLATE = "%s_usage_bytes";
+    private static final String STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE = "%s_ov_cost";
+    private static final String STORAGE_CLASS_OLD_VERSIONS_USAGE_BYTES_TEMPLATE = "%s_ov_usage_bytes";
+    private static final List<String> STORAGE_CLASS_AGGREGATION_TEMPLATES =
             Arrays.asList(STORAGE_CLASS_COST_TEMPLATE, STORAGE_CLASS_USAGE_BYTES_TEMPLATE,
                     STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE, STORAGE_CLASS_OLD_VERSIONS_USAGE_BYTES_TEMPLATE);
 
-    public final static List<String> STORAGE_CLASS_AGGREGATION_MASKS = Arrays.asList(
+    public static final List<String> STORAGE_CLASS_AGGREGATION_MASKS = Arrays.asList(
             "*_cost", "*_ov_cost", "*_usage_bytes", "*_ov_usage_bytes"
     );
 

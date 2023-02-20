@@ -16,14 +16,12 @@
 
 package com.epam.pipeline.entity.billing;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 @Setter
 @AllArgsConstructor
+@EqualsAndHashCode
 public class BillingGroupingSortOrder {
 
     public static final BillingGroupingSortOrder DEFAULT_SORT_ORDER = new BillingGroupingSortOrder(

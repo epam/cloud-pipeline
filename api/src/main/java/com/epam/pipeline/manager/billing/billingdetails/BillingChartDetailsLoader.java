@@ -6,15 +6,15 @@ import com.epam.pipeline.entity.billing.BillingGrouping;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@Service
-public class BillingChartDetailsLoader {
+public final class BillingChartDetailsLoader {
+
+    private BillingChartDetailsLoader() {}
 
     public static List<AggregationBuilder> buildQuery(final CostDetailsRequest request) {
         if (isStorageBillingDetailsShouldBeLoaded(request)) {
