@@ -130,7 +130,7 @@ def _create_user(user_name, user_pass, executor, python_exec):
     if is_windows():
         executor.execute('{python_exec} -c \\"'
                          'from pipeline.utils.account import create_user; '
-                         'create_user(\'{user_name}\', \'{user_pass}\', \'Users\', skip_existing=True)\\"'
+                         'create_user(\'{user_name}\', \'{user_pass}\', groups=\'Users\', skip_existing=True)\\"'
                          .format(python_exec=python_exec,
                                  user_name=user_name,
                                  user_pass=user_pass))

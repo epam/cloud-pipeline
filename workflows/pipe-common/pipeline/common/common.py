@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,10 @@ class CmdError(RuntimeError):
 
 def execute(command, logger=None):
     exit_code, out, err = execute_cmd_command_and_get_stdout_stderr(command, silent=True)
-    if out:
-        logger.info(out)
-    if err:
-        logger.warning(err)
+    if out and logger:
+        logger.debug(out)
+    if err and logger:
+        logger.debug(err)
     if exit_code:
         raise CmdError('Command has finished with exit code ' + str(exit_code))
     return out, err

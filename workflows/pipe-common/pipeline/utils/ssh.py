@@ -12,16 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import subprocess
 from abc import ABCMeta, abstractmethod
 
 import paramiko
 
+from pipeline.utils.plat import is_windows
 
-class SSHError(RuntimeError):
+
+class ExecutorError(RuntimeError):
     pass
 
 
-class CloudPipelineSSH:
+class SSHError(ExecutorError):
+    pass
+
+
+class CloudPipelineExecutor:
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -29,7 +37,7 @@ class CloudPipelineSSH:
         pass
 
 
-class LogSSH(CloudPipelineSSH):
+class LoggingExecutor(CloudPipelineExecutor):
 
     def __init__(self, logger, inner):
         self._logger = logger
@@ -39,7 +47,7 @@ class LogSSH(CloudPipelineSSH):
         self._inner.execute(command, user=user, logger=logger or self._logger)
 
 
-class UserSSH(CloudPipelineSSH):
+class UserExecutor(CloudPipelineExecutor):
 
     def __init__(self, user, inner):
         self._user = user
@@ -49,7 +57,7 @@ class UserSSH(CloudPipelineSSH):
         self._inner.execute(command, user=user or self._user, logger=logger)
 
 
-class HostSSH(CloudPipelineSSH):
+class RemoteHostExecutor(CloudPipelineExecutor):
 
     def __init__(self, host, private_key_path):
         self._host = host
@@ -71,3 +79,48 @@ class HostSSH(CloudPipelineSSH):
         if exit_code != 0:
             raise SSHError('Command has finished with exit code ' + str(exit_code))
         client.close()
+
+
+class LocalExecutor(CloudPipelineExecutor):
+
+    def __init__(self):
+        pass
+
+    def execute(self, command, user=None, logger=None):
+        exit_code, out, err = self._execute(command, user=user)
+        if out and logger:
+            logger.debug(out)
+        if err and logger:
+            logger.debug(err)
+        if exit_code != 0:
+            raise ExecutorError('Command has finished with exit code ' + str(exit_code))
+
+    def _execute(self, command, user=None):
+        stdout, stderr = self._get_stdout_and_stderr()
+        p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr,
+                             preexec_fn=self._execute_as_fn(user))
+        out, err = p.communicate()
+        return p.returncode, out, err
+
+    def _get_stdout_and_stderr(self):
+        return (None, None) if is_windows() else (subprocess.PIPE, subprocess.PIPE)
+
+    def _execute_as_fn(self, user):
+        if not user:
+            return None
+        if is_windows():
+            return None
+
+        user_uid, user_gid = user
+
+        def _execute_as():
+            os.setgid(user_gid)
+            os.setuid(user_uid)
+
+        return _execute_as
+
+# Temporary required for backward compatibility
+CloudPipelineSSH = CloudPipelineExecutor
+LogSSH = LoggingExecutor
+UserSSH = UserExecutor
+HostSSH = RemoteHostExecutor
