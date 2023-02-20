@@ -100,7 +100,11 @@ def sync_users():
             logger.debug('Resolved {} shared user details.'.format(len(shared_users_dict)))
 
             logger.debug('Loading shared users metadata...')
-            shared_users_metadata = api.load_all_metadata_efficiently(shared_users_dict.keys(), 'PIPELINE_USER')
+            try:
+                shared_users_metadata = api.load_all_metadata_efficiently(shared_users_dict.keys(), 'PIPELINE_USER')
+            except APIError:
+                logger.warning('Shared users metadata loading has failed.', trace=True)
+                shared_users_metadata = []
             logger.debug('Loaded {} shared users metadata.'.format(len(shared_users_metadata)))
 
             logger.debug('Merging shared users details and metadata...')
