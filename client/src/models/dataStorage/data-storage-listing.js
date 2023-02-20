@@ -16,11 +16,39 @@
 
 import {action, computed, observable} from 'mobx';
 import dataStorages from './DataStorages';
+import preferences from '../preferences/PreferencesLoad';
+import authenticatedUserInfo from '../user/WhoAmI';
 import DataStorageRequest from './DataStoragePage';
 import roleModel from '../../utils/roleModel';
+import MetadataLoad from '../metadata/MetadataLoad';
 
 const DEFAULT_DELIMITER = '/';
 const PAGE_SIZE = 40;
+
+/**
+ * Returns true if user is allowed to download from storage according to the
+ * `download.enabled` attribute value
+ * @param value
+ * @param userGroupsSet
+ * @returns {boolean}
+ */
+export function checkStorageDownloadEnabledAttributeValue (value, userGroupsSet) {
+  if (value === undefined) {
+    return true;
+  }
+  try {
+    if (/^(true|false)$/i.test(value)) {
+      return /^true$/i.test(value);
+    }
+    const array = value.split(/[,;\s]/g).map((item) => item.trim().toLowerCase());
+    if (Array.isArray(array)) {
+      return array.some((item) => userGroupsSet.has((item.toLowerCase())));
+    }
+  } catch (_) {
+    // empty
+  }
+  return true;
+}
 
 /**
  * @typedef {Object} CorrectPathOptions
@@ -238,6 +266,7 @@ class DataStorageListing {
    * "undefined" is returned if current path is root
    */
   @observable pagePath;
+  @observable downloadEnabled = false;
 
   /**
    * @param {DataStoragePagesOptions} options
@@ -402,7 +431,50 @@ class DataStorageListing {
       .catch((error) => console.warn(
         `Error fetching storage #${storageId || '<unknown>'}: ${error.message}`
       ));
+    this.initializeDownloadableAttribute();
     return true;
+  };
+
+  initializeDownloadableAttribute = () => {
+    this.downloadEnabled = false;
+    if (this.storageId) {
+      const metadata = new MetadataLoad(this.storageId, 'DATA_STORAGE');
+      Promise.all([
+        authenticatedUserInfo.fetchIfNeededOrWait(),
+        preferences.fetchIfNeededOrWait(),
+        metadata.fetch()
+      ])
+        .then(() => {
+          if (
+            authenticatedUserInfo.loaded &&
+            preferences.loaded &&
+            preferences.storageDownloadAttribute &&
+            metadata.loaded
+          ) {
+            const [currentStorageMetadata] = metadata.value || [];
+            if (
+              currentStorageMetadata &&
+              currentStorageMetadata.data &&
+              currentStorageMetadata.data[preferences.storageDownloadAttribute]
+            ) {
+              const userGroups = new Set([
+                ...(authenticatedUserInfo.value.groups || []).map((group) => group.toLowerCase()),
+                ...(authenticatedUserInfo.value.roles || []).map((role) => role.name.toLowerCase())
+              ]);
+              const value = currentStorageMetadata.data[preferences.storageDownloadAttribute].value;
+              return checkStorageDownloadEnabledAttributeValue(
+                value,
+                userGroups
+              );
+            }
+          }
+          return Promise.resolve(true);
+        })
+        .catch(() => {})
+        .then((result) => {
+          this.downloadEnabled = result;
+        });
+    }
   };
 
   @action

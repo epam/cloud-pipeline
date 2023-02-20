@@ -157,6 +157,16 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get facetedFilterDownloadFileTag () {
+    return this.getPreferenceValue('faceted.filter.download.file.tag');
+  }
+
+  @computed
+  get storageDownloadAttribute () {
+    return this.getPreferenceValue('ui.storage.download.attribute');
+  }
+
+  @computed
   get metadataSystemKeys () {
     const value = this.getPreferenceValue('misc.metadata.sensitive.keys');
     if (value) {

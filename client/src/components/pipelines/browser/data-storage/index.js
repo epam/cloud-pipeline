@@ -446,7 +446,8 @@ export default class DataStorage extends React.Component {
       pageElements: elements = [],
       pagePath: path,
       info,
-      storageId
+      storageId,
+      downloadEnabled: downloadable
     } = this.storage;
     if (!info) {
       return [];
@@ -494,7 +495,8 @@ export default class DataStorage extends React.Component {
             downloadable: item.type.toLowerCase() === 'file' &&
               !versions[version].deleteMarker &&
               !sensitive &&
-              (!archived || (latest ? fileRestored : versionRestored)),
+              (!archived || (latest ? fileRestored : versionRestored)) &&
+              downloadable,
             editable: versions[version].version === item.version &&
               writeAllowed &&
               !versions[version].deleteMarker,
@@ -531,7 +533,8 @@ export default class DataStorage extends React.Component {
         downloadable: i.type.toLowerCase() === 'file' &&
           !i.deleteMarker &&
           !sensitive &&
-          (!archived || restored),
+          (!archived || restored) &&
+          downloadable,
         editable: writeAllowed && !i.deleteMarker,
         shareAvailable: !i.deleteMarker && this.sharingEnabled,
         deletable: writeAllowed,

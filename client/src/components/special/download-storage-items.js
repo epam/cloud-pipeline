@@ -27,13 +27,14 @@ import GenerateDownloadUrls from '../../models/dataStorage/GenerateDownloadUrls'
  * @returns {Promise<string[]>}
  */
 async function downloadSingleStorageItems (items = []) {
+  console.log(items);
   if (items.length === 0) {
     return Promise.resolve([]);
   }
   const storageId = items[0].storageId;
   const request = new GenerateDownloadUrls(storageId);
   await request.send({
-    paths: items.map(item => item.path)
+    paths: items.map(item => item.downloadOverride || item.path)
   });
   if (request.error) {
     throw new Error(request.error);

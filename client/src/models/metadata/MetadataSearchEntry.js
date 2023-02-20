@@ -16,7 +16,7 @@
 
 import Remote from '../basic/Remote';
 
-export default class MetadataSearch extends Remote {
+export default class MetadataSearchEntry extends Remote {
   constructor (entityClass, key, value) {
     super();
     const query = [
@@ -26,6 +26,6 @@ export default class MetadataSearch extends Remote {
     ]
       .filter(Boolean)
       .join('&');
-    this.url = `/metadata/search?${query}`;
+    this.url = `/metadata/search/entry?${query}`;
   }
 }

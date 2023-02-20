@@ -59,6 +59,8 @@ import {SplitPanel} from '../special/splitPanel';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 import downloadStorageItems from '../special/download-storage-items';
+import getNotDownloadableStorages from './utilities/get-downloadable-storages';
+import roleModel from '../../utils/roleModel';
 
 function getDomainKey (domain) {
   return `domain-${domain || ''}`;
@@ -73,6 +75,7 @@ function parseDomainKey (key) {
 }
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
+@roleModel.authenticationInfo
 @inject((stores, props) => {
   const {location = {}} = props || {};
   const {query = {}} = location;
@@ -109,7 +112,8 @@ class FacetedSearch extends React.Component {
     searchToken: undefined,
     facetsToken: undefined,
     selectedItems: [],
-    showSelectionPreview: false
+    showSelectionPreview: false,
+    notDownloadableStorages: []
   }
 
   abortController;
@@ -117,6 +121,7 @@ class FacetedSearch extends React.Component {
   componentDidMount () {
     const {facetedFilters} = this.props;
     this.initAbortController();
+    this.fetchNotDownloadableStorages();
     if (facetedFilters) {
       const {
         query,
@@ -148,6 +153,15 @@ class FacetedSearch extends React.Component {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
       return preferences.displayNameTag;
+    }
+    return undefined;
+  }
+
+  @computed
+  get downloadFileTag () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return preferences.facetedFilterDownloadFileTag;
     }
     return undefined;
   }
@@ -360,6 +374,17 @@ class FacetedSearch extends React.Component {
     }
   };
 
+  fetchNotDownloadableStorages = () => {
+    const {
+      authenticatedUserInfo,
+      preferences
+    } = this.props;
+    getNotDownloadableStorages(authenticatedUserInfo, preferences)
+      .then((storages = []) => this.setState({
+        notDownloadableStorages: storages
+      }));
+  };
+
   setDefaultDomain = () => {
     const domains = this.filterDomains;
     this.setState({domain: domains[0]});
@@ -505,7 +530,7 @@ class FacetedSearch extends React.Component {
                 metadataFields: facets
                   .map(f => f.name)
                   .filter(facet => facet !== DocumentTypeFilterName)
-                  .concat(this.nameTag ? [this.nameTag] : [])
+                  .concat([this.nameTag, this.downloadFileTag].filter(Boolean))
               },
               scrollingParameters: continuousOptions,
               abortSignal: this.abortSignal
@@ -562,7 +587,10 @@ class FacetedSearch extends React.Component {
                 }
                 documents = documents.map(document => ({
                   ...document,
-                  nameOverride: document[this.nameTag]
+                  nameOverride: document[this.nameTag],
+                  downloadOverride: this.downloadFileTag
+                    ? document[this.downloadFileTag]
+                    : undefined
                 }));
                 if (actualFacetsToken !== facetsToken) {
                   state.facetsCount = facetsCount;
@@ -938,6 +966,7 @@ class FacetedSearch extends React.Component {
           onDeselectItem={this.onDeselectItem}
           selectedItems={this.state.selectedItems}
           dataStorageSharingEnabled={this.dataStorageSharingEnabled}
+          notDownloadableStorages={this.state.notDownloadableStorages}
           showResults={showResults}
           onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
           mode={presentationMode}
@@ -1056,6 +1085,7 @@ class FacetedSearch extends React.Component {
             extraColumns={this.extraColumns}
             onDownload={this.handleDownloadItems}
             dataStorageSharingEnabled={this.dataStorageSharingEnabled}
+            notDownloadableStorages={this.state.notDownloadableStorages}
           />
           {
             userDocumentTypes.length === 0 && (

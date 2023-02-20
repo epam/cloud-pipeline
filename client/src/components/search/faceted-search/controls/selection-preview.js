@@ -41,12 +41,20 @@ class SelectionPreview extends React.Component {
   };
 
   get actualSelection () {
-    const {items = [], preferences} = this.props;
+    const {
+      items = [],
+      preferences,
+      notDownloadableStorages = []
+    } = this.props;
     const {removedItems = []} = this.state;
     const notRemoved = items.filter(o => !removedItems
       .find(elasticItemUtilities.filterMatchingItemsFn(o))
     );
-    return elasticItemUtilities.filterDownloadableItems(notRemoved, preferences);
+    return elasticItemUtilities.filterDownloadableItems(
+      notRemoved,
+      preferences,
+      notDownloadableStorages
+    );
   }
 
   @computed
@@ -63,14 +71,22 @@ class SelectionPreview extends React.Component {
       .filter(item => item.type !== SearchItemTypes.NFSFile)
       .map(selection => ({
         storageId: selection.parentId,
-        path: selection.path,
+        path: selection.downloadOverride || selection.path,
         name: selection.name
       }));
   }
 
   get notAllowedToDownload () {
-    const {items = [], preferences} = this.props;
-    return items.filter((item) => !elasticItemUtilities.itemIsDownloadable(item, preferences));
+    const {
+      items = [],
+      preferences,
+      notDownloadableStorages = []
+    } = this.props;
+    return items.filter((item) => !elasticItemUtilities.itemIsDownloadable(
+      item,
+      preferences,
+      notDownloadableStorages
+    ));
   }
 
   componentDidMount () {
@@ -265,6 +281,7 @@ SelectionPreview.propTypes = {
   onClose: PropTypes.func,
   onClear: PropTypes.func,
   onDownload: PropTypes.func,
+  notDownloadableStorages: PropTypes.arrayOf(PropTypes.number),
   title: PropTypes.string,
   visible: PropTypes.bool
 };
