@@ -34,14 +34,14 @@ public final class StorageBillingCostDetailsHelper {
 
     private StorageBillingCostDetailsHelper() {}
 
-    private static final List<String> S3_STORAGE_CLASSES =
-            Arrays.asList("ALL_STORAGE_CLASSES", "STANDARD", "GLACIER", "GLACIER_IR", "DEEP_ARCHIVE");
+    public static final List<String> S3_STORAGE_CLASSES =
+            Arrays.asList("STANDARD", "GLACIER", "GLACIER_IR", "DEEP_ARCHIVE");
 
     private static final String STORAGE_CLASS_COST_TEMPLATE = "%s_cost";
     private static final String STORAGE_CLASS_USAGE_BYTES_TEMPLATE = "%s_usage_bytes";
     private static final String STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE = "%s_ov_cost";
     private static final String STORAGE_CLASS_OLD_VERSIONS_USAGE_BYTES_TEMPLATE = "%s_ov_usage_bytes";
-    private static final List<String> STORAGE_CLASS_AGGREGATION_TEMPLATES =
+    public static final List<String> STORAGE_CLASS_AGGREGATION_TEMPLATES =
             Arrays.asList(STORAGE_CLASS_COST_TEMPLATE, STORAGE_CLASS_USAGE_BYTES_TEMPLATE,
                     STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE, STORAGE_CLASS_OLD_VERSIONS_USAGE_BYTES_TEMPLATE);
 
@@ -83,7 +83,7 @@ public final class StorageBillingCostDetailsHelper {
     private static long fetchAggregationValue(final String template, final String field,
                                               final Aggregations aggregations) {
         final String costAggName = String.format(template, field.toLowerCase(Locale.ROOT));
-        return Optional.ofNullable(aggregations.<ParsedSum>get(costAggName))
+        return Optional.ofNullable(aggregations).map(agg -> agg.<ParsedSum>get(costAggName))
                 .map(ParsedSum::getValue).orElse(0.0).longValue();
     }
 
