@@ -29,13 +29,17 @@ import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceRate;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPricingCard;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsTerms;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.utils.StreamUtils;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,9 +47,10 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,7 +67,12 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     private static final String STORAGE = "Storage";
     private static final String STORAGE_CLASS_KEY = "storageClass";
     private static final String GENERAL_STORAGE = "General Purpose";
+    private static final String ARCHIVE_STORAGE = "Archive";
+    private static final String ARCHIVE_IR_STORAGE = "Archive Instant Retrieval";
     private static final String US_DOLLAR_CODE = "USD";
+    public static final String USAGETYPE = "usagetype";
+    public static final String TIMED_STORAGE_BYTE_HRS_USAGETYPE = ".*TimedStorage.*ByteHrs";
+    public static final String AMAZON_S3_SERVICE_NAME = "AmazonS3";
 
     private final String awsStorageServiceName;
     private final ObjectMapper mapper;
@@ -90,19 +100,44 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() {
-        return loadAwsPricingCards(awsStorageServiceName, priceLoadingMode).stream()
-            .map(this::extractEntryFromAwsPricing)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toMap(SimpleEntry::getKey,
-                                      SimpleEntry::getValue));
+        return StreamUtils.grouped(
+                loadAwsPricingCards(awsStorageServiceName, priceLoadingMode)
+                        .stream()
+                        .map(this::extractEntryFromAwsPricing)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .sorted(Comparator.comparing(Pair::getKey)),
+                    Comparator.comparing(Pair::getKey)
+        ).map(this::mergeRegionPrices)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 
-    private Optional<SimpleEntry<String, StoragePricing>> extractEntryFromAwsPricing(final AwsPricingCard price) {
+    private Optional<Pair<String, StoragePricing>> mergeRegionPrices(
+            final List<Pair<String, StoragePricing>> entries) {
+        return ListUtils.emptyIfNull(entries).stream().findAny().map(Map.Entry::getKey).map(r -> {
+            final StoragePricing pricing = new StoragePricing();
+            entries.stream()
+                    .map(Map.Entry::getValue)
+                    .flatMap(storagePricing -> storagePricing.getPrices().stream())
+                    .forEach(pricing::addPrice);
+            return ImmutablePair.of(r, pricing);
+        });
+    }
+
+    private Optional<Pair<String, StoragePricing>> extractEntryFromAwsPricing(final AwsPricingCard price) {
         final String regionName = price.getProduct().getAttributes().get(LOCATION_KEY);
         return getRegionFromFullLocation(regionName)
-            .map(region -> new SimpleEntry<>(region.getName(),
-                                             convertAwsPricing(price.getTerms().getOnDemand())));
+            .map(region -> {
+                final StoragePricing storagePricing = convertAwsPricing(price.getTerms().getOnDemand());
+                if (CollectionUtils.isEmpty(storagePricing.getPrices())) {
+                    log.warn(String.format("Region [%s] doesn't have price rates specified in USD, will be skipped.",
+                                           region.getName()));
+                    return null;
+                }
+                return ImmutablePair.of(region.getName(), storagePricing);
+            });
     }
 
     private StoragePricing convertAwsPricing(final Map<String, AwsPriceDimensions> allPrices) {
@@ -112,22 +147,26 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             .map(Map::values)
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
-        rates.forEach(rate -> {
-            final BigDecimal priceGb = new BigDecimal(rate.getPricePerUnit().get(US_DOLLAR_CODE),
-                                                      new MathContext(PRECISION))
-                .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
-            final Long beginRange = rate.getBeginRange() * BYTES_TO_GB;
-            final Long endRange = rate.getEndRange().equals(Long.MAX_VALUE)
-                                  ? Long.MAX_VALUE
-                                  : rate.getEndRange() * BYTES_TO_GB;
-            final StoragePricing.StoragePricingEntity pricingEntity =
-                new StoragePricing.StoragePricingEntity(beginRange, endRange, priceGb);
-            pricing.addPrice(pricingEntity);
-        });
+        rates.stream()
+            .filter(rate -> MapUtils.isNotEmpty(rate.getPricePerUnit()))
+            .filter(rate -> rate.getPricePerUnit().containsKey(US_DOLLAR_CODE))
+            .forEach(rate -> {
+                final BigDecimal priceGb = new BigDecimal(rate.getPricePerUnit().get(US_DOLLAR_CODE),
+                        new MathContext(PRECISION))
+                        .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
+                final Long beginRange = rate.getBeginRange() * BYTES_TO_GB;
+                final Long endRange = rate.getEndRange().equals(Long.MAX_VALUE)
+                        ? Long.MAX_VALUE
+                        : rate.getEndRange() * BYTES_TO_GB;
+                final StoragePricing.StoragePricingEntity pricingEntity =
+                        new StoragePricing.StoragePricingEntity(beginRange, endRange, priceGb);
+                pricing.addPrice(pricingEntity);
+            });
         return pricing;
     }
 
-    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName, final PriceLoadingMode mode) {
+    private List<AwsPricingCard> loadAwsPricingCards(final String awsStorageServiceName,
+                                                     final PriceLoadingMode mode) {
         switch (mode) {
             case API:
                 return getAwsPricingCardsViaApi(awsStorageServiceName);
@@ -140,44 +179,90 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     }
 
     private List<AwsPricingCard> getAwsPricingCardsViaApi(final String awsStorageServiceName) {
-        final List<AwsPricingCard> allPrices = new ArrayList<>();
-        final Filter filter = new Filter();
-        filter.setType(TERM_MATCH_FILTER);
-        filter.setField(PRODUCT_FAMILY_KEY);
-        filter.setValue(STORAGE);
-        filter.setField(STORAGE_CLASS_KEY);
-        filter.setValue(GENERAL_STORAGE);
+        final List<Pair<String, String>> commonFilters = new ArrayList<>();
+        if (AMAZON_S3_SERVICE_NAME.equals(awsStorageServiceName)) {
+            commonFilters.add(ImmutablePair.of(PRODUCT_FAMILY_KEY, STORAGE));
+        }
+        return Stream.of(
+                getAwsPricingCardsWithFiltersViaApi(
+                    awsStorageServiceName,
+                    ListUtils.sum(
+                        commonFilters, Collections.singletonList(ImmutablePair.of(STORAGE_CLASS_KEY, GENERAL_STORAGE))
+                    )
+                ).stream(),
+                getAwsPricingCardsWithFiltersViaApi(
+                    awsStorageServiceName,
+                    ListUtils.sum(
+                        commonFilters,
+                        Collections.singletonList(ImmutablePair.of(STORAGE_CLASS_KEY, ARCHIVE_STORAGE))
+                    )
+                ).stream(),
+                getAwsPricingCardsWithFiltersViaApi(
+                    awsStorageServiceName,
+                    ListUtils.sum(
+                        commonFilters,
+                        Collections.singletonList(ImmutablePair.of(STORAGE_CLASS_KEY, ARCHIVE_IR_STORAGE))
+                    )
+                ).stream()
+        ).reduce(Stream::concat)
+        .orElse(Stream.empty())
+        .filter(
+                price -> price.getProduct().getAttributes()
+                        .get(USAGETYPE).matches(TIMED_STORAGE_BYTE_HRS_USAGETYPE)
+        ).collect(Collectors.toList());
+    }
 
+    private List<AwsPricingCard> getAwsPricingCardsWithFiltersViaApi(final String awsStorageServiceName,
+                                                                     final List<Pair<String, String>> filters) {
+        final List<AwsPricingCard> allPrices = new ArrayList<>();
         String nextToken = StringUtils.EMPTY;
 
         final AWSPricing awsPricingService = AWSPricingClientBuilder
-            .standard()
-            .withRegion(Regions.US_EAST_1)
-            .build();
+                .standard()
+                .withRegion(Regions.US_EAST_1)
+                .build();
         do {
             final GetProductsRequest request = new GetProductsRequest()
-                .withServiceCode(awsStorageServiceName)
-                .withFilters(filter)
-                .withNextToken(nextToken)
-                .withFormatVersion(AWS_PRICE_FORMAT_VERSION);
+                    .withServiceCode(awsStorageServiceName)
+                    .withFilters(
+                        filters.stream()
+                            .map(f -> new Filter()
+                                    .withType(TERM_MATCH_FILTER)
+                                    .withField(f.getKey())
+                                    .withValue(f.getValue())
+                            ).collect(Collectors.toList())
+                    ).withNextToken(nextToken)
+                    .withFormatVersion(AWS_PRICE_FORMAT_VERSION);
 
             final GetProductsResult result = awsPricingService.getProducts(request);
             result.getPriceList().stream()
-                .map(this::parseAwsPricingCard)
-                .forEach(allPrices::add);
+                    .map(this::parseAwsPricingCard)
+                    .forEach(allPrices::add);
             nextToken = result.getNextToken();
         } while (nextToken != null);
         return allPrices;
     }
+
 
     private List<AwsPricingCard> getAwsPricingCardsFromJson() {
         try {
             final String jsonPriceList = readStringFromURL(priceLoadingEndpoint);
             final AwsPriceList fullPriceList = mapper.readValue(jsonPriceList, AwsPriceList.class);
             return fullPriceList.getProducts().values().stream()
-                .filter(awsProduct -> STORAGE.equals(awsProduct.getProductFamily()))
-                .filter(awsProduct -> GENERAL_STORAGE.equals(awsProduct.getAttributes().get(STORAGE_CLASS_KEY)))
-                .map(awsProduct -> {
+                .filter(awsProduct -> {
+                    if (awsStorageServiceName.equals(AMAZON_S3_SERVICE_NAME)) {
+                        return STORAGE.equals(awsProduct.getProductFamily());
+                    }
+                    return true;
+                })
+                .filter(awsProduct -> {
+                    final String storageClass = awsProduct.getAttributes().get(STORAGE_CLASS_KEY);
+                    return GENERAL_STORAGE.equals(storageClass) || ARCHIVE_STORAGE.equals(storageClass)
+                            || ARCHIVE_IR_STORAGE.equals(storageClass);
+                }).filter(awsProduct -> {
+                    final String usageType = awsProduct.getAttributes().get(USAGETYPE);
+                    return usageType.matches(TIMED_STORAGE_BYTE_HRS_USAGETYPE);
+                }).map(awsProduct -> {
                     final AwsPricingCard card = new AwsPricingCard();
                     card.setProduct(awsProduct);
                     card.setServiceCode(fullPriceList.getOfferCode());
@@ -197,7 +282,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         }
     }
 
-    public String readStringFromURL(String url) throws IOException {
+    String readStringFromURL(final String url) throws IOException {
         try (InputStream inputStream = new URL(url).openStream()) {
             return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         }
