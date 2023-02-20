@@ -60,6 +60,8 @@ import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.action.search.RestSearchAction;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -332,12 +334,16 @@ public class BillingManager {
         searchSource.aggregation(fieldAgg);
         searchSource.aggregation(billingHelper.aggregateCostSum());
 
+        final BoolQueryBuilder query = billingHelper.queryByDateAndFilters(from, to, filters)
+                // Apply additional filter to query to filter out docs that don't have value to sort by
+                .filter(QueryBuilders.boolQuery().must(QueryBuilders.existsQuery(aggToOrderBy.getKey())));
+
         final SearchRequest searchRequest = new SearchRequest()
                 .indicesOptions(IndicesOptions.strictExpandOpen())
                 .indices(billingHelper.indicesByDate(from, to))
                 .source(searchSource
                         .size(0)
-                        .query(billingHelper.queryByDateAndFilters(from, to, filters)));
+                        .query(query));
 
         try {
             return searchForGrouping(elasticsearchLowLevelClient, searchRequest, grouping.getCorrespondingField())
