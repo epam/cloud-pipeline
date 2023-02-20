@@ -247,7 +247,7 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getEditFooter = () => {
-    if (roleModel.writeAllowed(this.props.dataStorage)) {
+    if (roleModel.isOwner(this.props.dataStorage)) {
       return (
         <Row type="flex" justify="space-between">
           <Col span={12}>
@@ -281,7 +281,7 @@ export class DataStorageEditDialog extends React.Component {
         <Row type="flex" justify="end">
           <Button
             id="edit-storage-dialog-cancel-button"
-            onClick={this.props.onCancel}>Cancel</Button>
+            onClick={this.props.onCancel}>CANCEL</Button>
         </Row>
       );
     }
@@ -358,7 +358,7 @@ export class DataStorageEditDialog extends React.Component {
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
     const isReadOnly = this.props.dataStorage
-      ? this.props.dataStorage.locked || !roleModel.writeAllowed(this.props.dataStorage)
+      ? this.props.dataStorage.locked || !roleModel.isOwner(this.props.dataStorage)
       : false;
     const modalFooter = this.props.pending ? false : (
       this.props.dataStorage ? this.getEditFooter() : this.getCreateFooter()
