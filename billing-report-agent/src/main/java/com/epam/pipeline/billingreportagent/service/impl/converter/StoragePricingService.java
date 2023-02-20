@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -98,10 +97,10 @@ public class StoragePricingService {
                     .filter(price -> !BigDecimal.ZERO.equals(price))
                     .max(Comparator.naturalOrder()).orElse(null);
             if (sc == null || maxPrice == null) {
-                return null;
+                throw new IllegalStateException(String.format("No %s storage prices loaded!",
+                        priceListLoader.getProvider().name()));
             }
             return ImmutablePair.of(sc, maxPrice);
-        }).filter(Objects::nonNull)
-        .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        }).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 }
