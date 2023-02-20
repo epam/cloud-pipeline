@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.billing;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -24,11 +25,12 @@ import org.apache.commons.lang3.tuple.Pair;
 
 @Setter
 @AllArgsConstructor
+@EqualsAndHashCode
 public class BillingGroupingSortOrder {
 
     public static final BillingGroupingSortOrder DEFAULT_SORT_ORDER = new BillingGroupingSortOrder(
             BillingGroupingSortOrder.BillingGroupingSortField.COST,
-            BillingDetailsOrderAggregate.DEFAULT,
+            BillingGroupingOrderAggregate.DEFAULT,
             true
     );
 
@@ -39,7 +41,7 @@ public class BillingGroupingSortOrder {
     }
 
     private BillingGroupingSortField field;
-    private BillingDetailsOrderAggregate detailsAggregate;
+    private BillingGroupingOrderAggregate detailsAggregate;
     private boolean desc;
 
     public Pair<String, String> getAggregateToOrderBy() {
@@ -49,12 +51,12 @@ public class BillingGroupingSortOrder {
             case USAGE:
                 return detailsAggregate.getUsageAggregate();
             default:
-                return BillingDetailsOrderAggregate.DEFAULT.getCostAggregate();
+                return BillingGroupingOrderAggregate.DEFAULT.getCostAggregate();
         }
 
     }
 
-    public BillingDetailsOrderAggregate getDetailsAggregate() {
+    public BillingGroupingOrderAggregate getDetailsAggregate() {
         return detailsAggregate;
     }
 

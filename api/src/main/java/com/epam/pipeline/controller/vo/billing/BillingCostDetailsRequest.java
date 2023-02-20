@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.billing;
+package com.epam.pipeline.controller.vo.billing;
 
-public interface BillingChartDetails {
+import com.epam.pipeline.entity.billing.BillingGrouping;
+import lombok.Builder;
+import lombok.Value;
 
-    BillingChartCostDetailsType getType();
+import java.util.List;
+import java.util.Map;
+
+@Value
+@Builder
+public class BillingCostDetailsRequest {
+
+    BillingGrouping grouping;
+    Map<String, List<String>> filters;
+    boolean enabled;
+
 }
