@@ -722,6 +722,8 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_TOOL_ENABLED = new ObjectPreference<>(
             "ui.run.maintenance.tool.enabled", null, new TypeReference<Map<String, Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final StringPreference UI_STORAGE_DOWNLOAD_ATTRIBUTE = new StringPreference(
+            "ui.storage.download.attribute", "download_allowed_roles", UI_GROUP, pass, true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
@@ -734,6 +736,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DOWNLOAD = new ObjectPreference<>(
             "faceted.filter.download", null, new TypeReference<Map<String, Object>>() {},
             FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+
+    public static final StringPreference FACETED_FILTER_DOWNLOAD_FILE_TAG = new StringPreference(
+            "faceted.filter.download.file.tag", "download_url", FACETED_FILTER_GROUP, pass, true);
+
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
