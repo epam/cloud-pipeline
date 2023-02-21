@@ -26,6 +26,7 @@ import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.billing.BillingGroupingOrderAggregate;
 import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
@@ -306,10 +307,10 @@ public class BillingManager {
                                                    final boolean isLoadDetails,
                                                    final BillingCostDetailsRequest costDetailsRequest) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
-        Assert.isTrue(order.getDetailsAggregate().getGroup() == null ||
-                        grouping.equals(order.getDetailsAggregate().getGroup()),
-                String.format("Grouping: %s and Grouping Order: %s, don't match.",
-                        grouping.name(), order.getDetailsAggregate().name()));
+        final BillingGroupingOrderAggregate orderAggregate = order.getOrderAggregate();
+        Assert.isTrue(orderAggregate.getGroup() == null || grouping.equals(orderAggregate.getGroup()),
+                String.format(
+                        "Grouping: %s and Grouping Order: %s, don't match.", grouping.name(), orderAggregate.name()));
         final Pair<String, String> aggToOrderBy = order.getAggregateToOrderBy();
         final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
             .field(grouping.getCorrespondingField())
@@ -336,7 +337,7 @@ public class BillingManager {
 
         final BoolQueryBuilder query = billingHelper.queryByDateAndFilters(from, to, filters)
                 // Apply additional filter to query to filter out docs that don't have value to sort by
-                .filter(QueryBuilders.boolQuery().must(QueryBuilders.existsQuery(aggToOrderBy.getKey())));
+                .filter(QueryBuilders.boolQuery().must(QueryBuilders.existsQuery(aggToOrderBy.getValue())));
 
         final SearchRequest searchRequest = new SearchRequest()
                 .indicesOptions(IndicesOptions.strictExpandOpen())

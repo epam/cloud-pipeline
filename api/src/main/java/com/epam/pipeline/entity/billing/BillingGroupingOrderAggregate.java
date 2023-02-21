@@ -38,7 +38,7 @@ public enum BillingGroupingOrderAggregate {
             getSortOrder("deep_archive_total_cost"), getSortOrder("deep_archive_total_usage_bytes"));
 
     private static ImmutablePair<String, String> getCostSortOrder() {
-        return ImmutablePair.of("c_so", "cost");
+        return ImmutablePair.of("cost_sort_order", "cost");
     }
 
     private static ImmutablePair<String, String> getSortOrder(String field) {

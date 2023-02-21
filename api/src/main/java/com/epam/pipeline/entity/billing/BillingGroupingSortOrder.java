@@ -31,7 +31,7 @@ public class BillingGroupingSortOrder {
     public static final BillingGroupingSortOrder DEFAULT_SORT_ORDER = new BillingGroupingSortOrder(
             BillingGroupingSortOrder.BillingGroupingSortField.COST,
             BillingGroupingOrderAggregate.DEFAULT,
-            true
+            false
     );
 
     @Getter
@@ -41,23 +41,23 @@ public class BillingGroupingSortOrder {
     }
 
     private BillingGroupingSortField field;
-    private BillingGroupingOrderAggregate detailsAggregate;
+    private BillingGroupingOrderAggregate orderAggregate;
     private boolean desc;
 
     public Pair<String, String> getAggregateToOrderBy() {
         switch (field) {
             case COST:
-                return detailsAggregate.getCostAggregate();
+                return orderAggregate.getCostAggregate();
             case USAGE:
-                return detailsAggregate.getUsageAggregate();
+                return orderAggregate.getUsageAggregate();
             default:
                 return BillingGroupingOrderAggregate.DEFAULT.getCostAggregate();
         }
 
     }
 
-    public BillingGroupingOrderAggregate getDetailsAggregate() {
-        return detailsAggregate;
+    public BillingGroupingOrderAggregate getOrderAggregate() {
+        return orderAggregate;
     }
 
     public boolean isDesc() {
