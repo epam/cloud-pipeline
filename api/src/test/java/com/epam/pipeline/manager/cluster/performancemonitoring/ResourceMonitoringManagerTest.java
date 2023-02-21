@@ -25,6 +25,8 @@ import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -58,6 +60,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -107,6 +110,9 @@ public class ResourceMonitoringManagerTest {
         Collections.singletonMap(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
     private static final Map<String, String> PRESSURE_TAGS =
         Collections.singletonMap(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
+    private static final int LONG_PAUSED_ACTION_TIMEOUT = 30;
+    public static final long PAUSED_RUN_ID = 234L;
+    public static final int ONE_HOUR = 60;
 
     @InjectMocks
     private ResourceMonitoringManager resourceMonitoringManager;
@@ -183,6 +189,8 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(IdleRunAction.NOTIFY.name());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
                 .thenReturn(LongPausedRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES))
+                .thenReturn(LONG_PAUSED_ACTION_TIMEOUT);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");
@@ -659,6 +667,49 @@ public class ResourceMonitoringManagerTest {
         assertThat(spyPressuredRun.getTags(), CoreMatchers.is(PRESSURE_TAGS));
         verifyZeroInteractionWithTagsMethods(spyIdledRun, UTILIZATION_LEVEL_LOW);
         verifyZeroInteractionWithTagsMethods(spyPressuredRun, UTILIZATION_LEVEL_HIGH);
+    }
+
+    @Test
+    public void shouldNotifyPausedRunBeforeActionTimeout() {
+        final PipelineRun longPausedRun = getPausedRun(1);
+        final List<PipelineRun> runs = Collections.singletonList(longPausedRun);
+        when(pipelineRunManager.loadRunsByStatuses(any())).thenReturn(runs);
+        when(pipelineRunManager.loadPipelineRunWithStatuses(eq(PAUSED_RUN_ID)))
+                .thenReturn(longPausedRun);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
+                .thenReturn(LongPausedRunAction.STOP.name());
+
+        resourceMonitoringManager.monitorResourceUsage();
+        verify(notificationManager, never()).notifyLongPausedRunsBeforeStop(eq(runs));
+        verify(notificationManager, times(1)).notifyLongPausedRuns(eq(runs));
+    }
+
+    @Test
+    public void shouldStopPausedRunAfterTimeout() {
+        final PipelineRun longPausedRun = getPausedRun(LONG_PAUSED_ACTION_TIMEOUT + 1);
+        final List<PipelineRun> runs = Collections.singletonList(longPausedRun);
+        when(pipelineRunManager.loadRunsByStatuses(any())).thenReturn(runs);
+        when(pipelineRunManager.loadPipelineRunWithStatuses(eq(PAUSED_RUN_ID)))
+                .thenReturn(longPausedRun);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
+                .thenReturn(LongPausedRunAction.STOP.name());
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager, times(1)).notifyLongPausedRunsBeforeStop(eq(runs));
+    }
+
+    private static PipelineRun getPausedRun(final int pausedPeriod) {
+        final PipelineRun longPausedRun = new PipelineRun();
+        longPausedRun.setId(PAUSED_RUN_ID);
+        longPausedRun.setStatus(TaskStatus.PAUSED);
+        final LocalDateTime currentTime = DateUtils.nowUTC();
+        final ArrayList<RunStatus> statuses = new ArrayList<>();
+        statuses.add(new RunStatus(PAUSED_RUN_ID, TaskStatus.RUNNING, "", currentTime.minusMinutes(ONE_HOUR)));
+        statuses.add(new RunStatus(PAUSED_RUN_ID, TaskStatus.PAUSED, "",
+                currentTime.minusMinutes(pausedPeriod)));
+        longPausedRun.setRunStatuses(statuses);
+        return longPausedRun;
     }
 
     private void setTagsAndLastNotificationTimeOfRun(final PipelineRun run, final Map<String, String> tags,
