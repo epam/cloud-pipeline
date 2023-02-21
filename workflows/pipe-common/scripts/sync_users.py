@@ -36,6 +36,8 @@ def sync_users():
     shared_dir = os.getenv('SHARED_ROOT', '/common')
     root_home_dir = os.getenv('CP_CAP_SYNC_USERS_HOME_DIR', os.path.join(shared_dir, 'home'))
     uid_seed_default = int(os.getenv('CP_CAP_UID_SEED', '70000'))
+    user_name_case = os.getenv('CP_CAP_USER_NAME_CASE', 'default')
+    user_name_metadata_key = os.getenv('CP_CAP_USER_NAME_METADATA_KEY', 'local_user_name')
     sync_timeout = int(os.getenv('CP_CAP_SYNC_USERS_TIMEOUT_SECONDS', '60'))
     logging_directory = os.getenv('CP_CAP_SYNC_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
     logging_level = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL', 'ERROR')
@@ -51,6 +53,8 @@ def sync_users():
     logger = LevelLogger(level=logging_level, inner=logger)
     logger = LocalLogger(inner=logger)
 
+    logger.info('Initiating users synchronisation...')
+
     executor = LocalExecutor()
     executor = LoggingExecutor(logger=logger, inner=executor)
 
@@ -59,48 +63,76 @@ def sync_users():
             time.sleep(sync_timeout)
             logger.info('Starting users synchronization...')
 
-            logger.info('Loading preferences...')
+            logger.debug('Loading preferences...')
             try:
-                uid_seed = int(api.get_preference_efficiently('launch.uid.seed') or uid_seed_default)
+                uid_seed = int(api.get_preference_value('launch.uid.seed') or uid_seed_default)
             except APIError:
                 uid_seed = uid_seed_default
-            logger.info('Loaded uid seed: {}.', uid_seed)
+            logger.debug('Loaded uid seed: {}.', uid_seed)
 
-            logger.info('Loading shared users and groups...')
-            run_users, run_groups = _get_run_shared_users_and_groups(api, run_id)
-            shared_users = set()
-            shared_users.update(run_users)
-            shared_users.update(_get_group_users(api, run_groups))
-            logger.info('Loaded {} shared users.'.format(len(shared_users)))
-            logger.debug('Loaded shared users: {}'.format(shared_users))
+            logger.debug('Loading local users...')
+            local_user_names = set(_get_local_user_names())
+            logger.info('Loaded {} local users.'.format(len(local_user_names)))
+            logger.debug('Loaded local users: {}'.format(local_user_names))
 
-            logger.info('Loading local users...')
-            local_users = set(_get_local_users())
-            logger.info('Loaded {} local users.'.format(len(local_users)))
-            logger.debug('Loaded local users: {}'.format(local_users))
+            logger.debug('Loading shared users and groups...')
+            run_user_names, run_group_names = _get_run_shared_users_and_groups_names(api, run_id)
+            shared_user_names = set()
+            shared_user_names.update(run_user_names)
+            shared_user_names.update(_get_group_user_names(api, run_group_names))
+            logger.info('Loaded {} shared users.'.format(len(shared_user_names)))
+            logger.debug('Loaded shared users: {}'.format(shared_user_names))
 
-            logger.info('Loading user details...')
-            user_details = {user['userName']: user for user in api.load_users()}
-            logger.info('Loaded {} user details.'.format(len(user_details.keys())))
+            logger.debug('Loading user details...')
+            all_users = api.load_users()
+            logger.debug('Loaded {} user details.'.format(len(all_users)))
 
-            users_to_create = shared_users - local_users
-            logger.info('Creating {} users...'.format(len(users_to_create)))
-            logger.debug('Creating users {}...'.format(users_to_create))
+            logger.debug('Resolving shared user details...')
+            shared_users_dict = {}
+            for user in all_users:
+                user_id = user.get('id')
+                user_name = user.get('userName')
+                if not user_id or not user_name:
+                    continue
+                if user_name not in shared_user_names:
+                    continue
+                shared_users_dict[user_id] = user
+            logger.debug('Resolved {} shared user details.'.format(len(shared_users_dict)))
 
-            for user in users_to_create:
+            logger.debug('Loading shared users metadata...')
+            try:
+                shared_users_metadata = api.load_all_metadata_efficiently(shared_users_dict.keys(), 'PIPELINE_USER')
+            except APIError:
+                logger.warning('Shared users metadata loading has failed.', trace=True)
+                shared_users_metadata = []
+            logger.debug('Loaded {} shared users metadata.'.format(len(shared_users_metadata)))
+
+            logger.debug('Merging shared users details and metadata...')
+            for metadata_entry in shared_users_metadata:
+                user_id = metadata_entry.get('entity', {}).get('entityId', 0)
+                user_metadata = metadata_entry.get('data', {})
+                user = shared_users_dict.get(user_id, {})
+                user['userLocalName'] = user_metadata.get(user_name_metadata_key, {}).get('value')
+            logger.debug('Merged {} shared users details and metadata.'.format(len(shared_users_metadata)))
+
+            logger.debug('Checking {} shared users existence...'.format(len(shared_users_dict)))
+            for user in shared_users_dict.values():
+                user_id = user['id']
+                user_login_name = user['userName']
+                user_local_name = user.get('userLocalName')
+                user_name = user_local_name or _resolve_user_name(user_login_name, user_name_case)
+                if user_name in local_user_names:
+                    continue
                 try:
-                    user_id = user_details.get(user, {}).get('id', 0)
-                    if not user_id:
-                        logger.warning('Skipping {} user creation since the corresponding details have not been found.')
-                        continue
-                    user_uid, user_gid, user_home_dir = _create_account(user, user_id, uid_seed, root_home_dir,
+                    logger.info('Creating {} ({}) user...'.format(user_name, user_login_name))
+                    user_uid, user_gid, user_home_dir = _create_account(user_name, user_id, uid_seed, root_home_dir,
                                                                         executor, logger)
-                    _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logger)
+                    _configure_ssh_keys(user_name, user_uid, user_gid, user_home_dir, executor, logger)
                 except KeyboardInterrupt:
                     logger.warning('Interrupted.')
                     raise
                 except Exception:
-                    logger.warning('User {} creation has failed.'.format(user), trace=True)
+                    logger.warning('User {} ({}) creation has failed.'.format(user_name, user_login_name), trace=True)
             logger.info('Finishing users synchronization...')
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
@@ -112,15 +144,16 @@ def sync_users():
             raise
 
 
-def _get_run_shared_users_and_groups(api, run_id):
+def _get_run_shared_users_and_groups_names(api, run_id):
     run_sids = api.load_run_efficiently(run_id).get('runSids', [])
-    return reduce(
-        lambda (us, gs), sid: (us + [sid['name']], gs) if sid['isPrincipal'] else (us, gs + [sid['name']]),
-        run_sids,
-        ([], []))
+
+    def _split_by_principality(acc, sid):
+        return (acc[0] + [sid['name']], acc[1]) if sid['isPrincipal'] else (acc[0], acc[1] + [sid['name']])
+
+    return reduce(_split_by_principality, run_sids, ([], []))
 
 
-def _get_group_users(api, run_groups):
+def _get_group_user_names(api, run_groups):
     groups = (api.load_roles() or []) if run_groups else []
     for group in groups:
         group_id = group.get('id')
@@ -132,13 +165,22 @@ def _get_group_users(api, run_groups):
             yield group_user['userName']
 
 
-def _get_local_users():
+def _get_local_user_names():
     with open('/etc/passwd', 'r') as f:
         lines = f.readlines()
     for line in lines:
         stripped_line = line.strip()
         if stripped_line:
             yield stripped_line.split(':')[0]
+
+
+def _resolve_user_name(user_name, user_name_case):
+    if user_name_case == 'lower':
+        return user_name.lower()
+    elif user_name_case == 'upper':
+        return user_name.upper()
+    else:
+        return user_name
 
 
 def _create_account(user, user_id, uid_seed, root_home_dir, executor, logger):
