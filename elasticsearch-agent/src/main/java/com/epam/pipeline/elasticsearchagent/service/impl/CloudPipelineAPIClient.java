@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
@@ -82,6 +83,10 @@ public class CloudPipelineAPIClient {
 
     public List<AbstractDataStorage> loadAllDataStorages() {
         return executor.execute(cloudPipelineAPI.loadAllDataStorages());
+    }
+
+    public List<DataStorageWithShareMount> loadAllDataStoragesWithMounts() {
+        return executor.execute(cloudPipelineAPI.loadAllDataStoragesWithMounts());
     }
 
     public AbstractDataStorage loadDataStorage(final Long id) {
