@@ -159,24 +159,39 @@ export class DataStorageEditDialog extends React.Component {
       : this.props.isNfsMount;
   }
 
+  get userPermissions () {
+    const {dataStorage} = this.props;
+    if (!dataStorage) {
+      return {read: false, write: false};
+    }
+    const readAllowed = roleModel.readAllowed(dataStorage);
+    const writeAllowed = roleModel.writeAllowed(dataStorage);
+    return {
+      read: (
+        roleModel.isOwner(dataStorage) ||
+        roleModel.isManager.archiveManager(this) ||
+        roleModel.isManager.archiveReader(this)
+      ) && readAllowed,
+      write: (
+        roleModel.isOwner(dataStorage) ||
+        roleModel.isManager.archiveManager(this)
+      ) && writeAllowed
+    };
+  }
+
   @computed
   get transitionRulesAvailable () {
     const {
       dataStorage
     } = this.props;
-    return dataStorage &&
+    return (this.userPermissions.read || this.userPermissions.write) &&
+      dataStorage &&
       dataStorage.id &&
       /^s3$/i.test(dataStorage.storageType || dataStorage.type);
   }
 
-  @computed
   get transitionRulesReadOnly () {
-    const {dataStorage, authenticatedUserInfo} = this.props;
-    if (authenticatedUserInfo.loaded) {
-      const isAdmin = authenticatedUserInfo.value.admin;
-      return !isAdmin && !roleModel.isOwner(dataStorage);
-    }
-    return true;
+    return this.userPermissions.read && !this.userPermissions.write;
   }
 
   @computed
@@ -232,7 +247,7 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getEditFooter = () => {
-    if (roleModel.writeAllowed(this.props.dataStorage)) {
+    if (roleModel.isOwner(this.props.dataStorage)) {
       return (
         <Row type="flex" justify="space-between">
           <Col span={12}>
@@ -266,7 +281,7 @@ export class DataStorageEditDialog extends React.Component {
         <Row type="flex" justify="end">
           <Button
             id="edit-storage-dialog-cancel-button"
-            onClick={this.props.onCancel}>Cancel</Button>
+            onClick={this.props.onCancel}>CANCEL</Button>
         </Row>
       );
     }
@@ -343,7 +358,7 @@ export class DataStorageEditDialog extends React.Component {
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
     const isReadOnly = this.props.dataStorage
-      ? this.props.dataStorage.locked || !roleModel.writeAllowed(this.props.dataStorage)
+      ? this.props.dataStorage.locked || !roleModel.isOwner(this.props.dataStorage)
       : false;
     const modalFooter = this.props.pending ? false : (
       this.props.dataStorage ? this.getEditFooter() : this.getCreateFooter()

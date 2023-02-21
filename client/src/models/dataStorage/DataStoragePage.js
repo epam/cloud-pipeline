@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,20 @@ class DataStoragePage extends Remote {
   path;
   type;
 
-  constructor (id, path, showVersion, pageSize, marker) {
+  constructor (
+    id,
+    path,
+    showVersion,
+    showArchives,
+    pageSize,
+    marker
+  ) {
     super();
     this.id = id;
     this.path = path;
     this.pageSize = pageSize;
     this.showVersion = showVersion;
+    this.showArchives = showArchives;
     this.marker = marker;
     this.buildUrl();
   };
@@ -48,6 +56,7 @@ class DataStoragePage extends Remote {
     const query = [
       !!this.path && `path=${encodeURIComponent(this.path)}`,
       `showVersion=${!!this.showVersion}`,
+      `showArchived=${!!this.showArchives}`,
       `pageSize=${this.pageSize}`,
       !!this.marker && `marker=${encodeURIComponent(this.marker)}`
     ]

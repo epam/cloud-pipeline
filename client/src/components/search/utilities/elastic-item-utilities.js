@@ -57,7 +57,11 @@ function itemFitsMask (item, mask) {
   return mask.test(path);
 }
 
-export function itemIsDownloadable (item, preferences) {
+export function itemIsDownloadable (
+  item,
+  preferences,
+  notDownloadableStorages = []
+) {
   if (
     !item ||
     (
@@ -71,6 +75,9 @@ export function itemIsDownloadable (item, preferences) {
   ) {
     return false;
   }
+  if (notDownloadableStorages.includes(Number(item.parentId || item.storageId))) {
+    return false;
+  }
   const {
     allow = [],
     deny = []
@@ -79,6 +86,10 @@ export function itemIsDownloadable (item, preferences) {
     (deny.length === 0 || !deny.some(mask => itemFitsMask(item, mask)));
 }
 
-export function filterDownloadableItems (items, preferences) {
-  return (items || []).filter((item) => itemIsDownloadable(item, preferences));
+export function filterDownloadableItems (items, preferences, notDownloadableStorages = []) {
+  return (items || []).filter((item) => itemIsDownloadable(
+    item,
+    preferences,
+    notDownloadableStorages
+  ));
 }

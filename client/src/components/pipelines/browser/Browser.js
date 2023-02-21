@@ -245,8 +245,24 @@ export default class Folder extends localization.LocalizedReactComponent {
     const {browserLocation} = this.props;
     const isStorages = /^storages$/i.test(browserLocation);
     const {filter} = this.state;
+    const filterItem = (item) => {
+      if (!filter) {
+        return true;
+      }
+      if (item.name.toLowerCase().includes(filter.toLowerCase())) {
+        return true;
+      }
+      if (
+        item.type === ItemTypes.storage &&
+        item.path &&
+        item.path.toLowerCase().includes(filter.toLowerCase())
+      ) {
+        return true;
+      }
+      return false;
+    };
     const items = this.items
-      .filter((item) => !filter || item.name.toLowerCase().indexOf(filter.toLowerCase()) >= 0);
+      .filter(filterItem);
     const columns = [
       {
         key: 'type',

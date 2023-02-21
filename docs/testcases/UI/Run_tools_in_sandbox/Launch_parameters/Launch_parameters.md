@@ -28,8 +28,9 @@
 | [**2642_6**](2642/2642_6.md)              | Check running instances restriction for launch tool with configured Cluster                                                |
 | [**2642_7**](2642/2642_7.md)              | Check running instances restriction for Auto-Scaled Cluster runs                                                           |
 | [**2736**](2736.md)                       | Forcible terminate instances if the job is stuck in umount                                                                 |
-| [**3064_1**](3064/3064_1.md)              | # Optionally hide maintenance configuration for tool jobs                                                                  |
-| [**3064_2**](3064/3064_2.md)              | # Optionally hide maintenance configuration for pipeline jobs                                                              |
+| [**3064_1**](3064/3064_1.md)              | Optionally hide maintenance configuration for tool jobs                                                                  |
+| [**3064_2**](3064/3064_2.md)              | Optionally hide maintenance configuration for pipeline jobs                                                              |
+| [**3069**](3069.md)                       | Check hiding system capabilities                                                                                           |
 | [**783**](783.md)                         | Check the configure CPU resource                                                                                           |
 | [**TC-PARAMETERS-1**](TC-PARAMETERS-1.md) | Check the configure allowed instance types                                                                                 |
 | [**TC-PARAMETERS-2**](TC-PARAMETERS-2.md) | Check the configure allowed instance types for docker images                                                               |

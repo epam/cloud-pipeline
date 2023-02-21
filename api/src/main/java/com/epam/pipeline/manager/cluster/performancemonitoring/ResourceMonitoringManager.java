@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -35,6 +36,7 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -456,28 +458,44 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private void processLongPausedRuns() {
             final LongPausedRunAction action = LongPausedRunAction.valueOf(preferenceManager.getPreference(
                     SystemPreferences.SYSTEM_LONG_PAUSED_ACTION));
+            final int actionTimeout = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES);
 
             final List<PipelineRun> pausedRuns = pipelineRunManager
                     .loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSED)).stream()
                     .map(run -> pipelineRunManager.loadPipelineRunWithStatuses(run.getId()))
                     .collect(Collectors.toList());
 
-            processLongPausedRuns(pausedRuns, action);
+            processLongPausedRuns(pausedRuns, action, actionTimeout);
         }
 
-        private void processLongPausedRuns(final List<PipelineRun> pausedRuns, final LongPausedRunAction action) {
+        private void processLongPausedRuns(final List<PipelineRun> pausedRuns,
+                                           final LongPausedRunAction action,
+                                           final int actionTimeout) {
             if (CollectionUtils.isEmpty(pausedRuns)) {
                 return;
             }
-
             if (LongPausedRunAction.STOP.equals(action)) {
-                ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(pausedRuns.stream()
-                        .filter(run -> !run.isNonPause())
-                        .collect(Collectors.toList())))
+                final Map<Boolean, List<PipelineRun>> runs = pausedRuns.stream()
+                        .collect(Collectors.partitioningBy(
+                            run -> !run.isNonPause() && isReadyForAction(run, actionTimeout)));
+                final List<PipelineRun> runsToStop = ListUtils.emptyIfNull(runs.get(true));
+                ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(runsToStop))
                         .forEach(run -> pipelineRunManager.terminateRun(run.getId()));
+                final List<PipelineRun> runsToNotify = ListUtils.emptyIfNull(runs.get(false));
+                notificationManager.notifyLongPausedRuns(runsToNotify);
             } else {
                 notificationManager.notifyLongPausedRuns(pausedRuns);
             }
+        }
+
+        private boolean isReadyForAction(final PipelineRun pausedRun, final int actionTimeout) {
+            return ListUtils.emptyIfNull(pausedRun.getRunStatuses()).stream()
+                    .filter(status -> TaskStatus.PAUSED.equals(status.getStatus()))
+                    .max(Comparator.comparing(RunStatus::getTimestamp))
+                    .map(status ->
+                            status.getTimestamp().isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout)))
+                    .orElse(false);
         }
 
         private String getTimestampTag(final String tagName) {

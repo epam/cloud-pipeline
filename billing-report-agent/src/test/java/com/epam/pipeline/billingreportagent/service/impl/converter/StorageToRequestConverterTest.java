@@ -21,6 +21,7 @@ import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.StorageType;
+import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing.StoragePricingEntity;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
@@ -41,22 +42,28 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.text.Text;
-import org.elasticsearch.common.xcontent.DeprecationHandler;
-import org.elasticsearch.common.xcontent.NamedXContentRegistry;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.common.xcontent.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
+import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,16 +78,18 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RunWith(MockitoJUnitRunner.class)
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({"checkstyle:MagicNumber", "PMD.AvoidDuplicateLiterals"})
 public class StorageToRequestConverterTest {
 
     private static final String BILLING_CENTER_KEY = "billing";
@@ -96,10 +105,45 @@ public class StorageToRequestConverterTest {
     private static final Long TEST_AZURE_FILES_MOUNT_ID = 3L;
 
     private static final long BYTES_IN_1_GB = 1L << 30;
-    private static final String SIZE_SUM_SEARCH = "sizeSumSearch";
+
     private static final String REGION_FIELD = "storage_region";
 
-    private static final String VALUE_RESULT_PATTERN_JSON = "{\"value\" : \"%d\"}";
+    private static final String CURRENT_OBJECTS_RESULT_PATTERN_JSON = "{" +
+            "         \"doc_count_error_upper_bound\":0," +
+            "         \"sum_other_doc_count\":0," +
+            "         \"buckets\":[" +
+            "            {" +
+            "               \"key\":\"STANDARD\"," +
+            "               \"doc_count\":1," +
+            "               \"sum#" + StorageToBillingRequestConverter.STORAGE_SIZE_AGG_NAME + "\":{" +
+            "                  \"value\":\"%d\"" +
+            "               }" +
+            "            }" +
+            "         ]" +
+            "   }";
+    private static final String OLD_VERSION_RESULT_JSON = "{\"value\": %d}";
+
+    private static final String CURRENT_OBJECTS_RESULT_PATTERN_WITH_DIFF_STORAGE_CLASSES_JSON = "{" +
+            "         \"doc_count_error_upper_bound\":0," +
+            "         \"sum_other_doc_count\":0," +
+            "         \"buckets\":[" +
+            "            {" +
+            "               \"key\":\"STANDARD\"," +
+            "               \"doc_count\":10," +
+            "               \"sum#" + StorageToBillingRequestConverter.STORAGE_SIZE_AGG_NAME + "\":{" +
+            "                  \"value\":\"%d\"" +
+            "               }" +
+            "            }," +
+            "            {" +
+            "               \"key\":\"GLACIER\"," +
+            "               \"doc_count\":1," +
+            "               \"sum#" + StorageToBillingRequestConverter.STORAGE_SIZE_AGG_NAME + "\":{" +
+            "                  \"value\":\"%d\"" +
+            "               }" +
+            "            }" +
+            "         ]" +
+            "   }";
+
     private static final String UNKNOWN_REGION = "unknownRegion";
     private static final String USER_NAME = "TestUser";
     private static final String GROUP_1 = "TestGroup1";
@@ -114,7 +158,13 @@ public class StorageToRequestConverterTest {
     private static final BigDecimal TIER_1_STORAGE_1_GB_DAILY_PRICE = BigDecimal.TEN;
     private static final BigDecimal TIER_2_STORAGE_1_GB_DAILY_PRICE = BigDecimal.valueOf(5);
     private static final BigDecimal OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE = BigDecimal.ONE;
+    private static final BigDecimal ARCHIVE_1_GB_DAILY_PRICE = BigDecimal.ONE;
+    private static final BigDecimal US_EAST_2_ARCHIVE_1_GB_DAILY_PRICE = BigDecimal.TEN;
+
+
     private static final BigDecimal AZ_NFS_STORAGE_1_GB_DAILY_PRICE = BigDecimal.valueOf(2);
+    public static final String STORAGE_CLASS = "STANDARD";
+    public static final String ARCHIVE_CLASS = "GLACIER";
 
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(USER_NAME)
@@ -243,58 +293,92 @@ public class StorageToRequestConverterTest {
             .add(OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE.multiply(BigDecimal.valueOf(storageUsedTier3)));
 
         final long dailyCostForTotalSize =
-            s3Converter.calculateDailyCost(totalSize * BYTES_IN_1_GB, Regions.US_EAST_2.getName(), syncDate);
+            s3Converter.calculateDailyCost(
+                    totalSize * BYTES_IN_1_GB, STORAGE_CLASS, Regions.US_EAST_2.getName(), syncDate);
 
         Assert.assertEquals(expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForTotalSize);
+
+        final BigDecimal usEast2expectedPrice = US_EAST_2_ARCHIVE_1_GB_DAILY_PRICE
+                .multiply(BigDecimal.valueOf(totalSize));
+
+        final long dailyCostForArchiveTotalSize =
+                s3Converter.calculateDailyCost(
+                        totalSize * BYTES_IN_1_GB, ARCHIVE_CLASS, Regions.US_EAST_2.getName(), syncDate);
+
+        Assert.assertEquals(usEast2expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForArchiveTotalSize);
     }
 
     @Test
     public void testS3StorageConverting() throws IOException {
         testStorageConverting(s3Converter, s3StorageContainer, SearchDocumentType.S3_STORAGE,
                               TEST_AWS_REGION_ID, US_EAST_1, StorageType.OBJECT_STORAGE,
-                              OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE);
+                              OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE, BYTES_IN_1_GB);
+    }
+
+    @Test
+    public void testS3StorageWithDifferentStorageClassesConverting() throws IOException {
+        testStorageConvertingWithDifferentStorageClasses(
+                s3Converter, s3StorageContainer, SearchDocumentType.S3_STORAGE,
+                TEST_AWS_REGION_ID, US_EAST_1, StorageType.OBJECT_STORAGE,
+                //Putting costs according to our expectations to use these values further
+                new HashMap<String, StorageBillingInfo.StorageBillingInfoDetails>() {{
+                    put(STORAGE_CLASS, StorageBillingInfo.StorageBillingInfoDetails.builder()
+                            .storageClass(STORAGE_CLASS)
+                            .usageBytes(BYTES_IN_1_GB).oldVersionUsageBytes(3 * BYTES_IN_1_GB)
+                            .cost(100 * OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE.longValue())
+                            .oldVersionCost(100 * 3 * OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE.longValue()).build());
+                    put(ARCHIVE_CLASS, StorageBillingInfo.StorageBillingInfoDetails.builder()
+                            .usageBytes(BYTES_IN_1_GB).oldVersionUsageBytes(3 * BYTES_IN_1_GB)
+                            .cost(100 * ARCHIVE_1_GB_DAILY_PRICE.longValue())
+                            .oldVersionCost(100 * 3 * ARCHIVE_1_GB_DAILY_PRICE.longValue()).build());
+                }}
+        );
     }
 
     @Test
     public void testEFSStorageConverting() throws IOException {
         testStorageConverting(nfsConverter, nfsStorageContainer, SearchDocumentType.NFS_STORAGE,
                               TEST_AWS_REGION_ID, US_EAST_1, StorageType.FILE_STORAGE,
-                              OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE);
+                              OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE, BYTES_IN_1_GB);
     }
 
     @Test
     public void testGcpStorageConverting() throws IOException {
         testStorageConverting(gcpConverter, gcpStorageContainer, SearchDocumentType.GS_STORAGE,
                               TEST_GCP_REGION_ID, US_EAST_1, StorageType.OBJECT_STORAGE,
-                              OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE);
+                              OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE, BYTES_IN_1_GB);
     }
 
     @Test
     public void testAzureBlobStorageConverting() throws IOException {
         testStorageConverting(azureBlobConverter, azureStorageContainer, SearchDocumentType.AZ_BLOB_STORAGE,
                               TEST_AZURE_REGION_ID, US_EAST_1, StorageType.OBJECT_STORAGE,
-                              OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE);
+                              OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE, BYTES_IN_1_GB);
     }
 
     @Test
     public void testAzureNetAppStorageConverting() throws IOException {
         testStorageConverting(azureNetAppConverter, azureNetAppStorageContainer, SearchDocumentType.NFS_STORAGE,
                               TEST_AZURE_REGION_ID, TEST_AZURE_REGION_NAME, StorageType.FILE_STORAGE,
-                              AZ_NFS_STORAGE_1_GB_DAILY_PRICE);
+                              AZ_NFS_STORAGE_1_GB_DAILY_PRICE, BYTES_IN_1_GB);
     }
 
     @Test
     public void testAzureFilesStorageConverting() throws IOException {
         testStorageConverting(azureFilesConverter, azureFilesStorageContainer, SearchDocumentType.NFS_STORAGE,
                               TEST_AZURE_REGION_ID, TEST_AZURE_REGION_NAME, StorageType.FILE_STORAGE,
-                              AZ_NFS_STORAGE_1_GB_DAILY_PRICE);
+                              AZ_NFS_STORAGE_1_GB_DAILY_PRICE, BYTES_IN_1_GB);
     }
 
     @Test
     public void testInvalidResponseConverting() throws IOException {
         final EntityContainer<AbstractDataStorage> s3StorageContainer =
             getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
-        createElasticsearchSearchContext(0L, true, UNKNOWN_REGION);
+        createElasticsearchSearchContext(
+                true, UNKNOWN_REGION,
+                String.format(CURRENT_OBJECTS_RESULT_PATTERN_JSON, 0L),
+                Collections.singletonList(ImmutablePair.of(STORAGE_CLASS.toLowerCase(Locale.ROOT), 0L))
+        );
         final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer,
                                                                                    TestUtils.COMMON_INDEX_PREFIX,
                                                                                    SYNC_START, SYNC_END);
@@ -305,7 +389,11 @@ public class StorageToRequestConverterTest {
     public void testStorageWithNoInfoConverting() throws IOException {
         final EntityContainer<AbstractDataStorage> s3StorageContainer =
             getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
-        createElasticsearchSearchContext(0L, false, US_EAST_1);
+        createElasticsearchSearchContext(
+                false, US_EAST_1,
+                String.format(CURRENT_OBJECTS_RESULT_PATTERN_JSON, 0L),
+                Collections.singletonList(ImmutablePair.of(STORAGE_CLASS.toLowerCase(Locale.ROOT), 0L))
+        );
         Mockito.when(elasticsearchClient.isIndexExists(Mockito.anyString())).thenReturn(false);
         final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer,
                                                                                    TestUtils.COMMON_INDEX_PREFIX,
@@ -319,9 +407,14 @@ public class StorageToRequestConverterTest {
                                        final Long regionId,
                                        final String regionName,
                                        final StorageType storageType,
-                                       final BigDecimal storageDailyPriceGb) throws IOException {
+                                       final BigDecimal storageDailyPriceGb,
+                                       final long usage) throws IOException {
         final AbstractDataStorage azureStorage = storageContainer.getEntity();
-        createElasticsearchSearchContext(BYTES_IN_1_GB, false, regionName);
+        createElasticsearchSearchContext(
+                false, regionName,
+                String.format(CURRENT_OBJECTS_RESULT_PATTERN_JSON, usage),
+                Collections.singletonList(ImmutablePair.of(STORAGE_CLASS.toLowerCase(Locale.ROOT), 0L))
+        );
         final DocWriteRequest request = converter.convertEntityToRequests(storageContainer,
                                                                           TestUtils.STORAGE_BILLING_PREFIX,
                                                                           SYNC_START, SYNC_END).get(0);
@@ -329,19 +422,86 @@ public class StorageToRequestConverterTest {
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(azureStorage, requestFieldsMap, regionId, storageType, BYTES_IN_1_GB,
-                     storageDailyPriceGb.scaleByPowerOfTen(2).longValue());
+        assertFields(azureStorage, requestFieldsMap, regionId, storageType, usage,
+                     storageDailyPriceGb.scaleByPowerOfTen(2).longValue(), Collections.emptyMap());
     }
 
-    private void createElasticsearchSearchContext(final Long storageSize,
-                                                  final boolean isEmptyResponse,
-                                                  final String region) throws IOException {
-        final XContentParser parser =
-            XContentType.JSON.xContent().createParser(NamedXContentRegistry.EMPTY,
-                                                      DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                                                      String.format(VALUE_RESULT_PATTERN_JSON, storageSize));
-        final ParsedSum sumAgg = ParsedSum.fromXContent(parser, SIZE_SUM_SEARCH);
-        final Aggregations aggregations = new Aggregations(Collections.singletonList(sumAgg));
+    private void testStorageConvertingWithDifferentStorageClasses(
+            final StorageToBillingRequestConverter converter,
+            final EntityContainer<AbstractDataStorage> storageContainer,
+            final SearchDocumentType desiredType,
+            final Long regionId,
+            final String regionName,
+            final StorageType storageType,
+            final Map<String, StorageBillingInfo.StorageBillingInfoDetails> billingDetails) throws IOException {
+        final AbstractDataStorage azureStorage = storageContainer.getEntity();
+        createElasticsearchSearchContext(
+                false, regionName,
+                String.format(CURRENT_OBJECTS_RESULT_PATTERN_WITH_DIFF_STORAGE_CLASSES_JSON,
+                        billingDetails.get(STORAGE_CLASS).getUsageBytes(),
+                        billingDetails.get(ARCHIVE_CLASS).getUsageBytes()),
+                Arrays.asList(
+                        ImmutablePair.of(
+                                STORAGE_CLASS.toLowerCase(Locale.ROOT),
+                                billingDetails.get(STORAGE_CLASS).getOldVersionUsageBytes()
+                        ),
+                        ImmutablePair.of(
+                                ARCHIVE_CLASS.toLowerCase(Locale.ROOT),
+                                billingDetails.get(ARCHIVE_CLASS).getOldVersionUsageBytes()
+                        )
+                )
+        );
+        final Long expectedTotalCost = billingDetails.values().stream()
+                .map(d -> d.getCost() + d.getOldVersionCost()).reduce(0L, Long::sum);
+        final Long expectedTotalSize = billingDetails.values().stream()
+                .map(d -> d.getUsageBytes() + d.getOldVersionUsageBytes()).reduce(0L, Long::sum);
+        final DocWriteRequest request = converter.convertEntityToRequests(storageContainer,
+                TestUtils.STORAGE_BILLING_PREFIX,
+                SYNC_START, SYNC_END).get(0);
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
+        final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
+        Assert.assertEquals(expectedIndex, request.index());
+        Assert.assertEquals(desiredType.name(), requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
+        assertFields(azureStorage, requestFieldsMap, regionId, storageType, expectedTotalSize,
+                expectedTotalCost, billingDetails);
+    }
+
+    private static List<NamedXContentRegistry.Entry> getDefaultNamedXContents() {
+        Map<String, ContextParser<Object, ? extends Aggregation>> map = new HashMap<>();
+        map.put(TopHitsAggregationBuilder.NAME, (p, c) -> ParsedTopHits.fromXContent(p, (String) c));
+        map.put(StringTerms.NAME, (p, c) -> ParsedStringTerms.fromXContent(p, (String) c));
+        map.put("sum", (p, c) -> ParsedSum.fromXContent(p, (String) c));
+        return map.entrySet().stream()
+                .map(entry -> new NamedXContentRegistry.Entry(
+                        Aggregation.class, new ParseField(entry.getKey()), entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    private void createElasticsearchSearchContext(final boolean isEmptyResponse, final String region,
+                                                  final String currentObjectResponse,
+                                                  final List<ImmutablePair<String, Long>> oldVersionResponse
+    ) throws IOException {
+        XContentParser parser =
+            XContentType.JSON.xContent().createParser(
+                    new NamedXContentRegistry(getDefaultNamedXContents()),
+                    DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                    currentObjectResponse);
+        ParsedTerms objectAgg = ParsedStringTerms.fromXContent(
+                parser, StorageToBillingRequestConverter.OBJECT_SIZE_AGG_NAME);
+        List<ParsedSum> oldVersionAggs = new ArrayList<>();
+        for (Pair<String, Long> ovSize : oldVersionResponse) {
+            parser = XContentType.JSON.xContent().createParser(
+                            new NamedXContentRegistry(getDefaultNamedXContents()),
+                            DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                            String.format(OLD_VERSION_RESULT_JSON, ovSize.getValue())
+            );
+            oldVersionAggs.add(
+                    ParsedSum.fromXContent(parser, String.format("ov_%s_size_agg", ovSize.getKey()))
+            );
+        }
+
+        final Aggregations aggregations = new Aggregations(
+                ListUtils.union(oldVersionAggs, Collections.singletonList(objectAgg)));
         final SearchHit hit = new SearchHit(DOC_ID,
                                             StringUtils.EMPTY,
                                             new Text(StringUtils.EMPTY),
@@ -364,37 +524,72 @@ public class StorageToRequestConverterTest {
     }
 
     private void assertFields(final AbstractDataStorage storage, final Map<String, Object> fieldMap,
-                              final Long region, final StorageType storageType, final Long usage, final Long cost) {
+                              final Long region, final StorageType storageType, final long usage, final long cost,
+                              final Map<String, StorageBillingInfo.StorageBillingInfoDetails> billingDetails) {
         Assert.assertEquals(storage.getId().intValue(), fieldMap.get("storage_id"));
         Assert.assertEquals(ResourceType.STORAGE.toString(), fieldMap.get("resource_type"));
         Assert.assertEquals(region.intValue(), fieldMap.get("cloudRegionId"));
         Assert.assertEquals(storage.getType().toString(), fieldMap.get("provider"));
         Assert.assertEquals(storageType.toString(), fieldMap.get("storage_type"));
         Assert.assertEquals(testUser.getUserName(), fieldMap.get("owner"));
-        Assert.assertEquals(usage.intValue(), fieldMap.get("usage_bytes"));
-        Assert.assertEquals(cost.intValue(), fieldMap.get("cost"));
+        Assert.assertEquals(usage, getLongValue(fieldMap.get("usage_bytes")));
+        Assert.assertEquals(cost, getLongValue(fieldMap.get("cost")));
         TestUtils.verifyStringArray(USER_GROUPS, fieldMap.get("groups"));
+        if (MapUtils.isNotEmpty(billingDetails)) {
+            for (String storageClass : billingDetails.keySet()) {
+                final String storageClassKey = storageClass.toLowerCase(Locale.ROOT);
+                Assert.assertEquals(
+                        billingDetails.get(storageClass).getCost(),
+                        getLongValue(fieldMap.get(String.format("%s_cost", storageClassKey)))
+                );
+                Assert.assertEquals(
+                        billingDetails.get(storageClass).getOldVersionCost(),
+                        getLongValue(fieldMap.get(String.format("%s_ov_cost", storageClassKey)))
+                );
+                Assert.assertEquals(
+                        billingDetails.get(storageClass).getUsageBytes(),
+                        getLongValue(fieldMap.get(String.format("%s_usage_bytes", storageClassKey)))
+                );
+                Assert.assertEquals(
+                        billingDetails.get(storageClass).getOldVersionUsageBytes(),
+                        getLongValue(fieldMap.get(String.format("%s_ov_usage_bytes", storageClassKey)))
+                );
+            }
+        }
+    }
+
+    private static long getLongValue(Object value) {
+        if (value instanceof Long) {
+            return (Long) value;
+        } else {
+            return ((Integer) value).longValue();
+        }
     }
 
     private StoragePricingService createTieredStoragePricing() {
         final StoragePricing pricingUsEast1 = new StoragePricing();
-        pricingUsEast1.addPrice(new StoragePricingEntity(0L,
+        pricingUsEast1.addPrice(STORAGE_CLASS, new StoragePricingEntity(0L,
                                                          STORAGE_LIMIT_TIER_1 * BYTES_IN_1_GB,
                                                          OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE
                                                              .multiply(DAYS_IN_SYNC_MONTH)));
+        pricingUsEast1.addPrice(ARCHIVE_CLASS, new StoragePricingEntity(0L,
+                Long.MAX_VALUE, ARCHIVE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
         final StoragePricing pricingUsEast2 = new StoragePricing();
         final long endRangeBytesTier1 = STORAGE_LIMIT_TIER_1 * BYTES_IN_1_GB;
         final long endRangeBytesTier2 = STORAGE_LIMIT_TIER_2 * BYTES_IN_1_GB;
-        pricingUsEast2.addPrice(new StoragePricingEntity(0L,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricingEntity(0L,
                                                          endRangeBytesTier1,
                                                          TIER_1_STORAGE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
-        pricingUsEast2.addPrice(new StoragePricingEntity(endRangeBytesTier1,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricingEntity(endRangeBytesTier1,
                                                          endRangeBytesTier2,
                                                          TIER_2_STORAGE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
-        pricingUsEast2.addPrice(new StoragePricingEntity(endRangeBytesTier2,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricingEntity(endRangeBytesTier2,
                                                          Long.MAX_VALUE,
                                                          OVER_TIER_2_STORAGE_1_GB_DAILY_PRICE
                                                              .multiply(DAYS_IN_SYNC_MONTH)));
+        pricingUsEast2.addPrice(ARCHIVE_CLASS, new StoragePricingEntity(0L,
+                Long.MAX_VALUE,
+                US_EAST_2_ARCHIVE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
 
         final Map<String, StoragePricing> testPriceList = new HashMap<>();
         testPriceList.put(Regions.US_EAST_1.getName(), pricingUsEast1);
@@ -408,7 +603,7 @@ public class StorageToRequestConverterTest {
     private StoragePricingService createAzureNfsPricing() {
         final StoragePricing pricingAzureNfs = new StoragePricing();
         pricingAzureNfs
-            .addPrice(new StoragePricingEntity(0L,
+            .addPrice(STORAGE_CLASS, new StoragePricingEntity(0L,
                                                Long.MAX_VALUE,
                                                AZ_NFS_STORAGE_1_GB_DAILY_PRICE.multiply(DAYS_IN_SYNC_MONTH)));
         final Map<String, StoragePricing> testPriceListAzureNfs = new HashMap<>();

@@ -18,7 +18,9 @@
 <p>*** This is a system generated email, do not reply to this email ***</p>
 <p>Please be informed, that data transition is scheduled for storage <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/storage/$templateParameters.get("storageId")">$templateParameters.get("storageName")</a>.</p>
 <p>Files under the path <b>${CP_DOLLAR}templateParameters.get("path")</b> will be transferred to <b>${CP_DOLLAR}templateParameters.get("storageClass")</b> on <b>${CP_DOLLAR}templateParameters.get("dateOfAction")</b>.</p>
-<p>You can postpone file transition for <b>${CP_DOLLAR}templateParameters.get("prolongDays")</b> days using this link: <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/restapi/datastorage/${CP_DOLLAR}templateParameters.get("storageId")/lifecycle/rule/${CP_DOLLAR}templateParameters.get("ruleId")/prolong?path=${CP_DOLLAR}templateParameters.get("path")&days=${CP_DOLLAR}templateParameters.get("prolongDays")">Postpone transfer</a>.</p>
+#if( ${CP_DOLLAR}templateParameters.get("isDateNotExpired") )
+<p>You can postpone this action on <b>${CP_DOLLAR}templateParameters.get("prolongDays")</b> days by clicking this link: <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/restapi/datastorage/${CP_DOLLAR}templateParameters.get("storageId")/lifecycle/rule/${CP_DOLLAR}templateParameters.get("ruleId")/prolong?path=${CP_DOLLAR}templateParameters.get("path")&days=${CP_DOLLAR}templateParameters.get("prolongDays")">Postpone transfer</a></p>
+#end
 <br/>
 <p>Best regards,</p>
 <p>$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME Platform</p>

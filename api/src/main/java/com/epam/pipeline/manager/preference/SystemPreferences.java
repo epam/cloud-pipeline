@@ -621,7 +621,7 @@ public class SystemPreferences {
 
     public static final ObjectPreference<List<Map<String, Object>>> LAUNCH_DISK_THRESHOLDS = new ObjectPreference<>(
             "launch.job.disk.size.thresholds", null, new TypeReference<List<Map<String, Object>>>() {},
-            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<Map<String, Object>>>() {}), true);
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
@@ -722,6 +722,8 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_TOOL_ENABLED = new ObjectPreference<>(
             "ui.run.maintenance.tool.enabled", null, new TypeReference<Map<String, Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final StringPreference UI_STORAGE_DOWNLOAD_ATTRIBUTE = new StringPreference(
+            "ui.storage.download.attribute", "download_allowed_roles", UI_GROUP, pass, true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
@@ -734,6 +736,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DOWNLOAD = new ObjectPreference<>(
             "faceted.filter.download", null, new TypeReference<Map<String, Object>>() {},
             FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+
+    public static final StringPreference FACETED_FILTER_DOWNLOAD_FILE_TAG = new StringPreference(
+            "faceted.filter.download.file.tag", "download_url", FACETED_FILTER_GROUP, pass, true);
+
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
@@ -844,6 +850,9 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_LONG_PAUSED_ACTION = new StringPreference("system.long.paused.action",
             LongPausedRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidLongPauseRunAction);
+    public static final IntPreference SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES =
+            new IntPreference("system.long.paused.action.timeout.minutes",
+                    30, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Controls how long resource monitoring stats are being kept, in days
      */

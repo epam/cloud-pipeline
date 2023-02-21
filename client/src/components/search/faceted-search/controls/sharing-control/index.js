@@ -78,11 +78,18 @@ class SharingControl extends React.Component {
   }
 
   get downloadableItems () {
-    const {preferences} = this.props;
+    const {
+      preferences,
+      notDownloadableStorages = []
+    } = this.props;
     if (!preferences.loaded) {
       return [];
     }
-    return filterDownloadableItems(this.items, preferences);
+    return filterDownloadableItems(
+      this.items,
+      preferences,
+      notDownloadableStorages
+    );
   }
 
   openShareStorageItemsDialog = (items) => {
@@ -253,7 +260,8 @@ class SharingControl extends React.Component {
       items,
       visible,
       extraColumns,
-      size
+      size,
+      notDownloadableStorages
     } = this.props;
     const {showSelectionPreview, dropDownVisible} = this.state;
     if (!items || !visible) {
@@ -289,6 +297,7 @@ class SharingControl extends React.Component {
           onClose={this.closeSelectionPreview}
           onClear={this.clearSelection}
           onDownload={this.onSelectionPreviewDownload}
+          notDownloadableStorages={notDownloadableStorages}
         />
       </div>
     );
@@ -305,7 +314,8 @@ SharingControl.propTypes = {
   onClearSelection: PropTypes.func,
   size: PropTypes.string,
   onDownload: PropTypes.func,
-  dataStorageSharingEnabled: PropTypes.bool
+  dataStorageSharingEnabled: PropTypes.bool,
+  notDownloadableStorages: PropTypes.arrayOf(PropTypes.number)
 };
 
 export default SharingControl;

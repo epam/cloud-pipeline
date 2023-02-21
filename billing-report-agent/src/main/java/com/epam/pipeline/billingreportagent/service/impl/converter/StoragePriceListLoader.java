@@ -27,6 +27,8 @@ public interface StoragePriceListLoader {
     int BYTES_TO_GB = 1 << (Integer.SIZE - 2);
     int PRECISION = 5;
 
+    String DEFAULT_STORAGE_CLASS = "STANDARD";
+
     Map<String, StoragePricing> loadFullPriceList() throws Exception;
 
     CloudProvider getProvider();

@@ -49,6 +49,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -199,13 +200,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public DataStorageListing getItems(S3bucketDataStorage dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker) {
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
+    }
+
+    @Override
+    public DataStorageListing getItems(final S3bucketDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
         final Set<String> activeLinkingMasks = resolveFolderPathListingMasks(dataStorage, path);
         return getS3Helper(dataStorage)
-            .getItems(datastoragePath.getRoot(),
-                      ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
-                      ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
-                      Optional.of(activeLinkingMasks).filter(CollectionUtils::isNotEmpty).orElse(null));
+                .getItems(datastoragePath.getRoot(),
+                        ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
+                        ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
+                        Optional.of(activeLinkingMasks).filter(CollectionUtils::isNotEmpty).orElse(null),
+                        restoredListing);
     }
 
     @Override

@@ -323,7 +323,11 @@ class PipelineAPI:
         })
 
     def get_preference_efficiently(self, name):
-        return self._request('GET', 'preferences/' + name) or ''
+        return self._request('GET', 'preferences/' + name)
+
+    def get_preference_value(self, name):
+        preference = self.get_preference_efficiently(name) or {}
+        return preference.get('value')
 
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self.api_url, endpoint)
@@ -688,6 +692,14 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load metadata for the given entity. "
                                "Error message: {}".format(str(e.message)))
+
+    def load_metadata_efficiently(self, entity_id, entity_class):
+        all_metadata = self.load_all_metadata_efficiently([entity_id], entity_class)
+        return (all_metadata[0] if all_metadata else {}).get('data', {})
+
+    def load_all_metadata_efficiently(self, entity_ids, entity_class):
+        data = [{"entityId": entity_id, "entityClass": entity_class} for entity_id in entity_ids]
+        return self._request('POST', self.LOAD_METADATA, data=data) or []
 
     def load_entities(self, entities_ids):
         try:

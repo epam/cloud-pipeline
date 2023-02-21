@@ -886,6 +886,13 @@ export default `
   background-color: @card-background-color;
   color: @application-color-disabled;
 }
+@THEME .cp-table-element-dimmed {
+  background-color: @card-background-color;
+  color: @application-color-disabled;
+}
+@THEME .cp-table-element-dimmed:hover {
+  background-color: @table-element-hover-background-color;
+}
 @THEME .ant-table-row-expand-icon {
   border-color: @table-border-color;
   background: inherit;
@@ -2706,6 +2713,9 @@ export default `
 }
 @THEME .cp-setting-critical {
   color: @color-red;
+}
+@THEME .cp-setting-message {
+  color: @primary-color;
 }
 @THEME .cp-settings-table thead,
 @THEME .cp-settings-table thead th {
