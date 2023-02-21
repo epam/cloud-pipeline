@@ -322,7 +322,8 @@ class DataStorageOperations(object):
             if show_archive and root_bucket.type != 'S3':
                 click.echo('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)
-            if show_archive and not cls.has_archived_permissions(root_bucket.identifier, root_bucket.owner):
+            if show_archive and not UserOperationsManager()\
+                    .has_storage_archive_permissions(root_bucket.identifier, root_bucket.owner):
                 click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
                 sys.exit(1)
             else:
@@ -536,7 +537,7 @@ class DataStorageOperations(object):
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
-        if show_archive and not cls.has_archived_permissions(bucket):
+        if show_archive and not UserOperationsManager().has_storage_archive_permissions(bucket):
             click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
             sys.exit(1)
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
@@ -734,23 +735,3 @@ class DataStorageOperations(object):
         else:
             logging.warn(u'Ignoring unsafe characters in path {}...'.format(full_path))
         return item[0], full_path, relative_path, item[3]
-
-    @staticmethod
-    def has_archived_permissions(bucket_identifier, owner=None):
-        user_manager = UserOperationsManager()
-        if user_manager.is_admin():
-            return True
-        try:
-            if not owner:
-                storage = Entity.load_by_id_or_name(bucket_identifier, 'DATA_STORAGE')
-                owner = storage.get('owner')
-            if owner and owner == user_manager.whoami().get('userName'):
-                return True
-            user_roles = user_manager.get_all_user_roles()
-            if 'ROLE_STORAGE_ARCHIVE_MANAGER' in user_roles or 'ROLE_STORAGE_ARCHIVE_READER' in user_roles:
-                return True
-            return False
-        except RuntimeError as e:
-            if 'Access is denied' in str(e):
-                return False
-            raise e
