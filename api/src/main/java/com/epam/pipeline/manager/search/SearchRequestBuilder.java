@@ -157,7 +157,7 @@ public class SearchRequestBuilder {
                                                      final Set<String> storageSizeMasks,
                                                      final Set<String> storageClasses, final boolean allowVersions) {
         final String searchIndex = String.format(
-                ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), 17410
+                ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId
         );
         final MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
         multiSearchRequest.add(buildSumAggRequest(
