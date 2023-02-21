@@ -88,7 +88,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         allStorages
                 .stream()
                 .filter(dataStorage -> dataStorage.getType() == getStorageType())
-                .filter(dataStorage -> isNotSharedOrChild(dataStorage, allStorages))
+                .filter(this::isNotShared)
                 .forEach(this::indexStorage);
     }
 
@@ -205,12 +205,32 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                         permissionsContainer, getDocumentType(), tagDelimiter, content));
     }
 
+    private boolean isNotShared(final AbstractDataStorage dataStorage) {
+        if (!dataStorage.isShared()) {
+            return true;
+        }
+        return dataStorage.getSourceStorageId() == null;
+    }
+
     private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,
                                        final List<AbstractDataStorage> allStorages) {
         if (!dataStorage.isShared()) {
             return true;
         }
-        return dataStorage.getSourceStorageId() == null;
+        if (dataStorage.getSourceStorageId() != null) {
+            return false;
+        }
+        final boolean isPrefixStorage = ListUtils.emptyIfNull(allStorages)
+                .stream()
+                .anyMatch(parentStorage -> !parentStorage.getId().equals(dataStorage.getId()) &&
+                        dataStorage.getPath()
+                        .startsWith(
+                                withTrailingDelimiter(parentStorage.getPath(), parentStorage.getDelimiter())));
+        return !isPrefixStorage;
+    }
+
+    private String withTrailingDelimiter(final String path, final String delimiter) {
+        return StringUtils.isNotBlank(path) && !path.endsWith(delimiter) ? path + delimiter : path;
     }
 
     private String findFileContent(final AbstractDataStorage storage, final String filePath) {
