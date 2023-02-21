@@ -36,6 +36,8 @@ public final class MessageConstants {
     public static final String ERROR_INVALID_PIPELINE_NAME = "error.pipeline.name.invalid";
     public static final String ERROR_INVALID_PIPELINE_REVISION_NAME = "error.pipeline.revision.name.invalid";
     public static final String ERROR_REPOSITORY_PATH_DOESNT_EXIST = "error.repository.path.doesnt.exist";
+    public static final String ERROR_REPOSITORY_SRC_NOT_FOUND = "error.repository.src.not.found";
+    public static final String ERROR_REPOSITORY_DOCS_NOT_FOUND = "error.repository.docs.not.found";
 
     //Pipeline config
     public static final String ERROR_CONFIG_INVALID = "error.pipeline.config.invalid";
@@ -580,8 +582,12 @@ public final class MessageConstants {
     public static final String ERROR_REGION_CREDENTIALS_NOT_FOUND = "error.region.credentials.not.found";
     public static final String ERROR_REGION_DEFAULT_UNDEFINED = "error.region.default.undefined";
     public static final String ERROR_REGION_NAME_MISSING = "error.region.name.missing";
-    public static final String ERROR_REGION_MOUNT_RULE_MISSING = "error.region.mount.rule.missing";
-    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING = "error.region.mont.credentials.missing";
+    public static final String ERROR_REGION_MOUNT_OBJECT_STORAGE_RULE_MISSING =
+            "error.region.mount.object.storage.rule.missing";
+    public static final String ERROR_REGION_MOUNT_FILE_STORAGE_RULE_MISSING =
+            "error.region.mount.file.storage.rule.missing";
+    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING =
+            "error.region.mount.credentials.rule.missing";
     public static final String ERROR_REGION_PROVIDER_MISMATCH = "error.region.provider.mismatch";
     public static final String ERROR_REGION_REGIONID_MISSING = "error.region.regionid.missing";
     public static final String ERROR_REGION_REGIONID_INVALID = "error.region.regionid.invalid";
@@ -830,8 +836,9 @@ public final class MessageConstants {
             "error.ngs.preprocessing.sampleid.is.not.found";
 
     // Static resource
-    public static final String ERROR_STATIC_RESOURCES_INVALID_PATH =
-            "error.static.resources.invalid.path";
+    public static final String ERROR_STATIC_RESOURCES_INVALID_PATH = "error.static.resources.invalid.path";
+    public static final String ERROR_STATIC_RESOURCES_FOLDER_PATH = "error.static.resources.folder.path";
+
 
     private MessageConstants() {
         // no-op

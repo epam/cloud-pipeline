@@ -46,7 +46,7 @@ const DTS_ENVIRONMENT = 'DTS';
 @submitsRun
 @runPipelineActions
 @roleModel.authenticationInfo
-@inject('awsRegions', 'pipelines', 'preferences')
+@inject('awsRegions', 'pipelines', 'preferences', 'dockerRegistries')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
   const isVersionedStorage = components.vs;

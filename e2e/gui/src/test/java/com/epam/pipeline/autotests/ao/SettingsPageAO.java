@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,12 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.mixins.Authorization;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -797,6 +799,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
 
+                    public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
+                        if ($(By.className(format("role-%s", value))).exists()) {
+                            return this;
+                        }
+                        return addRoleOrGroup(value);
+                    }
+
                     public EditUserPopup deleteRoleOrGroup(final String value) {
                         $$(byClassName("role-name-column"))
                                 .findBy(text(value))
@@ -1249,9 +1258,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public PreferencesAO clearAndSetJsonToPreference(String preference, String value, boolean eyeIsChecked) {
             SelenideElement pref = context().$(byClassName("preference-group__code-editor"));
             searchPreference(preference);
-            clearTextField(pref);
+            selectAllAndClearTextField(pref);
             clickAndSendKeysWithSlashes(pref, value);
-            deleteExtraBrackets(pref, 100);
+            deleteExtraBrackets(pref, 300);
             setEyeOption(eyeIsChecked);
             return this;
         }
@@ -1266,7 +1275,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             actions().moveToElement(editor).click()
                     .sendKeys(Keys.chord(Keys.CONTROL, "v"))
                     .perform();
-            deleteExtraBrackets(editor, 500);
             setEyeOption(eyeIsChecked);
             return this;
         }
@@ -1382,12 +1390,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public PreferencesAO save() {
-            click(SAVE);
-            get(SAVE).shouldBe(disabled);
+        /* click(SAVE) method has been replaced by pressEnter() method due to the problem of pressing
+           the Save button at case of big size json or a lot of preferences on the page for current Chromium version
+        */
+            actions().moveToElement(get(SAVE)).perform();
+            get(SAVE).pressEnter();
+            get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
             return this;
         }
 
         public PreferencesAO saveIfNeeded() {
+            actions().moveToElement($(By.id("edit-preference-form-ok-button")))
+                     .perform();
+            sleep(10, SECONDS);
             if(get(SAVE).isEnabled()) {
                 save();
             }
@@ -1454,6 +1469,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             private ClusterTabAO setClusterValue(final String clusterPref, final String value) {
                 By clusterVariable = getByField(clusterPref);
                 setByVariable(value, clusterVariable);
+                while(!$(clusterVariable).attr("value").equals(value)) {
+                    sleep(500, MILLISECONDS);
+                }
                 return this;
             }
 

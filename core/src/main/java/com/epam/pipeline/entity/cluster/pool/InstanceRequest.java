@@ -17,10 +17,12 @@ package com.epam.pipeline.entity.cluster.pool;
 
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import lombok.Data;
+import java.util.Map;
 
 
 @Data
 public class InstanceRequest {
     private RunInstance instance;
+    private Map<String, String> runtimeParameters;
     private String requestedImage;
 }

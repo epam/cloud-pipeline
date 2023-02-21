@@ -29,23 +29,24 @@ public class StorageServicePricingTest {
 
     private static final long STORAGE_LIMIT_TIER_1 = 51200L;
     private static final long STORAGE_LIMIT_TIER_2 = STORAGE_LIMIT_TIER_1 * 10;
+    public static final String STORAGE_CLASS = "STANDARD";
 
     @Test
     public void testDefaultPriceCalculation() {
         final StoragePricing pricingUsEast1 = new StoragePricing();
-        pricingUsEast1.addPrice(new StoragePricing.StoragePricingEntity(0L,
+        pricingUsEast1.addPrice(STORAGE_CLASS, new StoragePricing.StoragePricingEntity(0L,
                                                                         STORAGE_LIMIT_TIER_1,
                                                                         BigDecimal.TEN));
         final StoragePricing pricingUsEast2 = new StoragePricing();
         final long endRangeBytesTier1 = STORAGE_LIMIT_TIER_1;
         final long endRangeBytesTier2 = STORAGE_LIMIT_TIER_2;
-        pricingUsEast2.addPrice(new StoragePricing.StoragePricingEntity(0L,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricing.StoragePricingEntity(0L,
                                                                         endRangeBytesTier1,
                                                                         BigDecimal.valueOf(7)));
-        pricingUsEast2.addPrice(new StoragePricing.StoragePricingEntity(endRangeBytesTier1,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricing.StoragePricingEntity(endRangeBytesTier1,
                                                                         endRangeBytesTier2,
                                                                         BigDecimal.valueOf(5)));
-        pricingUsEast2.addPrice(new StoragePricing.StoragePricingEntity(endRangeBytesTier2,
+        pricingUsEast2.addPrice(STORAGE_CLASS, new StoragePricing.StoragePricingEntity(endRangeBytesTier2,
                                                                         Long.MAX_VALUE,
                                                                         BigDecimal.ONE));
         final Map<String, StoragePricing> testPriceList = new HashMap<>();

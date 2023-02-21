@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,14 @@ import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
+import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
+import com.epam.pipeline.entity.sharing.StaticResourceSettings;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -60,7 +63,6 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreferen
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
-import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -305,7 +307,18 @@ public class SystemPreferences {
             new StringPreference("bitbucket.user.name", null, GIT_GROUP, pass);
     public static final StringPreference GITLAB_API_VERSION = new StringPreference(
             "git.gitlab.api.version", "v3", GIT_GROUP, pass);
-
+    public static final BooleanPreference GITLAB_HASHED_REPO_SUPPORT = new BooleanPreference(
+            "git.gitlab.hashed.repo.support", false, GIT_GROUP, pass);
+    public static final StringPreference GITLAB_DEFAULT_SRC_DIRECTORY = new StringPreference(
+            "gitlab.default.src.directory", "src/", GIT_GROUP, pass, true);
+    public static final StringPreference GITLAB_DEFAULT_DOC_DIRECTORY = new StringPreference(
+            "gitlab.default.doc.directory", "docs/", GIT_GROUP, pass, true);
+    public static final StringPreference BITBUCKET_DEFAULT_SRC_DIRECTORY = new StringPreference(
+            "bitbucket.default.src.directory", "/", GIT_GROUP, pass, true);
+    public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
+            "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
+    public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
+            "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -497,13 +510,30 @@ public class SystemPreferences {
     public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
             "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<Set<String>>() {}));
+
+    /**
+     * Configures global dns hosted zone id.
+     * Generally should not be used in favor of region specific dns hosted zone id.
+     */
     public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_ID = new StringPreference(
             "instance.dns.hosted.zone.id", null, CLUSTER_GROUP, pass);
+
+    /**
+     * Configures global dns hosted zone base.
+     * Generally should not be used in favor of region specific dns hosted zone base.
+     */
     public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_BASE = new StringPreference(
             "instance.dns.hosted.zone.base", null, CLUSTER_GROUP, pass);
+
     public static final StringPreference DEFAULT_EDGE_REGION = new StringPreference(
             "default.edge.region", "eu-central", CLUSTER_GROUP, pass);
+    public static final IntPreference DEFAULT_EDGE_REGION_ID = new IntPreference(
+            "default.edge.region.id", 1, CLUSTER_GROUP, isGreaterThan(0L), true);
 
+    public static final ObjectPreference<Map<String, RuntimeParameter>> CLUSTER_RUN_PARAMETERS_MAPPING =
+            new ObjectPreference<>("cluster.run.parameters.mapping", null,
+                    new TypeReference<Map<String, RuntimeParameter>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, RuntimeParameter>>() {}));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
@@ -585,6 +615,13 @@ public class SystemPreferences {
     public static final IntPreference  LAUNCH_UID_SEED = new IntPreference("launch.uid.seed", 70000,
             LAUNCH_GROUP, pass, true);
 
+    public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
+            "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    public static final ObjectPreference<List<Map<String, Object>>> LAUNCH_DISK_THRESHOLDS = new ObjectPreference<>(
+            "launch.job.disk.size.thresholds", null, new TypeReference<List<Map<String, Object>>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<Map<String, Object>>>() {}), true);
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
@@ -679,11 +716,30 @@ public class SystemPreferences {
             "", UI_GROUP, pass);
     public static final StringPreference UI_STORAGE_STATIC_PREVIEW_MASK =
             new StringPreference("ui.storage.static.preview.mask", "html,htm", UI_GROUP, pass, true);
+    public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_PIPELINE_ENABLED = new ObjectPreference<>(
+            "ui.run.maintenance.pipeline.enabled", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_TOOL_ENABLED = new ObjectPreference<>(
+            "ui.run.maintenance.tool.enabled", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final StringPreference UI_STORAGE_DOWNLOAD_ATTRIBUTE = new StringPreference(
+            "ui.storage.download.attribute", "download_allowed_roles", UI_GROUP, pass, true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
             "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
             FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    public static final StringPreference FACETED_FILTER_DISPLAY_NAME_TAG = new StringPreference(
+            "faceted.filter.display.name.tag", null, FACETED_FILTER_GROUP, pass, true);
+
+    public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DOWNLOAD = new ObjectPreference<>(
+            "faceted.filter.download", null, new TypeReference<Map<String, Object>>() {},
+            FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+
+    public static final StringPreference FACETED_FILTER_DOWNLOAD_FILE_TAG = new StringPreference(
+            "faceted.filter.download.file.tag", "download_url", FACETED_FILTER_GROUP, pass, true);
+
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
@@ -699,6 +755,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> CLOUD_DATA_DISTRIBUTION_URL = new ObjectPreference<>(
             "base.cloud.data.distribution.url", null, new TypeReference<Map<String, String>>() {},
             BASE_URLS_GROUP, isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
+    public static final StringPreference BASE_GLOBAL_DISTRIBUTION_URL = new StringPreference(
+            "base.global.distribution.url", "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/",
+            BASE_URLS_GROUP, isNotBlank, true);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,
@@ -711,10 +770,13 @@ public class SystemPreferences {
             new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
                     new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
                     isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
-    public static final ObjectPreference<Map<String, Map<String, String>>> DATA_SHARING_STATIC_HEADERS =
-            new ObjectPreference<>("data.sharing.static.resource.headers", null,
-                    new TypeReference<Map<String, Map<String, String>>>() {}, DATA_SHARING_GROUP,
-                    isNullOrValidJson(new TypeReference<Map<String, Map<String, String>>>() {}));
+    public static final ObjectPreference<Map<String, StaticResourceSettings>> DATA_SHARING_STATIC_RESOURCE_SETTINGS =
+            new ObjectPreference<>("data.sharing.static.resource.settings", null,
+                    new TypeReference<Map<String, StaticResourceSettings>>() {}, DATA_SHARING_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, StaticResourceSettings>>() {}));
+    public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
+            new StringPreference("data.sharing.static.resource.template.path", "classpath:views/folder.vm",
+                    DATA_SHARING_GROUP, pass);
 
     // SYSTEM_GROUP
     /**
@@ -741,6 +803,9 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_LIMIT_LOG_LINES = new IntPreference(
             "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
+
+    public static final StringPreference SYSTEM_RUN_TAG_DATE_SUFFIX = new StringPreference(
+            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, pass);
 
     /**
      * Level of CPU load, below which a Run is considered `idle`
@@ -785,6 +850,9 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_LONG_PAUSED_ACTION = new StringPreference("system.long.paused.action",
             LongPausedRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidLongPauseRunAction);
+    public static final IntPreference SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES =
+            new IntPreference("system.long.paused.action.timeout.minutes",
+                    30, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Controls how long resource monitoring stats are being kept, in days
      */
@@ -844,7 +912,6 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
             "system.maintenance.mode.banner",
             "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
-
     public static final IntPreference SYSTEM_USAGE_USERS_MONITOR_DELAY = new IntPreference(
             "system.usage.users.monitor.delay", 300000, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_USAGE_USERS_MONITOR_ENABLE = new BooleanPreference(
@@ -855,6 +922,10 @@ public class SystemPreferences {
             "system.usage.users.clean.delay",  Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_USAGE_USERS_STORE_DAYS = new IntPreference(
             "system.usage.users.store.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_NOTIFICATIONS_EXP_PERIOD = new IntPreference(
+            "system.notifications.exp.period", null, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_NOTIFICATIONS_ENABLE = new BooleanPreference(
+            "system.notifications.enable", false, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -935,12 +1006,18 @@ public class SystemPreferences {
     public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
             20, SEARCH_GROUP, pass);
 
+    public static final IntPreference SEARCH_EXPORT_PAGE_SIZE = new IntPreference(
+            "search.export.page.size", 5000, SEARCH_GROUP, isGreaterThan(0));
+
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
-        "search.storage.elements.hide.mask",
+        "search.storage.elements.settings",
         Collections.emptyList(),
         new TypeReference<List<StorageFileSearchMask>>() {},
         SEARCH_GROUP,
         isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
+
+    public static final StringPreference SEARCH_ELASTIC_PREFIX_FILTER_FIELD = new StringPreference(
+            "search.elastic.prefix.filter.field", "id", SEARCH_GROUP, pass);
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
@@ -1045,6 +1122,10 @@ public class SystemPreferences {
             "ldap.blocked.user.name.attribute", "sAMAccountName", LDAP_GROUP, pass);
     public static final IntPreference LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE = new IntPreference(
             "ldap.blocked.user.filter.page.size", 50, LDAP_GROUP, pass);
+    public static final ObjectPreference<Set<String>> LDAP_INVALID_USER_ENTRIES = new ObjectPreference<>(
+            "ldap.blocked.invalid.user.entries",
+            Collections.singleton("Name not found"), new TypeReference<Set<String>>() {}, LDAP_GROUP,
+            isNullOrValidJson(new TypeReference<Set<String>>() {}));
 
     //NGS Preprocessing
     public static final StringPreference PREPROCESSING_MACHINE_RUN_CLASS = new StringPreference(

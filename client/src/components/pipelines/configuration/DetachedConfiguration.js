@@ -45,7 +45,7 @@ import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import HiddenObjects from '../../../utils/hidden-objects';
 import getPathParameters from '../browser/metadata-controls/get-path-parameters';
-import {applyCustomCapabilitiesParameters} from "../launch/form/utilities/run-capabilities";
+import {applyCustomCapabilitiesParameters} from '../launch/form/utilities/run-capabilities';
 
 const DTS_ENVIRONMENT = 'DTS';
 

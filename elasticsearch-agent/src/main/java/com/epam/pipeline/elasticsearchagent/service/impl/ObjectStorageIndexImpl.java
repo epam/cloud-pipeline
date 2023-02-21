@@ -21,12 +21,14 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
-import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
@@ -34,14 +36,21 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -67,6 +76,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     @Getter
     private final SearchDocumentType documentType;
     private final String tagDelimiter;
+    private final boolean includeVersions;
+
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Override
@@ -98,16 +109,14 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             final Supplier<TemporaryCredentials> credentialsSupplier = () -> getTemporaryCredentials(dataStorage);
             final TemporaryCredentials credentials = credentialsSupplier.get();
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
-                final Stream<DataStorageFile> files = fileManager
-                        .files(dataStorage.getRoot(),
-                                Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
-                                credentialsSupplier);
-                StreamUtils.chunked(files, bulkLoadTagsSize)
-                        .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
-                        .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())))
-                        .map(file -> createIndexRequest(file, dataStorage, permissionsContainer, indexName,
-                                credentials.getRegion()))
-                        .forEach(requestContainer::add);
+
+                final Stream<DataStorageFile> files = dataStorage.isVersioningEnabled() && includeVersions
+                        ? loadFileWithVersions(dataStorage, credentialsSupplier)
+                        : loadFiles(dataStorage, credentialsSupplier);
+                files.map(file -> createIndexRequest(
+                        file, dataStorage, permissionsContainer, indexName, credentials.getRegion(),
+                        findFileContent(dataStorage, file.getPath()))
+                ).forEach(requestContainer::add);
             }
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
@@ -122,7 +131,42 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         }
     }
 
-    private IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
+    private Stream<DataStorageFile> loadFiles(final AbstractDataStorage dataStorage,
+                                              final Supplier<TemporaryCredentials> credentialsSupplier) {
+        return StreamUtils.chunked(
+                        fileManager.files(dataStorage.getRoot(),
+                                Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
+                                credentialsSupplier), bulkLoadTagsSize
+                ).flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
+                .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath())));
+    }
+
+    private Stream<DataStorageFile> loadFileWithVersions(final AbstractDataStorage dataStorage,
+                                                         final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final Stream<DataStorageFile> files = fileManager.versions(
+                dataStorage.getRoot(),
+                Optional.ofNullable(dataStorage.getPrefix()).orElse(StringUtils.EMPTY),
+                credentialsSupplier,
+                true
+        );
+        return StreamUtils.grouped(
+                        StreamUtils.chunked(files, bulkLoadTagsSize)
+                                .flatMap(filesChunk -> filesWithIncorporatedTags(dataStorage, filesChunk))
+                                .peek(file -> file.setPath(dataStorage.resolveRelativePath(file.getPath()))),
+                        Comparator.comparing(AbstractDataStorageItem::getPath))
+                .filter(CollectionUtils::isNotEmpty)
+                .map(versions -> {
+                    final DataStorageFile file = versions.get(0);
+                    file.setVersions(
+                            versions.stream().skip(1).collect(
+                                    Collectors.toMap(DataStorageFile::getVersion, v -> v)
+                            )
+                    );
+                    return file;
+                });
+    }
+
+    IndexRequestContainer getRequestContainer(final String indexName, final int bulkInsertSize) {
         return new IndexRequestContainer(requests -> elasticsearchServiceClient.sendRequests(indexName, requests),
                 bulkInsertSize);
     }
@@ -133,6 +177,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         action.setBucketName(dataStorage.getPath());
         action.setId(dataStorage.getId());
         action.setList(true);
+        action.setListVersion(true);
         return cloudPipelineAPIClient
                 .generateTemporaryCredentials(Collections.singletonList(action));
     }
@@ -153,11 +198,11 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                                             final AbstractDataStorage dataStorage,
                                             final PermissionsContainer permissionsContainer,
                                             final String indexName,
-                                            final String region) {
+                                            final String region,
+                                            final String content) {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
-                        permissionsContainer,
-                        getDocumentType(), tagDelimiter));
+                        permissionsContainer, getDocumentType(), tagDelimiter, content));
     }
 
     private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,
@@ -179,5 +224,24 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
 
     private String withTrailingDelimiter(final String path, final String delimiter) {
         return StringUtils.isNotBlank(path) && !path.endsWith(delimiter) ? path + delimiter : path;
+    }
+
+    private String findFileContent(final AbstractDataStorage storage, final String filePath) {
+        if (fileMapper.isSkipContent(storage.getName(), filePath)) {
+            return null;
+        }
+        final DataStorageDownloadFileUrl downloadUrl = cloudPipelineAPIClient
+                .generateDownloadUrl(storage.getId(), filePath);
+        if (Objects.isNull(downloadUrl) || StringUtils.isBlank(downloadUrl.getUrl())) {
+            log.error("Cannot find download url for file '{}' from storage '{}'", filePath, storage.getName());
+            return null;
+        }
+        try (InputStream inputStream = new URL(downloadUrl.getUrl()).openStream()) {
+            return fileMapper.getFileContent(IOUtils.toByteArray(inputStream), filePath, log);
+        } catch (IOException e) {
+            log.error("An error occurred during reading file '{}' content from storage '{}'",
+                    filePath, storage.getName(), e);
+            return null;
+        }
     }
 }

@@ -134,6 +134,9 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
 
         return CloudPipelineNotification.build_from_dicts(notification_template, notification_settings)
 
+    def load_entity_permissions(self, entity_id, entity_class):
+        return self.api.get_entity_permissions(entity_id, entity_class)
+
     def _load_default_lifecycle_rule_notification(self):
         notification = self.load_notification(self.DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE)
         default_rule_prolong_days = self.load_preference("storage.lifecycle.prolong.days")
@@ -158,5 +161,6 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
             recipients=recipients,
             enabled=notification.settings.enabled,
             subject=notification.template.subject if notification.template.subject else "",
-            body=notification.template.body if notification.template.body else ""
+            body=notification.template.body if notification.template.body else "",
+            notify_users=False
         )

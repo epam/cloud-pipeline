@@ -48,6 +48,14 @@ public final class ProviderUtils {
         return StringUtils.isNotBlank(path) && path.startsWith(DELIMITER) ? path.substring(1) : path;
     }
 
+    public static String withLeadingDelimiter(final String path) {
+        return StringUtils.isNotBlank(path) && path.startsWith(DELIMITER) ? path : DELIMITER + path;
+    }
+
+    public static String delimiterIfEmpty(final String path) {
+        return StringUtils.isBlank(path) ? DELIMITER : path;
+    }
+
     public static DatastoragePath parsePath(final String fullPath) {
         final String[] chunks = fullPath.split(DELIMITER);
         final String root = chunks[0];

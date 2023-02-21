@@ -61,20 +61,20 @@ class AzureRegionDaoHelper extends AbstractCloudRegionDaoHelper<AzureRegion, Azu
     @Override
     @SneakyThrows
     public AzureRegion parseCloudRegion(final ResultSet rs) {
-        final AzureRegion azureRegion = new AzureRegion();
-        fillCommonCloudRegionFields(azureRegion, rs);
-        azureRegion.setCorsRules(rs.getString(CloudRegionParameters.CORS_RULES.name()));
-        azureRegion.setStorageAccount(rs.getString(CloudRegionParameters.STORAGE_ACCOUNT.name()));
-        azureRegion.setResourceGroup(rs.getString(CloudRegionParameters.RESOURCE_GROUP.name()));
-        azureRegion.setAzurePolicy(parsePolicy(rs.getString(CloudRegionParameters.POLICY.name())));
-        azureRegion.setAuthFile(rs.getString(CloudRegionParameters.AUTH_FILE.name()));
-        azureRegion.setSubscription(rs.getString(CloudRegionParameters.SUBSCRIPTION.name()));
-        azureRegion.setSshPublicKeyPath(rs.getString(CloudRegionParameters.SSH_PUBLIC_KEY.name()));
-        azureRegion.setMeterRegionName(rs.getString(CloudRegionParameters.METER_REGION_NAME.name()));
-        azureRegion.setAzureApiUrl(rs.getString(CloudRegionParameters.AZURE_API_URL.name()));
-        azureRegion.setPriceOfferId(rs.getString(CloudRegionParameters.PRICE_OFFER_ID.name()));
-        azureRegion.setEnterpriseAgreements(rs.getBoolean(CloudRegionParameters.ENTERPRISE_AGREEMENTS.name()));
-        return azureRegion;
+        final AzureRegion region = new AzureRegion();
+        fillCommonCloudRegionFields(region, rs);
+        region.setCorsRules(rs.getString(CloudRegionParameters.CORS_RULES.name()));
+        region.setStorageAccount(rs.getString(CloudRegionParameters.STORAGE_ACCOUNT.name()));
+        region.setResourceGroup(rs.getString(CloudRegionParameters.RESOURCE_GROUP.name()));
+        region.setAzurePolicy(parsePolicy(rs.getString(CloudRegionParameters.POLICY.name())));
+        region.setAuthFile(rs.getString(CloudRegionParameters.AUTH_FILE.name()));
+        region.setSubscription(rs.getString(CloudRegionParameters.SUBSCRIPTION.name()));
+        region.setSshPublicKeyPath(rs.getString(CloudRegionParameters.SSH_PUBLIC_KEY.name()));
+        region.setMeterRegionName(rs.getString(CloudRegionParameters.METER_REGION_NAME.name()));
+        region.setAzureApiUrl(rs.getString(CloudRegionParameters.AZURE_API_URL.name()));
+        region.setPriceOfferId(rs.getString(CloudRegionParameters.PRICE_OFFER_ID.name()));
+        region.setEnterpriseAgreements(rs.getBoolean(CloudRegionParameters.ENTERPRISE_AGREEMENTS.name()));
+        return region;
     }
 
     private AzurePolicy parsePolicy(final String policy) {

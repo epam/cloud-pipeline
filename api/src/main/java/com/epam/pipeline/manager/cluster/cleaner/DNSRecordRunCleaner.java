@@ -17,91 +17,82 @@ package com.epam.pipeline.manager.cluster.cleaner;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecordStatus;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.utils.URLUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class DNSRecordRunCleaner implements RunCleaner {
 
-    private static final String HTTP = "http://";
-    private static final String HTTPS = "https://";
-    private static final String DELIMITER = "/";
-    private static final String PORT_DELIMITER = ":";
-
-    private final PreferenceManager preferenceManager;
-    private final EdgeServiceManager edgeServiceManager;
     private final CloudFacade cloudFacade;
+    private final EdgeServiceManager edgeServiceManager;
     private final PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
-
-    public DNSRecordRunCleaner(final PreferenceManager preferenceManager,
-                               final EdgeServiceManager edgeServiceManager,
-                               final CloudFacade cloudFacade,
-                               final PipelineRunServiceUrlManager pipelineRunServiceUrlManager) {
-        this.preferenceManager = preferenceManager;
-        this.edgeServiceManager = edgeServiceManager;
-        this.cloudFacade = cloudFacade;
-        this.pipelineRunServiceUrlManager = pipelineRunServiceUrlManager;
-    }
 
     @Override
     public void cleanResources(final PipelineRun run) {
-        final String defaultEdgeRegion = preferenceManager.getPreference(SystemPreferences.DEFAULT_EDGE_REGION);
-        if (StringUtils.isEmpty(defaultEdgeRegion)) {
-            return;
-        }
-        final String serviceUrls = pipelineRunServiceUrlManager.loadByRunIdAndRegion(run.getId(), defaultEdgeRegion);
-        if (StringUtils.isEmpty(serviceUrls)) {
-            return;
-        }
-
-        final String hostZoneId = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID);
-        final String hostZoneUrlBase = preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE);
-
-        if (StringUtils.isEmpty(hostZoneId) || StringUtils.isEmpty(hostZoneUrlBase)) {
-            return;
-        }
-
-        final List<Map<String, String>> serviceUrlsList = JsonMapper.parseData(
-                serviceUrls,
-                new TypeReference<List<Map<String, String>>>(){}
-        );
-
-        serviceUrlsList.forEach(serviceUrl -> {
-            final String url = serviceUrl.get("url");
-            if (!StringUtils.isEmpty(url) && url.contains(hostZoneUrlBase)) {
-                Assert.isTrue(
-                        !StringUtils.isEmpty(hostZoneId) && !StringUtils.isEmpty(hostZoneUrlBase),
-                        "instance.dns.hosted.zone.id or instance.dns.hosted.zone.base is empty can't remove DNS record."
-                );
-                cloudFacade.removeDNSRecord(run.getInstance().getCloudRegionId(),
-                        new InstanceDNSRecord(unify(url), edgeServiceManager.getEdgeDomainNameOrIP(), null));
-            }
-        });
+        cleanResources(run.getId());
     }
 
     @Override
     public void cleanResources(final Long runId) {
-        log.error("Clearing resource via runId is not supported.");
+        pipelineRunServiceUrlManager.loadByRunId(runId).forEach(this::removeDNSRecords);
     }
 
-    private static String unify(final String url) {
-        return url.trim()
-                .replace(HTTP, "")
-                .replace(HTTPS, "")
-                .split(DELIMITER)[0]
-                .split(PORT_DELIMITER)[0];
+    private void removeDNSRecords(final String regionName, final String serializedServiceUrls) {
+        final String edgeUrl = edgeServiceManager.getEdgeDomainNameOrIP(regionName);
+        for (final ServiceUrl serviceUrl : getDeserializedServiceUrls(serializedServiceUrls)) {
+            if (!serviceUrl.isCustomDNS()) {
+                continue;
+            }
+            final String domain = URLUtils.getHost(serviceUrl.getUrl());
+            final InstanceDNSRecord record = new InstanceDNSRecord(domain, edgeUrl,
+                    InstanceDNSRecordFormat.ABSOLUTE, InstanceDNSRecordStatus.NOOP);
+            cloudFacade.removeDNSRecord(serviceUrl.getRegionId(), record);
+        }
+    }
+
+    private List<ServiceUrl> getDeserializedServiceUrls(final String serializedServiceUrls) {
+        return deserializedServiceUrls(serializedServiceUrls)
+                .collect(Collectors.toList());
+    }
+
+    private Stream<ServiceUrl> deserializedServiceUrls(final String serializedServiceUrls) {
+        return Optional.ofNullable(deserializeServiceUrls(serializedServiceUrls))
+                .map(Collection::stream)
+                .orElseGet(Stream::empty)
+                .filter(serviceUrl -> StringUtils.isNotBlank(serviceUrl.getUrl()) && serviceUrl.getRegionId() != null);
+    }
+
+    private List<ServiceUrl> deserializeServiceUrls(final String serializedServiceUrls) {
+        final ObjectMapper mapper = JsonMapper.newInstance()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return JsonMapper.parseData(serializedServiceUrls, new TypeReference<List<ServiceUrl>>() {}, mapper);
+    }
+
+    @Value
+    private static class ServiceUrl {
+        String url;
+        Long regionId;
+        boolean customDNS;
     }
 }

@@ -68,11 +68,11 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         params.add(PATH, TEST);
         params.add(SHOW_VERSION, FALSE_AS_STRING);
         Mockito.doReturn(dataStorageListing)
-                .when(mockStorageApiService).getDataStorageItems(ID, TEST, false, null, null);
+                .when(mockStorageApiService).getDataStorageItems(ID, TEST, false, null, null, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(DATASTORAGE_ITEMS_URL, ID)).params(params));
 
-        Mockito.verify(mockStorageApiService).getDataStorageItems(ID, TEST, false, null, null);
+        Mockito.verify(mockStorageApiService).getDataStorageItems(ID, TEST, false, null, null, false);
         assertResponse(mvcResult, folders, DatastorageCreatorUtils.DATA_STORAGE_FOLDER_LIST_TYPE);
     }
 
@@ -86,11 +86,11 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         params.add(PATH, TEST);
         params.add(SHOW_VERSION, TRUE_AS_STRING);
         Mockito.doReturn(dataStorageListing)
-                .when(mockStorageApiService).getDataStorageItemsOwner(ID, TEST, true, null, null);
+                .when(mockStorageApiService).getDataStorageItemsOwner(ID, TEST, true, null, null, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(DATASTORAGE_ITEMS_URL, ID)).params(params));
 
-        Mockito.verify(mockStorageApiService).getDataStorageItemsOwner(ID, TEST, true, null, null);
+        Mockito.verify(mockStorageApiService).getDataStorageItemsOwner(ID, TEST, true, null, null, false);
         assertResponse(mvcResult, files, DatastorageCreatorUtils.DATA_STORAGE_FILE_LIST_TYPE);
     }
 
@@ -109,11 +109,11 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         params.add(PAGE_SIZE, ID_AS_STRING);
         params.add(MARKER, TEST);
         Mockito.doReturn(dataStorageListing)
-                .when(mockStorageApiService).getDataStorageItems(ID, TEST, false, TEST_INT, TEST);
+                .when(mockStorageApiService).getDataStorageItems(ID, TEST, false, TEST_INT, TEST, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(DATASTORAGE_LISTING_URL, ID)).params(params));
 
-        Mockito.verify(mockStorageApiService).getDataStorageItems(ID, TEST, false, TEST_INT, TEST);
+        Mockito.verify(mockStorageApiService).getDataStorageItems(ID, TEST, false, TEST_INT, TEST, false);
         assertResponse(mvcResult, dataStorageListing, DatastorageCreatorUtils.DATA_STORAGE_LISTING_TYPE);
     }
 

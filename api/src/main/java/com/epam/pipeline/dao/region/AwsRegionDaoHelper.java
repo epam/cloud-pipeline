@@ -51,22 +51,22 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, Abstrac
     @Override
     @SneakyThrows
     public AwsRegion parseCloudRegion(final ResultSet rs) {
-        final AwsRegion awsRegion = new AwsRegion();
-        fillCommonCloudRegionFields(awsRegion, rs);
-        awsRegion.setCorsRules(rs.getString(CloudRegionParameters.CORS_RULES.name()));
-        awsRegion.setPolicy(rs.getString(CloudRegionParameters.POLICY.name()));
-        awsRegion.setKmsKeyId(rs.getString(CloudRegionParameters.KMS_KEY_ID.name()));
-        awsRegion.setKmsKeyArn(rs.getString(CloudRegionParameters.KMS_KEY_ARN.name()));
-        awsRegion.setProfile(rs.getString(CloudRegionParameters.PROFILE.name()));
-        awsRegion.setTempCredentialsRole(rs.getString(CloudRegionParameters.TEMP_CREDENTIALS_ROLE.name()));
+        final AwsRegion region = new AwsRegion();
+        fillCommonCloudRegionFields(region, rs);
+        region.setCorsRules(rs.getString(CloudRegionParameters.CORS_RULES.name()));
+        region.setPolicy(rs.getString(CloudRegionParameters.POLICY.name()));
+        region.setKmsKeyId(rs.getString(CloudRegionParameters.KMS_KEY_ID.name()));
+        region.setKmsKeyArn(rs.getString(CloudRegionParameters.KMS_KEY_ARN.name()));
+        region.setProfile(rs.getString(CloudRegionParameters.PROFILE.name()));
+        region.setTempCredentialsRole(rs.getString(CloudRegionParameters.TEMP_CREDENTIALS_ROLE.name()));
         final int backupDuration = rs.getInt(CloudRegionParameters.BACKUP_DURATION.name());
         if (!rs.wasNull()) {
-            awsRegion.setBackupDuration(backupDuration);
+            region.setBackupDuration(backupDuration);
         }
-        awsRegion.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
-        awsRegion.setSshKeyName(rs.getString(CloudRegionParameters.SSH_KEY_NAME.name()));
-        awsRegion.setIamRole(rs.getString(CloudRegionParameters.AWS_IAM_ROLE.name()));
-        return awsRegion;
+        region.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
+        region.setSshKeyName(rs.getString(CloudRegionParameters.SSH_KEY_NAME.name()));
+        region.setIamRole(rs.getString(CloudRegionParameters.AWS_IAM_ROLE.name()));
+        return region;
     }
 
     @Override

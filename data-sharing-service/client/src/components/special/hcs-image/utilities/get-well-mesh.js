@@ -14,23 +14,21 @@
  *  limitations under the License.
  */
 
-export function getWellMesh (well) {
+export function getWellMesh (well, fields = []) {
   if (!well) {
     return undefined;
   }
-  const {images = []} = well;
-  if (images.length === 0) {
+  const {
+    images = [],
+    meshSize
+  } = well;
+  if (images.length === 0 || !meshSize) {
     return undefined;
   }
-  const minX = Math.min(...images.map(o => o.x));
-  const maxX = Math.max(...images.map(o => o.x));
-  const minY = Math.min(...images.map(o => o.y));
-  const maxY = Math.max(...images.map(o => o.y));
-  const longestSeries = Math.max(maxX - minX + 1, maxY - minY + 1);
   return {
-    columns: longestSeries,
-    rows: longestSeries,
-    cells: images.map(image => ({column: image.x - minX, row: maxY - image.y}))
+    meshSize,
+    cells: images.map(image => ({x: image.realX, y: image.realY, id: image.id})),
+    selected: fields.map(image => ({x: image.realX, y: image.realY, id: image.id}))
   };
 }
 
@@ -42,7 +40,5 @@ export function getWellImageFromMesh (well, cell) {
   if (images.length === 0) {
     return undefined;
   }
-  const minX = Math.min(...images.map(o => o.x));
-  const maxY = Math.max(...images.map(o => o.y));
-  return images.find(image => image.x === minX + cell.column && image.y === maxY - cell.row);
+  return images.find(image => image.id === cell.id);
 }

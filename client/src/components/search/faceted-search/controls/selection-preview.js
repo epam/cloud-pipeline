@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,77 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, Button, Modal} from 'antd';
+import {
+  Alert,
+  Checkbox,
+  Button,
+  Modal
+} from 'antd';
 import classNames from 'classnames';
+import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import DocumentListPresentation from '../document-presentation/list';
 import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
+import SelectionDownloadCommand from './selection-download-command';
+import {SearchItemTypes} from '../../../../models/search';
 import styles from '../search-results.css';
 
+@inject('preferences')
+@observer
 class SelectionPreview extends React.Component {
   state = {
     selection: [],
-    removedItems: []
+    removedItems: [],
+    downloadCommandVisible: false
   };
 
   get actualSelection () {
-    const {items = []} = this.props;
+    const {
+      items = [],
+      preferences,
+      notDownloadableStorages = []
+    } = this.props;
     const {removedItems = []} = this.state;
-    return items.filter(o => !removedItems
+    const notRemoved = items.filter(o => !removedItems
       .find(elasticItemUtilities.filterMatchingItemsFn(o))
     );
+    return elasticItemUtilities.filterDownloadableItems(
+      notRemoved,
+      preferences,
+      notDownloadableStorages
+    );
+  }
+
+  @computed
+  get commandGenerationAvailable () {
+    const {preferences} = this.props;
+    const {
+      command = {}
+    } = preferences.facetedFilterDownload || {};
+    return Object.keys(command).length > 0;
+  }
+
+  get selectionInfo () {
+    return this.actualSelection
+      .filter(item => item.type !== SearchItemTypes.NFSFile)
+      .map(selection => ({
+        storageId: selection.parentId,
+        path: selection.downloadOverride || selection.path,
+        name: selection.name
+      }));
+  }
+
+  get notAllowedToDownload () {
+    const {
+      items = [],
+      preferences,
+      notDownloadableStorages = []
+    } = this.props;
+    return items.filter((item) => !elasticItemUtilities.itemIsDownloadable(
+      item,
+      preferences,
+      notDownloadableStorages
+    ));
   }
 
   componentDidMount () {
@@ -75,27 +128,66 @@ class SelectionPreview extends React.Component {
     }
   };
 
-  onShareClicked = () => {
-    const {onShare, items = []} = this.props;
-    if (onShare) {
-      const {removedItems = []} = this.state;
-      onShare(
-        items.filter(o => !removedItems
-          .find(elasticItemUtilities.filterMatchingItemsFn(o))
-        )
-      );
+  onDownloadClicked = () => {
+    const {onDownload} = this.props;
+    if (typeof onDownload === 'function') {
+      onDownload(this.actualSelection);
     }
+  };
+
+  openDownloadCommandModal = () => {
+    this.setState({downloadCommandVisible: true});
+  };
+
+  closeDownloadCommandModal = () => {
+    this.setState({downloadCommandVisible: false});
+  };
+
+  renderSelectionDocument = (document) => {
+    const {extraColumns = []} = this.props;
+    const isDownloadable = !this.notAllowedToDownload
+      .find(item => item.id === document.id);
+    return (
+      <div
+        key={`${document.elasticId}`}
+        id={`search-result-item-${document.elasticId}`}
+        className={
+          classNames(
+            styles.resultItem,
+            'cp-even-odd-element',
+            'cp-search-result-item',
+            {'disabled': !isDownloadable}
+          )
+        }
+        style={{cursor: 'default', margin: '2px 0'}}
+      >
+        <Checkbox
+          checked={isDownloadable && this.itemIsSelected(document)}
+          onChange={this.toggleSelection(document)}
+          style={{marginRight: 5}}
+          disabled={!isDownloadable}
+        />
+        <DocumentListPresentation
+          className={styles.title}
+          document={document}
+          extraColumns={extraColumns}
+        />
+      </div>
+    );
   };
 
   render () {
     const {
-      extraColumns = [],
       onClose,
       onClear,
       title = 'Selected documents',
       visible
     } = this.props;
-    const {selection = []} = this.state;
+    const {
+      selection = [],
+      downloadCommandVisible
+    } = this.state;
+    const skipped = this.notAllowedToDownload.length;
     return (
       <Modal
         visible={visible}
@@ -125,12 +217,26 @@ class SelectionPreview extends React.Component {
               >
                 CLEAR SELECTION
               </Button>
+              {
+                this.commandGenerationAvailable && (
+                  <Button
+                    disabled={this.selectionInfo.length === 0}
+                    style={{marginRight: 5}}
+                    onClick={this.openDownloadCommandModal}
+                  >
+                    GENERATE COMMAND
+                  </Button>
+                )
+              }
               <Button
                 disabled={this.actualSelection.length === 0}
-                onClick={this.onShareClicked}
+                onClick={this.onDownloadClicked}
                 type="primary"
               >
-                SHARE
+                DOWNLOAD
+                {
+                  skipped > 0 && ` (${this.actualSelection.length})`
+                }
               </Button>
             </div>
           </div>
@@ -138,31 +244,31 @@ class SelectionPreview extends React.Component {
       >
         <div style={{maxHeight: '50vh', overflow: 'auto'}}>
           {
-            selection.map(document => (
-              <div
-                key={`${document.elasticId}`}
-                id={`search-result-item-${document.elasticId}`}
-                className={
-                  classNames(
-                    styles.resultItem,
-                    'cp-even-odd-element'
-                  )
-                }
-                style={{cursor: 'default', margin: '2px 0'}}
-              >
-                <Checkbox
-                  checked={this.itemIsSelected(document)}
-                  onChange={this.toggleSelection(document)}
-                  style={{marginRight: 5}}
-                />
-                <DocumentListPresentation
-                  className={styles.title}
-                  document={document}
-                  extraColumns={extraColumns}
-                />
-              </div>
-            ))
+            skipped > 0 && (
+              <Alert
+                type="info"
+                showIcon
+                style={{marginBottom: 5}}
+                message={(
+                  <div>
+                    {skipped} file{skipped === 1 ? ' is' : 's are'} not allowed
+                    to be downloaded and therefore will be skipped
+                  </div>
+                )}
+              />
+            )
           }
+          {
+            selection.map(this.renderSelectionDocument)
+          }
+          <SelectionDownloadCommand
+            items={this.selectionInfo}
+            style={{marginTop: 10}}
+            visible={downloadCommandVisible}
+            onClose={this.closeDownloadCommandModal}
+            skipped={this.notAllowedToDownload.length}
+            filtered={(this.actualSelection.length - this.selectionInfo.length)}
+          />
         </div>
       </Modal>
     );
@@ -174,7 +280,8 @@ SelectionPreview.propTypes = {
   items: PropTypes.array,
   onClose: PropTypes.func,
   onClear: PropTypes.func,
-  onShare: PropTypes.func,
+  onDownload: PropTypes.func,
+  notDownloadableStorages: PropTypes.arrayOf(PropTypes.number),
   title: PropTypes.string,
   visible: PropTypes.bool
 };

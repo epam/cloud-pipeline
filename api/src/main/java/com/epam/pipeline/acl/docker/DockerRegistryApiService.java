@@ -84,8 +84,7 @@ public class DockerRegistryApiService {
         return registryManager.issueTokenForDockerRegistry(userName, token, dockerRegistryHost, scope);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.DockerRegistry', 'READ')")
+    @PreAuthorize("hasRole('ADMIN') OR @dockerPermissionManager.hasDockerReadPermission(#id)")
     public byte[] getCertificateContent(Long id) {
         return registryManager.getCertificateContent(id);
     }

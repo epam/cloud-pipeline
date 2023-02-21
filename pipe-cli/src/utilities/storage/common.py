@@ -297,9 +297,11 @@ class AbstractTransferManager:
 class AbstractListingManager:
     __metaclass__ = ABCMeta
 
+    STANDARD_TIER = "STANDARD"
+
     @abstractmethod
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                   show_all=False):
+                   show_all=False, show_archive=False):
         """
         Lists files and folders by a relative path in the current storage.
 
@@ -307,6 +309,7 @@ class AbstractListingManager:
         :param recursive: Specifies if the listing has to be recursive.
         :param page_size: Max number of items to return. The argument is ignored if show_all argument is specified.
         :param show_all: Specifies if all items have to be listed.
+        :param show_archive: Specifies if archived items have to be listed
         """
         pass
 

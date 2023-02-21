@@ -348,6 +348,7 @@ public class PipelineRunManager {
     public void prolongIdleRun(Long runId) {
         PipelineRun run = loadPipelineRun(runId);
         run.setLastIdleNotificationTime(null);
+        run.setLastNotificationTime(null);
         run.setProlongedAtTime(DateUtils.nowUTC());
         updateProlongIdleRunAndLastIdleNotificationTime(run);
     }

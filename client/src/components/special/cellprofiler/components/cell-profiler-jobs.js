@@ -21,6 +21,7 @@ import {Alert, Icon, Pagination} from 'antd';
 import {filtersAreEqual, getBatchJobs} from '../model/analysis/batch';
 import CellProfilerJob from './components/cell-profiler-job';
 import CellProfilerJobsFilters from './components/cell-profiler-jobs-filters';
+import CellProfilerExternalJobs from './external-jobs/external-jobs';
 import styles from './cell-profiler.css';
 
 const PAGE_SIZE = 2;
@@ -247,6 +248,13 @@ class CellProfilerJobs extends React.Component {
         <CellProfilerJobsFilters
           filters={this.filters}
           onChange={this.onChangeFilters}
+        />
+        <CellProfilerExternalJobs
+          className={styles.cellProfilerOtherJobs}
+          selected={this.selectedJobId}
+          onSelect={this.onSelectJob}
+          filters={this.filters}
+          onChangeFilters={this.onChangeFilters}
         />
         {
           error && (

@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
@@ -191,6 +192,9 @@ public interface CloudPipelineAPI {
     @POST("datastorage/{id}/tags/batch/load")
     Call<Result<List<DataStorageTag>>> loadDataStorageObjectTags(@Path(ID) Long storageId,
                                                                  @Body DataStorageTagLoadBatchRequest request);
+
+    @GET("datastorage/{id}/generateUrl")
+    Call<Result<DataStorageDownloadFileUrl>> generateDownloadUrl(@Path(ID) Long storageId, @Query(PATH) String path);
 
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();

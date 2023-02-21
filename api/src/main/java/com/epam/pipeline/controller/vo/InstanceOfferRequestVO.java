@@ -18,22 +18,28 @@ package com.epam.pipeline.controller.vo;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
+
+import java.util.List;
 
 @Getter
 @Setter
 public class InstanceOfferRequestVO {
     private String termType;
+    private List<String> termTypes;
     private String unit;
     private String instanceType;
     private String tenancy;
     private String operatingSystem;
     private String productFamily;
     private String volumeType;
+    private String volumeApiName;
     private Long regionId;
     private String cloudProvider;
 
     public boolean isEmpty() {
         return termType == null && unit == null && instanceType == null && tenancy == null && operatingSystem == null
-                && productFamily == null && volumeType == null && regionId == null && cloudProvider == null;
+                && productFamily == null && volumeType == null && regionId == null && cloudProvider == null &&
+                CollectionUtils.isEmpty(termTypes);
     }
 }

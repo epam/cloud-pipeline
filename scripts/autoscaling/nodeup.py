@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import os
 
 from pipeline import TaskStatus
 
@@ -69,6 +70,8 @@ def main():
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get('pool_id')
     is_dedicated = args.dedicated if args.dedicated else False
+    global_distribution_url = os.getenv('GLOBAL_DISTRIBUTION_URL',
+                                        default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
 
     if not kube_ip or not kubeadm_token:
         raise RuntimeError('Kubernetes configuration is required to create a new node')
@@ -123,6 +126,7 @@ def main():
             ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id,
                                                          pool_id, kms_encyr_key_id, num_rep, time_rep, kube_ip,
                                                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                                                         global_distribution_url,
                                                          pre_pull_images, is_dedicated)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)

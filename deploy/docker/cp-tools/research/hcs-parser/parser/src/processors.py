@@ -31,6 +31,7 @@ from PIL import Image
 from tifffile import imread
 from .utils import HcsParsingUtils, HcsFileLogger, log_run_info, get_int_run_param, get_bool_run_param
 from .tags import HcsFileTagProcessor
+from .evals import HcsFileEvalProcessor
 
 RAW_TO_OME_TIFF_FLAGS = os.getenv('HCS_PARSING_RAW2OMETIFF_EXTRA_FLAGS')
 BFORMATS_TO_RAW_FLAGS = os.getenv('HCS_PARSING_BIOFORMATS2RAW_EXTRA_FLAGS')
@@ -39,6 +40,9 @@ PLANE_COORDINATES_DELIMITER = os.getenv('HCS_PARSING_PLANE_COORDINATES_DELIMITER
 HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
 HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
+
+HCS_EVAL_DIR_NAME = os.getenv('HCS_EVAL_DIR_NAME', 'eval')
+EVAL_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_EVAL_ONLY')
 
 HCS_PREVIEW_OUTPUT_USE_ABSOLUTE_PATHS = get_bool_run_param('HCS_PARSING_PREVIEW_FIELDS_USE_ABSOLUTE_PATHS', 'true')
 TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
@@ -357,7 +361,7 @@ class HcsFileParser:
         wells_tags = self.read_wells_tags()
         if wells_tags:
             self._processing_logger.log_info("Tags " + str(wells_tags))
-        if not TAGS_PROCESSING_ONLY:
+        if not TAGS_PROCESSING_ONLY and not EVAL_PROCESSING_ONLY:
             if not self._localize_related_files():
                 self._processing_logger.log_info('Some errors occurred during copying files from the bucket, exiting...')
                 return 1
@@ -390,9 +394,14 @@ class HcsFileParser:
                 self._processing_logger.log_info('Results transfer was not successful...')
                 return 1
             self._write_hcs_file(time_series_details, plate_width, plate_height)
-        tags_processing_result = self.try_process_tags(xml_info_tree, wells_tags)
-        if TAGS_PROCESSING_ONLY:
-            return tags_processing_result
+        if not EVAL_PROCESSING_ONLY:
+            tags_processing_result = self.try_process_tags(xml_info_tree, wells_tags)
+            if TAGS_PROCESSING_ONLY:
+                return tags_processing_result
+        if not TAGS_PROCESSING_ONLY:
+            eval_processing_result = self.try_process_eval()
+            if EVAL_PROCESSING_ONLY:
+                return eval_processing_result
         self.create_stat_file()
         return 0
 
@@ -580,6 +589,30 @@ class HcsFileParser:
 
     def read_wells_tags(self):
         return HcsFileTagProcessor.read_well_tags(self.hcs_root_dir)
+
+    def try_process_eval(self):
+        result = 0
+        local_eval_folder = os.path.join(self.tmp_local_dir, HCS_EVAL_DIR_NAME)
+        harmony_eval_folder = os.path.join(self.hcs_root_dir, HCS_EVAL_DIR_NAME)
+        if not os.path.exists(harmony_eval_folder) or not os.listdir(harmony_eval_folder):
+            self._processing_logger.log_info('Evaluation files not found.')
+            return result
+        try:
+            HcsFileEvalProcessor(harmony_eval_folder, local_eval_folder)\
+                .parse_evaluations()
+            eval_results_path = os.path.join(local_eval_folder, HCS_EVAL_DIR_NAME)
+            if os.path.exists(eval_results_path) and os.listdir(eval_results_path):
+                cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
+                                                  .format(eval_results_path,
+                                                          HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
+                                                          + '/' + HCS_EVAL_DIR_NAME + '/'))
+                if cloud_transfer_result != 0:
+                    self._processing_logger.log_info('Evaluations transfer was not successful.')
+        except Exception as e:
+            self._processing_logger.log_info('An error occurred during evaluations processing: {}'.format(str(e)))
+            print(traceback.format_exc())
+            result = 1
+        return result
 
     def try_process_tags(self, xml_info_tree, wells_tags):
         tags_processing_result = 0

@@ -76,7 +76,7 @@ if ($Install) {
 `$env:CP_API_JWT_KEY_PUBLIC = "$env:API_PUBLIC_KEY"
 `$env:DTS_LOCAL_NAME = "$env:DTS_NAME"
 `$env:DTS_IMPERSONATION_ENABLED = "false"
-`$env:DTS_PIPE_EXECUTABLE = "$env:DTS_DIR\pipe\pipe\pipe.exe"
+`$env:DTS_PIPE_EXECUTABLE = "$env:DTS_DIR\pipe\pipe\pipe"
 "@ | Out-File -FilePath Environment.ps1 -Encoding ascii -Force -ErrorAction Stop
 
     Log "Loading environment..."

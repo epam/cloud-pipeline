@@ -16,10 +16,16 @@
 
 package com.epam.pipeline.external.datastorage.manager.preference;
 
+import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
+import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.external.datastorage.manager.CloudPipelineApiBuilder;
+import com.epam.pipeline.external.datastorage.manager.auth.PipelineAuthManager;
 import com.epam.pipeline.external.datastorage.message.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +37,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class PreferenceService {
@@ -40,12 +51,24 @@ public class PreferenceService {
     private final String preferencesPath;
     private final MessageHelper messageHelper;
     private final JsonMapper objectMapper;
+    private final Set<String> apiPreferences;
+    private final CloudPipelineApiExecutor apiExecutor;
+    private final PreferenceClient preferenceClient;
+    private final PipelineAuthManager authManager;
 
     public PreferenceService(@Value("${preferences.path:}") final String preferencesPath,
-                             final MessageHelper messageHelper) {
+                             @Value("${preferences.api.keys:}") final String apiPreferences,
+                             final MessageHelper messageHelper,
+                             final CloudPipelineApiBuilder builder,
+                             final CloudPipelineApiExecutor apiExecutor,
+                             final PipelineAuthManager authManager) {
         this.preferencesPath = preferencesPath;
         this.messageHelper = messageHelper;
+        this.apiPreferences = new HashSet<>(Arrays.asList(apiPreferences.split(",")));
+        this.authManager = authManager;
         this.objectMapper = new JsonMapper();
+        this.apiExecutor = apiExecutor;
+        this.preferenceClient = builder.getClient(PreferenceClient.class);
     }
 
     public String getValue(final String name) {
@@ -71,11 +94,28 @@ public class PreferenceService {
     public Map<String, Map<String, Object>> loadAll() {
         final File preferencesFile = validatePreferencesFileAndGet();
         try {
-            return objectMapper.readValue(preferencesFile, TypeFactory.defaultInstance()
-                    .constructParametricType(Map.class, String.class, Object.class));
+            final Map<String, Map<String, Object>> values = objectMapper.readValue(preferencesFile,
+                    TypeFactory.defaultInstance().constructParametricType(Map.class, String.class, Object.class));
+            return addApiPreferences(values);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to parse preference file", e);
         }
+    }
+
+    private Map<String, Map<String, Object>> addApiPreferences(final Map<String, Map<String, Object>> values) {
+        final HashMap<String, Map<String, Object>> preferences = new HashMap<>(values);
+        if (CollectionUtils.isNotEmpty(apiPreferences)) {
+            final List<Preference> apiPrefs = apiExecutor.execute(
+                    preferenceClient.loadPreferences(authManager.getHeader()));
+            ListUtils.emptyIfNull(apiPrefs).forEach(pref -> {
+                if (apiPreferences.contains(pref.getName())) {
+                    preferences.values().forEach(v -> v.remove(pref.getName()));
+                    preferences.putIfAbsent(pref.getPreferenceGroup(), new HashMap<>());
+                    preferences.get(pref.getPreferenceGroup()).put(pref.getName(), pref.getValue());
+                }
+            });
+        }
+        return preferences;
     }
 
     private File validatePreferencesFileAndGet() {

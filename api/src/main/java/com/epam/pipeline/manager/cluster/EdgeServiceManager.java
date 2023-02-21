@@ -107,9 +107,8 @@ public class EdgeServiceManager {
         }
     }
 
-    public String getEdgeDomainNameOrIP() {
-        final String defaultEdgeRegion = preferenceManager.getPreference(SystemPreferences.DEFAULT_EDGE_REGION);
-        final Map<String, String> labels = buildRegionsLabels(defaultEdgeRegion);
+    public String getEdgeDomainNameOrIP(final String region) {
+        final Map<String, String> labels = buildRegionsLabels(region);
         return kubernetesManager.getServicesByLabels(labels, edgeLabel).stream()
                 .findFirst()
                 .map(this::getServiceDescription)

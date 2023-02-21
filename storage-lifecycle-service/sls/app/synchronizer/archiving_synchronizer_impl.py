@@ -18,6 +18,7 @@ import datetime
 import os
 import re
 
+from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
 from sls.app.model.sync_event_model import StorageLifecycleRuleActionItems
 from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation
@@ -368,16 +369,23 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                     loaded_role = self.pipeline_api_client.load_role_by_name(recipient["name"])
                     if loaded_role and "users" in loaded_role:
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
+            if rule.notification.notify_users:
+                storage_users = StoragePermissionsManager(self.pipeline_api_client, storage.id).get_users()
+                cc_users.extend([user_name for user_name in storage_users if not cc_users.__contains__(user_name)])
 
             _to_user = next(iter(cc_users), None)
+            is_date_expired = self._is_action_date_expired(notification_properties)
+            date_of_action = date_utils.current_date_string() if is_date_expired \
+                else notification_properties["date_of_action"]
             notification_parameters = {
                 "storageName": storage.name,
                 "storageId": storage.id,
                 "ruleId": rule.rule_id,
                 "path": notification_properties["path"],
                 "storageClass": notification_properties["storage_class"],
-                "dateOfAction": notification_properties["date_of_action"],
-                "prolongDays": notification_properties["prolong_days"]
+                "dateOfAction": date_of_action,
+                "prolongDays": notification_properties["prolong_days"],
+                "isDateNotExpired": not is_date_expired
             }
 
             return rule.notification.subject, rule.notification.body, _to_user, cc_users, notification_parameters
@@ -518,3 +526,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         resulted_regexp = path_utils.convert_glob_to_regexp(glob_str)
         pattern = re.compile(resulted_regexp)
         return [p for p in directories if pattern.match(p)]
+
+    @staticmethod
+    def _is_action_date_expired(notification_properties):
+        date_of_action = notification_properties["date_of_action"]
+        if not date_of_action:
+            return False
+        return date_utils.is_date_before_now(date_utils.parse_date(date_of_action))

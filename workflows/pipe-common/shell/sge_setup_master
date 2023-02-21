@@ -424,7 +424,7 @@ create_execution_host
 
 "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py"
 
-for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*.sh; do
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
     (
         # shellcheck source=/dev/null
         [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
@@ -479,7 +479,7 @@ else
     pipe_log_success "All execution hosts are connected" "$SGE_MASTER_SETUP_TASK_WORKERS"
 fi
 
-for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
     (
         # shellcheck source=/dev/null
         [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"

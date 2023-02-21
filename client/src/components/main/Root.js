@@ -22,6 +22,7 @@ import GoogleApi from '../../models/google/GoogleApi';
 import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
 import notifications from '../../models/notifications/ActiveNotifications';
+import userNotifications from '../../models/notifications/CurrentUserNotifications';
 import pipelines from '../../models/pipelines/Pipelines';
 import projects from '../../models/folders/FolderProjects';
 import FireCloudMethods from '../../models/firecloud/FireCloudMethods';
@@ -60,13 +61,16 @@ import multiZoneManager from '../../utils/multizone';
 import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
-import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
+import CurrentUserAttributes, {
+  CURRENT_USER_ATTRIBUTES_STORE
+} from '../../utils/current-user-attributes';
 import CloudPipelineThemes from '../../themes';
+import ApplicationInfo from '../../models/utils/application-info';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
-const localization = new AppLocalization.Localization();
+const localization = AppLocalization.localization;
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
@@ -96,6 +100,8 @@ const currentUserAttributes = new CurrentUserAttributes(
   dataStorageAvailable
 );
 
+const applicationInfo = new ApplicationInfo();
+
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
 (() => { return allowedInstanceTypes.fetchIfNeededOrWait(); })();
@@ -104,6 +110,7 @@ const currentUserAttributes = new CurrentUserAttributes(
 (() => { return spotToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
+(() => { return applicationInfo.fetchIfNeededOrWait(); })();
 
 const themes = new CloudPipelineThemes();
 
@@ -135,6 +142,7 @@ const Root = () =>
       spotToolInstanceTypes,
       onDemandToolInstanceTypes,
       notifications,
+      userNotifications,
       authenticatedUserInfo,
       [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
       impersonation,
@@ -157,7 +165,8 @@ const Root = () =>
       multiZoneManager,
       uiNavigation,
       vsActions,
-      themes
+      themes,
+      applicationInfo
     }}>
     <AppRouter />
   </Provider>;

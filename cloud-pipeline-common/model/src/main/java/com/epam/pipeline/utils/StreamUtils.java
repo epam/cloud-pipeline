@@ -1,5 +1,6 @@
 package com.epam.pipeline.utils;
 
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -22,6 +23,10 @@ public final class StreamUtils {
 
     public static <T> Stream<List<T>> chunked(final Stream<T> stream, final int chunkSize) {
         return from(IteratorUtils.chunked(stream.iterator(), chunkSize));
+    }
+
+    public static <T> Stream<List<T>> grouped(final Stream<T> stream, final Comparator<T> comparator) {
+        return from(IteratorUtils.grouped(stream.iterator(), comparator));
     }
 
     /**

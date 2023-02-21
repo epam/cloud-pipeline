@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
+import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -37,6 +38,9 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
@@ -59,8 +63,6 @@ import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
-import com.epam.pipeline.autotests.ao.ToolDescription.InstanceManagementSectionAO;
-
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -98,6 +100,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
 
     @BeforeClass
     public void initialLogout() {
+        refresh();
         logout();
     }
 
@@ -167,6 +170,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .sleep(1, SECONDS)
                                 .click(SAVE)
                                 .sleep(3, SECONDS)
+                                .ensureDisable(SAVE)
                                 .expandTab(EXEC_ENVIRONMENT)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType))
                                 .dropDownCount(INSTANCE_TYPE));
@@ -177,6 +181,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                         configuration
                                 .expandTabs(execEnvironmentTab)
                                 .setValue(DISK, customDisk)
+                                .sleep(1, SECONDS)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .selectDockerImage(dockerImage ->
                                         dockerImage
@@ -186,6 +191,8 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                 .click(OK)
                                 )
                                 .click(SAVE)
+                                .ensureDisable(SAVE)
+                                .ensure(byText("Estimated price per hour:"), visible)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType)));
     }
 
@@ -345,9 +352,13 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                                     .ok()
                                                     .also(confirmConfigurationChange())
                                     )
+                                    .ensure(byClassName("ant-modal-body"), not(visible))
+                                    .sleep(2, SECONDS)
                                     .setValue(DISK, customDisk)
-                                    .sleep(3, SECONDS)
-                                    .click(SAVE))
+                                    .sleep(2, SECONDS)
+                                    .click(SAVE)
+                                    .ensureDisable(SAVE)
+                                    .ensure(byText("Estimated price per hour:"), visible))
                     .sleep(2, SECONDS);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
             logout();
@@ -682,8 +693,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
         navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .switchToCluster()
-                .setClusterAllowedStringPreference(pref, value)
+                .setPreference(pref, value, true)
                 .saveIfNeeded();
     }
 

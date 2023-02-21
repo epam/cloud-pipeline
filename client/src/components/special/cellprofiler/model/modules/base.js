@@ -203,6 +203,17 @@ class AnalysisModule {
     }).filter(Boolean);
   }
 
+  /**
+   * @returns {ModuleParameterValue[]}
+   */
+  @computed
+  get fileInputParameters () {
+    return (this.parameters || [])
+      .filter(
+        (parameter) => parameter.parameter && parameter.parameter.type === AnalysisTypes.file
+      );
+  }
+
   @computed
   get outputParameters () {
     return this.outputsConfiguration.map((outputConfiguration) => {
@@ -543,6 +554,33 @@ class AnalysisModule {
     }
     return undefined;
   }
+
+  getMissingInputs = () => this.fileInputParameters
+    .map((fileParameter) => {
+      const values = (fileParameter.parameter.values || []).map((value) => value.value);
+      const value = fileParameter.getValue();
+      if (value && !values.includes(value)) {
+        return value;
+      }
+      return undefined;
+    })
+    .filter(Boolean);
+
+  correctInputsForModules = (correctedInputs = {}) => {
+    let corrected = false;
+    this.fileInputParameters
+      .forEach((fileParameter) => {
+        const values = (fileParameter.parameter.values || [])
+          .map((value) => value.value);
+        const value = fileParameter.getValue();
+        if (value && !values.includes(value)) {
+          corrected = true;
+          // apply corrected value (if exists) or undefined
+          fileParameter.applyValue(correctedInputs[value]);
+        }
+      });
+    return corrected;
+  };
 }
 
 export {

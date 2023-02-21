@@ -15,6 +15,8 @@
 from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 
+from src.model.datastorage_usage_model import StorageUsage
+from src.utilities.datastorage_lifecycle_manager import DataStorageLifecycleManager
 from src.utilities.encoding_utilities import to_string, to_ascii, is_safe_chars
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
@@ -595,7 +597,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         self.show_versions = show_versions
 
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                   show_all=False):
+                   show_all=False, show_archive=False):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         client = self._get_client()
         operation_parameters = {
@@ -615,9 +617,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             operation_parameters['Prefix'] = prefix
 
         if self.show_versions:
-            return self.list_versions(client, prefix, operation_parameters, recursive, page_size)
+            return self.list_versions(client, prefix, operation_parameters, recursive, page_size, show_archive)
         else:
-            return self.list_objects(client, prefix, operation_parameters, recursive, page_size)
+            return self.list_objects(client, prefix, operation_parameters, recursive, page_size, show_archive)
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         bucket_name = self.bucket.bucket.path
@@ -641,7 +643,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 for file in page['Contents']:
                     name = self.get_file_name(file, prefix, True)
                     size = file['Size']
-                    accumulator.add_path(name, size)
+                    tier = file['StorageClass']
+                    accumulator.add_path(name, tier, size)
             if not page['IsTruncated']:
                 break
         return accumulator.get_tree()
@@ -659,18 +662,16 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
 
-        total_size = 0
-        total_objects = 0
+        storage_usage = StorageUsage()
 
         for page in page_iterator:
             if 'Contents' in page:
                 for file in page['Contents']:
                     if self.prefix_match(file, relative_path):
-                        total_size += file['Size']
-                        total_objects += 1
+                        storage_usage.add_item(file["StorageClass"], file['Size'])
             if not page['IsTruncated']:
                 break
-        return delimiter.join([self.bucket.bucket.path, relative_path]), total_objects, total_size
+        return delimiter.join([self.bucket.bucket.path, relative_path]), storage_usage
 
     @classmethod
     def prefix_match(cls, page_file, relative_path=None):
@@ -687,12 +688,14 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             return True
         return False
 
-    def list_versions(self, client, prefix,  operation_parameters, recursive, page_size):
+    def list_versions(self, client, prefix,  operation_parameters, recursive, page_size, show_archive):
         paginator = client.get_paginator('list_object_versions')
         page_iterator = paginator.paginate(**operation_parameters)
         items = []
         item_keys = collections.OrderedDict()
         items_count = 0
+        lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
+
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
@@ -702,7 +705,17 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             if 'Versions' in page:
                 for version in page['Versions']:
                     name = self.get_file_name(version, prefix, recursive)
-                    item = self.get_file_object(version, name, version=True)
+                    restore_status = None
+                    if version['StorageClass'] != 'STANDARD':
+                        restore_status, versions_restored = lifecycle_manager.find_lifecycle_status(name)
+                        version_not_restored = restore_status and not version['IsLatest'] and not versions_restored
+                        if not show_archive:
+                            if not restore_status or version_not_restored:
+                                continue
+                        else:
+                            if version_not_restored:
+                                restore_status = None
+                    item = self.get_file_object(version, name, version=True, lifecycle_status=restore_status)
                     self.process_version(item, item_keys, name)
             if 'DeleteMarkers' in page:
                 for delete_marker in page['DeleteMarkers']:
@@ -730,11 +743,13 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 item.versions = versions
                 item_keys[name] = item
 
-    def list_objects(self, client, prefix, operation_parameters, recursive, page_size):
+    def list_objects(self, client, prefix, operation_parameters, recursive, page_size, show_archive):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
         items = []
         items_count = 0
+        lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
+
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
@@ -744,14 +759,19 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             if 'Contents' in page:
                 for file in page['Contents']:
                     name = self.get_file_name(file, prefix, recursive)
-                    item = self.get_file_object(file, name)
+                    lifecycle_status = None
+                    if file['StorageClass'] != 'STANDARD':
+                        lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
+                        if not show_archive and not lifecycle_status:
+                            continue
+                    item = self.get_file_object(file, name, lifecycle_status=lifecycle_status)
                     items.append(item)
                     items_count += 1
             if self.need_to_stop_paging(page, page_size, items_count):
                 break
         return items
 
-    def get_file_object(self, file, name, version=False, storage_class=True):
+    def get_file_object(self, file, name, version=False, storage_class=True, lifecycle_status=None):
         item = DataStorageItemModel()
         item.type = 'File'
         item.name = name
@@ -760,7 +780,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         item.path = name
         item.changed = file['LastModified'].astimezone(Config.instance().timezone())
         if storage_class:
-            item.labels = [DataStorageItemLabelModel('StorageClass', file['StorageClass'])]
+            lifecycle_status = lifecycle_status if lifecycle_status else ''
+            item.labels = [DataStorageItemLabelModel('StorageClass', file['StorageClass'] + lifecycle_status)]
         if version:
             item.version = file['VersionId']
             item.latest = file['IsLatest']

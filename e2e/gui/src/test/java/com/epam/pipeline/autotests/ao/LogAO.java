@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,9 +171,9 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO pause(final String pipelineName) {
         clickOnPauseButton();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleIs(
-                        format("Do you want to pause %s?", pipelineName))
+        $(byClassName("ant-modal-body")).shouldBe(visible);
+        ensure(byClassName("ause-confirmation__title"),
+                matchText(format("Do you want to pause%s", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button(PAUSE.name()));
         return this;
@@ -308,7 +308,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO validateException(final String exception) {
-        $(byClassName("ant-alert-error")).shouldHave(text(exception));
+        $(byClassName("ant-alert-message")).shouldHave(text(exception));
         return this;
     }
 

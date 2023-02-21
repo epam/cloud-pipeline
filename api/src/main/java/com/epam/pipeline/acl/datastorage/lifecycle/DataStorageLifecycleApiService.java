@@ -127,19 +127,19 @@ public class DataStorageLifecycleApiService {
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public StorageRestoreAction loadEffectiveRestoreStorageAction(final Long datastorageId, final String path,
+    public StorageRestoreAction loadEffectiveRestoreStorageAction(final Long id, final String path,
                                                                   final StorageRestorePathType pathType) {
-        final AbstractDataStorage storage = storageManager.load(datastorageId);
+        final AbstractDataStorage storage = storageManager.load(id);
         return restoreManager.loadEffectiveRestoreStorageAction(
                 storage, StorageRestorePath.builder().type(pathType).path(path).build());
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<StorageRestoreAction> loadEffectiveRestoreStorageActionHierarchy(final Long datastorageId,
+    public List<StorageRestoreAction> loadEffectiveRestoreStorageActionHierarchy(final Long id,
                                                                                  final String path,
                                                                                  final StorageRestorePathType pathType,
                                                                                  final Boolean recursive) {
-        final AbstractDataStorage storage = storageManager.load(datastorageId);
+        final AbstractDataStorage storage = storageManager.load(id);
         return restoreManager.loadEffectiveRestoreStorageActionHierarchy(
                 storage, StorageRestorePath.builder().type(pathType).path(path).build(), recursive);
     }

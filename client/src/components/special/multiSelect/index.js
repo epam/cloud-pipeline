@@ -57,11 +57,17 @@ class MultiSelect extends React.Component {
   get filteredOptions () {
     const {options} = this.props;
     const {searchString} = this.state;
+    if (!searchString) {
+      return [];
+    }
     return (options || []).filter(o => o.includes(searchString));
   }
 
   onVisibleChange = (visible) => {
-    this.setState({dropdownVisible: visible});
+    this.setState({
+      dropdownVisible: visible,
+      searchString: ''
+    });
   };
 
   removeValue = (key) => {
@@ -104,9 +110,10 @@ class MultiSelect extends React.Component {
         <div>
           <Input.Search
             disabled={disabled || pending}
-            placeholder="Filter versions"
+            placeholder="Start typing to filter versions..."
             className={styles.menuItem}
             onChange={this.onSearch}
+            value={this.state.searchString}
           />
         </div>
         {

@@ -180,11 +180,14 @@ class PipelineAPI:
     TOOL_VERSIONS_URL = 'tool/{tool_id}/tags'
     ENABLE_TOOL_URL = 'tool/register'
     UPDATE_TOOL_URL = 'tool/update'
+    DELETE_TOOL_URL = 'tool/delete'
     RUN_URL = 'run'
     GET_RUN_URL = '/run/{}'
     GET_TASK_URL = '/run/{}/task?taskName={}'
     FILTER_RUNS = 'run/filter'
+    TERMINATE_RUN = 'run/{}/terminate'
     DATA_STORAGE_URL = "/datastorage"
+    DATA_STORAGE_LOAD_ALL_URL = "datastorage/loadAll"
     DATA_STORAGE_RULES_URL = "datastorage/rule/load"
     REGISTRY_CERTIFICATES_URL = "dockerRegistry/loadCerts"
     REGISTRY_LOAD_ALL_URL = "dockerRegistry/loadTree"
@@ -205,6 +208,7 @@ class PipelineAPI:
     UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}/status?status={status}"
     DELETE_LIFECYCLE_RULES_EXECUTION_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}"
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
+    LOAD_STORAGE_ITEM_CONTENT_URL = '/datastorage/{id}/content?path={path}'
     LOAD_METADATA = "/metadata/load"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
@@ -237,6 +241,18 @@ class PipelineAPI:
     LIFECYCLE_RESTORE_ACTION_URL = "/datastorage/{id}/lifecycle/restore"
     LIFECYCLE_RESTORE_ACTION_FILTER_URL = "/datastorage/{id}/lifecycle/restore/filter"
     DATA_STORAGE_PATH_SIZE_URL = '/datastorage/path/size'
+    SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL = '/datastorage/tags/search'
+    DATA_STORAGE_ITEM_TAG_LIST_URL = '/datastorage/{id}/tags/list?path={path}&showVersions={show_versions}'
+    DATA_STORAGE_ITEM_TAGS_BATCH_UPSERT_URL = '/datastorage/{id}/tags/batch/upsert'
+    DATA_STORAGE_ITEM_TAGS_BATCH_INSERT_URL = '/datastorage/{id}/tags/batch/insert'
+    DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL = '/datastorage/{id}/tags/batch/delete'
+    DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
+    DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
+    DATA_STORAGE_LIST_ITEMS_URL = "datastorage/{id}/list"
+    DATA_STORAGE_DELETE_URL = '/datastorage/{id}/delete'
+    CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
+    GRANT_PERMISSIONS_URL = "/grant"
+    PERMISSION_URL = "/permissions"
 
     # Pipeline API default header
 
@@ -307,7 +323,11 @@ class PipelineAPI:
         })
 
     def get_preference_efficiently(self, name):
-        return self._request('GET', 'preferences/' + name) or ''
+        return self._request('GET', 'preferences/' + name)
+
+    def get_preference_value(self, name):
+        preference = self.get_preference_efficiently(name) or {}
+        return preference.get('value')
 
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self.api_url, endpoint)
@@ -672,6 +692,14 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load metadata for the given entity. "
                                "Error message: {}".format(str(e.message)))
+
+    def load_metadata_efficiently(self, entity_id, entity_class):
+        all_metadata = self.load_all_metadata_efficiently([entity_id], entity_class)
+        return (all_metadata[0] if all_metadata else {}).get('data', {})
+
+    def load_all_metadata_efficiently(self, entity_ids, entity_class):
+        data = [{"entityId": entity_id, "entityClass": entity_class} for entity_id in entity_ids]
+        return self._request('POST', self.LOAD_METADATA, data=data) or []
 
     def load_entities(self, entities_ids):
         try:
@@ -1140,6 +1168,78 @@ class PipelineAPI:
             raise RuntimeError("Failed to prolong lifecycle rule '{}'.",
                                "Error message: {}".format(str(rule_id), str(e.message)))
 
+    def load_datastorage_item_content(self, storage_id, path, version=None):
+        try:
+            formed_url = self.LOAD_STORAGE_ITEM_CONTENT_URL.format(id=storage_id, path=path)
+            if version:
+                formed_url = formed_url + "&version={version}".format(version=version)
+            return self._request(endpoint=formed_url, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage item content: storage_id - '{}', path - '{}', version - '{}'.",
+                               "Error message: {}".format(storage_id, path, version, str(e.message)))
+
+    def search_datastorage_items_by_tag(self, request):
+        try:
+            return self._request(
+                endpoint=self.SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL, http_method="post", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to search datastorage items by tag: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def load_datastorage(self, storage_id):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LOAD_URL.format(id=storage_id), http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage by id: '{}'.",
+                               "Error message: {}".format(storage_id, str(e.message)))
+
+    def load_datastorage_item_with_tags(self, storage_id, path, show_versions=False):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAG_LIST_URL.format(id=storage_id, path=path, show_versions=show_versions),
+                http_method="get"
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage item with tags: storage_id - '{}', path - '{}', show_versions - '{}'.",
+                               "Error message: {}".format(storage_id, path, show_versions, str(e.message)))
+
+    def insert_datastorage_item_tags(self, storage_id, request):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_INSERT_URL.format(id=storage_id), http_method="put", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to batch insert tags: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def upsert_datastorage_item_tags(self, storage_id, request):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_UPSERT_URL.format(id=storage_id), http_method="put", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to batch upsert tags: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def delete_datastorage_item_tags(self, storage_id, request):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL.format(id=storage_id), http_method="delete", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to batch delete tags: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def delete_all_datastorage_item_tags(self, storage_id, request):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL.format(id=storage_id), http_method="delete", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to batch delete all tags: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
     def load_notification_templates(self):
         try:
             return self.execute_request(str(self.api_url) + self.NOTIFICATION_TEMPLATE_URL)
@@ -1180,3 +1280,87 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError(
                 "Failed get size for paths: '{}'. Error message: {}".format(','.join(paths), str(e.message)))
+
+    def load_categorical_attributes_dictionary(self):
+        try:
+            return self._request(endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+
+    def upsert_categorical_attribute(self, attribute):
+        try:
+            return self._request(
+                endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="post", data=attribute
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+
+    def grant_permissions(self, permissions_object):
+        try:
+            return self._request(
+                endpoint=self.GRANT_PERMISSIONS_URL, http_method="post", data=permissions_object
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
+
+    def get_permissions(self, entity_id, entity_class):
+        try:
+            result = self._request(endpoint='grant?id={}&aclClass={}'
+                                   .format(entity_id, entity_class), http_method="get")
+            return result['permissions'] if 'permissions' in result else None
+        except Exception as e:
+            raise RuntimeError("Failed to load permissions, entity_id: {} error: {}".format(entity_id, str(e.message)))
+
+    def terminate_run(self, run_id):
+        try:
+            return self._request(endpoint=self.TERMINATE_RUN.format(str(run_id)), http_method="post")
+        except Exception as e:
+            raise RuntimeError("Failed to terminate run. \n {}".format(e))
+
+    def data_storage_load_all(self):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LOAD_ALL_URL, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load data storages. \n {}".format(e))
+
+    def load_pipelines_by_owners(self, owners, statuses):
+        try:
+            data = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'owners': owners, 'statuses': statuses}
+            result = self._request(endpoint=self.FILTER_RUNS, http_method="post", data=data)
+            return result['elements'] if 'elements' in result else []
+        except Exception as e:
+            raise RuntimeError("Failed to load pipelines \n {}".format(e))
+
+    def delete_tool(self, image):
+        try:
+            return self._request(endpoint='tool/delete?image={}'.format(image), http_method="delete")
+        except Exception as e:
+            raise RuntimeError("Failed to delete tool \n {}".format(e))
+
+    def load_datastorage_items(self, storage_id):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
+
+    def delete_user_home_storage(self, user_id):
+        try:
+            return self._request(endpoint='user/{}'.format(str(user_id)), http_method="put", data={})
+        except Exception as e:
+            raise RuntimeError("Failed to delete user home storage '{}'.".format(user_id))
+
+    def stop_run(self, run_id):
+        try:
+            data = {'status': 'STOPPED', 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}
+            return self._request(endpoint='run/{}/status'.format(str(run_id)), http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to stop run. \n {}".format(e))
+
+    def get_entity_permissions(self, entity_id, entity_class):
+        request_url = '%s?id=%s&aclClass=%s' % (self.PERMISSION_URL, str(entity_id), entity_class)
+        try:
+            return self._request(endpoint=request_url, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
+                entity_class, str(entity_id), str(e)))
+

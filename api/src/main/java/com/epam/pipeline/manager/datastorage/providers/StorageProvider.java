@@ -35,12 +35,14 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 
 public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageType getStorageType();
@@ -60,6 +62,10 @@ public interface StorageProvider<T extends AbstractDataStorage> {
 
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);
+
+    DataStorageListing getItems(T dataStorage, String path,
+                                Boolean showVersion, Integer pageSize, String marker,
+                                DataStorageLifecycleRestoredListingContainer restoredListing);
 
     Optional<DataStorageFile> findFile(T dataStorage, String path, String version);
 
@@ -138,4 +144,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     void verifyRestoreActionSupported();
 
     String verifyOrDefaultRestoreMode(StorageRestoreActionRequest restoreMode);
+
+    DataStorageItemType getItemType(T dataStorage, String path, String version);
 }

@@ -19,10 +19,41 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Checkbox,
+  Icon,
   Slider
 } from 'antd';
 import ColorPicker from '../../color-picker';
 import styles from './hcs-image-controls.css';
+
+function LockCheckbox (
+  {
+    disabled,
+    style,
+    locked,
+    onLockedChanged
+  }
+) {
+  const onClick = (event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (typeof onLockedChanged === 'function') {
+      onLockedChanged(!locked);
+    }
+  };
+  return (
+    <Icon
+      style={{
+        cursor: 'pointer',
+        fontSize: 'larger',
+        opacity: locked && !disabled ? 1 : 0.25,
+        ...(style || {})
+      }}
+      type={locked ? 'lock' : 'unlock'}
+      onClick={onClick}
+    />
+  );
+}
 
 class Channel extends React.PureComponent {
   state = {
@@ -86,8 +117,10 @@ class Channel extends React.PureComponent {
       name,
       style,
       visible,
+      locked,
       loading,
-      onVisibilityChanged
+      onVisibilityChanged,
+      onLockedChanged
     } = this.props;
     return (
       <div
@@ -102,13 +135,31 @@ class Channel extends React.PureComponent {
         <div
           className={styles.header}
         >
+          <LockCheckbox
+            disabled={loading}
+            locked={locked}
+            onLockedChanged={onLockedChanged}
+            style={{
+              marginRight: 5
+            }}
+          />
           <Checkbox
             disabled={loading}
-            style={{marginRight: 5}}
             checked={visible}
             onChange={e => onVisibilityChanged ? onVisibilityChanged(e.target.checked) : {}}
-          />
-          <b>{name}</b>
+          >
+            <b>{name}</b>
+            {
+              locked && (
+                <i
+                  className="cp-text-not-important"
+                  style={{fontWeight: 'normal'}}
+                >
+                  {' - locked'}
+                </i>
+              )
+            }
+          </Checkbox>
           <div style={{marginLeft: 'auto'}}>
             {this.renderColorConfiguration()}
           </div>
@@ -130,8 +181,10 @@ Channel.propTypes = {
   onContrastLimitsChanged: PropTypes.func,
   onColorChanged: PropTypes.func,
   onVisibilityChanged: PropTypes.func,
+  onLockedChanged: PropTypes.func,
   style: PropTypes.object,
-  visible: PropTypes.bool
+  visible: PropTypes.bool,
+  locked: PropTypes.bool
 };
 
 export default Channel;

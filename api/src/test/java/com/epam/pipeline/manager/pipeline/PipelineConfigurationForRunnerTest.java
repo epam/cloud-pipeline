@@ -28,6 +28,8 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,6 +84,14 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     @MockBean
     @SuppressWarnings("PMD.UnusedPrivateField")
     private PipelineRunManager pipelineRunManager;
+
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private CloudRegionManager regionManager;
+
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private PreferenceManager preferenceManager;
 
     private ConfigurationEntry configurationEntry;
 

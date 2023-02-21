@@ -77,11 +77,11 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetDataStorageItemsForAdmin() {
         doReturn(dataStorageListing).when(mockDataStorageManager)
-                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
+                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false);
         mockUserContext(context);
 
         assertThat(dataStorageApiService.getDataStorageItems(
-                ID, TEST_STRING, true, TEST_INT, TEST_STRING)).isEqualTo(dataStorageListing);
+                ID, TEST_STRING, true, TEST_INT, TEST_STRING, false)).isEqualTo(dataStorageListing);
     }
 
     @Test
@@ -89,11 +89,11 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldGetDataStorageItemsWhenPermissionIsGranted() {
         initAclEntity(s3bucket, AclPermission.READ);
         doReturn(dataStorageListing).when(mockDataStorageManager)
-                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
+                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
         assertThat(dataStorageApiService.getDataStorageItems(
-                ID, TEST_STRING, true, TEST_INT, TEST_STRING)).isEqualTo(dataStorageListing);
+                ID, TEST_STRING, true, TEST_INT, TEST_STRING, false)).isEqualTo(dataStorageListing);
     }
 
     @Test
@@ -101,11 +101,11 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldDenyGetDataStorageItemsWhenStoragePermissionIsNotGranted() {
         initAclEntity(s3bucket);
         doReturn(dataStorageListing).when(mockDataStorageManager)
-                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
+                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, s3bucket, context);
 
         assertThrows(AccessDeniedException.class, () ->
-                dataStorageApiService.getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING));
+                dataStorageApiService.getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false));
     }
 
     @Test
@@ -113,22 +113,22 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldDenyGetDataStorageItemsWhenCheckStorageSharedPermissionIsNotGranted() {
         initAclEntity(notSharedS3bucket, AclPermission.READ);
         doReturn(dataStorageListing).when(mockDataStorageManager)
-                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
+                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 
         assertThrows(AccessDeniedException.class, () ->
-                dataStorageApiService.getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING));
+                dataStorageApiService.getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false));
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetDataStorageItemsOwnerForAdmin() {
         doReturn(dataStorageListing).when(mockDataStorageManager)
-                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
+                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false);
         mockUserContext(context);
 
         assertThat(dataStorageApiService.getDataStorageItemsOwner(
-                ID, TEST_STRING, true, TEST_INT, TEST_STRING)).isEqualTo(dataStorageListing);
+                ID, TEST_STRING, true, TEST_INT, TEST_STRING, false)).isEqualTo(dataStorageListing);
     }
 
     @Test
@@ -136,11 +136,11 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldGetDataStorageItemsOwnerWhenPermissionIsGranted() {
         initAclEntity(notSharedS3bucket, AclPermission.OWNER);
         doReturn(dataStorageListing).when(mockDataStorageManager)
-                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
+                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false);
         initUserAndEntityMocks(SIMPLE_USER, notSharedS3bucket, context);
 
         assertThat(dataStorageApiService.getDataStorageItemsOwner(
-                ID, TEST_STRING, true, TEST_INT, TEST_STRING)).isEqualTo(dataStorageListing);
+                ID, TEST_STRING, true, TEST_INT, TEST_STRING, false)).isEqualTo(dataStorageListing);
     }
 
     @Test
@@ -148,11 +148,11 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldDenyGetDataStorageItemsOwnerWhenStoragePermissionIsNotGranted() {
         initAclEntity(s3bucket);
         doReturn(dataStorageListing).when(mockDataStorageManager)
-                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
+                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, s3bucket, context);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService.getDataStorageItemsOwner(
-                ID, TEST_STRING, true, TEST_INT, TEST_STRING));
+                ID, TEST_STRING, true, TEST_INT, TEST_STRING, false));
     }
 
     @Test
@@ -160,11 +160,11 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     public void shouldDenyGetDataStorageItemsOwnerWhenCheckStorageSharedPermissionIsNotGranted() {
         initAclEntity(notSharedS3bucket, AclPermission.OWNER);
         doReturn(dataStorageListing).when(mockDataStorageManager)
-                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING);
+                .getDataStorageItems(ID, TEST_STRING, true, TEST_INT, TEST_STRING, false);
         initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService.getDataStorageItemsOwner(
-                ID, TEST_STRING, true, TEST_INT, TEST_STRING));
+                ID, TEST_STRING, true, TEST_INT, TEST_STRING, false));
     }
 
     @Test

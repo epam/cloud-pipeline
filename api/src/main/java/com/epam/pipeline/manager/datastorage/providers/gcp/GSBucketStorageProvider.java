@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -35,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -46,6 +48,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -102,6 +105,16 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, String marker) {
         return getHelper(dataStorage).listItems(dataStorage, path, showVersion, pageSize, marker);
+    }
+
+    @Override
+    public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
+                                       final Integer pageSize, final String marker,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        if (Objects.nonNull(restoredListing)) {
+            throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+        }
+        return getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
     @Override
@@ -251,6 +264,13 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     @Override
     public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest actionRequest) {
         throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final GSBucketStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        throw new UnsupportedOperationException();
     }
 
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {

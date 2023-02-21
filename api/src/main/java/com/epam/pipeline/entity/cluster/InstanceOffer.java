@@ -41,6 +41,7 @@ public class InstanceOffer {
     private String operatingSystem;
     private String productFamily;
     private String volumeType;
+    private String volumeApiName;
     private Date priceListPublishDate;
     private int vCPU;
     private double memory;

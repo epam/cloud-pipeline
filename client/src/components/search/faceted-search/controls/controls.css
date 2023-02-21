@@ -21,9 +21,6 @@
   font-size: small;
   border: none;
   border-radius: 0;
-  color: #1890ff;
-  background-color: #fafafa;
-  border-top: 1px dashed #dfdfdf;
   width: 100%;
   height: auto;
   padding: 2px 5px;
@@ -32,40 +29,29 @@
 }
 
 .expand-btn:hover {
-  background: #e6f7ff;
+  text-decoration: underline;
 }
 
-.document-type-filter {
-  line-height: 24px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  max-width: 60vw;
-  align-content: flex-start;
-  height: 100%;
-  padding-top: 2px;
+.document-filter-btn {
+  margin-left: 5px;
+  padding: 0 8px;
 }
 
-.document-type-filter .filter {
-  border-radius: 5px;
-  padding: 3px;
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  min-width: 135px;
-  margin-right: 5px;
-  text-align: center;
+.document-filter {
+  min-width: 100px;
   cursor: pointer;
-  height: 32px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  padding-right: 25px;
+  position: relative;
 }
 
-.document-type-filter .filter .count {
+.document-filter .count {
   margin-left: 5px;
 }
 
-.document-type-filter .filter .icon {
+.document-filter .icon {
   font-size: large;
   margin-right: 5px;
 }
@@ -78,7 +64,6 @@
 .view-toggler {
   display: flex;
   flex-direction: row;
-  padding: 0 5px;
   align-items: flex-start;
 }
 

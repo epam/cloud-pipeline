@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,34 +15,66 @@
  */
 
 import React from 'react';
+import {observer} from 'mobx-react';
+import {computed} from 'mobx';
 import SubSettings from '../sub-settings';
 import ProfileSettings from './profile';
 import AppearanceSettings, {MANAGEMENT_SECTION} from './appearance';
+import roleModel from '../../../utils/roleModel';
+import UserInfoSummary from '../forms/EditUserRolesDialog/UserInfoSummary';
 
-const sections = [
-  {
-    key: 'profile',
-    title: 'PROFILE',
-    default: true,
-    render: () => (<ProfileSettings />)
-  },
-  {
-    key: 'appearance',
-    title: 'APPEARANCE',
-    render: ({router, sub} = {}) => (
-      <AppearanceSettings
-        router={router}
-        management={MANAGEMENT_SECTION.toLowerCase() === (sub || '').toLowerCase()}
-      />)
+@roleModel.authenticationInfo
+@observer
+export default class UserProfile extends React.Component {
+  @computed
+  get user () {
+    if (
+      this.props.authenticatedUserInfo &&
+      this.props.authenticatedUserInfo.loaded
+    ) {
+      return this.props.authenticatedUserInfo.value;
+    }
+    return undefined;
   }
-];
 
-export default function UserProfile ({router}) {
-  return (
-    <SubSettings
-      sections={sections}
-      router={router}
-      root="profile"
-    />
-  );
+  getSections = () => {
+    const sections = [];
+    sections.push({
+      key: 'profile',
+      title: 'PROFILE',
+      default: true,
+      render: () => (<ProfileSettings />)
+    });
+    sections.push({
+      key: 'appearance',
+      title: 'APPEARANCE',
+      render: ({router, sub} = {}) => (
+        <AppearanceSettings
+          router={router}
+          management={MANAGEMENT_SECTION.toLowerCase() === (sub || '').toLowerCase()}
+        />
+      )
+    });
+    sections.push({
+      key: 'statistics',
+      title: 'STATISTICS',
+      render: () => (
+        <UserInfoSummary
+          user={this.user}
+        />
+      )
+    });
+    return sections;
+  };
+
+  render () {
+    const {router} = this.props;
+    return (
+      <SubSettings
+        sections={this.getSections()}
+        router={router}
+        root="profile"
+      />
+    );
+  }
 }

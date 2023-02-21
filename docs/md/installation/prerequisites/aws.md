@@ -14,28 +14,30 @@ A new VPC in the `<region-id>` region with the default configuration
 
 * A routable subnet with /26 CIDR or a subnet with the Elastic IPs allowed. It will be used to deploy user-facing services
 * Non routable subnets with any CIDR range (e.g. /16) in each of the available Availability Zones. These subnets will be used to launch the worker nodes. E.g. for us-east-1 region, the following subnets/CIDRs can be created:
-    * us-east-1a: 10.0.0.0/23
-    * us-east-1b: 10.0.2.0/23
-    * us-east-1c: 10.0.4.0/23
-    * us-east-1d: 10.0.6.0/23
-    * us-east-1e: 10.0.8.0/23
-    * us-east-1f: 10.0.10.0/23
+  * us-east-1a: 10.0.0.0/23
+  * us-east-1b: 10.0.2.0/23
+  * us-east-1c: 10.0.4.0/23
+  * us-east-1d: 10.0.6.0/23
+  * us-east-1e: 10.0.8.0/23
+  * us-east-1f: 10.0.10.0/23
 
 ## Security Groups
 
 * CP-Cluster-Internal:
-    * Traffic type: ALL
-    * Ports: ALL
-    * Inbound: from <CP-Cluster-Internal>
-    * Outbound: to <CP-Cluster-Internal>
+  * Traffic type: ALL
+  * Ports: ALL
+  * Inbound: from <CP-Cluster-Internal>
+  * Outbound: to <CP-Cluster-Internal>
+
 * CP-HTTPS-Access:
-    * Traffic type: HTTPS
-    * Port: 443
-    * Inbound: from `Internal networks or 0.0.0.0 (for the Elastic IPs usage)`
+  * Traffic type: HTTPS
+  * Port: 443
+  * Inbound: from `Internal networks or 0.0.0.0 (for the Elastic IPs usage)`
+
 * CP-Internet-Access:
-    * Traffic type: Any
-    * Port: 3128
-    * Outbound: to `Egress HTTP proxy, if applicable`
+  * Traffic type: Any
+  * Port: 3128
+  * Outbound: to `Egress HTTP proxy, if applicable`
 
 ## AMI
 
@@ -46,7 +48,19 @@ The following AMIs shall be white-listed for the AWS Account:
 
 ## VPC S3 Endpoint
 
-A new VPC endpoint shall be created for the S3 service. No specific configuration is needed
+A new VPC endpoint shall be created for the S3 service. 
+* Policy:
+```
+{
+  "Sid": "CP-S3-Endpoint-Policy",
+  "Effect": "Allow",
+  "Principal": "*",
+  "Action": "*",
+  "Resource": "*"
+}
+```
+
+**NOTE:** Resource "*" is used here because CP need to make API calls to "s3:CreateJob" and "s3:DescribeJob" to perform archive and restore actions with s3 objects, when **Cloud-Pipeline Storage Lifecycle Service** is used.  
 
 ## SSH Key
 
@@ -58,7 +72,7 @@ A new SSH key named `CP-SSH-Key`
 
 * Name: **CP-Service-Policy**
 
-``` json
+```
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -175,6 +189,26 @@ A new SSH key named `CP-SSH-Key`
             "Resource": [
                 "arn:aws:iam::<account-id>:role/CP-S3viaSTS"
             ]
+        },
+        {
+            "Sid": "RunS3BatchOperationsAllow",
+	        "Effect": "Allow",
+	        "Action": [
+	            "s3:CreateJob",
+	            "s3:DescribeJob",
+	            "s3:GetLifecycleConfiguration",
+	            "s3:PutLifecycleConfiguration"
+	        ],
+        	"Resource": "*"
+        },
+        {
+            "Sid": "PassSLSRoleAllow",
+	        "Effect": "Allow",
+	        "Action": [
+	            "iam:GetRole",
+	            "iam:PassRole"
+	        ],
+        	"Resource": "arn:aws:iam::<account-id>:role/CP-SLS-Role"
         }
     ]
 }
@@ -182,7 +216,7 @@ A new SSH key named `CP-SSH-Key`
 
 * Name: **CP-KMS-Assume-Policy**
 
-``` json
+```
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -205,7 +239,7 @@ A new SSH key named `CP-SSH-Key`
 
 * Name: **CP-S3viaSTS-Policy**
 
-``` json
+```
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -236,15 +270,68 @@ A new SSH key named `CP-SSH-Key`
 }
 ```
 
+* Name: **CP-SLS-Policy**
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:DeleteObject",
+                "s3:GetObject",
+                "s3:PutObjectTagging",
+                "s3:GetObjectTagging",
+                "s3:DeleteObjectTagging",
+                "s3:ListBucket",
+                "s3:PutObject",
+                "s3:ListBucketVersions",
+                "s3:DeleteObjectVersion",
+                "s3:GetObjectVersion",
+                "s3:PutObjectVersionTagging",
+                "s3:GetObjectVersionTagging",
+                "s3:DeleteObjectVersionTagging",
+                "s3:RestoreObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::*"
+            ]
+        },
+
+    ]
+}
+```
+
 ### Roles
 
 * **AWSServiceRoleForEC2Spot**: policies according to the AWS Documentation [Manually create the AWSServiceRoleForEC2Spot service-linked role](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#service-linked-roles-spot-instance-requests)
-* **CP-Service**: CP-Service-Policy and CP-KMS-Assume-Policy
-* **CP-S3viaSTS**:
-    * Policies: CP-S3viaSTS-Policy and CP-KMS-Assume-Policy
-    * Trust relationship:
 
-``` json
+* **CP-Service**: CP-Service-Policy and CP-KMS-Assume-Policy
+
+* **CP-SLS-Service**: CP-SLS-Policy 
+  * Trust relationship:
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "batchoperations.s3.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+```
+
+**NOTE**: If access to some storages would be performed through different role that **CP-Service**, for such roles policy statements **RunS3BatchOperationsAllow** and **PassSLSRoleAllow** also should be attached.
+
+* **CP-S3viaSTS**: 
+  * Policies: CP-S3viaSTS-Policy and CP-KMS-Assume-Policy
+  * Trust relationship:
+```
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -262,7 +349,6 @@ A new SSH key named `CP-SSH-Key`
 ## KMS
 
 The following AWS KMS key shall be created:
-
 * Region: `<region-id>`
 * Name: CP-KMS-`<region-id>`
 * Description: Cloud Pipeline KMS encryption key
@@ -270,7 +356,7 @@ The following AWS KMS key shall be created:
 
 The following policy shall be attached to the key:
 
-``` json
+```
 {
     "Id": "CP-KMS-Key-Policy",
     "Version": "2012-10-17",

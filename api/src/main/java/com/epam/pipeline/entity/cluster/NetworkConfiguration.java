@@ -43,5 +43,7 @@ public class NetworkConfiguration {
     @JsonProperty("security_group_ids")
     private List<String> securityGroups;
 
+    private List<AMIConfiguration> amis;
+
     private List<SwapConfiguration> swap;
 }

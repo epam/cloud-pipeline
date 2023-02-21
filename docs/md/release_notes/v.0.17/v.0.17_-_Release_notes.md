@@ -2,6 +2,7 @@
 
 - [Billing reports enhancements](#billing-reports-enhancements)
 - [System dictionaries](#system-dictionaries)
+- [Cloud Data application](#cloud-data-application)
 - [Sending of email notifications enhancements](#sending-of-email-notifications-enhancements)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
@@ -199,6 +200,42 @@ In the GUI, such connection is being handled in the following way:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_05.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-dictionaries).
+
+## Cloud Data application
+
+Previously, there were several ways to manage data between local workstation and Cloud data storages, including CLI, GUI, mounting data storages as a network drives, and others.  
+
+In the current version, a new Platform capability was implemented that provides a simple and convenient way to manage files, copy/move them between Cloud data storage and local workstation or even FTP-server.  
+This introduces via the new separate application that can be downloaded from the Cloud Pipeline Platform and launched at the local machine - **Cloud Data** application.
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_01.png)
+
+Cloud Data application allows you manage files/folders as in a file commander.  
+Main application form contains two panels (left and right).  
+In each panel, one of the following sources can be opened: **local workstation** / **FTP server** / **Cloud data** (datastorages).
+
+- the **_local_** content shows files and folders of the local workstation (by default, _home_ user's directory). Navigation between and inside folders is available:  
+   ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_02.png)
+- the **_Cloud data_** content includes:
+    - all FS mounts from the Cloud Pipeline environment - to which current user has permissions.  
+      They are shown as simple folders
+    - those object storages from the Cloud Pipeline environment - to which current user has permissions and "File system access" was requested.  
+      They are shown with storage icon
+    - Navigation between and inside folders/storages is available  
+   ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_03.png)
+- the **_ftp_** content shows files and folders of the FTP/SFTP server. Navigation between and inside folders is available:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_04.png)
+
+The base scenario of the application usage:
+
+1. User selects desired source and destination in panels, e.g. FTP server and object datastorage correspondingly:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_05.png)
+2. Users selects desired files/folders in the source and clicks the data management button in the source panel - according to the action user wants to perform, e.g. to copy a file:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_06.png)
+3. Action will be performed, content of the panels will be updated:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_07.png)
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app.md).
 
 ## Sending of email notifications enhancements
 

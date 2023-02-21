@@ -33,7 +33,7 @@ from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
-from src.utilities.du_format_type import DuFormatType
+from src.utilities.datastorage_du_operation import DuOutput
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
@@ -1075,8 +1075,9 @@ def mvtodir(name, directory):
               help="Option for configuring storage summary details listing mode. Possible values: "
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
+@click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, output):
+def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
     """Lists storage contents
     """
     show_extended = False
@@ -1085,7 +1086,8 @@ def storage_list(path, show_details, show_versions, recursive, page, all, output
             click.echo('Extended output could be configured for the storage summary listing only!', err=True)
             sys.exit(1)
         show_extended = True
-    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended)
+    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
+                                       show_archive)
 
 
 @storage.command(name='mkdir')
@@ -1255,12 +1257,23 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @storage.command('du')
 @click.argument('name', required=False)
 @click.option('-p', '--relative-path', required=False, help='Relative path')
+@click.option('-c', '--cloud', required=False, is_flag=True, default=False,
+              help='Force to get data directly from the cloud.')
+@click.option('-o', '--output-mode', help='Output mode [brief/full]. '
+                                          '"brief(b)" - reports in format Storage size/Archive size. '
+                                          '"full(f)" - reports in format divided by Storage Class.',
+              type=click.Choice(DuOutput.possible_modes()), required=False, default='brief')
+@click.option('-g', '--generation', help='File generation to inspect [all/current/old]. '
+                                         '"all(a)" - reports sum of sizes for current and old file versions. '
+                                         '"current(c)" - reports size of current file versions only. '
+                                         '"old(o)" - reports size of old file versions only. ',
+              type=click.Choice(DuOutput.possible_generations()), required=False, default='all')
 @click.option('-f', '--format', help='Format for size [G/M/K]',
-              type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
+              type=click.Choice(DuOutput.possible_size_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
 @common_options
-def du(name, relative_path, format, depth):
-    DataStorageOperations.du(name, relative_path, format, depth)
+def du(name, relative_path, depth, cloud, output_mode, generation, format):
+    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format)
 
 
 @storage.command('restore')
@@ -1338,9 +1351,10 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
 @click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
               default=1000, type=int)
+@click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @common_options
 def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode,
-                  timeout):
+                  timeout, show_archive):
     """
     Mounts either all available network file systems or a single object storage to a local folder.
 
@@ -1365,7 +1379,8 @@ def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, l
     """
     DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
                                         bucket=bucket, options=options, custom_options=custom_options,
-                                        quiet=quiet, threading=threads, mode=mode, timeout=timeout)
+                                        quiet=quiet, threading=threads, mode=mode, timeout=timeout,
+                                        show_archive=show_archive)
 
 
 @storage.command('umount')

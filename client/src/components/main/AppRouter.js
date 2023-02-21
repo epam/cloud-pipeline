@@ -76,6 +76,7 @@ import ToolHistory from '../tools/tool-version/history';
 import ProjectHistory from '../pipelines/browser/ProjectHistory';
 import {FacetedSearchPage} from '../search';
 import {HcsImagePage} from '../special/hcs-image';
+import NotificationBrowser from './notification/NotificationBrowser';
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -163,6 +164,7 @@ function AppRouterComponent ({history, uiNavigation}) {
             <Route path="storage(/:type)" component={BillingReports.StorageReport} />
           </Route>
         </Route>
+        <Route path="/notifications" component={NotificationBrowser} />
         <Route path="/miew" component={MiewPage} />
         <Route path="/wsi" component={VSIPreviewPage} />
         <Route path="/hcs" component={HcsImagePage} />

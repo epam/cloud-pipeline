@@ -30,6 +30,7 @@ public class DockerCommitCommand extends AbstractDockerCommand {
     private final String apiToken;
     private final String commitDistributionUrl;
     private final String distributionUrl;
+    private final String globalDistributionUrl;
     private final String runId;
     private final String containerId;
     private final String cleanUp;
@@ -75,6 +76,7 @@ public class DockerCommitCommand extends AbstractDockerCommand {
         command.add(isPipelineAuth);
         command.add(preCommitCommand);
         command.add(postCommitCommand);
+        command.add(globalDistributionUrl);
         return command;
     }
 }

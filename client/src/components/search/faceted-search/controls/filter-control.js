@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import styles from './controls.css';
 
 function FilterControl ({onClick, expanded, visible}) {
@@ -24,10 +25,19 @@ function FilterControl ({onClick, expanded, visible}) {
   return (
     <div
       onClick={onClick}
-      className={styles.expandBtn}
+      className={
+        classNames(
+          styles.expandBtn,
+          'cp-primary',
+          'cp-divider',
+          'top',
+          'dashed'
+        )
+      }
     >
       {expanded ? 'Hide' : 'Show all'}
-    </div>);
-};
+    </div>
+  );
+}
 
 export default FilterControl;

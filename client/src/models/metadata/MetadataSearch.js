@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,9 @@ export default class MetadataSearch extends Remote {
     const query = [
       `entityClass=${entityClass}`,
       `key=${decodeURIComponent(key)}`,
-      `value=${decodeURIComponent(value)}`
+      value !== undefined ? `value=${decodeURIComponent(value)}` : undefined
     ]
+      .filter(Boolean)
       .join('&');
     this.url = `/metadata/search?${query}`;
   }

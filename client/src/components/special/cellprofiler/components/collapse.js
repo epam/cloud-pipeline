@@ -36,7 +36,8 @@ class Collapse extends React.Component {
   renderHeader () {
     const {
       onExpandedChange = this.toggleExpanded,
-      header
+      header,
+      empty
     } = this.props;
     if (!header) {
       return null;
@@ -58,16 +59,20 @@ class Collapse extends React.Component {
       <div
         className={
           classNames(
-            styles.cellProfilerCpModuleHeader,
+            styles.cellProfilerCollapseHeader,
             'cell-profiler-module-header'
           )
         }
         onClick={onExpandedChange}
       >
-        <Icon
-          type="right"
-          className={styles.expandIndicator}
-        />
+        {
+          !empty && (
+            <Icon
+              type="right"
+              className={styles.expandIndicator}
+            />
+          )
+        }
         {render()}
       </div>
     );
@@ -76,28 +81,35 @@ class Collapse extends React.Component {
   render () {
     const {
       expanded = this.state.expanded,
-      children
+      children,
+      empty,
+      className,
+      style
     } = this.props;
     return (
       <div
         className={
           classNames(
-            styles.cellProfilerCpModule,
+            styles.cellProfilerCollapse,
             'cell-profiler-module',
             {
               expanded,
-              [styles.expanded]: expanded
-            }
+              empty,
+              [styles.expanded]: expanded,
+              [styles.empty]: empty
+            },
+            className
           )
         }
+        style={style}
       >
         {
           this.renderHeader()
         }
         {
-          expanded && (
+          expanded && !empty && (
             <div
-              className={styles.cellProfilerCpModuleContent}
+              className={styles.cellProfilerCollapseContent}
             >
               {children}
             </div>
@@ -113,7 +125,8 @@ Collapse.propTypes = {
   style: PropTypes.object,
   header: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   expanded: PropTypes.bool,
-  onExpandedChange: PropTypes.func
+  onExpandedChange: PropTypes.func,
+  empty: PropTypes.bool
 };
 
 export default Collapse;

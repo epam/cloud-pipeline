@@ -521,5 +521,40 @@
         "description": "Specifies if the instance should be dedicated (has a dedicated hardware)",
         "defaultValue": "false",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_TARGET_SECURITY_GROUPS",
+        "type": "string",
+        "description": "Specifies which security groups shall be attached to the instance",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_TARGET_SUBNET_ID",
+        "type": "string",
+        "description": "Specifies which subnet shall be used for an instance",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_NODE_SSH_PORT",
+        "type": "int",
+        "description": "Sets SSH port, which is used by a host node of the job",
+        "defaultValue": "22",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_EFA_ENABLED",
+        "type": "boolean",
+        "description": "Specifies if EFA should be enabled for this instance",
+        "defaultValue": "false",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_USE_HOST_NETWORK",
+        "type": "boolean",
+        "description": "Specifies if run pod should be run with host network capability",
+        "defaultValue": "false",
+        "passToWorkers": true
     }
 ]

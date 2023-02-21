@@ -68,7 +68,8 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images=[], is_dedicated=False):
+                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                     global_distribution_url, pre_pull_images=[], is_dedicated=False):
 
         ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, pool_id, time_rep)
         if ins_id:
@@ -76,7 +77,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "AWS")
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                                                       kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                                      swap_size, pre_pull_images)
+                                                      global_distribution_url, swap_size, pre_pull_images)
         if is_spot:
             ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd,
                                                        kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size, is_dedicated)

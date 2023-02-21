@@ -79,7 +79,7 @@ public class DataStorageLifecycleRestoreManagerTest {
             .started(DateUtils.nowUTC().minus(ONE, ChronoUnit.DAYS)).build();
     public static final String STANDARD_RESTORE_MODE = "Standard";
     public static final StorageRestoreActionNotification DISABLED_NOTIFICATION =
-            new StorageRestoreActionNotification(false, Collections.emptyList());
+            new StorageRestoreActionNotification(false, Collections.emptyList(), false);
 
     private final PreferenceManager preferenceManager = Mockito.mock(PreferenceManager.class);
     private final DataStorageRestoreActionRepository dataStoragePathRestoreActionRepository =
@@ -140,7 +140,7 @@ public class DataStorageLifecycleRestoreManagerTest {
         lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1)
                         .type(StorageRestorePathType.FOLDER).build(),
                 STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false,
-                new StorageRestoreActionNotification(true, Collections.emptyList()));
+                new StorageRestoreActionNotification(true, Collections.emptyList(), false));
     }
 
     @Test(expected = IllegalStateException.class)

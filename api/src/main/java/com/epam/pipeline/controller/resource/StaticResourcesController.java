@@ -19,12 +19,18 @@ package com.epam.pipeline.controller.resource;
 import com.epam.pipeline.acl.resource.StaticResourceApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.sharing.Modification;
+import com.epam.pipeline.entity.sharing.StaticResourceSettings;
+import com.epam.pipeline.exception.InvalidPathException;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.poi.util.ReplacingInputStream;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,11 +38,14 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.FileNameMap;
 import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -45,28 +54,57 @@ public class StaticResourcesController extends AbstractRestController {
 
     private static final FileNameMap FILE_NAME_MAP = URLConnection.getFileNameMap();
     private static final String STATIC_RESOURCES = "/static-resources/";
+
     private final StaticResourceApiService resourcesService;
     private final PreferenceManager preferenceManager;
 
     @GetMapping(value = "/static-resources/**")
     public void getStaticFile(final HttpServletRequest request, final HttpServletResponse response)
             throws IOException {
-        final DataStorageStreamingContent content = resourcesService.getContent(
-                request.getPathInfo().replaceFirst(STATIC_RESOURCES, ""));
-        final String fileName = FilenameUtils.getName(content.getName());
-        final MediaType mediaType = getMediaType(fileName);
-        writeStreamToResponse(response, content.getContent(), fileName, mediaType,
-                !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(fileName));
+        try {
+            final DataStorageStreamingContent content = resourcesService.getContent(
+                    request.getPathInfo().replaceFirst(STATIC_RESOURCES, ""));
+            final String fileName = FilenameUtils.getName(content.getName());
+            final MediaType mediaType = getMediaType(fileName);
+            final StaticResourceSettings settings = getStaticResourceSettings(fileName);
+
+            writeStreamToResponse(response, getCustomContent(content.getContent(), settings), fileName, mediaType,
+                    !MediaType.APPLICATION_OCTET_STREAM.equals(mediaType), getCustomHeaders(settings));
+        } catch (InvalidPathException e) {
+            response.setHeader("Location", request.getRequestURI() + ProviderUtils.DELIMITER);
+            response.setStatus(HttpStatus.FOUND.value());
+        }
     }
 
-    private Map<String, String> getCustomHeaders(final String fileName) {
-        final Map<String, Map<String, String>> headers = preferenceManager.getPreference(
-                SystemPreferences.DATA_SHARING_STATIC_HEADERS);
-        final String extension = FilenameUtils.getExtension(fileName);
-        if (MapUtils.isEmpty(headers) || !headers.containsKey(extension)) {
-            return Collections.emptyMap();
+    private StaticResourceSettings getStaticResourceSettings(final String fileName) {
+        final Map<String, StaticResourceSettings> settings = preferenceManager.getPreference(
+                SystemPreferences.DATA_SHARING_STATIC_RESOURCE_SETTINGS);
+        if (settings == null) {
+            return new StaticResourceSettings();
         }
-        return headers.get(extension);
+        final String extension = FilenameUtils.getExtension(fileName);
+        return settings.getOrDefault(extension, new StaticResourceSettings());
+    }
+
+    private Map<String, String> getCustomHeaders(final StaticResourceSettings settings) {
+        return Optional.ofNullable(settings.getHeaders()).orElse(Collections.emptyMap());
+    }
+
+    private InputStream getCustomContent(final InputStream content,
+                                         final StaticResourceSettings settings) {
+        final List<Modification> modifications = Optional.ofNullable(settings.getModifications())
+                .orElse(Collections.emptyList());
+        return CollectionUtils.isNotEmpty(modifications) ? replace(content, modifications, 0) : content;
+    }
+
+    private InputStream replace(final InputStream content, final List<Modification> modifications, final int n) {
+        if (n == modifications.size()) {
+            return content;
+        } else {
+            Modification modification = modifications.get(n);
+            return replace(new ReplacingInputStream(content,
+                    modification.getPattern(), modification.getReplacement()), modifications, n+1);
+        }
     }
 
     private MediaType getMediaType(final String fileName) {

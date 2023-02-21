@@ -36,18 +36,22 @@ import java.util.Map;
 public class ApplicationInfoManager {
 
     private final String componentVersionFile;
+    private final String prettyVersion;
     private final ResourceLoader resourceLoader;
 
     public ApplicationInfoManager(
             final @Value("${app.component.version.file:classpath:static/components_versions.json}")
                     String componentVersionFile,
+            final @Value("${app.component.version.name:}")
+                    String prettyVersion,
             final ResourceLoader resourceLoader) {
         this.componentVersionFile = componentVersionFile;
+        this.prettyVersion = prettyVersion;
         this.resourceLoader = resourceLoader;
     }
 
     public ApplicationInfo getInfo() {
-        return new ApplicationInfo(getComponentVersions());
+        return new ApplicationInfo(getComponentVersions(), prettyVersion);
     }
 
     private Map<String, String> getComponentVersions() {

@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectMember;
 import com.epam.pipeline.entity.git.GitProjectMemberRequest;
 import com.epam.pipeline.entity.git.GitProjectRequest;
+import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
@@ -332,4 +333,13 @@ public interface GitLabApi {
     Call<GitProject> forkProject(@Path(API_VERSION) String apiVersion,
                                  @Path(PROJECT) String project,
                                  @Query("namespace") String namespace);
+
+    /**
+     * Get the path to repository storage for specified project. Available for administrators only.
+     * NOTE: Introduced in GitLab 14.0.
+     *
+     * @param project The ID or URL-encoded path of the project
+     */
+    @GET("api/v4/projects/{project}/storage")
+    Call<GitProjectStorage> getProjectStorage(@Path(PROJECT) String project);
 }

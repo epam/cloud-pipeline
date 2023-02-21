@@ -114,7 +114,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
             pricing.get(i).setEndRangeBytes(pricing.get(i + 1).getBeginRangeBytes());
         }
         pricing.get(pricingSize - 1).setEndRangeBytes(Long.MAX_VALUE);
-        storagePricing.getPrices().addAll(pricing);
+        storagePricing.addPrices(StoragePriceListLoader.DEFAULT_STORAGE_CLASS, pricing);
         return storagePricing;
     }
 

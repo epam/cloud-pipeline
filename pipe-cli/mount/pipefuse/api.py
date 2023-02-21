@@ -47,6 +47,28 @@ class TemporaryCredentials:
         return instance
 
 
+class StorageLifecycle:
+
+    def __init__(self):
+        self.path = None
+        self.status = None
+        self.restored_till = None
+
+    @classmethod
+    def load(cls, json):
+        instance = StorageLifecycle()
+        if 'path' in json:
+            instance.path = json['path']
+        if 'status' in json:
+            instance.status = json['status']
+        if 'restoredTill' in json:
+            instance.restored_till = json['restoredTill']
+        return instance
+
+    def is_restored(self):
+        return self.status == 'SUCCEEDED'
+
+
 class DataStorage:
     _READ_MASK = 1
     _WRITE_MASK = 1 << 1
@@ -129,6 +151,21 @@ class CloudPipelineClient:
         }
         credentials = self._get_temporary_credentials([operation])
         return credentials
+
+    def get_storage_lifecycle(self, bucket, path, is_file=False):
+        logging.info('Getting storage lifecycle for data storage #%s' % bucket.id)
+        request_url = '/datastorage/%s/lifecycle/restore/effectiveHierarchy?path=%s&pathType=%s' \
+                      % (str(bucket.id), path, 'FILE' if is_file else 'FOLDER&recursive=false')
+        response_data = self._get(request_url)
+        if 'payload' in response_data:
+            items = []
+            for lifecycles_json in response_data['payload']:
+                lifecycle = StorageLifecycle.load(lifecycles_json)
+                items.append(lifecycle)
+            return items
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        return None
 
     def _check_write_allowed(self, bucket):
         try:

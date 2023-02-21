@@ -116,6 +116,13 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 clausesCount++;
             }
 
+            if (CollectionUtils.isNotEmpty(requestVO.getTermTypes())) {
+                whereBuilder.append(" i.term_type IN :").append(InstanceOfferParameters.TERM_TYPE.name());
+                params.addValue(InstanceOfferParameters.TERM_TYPE.name(),
+                        String.join(",", requestVO.getTermTypes()));
+                clausesCount++;
+            }
+
             if (requestVO.getUnit() != null) {
                 if (clausesCount > 0) {
                     whereBuilder.append(AND);
@@ -168,6 +175,13 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 whereBuilder.append(" i.volume_type = :").append(InstanceOfferParameters.VOLUME_TYPE.name());
                 params.addValue(InstanceOfferParameters.VOLUME_TYPE.name(), requestVO.getVolumeType());
             }
+            if (requestVO.getVolumeApiName() != null) {
+                if (clausesCount > 0) {
+                    whereBuilder.append(AND);
+                }
+                whereBuilder.append(" i.volume_api_name = :").append(InstanceOfferParameters.VOLUME_API_NAME.name());
+                params.addValue(InstanceOfferParameters.VOLUME_API_NAME.name(), requestVO.getVolumeApiName());
+            }
             if (requestVO.getRegionId() != null) {
                 if (clausesCount > 0) {
                     whereBuilder.append(AND);
@@ -191,6 +205,7 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         OPERATING_SYSTEM,
         PRODUCT_FAMILY,
         VOLUME_TYPE,
+        VOLUME_API_NAME,
         PRICE_LIST_PUBLISH_DATE,
         VCPU,
         MEMORY,
@@ -213,6 +228,7 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
             params.addValue(OPERATING_SYSTEM.name(), instanceOffer.getOperatingSystem());
             params.addValue(PRODUCT_FAMILY.name(), instanceOffer.getProductFamily());
             params.addValue(VOLUME_TYPE.name(), instanceOffer.getVolumeType());
+            params.addValue(VOLUME_API_NAME.name(), instanceOffer.getVolumeApiName());
             params.addValue(PRICE_LIST_PUBLISH_DATE.name(), instanceOffer.getPriceListPublishDate());
             params.addValue(VCPU.name(), instanceOffer.getVCPU());
             params.addValue(MEMORY.name(), instanceOffer.getMemory());

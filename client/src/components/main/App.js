@@ -135,7 +135,10 @@ export default class App extends Component {
             )
           }
           {content}
-          <NotificationCenter delaySeconds={2} />
+          <NotificationCenter
+            delaySeconds={2}
+            disableEmailNotifications={activeTabPath === Pages.notifications}
+          />
         </div>
       </LocaleProvider>
     );

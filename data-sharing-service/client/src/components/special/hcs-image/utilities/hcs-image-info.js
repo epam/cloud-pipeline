@@ -23,6 +23,7 @@ import {createObjectStorageWrapper} from '../../../../utils/object-storage';
  * @property {number|string} storageId
  * @property {ObjectStorage} objectStorage
  * @property {string} directory
+ * @property {string} sourceDirectory
  * @property {number} width
  * @property {number} height
  * @property {Object} timeSeriesDetails
@@ -37,6 +38,7 @@ class HCSInfo {
       storageId,
       objectStorage,
       directory,
+      sourceDirectory,
       width,
       height,
       timeSeriesDetails = {}
@@ -63,6 +65,11 @@ class HCSInfo {
      */
     this.directory = directory;
     /**
+     * Source directory
+     * @type {string}
+     */
+    this.sourceDirectory = sourceDirectory;
+    /**
      * Plate width
      * @type {number}
      */
@@ -82,6 +89,7 @@ class HCSInfo {
         storageId,
         objectStorage,
         sequence,
+        sourceDirectory,
         directory: (directory || '')
           .split(objectStorage ? objectStorage.delimiter : '/')
           .concat(sequence)
@@ -89,6 +97,31 @@ class HCSInfo {
           .join(objectStorage ? objectStorage.delimiter : '/'),
         timeSeries: timeSeriesDetails[sequence] || []
       }));
+    this.sequences
+      .forEach(aSequence => aSequence.addURLsGeneratedListener(this.sequenceURLsRegenerated));
+    this.listeners = [];
+  }
+
+  addURLsRegeneratedListener = (listener) => {
+    this.removeURLsRegeneratedListener(listener);
+    this.listeners.push(listener);
+  };
+
+  removeURLsRegeneratedListener = (listener) => {
+    this.listeners = this.listeners.filter(aListener => aListener !== listener);
+  };
+
+  sequenceURLsRegenerated = (sequence) => {
+    this.listeners
+      .filter(aListener => typeof aListener === 'function')
+      .forEach(aListener => aListener(sequence, this));
+  };
+
+  destroy () {
+    this.listeners = undefined;
+    this.sequences.forEach(aSequence => aSequence.destroy());
+    this.sequences = undefined;
+    this.objectStorage = undefined;
   }
 
   /**
@@ -130,6 +163,7 @@ class HCSInfo {
           previewDir: previewDirectory
         } = hcsPathInfo;
         const {
+          sourceDir: sourceDirectory,
           plate_height: height,
           plate_width: width,
           time_series_details: timeSeriesDetails = {}
@@ -138,6 +172,7 @@ class HCSInfo {
           new HCSInfo({
             storageId,
             directory: previewDirectory,
+            sourceDirectory,
             width,
             height,
             objectStorage,

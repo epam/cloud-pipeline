@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,21 +38,21 @@ import styles from './life-cycle-forms.css';
 const columnLayout = {
   labelCol: {
     xs: {span: 24},
-    sm: {span: 6}
+    sm: {span: 10}
   },
   wrapperCol: {
     xs: {span: 24},
-    sm: {span: 14}
+    sm: {span: 10}
   }
 };
 const fullWidthLayout = {
   labelCol: {
     xs: {span: 24},
-    sm: {span: 3}
+    sm: {span: 5}
   },
   wrapperCol: {
     xs: {span: 24},
-    sm: {span: 19}
+    sm: {span: 17}
   }
 };
 
@@ -106,30 +106,36 @@ class NotificationForm extends React.Component {
     return undefined;
   }
 
+  get notifyUsers () {
+    const {form} = this.props;
+    return form.getFieldValue('notification.notifyUsers');
+  }
+
   fetchEmailSettings = () => {
     this.setState({pending: true}, async () => {
       const request = new NotificationTemplates();
       await request.fetch();
       this.setState({pending: false}, () => {
-        if (request.error) {
-          return message.error(request.error, 5);
+        if (!request.error) {
+          this.systemTemplate = (request.value || [])
+            .find(template => template.name === TEMPLATE_KEY);
         }
-        this.systemTemplate = (request.value || [])
-          .find(template => template.name === TEMPLATE_KEY);
       });
     });
   };
 
   checkRequiredFields = () => {
-    const {form} = this.props;
-    form.validateFields(
-      [
-        'notification.recipients',
-        'notification.body',
-        'notification.subject'
-      ],
-      {force: true}
-    );
+    setTimeout(() => {
+      const {form} = this.props;
+      form.validateFields(
+        [
+          'notification.recipients',
+          'notification.body',
+          'notification.subject'
+        ],
+        {force: true}
+      );
+    });
   };
 
   setPreviewMode = (preview) => {
@@ -322,7 +328,7 @@ class NotificationForm extends React.Component {
                 ? rule.notification.recipients
                 : [],
               rules: [{
-                required: !notificationsDisabled,
+                required: !notificationsDisabled && !this.notifyUsers,
                 message: ' '
               }]
             })(
@@ -331,7 +337,30 @@ class NotificationForm extends React.Component {
                 style={{flex: 1}}
                 dropdownStyle={{maxHeight: '80%'}}
                 popupContainerFn={() => this.notifyFormContainer}
+                onChange={this.checkRequiredFields}
               />
+            )}
+          </Form.Item>
+        </Row>
+        <Row>
+          <Form.Item
+            {...fullWidthLayout}
+            className={styles.formItem}
+            label=" "
+            colon={false}
+          >
+            {getFieldDecorator('notification.notifyUsers', {
+              valuePropName: 'checked',
+              initialValue: rule.notification && rule.notification.notifyUsers !== undefined
+                ? rule.notification.notifyUsers
+                : false
+            })(
+              <Checkbox
+                disabled={notificationsDisabled || pending}
+                onChange={this.checkRequiredFields}
+              >
+                Storage users
+              </Checkbox>
             )}
           </Form.Item>
         </Row>

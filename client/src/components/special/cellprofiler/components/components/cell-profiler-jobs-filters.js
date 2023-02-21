@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {Icon} from 'antd';
 import UsersRolesSelect from '../../../users-roles-select';
 import Collapse from '../collapse';
 import DelayedInput from '../../../DelayedInput';
@@ -76,11 +77,24 @@ class CellProfilerJobsFilters extends React.Component {
           />
         ));
       }
+      if (source && source.length) {
+        parts.push((
+          <span
+            key="source"
+            style={{marginRight: 5}}
+          >
+            <Icon type="file" />
+            {source}
+          </span>
+        ));
+      }
       if (parts.length === 0) {
         return 'Filters';
       }
       return (
-        <span>
+        <span
+          className="cp-ellipsis-text"
+        >
           Filters:
           {' '}
           {parts}

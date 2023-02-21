@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,17 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.util.Map;
-
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static org.openqa.selenium.By.id;
 
+
 public class ToolGroupDeletionPopup extends PopupAO<ToolGroupDeletionPopup, Registry> {
     private final Map<Primitive,SelenideElement> elements = initialiseElements(
             entry(DELETE, context().find(id("remove-button-delete"))),
-            entry(CANCEL, context().find(id("cancel-remove-group")))
+            entry(CANCEL, context().find(id("remove-button-cancel")))
     );
 
     public ToolGroupDeletionPopup(final Registry registry) {

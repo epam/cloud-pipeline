@@ -21,6 +21,7 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AwsPriceStorageListComposerLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureBlobStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureEARawPriceLoader;
@@ -113,9 +114,20 @@ public class CommonSyncConfiguration {
                                                       String endpointTemplate) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3",
-                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
-                        endpointTemplate));
+                new StoragePricingService(
+                        new AwsPriceStorageListComposerLoader(
+                                new AwsStoragePriceListLoader(
+                                        "AmazonS3",
+                                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                                        endpointTemplate
+                                ),
+                                new AwsStoragePriceListLoader(
+                                        "AmazonS3GlacierDeepArchive",
+                                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                                        endpointTemplate
+                                )
+                        )
+                );
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,

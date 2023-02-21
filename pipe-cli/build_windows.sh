@@ -78,7 +78,7 @@ _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
-version_file="${PIPE_CLI_SOURCES_DIR}/src/version.py"
+version_file="/pipe-cli/src/version.py"
 sed -i '/__component_version__/d' \$version_file
 echo "__component_version__='\${PIPE_COMMIT_HASH}'" >> \$version_file
 
@@ -143,8 +143,11 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --add-data "/pipe-cli/ntlmaps;ntlmaps" \
             --add-data "/tmp/mount/dist/pipe-fuse;mount" \
             --version-file /tmp/pipe-win-version-info.txt \
-            --icon /pipe-cli/res/cloud-pipeline.ico && \
+            --icon /pipe-cli/res/cloud-pipeline.ico \
+            --name pipe-cli && \
 cd /pipe-cli/dist/win64 && \
+cp /pipe-cli/pipe.bat pipe-cli/ && \
+mv pipe-cli pipe && \
 zip -r -q pipe.zip pipe
 EOL
 

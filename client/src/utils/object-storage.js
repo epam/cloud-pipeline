@@ -100,6 +100,13 @@ class ObjectStorage {
     }
   }
 
+  get initialized () {
+    if (this.id && this.type && this.path && /^s3$/i.test(this.type)) {
+      return !!this.s3Storage;
+    }
+    return true;
+  }
+
   async initialize (permissions = {}) {
     if (this.id && this.type && this.path && /^s3$/i.test(this.type)) {
       this.s3Storage = new S3Storage({
@@ -157,6 +164,7 @@ class ObjectStorage {
         const request = new DataStorageRequest(
           id,
           decodeURIComponent(folder),
+          false,
           false,
           50
         );
@@ -283,7 +291,7 @@ export async function createObjectStorageWrapper (
     console.warn(e.message);
   }
   const filteredStoragesArray = storagesArray && typeof storagesArray.filter === 'function'
-    ? storagesArray.filter(storage => !storage.shared)
+    ? storagesArray.filter(s => !s.shared)
     : undefined;
   if (!isURL && !Number.isNaN(Number(storage))) {
     const storageId = Number(storage);

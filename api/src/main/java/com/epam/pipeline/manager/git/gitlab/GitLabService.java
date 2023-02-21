@@ -74,9 +74,13 @@ public class GitLabService implements GitClientService {
     }
 
     @Override
-    public GitProject createRepository(final String description, final String repositoryPath, final String token)
+    public GitProject createRepository(final String description,
+                                       final String repositoryPath,
+                                       final String token,
+                                       final String visibility)
             throws GitClientException {
-        return getGitlabClientForRepository(repositoryPath, token, true).createRepo(description);
+        return getGitlabClientForRepository(repositoryPath, token, true)
+                .createRepo(description, visibility);
     }
 
     @Override
