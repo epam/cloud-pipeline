@@ -740,6 +740,9 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_LONG_PAUSED_ACTION = new StringPreference("system.long.paused.action",
             LongPausedRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidLongPauseRunAction);
+    public static final IntPreference SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES =
+            new IntPreference("system.long.paused.action.timeout.minutes",
+                    30, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Controls how long resource monitoring stats are being kept, in days
      */
