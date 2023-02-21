@@ -16,18 +16,18 @@
 
 package com.epam.pipeline.manager.billing.billingdetails;
 
+import com.epam.pipeline.controller.vo.billing.BillingCostDetailsRequest;
 import com.epam.pipeline.entity.billing.BillingChartDetails;
+import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails;
+import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public final class StorageBillingCostDetailsHelper {
@@ -75,6 +75,24 @@ public final class StorageBillingCostDetailsHelper {
         ).build();
     }
 
+    static boolean isStorageBillingDetailsShouldBeLoaded(final BillingCostDetailsRequest request) {
+        if (!request.isEnabled()) {
+            return false;
+        }
+        final BillingGrouping grouping = request.getGrouping();
+        if (BillingGrouping.STORAGE.equals(grouping) || BillingGrouping.STORAGE_TYPE.equals(grouping)) {
+            return true;
+        } else {
+            final Map<String, List<String>> filters = MapUtils.emptyIfNull(request.getFilters());
+            Boolean onlyStorageRTypeRequestedOrNothing = Optional.ofNullable(filters.get("resource_type"))
+                    .map(values -> (values.contains("STORAGE") && values.size() == 1) || values.isEmpty())
+                    .orElse(true);
+            Boolean onlyObjectStorageSTypeRequested = Optional.ofNullable(filters.get("storage_type"))
+                    .map(values -> values.contains("OBJECT_STORAGE") && values.size() == 1).orElse(false);
+            return onlyObjectStorageSTypeRequested && onlyStorageRTypeRequestedOrNothing;
+        }
+    }
+
     private static boolean isDetailsEntryEmpty(StorageBillingChartCostDetails.StorageBillingDetails details) {
         return details.getCost() == 0 && details.getSize() == 0
                 && details.getOldVersionCost() == 0 && details.getOldVersionSize() == 0;
@@ -99,5 +117,4 @@ public final class StorageBillingCostDetailsHelper {
     private static String getAggregationField(String template, String field) {
         return String.format(template, field);
     }
-
 }

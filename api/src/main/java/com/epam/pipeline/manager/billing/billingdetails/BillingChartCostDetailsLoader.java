@@ -18,16 +18,12 @@ package com.epam.pipeline.manager.billing.billingdetails;
 
 import com.epam.pipeline.controller.vo.billing.BillingCostDetailsRequest;
 import com.epam.pipeline.entity.billing.BillingChartDetails;
-import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails;
-import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Helper class to encapsulate logic of loading cost details for specific billing entity,
@@ -38,34 +34,16 @@ public final class BillingChartCostDetailsLoader {
     private BillingChartCostDetailsLoader() {}
 
     public static List<AggregationBuilder> buildQuery(final BillingCostDetailsRequest request) {
-        if (isStorageBillingDetailsShouldBeLoaded(request)) {
+        if (StorageBillingCostDetailsHelper.isStorageBillingDetailsShouldBeLoaded(request)) {
             return StorageBillingCostDetailsHelper.buildQuery();
         }
         return Collections.emptyList();
     }
 
-    private static boolean isStorageBillingDetailsShouldBeLoaded(final BillingCostDetailsRequest request) {
-        if (!request.isEnabled()) {
-            return false;
-        }
-        final BillingGrouping grouping = request.getGrouping();
-        if (BillingGrouping.STORAGE.equals(grouping) || BillingGrouping.STORAGE_TYPE.equals(grouping)) {
-            return true;
-        } else {
-            final Map<String, List<String>> filters = MapUtils.emptyIfNull(request.getFilters());
-            Boolean onlyStorageRTypeRequestedOrNothing = Optional.ofNullable(filters.get("resource_type"))
-                    .map(values -> (values.contains("STORAGE") && values.size() == 1) || values.isEmpty())
-                    .orElse(false);
-            Boolean onlyObjectStorageSTypeRequested = Optional.ofNullable(filters.get("storage_type"))
-                    .map(values -> values.contains("OBJECT_STORAGE") && values.size() == 1).orElse(false);
-            return onlyObjectStorageSTypeRequested && onlyStorageRTypeRequestedOrNothing;
-        }
-    }
-
 
     public static BillingChartDetails parseResponse(final BillingCostDetailsRequest request,
                                                     final Aggregations aggregations) {
-        if (isStorageBillingDetailsShouldBeLoaded(request)) {
+        if (StorageBillingCostDetailsHelper.isStorageBillingDetailsShouldBeLoaded(request)) {
             return StorageBillingCostDetailsHelper.parseResponse(aggregations);
         }
         return null;
