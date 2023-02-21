@@ -210,20 +210,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         if (!dataStorage.isShared()) {
             return true;
         }
-        if (dataStorage.getSourceStorageId() != null) {
-            return false;
-        }
-        final boolean isPrefixStorage = ListUtils.emptyIfNull(allStorages)
-                .stream()
-                .anyMatch(parentStorage -> !parentStorage.getId().equals(dataStorage.getId()) &&
-                        dataStorage.getPath()
-                        .startsWith(
-                                withTrailingDelimiter(parentStorage.getPath(), parentStorage.getDelimiter())));
-        return !isPrefixStorage;
-    }
-
-    private String withTrailingDelimiter(final String path, final String delimiter) {
-        return StringUtils.isNotBlank(path) && !path.endsWith(delimiter) ? path + delimiter : path;
+        return dataStorage.getSourceStorageId() == null;
     }
 
     private String findFileContent(final AbstractDataStorage storage, final String filePath) {
