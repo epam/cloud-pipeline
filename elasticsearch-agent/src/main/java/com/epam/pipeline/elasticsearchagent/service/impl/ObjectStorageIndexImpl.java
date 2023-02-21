@@ -37,7 +37,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
@@ -210,27 +209,6 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             return true;
         }
         return dataStorage.getSourceStorageId() == null;
-    }
-
-    private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,
-                                       final List<AbstractDataStorage> allStorages) {
-        if (!dataStorage.isShared()) {
-            return true;
-        }
-        if (dataStorage.getSourceStorageId() != null) {
-            return false;
-        }
-        final boolean isPrefixStorage = ListUtils.emptyIfNull(allStorages)
-                .stream()
-                .anyMatch(parentStorage -> !parentStorage.getId().equals(dataStorage.getId()) &&
-                        dataStorage.getPath()
-                        .startsWith(
-                                withTrailingDelimiter(parentStorage.getPath(), parentStorage.getDelimiter())));
-        return !isPrefixStorage;
-    }
-
-    private String withTrailingDelimiter(final String path, final String delimiter) {
-        return StringUtils.isNotBlank(path) && !path.endsWith(delimiter) ? path + delimiter : path;
     }
 
     private String findFileContent(final AbstractDataStorage storage, final String filePath) {
