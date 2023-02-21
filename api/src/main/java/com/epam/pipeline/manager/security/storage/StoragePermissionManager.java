@@ -24,7 +24,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.quota.QuotaService;
@@ -36,7 +35,6 @@ import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
 
@@ -140,11 +138,6 @@ public class StoragePermissionManager {
         }
     }
 
-    public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
-        return grantPermissionManager.isOwnerOrAdmin(storage.getOwner())
-                || permissionHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
-    }
-
     private boolean checkPermissions(final List<AclPermission> permissions,
                                      final AbstractDataStorage storage,
                                      final boolean allPermissions) {
@@ -156,14 +149,5 @@ public class StoragePermissionManager {
         return permissions.stream()
                 .anyMatch(permission -> permissionsService.isMaskBitSet(storage.getMask(),
                         permission.getSimpleMask()));
-    }
-
-    private boolean checkStorageArchiveRoles() {
-        final GrantedAuthoritySid archiveManager = new GrantedAuthoritySid(
-                DefaultRoles.ROLE_STORAGE_ARCHIVE_MANAGER.getName());
-        final GrantedAuthoritySid archiveReader = new GrantedAuthoritySid(
-                DefaultRoles.ROLE_STORAGE_ARCHIVE_READER.getName());
-        return permissionHelper.getSids().stream()
-                .anyMatch(sid -> sid.equals(archiveManager) || sid.equals(archiveReader));
     }
 }

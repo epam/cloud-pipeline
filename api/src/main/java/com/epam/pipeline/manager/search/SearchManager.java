@@ -78,15 +78,18 @@ public class SearchManager {
     }
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
-                                        final Set<String> storageSizeMasks) {
-        return getStorageUsage(dataStorage, path, false, storageSizeMasks);
+                                        final Set<String> storageSizeMasks, final Set<String> storageClasses,
+                                        final boolean allowVersions) {
+        return getStorageUsage(dataStorage, path, false, storageSizeMasks, storageClasses, allowVersions);
     }
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
-                                        final boolean allowNoIndex, final Set<String> storageSizeMasks) {
+                                        final boolean allowNoIndex, final Set<String> storageSizeMasks,
+                                        final Set<String> storageClasses, final boolean allowVersions) {
         try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final MultiSearchRequest searchRequest = requestBuilder.buildStorageSumRequest(
-                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks);
+                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks,
+                    storageClasses, allowVersions);
             final MultiSearchResponse searchResponse = client.msearch(searchRequest, RequestOptions.DEFAULT);
             return resultConverter.buildStorageUsageResponse(searchRequest, searchResponse, dataStorage, path);
         } catch (IOException e) {

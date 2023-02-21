@@ -28,7 +28,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
-import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -45,7 +45,7 @@ public class DataStorageLifecycleApiService {
 
     private final DataStorageLifecycleManager storageLifecycleManager;
     private final DataStorageLifecycleRestoreManager restoreManager;
-    private final StoragePermissionManager storagePermissionManager;
+    private final GrantPermissionManager permissionManager;
 
     @PreAuthorize(AclExpressions.STORAGE_LIFECYCLE_READER)
     public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long id, final String path) {
@@ -142,7 +142,7 @@ public class DataStorageLifecycleApiService {
                                                                                  final StorageRestorePathType pathType,
                                                                                  final Boolean recursive) {
         final AbstractDataStorage storage = storageManager.load(id);
-        final boolean showArchived = storagePermissionManager.storageArchiveReadPermissions(storage);
+        final boolean showArchived = permissionManager.storageArchiveReadPermissions(storage);
         return restoreManager.loadEffectiveRestoreStorageActionHierarchy(
                 storage, StorageRestorePath.builder().type(pathType).path(path).build(), recursive, showArchived);
     }

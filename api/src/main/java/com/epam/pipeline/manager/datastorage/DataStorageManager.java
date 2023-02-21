@@ -867,7 +867,11 @@ public class DataStorageManager implements SecuredEntityManager {
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
         final Set<String> storageSizeMasks = resolveSizeMasks(loadSizeCalculationMasksMapping(), dataStorage);
-        return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks);
+        final Set<String> storageClasses = permissionManager.storageArchiveReadPermissions(dataStorage)
+                ? dataStorage.getType().getStorageClasses()
+                : Collections.singleton(DataStorageType.Constants.STANDARD_STORAGE_CLASS);
+        final boolean allowVersions = permissionManager.isOwnerOrAdmin(dataStorage.getOwner());
+        return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks, storageClasses, allowVersions);
     }
 
     public Map<String, Set<String>> loadSizeCalculationMasksMapping() {
