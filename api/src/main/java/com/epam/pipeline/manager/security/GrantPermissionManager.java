@@ -820,21 +820,6 @@ public class GrantPermissionManager {
         return cloudProfileCredentialsManagerProvider.hasAssignedUserOrRole(profileId, currentUser.getId(),
                 currentUser.getRoles());
     }
-
-    public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
-        return isOwnerOrAdmin(storage.getOwner())
-                || permissionsHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
-    }
-
-    private boolean checkStorageArchiveRoles() {
-        final GrantedAuthoritySid archiveManager = new GrantedAuthoritySid(
-                DefaultRoles.ROLE_STORAGE_ARCHIVE_MANAGER.getName());
-        final GrantedAuthoritySid archiveReader = new GrantedAuthoritySid(
-                DefaultRoles.ROLE_STORAGE_ARCHIVE_READER.getName());
-        return permissionsHelper.getSids().stream()
-                .anyMatch(sid -> sid.equals(archiveManager) || sid.equals(archiveReader));
-    }
-
     private List<Sid> convertUserToSids(String user) {
         String principal = user.toUpperCase();
         UserContext eventOwner = userManager.loadUserContext(user.toUpperCase());
