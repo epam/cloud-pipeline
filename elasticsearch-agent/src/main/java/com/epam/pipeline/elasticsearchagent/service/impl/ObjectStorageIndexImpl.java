@@ -43,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,6 +58,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -74,6 +76,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
 
     private static final String STANDARD_TIER = "STANDARD";
     private static final String ROOT_PATH = "/";
+    public static final String RESTORED_POSTFIX = "_restored";
 
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final ElasticsearchServiceClient elasticsearchServiceClient;
@@ -158,26 +161,32 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                     : file.getAbsolutePath().startsWith(action.getPath());
             return pathsMatches && StorageRestoreStatus.SUCCEEDED == action.getStatus();
         }).findAny().ifPresent(action -> {
-            // Create second copy of the file with STANDARD_TIER
+
+            // Create second copy of the file with STANDARD_TIER if it's restored,
+            // or use original object to hold restored versions
+            final DataStorageFile primaryFile;
             if (fileWasRestored(file, action)) {
-                final DataStorageFile restored = file.copy();
-                restored.getLabels().put(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER);
-                restored.setVersions(Collections.emptyMap());
-                filesWithRespectToRestoreStatus.add(restored);
+                primaryFile = file.copy();
+                primaryFile.getLabels().put(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER);
+                primaryFile.setVersions(new HashMap<>());
+                filesWithRespectToRestoreStatus.add(primaryFile);
+            } else {
+                primaryFile = file;
             }
+
             // If version were restored too we need to count it twice also, with actual storage class
             // and STANDARD storage class, to count usage and billing appropriately
-            if (BooleanUtils.isTrue(action.getRestoreVersions())) {
-                Map<String, DataStorageFile> duplicated = file.getVersions().entrySet().stream().map(e -> {
+            if (MapUtils.isNotEmpty(file.getVersions()) && BooleanUtils.isTrue(action.getRestoreVersions())) {
+                final Map<String, DataStorageFile> restoredVersions = file.getVersions().entrySet().stream().map(e -> {
                     final DataStorageFile fileVersion = ((DataStorageFile) e.getValue()).copy();
                     if (fileWasRestored(fileVersion, action)) {
                         fileVersion.getLabels().put(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER);
-                        return ImmutablePair.of(e.getKey() + "_restored", fileVersion);
+                        return ImmutablePair.of(e.getKey() + RESTORED_POSTFIX, fileVersion);
                     } else {
                         return null;
                     }
                 }).filter(Objects::nonNull).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
-                file.getVersions().putAll(duplicated);
+                primaryFile.getVersions().putAll(restoredVersions);
             }
         });
         return filesWithRespectToRestoreStatus;
