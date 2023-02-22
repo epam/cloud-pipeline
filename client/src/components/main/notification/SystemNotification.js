@@ -134,6 +134,7 @@ export default class SystemNotification extends React.Component {
   };
 
   render () {
+    const {visible} = this.props;
     return (
       <div
         id={`notification-${this.props.notification.notificationId}`}
@@ -146,8 +147,10 @@ export default class SystemNotification extends React.Component {
           )
         }
         style={{
-          right: -350,
-          top: window.innerHeight,
+          right: visible ? 0 : -350,
+          top: visible
+            ? top
+            : window.innerHeight,
           display: 'flex',
           flexDirection: 'row',
           cursor: this.props.onClick ? 'pointer' : 'default'

@@ -229,7 +229,7 @@ export default class NotificationCenter extends React.Component {
   getPositioningInfo = (notification, index) => {
     if (this.notificationIsVisible(notification)) {
       const notifications = this.notificationsToShow;
-      const padding = 80;
+      const padding = 50;
       let top = SystemNotification.margin;
       let bottom = SystemNotification.margin;
       let remainingHeight = window.innerHeight - padding;
@@ -285,12 +285,13 @@ export default class NotificationCenter extends React.Component {
     this.setState({notificationsState});
   };
 
-  readMessage = async (notification) => {
+  readMessage = async (notification, forceRead = false) => {
     if (!notification) {
       return null;
     }
-    const padding = 5;
-    const force = DEFAULT_PAGE_SIZE - this.readUserNotifications <= MAX_NOTIFICATIONS + padding;
+    const buffer = 5;
+    const force = forceRead ||
+      (DEFAULT_PAGE_SIZE - this.readUserNotifications <= MAX_NOTIFICATIONS + buffer);
     const request = new ReadMessage();
     const payload = unMapMessage(notification);
     payload.isRead = true;
@@ -458,12 +459,14 @@ export default class NotificationCenter extends React.Component {
   };
 
   openPreviewNotification = (notification) => {
-    this.setState({previewNotification: notification});
+    this.setState({previewNotification: notification}, () => {
+      if (notification.type === NOTIFICATION_TYPE.message) {
+        this.readMessage(notification, true);
+      }
+    });
   };
 
   closePreviewNotification = () => {
-    const {previewNotification} = this.state;
-    this.onCloseNotification(previewNotification);
     this.setState({previewNotification: null});
   };
 
