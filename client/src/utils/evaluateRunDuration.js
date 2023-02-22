@@ -16,28 +16,33 @@
 
 import moment from 'moment-timezone';
 
+export function getAllStatusesArray (run) {
+  const startDate = moment.utc(run.startDate);
+  const endDate = run.endDate ? moment.utc(run.endDate) : moment.utc();
+  const dates = run.runStatuses
+    .map(r => ({status: r.status, timestamp: moment.utc(r.timestamp)}));
+  dates.push({
+    status: 'RUNNING',
+    timestamp: startDate
+  });
+  dates.push({
+    status: 'STOPPED',
+    timestamp: endDate
+  });
+  dates.sort((dA, dB) => {
+    if (dA.timestamp > dB.timestamp) {
+      return 1;
+    } else if (dA.timestamp < dB.timestamp) {
+      return -1;
+    }
+    return 0;
+  });
+  return dates;
+}
+
 export default function evaluateRunDuration (run) {
   if (run.runStatuses) {
-    const startDate = moment.utc(run.startDate);
-    const endDate = run.endDate ? moment.utc(run.endDate) : moment.utc();
-    const dates = run.runStatuses
-      .map(r => ({status: r.status, timestamp: moment.utc(r.timestamp)}));
-    dates.push({
-      status: 'RUNNING',
-      timestamp: startDate
-    });
-    dates.push({
-      status: 'STOPPED',
-      timestamp: endDate
-    });
-    dates.sort((dA, dB) => {
-      if (dA.timestamp > dB.timestamp) {
-        return 1;
-      } else if (dA.timestamp < dB.timestamp) {
-        return -1;
-      }
-      return 0;
-    });
+    const dates = getAllStatusesArray(run);
     let activeDuration = 0;
     for (let i = 0; i < dates.length - 1; i++) {
       const start = dates[i];
