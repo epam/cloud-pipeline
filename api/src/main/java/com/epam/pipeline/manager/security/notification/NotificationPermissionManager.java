@@ -46,7 +46,7 @@ public class NotificationPermissionManager {
         if (userNotification == null) {
             return false;
         }
-        return hasPermission(userNotification);
+        return hasPermissionByUserId(userNotification.getUserId());
     }
 
     public boolean hasPermissionByUserId(final Long userId) {
