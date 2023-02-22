@@ -211,9 +211,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         final Map<Boolean, List<NFSObserverEvent>> groupedEvents = flattenEvents(dataStorage, events).stream()
                 .collect(Collectors.partitioningBy(e -> NFSObserverEventType.REINDEX.equals(e.getEventType())));
         final DataStorageWithShareMount storageWithShareMount = loadStorageWithShareMount(dataStorage);
-        final String regionCode = Optional.ofNullable(storageWithShareMount.getShareMount())
-                .map(mount -> getCloudPipelineAPIClient().loadRegion(mount.getRegionId()).getRegionCode())
-                .orElse(null);
+        final String regionCode = getRegionCode(storageWithShareMount);
         List<NFSObserverEvent> refreshEvents = groupedEvents.get(true);
         if (CollectionUtils.isNotEmpty(refreshEvents)) {
             reindexStorage(storageWithShareMount);
