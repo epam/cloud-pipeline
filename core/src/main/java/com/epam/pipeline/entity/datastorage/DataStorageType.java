@@ -78,7 +78,7 @@ public enum DataStorageType {
         }
     }
 
-    private static class Constants {
+    public static class Constants {
         public static final String STANDARD_STORAGE_CLASS = "STANDARD";
     }
 }

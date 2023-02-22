@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -73,6 +74,7 @@ public class SearchRequestBuilder {
     private static final String ES_DOC_SCORE_FIELD = "_score";
     private static final String SEARCH_HIDDEN = "is_hidden";
     private static final String INDEX_WILDCARD_PREFIX = "*";
+    private static final String STORAGE_CLASS_FIELD = "storage_class";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -110,40 +112,50 @@ public class SearchRequestBuilder {
 
     public MultiSearchRequest buildStorageSumRequest(final Long storageId, final DataStorageType storageType,
                                                      final String path, final boolean allowNoIndex,
-                                                     final Set<String> storageSizeMasks) {
+                                                     final Set<String> storageSizeMasks,
+                                                     final Set<String> storageClasses, final boolean allowVersions) {
         final String searchIndex = String.format(
                 ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId
         );
         final MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
         multiSearchRequest.add(buildSumAggRequest(
-                searchIndex, path, storageType.getStorageClasses(), allowNoIndex, null));
+                searchIndex, path, storageClasses, allowNoIndex, null, allowVersions));
         if (CollectionUtils.isNotEmpty(storageSizeMasks)) {
             multiSearchRequest.add(buildSumAggRequest(
-                    searchIndex, path, storageType.getStorageClasses(), allowNoIndex, storageSizeMasks));
+                    searchIndex, path, storageClasses, allowNoIndex, storageSizeMasks, allowVersions));
         }
         return multiSearchRequest;
     }
 
     private SearchRequest buildSumAggRequest(final String searchIndex, final String path,
                                              final Set<String> storageClasses, final boolean allowNoIndex,
-                                             final Set<String> storageSizeMasks) {
+                                             final Set<String> storageSizeMasks, final boolean allowVersions) {
         final BoolQueryBuilder fileFilteringQuery = QueryBuilders.boolQuery();
         CollectionUtils.emptyIfNull(storageSizeMasks)
             .forEach(mask -> fileFilteringQuery.mustNot(QueryBuilders.wildcardQuery(NAME_FIELD, mask)));
         if (StringUtils.isNotBlank(path)) {
             fileFilteringQuery.must(QueryBuilders.prefixQuery(NAME_FIELD, path));
         }
+
+        final BoolQueryBuilder storageClassesQuery = QueryBuilders.boolQuery();
+        SetUtils.emptyIfNull(storageClasses).forEach(storageClass ->
+                storageClassesQuery.should(QueryBuilders.termsQuery(STORAGE_CLASS_FIELD, storageClass)));
+        fileFilteringQuery.must(storageClassesQuery);
+
         final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder()
                 .query(fileFilteringQuery)
                 .size(0);
 
         final TermsAggregationBuilder sizeSumAgg = AggregationBuilders
-                .terms(STORAGE_SIZE_BY_TIER_AGG_NAME).field("storage_class")
+                .terms(STORAGE_SIZE_BY_TIER_AGG_NAME).field(STORAGE_CLASS_FIELD)
                 .subAggregation(AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field("size"));
         sizeSumSearch.aggregation(sizeSumAgg);
-        for (String storageClass : storageClasses) {
-            final String ovSizeFieldName = String.format("ov_%s_size", storageClass.toLowerCase(Locale.ROOT));
-            sizeSumSearch.aggregation(AggregationBuilders.sum(ovSizeFieldName + "_agg").field(ovSizeFieldName));
+        if (allowVersions) {
+            for (String storageClass : storageClasses) {
+                final String ovSizeFieldName = String.format("ov_%s_size", storageClass.toLowerCase(Locale.ROOT));
+                sizeSumSearch.aggregation(AggregationBuilders
+                        .sum(ovSizeFieldName + "_agg").field(ovSizeFieldName));
+            }
         }
         final SearchRequest request = new SearchRequest().indices(searchIndex).source(sizeSumSearch);
         if (allowNoIndex) {

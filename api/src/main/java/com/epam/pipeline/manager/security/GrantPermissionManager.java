@@ -820,7 +820,6 @@ public class GrantPermissionManager {
         return cloudProfileCredentialsManagerProvider.hasAssignedUserOrRole(profileId, currentUser.getId(),
                 currentUser.getRoles());
     }
-
     private List<Sid> convertUserToSids(String user) {
         String principal = user.toUpperCase();
         UserContext eventOwner = userManager.loadUserContext(user.toUpperCase());

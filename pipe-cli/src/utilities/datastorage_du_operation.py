@@ -15,10 +15,12 @@
 import click
 from prettytable import prettytable
 
+from src.api.entity import Entity
 from src.model.datastorage_usage_model import StorageUsage
 
 from src.api.data_storage import DataStorage
 from src.model.data_storage_wrapper import DataStorageWrapper
+from src.utilities.user_operations_manager import UserOperationsManager
 
 
 class DataUsageCommand(object):
@@ -31,6 +33,7 @@ class DataUsageCommand(object):
         self.output_mode = output_mode
         self.generation = generation
         self.size_format = size_format
+        self.show_archive = True
 
     def validate(self):
         if self.depth and not self.storage_name:
@@ -47,7 +50,36 @@ class DataUsageCommand(object):
 
         if not self.storage_name and self.relative_path:
             raise RuntimeError('--relative-path could be used only with storage')
+
+        user_manager, storage_owner = self._validate_generation_permissions()
+        self._validate_storage_archive_permissions(user_manager, storage_owner)
+
         return True
+
+    def _validate_generation_permissions(self):
+        """
+        --generation=current - allowed for all users
+        --generation=old - allowed for admin or owner users
+        --generation=all - allowed for all users. If user is not ADMIN or OWNER the current versions shall be show.
+        """
+        if DuOutput.is_current(self.generation):
+            return None, None
+        user_manager = UserOperationsManager()
+        if user_manager.is_admin():
+            return user_manager, None
+        entity = Entity.load_by_id_or_name(self.storage_name, 'DATA_STORAGE')
+        storage_owner = entity.get('owner')
+        if user_manager.is_owner(storage_owner):
+            return user_manager, storage_owner
+        if DuOutput.is_old(self.generation):
+            raise RuntimeError('The old versions loading available for ADMIN or storage OWNER only.')
+        self.generation = 'current'
+        return user_manager, storage_owner
+
+    def _validate_storage_archive_permissions(self, user_manager, storage_owner):
+        if not user_manager:
+            user_manager = UserOperationsManager()
+        self.show_archive = user_manager.has_storage_archive_permissions(self.storage_name, owner=storage_owner)
 
 
 class DataUsageHelper(object):
@@ -161,12 +193,24 @@ class DuOutput(object):
         return ['all', 'a', 'A']
 
     @staticmethod
+    def is_all(generation):
+        return generation in DuOutput.__all()
+
+    @staticmethod
     def __current():
         return ['current', 'c', 'C']
 
     @staticmethod
+    def is_current(generation):
+        return generation in DuOutput.__current()
+
+    @staticmethod
     def __old():
         return ['old', 'o', 'O']
+
+    @staticmethod
+    def is_old(generation):
+        return generation in DuOutput.__old()
 
     @staticmethod
     def possible_generations():
@@ -187,6 +231,8 @@ class DuOutput(object):
             _header = [
                 "Storage", "Files count", "Size (%s)" % DuOutput.pretty_size(du_command.size_format)
             ]
+            if not du_command.show_archive:
+                return _header
             if du_command.output_mode in DuOutput.__brief():
                 _header.append("Archive size (%s)" % DuOutput.pretty_size(du_command.size_format))
             else:
@@ -202,9 +248,9 @@ class DuOutput(object):
             def _get_size(tier_usage):
                 if not tier_usage:
                     return 0
-                if du_command.generation in DuOutput.__current():
+                if DuOutput.is_current(du_command.generation):
                     return tier_usage.size
-                elif du_command.generation in DuOutput.__old():
+                elif DuOutput.is_old(du_command.generation):
                     return tier_usage.old_versions_size
                 else:
                     return tier_usage.size + tier_usage.old_versions_size
@@ -217,6 +263,9 @@ class DuOutput(object):
                     _get_size(usage_by_tiers.get(DuOutput.STANDARD_TIER)), du_command.size_format
                 )
             )
+
+            if not du_command.show_archive:
+                return _row
 
             if du_command.output_mode in DuOutput.__brief():
                 archive_size = 0
