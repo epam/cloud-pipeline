@@ -261,7 +261,8 @@ const NotificationPreferences = {
     SystemIdleActionPreference.preference
   ],
   [LongPausedType]: [
-    SystemLongPausedActionPreference.preference
+    SystemLongPausedActionPreference.preference,
+    SystemLongPausedActionTimeoutMinutesPreference.preference
   ]
 };
 
