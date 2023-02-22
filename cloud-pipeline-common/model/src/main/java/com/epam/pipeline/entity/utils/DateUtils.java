@@ -49,7 +49,8 @@ public final class DateUtils {
         try {
             return toLocalDateTime(format.parse(dateString));
         } catch (ParseException e) {
-            throw new RuntimeException(String.format("Filed to parse date: %s with format: %s", dateString, format), e);
+            throw new IllegalArgumentException(
+                    String.format("Filed to parse date: %s with format: %s", dateString, format), e);
         }
     }
 }
