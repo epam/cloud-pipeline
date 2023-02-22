@@ -162,11 +162,13 @@ public class DataStorageLifecycleRestoreManager {
 
     public List<StorageRestoreAction> loadEffectiveRestoreStorageActionHierarchy(final AbstractDataStorage storage,
                                                                                  final StorageRestorePath path,
-                                                                                 final Boolean recursive) {
+                                                                                 final Boolean recursive,
+                                                                                 final boolean showArchived) {
         final StorageRestoreAction root = loadEffectiveRestoreStorageAction(storage, path);
         final boolean rootActionIsActive = root != null && (isActionStillActive(root));
+        final List<StorageRestoreAction> rootActions = buildRootActions(root, rootActionIsActive, showArchived);
         if (path.getType() == StorageRestorePathType.FILE) {
-            return rootActionIsActive ? Collections.singletonList(root) : Collections.emptyList();
+            return rootActions;
         }
         final List<StorageRestoreAction> relatedActions = filterRestoreStorageActions(
                 storage,
@@ -174,7 +176,9 @@ public class DataStorageLifecycleRestoreManager {
                         .datastorageId(storage.getId())
                         .path(path)
                         .isLatest(true)
-                        .statuses(StorageRestoreStatus.ACTIVE_STATUSES)
+                        .statuses(showArchived
+                                ? StorageRestoreStatus.ACTIVE_STATUSES
+                                : Collections.singletonList(StorageRestoreStatus.SUCCEEDED))
                         .searchType(recursive
                                 ? StorageRestoreActionSearchFilter.SearchType.SEARCH_CHILD_RECURSIVELY
                                 : StorageRestoreActionSearchFilter.SearchType.SEARCH_CHILD
@@ -186,10 +190,7 @@ public class DataStorageLifecycleRestoreManager {
                 // check if child action still active
                 .filter(DataStorageLifecycleRestoreManager::isActionStillActive).collect(Collectors.toList());
 
-        return ListUtils.union(
-                rootActionIsActive ? Collections.singletonList(root) : Collections.emptyList(),
-                relatedActions
-        );
+        return ListUtils.union(rootActions, relatedActions);
     }
 
     @Transactional
@@ -200,20 +201,17 @@ public class DataStorageLifecycleRestoreManager {
 
     public List<StorageRestoreAction> loadSucceededRestoreActions(final AbstractDataStorage storage,
                                                                   final String path) {
-        final List<StorageRestoreAction> restoredItems = ListUtils.emptyIfNull(
+        final List<StorageRestoreAction> restoredFolders = ListUtils.emptyIfNull(
                 loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
                         .path(path)
                         .type(StorageRestorePathType.FOLDER)
-                        .build(), false)).stream()
-                .filter(action -> StorageRestoreStatus.SUCCEEDED.equals(action.getStatus()))
-                .collect(Collectors.toList());
-        ListUtils.emptyIfNull(loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
+                        .build(), false, false));
+        final List<StorageRestoreAction> restoredFiles = ListUtils.emptyIfNull(
+                loadEffectiveRestoreStorageActionHierarchy(storage, StorageRestorePath.builder()
                         .path(path)
                         .type(StorageRestorePathType.FILE)
-                        .build(), false)).stream()
-                .filter(action -> StorageRestoreStatus.SUCCEEDED.equals(action.getStatus()))
-                .forEach(restoredItems::add);
-        return restoredItems;
+                        .build(), false, false));
+        return ListUtils.union(restoredFiles, restoredFolders);
     }
 
     protected StorageRestoreActionEntity buildStoragePathRestoreAction(
@@ -294,5 +292,13 @@ public class DataStorageLifecycleRestoreManager {
             default:
                 return result;
         }
+    }
+
+    private static List<StorageRestoreAction> buildRootActions(final StorageRestoreAction root,
+                                                               final boolean rootActionIsActive,
+                                                               final boolean showArchived) {
+        return !rootActionIsActive || showArchived && !StorageRestoreStatus.SUCCEEDED.equals(root.getStatus())
+                ? Collections.emptyList()
+                : Collections.singletonList(root);
     }
 }

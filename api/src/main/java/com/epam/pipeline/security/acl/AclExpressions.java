@@ -70,9 +70,17 @@ public final class AclExpressions {
             "(hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'OWNER')) "
             + AND + STORAGE_SHARED;
 
-    public static final String STORAGE_SHOW_ARCHIVED_PERMISSIONS = "(#showArchived == false OR "
-            + "hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'OWNER') OR "
-            + "hasRole('ROLE_STORAGE_ARCHIVE_MANAGER') OR hasRole('ROLE_STORAGE_ARCHIVE_READER'))";
+    public static final String ARCHIVED_PERMISSIONS =
+            "hasRole('ROLE_STORAGE_ARCHIVE_MANAGER') OR hasRole('ROLE_STORAGE_ARCHIVE_READER')";
+
+    public static final String STORAGE_SHOW_ARCHIVED_PERMISSIONS = "(#showArchived == false"
+            + OR + STORAGE_ID_OWNER + OR + ARCHIVED_PERMISSIONS + ")";
+
+    public static final String STORAGE_LIFECYCLE_READER = STORAGE_ID_OWNER + OR + STORAGE_ID_READ + AND
+            + ARCHIVED_PERMISSIONS;
+
+    public static final String STORAGE_LIFECYCLE_MANAGER = STORAGE_ID_OWNER + OR + STORAGE_ID_WRITE + AND
+            + "hasRole('ROLE_STORAGE_ARCHIVE_MANAGER')";
 
     public static final String STORAGE_ID_PERMISSIONS =
             "("

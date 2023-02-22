@@ -93,6 +93,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
+import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.utils.DataStorageUtils;
@@ -212,6 +213,9 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
+
+    @Autowired
+    private StoragePermissionManager storagePermissionManager;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -867,7 +871,11 @@ public class DataStorageManager implements SecuredEntityManager {
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
         final Set<String> storageSizeMasks = resolveSizeMasks(loadSizeCalculationMasksMapping(), dataStorage);
-        return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks);
+        final Set<String> storageClasses = storagePermissionManager.storageArchiveReadPermissions(dataStorage)
+                ? dataStorage.getType().getStorageClasses()
+                : Collections.singleton(DataStorageType.Constants.STANDARD_STORAGE_CLASS);
+        final boolean allowVersions = permissionManager.isOwnerOrAdmin(dataStorage.getOwner());
+        return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks, storageClasses, allowVersions);
     }
 
     public Map<String, Set<String>> loadSizeCalculationMasksMapping() {

@@ -28,6 +28,7 @@ from future.utils import iteritems
 from operator import itemgetter
 
 from src.api.data_storage import DataStorage
+from src.api.entity import Entity
 from src.api.folder import Folder
 from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
@@ -39,9 +40,11 @@ from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
+from src.utilities.user_operations_manager import UserOperationsManager
 
 FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
+ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
 
 class AllowedUnsafeCharsValues(object):
@@ -319,6 +322,10 @@ class DataStorageOperations(object):
             if show_archive and root_bucket.type != 'S3':
                 click.echo('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)
+            if show_archive and not UserOperationsManager()\
+                    .has_storage_archive_permissions(root_bucket.identifier, root_bucket.owner):
+                click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
+                sys.exit(1)
             else:
                 relative_path = original_path if original_path != '/' else ''
                 cls.__print_data_storage_contents(root_bucket, relative_path, show_details, recursive,
@@ -529,6 +536,9 @@ class DataStorageOperations(object):
         if not file and not bucket:
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
+            sys.exit(1)
+        if show_archive and not UserOperationsManager().has_storage_archive_permissions(bucket):
+            click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
             sys.exit(1)
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
                                log_file=log_file, log_level=log_level,  threading=threading,
