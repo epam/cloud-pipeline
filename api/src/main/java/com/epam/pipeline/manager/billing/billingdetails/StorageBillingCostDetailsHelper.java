@@ -27,7 +27,11 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class StorageBillingCostDetailsHelper {
@@ -84,10 +88,10 @@ public final class StorageBillingCostDetailsHelper {
             return true;
         } else {
             final Map<String, List<String>> filters = MapUtils.emptyIfNull(request.getFilters());
-            Boolean onlyStorageRTypeRequestedOrNothing = Optional.ofNullable(filters.get("resource_type"))
+            final Boolean onlyStorageRTypeRequestedOrNothing = Optional.ofNullable(filters.get("resource_type"))
                     .map(values -> (values.contains("STORAGE") && values.size() == 1) || values.isEmpty())
                     .orElse(true);
-            Boolean onlyObjectStorageSTypeRequested = Optional.ofNullable(filters.get("storage_type"))
+            final Boolean onlyObjectStorageSTypeRequested = Optional.ofNullable(filters.get("storage_type"))
                     .map(values -> values.contains("OBJECT_STORAGE") && values.size() == 1).orElse(false);
             return onlyObjectStorageSTypeRequested && onlyStorageRTypeRequestedOrNothing;
         }

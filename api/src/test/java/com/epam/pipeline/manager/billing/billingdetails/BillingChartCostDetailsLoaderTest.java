@@ -34,17 +34,19 @@ public class BillingChartCostDetailsLoaderTest {
 
     @Test
     public void checkThatBuildQueryWillBuildAggsIfCriteriaMatchByGrouping() {
-        List<AggregationBuilder> aggs = BillingChartCostDetailsLoader.buildQuery(
+        assertAggregations(
+            BillingChartCostDetailsLoader.buildQuery(
                 BillingCostDetailsRequest.builder().enabled(true)
                         .grouping(BillingGrouping.STORAGE).build()
+            )
         );
-        assertAggregations(aggs);
 
-        aggs = BillingChartCostDetailsLoader.buildQuery(
+        assertAggregations(
+            BillingChartCostDetailsLoader.buildQuery(
                 BillingCostDetailsRequest.builder().enabled(true)
                         .grouping(BillingGrouping.STORAGE_TYPE).build()
+            )
         );
-        assertAggregations(aggs);
     }
 
     @Test
