@@ -115,9 +115,7 @@ export default class NotificationCenter extends React.Component {
     if (!userNotifications.loaded || !this.state.initialized || !this.userNotificationsEnabled) {
       return [];
     }
-    const dateFrom = userNotifications.hideNotificationsTill !== undefined
-      ? moment.utc(userNotifications.hideNotificationsTill)
-      : undefined;
+    const dateFrom = userNotifications.hideNotificationsTill;
     return [...(userNotifications.value.elements || [])]
       .filter(message => {
         return !message.isRead && (dateFrom
@@ -186,7 +184,8 @@ export default class NotificationCenter extends React.Component {
     } = this.props;
     if (userNotifications.loaded && preferences.loaded) {
       return !disableEmailNotifications &&
-        preferences.userNotificationsEnabled;
+        preferences.userNotificationsEnabled &&
+        !userNotifications.muted;
     }
     return false;
   }

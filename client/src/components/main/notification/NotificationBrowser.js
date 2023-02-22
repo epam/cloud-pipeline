@@ -89,8 +89,14 @@ export default class NotificationBrowser extends React.Component {
   }
 
   changeMode = (description) => {
-    this.setState({mode: description}, () => {
-      const {currentPage, mode} = this.state;
+    if (this.state.mode === description) {
+      return;
+    }
+    this.setState({
+      currentPage: 0,
+      mode: description
+    }, () => {
+      const {mode, currentPage} = this.state;
       this.fetchPage(currentPage, mode === MODES.read);
     });
   };
@@ -169,7 +175,8 @@ export default class NotificationBrowser extends React.Component {
           styles.notificationGridRow,
           styles.header,
           'cp-divider',
-          'bottom'
+          'bottom',
+          'cp-card-background-color'
         )}
       >
         <div className={classNames(
@@ -224,7 +231,7 @@ export default class NotificationBrowser extends React.Component {
     return (
       <div className={styles.notificationsContainer}>
         {this.renderHeader()}
-        <div style={{overflow: 'auto'}}>
+        <div>
           <Spin spinning={pending}>
             {this.notifications.length > 0
               ? this.notifications.map(notification => (

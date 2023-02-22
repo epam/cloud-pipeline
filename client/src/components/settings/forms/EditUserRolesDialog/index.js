@@ -55,6 +55,7 @@ import AWSRegionTag from '../../../special/AWSRegionTag';
 import UserName from '../../../special/UserName';
 import ShareWithForm from '../../../runs/logs/forms/ShareWithForm';
 import {CP_CAP_RUN_CAPABILITIES} from '../../../pipelines/launch/form/utilities/parameters';
+import MuteEmailNotifications from '../../../special/metadata/special/mute-email-notifications';
 import styles from './EditUserRolesDialog.css';
 
 @roleModel.authenticationInfo
@@ -976,6 +977,9 @@ export default class EditUserRolesDialog extends React.Component {
             onChange={this.onChangeMetadata}
             value={metadata}
             extraKeys={[CP_CAP_RUN_CAPABILITIES]}
+            restrictedKeys={[
+              MuteEmailNotifications.metadataKey
+            ].filter(Boolean)}
           />
           <div
             key="INSTANCE_MANAGEMENT"

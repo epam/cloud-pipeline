@@ -51,6 +51,7 @@ import UserName from '../../special/UserName';
 import FSNotifications from './special/fs-notifications';
 import LimitMountsUserPreference from './special/limit-mounts';
 import RequestDavAccess from './special/request-dav-access';
+import MuteEmailNotifications from './special/mute-email-notifications';
 import SshThemeSelect from './special/ssh-theme-select';
 import OpenStaticPreview from './special/open-static-preview';
 import SampleSheet, {utilities} from '../sample-sheet';
@@ -73,6 +74,7 @@ const SpecialTags = {
   [FSNotifications.metatadaKey]: FSNotifications,
   [LimitMountsUserPreference.metatadaKey]: LimitMountsUserPreference,
   [RequestDavAccess.metatadaKey]: RequestDavAccess,
+  [MuteEmailNotifications.metadataKey]: MuteEmailNotifications,
   [SshThemeSelect.metadataKey]: SshThemeSelect,
   [RUN_CAPABILITIES]: RunCapabilitiesMetadataPreference
 };
@@ -1202,6 +1204,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
         });
       }
     });
+    const getExtraKeyIndex = (key) => {
+      const index = extraKeys.indexOf(key);
+      if (index === -1) {
+        return Infinity;
+      }
+      return index;
+    };
     value
       .sort((a, b) => {
         if (a.key < b.key) {
@@ -1212,7 +1221,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
         return 0;
       })
       .sort((a, b) =>
-        Number(this.isSpecialItem(b.key)) - Number(this.isSpecialItem(a.key))
+        (Number(this.isSpecialItem(b.key)) - Number(this.isSpecialItem(a.key))) ||
+        (getExtraKeyIndex(a.key) - getExtraKeyIndex(b.key))
       );
     return value.map((value, index) => { return {...value, index}; });
   }
