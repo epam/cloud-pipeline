@@ -51,6 +51,7 @@ import UserName from '../../special/UserName';
 import FSNotifications from './special/fs-notifications';
 import LimitMountsUserPreference from './special/limit-mounts';
 import RequestDavAccess from './special/request-dav-access';
+import MuteEmailNotifications from './special/mute-email-notifications';
 import SshThemeSelect from './special/ssh-theme-select';
 import OpenStaticPreview from './special/open-static-preview';
 import SampleSheet, {utilities} from '../sample-sheet';
@@ -73,6 +74,7 @@ const SpecialTags = {
   [FSNotifications.metatadaKey]: FSNotifications,
   [LimitMountsUserPreference.metatadaKey]: LimitMountsUserPreference,
   [RequestDavAccess.metatadaKey]: RequestDavAccess,
+  [MuteEmailNotifications.metadataKey]: MuteEmailNotifications,
   [SshThemeSelect.metadataKey]: SshThemeSelect,
   [RUN_CAPABILITIES]: RunCapabilitiesMetadataPreference
 };
@@ -694,11 +696,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   renderSpecialTag = (metadataItem) => {
     const {key, index} = metadataItem || {};
-    const {specialTagsProperties = {}} = this.props;
+    const {specialTagsProperties = {}, extraKeys = []} = this.props;
     const readOnly = this.props.readOnly ||
       this.isReadOnlyTag(metadataItem.key);
     if (key && SpecialTags.hasOwnProperty(key)) {
       const Component = SpecialTags[key];
+      if (Component.isOptional && !extraKeys.includes(key)) {
+        return null;
+      }
       const onRemove = async () => {
         const {error, refresh} = await this.applyRemoveChanges({item: {key}});
         if (error) {

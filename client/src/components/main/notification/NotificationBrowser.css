@@ -46,7 +46,7 @@
 
 .notification-grid-row {
   display: grid;
-  grid: "status title body date readDate" 30px / 55px 1fr 2fr 135px 135px;
+  grid: "status title body date readDate" 32px / 55px 1fr 2fr 135px 135px;
   padding: 5px 0;
   cursor: pointer;
   transition: all 0.3s ease;

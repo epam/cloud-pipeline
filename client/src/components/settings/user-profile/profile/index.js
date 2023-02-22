@@ -16,6 +16,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import roleModel from '../../../../utils/roleModel';
@@ -28,6 +29,7 @@ import {METADATA_KEY as RUN_CAPABILITIES}
   from '../../../pipelines/launch/form/utilities/run-capabilities';
 import displayDate from '../../../../utils/displayDate';
 import styles from './profile.css';
+import MuteEmailNotifications from '../../../special/metadata/special/mute-email-notifications';
 import SshThemeSelect from '../../../special/metadata/special/ssh-theme-select';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 
@@ -51,6 +53,15 @@ class ProfileSettings extends React.Component {
 
   componentWillUnmount () {
     this.props.currentUserAttributes.refresh(true);
+  }
+
+  @computed
+  get notificationsEnabled () {
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return preferences.userNotificationsEnabled;
+    }
+    return false;
   }
 
   render () {
@@ -196,8 +207,11 @@ class ProfileSettings extends React.Component {
           extraKeys={[
             LIMIT_MOUNTS_USER_PREFERENCE,
             RUN_CAPABILITIES,
-            SshThemeSelect.metadataKey
-          ]}
+            SshThemeSelect.metadataKey,
+            this.notificationsEnabled
+              ? MuteEmailNotifications.metadataKey
+              : undefined
+          ].filter(Boolean)}
         />
       </div>
     );

@@ -28,6 +28,7 @@ import ReadAllUserNotifications from '../../../models/notifications/ReadAllUserN
 import ReadMessage from '../../../models/notifications/ReadMessage';
 import PreviewNotification from './PreviewNotification';
 import Markdown from '../../special/markdown';
+import MuteEmailNotifications from '../../special/metadata/special/mute-email-notifications';
 import styles from './SystemNotification.css';
 
 const MAX_NOTIFICATIONS = 5;
@@ -76,7 +77,31 @@ function unMapMessage (message) {
   };
 }
 
-@inject('notifications', 'userNotifications', 'preferences')
+@inject(
+  'notifications',
+  'userNotifications',
+  'preferences',
+  'metadataCache',
+  'authenticatedUserInfo'
+)
+@inject((
+  {
+    notifications,
+    userNotifications,
+    preferences,
+    metadataCache,
+    authenticatedUserInfo
+  },
+  params
+) => ({
+  notifications,
+  userNotifications,
+  preferences,
+  metadata: metadataCache.getMetadata(
+    authenticatedUserInfo.value.id,
+    'PIPELINE_USER'
+  )
+}))
 @observer
 export default class NotificationCenter extends React.Component {
   static propTypes = {
@@ -186,9 +211,25 @@ export default class NotificationCenter extends React.Component {
     } = this.props;
     if (userNotifications.loaded && preferences.loaded) {
       return !disableEmailNotifications &&
-        preferences.userNotificationsEnabled;
+        preferences.userNotificationsEnabled &&
+        !this.mutedViaUserProfilePreference;
     }
     return false;
+  }
+
+  @computed
+  get mutedViaUserProfilePreference () {
+    const {metadata} = this.props;
+    if (
+      !metadata ||
+      metadata.pending ||
+      !metadata.loaded
+    ) {
+      return true;
+    }
+    const [currentMetadata = {}] = metadata.value;
+    const muted = (currentMetadata.data || {})[MuteEmailNotifications.metadataKey] || {};
+    return `${muted.value}` === 'true';
   }
 
   @action
