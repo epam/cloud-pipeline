@@ -233,6 +233,7 @@ public class LogManager {
                     .field(USER, logEntry.getUser())
                     .field(MESSAGE, logEntry.getMessage())
                     .field(SEVERITY, logEntry.getSeverity())
+                    .field(SERVICE_ACCOUNT, authManager.isServiceUser(logEntry.getUser()))
                     .endObject();
         } catch (IOException e) {
             throw new PipelineException(e);
