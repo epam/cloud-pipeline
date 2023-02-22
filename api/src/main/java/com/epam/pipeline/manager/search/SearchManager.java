@@ -80,7 +80,7 @@ public class SearchManager {
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
                                         final Set<String> storageSizeMasks, final Set<String> storageClasses,
                                         final boolean allowVersions) {
-        return getStorageUsage(dataStorage, path, false, storageSizeMasks, storageClasses, allowVersions);
+        return getStorageUsage(dataStorage, path, true, storageSizeMasks, storageClasses, allowVersions);
     }
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
