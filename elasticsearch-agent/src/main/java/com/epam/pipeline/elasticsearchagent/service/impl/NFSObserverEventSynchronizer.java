@@ -550,7 +550,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private S3FileManager getS3FileManager(final URI eventsBucketURI) {
         Assert.isTrue(DataStorageType.S3.getId().equalsIgnoreCase(eventsBucketURI.getScheme()),
                       "Only S3 is supported as events bucket!");
-        return new S3FileManager(false);
+        return new S3FileManager();
     }
 
     private String getEventsBucketFolder(final URI eventsBucketUri) {

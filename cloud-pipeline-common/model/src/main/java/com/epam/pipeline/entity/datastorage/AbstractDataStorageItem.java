@@ -26,6 +26,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public abstract class AbstractDataStorageItem {
+
+    public static final String DELIMITER = "/";
+
     private String name;
     private String path;
     private Map<String, String> labels;
@@ -44,6 +47,10 @@ public abstract class AbstractDataStorageItem {
             }
             return 0;
         };
+    }
+
+    public String getAbsolutePath() {
+        return this.getPath().startsWith(DELIMITER) ? this.getPath() : DELIMITER + this.getPath();
     }
 
 }

@@ -74,7 +74,7 @@ public abstract class AbstractCloudPipelineEntityLoader<T> implements EntityLoad
         final T entity = fetchEntity(id);
         if (entity == null) {
             throw new EntityNotFoundException(
-                    String.format("%s: Failed to find entity with id %d.",this.getClass().getSimpleName(), id));
+                    String.format("%s: Failed to find entity with id %d.", this.getClass().getSimpleName(), id));
         }
         return EntityContainer.<T>builder()
                 .entity(entity)

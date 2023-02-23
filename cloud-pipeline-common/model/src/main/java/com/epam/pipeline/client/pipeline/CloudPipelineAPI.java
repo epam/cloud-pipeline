@@ -26,6 +26,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -267,5 +269,12 @@ public interface CloudPipelineAPI {
 
     @DELETE("cluster/pool/usage")
     Call<Result<Boolean>> deleteExpiredNodePoolUsage(@Query("date") LocalDate date);
+
+    @GET("datastorage/{id}/lifecycle/restore/effectiveHierarchy")
+    Call<Result<List<StorageRestoreAction>>> loadDataStorageRestoreHierarchy(
+            @Path(ID) long datastorageId, @Query(PATH) String path,
+            @Query("pathType") StorageRestorePathType pathType,
+            @Query("recursive") boolean recursive);
+
 }
 

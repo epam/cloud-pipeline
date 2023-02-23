@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
@@ -42,6 +44,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -71,6 +74,14 @@ public class CloudPipelineAPIClient {
 
     public AbstractDataStorage loadDataStorage(final Long id) {
         return executor.execute(cloudPipelineAPI.loadDataStorage(id));
+    }
+
+    public List<StorageRestoreAction> loadDataStorageRestoreHierarchy(
+            final long datastorageId, final String path,
+            final StorageRestorePathType pathType, final boolean recursive) {
+        return ListUtils.emptyIfNull(executor.execute(
+                cloudPipelineAPI.loadDataStorageRestoreHierarchy(datastorageId, path, pathType, recursive)));
+
     }
 
     public PipelineRunWithLog loadPipelineRunWithLogs(final Long pipelineRunId) {
