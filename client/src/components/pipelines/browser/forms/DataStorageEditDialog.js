@@ -102,7 +102,8 @@ export class DataStorageEditDialog extends React.Component {
     if (loaded) {
       const isAdmin = authenticatedUserInfo.value.admin;
       const isOwner = roleModel.isOwner(dataStorage);
-      return isAdmin || isOwner;
+      return isAdmin ||
+        (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
     }
     return false;
   }

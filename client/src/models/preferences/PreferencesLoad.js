@@ -392,6 +392,12 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get storagePolicyBackupVisibleNonAdmins () {
+    const value = this.getPreferenceValue('storage.policy.backup.visible.non.admins');
+    return value === undefined || `${value}` !== 'false';
+  }
+
+  @computed
   get autoscalingMultiQueuesTemplate () {
     const value = this.getPreferenceValue('ge.autoscaling.scale.multi.queues.template');
     if (value) {
