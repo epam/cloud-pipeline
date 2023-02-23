@@ -16,52 +16,39 @@
 
 package com.epam.pipeline.entity.billing;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import org.apache.commons.lang3.tuple.Pair;
 
-@Setter
-@AllArgsConstructor
+@Getter
+@RequiredArgsConstructor
 @EqualsAndHashCode
 public class BillingGroupingSortOrder {
 
     public static final BillingGroupingSortOrder DEFAULT_SORT_ORDER = new BillingGroupingSortOrder(
-            BillingGroupingSortOrder.BillingGroupingSortField.COST,
+            BillingGroupingSortMetric.COST,
             BillingGroupingOrderAggregate.DEFAULT,
             false
     );
 
-    @Getter
-    @RequiredArgsConstructor
-    public enum BillingGroupingSortField {
+    public enum BillingGroupingSortMetric {
         COST, USAGE
     }
 
-    private BillingGroupingSortField field;
-    private BillingGroupingOrderAggregate orderAggregate;
-    private boolean desc;
+    private final BillingGroupingSortMetric metric;
+    private final BillingGroupingOrderAggregate aggregate;
+    private final boolean desc;
 
-    public Pair<String, String> getAggregateToOrderBy() {
-        switch (field) {
+    public String getAggregateToOrderBy() {
+        switch (metric) {
             case COST:
-                return orderAggregate.getCostAggregate();
+                return aggregate.getCostField();
             case USAGE:
-                return orderAggregate.getUsageAggregate();
+                return aggregate.getUsageField();
             default:
-                return BillingGroupingOrderAggregate.DEFAULT.getCostAggregate();
+                return BillingGroupingOrderAggregate.DEFAULT.getCostField();
         }
 
     }
-
-    public BillingGroupingOrderAggregate getOrderAggregate() {
-        return orderAggregate;
-    }
-
-    public boolean isDesc() {
-        return desc;
-    }
-
 }
+

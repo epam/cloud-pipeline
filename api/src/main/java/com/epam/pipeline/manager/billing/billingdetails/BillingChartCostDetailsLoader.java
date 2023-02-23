@@ -22,9 +22,6 @@ import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Helper class to encapsulate logic of loading cost details for specific billing entity,
  * currently it loads details for storages {@link StorageBillingChartCostDetails} only but can be easily expanded
@@ -33,18 +30,18 @@ public final class BillingChartCostDetailsLoader {
 
     private BillingChartCostDetailsLoader() {}
 
-    public static List<AggregationBuilder> buildQuery(final BillingCostDetailsRequest request) {
-        if (StorageBillingCostDetailsHelper.isStorageBillingDetailsShouldBeLoaded(request)) {
-            return StorageBillingCostDetailsHelper.buildQuery();
+    public static void buildQuery(final BillingCostDetailsRequest request,
+                                  final AggregationBuilder topLevelAggregation) {
+        if (StorageBillingCostDetailsLoader.isStorageBillingDetailsShouldBeLoaded(request)) {
+            StorageBillingCostDetailsLoader.buildQuery(request, topLevelAggregation);
         }
-        return Collections.emptyList();
     }
 
 
     public static BillingChartDetails parseResponse(final BillingCostDetailsRequest request,
                                                     final Aggregations aggregations) {
-        if (StorageBillingCostDetailsHelper.isStorageBillingDetailsShouldBeLoaded(request)) {
-            return StorageBillingCostDetailsHelper.parseResponse(aggregations);
+        if (StorageBillingCostDetailsLoader.isStorageBillingDetailsShouldBeLoaded(request)) {
+            return StorageBillingCostDetailsLoader.parseResponse(request, aggregations);
         }
         return null;
     }

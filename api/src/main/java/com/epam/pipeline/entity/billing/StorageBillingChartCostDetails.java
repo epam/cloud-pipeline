@@ -39,8 +39,10 @@ public class StorageBillingChartCostDetails implements BillingChartDetails {
     public static class StorageBillingDetails {
         String storageClass;
         Long cost;
+        Long avgSize;
         Long size;
         Long oldVersionCost;
+        Long oldVersionAvgSize;
         Long oldVersionSize;
     }
 }

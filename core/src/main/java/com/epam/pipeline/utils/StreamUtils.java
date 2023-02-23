@@ -44,6 +44,10 @@ public final class StreamUtils {
                 .skip(1L);
     }
 
+    public static <T> Stream<T> appended(final Stream<T> stream, final T item) {
+        return Stream.concat(stream, Stream.of(item));
+    }
+
     /**
      * Provides predicate that helps to filter objects in a stream distinctly by key
      * */
