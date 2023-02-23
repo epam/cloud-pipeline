@@ -50,7 +50,6 @@ const statuses = [
 @Form.create()
 @observer
 export default class EditEmailNotification extends React.Component {
-
   static propTypes = {
     onSubmit: PropTypes.func,
     pending: PropTypes.bool,
@@ -126,7 +125,18 @@ export default class EditEmailNotification extends React.Component {
     e.preventDefault();
     this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (!err) {
-        this.props.onSubmit && this.props.onSubmit(values);
+        let {
+          threshold,
+          ...restValues
+        } = values;
+        if (this.props.template.type === 'LONG_PAUSED_STOPPED') {
+          threshold = 1;
+        }
+        const payload = {
+          threshold,
+          ...restValues
+        };
+        this.props.onSubmit && this.props.onSubmit(payload);
         if (this.state.preferences.modified) {
           const request = new PreferencesUpdate();
           await request.send(this.state.preferences.values);
@@ -168,7 +178,6 @@ export default class EditEmailNotification extends React.Component {
       this.props.template.type === 'LONG_RUNNING' ||
       this.props.template.type === 'LONG_STATUS' ||
       this.props.template.type === 'LONG_PAUSED';
-    const renderThreshold = this.props.template.type === 'LONG_PAUSED_STOPPED';
     const renderDelay = ['IDLE_RUN', 'FULL_NODE_POOL'].includes(this.props.template.type);
     const renderStatusesToInform = this.props.template.type === 'PIPELINE_RUN_STATUS';
     const {getFieldDecorator, resetFields} = this.props.form;
@@ -221,7 +230,7 @@ export default class EditEmailNotification extends React.Component {
                 size="small"
                 filterOption={
                   (input, option) =>
-                  option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                    option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                 mode="tags">
                 {
                   this.props.users.map(u => {
@@ -266,7 +275,7 @@ export default class EditEmailNotification extends React.Component {
           <Form.Item
             style={{
               marginBottom: 0,
-              display: renderThresholdAndDelay || renderThreshold ? 'inherit' : 'none'
+              display: renderThresholdAndDelay ? 'inherit' : 'none'
             }}
             label="Threshold (sec)"
             className="edit-email-notification-threshold-container">
