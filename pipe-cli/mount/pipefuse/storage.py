@@ -182,6 +182,12 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
         self.upload(modified_bytes, path)
 
     def flush(self, fh, path):
+        try:
+            self._flush_mpu(fh, path)
+        finally:
+            self._inner.flush(fh, path)
+
+    def _flush_mpu(self, fh, path):
         mpu = self._mpus.get(path, None)
         if mpu:
             try:

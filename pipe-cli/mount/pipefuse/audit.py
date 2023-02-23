@@ -40,7 +40,11 @@ class AuditContainer:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def put(self, *entries):
+    def put(self, entry):
+        pass
+
+    @abstractmethod
+    def put_all(self, entries):
         pass
 
     @abstractmethod
@@ -61,7 +65,10 @@ class NativeSetAuditContainer(AuditContainer):
     def __init__(self):
         self._entries = set()
 
-    def put(self, *entries):
+    def put(self, entry):
+        self._entries.add(entry)
+
+    def put_all(self, entries):
         self._entries.update(entries)
 
     def pull(self):
@@ -133,6 +140,7 @@ class AuditFileSystemClient(FileSystemClientDecorator, StorageLowLevelFileSystem
         super(AuditFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._container = container
+        self._fhs = set()
 
     def upload(self, buf, path):
         self._container.put(DataAccessEntry(path, DataAccessType.WRITE))
@@ -143,14 +151,23 @@ class AuditFileSystemClient(FileSystemClientDecorator, StorageLowLevelFileSystem
         self._inner.delete(path)
 
     def mv(self, old_path, path):
-        self._container.put(DataAccessEntry(old_path, DataAccessType.READ),
-                            DataAccessEntry(old_path, DataAccessType.DELETE),
-                            DataAccessEntry(path, DataAccessType.WRITE))
+        self._container.put_all(DataAccessEntry(old_path, DataAccessType.READ),
+                                DataAccessEntry(old_path, DataAccessType.DELETE),
+                                DataAccessEntry(path, DataAccessType.WRITE))
         self._inner.mv(old_path, path)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
-        self._container.put(DataAccessEntry(path, DataAccessType.READ))
+        if fh not in self._fhs:
+            self._fhs.add(fh)
+            self._container.put(DataAccessEntry(path, DataAccessType.READ))
         self._inner.download_range(fh, buf, path, offset, length)
+
+    def flush(self, fh, path):
+        try:
+            self._fhs.remove(fh)
+        except KeyError:
+            pass
+        self._inner.flush(fh, path)
 
     def new_mpu(self, path, file_size, download, mv):
         self._container.put(DataAccessEntry(path, DataAccessType.WRITE))
