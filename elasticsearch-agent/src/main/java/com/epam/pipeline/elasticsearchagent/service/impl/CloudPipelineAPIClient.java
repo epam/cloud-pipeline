@@ -22,6 +22,7 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
@@ -70,6 +71,10 @@ public class CloudPipelineAPIClient {
 
     public List<AbstractDataStorage> loadAllDataStorages() {
         return executor.execute(cloudPipelineAPI.loadAllDataStorages());
+    }
+
+    public List<DataStorageWithShareMount> loadAllDataStoragesWithMounts() {
+        return executor.execute(cloudPipelineAPI.loadAllDataStoragesWithMounts());
     }
 
     public AbstractDataStorage loadDataStorage(final Long id) {

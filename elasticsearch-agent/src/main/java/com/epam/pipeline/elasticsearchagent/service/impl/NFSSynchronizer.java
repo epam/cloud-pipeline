@@ -23,11 +23,16 @@ import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -42,9 +47,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
@@ -67,6 +74,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final ElasticIndexService elasticIndexService;
     private final NFSStorageMounter nfsMounter;
+    protected final Map<Long, AbstractCloudRegion> cloudRegions;
 
     public NFSSynchronizer(@Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
                            @Value("${sync.nfs-file.root.mount.point}") String rootMountPoint,
@@ -86,21 +94,26 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.elasticsearchServiceClient = elasticsearchServiceClient;
         this.elasticIndexService = elasticIndexService;
         this.nfsMounter = nfsMounter;
+        this.cloudRegions = ListUtils.emptyIfNull(cloudPipelineAPIClient.loadAllRegions()).stream()
+                .map(r -> ImmutablePair.of(r.getId(), r))
+                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started NFS synchronization");
 
-        List<AbstractDataStorage> allDataStorages = cloudPipelineAPIClient.loadAllDataStorages();
-        allDataStorages.stream()
-                .filter(dataStorage -> dataStorage.getType() == DataStorageType.NFS)
+        cloudPipelineAPIClient.loadAllDataStoragesWithMounts().stream()
+                .filter(dataStorage -> dataStorage.getStorage().getType() == DataStorageType.NFS)
                 .forEach(this::createIndexAndDocuments);
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    void createIndexAndDocuments(final AbstractDataStorage dataStorage) {
-        EntityPermissionVO entityPermission = cloudPipelineAPIClient
+    void createIndexAndDocuments(final DataStorageWithShareMount storageWithShareMount) {
+        final AbstractDataStorage dataStorage = storageWithShareMount.getStorage();
+        log.debug("Starting to  process storage: {}, id: {}.", dataStorage.getName(), dataStorage.getId());
+        final String regionCode = getRegionCode(storageWithShareMount);
+        final EntityPermissionVO entityPermission = cloudPipelineAPIClient
                 .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
 
         PermissionsContainer permissionsContainer = new PermissionsContainer();
@@ -119,7 +132,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                 return;
             }
 
-            createDocuments(indexName, mountFolder, dataStorage, permissionsContainer);
+            createDocuments(indexName, mountFolder, dataStorage, regionCode, permissionsContainer);
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
             if (StringUtils.hasText(currentIndexName)) {
@@ -133,8 +146,16 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         }
     }
 
+    protected String getRegionCode(DataStorageWithShareMount storageWithShareMount) {
+        return Optional.ofNullable(storageWithShareMount.getShareMount())
+                .flatMap(mount -> Optional.ofNullable(cloudRegions.get(mount.getRegionId()))
+                        .map(AbstractCloudRegion::getRegionCode))
+                .orElse(null);
+    }
+
     private void createDocuments(final String indexName, final Path mountFolder,
                                  final AbstractDataStorage dataStorage,
+                                 final String regionCode,
                                  final PermissionsContainer permissionsContainer) {
         try (Stream<Path> files = Files.walk(mountFolder);
              IndexRequestContainer walker = new IndexRequestContainer(requests ->
@@ -145,7 +166,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                         IndexRequest request = new IndexRequest(indexName, DOC_MAPPING_TYPE)
                                 .source(dataStorageToDocument(getLastModified(file), getSize(file),
                                         getRelativePath(mountFolder, file),
-                                        dataStorage.getId(), dataStorage.getName(), permissionsContainer));
+                                        dataStorage.getId(), dataStorage.getName(), permissionsContainer, regionCode));
                         walker.add(request);
                     });
         } catch (IOException e) {
@@ -236,7 +257,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
 
     private XContentBuilder dataStorageToDocument(final String lastModified, final Long size, final String path,
                                                   final Long storageId, final String storageName,
-                                                  final PermissionsContainer permissions) {
+                                                  final PermissionsContainer permissions,
+                                                  final String regionCode) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             jsonBuilder
                     .startObject()
@@ -248,6 +270,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                     .field("storage_name", storageName)
                     .field("id", path)
                     .field("name", path)
+                    .field("storage_region", regionCode)
                     .field("storage_class", "STANDARD")
                     .field("parentId", storageId);
 

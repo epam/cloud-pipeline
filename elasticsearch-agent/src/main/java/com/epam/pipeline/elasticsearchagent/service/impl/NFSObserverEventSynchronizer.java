@@ -29,6 +29,8 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.utils.StreamUtils;
@@ -101,7 +103,6 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private final StorageFileMapper fileMapper;
     private final ExecutorService executorService;
     private final Set<Long> activeIndexTasks = ConcurrentHashMap.newKeySet();
-
 
     public NFSObserverEventSynchronizer(final @Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
                                         final @Value("${sync.nfs-file.root.mount.point}") String rootMountPoint,
@@ -207,9 +208,11 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         log.debug("Processing {} events for datastorage [id={}]", events.size(), dataStorage.getId());
         final Map<Boolean, List<NFSObserverEvent>> groupedEvents = flattenEvents(dataStorage, events).stream()
                 .collect(Collectors.partitioningBy(e -> NFSObserverEventType.REINDEX.equals(e.getEventType())));
+        final DataStorageWithShareMount storageWithShareMount = loadStorageWithShareMount(dataStorage);
+        final String regionCode = getRegionCode(storageWithShareMount);
         List<NFSObserverEvent> refreshEvents = groupedEvents.get(true);
         if (CollectionUtils.isNotEmpty(refreshEvents)) {
-            reindexStorage(dataStorage);
+            reindexStorage(storageWithShareMount);
             return;
         }
         List<NFSObserverEvent> allEvents = groupedEvents.get(false);
@@ -230,14 +233,27 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                         .map(event -> mapUpdateEventToFile(requestContainer, mountFolder, searchHitMap, event))
                         .filter(Objects::nonNull)
                         .map(file ->
-                                mapToElasticRequest(dataStorage, searchHitMap,
+                                mapToElasticRequest(dataStorage, regionCode, searchHitMap,
                                         indexForNewFiles, permissionsContainer, file))
                         .forEach(requestContainer::add);
                 });
         log.debug("Finished processing events for datastorage [id={}]", dataStorage.getId());
     }
 
-    private void reindexStorage(final AbstractDataStorage dataStorage) {
+    private DataStorageWithShareMount loadStorageWithShareMount(final AbstractDataStorage dataStorage) {
+        FileShareMount fileShareMount = null;
+        if (dataStorage.getFileShareMountId() != null) {
+            fileShareMount = getCloudPipelineAPIClient().loadFileShareMount(dataStorage.getFileShareMountId());
+        } else {
+            log.warn(
+                    String.format("Storage: %s, id: %d doesn't have shareMountId!",
+                            dataStorage.getName(), dataStorage.getId()));
+        }
+        return new DataStorageWithShareMount(dataStorage, fileShareMount);
+    }
+
+    private void reindexStorage(final DataStorageWithShareMount dataStorageWithShareMount) {
+        final AbstractDataStorage dataStorage = dataStorageWithShareMount.getStorage();
         log.debug("Full reindex is requested for storage {}", dataStorage.getId());
         if (activeIndexTasks.contains(dataStorage.getId())) {
             log.debug("Indexing process is already in progress for storage {}. " +
@@ -246,7 +262,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             CompletableFuture.runAsync(() -> {
                 log.debug("Starting reindexing of storage {}", dataStorage.getId());
                 activeIndexTasks.add(dataStorage.getId());
-                createIndexAndDocuments(dataStorage);
+                createIndexAndDocuments(dataStorageWithShareMount);
                 activeIndexTasks.remove(dataStorage.getId());
             }, executorService)
                     .exceptionally(e -> {
@@ -338,6 +354,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     }
 
     private IndexRequest mapToElasticRequest(final AbstractDataStorage dataStorage,
+                                             final String regionCode,
                                              final Map<String, SearchHit> searchHitMap,
                                              final String newIndex,
                                              final PermissionsContainer permissionsContainer,
@@ -345,11 +362,13 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         return Optional.ofNullable(searchHitMap.get(storageFile.getPath()))
             .map(document -> {
                 log.debug("Mapping `{}` file to update request [{}]", storageFile.getPath(), document.getId());
-                return updateIndexRequest(dataStorage, storageFile, permissionsContainer, document);
+                return updateIndexRequest(
+                        dataStorage, regionCode, storageFile, permissionsContainer, document);
             })
             .orElseGet(() -> {
                 log.debug("Mapping `{}` file to create request", storageFile.getPath());
-                return createIndexRequest(storageFile, newIndex, dataStorage, permissionsContainer);
+                return createIndexRequest(
+                        storageFile, newIndex, dataStorage, permissionsContainer, regionCode);
             });
     }
 
@@ -391,9 +410,11 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .collect(Collectors.toMap(hit -> (String)hit.getSourceAsMap().get(FILE_ID_FIELD), Function.identity()));
     }
 
-    private IndexRequest updateIndexRequest(final AbstractDataStorage dataStorage, final DataStorageFile file,
-                                            final PermissionsContainer container, final SearchHit hit) {
-        final IndexRequest updateRequest = createIndexRequest(file, hit.getIndex(), dataStorage, container);
+    private IndexRequest updateIndexRequest(final AbstractDataStorage dataStorage, final String regionCode,
+                                            final DataStorageFile file, final PermissionsContainer container,
+                                            final SearchHit hit) {
+        final IndexRequest updateRequest = createIndexRequest(file, hit.getIndex(),
+                dataStorage, container, regionCode);
         updateRequest.id(hit.getId());
         return updateRequest;
     }
@@ -561,11 +582,12 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     }
 
     private IndexRequest createIndexRequest(final DataStorageFile file,
-                                              final String indexName,
-                                              final AbstractDataStorage dataStorage,
-                                              final PermissionsContainer permissionsContainer) {
+                                            final String indexName,
+                                            final AbstractDataStorage dataStorage,
+                                            final PermissionsContainer permissionsContainer,
+                                            final String regionCode) {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
-            .source(fileMapper.fileToDocument(file, dataStorage, null, permissionsContainer,
-                                              SearchDocumentType.NFS_FILE));
+                .source(fileMapper.fileToDocument(file, dataStorage, regionCode, permissionsContainer,
+                        SearchDocumentType.NFS_FILE));
     }
 }
