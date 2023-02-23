@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
@@ -166,6 +167,9 @@ public interface CloudPipelineAPI {
 
     @GET("datastorage/loadAll")
     Call<Result<List<AbstractDataStorage>>> loadAllDataStorages();
+
+    @GET("datastorage/availableWithMounts")
+    Call<Result<List<DataStorageWithShareMount>>> loadAllDataStoragesWithMounts();
 
     @GET("datastorage/{id}/load")
     Call<Result<AbstractDataStorage>> loadDataStorage(@Path(ID) Long storageId);
