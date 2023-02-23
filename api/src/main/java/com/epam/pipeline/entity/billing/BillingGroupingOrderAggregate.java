@@ -18,34 +18,24 @@ package com.epam.pipeline.entity.billing;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 @Getter
 @RequiredArgsConstructor
 public enum BillingGroupingOrderAggregate {
 
-    DEFAULT(null, getCostSortOrder(), getCostSortOrder()),
+    DEFAULT(null, "cost", "cost"),
 
-    STORAGE(BillingGrouping.STORAGE, getCostSortOrder(), getSortOrder("usage_bytes")),
+    STORAGE(BillingGrouping.STORAGE, "cost", "usage_bytes"),
     STANDARD(BillingGrouping.STORAGE,
-            getSortOrder("standard_total_cost"), getSortOrder("standard_total_usage_bytes")),
+            "standard_total_cost", "standard_total_usage_bytes"),
     GLACIER(BillingGrouping.STORAGE,
-            getSortOrder("glacier_total_cost"), getSortOrder("glacier_total_usage_bytes")),
+            "glacier_total_cost", "glacier_total_usage_bytes"),
     GLACIER_IR(BillingGrouping.STORAGE,
-            getSortOrder("glacier_ir_total_cost"), getSortOrder("glacier_ir_total_usage_bytes")),
+            "glacier_ir_total_cost", "glacier_ir_total_usage_bytes"),
     DEEP_ARCHIVE(BillingGrouping.STORAGE,
-            getSortOrder("deep_archive_total_cost"), getSortOrder("deep_archive_total_usage_bytes"));
-
-    private static ImmutablePair<String, String> getCostSortOrder() {
-        return ImmutablePair.of("cost_sort_order", "cost");
-    }
-
-    private static ImmutablePair<String, String> getSortOrder(String field) {
-        return ImmutablePair.of(field, field);
-    }
+            "deep_archive_total_cost", "deep_archive_total_usage_bytes");
 
     private final BillingGrouping group;
-    private final Pair<String, String> costAggregate;
-    private final Pair<String, String> usageAggregate;
+    private final String costField;
+    private final String usageField;
 }
