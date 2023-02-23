@@ -19,6 +19,7 @@ package com.epam.pipeline.acl.billing;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
@@ -61,7 +62,9 @@ public class BillingApiServiceTest extends AbstractAclTest {
                 Collections.singletonMap("filter", Collections.singletonList("filter")),
                 DateHistogramInterval.DAY,
                 BillingGrouping.BILLING_CENTER,
+                BillingGroupingSortOrder.DEFAULT_SORT_ORDER,
                 true,
+                false,
                 1L,
                 1L
         );
