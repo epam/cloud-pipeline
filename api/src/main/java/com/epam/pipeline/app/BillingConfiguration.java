@@ -87,7 +87,8 @@ public class BillingConfiguration {
         return new CommonBillingExporter<>("Storages Report",
             BillingExportType.STORAGE,
             storageBillingLoader,
-            (request, writer) -> new StorageBillingWriter(writer, request.getFrom(), request.getTo()),
+            (request, writer) -> new StorageBillingWriter(writer, request.getFrom(), request.getTo(),
+                    request.getProperties()),
             elasticHelper);
     }
 

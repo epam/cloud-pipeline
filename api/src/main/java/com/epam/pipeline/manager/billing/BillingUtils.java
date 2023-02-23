@@ -57,8 +57,14 @@ public final class BillingUtils {
     public static final String STORAGES_COSTS_COLUMN = "Storage costs ($)";
     public static final String DURATION_COLUMN = "Duration (hours)";
     public static final String COST_COLUMN = "Cost ($)";
+    public static final String DETAILED_COST_COLUMN = "Cost, %s ($)";
+    public static final String DETAILED_OV_COST_COLUMN = "Cost, %s Old Versions ($)";
     public static final String AVERAGE_VOLUME_COLUMN = "Average Volume (GB)";
+    public static final String DETAILED_AVERAGE_VOLUME_COLUMN = "Average Volume, %s (GB)";
+    public static final String DETAILED_OV_AVERAGE_VOLUME_COLUMN = "Average Volume, %s Old Versions (GB)";
     public static final String CURRENT_VOLUME_COLUMN = "Current Volume (GB)";
+    public static final String DETAILED_CURRENT_VOLUME_COLUMN = "Current Volume, %s (GB)";
+    public static final String DETAILED_OV_CURRENT_VOLUME_COLUMN = "Current Volume, %s Old Versions (GB)";
 
     public static final String SYNTHETIC_TOTAL_BILLING = "Grand total";
     public static final String MISSING_VALUE = "unknown";

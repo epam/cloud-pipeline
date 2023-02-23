@@ -44,5 +44,13 @@ public class StorageBillingChartCostDetails implements BillingChartDetails {
         Long oldVersionCost;
         Long oldVersionAvgSize;
         Long oldVersionSize;
+
+        public static StorageBillingDetails empty(String storageClass) {
+            return StorageBillingDetails.builder().storageClass(storageClass)
+                    .cost(0L).oldVersionCost(0L)
+                    .size(0L).oldVersionSize(0L)
+                    .avgSize(0L).oldVersionAvgSize(0L)
+                    .build();
+        }
     }
 }

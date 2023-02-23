@@ -10,6 +10,7 @@ public class StorageBillingMetrics {
     Long cost;
     Long averageVolume;
     Long currentVolume;
+    BillingChartDetails details;
 
     public static StorageBillingMetrics empty() {
         return StorageBillingMetrics.builder()
