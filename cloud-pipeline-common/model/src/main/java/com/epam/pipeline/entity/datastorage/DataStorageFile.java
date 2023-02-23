@@ -19,9 +19,11 @@ package com.epam.pipeline.entity.datastorage;
 
 import java.io.File;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.collections4.MapUtils;
 
 @Getter
 @Setter
@@ -51,6 +53,24 @@ public class DataStorageFile extends AbstractDataStorageItem {
         file.setVersion(other.getVersion());
         file.setDeleteMarker(other.getDeleteMarker());
         file.setIsHidden(other.getIsHidden());
+        return file;
+    }
+
+    public DataStorageFile copy() {
+        DataStorageFile file = new DataStorageFile();
+        file.setName(this.getName());
+        file.setPath(this.getPath());
+        file.setSize(this.getSize());
+        file.setChanged(this.getChanged());
+        if (MapUtils.isNotEmpty(getVersions())) {
+            file.setVersions(new HashMap<>(this.getVersions()));
+        }
+        if (MapUtils.isNotEmpty(getLabels())) {
+            file.setLabels(new HashMap<>(this.getLabels()));
+        }
+        file.setVersion(this.getVersion());
+        file.setDeleteMarker(this.getDeleteMarker());
+        file.setIsHidden(this.getIsHidden());
         return file;
     }
 

@@ -27,6 +27,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
@@ -114,6 +116,14 @@ public class CloudPipelineAPIClient {
         return loadDataStorageTags(id, request).stream()
                 .collect(Collectors.groupingBy(tag -> tag.getObject().getPath(),
                         Collectors.toMap(DataStorageTag::getKey, DataStorageTag::getValue)));
+    }
+
+    public List<StorageRestoreAction> loadDataStorageRestoreHierarchy(
+            final long datastorageId, final String path,
+            final StorageRestorePathType pathType, final boolean recursive) {
+        return ListUtils.emptyIfNull(executor.execute(
+                cloudPipelineAPI.loadDataStorageRestoreHierarchy(datastorageId, path, pathType, recursive)));
+
     }
 
     public PipelineRunWithLog loadPipelineRunWithLogs(final Long pipelineRunId) {

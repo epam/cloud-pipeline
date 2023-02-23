@@ -21,6 +21,7 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.storage.StorageFileMapper;
+import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -28,6 +29,10 @@ import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
@@ -38,16 +43,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.index.IndexRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,6 +73,10 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 @RequiredArgsConstructor
 @Slf4j
 public class ObjectStorageIndexImpl implements ObjectStorageIndex {
+
+    private static final String STANDARD_TIER = "STANDARD";
+    private static final String ROOT_PATH = "/";
+    public static final String RESTORED_POSTFIX = "_restored";
 
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final ElasticsearchServiceClient elasticsearchServiceClient;
@@ -110,13 +125,19 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             final TemporaryCredentials credentials = credentialsSupplier.get();
             try (IndexRequestContainer requestContainer = getRequestContainer(indexName, bulkInsertSize)) {
 
+                final List<StorageRestoreAction> restoreActions = ListUtils.emptyIfNull(
+                        cloudPipelineAPIClient.loadDataStorageRestoreHierarchy(
+                                dataStorage.getId(), ROOT_PATH, StorageRestorePathType.FOLDER, true)
+                );
+
                 final Stream<DataStorageFile> files = dataStorage.isVersioningEnabled() && includeVersions
                         ? loadFileWithVersions(dataStorage, credentialsSupplier)
                         : loadFiles(dataStorage, credentialsSupplier);
-                files.map(file -> createIndexRequest(
-                        file, dataStorage, permissionsContainer, indexName, credentials.getRegion(),
-                        findFileContent(dataStorage, file.getPath()))
-                ).forEach(requestContainer::add);
+                files.flatMap(file -> countRestored(restoreActions, file).stream())
+                        .map(file -> createIndexRequest(
+                                file, dataStorage, permissionsContainer, indexName, credentials.getRegion(),
+                                findFileContent(dataStorage, file.getPath()))
+                        ).forEach(requestContainer::add);
             }
 
             elasticsearchServiceClient.createIndexAlias(indexName, alias);
@@ -129,6 +150,51 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                 elasticsearchServiceClient.deleteIndex(indexName);
             }
         }
+    }
+
+    private List<DataStorageFile> countRestored(final List<StorageRestoreAction> actions, final DataStorageFile file) {
+        final List<DataStorageFile> filesWithRespectToRestoreStatus = new ArrayList<>();
+        filesWithRespectToRestoreStatus.add(file);
+        actions.stream().filter(action -> {
+            final boolean pathsMatches = action.getType() == StorageRestorePathType.FILE
+                    ? action.getPath().equals(file.getAbsolutePath())
+                    : file.getAbsolutePath().startsWith(action.getPath());
+            return pathsMatches && StorageRestoreStatus.SUCCEEDED == action.getStatus();
+        }).findAny().ifPresent(action -> {
+
+            // Create second copy of the file with STANDARD_TIER if it's restored,
+            // or use original object to hold restored versions
+            final DataStorageFile primaryFile;
+            if (fileIsCoveredByAction(file, action)) {
+                primaryFile = file.copy();
+                primaryFile.getLabels().put(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER);
+                primaryFile.setVersions(new HashMap<>());
+                filesWithRespectToRestoreStatus.add(primaryFile);
+            } else {
+                primaryFile = file;
+            }
+
+            // If version were restored too we need to count it twice also, with actual storage class
+            // and STANDARD storage class, to count usage and billing appropriately
+            if (MapUtils.isNotEmpty(file.getVersions()) && BooleanUtils.isTrue(action.getRestoreVersions())) {
+                final Map<String, DataStorageFile> restoredVersions = file.getVersions().entrySet().stream().map(e -> {
+                    final DataStorageFile fileVersion = ((DataStorageFile) e.getValue()).copy();
+                    if (fileIsCoveredByAction(fileVersion, action)) {
+                        fileVersion.getLabels().put(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER);
+                        return ImmutablePair.of(e.getKey() + RESTORED_POSTFIX, fileVersion);
+                    } else {
+                        return null;
+                    }
+                }).filter(Objects::nonNull).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+                primaryFile.getVersions().putAll(restoredVersions);
+            }
+        });
+        return filesWithRespectToRestoreStatus;
+    }
+
+    private boolean fileIsCoveredByAction(final DataStorageFile file, final StorageRestoreAction action) {
+        return action.getStarted().isAfter(DateUtils.parse(ESConstants.FILE_DATE_FORMAT, file.getChanged()))
+                && !file.getLabels().getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER).equals(STANDARD_TIER);
     }
 
     private Stream<DataStorageFile> loadFiles(final AbstractDataStorage dataStorage,
