@@ -20,12 +20,17 @@ import com.epam.pipeline.controller.vo.billing.BillingCostDetailsRequest;
 import com.epam.pipeline.entity.billing.BillingChartDetails;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails;
+import com.epam.pipeline.manager.billing.BillingUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
+import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
+import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,8 +38,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class StorageBillingCostDetailsHelper {
+
+    public static final String STORAGES_COST_DETAILS = "storages_cost_details";
 
     private StorageBillingCostDetailsHelper() {}
 
@@ -42,24 +50,39 @@ public final class StorageBillingCostDetailsHelper {
             Arrays.asList("STANDARD", "GLACIER", "GLACIER_IR", "DEEP_ARCHIVE");
 
     private static final String STORAGE_CLASS_COST_TEMPLATE = "%s_cost";
-    private static final String STORAGE_CLASS_USAGE_BYTES_TEMPLATE = "%s_usage_bytes";
+    private static final String STORAGE_CLASS_USAGE_TEMPLATE = "%s_usage_bytes";
     private static final String STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE = "%s_ov_cost";
-    private static final String STORAGE_CLASS_OLD_VERSIONS_USAGE_BYTES_TEMPLATE = "%s_ov_usage_bytes";
-    public static final List<String> STORAGE_CLASS_AGGREGATION_TEMPLATES =
-            Arrays.asList(STORAGE_CLASS_COST_TEMPLATE, STORAGE_CLASS_USAGE_BYTES_TEMPLATE,
-                    STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE, STORAGE_CLASS_OLD_VERSIONS_USAGE_BYTES_TEMPLATE);
+    private static final String STORAGE_CLASS_OLD_VERSIONS_USAGE_TEMPLATE = "%s_ov_usage_bytes";
 
-    public static final List<String> STORAGE_CLASS_AGGREGATION_MASKS = Arrays.asList(
-            "*_cost", "*_ov_cost", "*_usage_bytes", "*_ov_usage_bytes"
+    public static final List<String> STORAGE_COST_DETAILS_AGGREGATION_MASKS = Arrays.asList(
+            "_cost", "_ov_cost", "_usage_bytes", "_ov_usage_bytes"
     );
 
-    public static List<AggregationBuilder> buildQuery() {
-        return S3_STORAGE_CLASSES.stream()
+    public static void buildQuery(final AggregationBuilder topLevelAggregation) {
+        List<AggregationBuilder> storageDetailsAggregations = S3_STORAGE_CLASSES.stream()
                 .map(sc -> sc.toLowerCase(Locale.ROOT))
-                .flatMap(sc -> STORAGE_CLASS_AGGREGATION_TEMPLATES.stream().map(t -> buildSumAggregation(t, sc)))
-                .collect(Collectors.toList());
+                .flatMap(sc -> Stream.of(
+                        buildSumAggregation(STORAGE_CLASS_COST_TEMPLATE, sc),
+                        buildSumAggregation(STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE, sc),
+                        buildAvgAggregation(STORAGE_CLASS_USAGE_TEMPLATE, sc),
+                        buildAvgAggregation(STORAGE_CLASS_OLD_VERSIONS_USAGE_TEMPLATE, sc)
+                )).collect(Collectors.toList());
+        final TermsAggregationBuilder usageByStorageAgg = AggregationBuilders.terms(STORAGES_COST_DETAILS)
+            .field(BillingUtils.STORAGE_ID_FIELD).size(Integer.MAX_VALUE);
+        for (AggregationBuilder storageDetailsAggregation : storageDetailsAggregations) {
+            usageByStorageAgg.subAggregation(storageDetailsAggregation);
+        }
+        topLevelAggregation.subAggregation(usageByStorageAgg);
+        S3_STORAGE_CLASSES.stream()
+            .map(sc -> sc.toLowerCase(Locale.ROOT))
+            .flatMap(sc -> Stream.of(
+                buildPipelineSumAggregation(STORAGES_COST_DETAILS, STORAGE_CLASS_COST_TEMPLATE, sc),
+                buildPipelineSumAggregation(STORAGES_COST_DETAILS, STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE, sc),
+                buildPipelineSumAggregation(STORAGES_COST_DETAILS, STORAGE_CLASS_USAGE_TEMPLATE, sc),
+                buildPipelineSumAggregation(STORAGES_COST_DETAILS, STORAGE_CLASS_OLD_VERSIONS_USAGE_TEMPLATE, sc)
+            )
+        ).forEach(topLevelAggregation::subAggregation);
     }
-
 
     public static BillingChartDetails parseResponse(final Aggregations aggregations) {
         return StorageBillingChartCostDetails.builder().tiers(
@@ -67,12 +90,12 @@ public final class StorageBillingCostDetailsHelper {
                 .map(field ->
                 StorageBillingChartCostDetails.StorageBillingDetails.builder()
                     .storageClass(field)
-                    .cost(fetchAggregationValue(STORAGE_CLASS_COST_TEMPLATE, field, aggregations))
-                    .size(fetchAggregationValue(STORAGE_CLASS_USAGE_BYTES_TEMPLATE, field, aggregations))
+                    .cost(fetchSimpleAggregationValue(STORAGE_CLASS_COST_TEMPLATE, field, aggregations))
+                    .size(fetchSimpleAggregationValue(STORAGE_CLASS_USAGE_TEMPLATE, field, aggregations))
                     .oldVersionCost(
-                        fetchAggregationValue(STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE, field, aggregations))
+                        fetchSimpleAggregationValue(STORAGE_CLASS_OLD_VERSIONS_COST_TEMPLATE, field, aggregations))
                     .oldVersionSize(
-                        fetchAggregationValue(STORAGE_CLASS_OLD_VERSIONS_USAGE_BYTES_TEMPLATE, field, aggregations)
+                        fetchSimpleAggregationValue(STORAGE_CLASS_OLD_VERSIONS_USAGE_TEMPLATE, field, aggregations)
                 ).build())
                 .filter(details -> !isDetailsEntryEmpty(details))
                 .collect(Collectors.toList())
@@ -102,23 +125,39 @@ public final class StorageBillingCostDetailsHelper {
                 && details.getOldVersionCost() == 0 && details.getOldVersionSize() == 0;
     }
 
-    private static long fetchAggregationValue(final String template, final String field,
-                                              final Aggregations aggregations) {
+    private static long fetchSimpleAggregationValue(final String template, final String field,
+                                                    final Aggregations aggregations) {
         final String costAggName = String.format(template, field.toLowerCase(Locale.ROOT));
-        return Optional.ofNullable(aggregations).map(agg -> agg.<ParsedSum>get(costAggName))
-                .map(ParsedSum::getValue).orElse(0.0).longValue();
+        return Optional.ofNullable(aggregations).map(aggs -> aggs.<ParsedSimpleValue>get(costAggName))
+                .map(ParsedSimpleValue::value).orElse(0.0).longValue();
     }
 
     private static SumAggregationBuilder buildSumAggregation(final String template, final String storageClass) {
         final String agg = getAggregationField(template, storageClass);
-        return buildSumAggregation(agg);
+        return AggregationBuilders.sum(agg).field(agg);
     }
 
-    private static SumAggregationBuilder buildSumAggregation(String agg) {
-        return AggregationBuilders.sum(agg).field(agg);
+    private static AvgAggregationBuilder buildAvgAggregation(final String template, final String storageClass) {
+        final String agg = getAggregationField(template, storageClass);
+        return AggregationBuilders.avg(agg).field(agg);
+    }
+
+    private static SumBucketPipelineAggregationBuilder buildPipelineSumAggregation(final String parentAgg,
+                                                                                   final String template,
+                                                                                   final String storageClass) {
+        final String agg = getAggregationField(template, storageClass);
+        return PipelineAggregatorBuilders.sumBucket(agg, fieldsPath(parentAgg, agg));
     }
 
     private static String getAggregationField(String template, String field) {
         return String.format(template, field);
+    }
+
+    private static String fieldsPath(final String... paths) {
+        return bucketsPath(BillingUtils.ES_DOC_FIELDS_SEPARATOR, paths);
+    }
+
+    private static String bucketsPath(final String separator, final String[] paths) {
+        return String.join(separator, paths);
     }
 }

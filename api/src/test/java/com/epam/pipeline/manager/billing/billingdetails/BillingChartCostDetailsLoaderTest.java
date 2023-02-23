@@ -20,32 +20,38 @@ import com.epam.pipeline.controller.vo.billing.BillingCostDetailsRequest;
 import com.epam.pipeline.entity.billing.BillingChartDetails;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.PipelineAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.function.Consumer;
 
 
 public class BillingChartCostDetailsLoaderTest {
 
+    public static final int ZERO = 0;
+    public static final int NUMBER_OF_TERM_AGGREGATIONS_FOR_COST_DETAILS = 1;
+
     @Test
     public void checkThatBuildQueryWillBuildAggsIfCriteriaMatchByGrouping() {
         assertAggregations(
-            BillingChartCostDetailsLoader.buildQuery(
-                BillingCostDetailsRequest.builder().enabled(true)
-                        .grouping(BillingGrouping.STORAGE).build()
-            )
+            agg -> BillingChartCostDetailsLoader.buildQuery(
+                    BillingCostDetailsRequest.builder().enabled(true)
+                            .grouping(BillingGrouping.STORAGE).build(), agg),
+            true
         );
 
         assertAggregations(
-            BillingChartCostDetailsLoader.buildQuery(
-                BillingCostDetailsRequest.builder().enabled(true)
-                        .grouping(BillingGrouping.STORAGE_TYPE).build()
-            )
+            agg -> BillingChartCostDetailsLoader.buildQuery(
+            BillingCostDetailsRequest.builder().enabled(true)
+                    .grouping(BillingGrouping.STORAGE_TYPE).build(), agg),
+            true
         );
     }
 
@@ -56,37 +62,38 @@ public class BillingChartCostDetailsLoaderTest {
                 put("storage_type", Collections.singletonList("OBJECT_STORAGE"));
             }};
         assertAggregations(
-            BillingChartCostDetailsLoader.buildQuery(
-                BillingCostDetailsRequest.builder().enabled(true).filters(filters).build()
-            )
+            agg -> BillingChartCostDetailsLoader.buildQuery(
+                    BillingCostDetailsRequest.builder().enabled(true).filters(filters).build(), agg),
+            true
         );
     }
 
     @Test
     public void checkThatBuildQueryWillNotBuildAggsIfDisabledMatch() {
-        Assert.assertTrue(
-                BillingChartCostDetailsLoader.buildQuery(
-                        BillingCostDetailsRequest.builder().enabled(false).build()
-                ).isEmpty()
+        assertAggregations(
+            agg -> BillingChartCostDetailsLoader.buildQuery(
+                    BillingCostDetailsRequest.builder().enabled(false).build(), agg),
+            false
         );
     }
 
     @Test
     public void checkThatBuildQueryWillNotBuildAggsIfCriteriaDontMatch() {
-        Assert.assertTrue(
-                BillingChartCostDetailsLoader.buildQuery(
-                        BillingCostDetailsRequest.builder().enabled(true)
-                                .grouping(BillingGrouping.TOOL).build()
-                ).isEmpty()
+        assertAggregations(
+            agg -> BillingChartCostDetailsLoader.buildQuery(
+                    BillingCostDetailsRequest.builder().enabled(true)
+                            .grouping(BillingGrouping.TOOL).build(), agg),
+            false
         );
+
         final HashMap<String, List<String>> filters = new HashMap<String, List<String>>() {{
                 put("resource_type", Arrays.asList("STORAGE", "COMPUTE"));
                 put("storage_type", Collections.singletonList("OBJECT_STORAGE"));
             }};
-        Assert.assertTrue(
-            BillingChartCostDetailsLoader.buildQuery(
-                BillingCostDetailsRequest.builder().enabled(true).filters(filters).build()
-            ).isEmpty()
+        assertAggregations(
+            agg -> BillingChartCostDetailsLoader.buildQuery(
+                    BillingCostDetailsRequest.builder().enabled(true).filters(filters).build(), agg),
+            false
         );
     }
 
@@ -106,17 +113,21 @@ public class BillingChartCostDetailsLoaderTest {
         );
     }
 
-    private static void assertAggregations(List<AggregationBuilder> aggs) {
-        Assert.assertEquals(aggs.size(), 4 * StorageBillingCostDetailsHelper.S3_STORAGE_CLASSES.size());
-        // For each storage class there should be 4 aggs (cost, cost old version, size, size old versions)
-        for (String storageClass : StorageBillingCostDetailsHelper.S3_STORAGE_CLASSES) {
-            for (String template : StorageBillingCostDetailsHelper.STORAGE_CLASS_AGGREGATION_TEMPLATES) {
-                Assert.assertTrue(
-                        aggs.stream().anyMatch(agg -> agg.getName().equals(
-                                String.format(template, storageClass.toLowerCase(Locale.ROOT)))
-                        )
-                );
-            }
+    private static void assertAggregations(Consumer<AggregationBuilder> aggs, boolean shouldAccept) {
+        TermsAggregationBuilder topLevelAgg = Mockito.mock(TermsAggregationBuilder.class);
+        aggs.accept(topLevelAgg);
+        if (shouldAccept) {
+            Mockito.verify(topLevelAgg, Mockito.times(NUMBER_OF_TERM_AGGREGATIONS_FOR_COST_DETAILS))
+                    .subAggregation(Mockito.any(TermsAggregationBuilder.class));
+            Mockito.verify(
+                    topLevelAgg,
+                    Mockito.times(4 * StorageBillingCostDetailsHelper.S3_STORAGE_CLASSES.size())
+            ).subAggregation(Mockito.any(PipelineAggregationBuilder.class));
+        } else {
+            Mockito.verify(topLevelAgg, Mockito.times(ZERO))
+                    .subAggregation(Mockito.any(TermsAggregationBuilder.class));
+            Mockito.verify(topLevelAgg, Mockito.times(ZERO))
+                    .subAggregation(Mockito.any(PipelineAggregationBuilder.class));
         }
     }
 }
