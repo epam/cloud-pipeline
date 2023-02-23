@@ -261,15 +261,21 @@ export default class DataStorage extends React.Component {
 
   @computed
   get storageVersioningAllowed () {
-    const {authenticatedUserInfo} = this.props;
-    const loaded = this.storage.info &&
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    const loaded = preferences &&
+      preferences.loaded &&
+      this.storage.info &&
       this.storage.infoLoaded &&
       authenticatedUserInfo &&
       authenticatedUserInfo.loaded;
     if (loaded) {
       const isAdmin = authenticatedUserInfo.value.admin;
       const isOwner = roleModel.isOwner(this.storage.info);
-      return isAdmin || isOwner;
+      return isAdmin ||
+        (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
     }
     return false;
   }
