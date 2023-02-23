@@ -165,7 +165,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             // Create second copy of the file with STANDARD_TIER if it's restored,
             // or use original object to hold restored versions
             final DataStorageFile primaryFile;
-            if (fileWasRestored(file, action)) {
+            if (fileIsCoveredByAction(file, action)) {
                 primaryFile = file.copy();
                 primaryFile.getLabels().put(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER);
                 primaryFile.setVersions(new HashMap<>());
@@ -179,7 +179,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
             if (MapUtils.isNotEmpty(file.getVersions()) && BooleanUtils.isTrue(action.getRestoreVersions())) {
                 final Map<String, DataStorageFile> restoredVersions = file.getVersions().entrySet().stream().map(e -> {
                     final DataStorageFile fileVersion = ((DataStorageFile) e.getValue()).copy();
-                    if (fileWasRestored(fileVersion, action)) {
+                    if (fileIsCoveredByAction(fileVersion, action)) {
                         fileVersion.getLabels().put(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER);
                         return ImmutablePair.of(e.getKey() + RESTORED_POSTFIX, fileVersion);
                     } else {
@@ -192,7 +192,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         return filesWithRespectToRestoreStatus;
     }
 
-    private boolean fileWasRestored(final DataStorageFile file, final StorageRestoreAction action) {
+    private boolean fileIsCoveredByAction(final DataStorageFile file, final StorageRestoreAction action) {
         return action.getStarted().isAfter(DateUtils.parse(ESConstants.FILE_DATE_FORMAT, file.getChanged()))
                 && !file.getLabels().getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER).equals(STANDARD_TIER);
     }
