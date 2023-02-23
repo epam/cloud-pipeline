@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import json
 import logging
-
+import pytz
 import requests
+import socket
+import time
+
+from pipefuse.audit import AuditConsumer, DataAccessType
 
 
 class CloudType:
@@ -75,6 +80,7 @@ class DataStorage:
 
     def __init__(self):
         self.id = None
+        self.path = None
         self.mask = None
         self.sensitive = False
         self.ro = False
@@ -85,11 +91,11 @@ class DataStorage:
     def load(cls, json, region_info=[]):
         instance = DataStorage()
         instance.id = json['id']
+        instance.path = json['path']
         instance.mask = json['mask']
         instance.sensitive = json['sensitive']
         instance.type = json['type']
-        if region_info and 'regionId' in json:
-            instance.region_name = cls._find_region_code(json['regionId'], region_info)
+        instance.region_name = cls._find_region_code(json.get('regionId', 0), region_info)
         return instance
 
     @staticmethod
@@ -109,6 +115,18 @@ class DataStorage:
         return self.mask & mask == mask
 
 
+class ServerError(RuntimeError):
+    pass
+
+
+class HTTPError(ServerError):
+    pass
+
+
+class APIError(ServerError):
+    pass
+
+
 class CloudPipelineClient:
 
     def __init__(self, api, token):
@@ -116,94 +134,117 @@ class CloudPipelineClient:
         self._token = token
         self.__headers__ = {'Content-Type': 'application/json',
                             'Authorization': 'Bearer {}'.format(self._token)}
+        self.__attempts__ = 3
+        self.__timeout__ = 5
+        self.__connection_timeout__ = 10
 
-    def get_storage(self, name):
-        logging.info('Getting data storage %s' % name)
-        response_data = self._get('datastorage/findByPath?id={}'.format(name))
-        if 'payload' in response_data:
-            bucket = DataStorage.load(response_data['payload'], self.get_region_info())
-            # When regular bucket is mounted inside a sensitive run, the only way
-            # check whether actual write will be allowed is to request write credentials
-            # from API server and parse response
-            if bucket.is_write_allowed():
-                bucket.ro = not self._check_write_allowed(bucket)
-            return bucket
-        return None
+    def init_bucket_object(self, name):
+        storage_payload = self.get_storage(name)
+        regions_payload = self.get_regions()
+        bucket = DataStorage.load(storage_payload, regions_payload)
+        # When regular bucket is mounted inside a sensitive run, the only way
+        # check whether actual write will be allowed is to request write credentials
+        # from API server and parse response
+        if bucket.is_write_allowed():
+            bucket.ro = not self._is_write_allowed(bucket)
+        return bucket
 
-    def get_region_info(self):
-        logging.info('Getting region info')
-        response_data = self._get('cloud/region/info')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to load regions info")
-
-    def get_temporary_credentials(self, bucket):
-        logging.info('Getting temporary credentials for data storage #%s' % bucket.id)
-        operation = {
-            'id': bucket.id,
-            'read': bucket.is_read_allowed(),
-            'write': bucket.is_write_allowed()
-        }
-        credentials = self._get_temporary_credentials([operation])
-        return credentials
-
-    def get_storage_lifecycle(self, bucket, path, is_file=False):
-        logging.info('Getting storage lifecycle for data storage #%s' % bucket.id)
-        request_url = '/datastorage/%s/lifecycle/restore/effectiveHierarchy?path=%s&pathType=%s' \
-                      % (str(bucket.id), path, 'FILE' if is_file else 'FOLDER&recursive=false')
-        response_data = self._get(request_url)
-        if 'payload' in response_data:
-            items = []
-            for lifecycles_json in response_data['payload']:
-                lifecycle = StorageLifecycle.load(lifecycles_json)
-                items.append(lifecycle)
-            return items
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        return None
-
-    def _check_write_allowed(self, bucket):
+    def _is_write_allowed(self, bucket):
         try:
             self.get_temporary_credentials(bucket)
             return True
         except RuntimeError as e:
-            if 'Write operations are forbidden' in str(e.message):
+            if 'Write operations are forbidden' in str(e):
                 return False
             else:
                 raise e
 
-    def _get_temporary_credentials(self, data):
-        response_data = self._post('datastorage/tempCredentials/', data=json.dumps(data))
-        if 'payload' in response_data:
-            return TemporaryCredentials.load(response_data['payload'])
-        elif 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError('Failed to load credentials from server.')
+    def get_storage(self, name):
+        logging.info('Getting data storage %s...' % name)
+        return self._retryable_call('GET', 'datastorage/findByPath?id={}'.format(name)) or {}
 
-    def _get(self, method, *args, **kwargs):
-        return self._call(method, http_method='get', *args, **kwargs)
+    def get_regions(self):
+        logging.info('Getting regions...')
+        return self._retryable_call('GET', 'cloud/region/info') or []
 
-    def _post(self, method, *args, **kwargs):
-        return self._call(method, http_method='post', *args, **kwargs)
+    def get_temporary_credentials(self, bucket):
+        logging.info('Getting temporary credentials for data storage #%s...' % bucket.id)
+        data = [{
+            'id': bucket.id,
+            'read': bucket.is_read_allowed(),
+            'write': bucket.is_write_allowed()
+        }]
+        payload = self._retryable_call('POST', 'datastorage/tempCredentials/', data=data) or {}
+        return TemporaryCredentials.load(payload)
 
-    def _call(self, method, http_method, data=None, error_message=None):
-        url = '{}/{}'.format(self._api, method)
-        if http_method == 'get':
-            response = requests.get(url, headers=self.__headers__, verify=False)
-        else:
-            response = requests.post(url, data=data, headers=self.__headers__, verify=False)
-        response_data = json.loads(response.text)
-        message_text = error_message if error_message else 'Failed to fetch data from server'
-        if 'status' not in response_data:
-            raise RuntimeError('{}. Server responded with status: {}.'
-                               .format(message_text, str(response_data.status_code)))
-        if response_data['status'] != 'OK':
-            raise RuntimeError('{}. Server responded with message: {}'.format(message_text, response_data['message']))
-        else:
-            return response_data
+    def get_storage_lifecycle(self, bucket, path, is_file=False):
+        logging.info('Getting storage lifecycle for data storage #%s...' % bucket.id)
+        request_url = 'datastorage/%s/lifecycle/restore/effectiveHierarchy?path=%s&pathType=%s' \
+                      % (str(bucket.id), path, 'FILE' if is_file else 'FOLDER&recursive=false')
+        payload = self._retryable_call('GET', request_url) or []
+        return [StorageLifecycle.load(lifecycles_json) for lifecycles_json in payload]
+
+    def create_system_logs(self, entries):
+        self._retryable_call('POST', 'log', data=entries)
+
+    def whoami(self):
+        return self._retryable_call('GET', 'whoami') or {}
+
+    def _retryable_call(self, http_method, endpoint, data=None):
+        url = '{}/{}'.format(self._api, endpoint)
+        count = 0
+        exceptions = []
+        while count < self.__attempts__:
+            count += 1
+            try:
+                response = requests.request(method=http_method, url=url, data=json.dumps(data),
+                                            headers=self.__headers__, verify=False,
+                                            timeout=self.__connection_timeout__)
+                if response.status_code != 200:
+                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
+                response_data = response.json()
+                status = response_data.get('status') or 'ERROR'
+                message = response_data.get('message') or 'No message'
+                if status != 'OK':
+                    raise APIError('%s: %s' % (status, message))
+                return response_data.get('payload')
+            except APIError as e:
+                raise e
+            except Exception as e:
+                exceptions.append(e)
+            time.sleep(self.__timeout__)
+        raise exceptions[-1]
+
+
+class CloudPipelineAuditConsumer(AuditConsumer):
+
+    def __init__(self, pipe, bucket_object):
+        self._pipe = pipe
+        self._log_path_prefix = bucket_object.type.lower() + '://' + bucket_object.path + '/'
+        self._log_user = self._pipe.whoami().get('userName')
+        self._log_hostname = socket.gethostname()
+        self._log_type = 'audit'
+        self._log_service = 'pipe-mount'
+        self._log_severity = 'INFO'
+        self._type_mapping = {
+            DataAccessType.READ: 'READ',
+            DataAccessType.WRITE: 'WRITE',
+            DataAccessType.DELETE: 'DELETE'
+        }
+
+    def consume(self, entries):
+        now = datetime.datetime.now(tz=pytz.utc)
+        now_str = now.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        self._pipe.create_system_logs([{
+            'eventId': int(time.time() * 10 ** 9),
+            'messageTimestamp': now_str,
+            'hostname': self._log_hostname,
+            'serviceName': self._log_service,
+            'type': self._log_type,
+            'user': self._log_user,
+            'message': self._convert_type(entry.type) + ' ' + self._log_path_prefix + entry.path,
+            'severity': self._log_severity
+        } for entry in entries])
+
+    def _convert_type(self, type):
+        return self._type_mapping.get(type, 'ACCESS')

@@ -39,9 +39,6 @@ class StorageLowLevelFileSystemClient(FileSystemClient):
     def upload_range(self, fh, buf, path, offset):
         pass
 
-    def flush(self, fh, path):
-        pass
-
     @abstractmethod
     def new_mpu(self, path, file_size, download, mv):
         pass

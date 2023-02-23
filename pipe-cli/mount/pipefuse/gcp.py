@@ -209,11 +209,12 @@ class _RefreshingClient(Client):
 
 class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
 
-    def __init__(self, bucket, pipe, chunk_size, storage_path):
+    def __init__(self, bucket, bucket_object, pipe, chunk_size):
         """
         Google storage low level file system client operations.
 
         :param bucket: Name of the GCP bucket.
+        :param bucket_object: GCP bucket object.
         :param pipe: Cloud Pipeline API client.
         :param chunk_size: Multipart upload chunk size.
         """
@@ -221,7 +222,8 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
-        self._gcp = self._generate_gcp(pipe, storage_path)
+        self.bucket_object = bucket_object
+        self._gcp = self._generate_gcp(pipe)
         self._chunk_size = chunk_size
         self._max_size = 5 * TB
         self._min_chunk = 1
@@ -230,10 +232,9 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
         self._max_part_size = 500 * MB
         self._max_composite_parts = 32
 
-    def _generate_gcp(self, pipe, storage_path):
-        bucket_object = pipe.get_storage(storage_path)
-        self._is_read_only = not bucket_object.is_write_allowed()
-        return _RefreshingClient(lambda: pipe.get_temporary_credentials(bucket_object))
+    def _generate_gcp(self, pipe):
+        self._is_read_only = not self.bucket_object.is_write_allowed()
+        return _RefreshingClient(lambda: pipe.get_temporary_credentials(self.bucket_object))
 
     def is_available(self):
         # TODO 05.09.2019: Check GCP API for availability

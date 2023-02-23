@@ -120,11 +120,12 @@ class S3MultipartUpload(MultipartUpload):
 
 class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
-    def __init__(self, bucket, pipe, chunk_size, storage_path):
+    def __init__(self, bucket, bucket_object, pipe, chunk_size):
         """
         AWS S3 storage low level file system client operations.
 
         :param bucket: Name of the AWS S3 bucket.
+        :param bucket_object: AWS S3 bucket object.
         :param pipe: Cloud Pipeline API client.
         :param chunk_size: Multipart upload chunk size.
         """
@@ -132,21 +133,20 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
-        self.bucket_object = pipe.get_storage(bucket)
-        self._s3 = self._generate_s3_client(storage_path, pipe)
+        self.bucket_object = bucket_object
+        self._s3 = self._generate_s3_client(pipe)
         self._chunk_size = chunk_size
         self._min_chunk = 1
         self._max_chunk = 10000
         self._min_part_size = 5 * MB
         self._max_part_size = 5 * GB
 
-    def _generate_s3_client(self, bucket, pipe):
-        session = self._generate_aws_session(bucket, pipe, self.bucket_object)
+    def _generate_s3_client(self, pipe):
+        session = self._generate_aws_session(pipe, self.bucket_object)
         return session.client('s3', config=Config(), region_name=self.bucket_object.region_name)
 
-    def _generate_aws_session(self, bucket, pipe, bucket_object):
+    def _generate_aws_session(self, pipe, bucket_object):
         def refresh():
-            logging.info('Refreshing temporary credentials for data storage %s' % bucket)
             credentials = pipe.get_temporary_credentials(bucket_object)
             return dict(
                 access_key=credentials.access_key_id,

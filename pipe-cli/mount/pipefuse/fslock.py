@@ -67,6 +67,7 @@ class PathLock(FileSystemLock):
         self._mutex = RLock()
         self._monitor_lock = RLock()
         self._locks = {}
+        # todo: Move to daemons section in pipe-fuse.py
         self._monitor = Thread(target=monitor_locks, args=(self._monitor_lock, self._locks, monitoring_delay,))
         self._monitor.daemon = True
         self._monitor.start()
