@@ -35,12 +35,17 @@ class LifeCycleCounter extends React.Component {
   }
 
   componentDidMount () {
-    this.fetchRulesInfo();
+    const {visible} = this.props;
+    if (visible) {
+      this.fetchRulesInfo();
+    }
   }
 
   componentDidUpdate (prevProps) {
-    if (this.props.storage !== prevProps.storage ||
-      this.props.path !== prevProps.path
+    const {visible, storage, path} = this.props;
+    if (
+      visible &&
+      (storage !== prevProps.storage || path !== prevProps.path)
     ) {
       this.fetchRulesInfo();
     }
