@@ -1592,6 +1592,9 @@ export default `
 @THEME .cp-panel.cp-panel-borderless:hover {
   border-color: transparent;
 }
+@THEME .cp-card-background-color {
+  background-color: @card-background-color;
+}
 @THEME .cp-panel .cp-panel-card {
   border: 1px solid @card-border-color;
   background-color: @card-background-color;

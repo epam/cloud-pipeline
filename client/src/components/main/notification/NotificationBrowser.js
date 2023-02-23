@@ -169,7 +169,8 @@ export default class NotificationBrowser extends React.Component {
           styles.notificationGridRow,
           styles.header,
           'cp-divider',
-          'bottom'
+          'bottom',
+          'cp-card-background-color'
         )}
       >
         <div className={classNames(
@@ -224,7 +225,7 @@ export default class NotificationBrowser extends React.Component {
     return (
       <div className={styles.notificationsContainer}>
         {this.renderHeader()}
-        <div style={{overflow: 'auto'}}>
+        <div>
           <Spin spinning={pending}>
             {this.notifications.length > 0
               ? this.notifications.map(notification => (
