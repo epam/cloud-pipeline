@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -190,6 +191,10 @@ public class AuthManager {
         context.setAuthentication(new JwtAuthenticationToken(userContext, authorities));
 
         return context;
+    }
+
+    public boolean isServiceUser(@Nullable String user) {
+        return StringUtils.equalsIgnoreCase(user, defaultAdmin);
     }
 
     private Object getPrincipal() {

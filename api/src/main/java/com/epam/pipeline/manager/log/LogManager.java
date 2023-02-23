@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.log.LogPaginationRequest;
 import com.epam.pipeline.entity.log.PageMarker;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -104,6 +105,7 @@ public class LogManager {
     private static final String INDEX_TYPE = "_doc";
 
     private final GlobalSearchElasticHelper elasticHelper;
+    private final AuthManager authManager;
     private final MessageHelper messageHelper;
 
     @Value("${log.security.elastic.index.prefix:security_log}")
@@ -145,7 +147,7 @@ public class LogManager {
 
         final SearchRequest request = new SearchRequest()
                 .source(source)
-                .indices(getLogIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
+                .indices(getReadIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
@@ -175,7 +177,7 @@ public class LogManager {
                 .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD));
         final SearchRequest request = new SearchRequest()
                 .source(source)
-                .indices(getLogIndices())
+                .indices(getAllIndices())
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
@@ -203,7 +205,7 @@ public class LogManager {
     }
 
     public void save(final List<LogEntry> logEntries) {
-        final String index = getIndexName();
+        final String index = getWriteIndex();
         final BulkRequest bulkRequest = new BulkRequest();
         final List<IndexRequest> indexRequests = logEntries.stream()
                 .map(e -> getIndexRequest(e, index))
@@ -214,10 +216,6 @@ public class LogManager {
         } catch (IOException e) {
             throw new PipelineException(e);
         }
-    }
-
-    private String getIndexName() {
-        return getIndexName(indexPrefix, LocalDate.now().format(ELASTIC_DATE_FORMATTER));
     }
 
     private IndexRequest getIndexRequest(final LogEntry logEntry, final String index) {
@@ -233,6 +231,7 @@ public class LogManager {
                     .field(USER, logEntry.getUser())
                     .field(MESSAGE, logEntry.getMessage())
                     .field(SEVERITY, logEntry.getSeverity())
+                    .field(SERVICE_ACCOUNT, authManager.isServiceUser(logEntry.getUser()))
                     .endObject();
         } catch (IOException e) {
             throw new PipelineException(e);
@@ -240,26 +239,30 @@ public class LogManager {
         return new IndexRequest(index, INDEX_TYPE).source(builder);
     }
 
-    private String[] getLogIndices(final LocalDateTime from, final LocalDateTime to) {
+    private String[] getAllIndices() {
+        return new String[]{getIndexName(indexPrefix, ES_WILDCARD)};
+    }
+
+    private String getWriteIndex() {
+        return getIndexName(indexPrefix);
+    }
+
+    /**
+     * Returns system logs day indices taking into consideration filebeat transition period.
+     * <p>
+     * The transition period includes adjacent indices which may contain required documents.
+     */
+    private String[] getReadIndices(final LocalDateTime from, final LocalDateTime to) {
         final LocalDate toDate = Optional.ofNullable(to)
                 .orElseGet(DateUtils::nowUTC)
                 .toLocalDate();
         return Optional.ofNullable(from)
                 .map(LocalDateTime::toLocalDate)
-                .map(fromDate -> getLogDayIndices(fromDate, toDate))
-                .orElseGet(this::getLogIndices);
+                .map(fromDate -> getReadIndices(fromDate, toDate))
+                .orElseGet(this::getAllIndices);
     }
 
-    private String[] getLogIndices() {
-        return new String[]{getIndexName(indexPrefix, ES_WILDCARD)};
-    }
-
-    /**
-     * Returns system logs day indices taking into consideration filebeat transition period.
-     *
-     * The transition period includes adjacent indices which may contain required documents.
-     */
-    private String[] getLogDayIndices(final LocalDate from, final LocalDate to) {
+    private String[] getReadIndices(final LocalDate from, final LocalDate to) {
         final LocalDate actualFrom = from.minus(FILEBEAT_TRANSITION_PERIOD);
         final LocalDate actualTo = to.plus(FILEBEAT_TRANSITION_PERIOD);
         return Stream.iterate(actualFrom, date -> date.plusDays(1))
