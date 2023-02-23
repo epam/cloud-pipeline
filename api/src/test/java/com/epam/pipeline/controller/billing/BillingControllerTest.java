@@ -54,9 +54,9 @@ public class BillingControllerTest extends AbstractControllerTest {
                                                 "\"grouping\":\"BILLING_CENTER\"," +
                                                 "\"loadDetails\":true," +
                                                 "\"order\": {" +
-                                                    "\"field\": \"COST\", " +
-                                                    "\"detailsAggregate\": \"DEFAULT\", " +
-                                                    "\"desc\": true" +
+                                                    "\"metric\": \"COST\", " +
+                                                    "\"aggregate\": \"DEFAULT\", " +
+                                                    "\"desc\": false" +
                                                 "}," +
                                                 "\"pageSize\":5," +
                                                 "\"pageNum\":1}";

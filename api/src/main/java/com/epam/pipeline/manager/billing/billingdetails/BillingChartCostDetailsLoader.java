@@ -32,16 +32,16 @@ public final class BillingChartCostDetailsLoader {
 
     public static void buildQuery(final BillingCostDetailsRequest request,
                                   final AggregationBuilder topLevelAggregation) {
-        if (StorageBillingCostDetailsHelper.isStorageBillingDetailsShouldBeLoaded(request)) {
-            StorageBillingCostDetailsHelper.buildQuery(topLevelAggregation);
+        if (StorageBillingCostDetailsLoader.isStorageBillingDetailsShouldBeLoaded(request)) {
+            StorageBillingCostDetailsLoader.buildQuery(request, topLevelAggregation);
         }
     }
 
 
     public static BillingChartDetails parseResponse(final BillingCostDetailsRequest request,
                                                     final Aggregations aggregations) {
-        if (StorageBillingCostDetailsHelper.isStorageBillingDetailsShouldBeLoaded(request)) {
-            return StorageBillingCostDetailsHelper.parseResponse(aggregations);
+        if (StorageBillingCostDetailsLoader.isStorageBillingDetailsShouldBeLoaded(request)) {
+            return StorageBillingCostDetailsLoader.parseResponse(request, aggregations);
         }
         return null;
     }

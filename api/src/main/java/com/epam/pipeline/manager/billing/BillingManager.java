@@ -30,7 +30,7 @@ import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.billing.billingdetails.BillingChartCostDetailsLoader;
-import com.epam.pipeline.manager.billing.billingdetails.StorageBillingCostDetailsHelper;
+import com.epam.pipeline.manager.billing.billingdetails.StorageBillingCostDetailsLoader;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.billing.order.BillingOrderApplier;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -383,7 +383,7 @@ public class BillingManager {
                     billingHelper.aggregateStorageUsageTotalSumBucket().getName(),
                     billingHelper.aggregateLastByDateDoc().getName()
                 ),
-                StorageBillingCostDetailsHelper.STORAGE_COST_DETAILS_AGGREGATION_MASKS.stream()
+                StorageBillingCostDetailsLoader.STORAGE_COST_DETAILS_AGGREGATION_MASKS.stream()
             ).map(aggName -> String.join(BillingUtils.ES_DOC_FIELDS_SEPARATOR, groupingBuckets,
                 BillingUtils.ES_WILDCARD + aggName)).collect(Collectors.toList());
         responseFilters.add(groupingBuckets + BillingUtils.ES_DOC_FIELDS_SEPARATOR + BillingUtils.ES_WILDCARD +
