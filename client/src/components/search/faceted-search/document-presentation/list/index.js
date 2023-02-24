@@ -73,7 +73,7 @@ export default function DocumentListPresentation ({className, document, extraCol
       extra={extra}
     >
       {
-        extraColumns && extraColumns.length && (extraColumns || [])
+        extraColumns && extraColumns.length > 0 && (extraColumns || [])
           .map(column => (
             <KeyValue
               key={column.key}
