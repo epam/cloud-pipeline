@@ -45,7 +45,6 @@ import DataStorageDelete from '../../../../models/dataStorage/DataStorageDelete'
 import DataStorageItemUpdate from '../../../../models/dataStorage/DataStorageItemUpdate';
 import UpdateContent from '../../../../models/dataStorage/DataStorageItemUpdateContent';
 import DataStorageItemDelete from '../../../../models/dataStorage/DataStorageItemDelete';
-import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateDownloadUrl';
 import GenerateDownloadUrlsRequest from '../../../../models/dataStorage/GenerateDownloadUrls';
 import GenerateFolderDownloadUrl from '../../../../models/dataStorage/GenerateFolderDownloadUrl';
 import DataStorageConvert from '../../../../models/dataStorage/DataStorageConvert';
@@ -99,6 +98,7 @@ import DataStorageListing from '../../../../models/dataStorage/data-storage-list
 import LabelsRenderer from './components/labels-renderer';
 import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
+import DownloadFileButton from './components/download-file-button';
 import styles from '../Browser.css';
 
 const STORAGE_CLASSES = {
@@ -712,28 +712,6 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  downloadSingleFile = async (event, item) => {
-    event.stopPropagation();
-    event.preventDefault();
-    const hide = message.loading(`Fetching ${item.name} url...`, 0);
-    const request = new GenerateDownloadUrlRequest(this.props.storageId, item.path, item.version);
-    await request.fetch();
-    if (request.error) {
-      hide();
-      message.error(request.error);
-    } else {
-      hide();
-      const a = document.createElement('a');
-      a.href = request.value.url;
-      a.download = item.name;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-    return false;
-  };
-
   toggleGenerateDownloadUrlsModalFn = () => {
     let downloadUrlModalVisible = !this.state.downloadUrlModalVisible;
     if (downloadUrlModalVisible && this.state.selectedItems) {
@@ -1146,19 +1124,12 @@ export default class DataStorage extends React.Component {
         />
       ));
       actions.push(
-        <a
-          key="download"
-          id={`download ${item.name}`}
-          className="cp-button"
-          href={
-            GenerateDownloadUrlRequest.getRedirectUrl(this.props.storageId, item.path, item.version)
-          }
-          target="_blank"
-          download={item.name}
-          onClick={(e) => this.downloadSingleFile(e, item)}
-        >
-          <Icon type="download" />
-        </a>
+        <DownloadFileButton
+          key={`download-${item.path}`}
+          storageId={this.props.storageId}
+          path={item.path}
+          version={item.version}
+        />
       );
     }
     if (
