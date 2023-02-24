@@ -60,6 +60,10 @@ import {
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import evaluateFullDuration from '../../../utils/evaluateFullDuration';
+import
+evaluatePausedDurations,
+{displayedFullPausedDuration} from '../../../utils/evaluatePausedDurations';
+import evaluateResumeDuration from '../../../utils/evaluateResumeDuration';
 import displayDate from '../../../utils/displayDate';
 import displayDuration from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
@@ -1658,6 +1662,72 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
+      let pausedTime;
+      if (this.props.run.value.runStatuses) {
+        const pausedDurations = evaluatePausedDurations(this.props.run.value);
+        if (pausedDurations && pausedDurations.length) {
+          const fullPausedDuration = pausedDurations.reduce((acc, curr) => {
+            acc += curr.duration;
+            return acc;
+          }, 0);
+          const renderPausedDuration = (durations) => {
+            return (
+              <table className={styles.pausedDurationTable}>
+                <thead>
+                  <tr>
+                    <th>Start date</th>
+                    <th>End date</th>
+                    <th>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {durations.map(duration => {
+                    const start = duration.start.timestamp;
+                    const end = duration.end.timestamp;
+                    return (
+                      <tr key={duration.start.timestamp}>
+                        <td>{displayDate(start)}</td>
+                        <td>{displayDate(end)}</td>
+                        <td>{displayDuration(start, end)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            );
+          };
+          pausedTime = (
+            <tr>
+              <th>Paused time: </th>
+              <td>
+                <Popover
+                  placement="right"
+                  content={renderPausedDuration(pausedDurations)}
+                >
+                  {displayedFullPausedDuration(fullPausedDuration)}
+                </Popover>
+              </td>
+            </tr>
+          );
+        }
+      }
+
+      let lastResumeTime;
+      if (this.props.run.value.runStatuses) {
+        if (/^RUNNING$/i.test(this.props.run.value.status)) {
+          const resumeDuration = evaluateResumeDuration(this.props.run.value);
+          if (resumeDuration) {
+            lastResumeTime = (
+              <tr>
+                <th>Running since last resume: </th>
+                <td>
+                  {displayDuration(resumeDuration.start, resumeDuration.end)}
+                </td>
+              </tr>
+            );
+          }
+        }
+      }
 
       Details =
         <div>
@@ -1695,6 +1765,8 @@ class Logs extends localization.LocalizedReactComponent {
               </tr>
               {startedTime}
               {finishTime}
+              {pausedTime}
+              {lastResumeTime}
               {price}
               {this.renderNestedRuns()}
               {this.renderRunSchedule(instance, this.props.run.value)}
