@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import OrderedDict
+import codecs
+import glob
+import json
 import os
 from .utils import HcsParsingUtils, log_run_info, get_list_run_param
 from .processors import HcsRoot
@@ -26,7 +30,9 @@ def get_processing_roots(should_force_processing, measurement_index_file):
         log_run_info('Following paths are specified for processing: {}'.format(lookup_paths))
         log_run_info('Lookup for unprocessed files')
         result = HcsProcessingDirsGenerator(
-            lookup_paths, measurement_index_file, should_force_processing).generate_paths()
+            lookup_paths, measurement_index_file, should_force_processing,
+            skip=get_list_run_param('HCS_SKIP_FILES'),
+            objmeta_file=os.getenv('HCS_OBJECT_META_FILE', None)).generate_paths()
     else:
         result = []
         image_names = get_list_run_param('HCS_TARGET_IMG_NAMES')
@@ -41,10 +47,12 @@ def get_processing_roots(should_force_processing, measurement_index_file):
 
 class HcsProcessingDirsGenerator:
 
-    def __init__(self, lookup_paths, measurement_index_file_path, force_processing=False):
+    def __init__(self, lookup_paths, measurement_index_file_path, force_processing=False, skip=[], objmeta_file=None):
         self.lookup_paths = lookup_paths
         self.measurement_index_file_path = measurement_index_file_path
         self.force_processing = force_processing
+        self.skip = skip
+        self.objmeta_file = objmeta_file
 
     @staticmethod
     def is_folder_content_modified_after(dir_path, modification_date):
@@ -93,19 +101,101 @@ class HcsProcessingDirsGenerator:
         stat_file_modification_date = HcsParsingUtils.get_file_last_modification_time(stat_file)
         return self.is_folder_content_modified_after(hcs_folder_root_path, stat_file_modification_date)
 
+    def get_obj_metadata(self, path):
+        if not self.objmeta_file:
+            return None
+        if not os.path.exists(path):
+            log_run_info('Specified object metadata file {} does not exist.'.format(path))
+            return None
+        metadata, _, _, _ = self.read_object_meta(path)
+        return metadata
+
+    def validate_upload_status(self, path, metadata):
+        if not metadata:
+            return None
+        expected_image_number = self.read_expected_image_number(metadata, os.path.basename(path))
+        uploaded_image_number = self.count_uploaded_images(path)
+        if expected_image_number != uploaded_image_number:
+            log_run_info('Expected {} images and found {} uploaded images for {}.'
+                         .format(str(expected_image_number), str(uploaded_image_number), path))
+        if expected_image_number and expected_image_number > uploaded_image_number:
+            log_run_info('Path {} is missing some of the image files. '
+                         'Processing will be skipped and upload will be restarted.'.format(path))
+            return os.path.basename(path)
+        return None
+
+    def read_expected_image_number(self, metadata, id):
+        for item in metadata:
+            if item.get('OBJECTTYPE', '') == 'MEASUREMENT' and item.get('GUID', '') == id:
+                return int(item.get('__NROFIMAGEFILES', 0))
+        return 0
+
+    def read_object_meta(self, path):
+        version_line = ''
+        timestamp_line = ''
+        checksum_line = ''
+        metadata = None
+        with codecs.open(path, 'r', encoding="utf-8") as file:
+            content = ''
+            for line in file.readlines():
+                if line.startswith('Version'):
+                    version_line = line
+                    continue
+                if line.startswith('Timestamp'):
+                    timestamp_line = line
+                    continue
+                if line.startswith('Checksum'):
+                    checksum_line = line
+                    continue
+                else:
+                    content = content + line
+            metadata = json.loads(content, object_pairs_hook=OrderedDict)
+        return metadata, version_line, timestamp_line, checksum_line
+
+    def count_uploaded_images(self, path):
+        return len(glob.glob(os.path.join(path, HcsParsingUtils.get_hcs_image_folder(), '**/*.tiff')))
+
+    def reset_upload(self, root, ids):
+        log_run_info('Removing upload status for ids {}'.format(','.join(ids)))
+        objmeta_file_path = os.path.join(root, self.objmeta_file)
+        filtered = []
+        metadata, version, timestamp, checksum = self.read_object_meta(objmeta_file_path)
+        for item in metadata:
+            if item.get('OBJECTTYPE', '') == 'MEASUREMENT' and item.get('GUID', '') in ids:
+                pass
+            else:
+                filtered.append(item)
+        result = version + json.dumps(filtered, indent=2, separators=(',', ': '), ensure_ascii=False) + '\n' + timestamp + checksum
+        with codecs.open(objmeta_file_path, 'w', encoding="utf-8") as file:
+            file.write(result)
+
     def build_roots_with_preview(self, hcs_roots):
         result = {}
         names = {}
+        ids_to_clean = []
+        lookup_path = ''
         for root in hcs_roots:
+            if not lookup_path:
+                lookup_path = os.path.dirname(root)
             hcs_img_name = HcsParsingUtils.build_preview_file_name(root)
             if hcs_img_name not in names:
                 names[hcs_img_name] = [root]
             else:
                 names[hcs_img_name].append(root)
+        metadata = self.get_obj_metadata(os.path.join(lookup_path, self.objmeta_file))
         for name, roots in names.items():
             with_id = len(roots) > 1
             if with_id:
                 log_run_info('Found duplicate name {} for roots {}'.format(name, str(roots)))
             for root in roots:
-                result[root] = HcsParsingUtils.build_preview_file_path(root, with_id=with_id)
+                if os.path.basename(root) in self.skip:
+                    log_run_info('Skipping file {}'.format(root))
+                    continue
+                invalid_id = self.validate_upload_status(root, metadata)
+                if invalid_id:
+                    ids_to_clean.append(invalid_id)
+                else:
+                    result[root] = HcsParsingUtils.build_preview_file_path(root, with_id=with_id)
+        if ids_to_clean:
+            self.reset_upload(lookup_path, ids_to_clean)
         return result

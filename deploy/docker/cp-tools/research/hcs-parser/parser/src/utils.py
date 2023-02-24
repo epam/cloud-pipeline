@@ -180,3 +180,7 @@ class HcsParsingUtils:
             return []
         else:
             return element.findall(name)
+
+    @staticmethod
+    def get_hcs_image_folder():
+        return HCS_IMAGE_DIR_NAME
