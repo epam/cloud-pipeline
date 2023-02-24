@@ -55,10 +55,8 @@ import {
   checkCommitAllowedForTool
 } from '../actions';
 import connect from '../../../utils/connect';
-import evaluateRunDuration from '../../../utils/evaluateRunDuration';
-import evaluateFullDuration from '../../../utils/evaluateFullDuration';
 import displayDate from '../../../utils/displayDate';
-import displayDuration from '../../../utils/displayDuration';
+import displayDuration, {displayDurationInSeconds} from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 import parseQueryParameters from '../../../utils/queryParameters';
@@ -92,6 +90,9 @@ import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
 import confirmPause from '../actions/pause-confirmation';
+import getRunDurationInfo from '../../../utils/run-duration';
+import RunTimelineInfo from './misc/run-timeline-info';
+import evaluateRunPrice from '../../../utils/evaluate-run-price';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1586,43 +1587,67 @@ class Logs extends localization.LocalizedReactComponent {
           <span>{pipelineLink && ' -'} Logs</span>
         </h1>
       );
+      const {
+        scheduledDate,
+        runningDate,
+        schedulingDuration,
+        totalDuration,
+        totalNonPausedDuration
+      } = getRunDurationInfo(
+        this.props.run.value,
+        true,
+        this.props.runTasks.loaded ? this.props.runTasks.value : []
+      );
       let startedTime, finishTime;
+      const scheduledTime = (
+        <tr>
+          <th>Scheduled: </th><td>{displayDate(scheduledDate)}</td>
+        </tr>
+      );
 
-      if (this.props.runTasks.value.length) {
+      if (runningDate && this.props.runTasks.value.length) {
         startedTime = (
           <tr>
             <th>Started: </th>
             <td>
-              {displayDate(this.props.runTasks.value[0].started)} (
-              {displayDuration(startDate, this.props.runTasks.value[0].started)}
+              {displayDate(runningDate)} (
+              {displayDurationInSeconds(schedulingDuration)}
               )
             </td>
-          </tr>);
-        if (status === 'RUNNING') {
-          finishTime = <tr><th>Running for: </th><td>{this.runningTime}</td></tr>;
-        } else if (status === 'SUCCESS' || status === 'FAILURE') {
-          finishTime = (
-            <tr>
-              <th>Finished: </th>
-              <td>
-                {displayDate(endDate)} (
-                {displayDuration(this.props.runTasks.value[0].started, endDate)}
-                )
-              </td>
-            </tr>);
-        } else {
-          finishTime = (
-            <tr>
-              <th>Stopped at: </th>
-              <td>
-                {displayDate(endDate)} (
-                {displayDuration(this.props.runTasks.value[0].started, endDate)}
-                )
-              </td>
-            </tr>);
+          </tr>
+        );
+        let statusLabel = 'Running for';
+        switch ((status || '').toUpperCase()) {
+          case 'SUCCESS':
+          case 'FAILURE':
+            statusLabel = 'Finished';
+            break;
+          case 'STOPPED':
+            statusLabel = 'Stopped at';
+            break;
+          default:
+            statusLabel = 'Running for';
+            break;
         }
+        finishTime = (
+          <tr>
+            <th>{statusLabel}{`: `}</th>
+            <td>
+              <RunTimelineInfo
+                run={this.props.run.value}
+                runTasks={this.props.runTasks.value}
+                analyseSchedulingPhase
+              />
+            </td>
+          </tr>
+        );
       } else {
-        startedTime = <tr><th>Waiting for: </th><td>{this.timeFromStart}</td></tr>;
+        startedTime = (
+          <tr>
+            <th>Waiting for: </th>
+            <td>{displayDurationInSeconds(totalDuration)}</td>
+          </tr>
+        );
       }
 
       let price;
@@ -1645,11 +1670,13 @@ class Logs extends localization.LocalizedReactComponent {
             <td>
               <JobEstimatedPriceInfo>
                 {
-                  adjustPrice(
-                    evaluateRunDuration(runValue) * (runValue.computePricePerHour || 0) +
-                    evaluateFullDuration(runValue) * (runValue.diskPricePerHour || 0) +
-                    (runValue.workersPrice || 0)
-                  ).toFixed(2)
+                  adjustPrice(evaluateRunPrice(
+                    runValue,
+                    {
+                      analyseSchedulingPhase: true,
+                      runTasks: this.props.runTasks.loaded ? this.props.runTasks.value : []
+                    }
+                  ).total).toFixed(2)
                 }
                 $
               </JobEstimatedPriceInfo>
@@ -1689,9 +1716,7 @@ class Logs extends localization.LocalizedReactComponent {
                     </tr>
                   ) : undefined
               }
-              <tr>
-                <th>Scheduled: </th><td>{displayDate(startDate)}</td>
-              </tr>
+              {scheduledTime}
               {startedTime}
               {finishTime}
               {price}

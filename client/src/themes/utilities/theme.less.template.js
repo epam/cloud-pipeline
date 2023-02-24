@@ -1999,6 +1999,12 @@ export default `
   outline: 1px solid @panel-border-color;
   background-color: @element-selected-background-color !important;
 }
+@THEME .cp-run-timeline-table td,
+@THEME .cp-run-timeline-table th {
+  background-color: @panel-background-color;
+  color: @application-color;
+  border: 1px solid @panel-border-color;
+}
 
 @THEME .cp-billing-menu {
   width: fit-content;
