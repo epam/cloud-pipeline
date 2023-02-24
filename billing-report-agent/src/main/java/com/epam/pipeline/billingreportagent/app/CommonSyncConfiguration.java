@@ -74,6 +74,9 @@ public class CommonSyncConfiguration {
     @Value("${sync.storage.file.index.pattern}")
     private String fileIndexPattern;
 
+    @Value("${sync.storage.file.alias.index.pattern}")
+    private String fileAliasIndexPattern;
+
     @Value("${sync.storage.historical.billing.generation:false}")
     private boolean enableStorageHistoricalBillingGeneration;
 
@@ -139,6 +142,7 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.S3);
@@ -170,6 +174,7 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.FILE_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
                         fileShareMountsService,
                         MountType.NFS,
@@ -196,6 +201,7 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.GS);
@@ -231,6 +237,7 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.AZ);
@@ -262,6 +269,7 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.FILE_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
                         fileShareMountsService,
                         MountType.NFS,
@@ -295,6 +303,7 @@ public class CommonSyncConfiguration {
                                        new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                                                                             StorageType.FILE_STORAGE,
                                                                             pricingService,
+                                                                            fileAliasIndexPattern,
                                                                             fileIndexPattern,
                                                                             fileShareMountsService,
                                                                             MountType.SMB,
