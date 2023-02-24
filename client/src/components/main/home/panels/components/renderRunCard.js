@@ -18,7 +18,7 @@ import React from 'react';
 import StatusIcon from '../../../../special/run-status-icon';
 import {Icon, Popover, Row} from 'antd';
 import moment from 'moment-timezone';
-import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
+import evaluateRunPrice from '../../../../../utils/evaluate-run-price';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../../../special/job-estimated-price-info';
@@ -126,16 +126,10 @@ function renderCommitStatus (run) {
 }
 
 function renderEstimatedPrice (run) {
-  if (!run.pricePerHour) {
-    return null;
-  }
-  const diff = evaluateRunDuration(run) * run.pricePerHour;
-  // const price = (Math.ceil(diff * 100.0) / 100.0) * (run.nodeCount ? (run.nodeCount + 1) : 1);
-  const masterPrice = Math.ceil(diff * 100.0) / 100.0;
-  const price = masterPrice + (run.workersPrice || 0);
+  const price = evaluateRunPrice(run);
   return (
     <JobEstimatedPriceInfo>
-      , estimated price: <b>{price.toFixed(2)}$</b>
+      , estimated price: <b>{price.total.toFixed(2)}$</b>
     </JobEstimatedPriceInfo>
   );
 }

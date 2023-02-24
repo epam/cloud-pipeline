@@ -28,7 +28,7 @@ import StatusIcon, {Statuses} from '../../special/run-status-icon';
 import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import styles from './preview.css';
-import evaluateRunDuration from '../../../utils/evaluateRunDuration';
+import evaluateRunPrice from '../../../utils/evaluate-run-price';
 import displayDate from '../../../utils/displayDate';
 import moment from 'moment-timezone';
 import UserName from '../../special/UserName';
@@ -383,8 +383,7 @@ export default class PipelineRunPreview extends React.Component {
                   <JobEstimatedPriceInfo>
                     {
                       adjustPrice(
-                        evaluateRunDuration(this.props.runInfo.value) *
-                        this.props.runInfo.value.pricePerHour
+                        evaluateRunPrice(this.props.runInfo.value).total
                       )
                     }$
                   </JobEstimatedPriceInfo>
