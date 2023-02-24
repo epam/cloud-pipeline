@@ -437,12 +437,13 @@ class DataStorageListing {
 
   initializeDownloadableAttribute = () => {
     this.downloadEnabled = false;
-    if (this.storageId) {
+    if (this.storageId && this.storageRequest) {
       const metadata = new MetadataLoad(this.storageId, 'DATA_STORAGE');
       Promise.all([
         authenticatedUserInfo.fetchIfNeededOrWait(),
         preferences.fetchIfNeededOrWait(),
-        metadata.fetch()
+        metadata.fetch(),
+        this.storageRequest.fetchIfNeededOrWait()
       ])
         .then(() => {
           if (
@@ -453,6 +454,8 @@ class DataStorageListing {
           ) {
             const [currentStorageMetadata] = metadata.value || [];
             if (
+              !authenticatedUserInfo.value.admin &&
+              !this.isOwner &&
               currentStorageMetadata &&
               currentStorageMetadata.data &&
               currentStorageMetadata.data[preferences.storageDownloadAttribute]
