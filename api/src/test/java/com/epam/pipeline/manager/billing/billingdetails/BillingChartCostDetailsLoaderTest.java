@@ -37,8 +37,12 @@ public class BillingChartCostDetailsLoaderTest {
 
     public static final int ZERO = 0;
     public static final int NUMBER_OF_AGGS_FOR_STORAGE_GROUPING = 24;
+
+    // For each storage class 2 aggs for cost + 1 Terms agg for avg usage statistics by storage
     public static final int NUMBER_OF_SIMPLE_AGGS_FOR_NON_STORAGE_GROUPING =
-            3 * StorageBillingCostDetailsLoader.S3_STORAGE_CLASSES.size();
+            2 * StorageBillingCostDetailsLoader.S3_STORAGE_CLASSES.size() + 1;
+
+    // For each storage class 2 aggregations to get sum of avg stats by bucket
     public static final int NUMBER_OF_PIPELINE_AGGS_FOR_NON_STORAGE_GROUPING =
             2 * StorageBillingCostDetailsLoader.S3_STORAGE_CLASSES.size();
 

@@ -48,7 +48,7 @@ import java.util.Optional;
 
 public final class StorageBillingCostDetailsLoader {
 
-    public static final String STORAGES_COST_DETAILS = "%s_storages_cost_details";
+    public static final String STORAGES_SIZE_DETAILS = "storages_size_details";
     public static final String LATEST = "_latest";
 
     private StorageBillingCostDetailsLoader() {}
@@ -67,26 +67,33 @@ public final class StorageBillingCostDetailsLoader {
     );
 
     public static void buildQuery(BillingCostDetailsRequest request, final AggregationBuilder topAgg) {
-        for (String storageClass : S3_STORAGE_CLASSES) {
-            final String sc = storageClass.toLowerCase(Locale.ROOT);
-            topAgg.subAggregation(buildSumAggregation(SC_COST_TEMPLATE, sc));
-            topAgg.subAggregation(buildSumAggregation(SC_OV_COST_TEMPLATE, sc));
-            if (request.getGrouping() == BillingGrouping.STORAGE) {
+        if (request.getGrouping() == BillingGrouping.STORAGE) {
+            // Since we build topAgg as Term agg for storage (bucket is storage), we can just calculate
+            // cost as sum and size as avg + for current size we can grab last value
+            for (String storageClass : S3_STORAGE_CLASSES) {
+                final String sc = storageClass.toLowerCase(Locale.ROOT);
+                topAgg.subAggregation(buildSumAggregation(SC_COST_TEMPLATE, sc));
+                topAgg.subAggregation(buildSumAggregation(SC_OV_COST_TEMPLATE, sc));
                 topAgg.subAggregation(buildAvgAggregation(SC_USAGE_TEMPLATE, sc));
                 topAgg.subAggregation(buildAvgAggregation(SC_OV_USAGE_TEMPLATE, sc));
                 topAgg.subAggregation(buildLastByDateHitAggregation(SC_USAGE_TEMPLATE, sc));
                 topAgg.subAggregation(buildLastByDateHitAggregation(SC_OV_USAGE_TEMPLATE, sc));
-            } else {
-                final String scStoragesCostDetails = String.format(STORAGES_COST_DETAILS, sc);
-                final TermsAggregationBuilder avgUsageOfStorageAgg = AggregationBuilders.terms(scStoragesCostDetails)
-                        .field(BillingUtils.STORAGE_ID_FIELD).size(Integer.MAX_VALUE);
+            }
+        } else {
+            // Here we work with grouping such as STORAGE_TYPE, or even with interval query with filters
+            // So we need to calculate size for storages as avg first and then sum it
+            final TermsAggregationBuilder avgUsageOfStorageAgg = AggregationBuilders.terms(STORAGES_SIZE_DETAILS)
+                    .field(BillingUtils.STORAGE_ID_FIELD).size(Integer.MAX_VALUE);
+            for (String storageClass : S3_STORAGE_CLASSES) {
+                final String sc = storageClass.toLowerCase(Locale.ROOT);
+                topAgg.subAggregation(buildSumAggregation(SC_COST_TEMPLATE, sc));
+                topAgg.subAggregation(buildSumAggregation(SC_OV_COST_TEMPLATE, sc));
                 avgUsageOfStorageAgg.subAggregation(buildAvgAggregation(SC_USAGE_TEMPLATE, sc));
                 avgUsageOfStorageAgg.subAggregation(buildAvgAggregation(SC_OV_USAGE_TEMPLATE, sc));
-                topAgg.subAggregation(avgUsageOfStorageAgg);
-
-                topAgg.subAggregation(buildPipelineSumAggregation(scStoragesCostDetails, SC_USAGE_TEMPLATE, sc));
-                topAgg.subAggregation(buildPipelineSumAggregation(scStoragesCostDetails, SC_OV_USAGE_TEMPLATE, sc));
+                topAgg.subAggregation(buildPipelineSumAggregation(STORAGES_SIZE_DETAILS, SC_USAGE_TEMPLATE, sc));
+                topAgg.subAggregation(buildPipelineSumAggregation(STORAGES_SIZE_DETAILS, SC_OV_USAGE_TEMPLATE, sc));
             }
+            topAgg.subAggregation(avgUsageOfStorageAgg);
         }
     }
 
