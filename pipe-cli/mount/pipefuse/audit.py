@@ -17,10 +17,9 @@ from collections import namedtuple
 import logging
 import time
 from abc import abstractmethod, ABCMeta
-from threading import Thread, RLock
+from threading import Thread
 
 from pipefuse.fsclient import FileSystemClientDecorator
-from pipefuse.lock import synchronized
 from pipefuse.storage import StorageLowLevelFileSystemClient
 
 class DataAccessType:
@@ -151,9 +150,9 @@ class AuditFileSystemClient(FileSystemClientDecorator, StorageLowLevelFileSystem
         self._inner.delete(path)
 
     def mv(self, old_path, path):
-        self._container.put_all(DataAccessEntry(old_path, DataAccessType.READ),
-                                DataAccessEntry(old_path, DataAccessType.DELETE),
-                                DataAccessEntry(path, DataAccessType.WRITE))
+        self._container.put_all([DataAccessEntry(old_path, DataAccessType.READ),
+                                 DataAccessEntry(old_path, DataAccessType.DELETE),
+                                 DataAccessEntry(path, DataAccessType.WRITE)])
         self._inner.mv(old_path, path)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
