@@ -58,14 +58,8 @@ import {
   checkCommitAllowedForTool
 } from '../actions';
 import connect from '../../../utils/connect';
-import evaluateRunDuration from '../../../utils/evaluateRunDuration';
-import evaluateFullDuration from '../../../utils/evaluateFullDuration';
-import
-evaluatePausedDurations,
-{displayedFullPausedDuration} from '../../../utils/evaluatePausedDurations';
-import evaluateResumeDuration from '../../../utils/evaluateResumeDuration';
 import displayDate from '../../../utils/displayDate';
-import displayDuration from '../../../utils/displayDuration';
+import displayDuration, {displayDurationInSeconds} from '../../../utils/displayDuration';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 import parseQueryParameters from '../../../utils/queryParameters';
@@ -100,6 +94,9 @@ import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
 import confirmPause from '../actions/pause-confirmation';
+import getRunDurationInfo from '../../../utils/run-duration';
+import RunTimelineInfo from './misc/run-timeline-info';
+import evaluateRunPrice from '../../../utils/evaluate-run-price';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1591,43 +1588,67 @@ class Logs extends localization.LocalizedReactComponent {
           <span>{pipelineLink && ' -'} Logs</span>
         </h1>
       );
+      const {
+        scheduledDate,
+        runningDate,
+        schedulingDuration,
+        totalDuration,
+        totalNonPausedDuration
+      } = getRunDurationInfo(
+        this.props.run.value,
+        true,
+        this.props.runTasks.loaded ? this.props.runTasks.value : []
+      );
       let startedTime, finishTime;
+      const scheduledTime = (
+        <tr>
+          <th>Scheduled: </th><td>{displayDate(scheduledDate)}</td>
+        </tr>
+      );
 
-      if (this.props.runTasks.value.length) {
+      if (runningDate && this.props.runTasks.value.length) {
         startedTime = (
           <tr>
             <th>Started: </th>
             <td>
-              {displayDate(this.props.runTasks.value[0].started)} (
-              {displayDuration(startDate, this.props.runTasks.value[0].started)}
+              {displayDate(runningDate)} (
+              {displayDurationInSeconds(schedulingDuration)}
               )
             </td>
-          </tr>);
-        if (status === 'RUNNING') {
-          finishTime = <tr><th>Running for: </th><td>{this.runningTime}</td></tr>;
-        } else if (status === 'SUCCESS' || status === 'FAILURE') {
-          finishTime = (
-            <tr>
-              <th>Finished: </th>
-              <td>
-                {displayDate(endDate)} (
-                {displayDuration(this.props.runTasks.value[0].started, endDate)}
-                )
-              </td>
-            </tr>);
-        } else {
-          finishTime = (
-            <tr>
-              <th>Stopped at: </th>
-              <td>
-                {displayDate(endDate)} (
-                {displayDuration(this.props.runTasks.value[0].started, endDate)}
-                )
-              </td>
-            </tr>);
+          </tr>
+        );
+        let statusLabel = 'Running for';
+        switch ((status || '').toUpperCase()) {
+          case 'SUCCESS':
+          case 'FAILURE':
+            statusLabel = 'Finished';
+            break;
+          case 'STOPPED':
+            statusLabel = 'Stopped at';
+            break;
+          default:
+            statusLabel = 'Running for';
+            break;
         }
+        finishTime = (
+          <tr>
+            <th>{statusLabel}{`: `}</th>
+            <td>
+              <RunTimelineInfo
+                run={this.props.run.value}
+                runTasks={this.props.runTasks.value}
+                analyseSchedulingPhase
+              />
+            </td>
+          </tr>
+        );
       } else {
-        startedTime = <tr><th>Waiting for: </th><td>{this.timeFromStart}</td></tr>;
+        startedTime = (
+          <tr>
+            <th>Waiting for: </th>
+            <td>{displayDurationInSeconds(totalDuration)}</td>
+          </tr>
+        );
       }
 
       let price;
@@ -1650,83 +1671,19 @@ class Logs extends localization.LocalizedReactComponent {
             <td>
               <JobEstimatedPriceInfo>
                 {
-                  adjustPrice(
-                    evaluateRunDuration(runValue) * (runValue.computePricePerHour || 0) +
-                    evaluateFullDuration(runValue) * (runValue.diskPricePerHour || 0) +
-                    (runValue.workersPrice || 0)
-                  ).toFixed(2)
+                  adjustPrice(evaluateRunPrice(
+                    runValue,
+                    {
+                      analyseSchedulingPhase: true,
+                      runTasks: this.props.runTasks.loaded ? this.props.runTasks.value : []
+                    }
+                  ).total).toFixed(2)
                 }
                 $
               </JobEstimatedPriceInfo>
             </td>
           </tr>
         );
-      }
-      let pausedTime;
-      if (this.props.run.value.runStatuses) {
-        const pausedDurations = evaluatePausedDurations(this.props.run.value);
-        if (pausedDurations && pausedDurations.length) {
-          const fullPausedDuration = pausedDurations.reduce((acc, curr) => {
-            acc += curr.duration;
-            return acc;
-          }, 0);
-          const renderPausedDuration = (durations) => {
-            return (
-              <table className={styles.pausedDurationTable}>
-                <thead>
-                  <tr>
-                    <th>Start date</th>
-                    <th>End date</th>
-                    <th>Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {durations.map(duration => {
-                    const start = duration.start.timestamp;
-                    const end = duration.end.timestamp;
-                    return (
-                      <tr key={duration.start.timestamp}>
-                        <td>{displayDate(start)}</td>
-                        <td>{displayDate(end)}</td>
-                        <td>{displayDuration(start, end)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            );
-          };
-          pausedTime = (
-            <tr>
-              <th>Paused time: </th>
-              <td>
-                <Popover
-                  placement="right"
-                  content={renderPausedDuration(pausedDurations)}
-                >
-                  {displayedFullPausedDuration(fullPausedDuration)}
-                </Popover>
-              </td>
-            </tr>
-          );
-        }
-      }
-
-      let lastResumeTime;
-      if (this.props.run.value.runStatuses) {
-        if (/^RUNNING$/i.test(this.props.run.value.status)) {
-          const resumeDuration = evaluateResumeDuration(this.props.run.value);
-          if (resumeDuration) {
-            lastResumeTime = (
-              <tr>
-                <th>Running since last resume: </th>
-                <td>
-                  {displayDuration(resumeDuration.start, resumeDuration.end)}
-                </td>
-              </tr>
-            );
-          }
-        }
       }
 
       Details =
@@ -1760,13 +1717,9 @@ class Logs extends localization.LocalizedReactComponent {
                     </tr>
                   ) : undefined
               }
-              <tr>
-                <th>Scheduled: </th><td>{displayDate(startDate)}</td>
-              </tr>
+              {scheduledTime}
               {startedTime}
               {finishTime}
-              {pausedTime}
-              {lastResumeTime}
               {price}
               {this.renderNestedRuns()}
               {this.renderRunSchedule(instance, this.props.run.value)}

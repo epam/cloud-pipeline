@@ -263,19 +263,3 @@
   right: 25px;
   z-index: 2;
 }
-
-.paused-duration-table,
-.paused-duration-table th,
-.paused-duration-table td {
-  border: 1px solid #ddd;
-  border-collapse: collapse;
-  text-align: center;
-}
-
-.paused-duration-table td {
-  width: 130px;
-}
-
-.paused-duration-table td:last-child {
-  width: 80px;
-}

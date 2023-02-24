@@ -43,7 +43,7 @@ import DayPicker from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
 import moment from 'moment-timezone';
 import displayDate from '../../utils/displayDate';
-import evaluateRunDuration from '../../utils/evaluateRunDuration';
+import evaluateRunPrice from '../../utils/evaluate-run-price';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
@@ -884,21 +884,17 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (!item.pricePerHour) {
       return null;
     }
-    const diff = evaluateRunDuration(item) * item.pricePerHour;
-    const price = Math.ceil(diff * 100.0) / 100.0;
+    const info = evaluateRunPrice(item);
     if (item.masterRun) {
-      const {
-        workersPrice = 0
-      } = item;
       return (
         <JobEstimatedPriceInfo>
-          Cost: {(price + workersPrice).toFixed(2)}$ ({price.toFixed(2)}$)
+          Cost: {info.total.toFixed(2)}$ ({info.master.toFixed(2)}$)
         </JobEstimatedPriceInfo>
       );
     }
     return (
       <JobEstimatedPriceInfo>
-        Cost: {price.toFixed(2)}$
+        Cost: {info.total.toFixed(2)}$
       </JobEstimatedPriceInfo>
     );
   };

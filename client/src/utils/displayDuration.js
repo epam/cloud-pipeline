@@ -15,6 +15,33 @@
  */
 import moment from 'moment-timezone';
 
+/**
+ * Returns presentation of a duration specified in seconds
+ * @param {number} duration
+ * @param {boolean} [details=false]
+ * @returns {string}
+ */
+export function displayDurationInSeconds (duration = 0, details = false) {
+  const MINUTE = 60;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+  const days = Math.floor(duration / DAY);
+  const hours = Math.floor((duration - days * DAY) / HOUR);
+  const minutes = Math.floor((duration - days * DAY - hours * HOUR) / MINUTE);
+  const seconds = Math.floor(duration - days * DAY - hours * HOUR - minutes * MINUTE);
+  const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+  const parts = [
+    days > 0 ? plural(days, 'day') : undefined,
+    hours > 0 ? plural(hours, 'hour') : undefined,
+    minutes > 0 ? plural(minutes, 'minute') : undefined,
+    plural(seconds, 'second')
+  ].filter(Boolean);
+  if (details) {
+    return parts.join(', ');
+  }
+  return parts[0];
+}
+
 export default (start, end = undefined) => {
   if (!start && !end) {
     return null;
@@ -22,22 +49,5 @@ export default (start, end = undefined) => {
   const diff = moment
     .utc(end ? moment.utc(end) : moment.utc())
     .diff(moment.utc(start), 'seconds', false);
-  const MINUTE = 60;
-  const HOUR = 60 * MINUTE;
-  const DAY = 24 * HOUR;
-  const days = Math.floor(diff / DAY);
-  const hours = Math.floor((diff - days * DAY) / HOUR);
-  const minutes = Math.floor((diff - days * DAY - hours * HOUR) / MINUTE);
-  const seconds = diff - days * DAY - hours * HOUR - minutes * MINUTE;
-  const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
-  if (days > 0) {
-    return plural(days, 'day');
-  }
-  if (hours > 0) {
-    return plural(hours, 'hour');
-  }
-  if (minutes >= 1) {
-    return `${minutes} min`;
-  }
-  return `${seconds} sec`;
+  return displayDurationInSeconds(diff);
 };
