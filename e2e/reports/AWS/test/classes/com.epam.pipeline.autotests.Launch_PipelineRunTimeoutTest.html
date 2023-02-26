@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">26m43.10s</div>
+<div class="counter">4m9.94s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,24 +73,26 @@
 <a name="pipelineShouldStartWithTimeout - EPMCMBIBPC-396"></a>
 <h3 class="failures">pipelineShouldStartWithTimeout - EPMCMBIBPC-396</h3>
 <span class="code">
-<pre>Element should be cp-runs-table-icon-red {By.className: log__run-title}
-Element: '&lt;h1 class=&quot;log__run-title&quot;&gt;Run
-#38226
-- Launch-PipelineRunTimeoutTest1536059323 (draft-2416c8a5) - Logs&lt;/h1&gt;'
-Actual value: WORKING
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1676816965058.165.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1676816965058.165.html
-Timeout: 1500 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+<pre>Element not found {By.id: launch-pipeline-advanced-panel}
+Expected: be expanded tab
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1677398599744.50.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1677398599744.50.html
+Timeout: 150 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;launch-pipeline-advanced-panel&quot;}
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.waitUntil(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.waitFor(LogAO.java:78)
-	at com.epam.pipeline.autotests.Launch_PipelineRunTimeoutTest.pipelineShouldStartWithTimeout(Launch_PipelineRunTimeoutTest.java:58)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.expandTab(AccessObject.java:281)
+	at com.epam.pipeline.autotests.ao.PipelineRunFormAO.&lt;init&gt;(PipelineRunFormAO.java:98)
+	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.runPipeline(AbstractPipelineTabAO.java:123)
+	at com.epam.pipeline.autotests.Launch_PipelineRunTimeoutTest.pipelineShouldStartWithTimeout(Launch_PipelineRunTimeoutTest.java:55)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -104,6 +106,37 @@ Timeout: 1500 s.
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;launch-pipeline-advanced-panel&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'd89ad3b423f1', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 432af5acf88af35e771678e431ae17eb
+*** Element info: {Using=id, value=launch-pipeline-advanced-panel}
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
+	at org.openqa.selenium.remote.RemoteWebElement.findElementById(RemoteWebElement.java:215)
+	at org.openqa.selenium.By$ById.findElement(By.java:218)
+	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 24 more
 </pre>
 </span>
 </div>
@@ -120,12 +153,12 @@ Timeout: 1500 s.
 </thead>
 <tr>
 <td class="failures">pipelineShouldStartWithTimeout - EPMCMBIBPC-396</td>
-<td>25m51.56s</td>
+<td>3m19.76s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">preparePipelineAndValidate - EPMCMBIBPC-376</td>
-<td>51.532s</td>
+<td>50.184s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -138,7 +171,7 @@ Timeout: 1500 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 20, 2023 7:35:52 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 26, 2023 6:26:54 PM</p>
 </div>
 </div>
 </body>

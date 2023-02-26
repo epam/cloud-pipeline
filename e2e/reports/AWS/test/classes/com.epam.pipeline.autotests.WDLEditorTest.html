@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">4m55.58s</div>
+<div class="counter">2m16.30s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">85%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,57 +61,10 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
-</li>
-<li>
-<a href="#tab1">Tests</a>
+<a href="#tab0">Tests</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="checkDiagramChange - EPMCMBIBPC-621"></a>
-<h3 class="failures">checkDiagramChange - EPMCMBIBPC-621</h3>
-<span class="code">
-<pre>Element should attribute aria-selected=true {.pipeline-details__tabs-menu/li.findBy(text 'GRAPH')}
-Element: '&lt;li aria-selected=&quot;false&quot; class=&quot;ant-menu-item-active ant-menu-item&quot; role=&quot;menuitem&quot; value=&quot;0&quot;&gt;GRAPH&lt;/li&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1676773236626.44.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1676773236626.44.html
-Timeout: 150 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:228)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.tabShouldBeActive(AbstractPipelineTabAO.java:114)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.changeTabTo(AbstractPipelineTabAO.java:108)
-	at com.epam.pipeline.autotests.ao.PipelineGraphTabAO.open(PipelineGraphTabAO.java:67)
-	at com.epam.pipeline.autotests.ao.PipelineGraphTabAO.open(PipelineGraphTabAO.java:41)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.onTab(AbstractPipelineTabAO.java:76)
-	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.graphTab(AbstractPipelineTabAO.java:96)
-	at com.epam.pipeline.autotests.WDLEditorTest.checkDiagramChange(WDLEditorTest.java:93)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -122,38 +75,38 @@ Timeout: 150 s.
 </tr>
 </thead>
 <tr>
-<td class="failures">checkDiagramChange - EPMCMBIBPC-621</td>
-<td>2m54.17s</td>
-<td class="failures">failed</td>
+<td class="success">checkDiagramChange - EPMCMBIBPC-621</td>
+<td>23.576s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkDiagramChangeForScatter - EPMCMBIBPC-638</td>
-<td>29.359s</td>
+<td>27.883s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkDiagramChangeForScatterWithTask - EPMCMBIBPC-640</td>
-<td>29.394s</td>
+<td>27.609s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkJsonAfterChangingParameters - EPMCMBIBPC-650</td>
-<td>29.977s</td>
+<td>26.293s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkRevertButton - EPMCMBIBPC-639</td>
-<td>13.177s</td>
+<td>11.658s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateAddTaskInScatter - EPMCMBIBPC-637</td>
-<td>9.763s</td>
+<td>9.928s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateTaskEdit - EPMCMBIBPC-641</td>
-<td>9.740s</td>
+<td>9.357s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -166,7 +119,7 @@ Timeout: 150 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 20, 2023 7:35:52 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 26, 2023 6:26:54 PM</p>
 </div>
 </div>
 </body>
