@@ -12,27 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import click
+import datetime
 import logging
 import multiprocessing
 import os
 import platform
-from collections import OrderedDict
-
-import click
-import datetime
 import prettytable
 import sys
-
 from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
 
 from src.api.data_storage import DataStorage
-from src.api.entity import Entity
 from src.api.folder import Folder
 from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
+from src.utilities.audit import auditing
 from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
@@ -118,17 +115,19 @@ class DataStorageOperations(object):
 
         command = 'mv' if clean else 'cp'
         permission_to_check = os.R_OK if command == 'cp' else os.W_OK
-        manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
-        items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
-        items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                  include, exclude, force, quiet, skip_existing, verify_destination,
-                                  on_unsafe_chars, on_unsafe_chars_replacement)
-        if threads:
-            cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                             clean, quiet, tags, io_threads, on_failures)
-        else:
-            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                clean, quiet, tags, io_threads, on_failures)
+
+        with auditing() as audit:
+            manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, audit, command)
+            items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
+            items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                      include, exclude, force, quiet, skip_existing, verify_destination,
+                                      on_unsafe_chars, on_unsafe_chars_replacement)
+            if threads:
+                cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
+                                                 clean, quiet, tags, io_threads, on_failures)
+            else:
+                cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
+                                    clean, quiet, tags, io_threads, on_failures)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -203,8 +202,6 @@ class DataStorageOperations(object):
 
     @classmethod
     def storage_remove_item(cls, path, yes, version, hard_delete, recursive, exclude, include):
-        """ Removes file or folder
-        """
         if version and hard_delete:
             click.echo('"version" argument should\'t be combined with "hard-delete" option', err=True)
             sys.exit(1)
@@ -226,9 +223,12 @@ class DataStorageOperations(object):
                           abort=True)
         click.echo('Removing {} ...'.format(path), nl=False)
 
-        manager = source_wrapper.get_delete_manager(versioning=version or hard_delete)
-        manager.delete_items(source_wrapper.path, version=version, hard_delete=hard_delete,
-                             exclude=exclude, include=include, recursive=recursive and not source_wrapper.is_file())
+        with auditing() as audit:
+            manager = source_wrapper.get_delete_manager(audit=audit, versioning=version or hard_delete)
+            manager.delete_items(source_wrapper.path,
+                                 version=version, hard_delete=hard_delete,
+                                 exclude=exclude, include=include,
+                                 recursive=recursive and not source_wrapper.is_file())
         click.echo(' done.')
 
     @classmethod
@@ -302,8 +302,9 @@ class DataStorageOperations(object):
         if not recursive and not source_wrapper.is_file():
             click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
             sys.exit(1)
-        manager = source_wrapper.get_restore_manager()
-        manager.restore_version(version, exclude, include, recursive=recursive)
+        with auditing() as audit:
+            manager = source_wrapper.get_restore_manager(audit=audit)
+            manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
     def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):

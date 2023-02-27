@@ -23,6 +23,7 @@ import time
 from datetime import timedelta, datetime
 
 from src.model.datastorage_usage_model import StorageUsage
+from src.utilities.audit import StorageDataAccessEntry, DataAccessType
 from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
@@ -65,8 +66,9 @@ class AzureProgressPercentage(ProgressPercentage):
 
 class AzureManager:
 
-    def __init__(self, blob_service):
+    def __init__(self, blob_service, audit=None):
         self.service = blob_service
+        self.audit = audit
 
     def get_max_connections(self, io_threads):
         return max(io_threads, 1) if io_threads is not None else 2
@@ -140,8 +142,8 @@ class AzureListingManager(AzureManager, AbstractListingManager):
 
 class AzureDeleteManager(AzureManager, AbstractDeleteManager):
 
-    def __init__(self, blob_service, bucket):
-        super(AzureDeleteManager, self).__init__(blob_service)
+    def __init__(self, blob_service, audit, bucket):
+        super(AzureDeleteManager, self).__init__(blob_service, audit)
         self.bucket = bucket
         self.delimiter = StorageOperations.PATH_SEPARATOR
         self.listing_manager = AzureListingManager(self.service, self.bucket)
@@ -192,6 +194,7 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             return False
         if PatternMatcher.match_any(file_name, exclude, default=False):
             return False
+        self.audit.put(StorageDataAccessEntry(self.bucket, blob_name, DataAccessType.DELETE))
         self.service.delete_blob(self.bucket.path, blob_name)
         return True
 
@@ -233,6 +236,8 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         progress_callback = AzureProgressPercentage.callback(full_path, size, quiet, lock)
         if progress_callback:
             progress_callback(0, size)
+        self.audit.put_all([StorageDataAccessEntry(source_wrapper.bucket, full_path, DataAccessType.READ),
+                            StorageDataAccessEntry(destination_wrapper.bucket, destination_path, DataAccessType.WRITE)])
         self.service.copy_blob(destination_bucket, destination_path, source_blob_url,
                                requires_sync=sync_copy)
         if not sync_copy:
@@ -240,6 +245,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         if progress_callback:
             progress_callback(size, size)
         if clean:
+            self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, full_path, DataAccessType.DELETE))
             source_service.delete_blob(source_wrapper.bucket.path, full_path)
         return TransferResult(source_key=full_path, destination_key=destination_path, destination_version=None,
                               tags=StorageOperations.parse_tags(tags))
@@ -281,6 +287,7 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
 
         self.create_local_folder(destination_key, lock)
         progress_callback = AzureProgressPercentage.callback(source_key, size, quiet, lock)
+        self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, source_key, DataAccessType.READ))
         self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, to_string(destination_key),
                                       progress_callback=progress_callback)
         if clean:
@@ -309,6 +316,7 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         max_connections = self.get_max_connections(io_threads)
+        self.audit.put(StorageDataAccessEntry(destination_wrapper.bucket, destination_key, DataAccessType.WRITE))
         self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, to_string(source_key),
                                            metadata=destination_tags,
                                            progress_callback=progress_callback,
@@ -355,6 +363,7 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         max_connections = self.get_max_connections(io_threads)
+        self.audit.put(StorageDataAccessEntry(destination_wrapper.bucket, destination_key, DataAccessType.WRITE))
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
                                              progress_callback=progress_callback,
@@ -442,24 +451,24 @@ class ProxyBlockBlobService(RefreshingBlockBlobService):
 class AzureBucketOperations:
 
     @classmethod
-    def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, audit, command):
         blob_service = cls.get_blob_service(destination_wrapper.bucket, read=True, write=True)
-        return TransferBetweenAzureBucketsManager(blob_service)
+        return TransferBetweenAzureBucketsManager(blob_service, audit)
 
     @classmethod
-    def get_download_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_download_manager(cls, source_wrapper, destination_wrapper, audit, command):
         blob_service = cls.get_blob_service(source_wrapper.bucket, read=True, write=command == 'mv')
-        return AzureDownloadManager(blob_service)
+        return AzureDownloadManager(blob_service, audit)
 
     @classmethod
-    def get_upload_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_upload_manager(cls, source_wrapper, destination_wrapper, audit, command):
         blob_service = cls.get_blob_service(destination_wrapper.bucket, read=True, write=True)
-        return AzureUploadManager(blob_service)
+        return AzureUploadManager(blob_service, audit)
 
     @classmethod
-    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, audit, command):
         blob_service = cls.get_blob_service(destination_wrapper.bucket, read=True, write=True)
-        return TransferFromHttpOrFtpToAzureManager(blob_service)
+        return TransferFromHttpOrFtpToAzureManager(blob_service, audit)
 
     @classmethod
     def get_blob_service(cls, *args, **kwargs):
