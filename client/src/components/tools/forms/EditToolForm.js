@@ -409,6 +409,15 @@ export default class EditToolForm extends React.Component {
     return null;
   };
 
+  getCloudRegion = () => {
+    const instanceType = this.getInstanceTypeValue();
+    if (this.props.awsRegions.loaded) {
+      return this.awsRegions
+        .find(a => (instanceType && a.id === instanceType.regionId) || !instanceType);
+    }
+    return undefined;
+  };
+
   getPriceTypeInitialValue = () => {
     return this.correctPriceTypeValue(
       this.props.configuration && this.props.configuration.is_spot !== undefined
@@ -1415,6 +1424,7 @@ export default class EditToolForm extends React.Component {
                   onChange={this.onRunCapabilitiesSelect}
                   dockerImageOS={this.props.dockerOSVersion}
                   provider={this.getCloudProvider()}
+                  region={this.getCloudRegion()}
                   mode={RUN_CAPABILITIES_MODE.edit}
                 />
               </Form.Item>
