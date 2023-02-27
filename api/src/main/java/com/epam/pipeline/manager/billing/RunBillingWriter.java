@@ -27,7 +27,9 @@ public class RunBillingWriter implements BillingWriter<RunBilling> {
             BillingUtils.STARTED_COLUMN,
             BillingUtils.FINISHED_COLUMN,
             BillingUtils.DURATION_COLUMN,
-            BillingUtils.COST_COLUMN
+            BillingUtils.COST_COLUMN,
+            BillingUtils.DISK_COST_COLUMN,
+            BillingUtils.COMPUTE_COST_COLUMN
         });
     }
 
@@ -44,7 +46,10 @@ public class RunBillingWriter implements BillingWriter<RunBilling> {
             BillingUtils.asString(billing.getStarted()),
             BillingUtils.asString(billing.getFinished()),
             BillingUtils.asDurationString(billing.getDuration()),
-            BillingUtils.asCostString(billing.getCost())});
+            BillingUtils.asCostString(billing.getCost()),
+            BillingUtils.asCostString(billing.getDiskCost()),
+            BillingUtils.asCostString(billing.getComputeCost())
+        });
     }
 
     @Override

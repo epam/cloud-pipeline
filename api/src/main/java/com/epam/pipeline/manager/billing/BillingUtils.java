@@ -30,7 +30,10 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -75,6 +78,8 @@ public final class BillingUtils {
     public static final String COST_COLUMN = "Cost ($)";
     public static final String DETAILED_COST_COLUMN = "Cost, %s ($)";
     public static final String DETAILED_OV_COST_COLUMN = "Cost, %s Old Versions ($)";
+    public static final String DISK_COST_COLUMN = "Disk cost ($)";
+    public static final String COMPUTE_COST_COLUMN = "Compute cost ($)";
     public static final String AVERAGE_VOLUME_COLUMN = "Average Volume (GB)";
     public static final String DETAILED_AVERAGE_VOLUME_COLUMN = "Average Volume, %s (GB)";
     public static final String DETAILED_OV_AVERAGE_VOLUME_COLUMN = "Average Volume, %s Old Versions (GB)";
@@ -86,7 +91,11 @@ public final class BillingUtils {
     public static final String MISSING_VALUE = "unknown";
     public static final String DOC_TYPE = "doc_type";
     public static final String COST_FIELD = "cost";
+    public static final String DISK_COST_FIELD = "disk_cost";
+    public static final String COMPUTE_COST_FIELD = "compute_cost";
     public static final String ACCUMULATED_COST = "accumulatedCost";
+    public static final String ACCUMULATED_DISK_COST = "accumulatedDiskCost";
+    public static final String ACCUMULATED_COMPUTE_COST = "accumulatedComputeCost";
     public static final String RUN_USAGE_AGG = "usage_runs";
     public static final String STORAGE_USAGE_AGG = "usage_storages";
     public static final String RUN_USAGE_FIELD = "usage_minutes";
@@ -138,6 +147,8 @@ public final class BillingUtils {
     public static final String PROVIDER_FIELD = "provider";
     public static final String SORT_AGG = "sort";
     public static final String DISCOUNT_SCRIPT_TEMPLATE = "_value + _value * (%s)";
+    public static final String RESOURCE_TYPE = "resource_type";
+    public static final String COMPUTE_GROUP = "COMPUTE";
 
     private BillingUtils() {
     }
@@ -200,6 +211,10 @@ public final class BillingUtils {
                 .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
                 .flatMap(value -> Optional.ofNullable(value.getValue()))
                 .orElse(StringUtils.EMPTY);
+    }
+
+    public static boolean hasComputeResourceTypeFilter(final Map<String, List<String>> filters) {
+        return filters.getOrDefault(RESOURCE_TYPE, Collections.emptyList()).contains(COMPUTE_GROUP);
     }
 
     private static long tenInPowerOf(final int scale) {
