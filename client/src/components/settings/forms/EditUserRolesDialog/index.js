@@ -1150,8 +1150,17 @@ export default class EditUserRolesDialog extends React.Component {
               REVERT
             </Button>
             <Button
+              onClick={() => {
+                this.revertChanges();
+                this.onClose();
+              }}
+            >
+              CANCEL
+            </Button>
+            <Button
               id="close-edit-user-form"
               type="primary"
+              disabled={!this.modified}
               onClick={this.operationWrapper(this.saveChanges)}
             >
               OK

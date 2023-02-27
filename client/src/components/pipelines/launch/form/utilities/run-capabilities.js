@@ -604,6 +604,21 @@ export class RunCapabilitiesMetadataPreference extends React.Component {
     this.setState({
       disabled: true
     }, () => {
+      const current = new Set(this.values);
+      const newValues = new Set(values);
+      let changed = true;
+      if (current.size === newValues.size) {
+        changed = false;
+        for (const aValue of current) {
+          if (!newValues.has(aValue)) {
+            changed = true;
+          }
+        }
+      }
+      if (!changed) {
+        this.setState({disabled: false});
+        return;
+      }
       const result = onChange(values.join(','));
       if (result && typeof result.then === 'function') {
         result
