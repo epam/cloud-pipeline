@@ -28,7 +28,8 @@ function ParametersRunCapabilities (props) {
     parametersStore,
     disabled,
     tool,
-    provider
+    provider,
+    region
   } = props;
   if (!parametersStore) {
     return null;
@@ -42,6 +43,7 @@ function ParametersRunCapabilities (props) {
       dockerImage={dockerImage}
       platform={tool ? tool.platform : undefined}
       provider={provider}
+      region={region}
       values={parametersStore.capabilities}
       mode={RUN_CAPABILITIES_MODE.launch}
     />
@@ -54,7 +56,8 @@ ParametersRunCapabilities.propTypes = {
   style: PropTypes.object,
   dockerImage: PropTypes.string,
   tool: PropTypes.object,
-  provider: PropTypes.string
+  provider: PropTypes.string,
+  region: PropTypes.object
 };
 
 export default injectParametersStore(observer(ParametersRunCapabilities));

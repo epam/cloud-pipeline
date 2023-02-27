@@ -942,6 +942,7 @@ class ConfigurationPayload extends React.Component {
           dockerImage={dockerImage}
           tool={tool}
           provider={this.currentProvider}
+          region={this.currentCloudRegion}
         />
       </div>
     );

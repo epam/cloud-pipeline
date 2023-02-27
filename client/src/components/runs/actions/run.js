@@ -1147,6 +1147,7 @@ export class RunConfirmation extends React.Component {
                   }
                 </span>
                 <Provider
+                  awsRegions={awsRegions}
                   preferences={this.props.preferences}
                   dockerRegistries={this.props.dockerRegistries}
                 >
@@ -1156,6 +1157,7 @@ export class RunConfirmation extends React.Component {
                     platform={this.props.platform}
                     dockerImage={this.props.dockerImage}
                     provider={this.currentCloudProvider}
+                    region={this.currentRegion}
                     mode={RUN_CAPABILITIES_MODE.launch}
                     tagStyle={{height: '20px'}}
                     style={{padding: '2px'}}

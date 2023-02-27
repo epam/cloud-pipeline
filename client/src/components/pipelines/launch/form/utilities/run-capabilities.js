@@ -24,6 +24,7 @@ import {mergeUserRoleAttributes} from '../../../../../utils/attributes/merge-use
 import fetchToolDefaultParameters from './fetch-tool-default-parameters';
 import {RUN_CAPABILITIES} from '../../../../../models/preferences/PreferencesLoad';
 import styles from './run-capabilities.css';
+import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
 
 export {RUN_CAPABILITIES};
 
@@ -98,7 +99,8 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
   const {
     platform,
     os,
-    provider
+    provider,
+    region
   } = platformInfo;
   const capabilities = platform && PLATFORM_SPECIFIC_CAPABILITIES.hasOwnProperty(platform)
     ? PLATFORM_SPECIFIC_CAPABILITIES[platform]
@@ -113,10 +115,29 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     !capability.os ||
     capability.os.length === 0 ||
     capability.os.some(capabilityOS => parseOSMask(capabilityOS).test(os));
-  const filterByCloudProvider = capability => provider === undefined ||
-    !capability.cloud ||
+  const cloudMatches = (capabilityCloud) => {
+    const {
+      cloud: capabilityProvider,
+      regionIdentifier: capabilityRegionName,
+      regionId: capabilityRegionId
+    } = parseCapabilityCloudSetting(capabilityCloud);
+    return (
+      !capabilityProvider ||
+      !provider ||
+      capabilityProvider.toLowerCase() === provider.toLowerCase()
+    ) && (
+      !capabilityRegionName ||
+      !region ||
+      capabilityRegionName.toLowerCase() === region.regionId.toLowerCase()
+    ) && (
+      !capabilityRegionId ||
+      !region ||
+      capabilityRegionId === region.id
+    );
+  };
+  const filterByCloudProvider = capability => !capability.cloud ||
     capability.cloud.length === 0 ||
-    capability.cloud.some(p => p.toLowerCase() === provider.toLowerCase());
+    capability.cloud.some(cloudMatches);
   const mapCapability = (capability, parent) => {
     const {
       capabilities = [],
@@ -176,7 +197,8 @@ class RunCapabilities extends React.Component {
     onChange: PropTypes.func,
     dockerImage: PropTypes.string,
     dockerImageOS: PropTypes.string,
-    provider: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    provider: PropTypes.string,
+    region: PropTypes.object,
     mode: PropTypes.string,
     showError: PropTypes.bool,
     getPopupContainer: PropTypes.func
@@ -238,18 +260,28 @@ class RunCapabilities extends React.Component {
     const {
       platform,
       provider,
+      region,
       preferences
     } = this.props;
     const {
       os
     } = this.state;
-    return getAllPlatformCapabilities(preferences, {platform, os, provider});
+    return getAllPlatformCapabilities(
+      preferences,
+      {
+        platform,
+        os,
+        provider,
+        region
+      }
+    );
   }
 
   get filteredValues () {
     const {
       platform,
       provider,
+      region,
       preferences,
       values
     } = this.props;
@@ -258,7 +290,12 @@ class RunCapabilities extends React.Component {
     } = this.state;
     const capabilities = getPlatformSpecificCapabilities(
       preferences,
-      {platform, os, provider}
+      {
+        platform,
+        os,
+        provider,
+        region
+      }
     );
     return (values || [])
       .filter(value => capabilities.find(o => o.value === value));
@@ -304,13 +341,19 @@ class RunCapabilities extends React.Component {
     const {
       platform,
       provider,
+      region,
       preferences,
       onChange
     } = this.props;
     const {os} = this.state;
     const capabilities = getPlatformSpecificCapabilities(
       preferences,
-      {platform, os, provider}
+      {
+        platform,
+        os,
+        provider,
+        region
+      }
     );
     const filtered = (values || [])
       .filter(v => capabilities.find(o => o.value === v));

@@ -102,7 +102,8 @@ import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSet
 import ServerlessAPIButton from '../../../special/serverless-api-button';
 import RunCapabilities, {
   addCapability,
-  applyCapabilities, correctRequiredCapabilities,
+  applyCapabilities,
+  correctRequiredCapabilities,
   getEnabledCapabilities,
   getUserCapabilities,
   hasPlatformSpecificCapabilities,
@@ -520,6 +521,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             platform={this.toolPlatform}
             dockerImage={this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`)}
             provider={this.currentCloudRegionProvider}
+            region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
           />
         </FormItem>
