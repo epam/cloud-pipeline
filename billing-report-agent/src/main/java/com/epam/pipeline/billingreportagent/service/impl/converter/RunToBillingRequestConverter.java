@@ -277,6 +277,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         billing1.setCost(billing1.getCost() + billing2.getCost());
         billing1.setUsageMinutes(billing1.getUsageMinutes() + billing2.getUsageMinutes());
         billing1.setPausedMinutes(billing1.getPausedMinutes() + billing2.getPausedMinutes());
+        billing1.setComputeCost(billing1.getComputeCost() + billing2.getComputeCost());
+        billing1.setDiskCost(billing1.getDiskCost() + billing2.getDiskCost());
         return billing1;
     }
 
@@ -307,10 +309,17 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             final Duration duration = Duration.between(pointStart, pointEnd);
             final Long disk = getDisksSize(run, pointStart);
             final Long durationMinutes = minutesOf(duration);
+            final Long diskCosts = price.isOldFashioned() ? 0L : getDiskCosts(duration, disk, price);
+            final Long computeCosts = price.isOldFashioned() ? 0L : getComputeCosts(duration, price, active);
+            final Long totalCosts = price.isOldFashioned()
+                    ? getOldFashionedCosts(duration, price, active)
+                    : (diskCosts + computeCosts);
             billings.add(PipelineRunBillingInfo.builder()
                              .date(pointStart.toLocalDate())
                              .run(run)
-                             .cost(getCosts(duration, disk, price, active))
+                             .cost(totalCosts)
+                             .computeCost(computeCosts)
+                             .diskCost(diskCosts)
                              .usageMinutes(active ? durationMinutes : 0L)
                              .pausedMinutes(active ? 0L : durationMinutes)
                              .build());
@@ -349,12 +358,6 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 .map(NodeDisk::getCreatedDate);
     }
 
-    private Long getCosts(final Duration duration, final Long disk, final RunPrice price, final boolean active) {
-        return price.isOldFashioned() 
-                ? getOldFashionedCosts(duration, price, active)
-                : getNewFashionedCosts(duration, disk, price, active);
-    }
-
     private long getOldFashionedCosts(final Duration duration, final RunPrice price, final boolean active) {
         return active ? getOldFashionedCosts(duration, price) : 0L;
     }
@@ -363,13 +366,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         return calculateCostsForPeriod(duration.getSeconds(), price.getOldFashionedPricePerHour());
     }
 
-    private long getNewFashionedCosts(final Duration duration, final Long disk, final RunPrice price, 
-                                      final boolean active) {
-        return getDiskCosts(duration, disk, price) + (active ? getComputeCosts(duration, price) : 0L);
-    }
-
-    private Long getComputeCosts(final Duration duration, final RunPrice price) {
-        return calculateCostsForPeriod(duration.getSeconds(), price.getComputePricePerHour());
+    private Long getComputeCosts(final Duration duration, final RunPrice price, final boolean active) {
+        return active ? calculateCostsForPeriod(duration.getSeconds(), price.getComputePricePerHour()) : 0L;
     }
 
     private Long getDiskCosts(final Duration duration, final Long disk, final RunPrice price) {
