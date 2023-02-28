@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails;
 import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails.StorageBillingDetails;
 import com.epam.pipeline.manager.billing.BillingUtils;
 import com.epam.pipeline.manager.utils.ElasticSearchUtils;
+import com.epam.pipeline.utils.NumericUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -138,9 +139,10 @@ public final class StorageBillingCostDetailsLoader {
     }
 
     private static boolean isDetailsEntryEmpty(StorageBillingDetails details) {
-        return details.getCost() == 0 && details.getSize() == 0 && details.getAvgSize() == 0
-                && details.getOldVersionCost() == 0 && details.getOldVersionSize() == 0
-                && details.getOldVersionAvgSize() == 0;
+        return NumericUtils.isZero(details.getCost()) && NumericUtils.isZero(details.getSize())
+                && NumericUtils.isZero(details.getAvgSize()) && NumericUtils.isZero(details.getOldVersionCost())
+                && NumericUtils.isZero(details.getOldVersionSize())
+                && NumericUtils.isZero(details.getOldVersionAvgSize());
     }
 
     private static long fetchSimpleAggregationValue(final String template, final String storageClass,
