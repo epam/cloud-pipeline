@@ -343,7 +343,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                     List<PipelineRun> runsToUpdateNotificationTime, Double cpuUsageRate,
                                     List<PipelineRun> runsToUpdateTags) {
             if (shouldPerformActionOnIdleRun(run, actionTimeout)) {
-                performActionOnIdleRun(run, action, cpuUsageRate, pipelinesToNotify, runsToUpdateNotificationTime);
+                performActionOnIdleRun(run, action, cpuUsageRate, pipelinesToNotify,
+                        runsToUpdateNotificationTime, runsToUpdateTags);
                 return;
             }
             if (Objects.isNull(run.getLastIdleNotificationTime())) {
@@ -372,10 +373,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             runsToUpdateTags.add(run);
         }
 
-        private void performActionOnIdleRun(PipelineRun run, IdleRunAction action,
-                                            double cpuUsageRate,
-                                            List<Pair<PipelineRun, Double>> pipelinesToNotify,
-                                            List<PipelineRun> runsToUpdate) {
+        private void performActionOnIdleRun(final PipelineRun run, IdleRunAction action,
+                                            final double cpuUsageRate,
+                                            final List<Pair<PipelineRun, Double>> pipelinesToNotify,
+                                            final List<PipelineRun> runsToUpdate,
+                                            final List<PipelineRun> runsToUpdateTags) {
             log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), cpuUsageRate,
                     action));
             switch (action) {
@@ -389,14 +391,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     break;
                 case PAUSE_OR_STOP:
                     if (run.getInstance().getSpot()) {
-                        performStop(run, cpuUsageRate);
+                        performStop(run, cpuUsageRate, runsToUpdateTags);
                     } else {
                         performPause(run, cpuUsageRate);
                     }
 
                     break;
                 case STOP:
-                    performStop(run, cpuUsageRate);
+                    performStop(run, cpuUsageRate, runsToUpdateTags);
                     break;
                 default:
                     performNotify(run, cpuUsageRate, pipelinesToNotify);
@@ -411,12 +413,19 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
         }
 
-        private void performStop(PipelineRun run, double cpuUsageRate) {
+        private void performStop(final PipelineRun run,
+                                 final double cpuUsageRate,
+                                 final List<PipelineRun> runsToUpdateTags) {
             if (run.isNonPause() || run.isClusterRun()) {
                 log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
                 return;
             }
             pipelineRunManager.stop(run.getId());
+            final String stopTag = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_STOP_REASON);
+            if (StringUtils.isNotBlank(stopTag)) {
+                run.addTag(stopTag, "IDLE_RUN");
+                runsToUpdateTags.add(run);
+            }
             notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
                     NotificationType.IDLE_RUN_STOPPED);
         }
@@ -480,8 +489,18 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                         .collect(Collectors.partitioningBy(
                             run -> !run.isNonPause() && isReadyForAction(run, actionTimeout)));
                 final List<PipelineRun> runsToStop = ListUtils.emptyIfNull(runs.get(true));
-                ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(runsToStop))
-                        .forEach(run -> pipelineRunManager.terminateRun(run.getId()));
+                final List<PipelineRun> terminatedRuns =
+                        ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(runsToStop))
+                        .stream()
+                        .map(run -> pipelineRunManager.terminateRun(run.getId()))
+                        .collect(Collectors.toList());
+
+                final String stopTag = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_STOP_REASON);
+                if (StringUtils.isNotBlank(stopTag)) {
+                    terminatedRuns.forEach(run -> run.addTag(stopTag, "LONG_PAUSED"));
+                    pipelineRunManager.updateRunsTags(terminatedRuns);
+                }
+
                 final List<PipelineRun> runsToNotify = ListUtils.emptyIfNull(runs.get(false));
                 notificationManager.notifyLongPausedRuns(runsToNotify);
             } else {

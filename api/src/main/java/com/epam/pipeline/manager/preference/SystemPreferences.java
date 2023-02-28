@@ -807,6 +807,9 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_RUN_TAG_DATE_SUFFIX = new StringPreference(
             "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, pass);
 
+    public static final StringPreference SYSTEM_RUN_TAG_STOP_REASON = new StringPreference(
+            "system.run.tag.stop.reason", "STOP_REASON", SYSTEM_GROUP, pass, true);
+
     /**
      * Level of CPU load, below which a Run is considered `idle`
      */
