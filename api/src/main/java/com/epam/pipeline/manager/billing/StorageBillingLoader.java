@@ -1,10 +1,29 @@
+/*
+ * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.manager.billing;
 
+import com.epam.pipeline.controller.vo.billing.BillingCostDetailsRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingDiscount;
+import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.StorageBilling;
 import com.epam.pipeline.entity.billing.StorageBillingMetrics;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.manager.billing.billingdetails.StorageBillingCostDetailsLoader;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.billing.detail.StorageBillingDetailsLoader;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -21,6 +40,7 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Service;
 
@@ -91,19 +111,28 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                                              final BillingDiscount discount,
                                              final int pageOffset,
                                              final int pageSize) {
+        final TermsAggregationBuilder byStorageIdAggregate = billingHelper.aggregateBy(BillingUtils.STORAGE_ID_FIELD)
+                .size(Integer.MAX_VALUE)
+                .subAggregation(billingHelper.aggregateCostSumBucket())
+                .subAggregation(billingHelper.aggregateStorageUsageAverageBucket())
+                .subAggregation(billingHelper.aggregateLastByDateDoc())
+                .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize));
+
+        final BillingCostDetailsRequest costDetailsRequest = BillingCostDetailsRequest.builder()
+                .enabled(true).discount(discount).grouping(BillingGrouping.STORAGE).build();
+        StorageBillingCostDetailsLoader.buildQuery(costDetailsRequest, byStorageIdAggregate);
+
+        final DateHistogramAggregationBuilder byMonth = aggregateBillingsByMonth(discount);
+        StorageBillingCostDetailsLoader.buildQuery(costDetailsRequest, byMonth);
+        byStorageIdAggregate.subAggregation(byMonth);
+
         return new SearchRequest()
                 .indicesOptions(IndicesOptions.strictExpandOpen())
                 .indices(billingHelper.storageIndicesByDate(from, to))
                 .source(new SearchSourceBuilder()
                         .size(NumberUtils.INTEGER_ZERO)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))
-                        .aggregation(billingHelper.aggregateBy(BillingUtils.STORAGE_ID_FIELD)
-                                .size(Integer.MAX_VALUE)
-                                .subAggregation(aggregateBillingsByMonth(discount))
-                                .subAggregation(billingHelper.aggregateCostSumBucket())
-                                .subAggregation(billingHelper.aggregateStorageUsageAverageBucket())
-                                .subAggregation(billingHelper.aggregateLastByDateDoc())
-                                .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
+                        .aggregation(byStorageIdAggregate));
     }
 
     private DateHistogramAggregationBuilder aggregateBillingsByMonth(final BillingDiscount discount) {
@@ -121,6 +150,8 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
 
     private StorageBilling getBilling(final String id, final Aggregations aggregations) {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
+        final BillingCostDetailsRequest costDetailsRequest = BillingCostDetailsRequest.builder()
+                .enabled(true).grouping(BillingGrouping.STORAGE).build();
         return StorageBilling.builder()
                 .id(NumberUtils.toLong(id))
                 .name(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_NAME_FIELD)))
@@ -135,18 +166,22 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations))
                         .currentVolume(Long.valueOf(BillingUtils.asString(
                                 topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
+                        .details(StorageBillingCostDetailsLoader.parseResponse(costDetailsRequest, aggregations))
                         .build())
-                .periodMetrics(getMetrics(aggregations))
+                .periodMetrics(getMetrics(aggregations, costDetailsRequest))
                 .build();
     }
 
-    private Map<Temporal, StorageBillingMetrics> getMetrics(final Aggregations aggregations) {
+    private Map<Temporal, StorageBillingMetrics> getMetrics(final Aggregations aggregations,
+                                                            final BillingCostDetailsRequest costDetailsRequest) {
         return billingHelper.histogramBuckets(aggregations, BillingUtils.HISTOGRAM_AGGREGATION_NAME)
-                .map(bucket -> getMetrics(bucket.getKeyAsString(), bucket.getAggregations()))
+                .map(bucket -> getMetrics(bucket.getKeyAsString(), costDetailsRequest, bucket.getAggregations()))
                 .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
-    private Pair<Temporal, StorageBillingMetrics> getMetrics(final String period, final Aggregations aggregations) {
+    private Pair<Temporal, StorageBillingMetrics> getMetrics(final String period,
+                                                             final BillingCostDetailsRequest costDetailsRequest,
+                                                             final Aggregations aggregations) {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return Pair.of(
                 YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
@@ -155,6 +190,7 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations))
                         .currentVolume(Long.valueOf(BillingUtils.asString(
                                 topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
+                        .details(StorageBillingCostDetailsLoader.parseResponse(costDetailsRequest, aggregations))
                         .build());
     }
 
