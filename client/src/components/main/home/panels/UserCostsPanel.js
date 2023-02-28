@@ -183,8 +183,8 @@ export default class UserCostsPanel extends React.Component {
             ? moment(periodDate).format(rangeFormat)
             : undefined;
           const periodInfo = getPeriod(period, range);
-          const request = new GetBillingData(
-            {
+          const request = new GetBillingData({
+            filters: {
               user: userName,
               ...periodInfo,
               filterBy: [
@@ -192,7 +192,7 @@ export default class UserCostsPanel extends React.Component {
                 GetBillingData.FILTER_BY.storages
               ]
             }
-          );
+          });
           request.fetch()
             .then(() => resolve(request))
             .catch(() => resolve(request));

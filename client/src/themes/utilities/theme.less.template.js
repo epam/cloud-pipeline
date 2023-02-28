@@ -2174,6 +2174,19 @@ export default `
 @THEME .cp-billing-action-tag .ant-tag-text {
   background-color: @color-warning;
 }
+@THEME .cp-report-table td,
+@THEME .cp-report-table th {
+  background-color: @panel-background-color;
+  color: @application-color;
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-report-table tbody tr:not(:last-child) > *,
+@THEME .cp-report-table th {
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-report-table tr > *.fixed-column {
+  border-right: 1px solid @card-border-color;
+}
 @THEME .cp-report-table tr.cp-warning-row {
   background-color: fade(@color-error, 20%);
 }

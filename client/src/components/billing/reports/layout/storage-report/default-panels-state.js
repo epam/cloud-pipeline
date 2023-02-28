@@ -16,8 +16,17 @@
 
 import Panels from './panels';
 
-export default [
+const defaultState = [
   {'w': 10, 'h': 12, 'x': 0, 'y': 0, 'i': Panels.summary, 'moved': false, 'static': false},
   {'w': 14, 'h': 12, 'x': 10, 'y': 0, 'i': Panels.storages, 'moved': false, 'static': false},
   {'w': 24, 'h': 12, 'x': 0, 'y': 12, 'i': Panels.storagesTable, 'moved': false, 'static': false}
 ];
+
+const defaultObjectsState = [
+  {'w': 10, 'h': 12, 'x': 0, 'y': 0, 'i': Panels.summary, 'moved': false, 'static': false},
+  {'w': 14, 'h': 12, 'x': 10, 'y': 0, 'i': Panels.storageLayers, 'moved': false, 'static': false},
+  {'w': 24, 'h': 12, 'x': 0, 'y': 12, 'i': Panels.storages, 'moved': false, 'static': false},
+  {'w': 24, 'h': 12, 'x': 0, 'y': 12, 'i': Panels.storagesTable, 'moved': false, 'static': false}
+];
+
+export {defaultState, defaultObjectsState};

@@ -30,7 +30,9 @@ const plugin = {
     const ticks = ((chart.scales || {})[axis] || {})._ticks;
     if (ticks && ticks.length) {
       for (const tick of ticks) {
-        tick.major = highlightTickFn(request.value[tick.value]);
+        const storage = (request || {}).value;
+        const value = (storage || {})[tick.value];
+        tick.major = highlightTickFn(value, tick);
       }
     }
   }
