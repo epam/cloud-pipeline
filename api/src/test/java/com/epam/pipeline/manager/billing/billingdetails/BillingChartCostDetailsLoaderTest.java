@@ -19,6 +19,8 @@ package com.epam.pipeline.manager.billing.billingdetails;
 import com.epam.pipeline.controller.vo.billing.BillingCostDetailsRequest;
 import com.epam.pipeline.entity.billing.BillingChartDetails;
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.PipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
@@ -30,7 +32,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class BillingChartCostDetailsLoaderTest {
@@ -45,6 +50,12 @@ public class BillingChartCostDetailsLoaderTest {
     // For each storage class 2 aggregations to get sum of avg stats by bucket
     public static final int NUMBER_OF_PIPELINE_AGGS_FOR_NON_STORAGE_GROUPING =
             2 * StorageBillingCostDetailsLoader.STORAGE_CLASSES.size();
+
+    // For each storage class 2 aggregations to get sum of avg stats by bucket
+    // + 2 aggs for each storage class for accumulative cost sums
+    public static final int NUMBER_OF_PIPELINE_AGGS_FOR_NON_STORAGE_GROUPING_WITH_ACCUM_COST_SUMS =
+            2 * StorageBillingCostDetailsLoader.STORAGE_CLASSES.size() +
+                    2 * StorageBillingCostDetailsLoader.STORAGE_CLASSES.size();
 
     @Test
     public void checkThatBuildQueryWillBuildAggsIfCriteriaMatchByGrouping() {
@@ -75,6 +86,22 @@ public class BillingChartCostDetailsLoaderTest {
                     BillingCostDetailsRequest.builder().enabled(true).filters(filters).build(), agg),
                 NUMBER_OF_SIMPLE_AGGS_FOR_NON_STORAGE_GROUPING,
                 NUMBER_OF_PIPELINE_AGGS_FOR_NON_STORAGE_GROUPING
+        );
+    }
+
+    @Test
+    public void checkThatBuildQueryWillBuildAggsWithAccumSumIfIntervalsRequested() {
+        final Map<String, List<String>> filters = Stream.of(
+                ImmutablePair.of("resource_type", Collections.singletonList("STORAGE")),
+                ImmutablePair.of("storage_type", Collections.singletonList("OBJECT_STORAGE"))
+        ).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+
+        assertAggregations(
+            agg -> BillingChartCostDetailsLoader.buildQuery(
+                    BillingCostDetailsRequest.builder().isHistogram(true)
+                            .enabled(true).filters(filters).build(), agg),
+            NUMBER_OF_SIMPLE_AGGS_FOR_NON_STORAGE_GROUPING,
+            NUMBER_OF_PIPELINE_AGGS_FOR_NON_STORAGE_GROUPING_WITH_ACCUM_COST_SUMS
         );
     }
 
