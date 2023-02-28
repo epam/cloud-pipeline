@@ -22,27 +22,23 @@ import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.ComputeBillingChartCostDetails;
 import com.epam.pipeline.manager.billing.BillingUtils;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
-import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static com.epam.pipeline.manager.billing.BillingUtils.COMPUTE_GROUP;
 import static com.epam.pipeline.manager.billing.BillingUtils.RESOURCE_TYPE;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ComputeBillingCostDetailsLoader {
+
+    private ComputeBillingCostDetailsLoader() {}
 
     public static boolean isComputeCostDetailsShallBeLoaded(final BillingCostDetailsRequest request) {
         if (request.isHistogram()) {
@@ -76,12 +72,14 @@ public final class ComputeBillingCostDetailsLoader {
                                                     final Aggregations aggregations) {
         final ComputeBillingChartCostDetails.ComputeBillingChartCostDetailsBuilder builder =
                 ComputeBillingChartCostDetails.builder()
-                        .diskCost(parseSum(aggregations, BillingUtils.DISK_COST_FIELD))
-                        .computeCost(parseSum(aggregations, BillingUtils.COMPUTE_COST_FIELD));
+                        .diskCost(BillingUtils.parseSum(aggregations, BillingUtils.DISK_COST_FIELD))
+                        .computeCost(BillingUtils.parseSum(aggregations, BillingUtils.COMPUTE_COST_FIELD));
         if (request.isHistogram()) {
             return builder
-                    .accumulatedDiskCost(parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_DISK_COST))
-                    .accumulatedComputeCost(parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_COMPUTE_COST))
+                    .accumulatedDiskCost(BillingUtils
+                            .parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_DISK_COST))
+                    .accumulatedComputeCost(BillingUtils
+                            .parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_COMPUTE_COST))
                     .build();
         }
         return builder.build();
@@ -107,19 +105,5 @@ public final class ComputeBillingCostDetailsLoader {
     public static AggregationBuilder aggregateComputeCostSum(final BillingDiscount discount) {
         return BillingUtils.aggregateDiscountCostSum(BillingUtils.COMPUTE_COST_FIELD, discount.getComputes(),
                 ComputeBillingCostDetailsLoader::aggregateComputeCostSum);
-    }
-
-    private static Long parseSum(final Aggregations aggregations, final String field) {
-        final ParsedSum sumAggResult = aggregations.get(field);
-        return Optional.ofNullable(sumAggResult)
-                .map(result -> new Double(result.getValue()).longValue())
-                .orElse(null);
-    }
-
-    private static Long parseAccumulatedSum(final Aggregations aggregations, final String field) {
-        final ParsedSimpleValue accumulatedSumAggResult = aggregations.get(field);
-        return Optional.ofNullable(accumulatedSumAggResult)
-                .map(result -> new Double(result.getValueAsString()).longValue())
-                .orElse(null);
     }
 }

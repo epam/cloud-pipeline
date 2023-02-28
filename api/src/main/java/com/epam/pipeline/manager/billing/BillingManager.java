@@ -551,11 +551,11 @@ public class BillingManager {
 
     private BillingChartInfo getChartInfo(final Histogram.Bucket bucket, final DateHistogramInterval interval,
                                           final BillingCostDetailsRequest costDetailsRequest) {
-        final Aggregations aggregations = bucket.getAggregations();
+        final Aggregations intervalAggregations = bucket.getAggregations();
         final BillingChartInfo.BillingChartInfoBuilder builder = BillingChartInfo.builder()
                 .groupingInfo(null)
-                .cost(BillingUtils.parseSum(aggregations, BillingUtils.COST_FIELD))
-                .accumulatedCost(BillingUtils.parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_COST));
+                .cost(BillingUtils.parseSum(intervalAggregations, BillingUtils.COST_FIELD))
+                .accumulatedCost(BillingUtils.parseAccumulatedSum(intervalAggregations, BillingUtils.ACCUMULATED_COST));
 
         final DateTime date = (DateTime) bucket.getKey();
         final LocalDate periodStart = LocalDate.of(date.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
@@ -567,7 +567,7 @@ public class BillingManager {
             builder.periodEnd(periodStart.atTime(LocalTime.MAX));
         }
         return builder
-                .costDetails(BillingChartCostDetailsLoader.parseResponse(costDetailsRequest, aggregations))
+                .costDetails(BillingChartCostDetailsLoader.parseResponse(costDetailsRequest, intervalAggregations))
                 .build();
     }
 }
