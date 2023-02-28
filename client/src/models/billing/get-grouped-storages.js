@@ -4,8 +4,13 @@ import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
 
 export class GetGroupedStorages extends BaseBillingRequest {
-  constructor (filters, pagination = null) {
-    super(filters, true, pagination);
+  constructor (
+    filters,
+    loadDetails = false,
+    pagination = null,
+    loadCostDetails = false
+  ) {
+    super(filters, loadDetails, pagination, loadCostDetails);
     this.grouping = 'STORAGE';
   }
 

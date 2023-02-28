@@ -14,7 +14,12 @@ export default class BaseBillingRequest extends RemotePost {
 
   grouping;
 
-  constructor (filters, loadDetails = false, pagination = null) {
+  constructor (
+    filters,
+    loadDetails = false,
+    pagination = null,
+    loadCostDetails = false
+  ) {
     super();
     if (`${pagination}`.toLowerCase() === 'true') {
       pagination = {};
@@ -34,6 +39,7 @@ export default class BaseBillingRequest extends RemotePost {
     this.filters = filters;
     this.pagination = pagination;
     this.loadDetails = loadDetails;
+    this.loadCostDetails = loadCostDetails;
   }
 
   get totalPages () {
@@ -69,6 +75,9 @@ export default class BaseBillingRequest extends RemotePost {
     }
     if (this.loadDetails) {
       this.body.loadDetails = true;
+    }
+    if (this.loadCostDetails) {
+      this.body.loadCostDetails = true;
     }
     if (this.paginated) {
       this.body.pageNum = this.pageNum;

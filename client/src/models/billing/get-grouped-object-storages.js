@@ -3,8 +3,8 @@ import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
 
 export class GetGroupedObjectStorages extends GetGroupedStorages {
-  constructor (filters, pagination = null) {
-    super(filters, true, pagination);
+  constructor (filters, pagination = null, loadCostDetails = false) {
+    super(filters, true, pagination, loadCostDetails);
   }
 
   async prepareBody () {
@@ -14,7 +14,7 @@ export class GetGroupedObjectStorages extends GetGroupedStorages {
 }
 
 export class GetGroupedObjectStoragesWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+  constructor (filters, pagination = null, loadCostDetails = false) {
     const {
       end,
       endStrict,
@@ -30,7 +30,8 @@ export class GetGroupedObjectStoragesWithPrevious extends GetDataWithPrevious {
     super(
       GetGroupedObjectStorages,
       formattedFilters,
-      pagination
+      pagination,
+      loadCostDetails
     );
   }
 

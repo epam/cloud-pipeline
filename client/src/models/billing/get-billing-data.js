@@ -20,11 +20,12 @@ import GetDataWithPrevious from './get-data-with-previous';
 import {costMapper} from './utils';
 
 class GetBillingData extends BaseBillingRequest {
-  constructor (filter) {
-    super(filter);
+  constructor (filter, loadCostDetails = false) {
+    super(filter, false, null, loadCostDetails);
     const {dateFilter, dateMapper} = filter;
     this.dateMapper = dateMapper || (o => o);
     this.dateFilter = dateFilter || (() => true);
+    this.loadCostDetails = loadCostDetails;
   }
 
   static FILTER_BY = {
@@ -66,6 +67,9 @@ class GetBillingData extends BaseBillingRequest {
         }
       }
     }
+    if (this.loadCostDetails) {
+      this.body.loadCostDetails = true;
+    }
   }
 
   postprocess (value) {
@@ -95,8 +99,8 @@ class GetBillingData extends BaseBillingRequest {
 }
 
 class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
-  constructor (filter) {
-    super(GetBillingData, filter);
+  constructor (filter, loadCostDetails = false) {
+    super(GetBillingData, filter, loadCostDetails);
   }
 
   static FILTER_BY = GetBillingData.FILTER_BY;

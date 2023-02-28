@@ -24,7 +24,8 @@ import moment from 'moment-timezone';
 import {
   BarChart,
   BillingTable,
-  Summary
+  Summary,
+  StorageLayers
 } from './charts';
 import {
   costTickFormatter,
@@ -75,12 +76,15 @@ function injection (stores, props) {
   let storages;
   let storagesTable;
   let storageType;
+  let loadCostDetails = false;
   if (/^file$/i.test(type)) {
     storageType = 'FILE_STORAGE';
     storages = new GetGroupedFileStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedFileStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.fileStorages;
   } else if (/^object$/i.test(type)) {
+    // todo: pass loadCostDetails to requests
+    loadCostDetails = true;
     storageType = 'OBJECT_STORAGE';
     storages = new GetGroupedObjectStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedObjectStorages(filters, true);
@@ -232,16 +236,71 @@ function renderTable ({storages, discounts: discountsFn, height}) {
   );
 }
 
+const getRandom = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+};
+
+const detailsMock = {
+  'Deep Archive': {
+    storageClass: 'Deep Archive',
+    cost: getRandom(3000, 9000),
+    size: getRandom(500, 5000),
+    oldVersionCost: getRandom(3000, 4000),
+    oldVersionSize: getRandom(500, 5000)
+  },
+  'Glacier IR': {
+    storageClass: 'Glacier IR',
+    cost: getRandom(3000, 9000),
+    size: getRandom(500, 5000),
+    oldVersionCost: getRandom(3000, 4000),
+    oldVersionSize: getRandom(500, 5000)
+  },
+  'Glacier': {
+    storageClass: 'Glacier',
+    cost: getRandom(3000, 9000),
+    size: getRandom(500, 5000),
+    oldVersionCost: getRandom(3000, 4000),
+    oldVersionSize: getRandom(500, 5000)
+  },
+  'Standard': {
+    storageClass: 'Standard',
+    cost: getRandom(3000, 9000),
+    size: getRandom(500, 5000),
+    oldVersionCost: getRandom(3000, 4000),
+    oldVersionSize: getRandom(500, 5000)
+  }
+};
+
 const RenderTable = observer(renderTable);
 
 class StorageReports extends React.Component {
   state = {
-    dataSampleKey: StorageFilters.value.key
+    dataSampleKey: StorageFilters.value.key,
+    selectedStorageLayer: undefined
   };
+
+  get layout () {
+    const {type} = this.props;
+    if (/^object$/i.test(type)) {
+      return {
+        ...StorageReportLayout,
+        Layout: StorageReportLayout.ObjectsLayout
+      };
+    }
+    return StorageReportLayout;
+  }
 
   onChangeDataSample = (key) => {
     this.setState({
       dataSampleKey: key
+    });
+  };
+
+  onSelectLayer = ({key}) => {
+    const {selectedStorageLayer} = this.state;
+    this.setState({selectedStorageLayer: selectedStorageLayer === key
+      ? undefined
+      : key
     });
   };
 
@@ -267,6 +326,32 @@ class StorageReports extends React.Component {
     return 'Storages';
   };
 
+  get layersMock () {
+    const labels = Object.values(detailsMock).map(detail => detail.storageClass);
+    const getData = (key, labels) => {
+      const data = [];
+      labels.forEach((label, index) => {
+        const current = detailsMock[label] || {};
+        data[index] = current[key] || 0;
+      });
+      return data;
+    };
+    const filter = this.state.dataSampleKey === 'value'
+      ? ['cost', 'oldVersionCost']
+      : ['size', 'oldVersionSize'];
+    const datasets = filter
+      .map(key => {
+        return {
+          label: key,
+          data: getData(key, labels)
+        };
+      });
+    return {
+      labels,
+      datasets
+    };
+  }
+
   render () {
     const {
       storages,
@@ -274,6 +359,7 @@ class StorageReports extends React.Component {
       summary,
       user,
       group,
+      type,
       filters = {},
       storageType,
       reportThemes
@@ -301,10 +387,10 @@ class StorageReports extends React.Component {
               }}
             >
               <Layout
-                layout={StorageReportLayout.Layout}
-                gridStyles={StorageReportLayout.GridStyles}
+                layout={this.layout.Layout}
+                gridStyles={this.layout.GridStyles}
               >
-                <div key={StorageReportLayout.Panels.summary}>
+                <div key={this.layout.Panels.summary}>
                   <Layout.Panel
                     style={{
                       display: 'flex',
@@ -332,13 +418,63 @@ class StorageReports extends React.Component {
                     </ResizableContainer>
                   </Layout.Panel>
                 </div>
-                <div key={StorageReportLayout.Panels.storages}>
+                {/^object$/i.test(type) ? (
+                  <div key={this.layout.Panels.storageLayers}>
+                    <Layout.Panel>
+                      <ResizableContainer style={{width: '100%', height: '100%'}}>
+                        {
+                          ({height}) => (
+                            <div>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'row',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  height: costsUsageSelectorHeight
+                                }}
+                              >
+                                <StorageFilter
+                                  onChange={this.onChangeDataSample}
+                                  value={this.state.dataSampleKey}
+                                />
+                              </div>
+                              <StorageLayers
+                                highlightedLabel={this.layersMock.labels
+                                  .indexOf(this.state.selectedStorageLayer)
+                                }
+                                onSelect={this.onSelectLayer}
+                                data={this.layersMock}
+                                title={'Object storage layers'}
+                                style={{height: height - costsUsageSelectorHeight}}
+                                dataSample={
+                                  StorageFilters[this.state.dataSampleKey].dataSample
+                                }
+                                previousDataSample={
+                                  StorageFilters[this.state.dataSampleKey].previousDataSample
+                                }
+                                valueFormatter={
+                                  this.state.dataSampleKey === StorageFilters.value.key
+                                    ? costTickFormatter
+                                    : numberFormatter
+                                }
+                              />
+                            </div>
+                          )
+                        }
+                      </ResizableContainer>
+                    </Layout.Panel>
+                  </div>
+                ) : (
+                  null
+                )}
+                <div key={this.layout.Panels.storages}>
                   <Layout.Panel>
                     <ResizableContainer style={{width: '100%', height: '100%'}}>
                       {
                         ({height}) => (
                           <div>
-                            <div
+                            {/* <div
                               style={{
                                 display: 'flex',
                                 flexDirection: 'row',
@@ -351,7 +487,7 @@ class StorageReports extends React.Component {
                                 onChange={this.onChangeDataSample}
                                 value={this.state.dataSampleKey}
                               />
-                            </div>
+                            </div> */}
                             <BarChart
                               request={storages}
                               discounts={storageDiscounts}
@@ -382,7 +518,7 @@ class StorageReports extends React.Component {
                     </ResizableContainer>
                   </Layout.Panel>
                 </div>
-                <div key={StorageReportLayout.Panels.storagesTable}>
+                <div key={this.layout.Panels.storagesTable}>
                   <Layout.Panel>
                     <ResizableContainer style={{width: '100%', height: '100%'}}>
                       {
