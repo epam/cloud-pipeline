@@ -28,31 +28,85 @@ import {costTickFormatter} from '../utilities';
 import QuotaSummaryChartsTitle from './quota-summary-chart';
 
 function toValueFormat (value) {
+  if (value === undefined || Number.isNaN(Number(value))) {
+    return 0;
+  }
   return Math.round((+value || 0) * 100.0) / 100.0;
 }
 
+function getItemValue (item, ...keys) {
+  const [key, ...rest] = keys;
+  if (!item || !key || !Object.prototype.hasOwnProperty.call(item, key)) {
+    return undefined;
+  }
+  const value = item[key];
+  if (!Number.isNaN(Number(value))) {
+    return value;
+  }
+  if (typeof value === 'object' && rest.length > 0) {
+    return getItemValue(value, ...rest);
+  }
+  return undefined;
+}
+
+function getItemSampleValue (item, sample) {
+  if (typeof sample === 'string') {
+    return getItemValue(item, ...sample.split('.'));
+  }
+  if (Array.isArray(sample)) {
+    const values = sample.map((singleSample) => getItemSampleValue(item, singleSample));
+    if (!values.some((aValue) => aValue !== undefined && !Number.isNaN(Number(aValue)))) {
+      return undefined;
+    }
+    return values.reduce((r, c) => (r || 0) + (c || 0), 0);
+  }
+  if (typeof sample === 'function') {
+    return sample(item);
+  }
+  return undefined;
+}
+
 function getValues (data, propertyName = 'value') {
-  return data.map(({item}) => toValueFormat(item[propertyName]));
+  return data.map(({item}) => toValueFormat(getItemSampleValue(item, propertyName)));
 }
 
 function getMaximum (...values) {
   const trueMaximum = Math.max(...values.filter(v => !isNaN(v)), 0);
   const extended = trueMaximum * 1.2; // + 20%
   const step = trueMaximum / 10.0;
+  if (step === 0) {
+    return 1.0;
+  }
   const basis = 10 ** Math.floor(Math.log10(step));
   return Math.ceil(extended / basis) * basis;
 }
 
 function filterTopData (data, top, dataSample = 'value') {
   const sortedData = Object.keys(data || {})
-    .map((key) => ({name: key, item: data[key]}));
+    .map((key) => ({
+      name: key,
+      item: data[key],
+      value: getItemSampleValue(data[key], dataSample)
+    }))
+    .map((item) => ({
+      ...item,
+      value: item.value === undefined ? -Infinity : item.value
+    }));
   sortedData
-    .sort((a, b) => +b.item[dataSample] - (+a.item[dataSample]));
+    .sort((a, b) => b.value - a.value);
   if (top) {
     return sortedData.filter((o, i) => i < top);
   }
   return sortedData;
 }
+
+const DefaultCurrentDataset = {
+  sample: 'value'
+};
+const DefaultPreviousDataset = {
+  sample: 'previous',
+  isPrevious: true
+};
 
 function BarChart (
   {
@@ -60,8 +114,7 @@ function BarChart (
     request,
     discounts: discountsFn,
     data: rawData,
-    dataSample = 'value',
-    previousDataSample = 'previous',
+    datasets = [DefaultCurrentDataset, DefaultPreviousDataset],
     onSelect,
     onScaleSelect,
     title,
@@ -69,6 +122,7 @@ function BarChart (
     subChart,
     subChartTitleStyle,
     top = 10,
+    topDescription,
     valueFormatter = costTickFormatter,
     useImageConsumer = true,
     onImageDataReceived,
@@ -77,7 +131,8 @@ function BarChart (
     displayQuotasSummary,
     quotaGroup,
     highlightTickFn,
-    highlightTickStyle = {}
+    highlightTickStyle = {},
+    extraTooltipForItem = ((o) => undefined)
   }
 ) {
   if (!request) {
@@ -104,47 +159,66 @@ function BarChart (
   const [error] = Array.isArray(request)
     ? request.filter(r => r.error).map(r => r.error)
     : [request.error];
-  const filteredData = filterTopData(data, top, dataSample);
+  const currentDataset = datasets.find((o) => o.main) ||
+    datasets.find((o) => !o.isPrevious) ||
+    datasets[0];
+  const filteredData = filterTopData(data, top, currentDataset ? currentDataset.sample : 'value');
   const groups = filteredData.map(d => d.name);
   const displayGroups = groups.map(itemNameFn);
-  const previousData = getValues(filteredData, previousDataSample);
-  const currentData = getValues(filteredData, dataSample);
+  const processedDatasets = datasets.map((dataset) => {
+    const {
+      isPrevious = false,
+      sample,
+      ...options
+    } = dataset;
+    const {
+      title,
+      ...rest
+    } = options;
+    const data = getValues(filteredData, sample);
+    return {
+      label: title || (isPrevious ? 'Previous' : 'Current'),
+      type: isPrevious ? 'previous-line-bar' : 'bar',
+      data,
+      borderWidth: 2,
+      borderColor: isPrevious ? reportThemes.blue : reportThemes.current,
+      backgroundColor: isPrevious ? reportThemes.blue : reportThemes.lightCurrent,
+      borderSkipped: '',
+      textColor: reportThemes.textColor,
+      flagColor: isPrevious ? reportThemes.blue : reportThemes.current,
+      textBold: false,
+      maxBarThickness: 70,
+      borderDash: isPrevious ? [4, 4] : undefined,
+      showDataLabels: isPrevious ? false : undefined,
+      maximum: Math.max(0, ...data),
+      isPrevious,
+      ...rest
+    };
+  }).sort((a, b) => {
+    if (a.isPrevious) {
+      return -1;
+    }
+    if (b.isPrevious) {
+      return 1;
+    }
+    return 0;
+  });
   const maximum = getMaximum(
-    ...previousData,
-    ...currentData
+    ...processedDatasets.filter(dataset => dataset.data.length > 0).map(dataset => dataset.maximum)
   );
   const disabled = isNaN(maximum);
   const chartData = {
     labels: displayGroups,
-    datasets: [
-      {
-        label: 'Previous',
-        type: 'previous-line-bar',
-        data: previousData,
-        borderWidth: 2,
-        borderDash: [4, 4],
-        borderColor: reportThemes.blue,
-        backgroundColor: reportThemes.blue,
-        borderSkipped: '',
-        textColor: reportThemes.textColor,
-        flagColor: reportThemes.blue,
-        textBold: false,
-        showDataLabels: false,
-        maxBarThickness: 70
-      },
-      {
-        label: 'Current',
-        data: currentData,
-        borderWidth: 2,
-        borderColor: reportThemes.current,
-        backgroundColor: reportThemes.lightCurrent,
-        borderSkipped: '',
-        textColor: reportThemes.textColor,
-        flagColor: reportThemes.current,
-        textBold: false,
-        maxBarThickness: 70
-      }
-    ]
+    datasets: processedDatasets
+  };
+  const getTitle = () => {
+    if (top && topDescription) {
+      return `${title} (TOP ${top}, ${topDescription})`;
+    }
+    if (top) {
+      return `${title} (TOP ${top})`;
+    }
+    return title;
   };
   const options = {
     animation: {duration: 0},
@@ -190,7 +264,7 @@ function BarChart (
     },
     title: {
       display: !subChart && !!title,
-      text: top ? `${title} (TOP ${top})` : title,
+      text: getTitle(),
       fontColor: reportThemes.textColor
     },
     legend: {
@@ -204,13 +278,36 @@ function BarChart (
         return b - a;
       },
       callbacks: {
-        label: function (tooltipItem, data) {
-          const {label} = data.datasets[tooltipItem.datasetIndex];
-          const value = valueFormatter(tooltipItem.yLabel);
-          if (label) {
-            return `${label}: ${value}`;
+        label: function (tooltipItem, chart) {
+          const dataset = chart.datasets[tooltipItem.datasetIndex];
+          const {
+            label,
+            showTooltip = true,
+            tooltipValue = (o) => o
+          } = dataset || {};
+          const {
+            index
+          } = tooltipItem;
+          if (!showTooltip) {
+            return false;
           }
-          return value;
+          const value = valueFormatter(tooltipItem.yLabel);
+          const item = filteredData[index];
+          const display = tooltipValue(value, item ? item.item : undefined);
+          if (label) {
+            return `${label}: ${display}`;
+          }
+          return display;
+        },
+        beforeFooter: function (tooltips, chart) {
+          if (!extraTooltipForItem) {
+            return undefined;
+          }
+          const {
+            index = 0
+          } = tooltips[0] || {};
+          const item = filteredData[index];
+          return extraTooltipForItem(item ? item.item : undefined);
         }
       }
     },

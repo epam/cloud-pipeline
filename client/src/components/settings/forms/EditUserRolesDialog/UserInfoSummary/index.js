@@ -188,9 +188,9 @@ export default class UserInfoSummary extends React.Component {
         ...periodInfo
       };
       this.requests = {
-        pipelines: new GetGroupedPipelines(filters),
-        tools: new GetGroupedTools(filters),
-        storages: new GetGroupedStorages(filters)
+        pipelines: new GetGroupedPipelines({filters}),
+        tools: new GetGroupedTools({filters}),
+        storages: new GetGroupedStorages({filters})
       };
       const promises = Object.values(this.requests)
         .map(request => new Promise(resolve => {

@@ -21,3 +21,4 @@ export {default as colors} from './colors';
 export {default as GroupedBarChart} from './grouped-bar-chart';
 export {default as PieChart} from './pie-chart';
 export {default as Summary} from './summaryHOC';
+export {default as StorageLayers} from './storage-layers';

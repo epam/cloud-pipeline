@@ -16,8 +16,17 @@
 
 import Panels from './panels';
 
-export default {
+const defaultSizes = {
   [Panels.summary]: {w: 5, h: 1},
   [Panels.storages]: {w: 7, h: 1},
   [Panels.storagesTable]: {w: 4, h: 1}
 };
+
+const defaultObjectsSizes = {
+  [Panels.summary]: {w: 5, h: 1},
+  [Panels.storageLayers]: {w: 4, h: 1},
+  [Panels.storages]: {w: 7, h: 1},
+  [Panels.storagesTable]: {w: 4, h: 1}
+};
+
+export {defaultSizes, defaultObjectsSizes};

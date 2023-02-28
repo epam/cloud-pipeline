@@ -16,27 +16,29 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {
-  Pagination,
-  Table
-} from 'antd';
-import moment from 'moment-timezone';
+import {computed} from 'mobx';
+import {Icon, Button} from 'antd';
 import {
   BarChart,
   BillingTable,
-  Summary
+  Summary,
+  StorageLayers
 } from './charts';
 import {
   costTickFormatter,
   numberFormatter,
-  DisplayUser,
   ResizableContainer
 } from './utilities';
 import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
+import {
+  getBillingGroupingSortField,
+  parseStorageMetrics,
+  StorageMetrics
+} from '../navigation/metrics';
 import {Period, getPeriod} from '../../special/periods';
 import StorageFilter, {StorageFilters} from './filters/storage-filter';
 import Export from './export';
-import Discounts, {discounts} from './discounts';
+import Discounts from './discounts';
 import {
   GetBillingData,
   GetGroupedStorages,
@@ -44,11 +46,36 @@ import {
   GetGroupedFileStorages,
   GetGroupedFileStoragesWithPrevious,
   GetGroupedObjectStorages,
-  GetGroupedObjectStoragesWithPrevious
+  GetGroupedObjectStoragesWithPrevious,
+  GetObjectStorageLayersInfo,
+  preFetchBillingRequest,
+  LAYERS_KEYS
 } from '../../../models/billing';
 import {StorageReportLayout, Layout} from './layout';
+import {
+  getAggregateByStorageClass,
+  getBillingGroupingOrderAggregate,
+  getStorageClassName,
+  getStorageClassNameByAggregate,
+  parseStorageAggregate,
+  StorageAggregate,
+  DEFAULT_STORAGE_CLASS_ORDER,
+  getStorageClassByAggregate
+} from '../navigation/aggregate';
+import {
+  getDetailsDatasetsByStorageClassAndMetrics, getItemDetailsByMetrics,
+  getSummaryDatasetsByStorageClass
+} from './charts/object-storage/get-datasets-by-storage-class';
+import StorageTable from './storage-table';
 
 const tablePageSize = 10;
+
+const LAYERS_LABELS = {
+  [LAYERS_KEYS.avgSize]: 'Average size',
+  [LAYERS_KEYS.oldVersionAvgSize]: 'Old versions average size',
+  [LAYERS_KEYS.cost]: 'Cost',
+  [LAYERS_KEYS.oldVersionCost]: 'Old versions cost'
+};
 
 function injection (stores, props) {
   const {location, params} = props;
@@ -58,44 +85,80 @@ function injection (stores, props) {
     group: groupQ,
     period = Period.month,
     range,
-    region: regionQ
+    region: regionQ,
+    metrics: metricsQ,
+    layer: aggregateQ
   } = location.query;
+  const metrics = parseStorageMetrics(metricsQ);
+  const aggregate = /^object$/i.test(type)
+    ? parseStorageAggregate(aggregateQ)
+    : undefined;
   const periodInfo = getPeriod(period, range);
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
-  const filters = {
+  const filtersWithoutOrder = {
     group,
     user,
     type,
     cloudRegionId,
     ...periodInfo
   };
+  const filters = {
+    ...filtersWithoutOrder,
+    order: {
+      metric: getBillingGroupingSortField(metrics),
+      aggregate: getBillingGroupingOrderAggregate(aggregate)
+    }
+  };
   let filterBy = GetBillingData.FILTER_BY.storages;
-  let storages;
-  let storagesTable;
   let storageType;
+  const loadCostDetails = /^object$/i.test(type);
+  let StorageRequest = GetGroupedStoragesWithPrevious;
+  let StorageTableRequest = GetGroupedStorages;
+  let tiersRequest;
   if (/^file$/i.test(type)) {
     storageType = 'FILE_STORAGE';
-    storages = new GetGroupedFileStoragesWithPrevious(filters, true);
-    storagesTable = new GetGroupedFileStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.fileStorages;
+    StorageRequest = GetGroupedFileStoragesWithPrevious;
+    StorageTableRequest = GetGroupedFileStorages;
   } else if (/^object$/i.test(type)) {
     storageType = 'OBJECT_STORAGE';
-    storages = new GetGroupedObjectStoragesWithPrevious(filters, true);
-    storagesTable = new GetGroupedObjectStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.objectStorages;
-  } else {
-    storages = new GetGroupedStoragesWithPrevious(filters, true);
-    storagesTable = new GetGroupedStorages(filters, true);
+    StorageRequest = GetGroupedObjectStoragesWithPrevious;
+    StorageTableRequest = GetGroupedObjectStorages;
+    tiersRequest = new GetObjectStorageLayersInfo({
+      filters: {
+        ...filtersWithoutOrder,
+        filterBy: GetBillingData.FILTER_BY.objectStorages
+      },
+      loadCostDetails: true
+    });
   }
-  storages.fetch();
-  storagesTable.fetch();
-  const summary = new GetBillingData({
-    ...filters,
-    filterBy
+  const storages = new StorageRequest({
+    filters,
+    pagination: true,
+    loadCostDetails
   });
-  summary.fetch();
+  const storagesTable = new StorageTableRequest({
+    filters,
+    pagination: true,
+    loadCostDetails
+  });
+  (storages.fetch)();
+  (storagesTable.fetch)();
+  const summary = new GetBillingData({
+    filters: {
+      ...filtersWithoutOrder,
+      filterBy
+    },
+    loadCostDetails
+  });
+  (summary.fetch)();
+
+  if (tiersRequest) {
+    (preFetchBillingRequest)(tiersRequest);
+  }
 
   return {
     user,
@@ -104,145 +167,42 @@ function injection (stores, props) {
     summary,
     storages,
     storagesTable,
+    tiersRequest,
     storageType
   };
 }
-
-function renderTable ({storages, discounts: discountsFn, height}) {
-  if (!storages || !storages.loaded) {
-    return null;
-  }
-  const columns = [
-    {
-      key: 'storage',
-      title: 'Storage',
-      render: ({info, name}) => {
-        return info && info.name ? info.pathMask || info.name : name;
-      }
-    },
-    {
-      key: 'owner',
-      title: 'Owner',
-      dataIndex: 'owner',
-      render: owner => (<DisplayUser userName={owner} />)
-    },
-    {
-      key: 'billingCenter',
-      title: 'Billing Center',
-      dataIndex: 'billingCenter'
-    },
-    {
-      key: 'storageType',
-      title: 'Type',
-      dataIndex: 'storageType'
-    },
-    {
-      key: 'cost',
-      title: 'Cost',
-      dataIndex: 'value',
-      render: (value) => value ? costTickFormatter(value) : null
-    },
-    {
-      key: 'volume',
-      title: 'Avg. Vol. (GB)',
-      dataIndex: 'usage',
-      render: (value) => value ? numberFormatter(value) : null
-    },
-    {
-      key: 'volume current',
-      title: 'Cur. Vol. (GB)',
-      dataIndex: 'usageLast',
-      render: (value) => value ? numberFormatter(value) : null
-    },
-    {
-      key: 'region',
-      title: 'Region',
-      dataIndex: 'region'
-    },
-    {
-      key: 'provider',
-      title: 'Provider',
-      dataIndex: 'provider'
-    },
-    {
-      key: 'created',
-      title: 'Created date',
-      dataIndex: 'created',
-      render: (value) => value ? moment.utc(value).format('DD MMM YYYY') : value
-    }
-  ];
-  const dataSource = Object.values(
-    discounts.applyGroupedDataDiscounts(storages.value || {}, discountsFn)
-  );
-  const paginationEnabled = storages && storages.loaded
-    ? storages.totalPages > 1
-    : false;
-  const getRowClassName = (storage = {}) => {
-    if (`${(storage.groupingInfo || {}).is_deleted}` === 'true') {
-      return 'cp-warning-row';
-    }
-    return '';
-  };
-  return (
-    <div>
-      <div
-        style={{
-          position: 'relative',
-          overflow: 'auto',
-          maxHeight: height - (paginationEnabled ? 30 : 0),
-          padding: 5
-        }}
-      >
-        <Table
-          className="cp-report-table"
-          rowClassName={getRowClassName}
-          rowKey={({info, name}) => {
-            return info && info.id ? `storage_${info.id}` : `storage_${name}`;
-          }}
-          loading={storages.pending}
-          dataSource={dataSource}
-          columns={columns}
-          pagination={false}
-          size="small"
-        />
-      </div>
-      {
-        paginationEnabled && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              height: 30
-            }}
-          >
-            <Pagination
-              current={storages.pageNum + 1}
-              pageSize={storages.pageSize}
-              total={storages.totalPages * storages.pageSize}
-              onChange={async (page) => {
-                await storages.fetchPage(page - 1);
-              }}
-              size="small"
-            />
-          </div>
-        )
-      }
-    </div>
-  );
-}
-
-const RenderTable = observer(renderTable);
 
 class StorageReports extends React.Component {
   state = {
     dataSampleKey: StorageFilters.value.key
   };
 
-  onChangeDataSample = (key) => {
-    this.setState({
-      dataSampleKey: key
-    });
+  get layout () {
+    const {type} = this.props;
+    if (/^object$/i.test(type)) {
+      return {
+        ...StorageReportLayout,
+        Layout: StorageReportLayout.ObjectsLayout
+      };
+    }
+    return StorageReportLayout;
+  }
+
+  onSelectLayer = ({key}) => {
+    const {
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate,
+      storageAggregateNavigation
+    } = filters;
+    if (typeof storageAggregateNavigation === 'function') {
+      storageAggregateNavigation(
+        !key || storageAggregate === key
+          ? StorageAggregate.default
+          : key
+      );
+    }
   };
 
   getSummaryTitle = () => {
@@ -257,14 +217,177 @@ class StorageReports extends React.Component {
   };
 
   getTitle = () => {
-    const {type} = this.props;
+    const {
+      type,
+      filters = {}
+    } = this.props;
     if (/^file$/i.test(type)) {
       return 'File storages';
     }
     if (/^object$/i.test(type)) {
-      return 'Object storages';
+      const {
+        storageAggregate
+      } = filters;
+      if (!storageAggregate || storageAggregate === StorageAggregate.default) {
+        return 'Object storages';
+      }
+      const name = getStorageClassNameByAggregate(storageAggregate);
+      return `${name} object storages`;
     }
     return 'Storages';
+  };
+
+  @computed
+  get tiersData () {
+    const {
+      filters = {},
+      tiersRequest
+    } = this.props;
+    let data = {};
+    const {
+      metrics
+    } = filters;
+    if (tiersRequest && tiersRequest.loaded) {
+      const [storage = {}] = Object.values(tiersRequest.value || []);
+      if (storage.costDetails && storage.costDetails.tiers) {
+        data = storage.costDetails.tiers;
+      }
+    }
+    const labels = Object.keys(data)
+      .filter((storageClass) => DEFAULT_STORAGE_CLASS_ORDER.includes(storageClass))
+      .sort((a, b) => {
+        const aIndex = DEFAULT_STORAGE_CLASS_ORDER.indexOf(a);
+        const bIndex = DEFAULT_STORAGE_CLASS_ORDER.indexOf(b);
+        return aIndex - bIndex;
+      });
+    const aggregates = labels.map(label => getAggregateByStorageClass(label));
+    const getData = (key, labels) => {
+      const result = [];
+      labels.forEach((label) => {
+        result.push((data[label] || {})[key] || 0);
+      });
+      return result;
+    };
+
+    const filter = metrics === StorageMetrics.volume
+      ? [LAYERS_KEYS.avgSize, LAYERS_KEYS.oldVersionAvgSize]
+      : [LAYERS_KEYS.cost, LAYERS_KEYS.oldVersionCost];
+    const datasets = filter
+      .map(key => {
+        return {
+          stack: 'details',
+          details: true,
+          label: LAYERS_LABELS[key] || key,
+          data: getData(key, labels),
+          isOldVersions: [LAYERS_KEYS.oldVersionCost, LAYERS_KEYS.oldVersionAvgSize].includes(key),
+          showDataLabel: (value, datasetValues, options) => {
+            const {
+              dataset,
+              getPxSize = (() => 0)
+            } = options || {};
+            if (dataset.isOldVersions) {
+              return false;
+            }
+            const detailsDatasets = datasetValues
+              .filter((value) => value.dataset.details &&
+                (value.value > 0 && getPxSize(value.value) > 5.0)
+              );
+            return detailsDatasets.length > 1;
+          }
+        };
+      });
+    const totalDataset = (datasets || []).reduce((acc, current) => {
+      acc.data = current.data.map((value, index) => value + (acc.data[index] || 0));
+      return acc;
+    }, {
+      data: [],
+      label: 'Total',
+      dataItemTitle: 'Total',
+      hidden: true,
+      showDataLabel: true,
+      showFlag: true
+    });
+    return {
+      aggregates,
+      labels: labels.map(getStorageClassName),
+      datasets: [totalDataset, ...datasets]
+    };
+  }
+
+  @computed
+  get summaryDatasets () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return undefined;
+    }
+    const total = !storageAggregate || storageAggregate === StorageAggregate.default;
+    const storageClass = total
+      ? 'TOTAL'
+      : getStorageClassByAggregate(storageAggregate);
+    return getSummaryDatasetsByStorageClass(storageClass);
+  }
+
+  @computed
+  get detailsDatasets () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate,
+      metrics
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return getDetailsDatasetsByStorageClassAndMetrics(undefined, metrics);
+    }
+    const total = !storageAggregate || storageAggregate === StorageAggregate.default;
+    const storageClass = total
+      ? 'TOTAL'
+      : getStorageClassByAggregate(storageAggregate);
+    return getDetailsDatasetsByStorageClassAndMetrics(storageClass, metrics);
+  }
+
+  @computed
+  get extraTooltipForItemCallback () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      metrics
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return () => undefined;
+    }
+    return (dataItem) => getItemDetailsByMetrics(dataItem, metrics);
+  }
+
+  renderSelectedLayerButton = () => {
+    const {filters} = this.props;
+    const {storageAggregate} = filters;
+    const layer = this.tiersData.labels[this.tiersData.aggregates.indexOf(storageAggregate)];
+    if (layer) {
+      return (
+        <Button
+          size="small"
+          onClick={() => this.onSelectLayer({})}
+          style={{
+            position: 'absolute',
+            top: 5,
+            right: 5
+          }}
+        >
+          <Icon type="close" /> {layer}
+        </Button>
+      );
+    }
+    return null;
   };
 
   render () {
@@ -274,12 +397,31 @@ class StorageReports extends React.Component {
       summary,
       user,
       group,
+      type,
       filters = {},
       storageType,
-      reportThemes
+      reportThemes,
+      tiersRequest
     } = this.props;
-    const {period, range, region: cloudRegionId} = filters;
+    const {
+      period,
+      range,
+      region: cloudRegionId,
+      storageAggregate,
+      metrics
+    } = filters;
     const costsUsageSelectorHeight = 30;
+    const tiersPending = tiersRequest && tiersRequest.pending;
+    const tiersData = this.tiersData;
+    const isVolumeMetrics = metrics === StorageMetrics.volume;
+    const valueFormatter = isVolumeMetrics
+      ? numberFormatter
+      : costTickFormatter;
+    const topDescription = isVolumeMetrics
+      ? 'GB'
+      : undefined;
+    const showTableDetails = /^object$/i.test(type);
+    const selectedIndex = tiersData.aggregates.indexOf(storageAggregate);
     return (
       <Discounts.Consumer>
         {
@@ -301,10 +443,10 @@ class StorageReports extends React.Component {
               }}
             >
               <Layout
-                layout={StorageReportLayout.Layout}
-                gridStyles={StorageReportLayout.GridStyles}
+                layout={this.layout.Layout}
+                gridStyles={this.layout.GridStyles}
               >
-                <div key={StorageReportLayout.Panels.summary}>
+                <div key={this.layout.Panels.summary}>
                   <Layout.Panel
                     style={{
                       display: 'flex',
@@ -321,6 +463,7 @@ class StorageReports extends React.Component {
                       {
                         ({width, height}) => (
                           <Summary
+                            datasets={this.summaryDatasets}
                             storages={summary}
                             storagesDiscounts={storageDiscounts}
                             quota
@@ -332,49 +475,86 @@ class StorageReports extends React.Component {
                     </ResizableContainer>
                   </Layout.Panel>
                 </div>
-                <div key={StorageReportLayout.Panels.storages}>
+                {/^object$/i.test(type) && tiersRequest ? (
+                  <div key={this.layout.Panels.storageLayers}>
+                    <Layout.Panel>
+                      <ResizableContainer style={{width: '100%', height: '100%'}}>
+                        {
+                          ({height}) => (
+                            <div>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'row',
+                                  justifyContent: 'center',
+                                  alignItems: 'center',
+                                  height: costsUsageSelectorHeight,
+                                  position: 'relative'
+                                }}
+                              >
+                                <StorageFilter />
+                                {this.renderSelectedLayerButton()}
+                              </div>
+                              <StorageLayers
+                                highlightedLabel={selectedIndex}
+                                loading={tiersPending}
+                                onSelect={this.onSelectLayer}
+                                data={tiersData}
+                                title={
+                                  ['Object storage layers', topDescription]
+                                    .filter(Boolean).join(', ')
+                                }
+                                style={{height: height - costsUsageSelectorHeight}}
+                                valueFormatter={valueFormatter}
+                                highlightTickFn={
+                                  (_, tick) => tick._index === selectedIndex
+                                }
+                                discounts={isVolumeMetrics ? undefined : storageDiscounts}
+                              />
+                            </div>
+                          )
+                        }
+                      </ResizableContainer>
+                    </Layout.Panel>
+                  </div>
+                ) : null}
+                <div key={this.layout.Panels.storages}>
                   <Layout.Panel>
                     <ResizableContainer style={{width: '100%', height: '100%'}}>
                       {
                         ({height}) => (
                           <div>
-                            <div
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'row',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                height: costsUsageSelectorHeight
-                              }}
-                            >
-                              <StorageFilter
-                                onChange={this.onChangeDataSample}
-                                value={this.state.dataSampleKey}
-                              />
-                            </div>
+                            {
+                              !/^object$/i.test(type) && (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: costsUsageSelectorHeight
+                                  }}
+                                >
+                                  <StorageFilter />
+                                </div>
+                              )
+                            }
                             <BarChart
                               request={storages}
                               discounts={storageDiscounts}
                               title={this.getTitle()}
                               top={tablePageSize}
+                              topDescription={topDescription}
                               style={{height: height - costsUsageSelectorHeight}}
-                              dataSample={
-                                StorageFilters[this.state.dataSampleKey].dataSample
-                              }
-                              previousDataSample={
-                                StorageFilters[this.state.dataSampleKey].previousDataSample
-                              }
-                              valueFormatter={
-                                this.state.dataSampleKey === StorageFilters.value.key
-                                  ? costTickFormatter
-                                  : numberFormatter
-                              }
+                              datasets={this.detailsDatasets}
+                              valueFormatter={valueFormatter}
                               highlightTickFn={
                                 (storage) => `${(storage.groupingInfo || {}).is_deleted}` === 'true'
                               }
                               highlightTickStyle={{
                                 fontColor: reportThemes.errorColor
                               }}
+                              extraTooltipForItem={this.extraTooltipForItemCallback}
                             />
                           </div>
                         )
@@ -382,15 +562,17 @@ class StorageReports extends React.Component {
                     </ResizableContainer>
                   </Layout.Panel>
                 </div>
-                <div key={StorageReportLayout.Panels.storagesTable}>
+                <div key={this.layout.Panels.storagesTable}>
                   <Layout.Panel>
                     <ResizableContainer style={{width: '100%', height: '100%'}}>
                       {
                         ({height}) => (
-                          <RenderTable
+                          <StorageTable
                             storages={storagesTable}
                             discounts={storageDiscounts}
                             height={height}
+                            aggregate={storageAggregate}
+                            showDetails={showTableDetails}
                           />
                         )
                       }

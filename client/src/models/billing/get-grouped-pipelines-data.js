@@ -1,16 +1,26 @@
 import {GetGroupedInstances} from './get-grouped-instances';
-import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
+import GetGroupedComputeDataWithPrevious from './get-grouped-compute-data-with-previous';
 
 export class GetGroupedPipelines extends GetGroupedInstances {
-  constructor (filters, pagination = null) {
-    super(filters, pagination);
+  /**
+   * @param {GetGroupedInstancesOptions} options
+   */
+  constructor (options = {}) {
+    super(options);
     this.grouping = 'PIPELINE';
   }
 }
 
-export class GetGroupedPipelinesWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+export class GetGroupedPipelinesWithPrevious extends GetGroupedComputeDataWithPrevious {
+  /**
+   * @param {GetGroupedInstancesOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {
       end,
       endStrict,
@@ -25,8 +35,11 @@ export class GetGroupedPipelinesWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedPipelines,
-      formattedFilters,
-      pagination
+      {
+        filters: formattedFilters,
+        pagination
+      },
+      'pipelines'
     );
   }
 

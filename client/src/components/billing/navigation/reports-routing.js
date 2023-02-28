@@ -93,6 +93,26 @@ const reportsRouting = {
   getTitle: function (name) {
     const match = this.configurations.find(c => c.name === name);
     return match?.title || this.general.title;
+  },
+  isStorage: function (report) {
+    const path = this.getPath(report);
+    return [
+      this.storages.path,
+      this.storages.file.path,
+      this.storages.object.path
+    ].includes(path);
+  },
+  isObjectStorage: function (report) {
+    const path = this.getPath(report);
+    return path === this.storages.object.path;
+  },
+  isQuota: function (report) {
+    const path = this.getPath(report);
+    return [
+      this.quotas.path,
+      this.quotas.compute.path,
+      this.quotas.storage.path
+    ].includes(path);
   }
 };
 
