@@ -165,6 +165,7 @@ public class StorageToRequestConverterTest {
     private static final BigDecimal AZ_NFS_STORAGE_1_GB_DAILY_PRICE = BigDecimal.valueOf(2);
     public static final String STORAGE_CLASS = "STANDARD";
     public static final String ARCHIVE_CLASS = "GLACIER";
+    public static final String TEST_INDEX_NAME = "test-index-name";
 
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(USER_NAME)
@@ -221,12 +222,14 @@ public class StorageToRequestConverterTest {
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
             StringUtils.EMPTY,
+            StringUtils.EMPTY,
             false);
         gcpConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.GS_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
+            StringUtils.EMPTY,
             StringUtils.EMPTY,
             false);
         azureBlobConverter = new StorageToBillingRequestConverter(
@@ -235,12 +238,14 @@ public class StorageToRequestConverterTest {
             StorageType.OBJECT_STORAGE,
             testStoragePricing,
             StringUtils.EMPTY,
+            StringUtils.EMPTY,
             false);
         nfsConverter = new StorageToBillingRequestConverter(
             new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, BILLING_CENTER_KEY),
             elasticsearchClient,
             StorageType.FILE_STORAGE,
             testStoragePricing,
+            StringUtils.EMPTY,
             StringUtils.EMPTY,
             fileShareMountsService,
             MountType.NFS,
@@ -251,6 +256,7 @@ public class StorageToRequestConverterTest {
             StorageType.FILE_STORAGE,
             testAzureNfsStoragePricing,
             StringUtils.EMPTY,
+            StringUtils.EMPTY,
             fileShareMountsService,
             MountType.NFS,
             false);
@@ -259,6 +265,7 @@ public class StorageToRequestConverterTest {
             elasticsearchClient,
             StorageType.FILE_STORAGE,
             testAzureNfsStoragePricing,
+            StringUtils.EMPTY,
             StringUtils.EMPTY,
             fileShareMountsService,
             MountType.SMB,
@@ -520,6 +527,7 @@ public class StorageToRequestConverterTest {
         Mockito.when(response.getAggregations()).thenReturn(aggregations);
         Mockito.when(response.getHits()).thenReturn(hits);
         Mockito.when(elasticsearchClient.isIndexExists(Mockito.anyString())).thenReturn(true);
+        Mockito.when(elasticsearchClient.getIndexNameByAlias(Mockito.anyString())).thenReturn(TEST_INDEX_NAME);
         Mockito.when(elasticsearchClient.search(Mockito.any())).thenReturn(response);
     }
 

@@ -35,6 +35,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -73,6 +74,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private final ElasticsearchServiceClient elasticsearchService;
     private final StorageType storageType;
     private final StoragePricingService storagePricing;
+    private final String esFileAliasIndexPattern;
     private final String esFileIndexPattern;
     private final Optional<FileShareMountsService> fileshareMountsService;
     private final MountType desiredMountType;
@@ -82,16 +84,18 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                             final ElasticsearchServiceClient elasticsearchService,
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
+                                            final String esFileAliasIndexPattern,
                                             final String esFileIndexPattern,
                                             final boolean enableStorageHistoricalBillingGeneration) {
-        this(mapper, elasticsearchService, storageType, storagePricing, esFileIndexPattern, null, null,
-             enableStorageHistoricalBillingGeneration);
+        this(mapper, elasticsearchService, storageType, storagePricing, esFileAliasIndexPattern,
+                esFileIndexPattern, null, null, enableStorageHistoricalBillingGeneration);
     }
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                             final ElasticsearchServiceClient elasticsearchService,
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
+                                            final String esFileAliasIndexPattern,
                                             final String esFileIndexPattern,
                                             final FileShareMountsService fileshareMountsService,
                                             final MountType desiredMountType,
@@ -100,6 +104,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
         this.storagePricing = storagePricing;
+        this.esFileAliasIndexPattern = esFileAliasIndexPattern;
         this.esFileIndexPattern = esFileIndexPattern;
         this.fileshareMountsService = Optional.ofNullable(fileshareMountsService);
         this.desiredMountType = desiredMountType;
@@ -141,13 +146,10 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     private Optional<SearchResponse> requestSumAggregationForStorage(final Long storageId,
                                                                      final DataStorageType storageType) {
-        final String searchIndex = String.format(esFileIndexPattern,
-                                                 storageType.toString().toLowerCase(),
-                                                 DataStorageType.AZ.equals(storageType) ? "blob" : "file",
-                                                 storageId);
-        if (elasticsearchService.isIndexExists(searchIndex)) {
+        final String indexNameByAlias = getIndexName(storageId, storageType);
+        if (elasticsearchService.isIndexExists(indexNameByAlias)) {
             final SearchRequest searchRequest = new SearchRequest();
-            searchRequest.indices(searchIndex);
+            searchRequest.indices(indexNameByAlias);
             final TermsAggregationBuilder currentSizeSumAgg = AggregationBuilders
                     .terms(OBJECT_SIZE_AGG_NAME).field(STORAGE_CLASS_FIELD)
                     .subAggregation(AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(SIZE_FIELD));
@@ -161,6 +163,35 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
             return Optional.of(elasticsearchService.search(searchRequest));
         } else {
             return Optional.empty();
+        }
+    }
+
+    private String getIndexName(final Long storageId, final DataStorageType storageType) {
+        final String indexNameByAlias = getIndexNameByAlias(storageId, storageType);
+        if (indexNameByAlias == null) {
+            final String indexNamePattern = String.format(esFileIndexPattern, storageType.toString().toLowerCase(),
+                    DataStorageType.AZ.equals(storageType) ? "blob" : "file", storageId);
+            log.warn("Fail to found index by alias will use name pattern: {} for storage: {}, " +
+                    "billing can be calculated incorrectly!", indexNamePattern, storageId);
+            return indexNamePattern;
+        }
+        return indexNameByAlias;
+    }
+
+    private String getIndexNameByAlias(final Long storageId, final DataStorageType storageType) {
+        if (esFileAliasIndexPattern == null) {
+            return null;
+        }
+        final String searchIndex = String.format(esFileAliasIndexPattern,
+                storageType.toString().toLowerCase(),
+                DataStorageType.AZ.equals(storageType) ? "blob" : "file",
+                storageId);
+        try {
+            return elasticsearchService.getIndexNameByAlias(searchIndex);
+        } catch (ElasticsearchException e) {
+            log.warn(String.format("There is a problem to find index for storage %d by alias: %s!",
+                    storageId,  searchIndex), e);
+            return null;
         }
     }
 
