@@ -42,6 +42,7 @@ import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.cumulativesum.CumulativeSumPipelineAggregationBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 
 import java.util.ArrayList;
@@ -55,11 +56,18 @@ import java.util.stream.Stream;
 
 public final class StorageBillingCostDetailsLoader {
 
-    public static final String STORAGES_SIZE_DETAILS = "storages_size_details";
-    public static final String LATEST = "_latest";
+    private static final String STORAGES_SIZE_DETAILS = "storages_size_details";
+    private static final String LATEST = "_latest";
 
-    private StorageBillingCostDetailsLoader() {}
-
+    private static final String ACCUM_SUM_PREFIX = "accum_";
+    private static final String STORAGE_RT = "STORAGE";
+    private static final String OBJECT_STORAGE_ST = "OBJECT_STORAGE";
+    private static final String RT_FILTER = "resource_type";
+    private static final String ST_FILTER = "storage_type";
+    private static final String SC_COST_TEMPLATE = "%s_cost";
+    private static final String SC_USAGE_TEMPLATE = "%s_usage_bytes";
+    private static final String SC_OV_COST_TEMPLATE = "%s_ov_cost";
+    private static final String SC_OV_USAGE_TEMPLATE = "%s_ov_usage_bytes";
     public static final Map<String, String> STORAGE_CLASSES =
             Stream.of(
                     ImmutablePair.of("STANDARD", "Standard Layer"),
@@ -67,18 +75,14 @@ public final class StorageBillingCostDetailsLoader {
                     ImmutablePair.of("GLACIER_IR", "Glacier IR"),
                     ImmutablePair.of("DEEP_ARCHIVE", "Deep Archive")
             ).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
-
-    private static final String SC_COST_TEMPLATE = "%s_cost";
-    private static final String SC_USAGE_TEMPLATE = "%s_usage_bytes";
-    private static final String SC_OV_COST_TEMPLATE = "%s_ov_cost";
-    private static final String SC_OV_USAGE_TEMPLATE = "%s_ov_usage_bytes";
-
     public static final List<String> STORAGE_COST_DETAILS_AGGREGATION_MASKS = Arrays.asList(
             "_cost", "_ov_cost", "_usage_bytes", "_ov_usage_bytes",
             "_ov_usage_bytes_latest.hits.hits._source", "_usage_bytes_latest.hits.hits._source"
     );
 
-    public static void buildQuery(BillingCostDetailsRequest request, final AggregationBuilder topAgg) {
+    private StorageBillingCostDetailsLoader() {}
+
+    public static void buildQuery(final BillingCostDetailsRequest request, final AggregationBuilder topAgg) {
         final long storageDiscount = Optional.ofNullable(request.getDiscount())
                 .map(BillingDiscount::getStorages).orElse(0).longValue();
         if (request.getGrouping() == BillingGrouping.STORAGE) {
@@ -106,6 +110,10 @@ public final class StorageBillingCostDetailsLoader {
                 avgUsageOfStorageAgg.subAggregation(buildAvgAggregation(SC_OV_USAGE_TEMPLATE, sc));
                 topAgg.subAggregation(buildPipelineSumAggregation(STORAGES_SIZE_DETAILS, SC_USAGE_TEMPLATE, sc));
                 topAgg.subAggregation(buildPipelineSumAggregation(STORAGES_SIZE_DETAILS, SC_OV_USAGE_TEMPLATE, sc));
+                if (request.isHistogram()) {
+                    topAgg.subAggregation(buildAccumulativeSumAggregation(SC_COST_TEMPLATE, sc));
+                    topAgg.subAggregation(buildAccumulativeSumAggregation(SC_OV_COST_TEMPLATE, sc));
+                }
             }
             topAgg.subAggregation(avgUsageOfStorageAgg);
         }
@@ -125,6 +133,12 @@ public final class StorageBillingCostDetailsLoader {
                 detailsBuilder.size(fetchLastByDateHitValue(SC_USAGE_TEMPLATE, sc, aggregations));
                 detailsBuilder.oldVersionSize(fetchLastByDateHitValue(SC_OV_USAGE_TEMPLATE, sc, aggregations));
             }
+            if (request.isHistogram()) {
+                detailsBuilder.accumulativeCost(fetchSimpleAggregationValue(
+                        ACCUM_SUM_PREFIX + SC_COST_TEMPLATE, sc, aggregations));
+                detailsBuilder.accumulativeOldVersionCost(fetchSimpleAggregationValue(
+                        ACCUM_SUM_PREFIX + SC_OV_COST_TEMPLATE, sc, aggregations));
+            }
             final StorageBillingDetails details = detailsBuilder.build();
             if (!isDetailsEntryEmpty(details)) {
                 tiers.add(details);
@@ -142,11 +156,11 @@ public final class StorageBillingCostDetailsLoader {
             return true;
         } else {
             final Map<String, List<String>> filters = MapUtils.emptyIfNull(request.getFilters());
-            final Boolean onlyStorageRTypeRequestedOrNothing = Optional.ofNullable(filters.get("resource_type"))
-                    .map(values -> (values.contains("STORAGE") && values.size() == 1) || values.isEmpty())
+            final Boolean onlyStorageRTypeRequestedOrNothing = Optional.ofNullable(filters.get(RT_FILTER))
+                    .map(values -> (values.contains(STORAGE_RT) && values.size() == 1) || values.isEmpty())
                     .orElse(true);
-            final Boolean onlyObjectStorageSTypeRequested = Optional.ofNullable(filters.get("storage_type"))
-                    .map(values -> values.contains("OBJECT_STORAGE") && values.size() == 1).orElse(false);
+            final Boolean onlyObjectStorageSTypeRequested = Optional.ofNullable(filters.get(ST_FILTER))
+                    .map(values -> values.contains(OBJECT_STORAGE_ST) && values.size() == 1).orElse(false);
             return onlyObjectStorageSTypeRequested && onlyStorageRTypeRequestedOrNothing;
         }
     }
@@ -181,6 +195,12 @@ public final class StorageBillingCostDetailsLoader {
                 .map(source -> source.get(field))
                 .map(l -> l instanceof Long ? (Long) l : (Integer) l)
                 .orElse(0L);
+    }
+
+    private static CumulativeSumPipelineAggregationBuilder buildAccumulativeSumAggregation(
+            final String template, final String storageClass) {
+        final String agg = getAggregationField(template, storageClass);
+        return PipelineAggregatorBuilders.cumulativeSum(ACCUM_SUM_PREFIX + agg, agg);
     }
 
     private static TopHitsAggregationBuilder buildLastByDateHitAggregation(final String template,

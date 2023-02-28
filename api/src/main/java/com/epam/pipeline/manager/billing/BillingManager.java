@@ -166,7 +166,8 @@ public class BillingManager {
             final DateHistogramInterval interval = request.getInterval();
             final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
             final BillingCostDetailsRequest costDetailsRequest = BillingCostDetailsRequest.builder()
-                    .enabled(request.isLoadCostDetails()).filters(filters).grouping(grouping).build();
+                    .enabled(request.isLoadCostDetails()).filters(filters)
+                    .isHistogram(interval != null).grouping(grouping).build();
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval, costDetailsRequest);
             }
