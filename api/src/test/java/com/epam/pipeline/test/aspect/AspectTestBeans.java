@@ -413,6 +413,9 @@ public class AspectTestBeans {
     @MockBean
     protected CacheManager cacheManager;
 
+    @MockBean(name = "aclCacheManager")
+    protected CacheManager aclCacheManager;
+
     @MockBean
     protected NatGatewayDao natGatewayDao;
 
