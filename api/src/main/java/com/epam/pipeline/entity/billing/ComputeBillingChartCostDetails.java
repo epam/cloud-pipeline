@@ -16,6 +16,20 @@
 
 package com.epam.pipeline.entity.billing;
 
-public enum BillingChartCostDetailsType {
-    STORAGE_BILLING, COMPUTE_BILLING
+import lombok.Builder;
+import lombok.Value;
+
+@Builder
+@Value
+public class ComputeBillingChartCostDetails implements BillingChartDetails {
+
+    Long diskCost;
+    Long accumulatedDiskCost;
+    Long computeCost;
+    Long accumulatedComputeCost;
+
+    @Override
+    public BillingChartCostDetailsType getType() {
+        return BillingChartCostDetailsType.COMPUTE_BILLING;
+    }
 }

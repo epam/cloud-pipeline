@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.billing.billingdetails.BillingChartCostDetailsLoader;
+import com.epam.pipeline.manager.billing.billingdetails.ComputeBillingCostDetailsLoader;
 import com.epam.pipeline.manager.billing.billingdetails.StorageBillingCostDetailsLoader;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.billing.order.BillingOrderApplier;
@@ -39,6 +40,7 @@ import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
@@ -315,13 +317,6 @@ public class BillingManager {
         );
 
         fieldAgg.subAggregation(billingHelper.aggregateCostSum());
-
-        final boolean runReport = isRunBillingGrouping(grouping);
-        if (runReport) {
-            fieldAgg.subAggregation(billingHelper.aggregateDiskCostSum());
-            fieldAgg.subAggregation(billingHelper.aggregateComputeCostSum());
-        }
-
         fieldAgg.subAggregation(billingHelper.aggregateLastByDateDoc());
         if (grouping.isRunUsageDetailsRequired()) {
             fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
@@ -382,28 +377,25 @@ public class BillingManager {
 
     private String buildResponseFilterForGrouping(final String groupingName) {
         final String groupingBuckets = String.format(BillingUtils.FIRST_LEVEL_TERMS_AGG_BUCKETS_PATTERN, groupingName);
+        final List<String> costDetailsAggregations = ListUtils.union(
+                StorageBillingCostDetailsLoader.STORAGE_COST_DETAILS_AGGREGATION_MASKS,
+                ComputeBillingCostDetailsLoader.getCostDetailsAggregations());
         final List<String> responseFilters =
             Stream.concat(
                 Stream.of(
                     billingHelper.aggregateCostSum().getName(),
-                    billingHelper.aggregateDiskCostSum().getName(),
-                    billingHelper.aggregateComputeCostSum().getName(),
                     billingHelper.aggregateRunUsageSum().getName(),
                     billingHelper.aggregateUniqueRunsCount().getName(),
                     billingHelper.aggregateStorageUsageTotalSumBucket().getName(),
                     billingHelper.aggregateLastByDateDoc().getName()
                 ),
-                StorageBillingCostDetailsLoader.STORAGE_COST_DETAILS_AGGREGATION_MASKS.stream()
+                costDetailsAggregations.stream()
             ).map(aggName -> String.join(BillingUtils.ES_DOC_FIELDS_SEPARATOR, groupingBuckets,
                 BillingUtils.ES_WILDCARD + aggName)).collect(Collectors.toList());
         responseFilters.add(groupingBuckets + BillingUtils.ES_DOC_FIELDS_SEPARATOR + BillingUtils.ES_WILDCARD +
                 billingHelper.aggregateLastByDateStorageDoc().getName() + ".hits.hits._source");
         responseFilters.add(String.format(BillingUtils.FIRST_LEVEL_AGG_PATTERN,
                 billingHelper.aggregateCostSum().getName()));
-        responseFilters.add(String.format(BillingUtils.FIRST_LEVEL_AGG_PATTERN,
-                billingHelper.aggregateDiskCostSum().getName()));
-        responseFilters.add(String.format(BillingUtils.FIRST_LEVEL_AGG_PATTERN,
-                billingHelper.aggregateComputeCostSum().getName()));
         responseFilters.add(groupingBuckets + BillingUtils.ES_DOC_FIELDS_SEPARATOR +
                 BillingUtils.ES_TERMS_AGG_BUCKET_KEY);
         return String.join(BillingUtils.ES_ELEMENTS_SEPARATOR, responseFilters);
@@ -503,9 +495,8 @@ public class BillingManager {
         final BillingChartInfo.BillingChartInfoBuilder builder = BillingChartInfo.builder()
             .periodStart(from.atStartOfDay())
             .periodEnd(to.atTime(LocalTime.MAX))
-            .cost(parseSum(aggregations, BillingUtils.COST_FIELD))
-            .diskCost(parseSum(aggregations, BillingUtils.DISK_COST_FIELD))
-            .computeCost(parseSum(aggregations, BillingUtils.COMPUTE_COST_FIELD));
+            .cost(BillingUtils.parseSum(aggregations, BillingUtils.COST_FIELD));
+
         final Map<String, String> groupingInfo = new HashMap<>();
         final EntityBillingDetailsLoader detailsLoader = billingDetailsLoaders.get(grouping);
         final Map<String, String> defaultDetails = billingHelper.getLastByDateDocFields(aggregations)
@@ -563,12 +554,8 @@ public class BillingManager {
         final Aggregations aggregations = bucket.getAggregations();
         final BillingChartInfo.BillingChartInfoBuilder builder = BillingChartInfo.builder()
                 .groupingInfo(null)
-                .cost(parseSum(aggregations, BillingUtils.COST_FIELD))
-                .accumulatedCost(parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_COST))
-                .diskCost(parseSum(aggregations, BillingUtils.DISK_COST_FIELD))
-                .accumulatedDiskCost(parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_DISK_COST))
-                .computeCost(parseSum(aggregations, BillingUtils.COMPUTE_COST_FIELD))
-                .accumulatedComputeCost(parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_COMPUTE_COST));
+                .cost(BillingUtils.parseSum(aggregations, BillingUtils.COST_FIELD))
+                .accumulatedCost(BillingUtils.parseAccumulatedSum(aggregations, BillingUtils.ACCUMULATED_COST));
 
         final DateTime date = (DateTime) bucket.getKey();
         final LocalDate periodStart = LocalDate.of(date.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
@@ -582,25 +569,5 @@ public class BillingManager {
         return builder
                 .costDetails(BillingChartCostDetailsLoader.parseResponse(costDetailsRequest, aggregations))
                 .build();
-    }
-
-    private Long parseSum(final Aggregations aggregations, final String field) {
-        final ParsedSum sumAggResult = aggregations.get(field);
-        return Optional.ofNullable(sumAggResult)
-                .map(result -> new Double(result.getValue()).longValue())
-                .orElse(null);
-    }
-
-    private Long parseAccumulatedSum(final Aggregations aggregations, final String field) {
-        final ParsedSimpleValue accumulatedSumAggResult = aggregations.get(field);
-        return Optional.ofNullable(accumulatedSumAggResult)
-                .map(result -> new Double(result.getValueAsString()).longValue())
-                .orElse(null);
-    }
-
-    private boolean isRunBillingGrouping(final BillingGrouping grouping) {
-        return BillingGrouping.TOOL.equals(grouping) || BillingGrouping.PIPELINE.equals(grouping)
-                || BillingGrouping.RUN_COMPUTE_TYPE.equals(grouping)
-                || BillingGrouping.RUN_INSTANCE_TYPE.equals(grouping);
     }
 }

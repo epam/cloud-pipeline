@@ -3,6 +3,7 @@ package com.epam.pipeline.manager.billing;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.RunBilling;
+import com.epam.pipeline.manager.billing.billingdetails.ComputeBillingCostDetailsLoader;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
@@ -85,8 +86,8 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                         .aggregation(billingHelper.aggregateBy(BillingUtils.RUN_ID_FIELD)
                                 .size(Integer.MAX_VALUE)
                                 .subAggregation(billingHelper.aggregateCostSum(discount.getComputes()))
-                                .subAggregation(billingHelper.aggregateDiskCostSum(discount))
-                                .subAggregation(billingHelper.aggregateComputeCostSum(discount))
+                                .subAggregation(ComputeBillingCostDetailsLoader.aggregateDiskCostSum(discount))
+                                .subAggregation(ComputeBillingCostDetailsLoader.aggregateComputeCostSum(discount))
                                 .subAggregation(billingHelper.aggregateRunUsageSum())
                                 .subAggregation(billingHelper.aggregateLastByDateDoc())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
@@ -111,8 +112,8 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                 .finished(BillingUtils.asDateTime(topHitFields.get(BillingUtils.FINISHED_FIELD)))
                 .duration(billingHelper.getRunUsageSum(aggregations))
                 .cost(billingHelper.getCostSum(aggregations))
-                .diskCost(billingHelper.getDiskCostSum(aggregations))
-                .computeCost(billingHelper.getComputeCostSum(aggregations))
+                .diskCost(billingHelper.getLongValue(aggregations, BillingUtils.DISK_COST_FIELD))
+                .computeCost(billingHelper.getLongValue(aggregations, BillingUtils.COMPUTE_COST_FIELD))
                 .build();
     }
 }

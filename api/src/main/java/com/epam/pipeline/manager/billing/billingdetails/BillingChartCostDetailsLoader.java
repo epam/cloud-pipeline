@@ -35,13 +35,18 @@ public final class BillingChartCostDetailsLoader {
         if (StorageBillingCostDetailsLoader.isStorageBillingDetailsShouldBeLoaded(request)) {
             StorageBillingCostDetailsLoader.buildQuery(request, topLevelAggregation);
         }
+        if (ComputeBillingCostDetailsLoader.isComputeCostDetailsShallBeLoaded(request)) {
+            ComputeBillingCostDetailsLoader.buildQuery(request, topLevelAggregation);
+        }
     }
-
 
     public static BillingChartDetails parseResponse(final BillingCostDetailsRequest request,
                                                     final Aggregations aggregations) {
         if (StorageBillingCostDetailsLoader.isStorageBillingDetailsShouldBeLoaded(request)) {
             return StorageBillingCostDetailsLoader.parseResponse(request, aggregations);
+        }
+        if (ComputeBillingCostDetailsLoader.isComputeCostDetailsShallBeLoaded(request)) {
+            return ComputeBillingCostDetailsLoader.parseResponse(request, aggregations);
         }
         return null;
     }

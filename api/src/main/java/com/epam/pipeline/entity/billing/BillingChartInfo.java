@@ -32,9 +32,4 @@ public class BillingChartInfo {
     BillingChartDetails costDetails;
     Long cost;
     Long accumulatedCost;
-    Long diskCost;
-    Long accumulatedDiskCost;
-    Long computeCost;
-    Long accumulatedComputeCost;
-
 }

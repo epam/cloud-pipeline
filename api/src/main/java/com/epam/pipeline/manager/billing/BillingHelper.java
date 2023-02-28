@@ -1,6 +1,5 @@
 package com.epam.pipeline.manager.billing;
 
-import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -18,7 +17,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -59,7 +57,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -71,8 +68,6 @@ public class BillingHelper {
     private final String billingRunIndicesMonthlyPattern;
     private final String billingStorageIndicesMonthlyPattern;
     private final SumAggregationBuilder costAggregation;
-    private final SumAggregationBuilder diskCostAggregation;
-    private final SumAggregationBuilder computeCostAggregation;
     private final SumAggregationBuilder runUsageAggregation;
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
     private final SumBucketPipelineAggregationBuilder storageUsageTotalAggregation;
@@ -97,10 +92,6 @@ public class BillingHelper {
                 BillingUtils.ES_MONTHLY_DATE_REGEXP);
         this.costAggregation = AggregationBuilders.sum(BillingUtils.COST_FIELD)
                 .field(BillingUtils.COST_FIELD);
-        this.diskCostAggregation = AggregationBuilders.sum(BillingUtils.DISK_COST_FIELD)
-                .field(BillingUtils.DISK_COST_FIELD);
-        this.computeCostAggregation = AggregationBuilders.sum(BillingUtils.COMPUTE_COST_FIELD)
-                .field(BillingUtils.COMPUTE_COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(BillingUtils.RUN_USAGE_AGG)
                 .field(BillingUtils.RUN_USAGE_FIELD);
         this.uniqueRunsAggregation = AggregationBuilders.count(BillingUtils.RUN_COUNT_AGG)
@@ -212,26 +203,8 @@ public class BillingHelper {
         return costAggregation;
     }
 
-    public SumAggregationBuilder aggregateDiskCostSum() {
-        return diskCostAggregation;
-    }
-
-    public SumAggregationBuilder aggregateComputeCostSum() {
-        return computeCostAggregation;
-    }
-
     public AggregationBuilder aggregateCostSum(final long discount) {
-        return aggregateDiscountCostSum(BillingUtils.COST_FIELD, discount, this::aggregateCostSum);
-    }
-
-    public AggregationBuilder aggregateDiskCostSum(final BillingDiscount discount) {
-        return aggregateDiscountCostSum(BillingUtils.DISK_COST_FIELD, discount.getComputes(),
-                this::aggregateDiskCostSum);
-    }
-
-    public AggregationBuilder aggregateComputeCostSum(final BillingDiscount discount) {
-        return aggregateDiscountCostSum(BillingUtils.COMPUTE_COST_FIELD, discount.getComputes(),
-                this::aggregateComputeCostSum);
+        return BillingUtils.aggregateDiscountCostSum(BillingUtils.COST_FIELD, discount, this::aggregateCostSum);
     }
 
     public SumAggregationBuilder aggregateRunUsageSum() {
@@ -334,14 +307,6 @@ public class BillingHelper {
         return getLongValue(aggregations, BillingUtils.COST_FIELD);
     }
 
-    public Long getDiskCostSum(final Aggregations aggregations) {
-        return getLongValue(aggregations, BillingUtils.DISK_COST_FIELD);
-    }
-
-    public Long getComputeCostSum(final Aggregations aggregations) {
-        return getLongValue(aggregations, BillingUtils.COMPUTE_COST_FIELD);
-    }
-
     public Long getLongValue(final Aggregations aggregations, final String aggregation) {
         return getSingleValue(aggregations, aggregation)
                 .map(NumericMetricsAggregation.SingleValue::value)
@@ -440,16 +405,5 @@ public class BillingHelper {
                 throw new SearchException(e.getMessage(), e);
             }
         };
-    }
-
-    private AggregationBuilder aggregateDiscountCostSum(final String field, final long discount,
-                                                        final Supplier<AggregationBuilder> defaultFunction) {
-        if (discount == 0L) {
-            return defaultFunction.get();
-        }
-        return AggregationBuilders.sum(field)
-                .field(field)
-                .script(new Script(String.format(BillingUtils.DISCOUNT_SCRIPT_TEMPLATE,
-                        BillingUtils.asPercentToDecimalString(discount))));
     }
 }
