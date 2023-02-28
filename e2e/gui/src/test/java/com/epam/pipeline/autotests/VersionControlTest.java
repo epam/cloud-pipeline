@@ -165,7 +165,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
         navigationMenu()
                 .library()
                 .selectStorage(storageName)
-                .showFilesVersions(false)
+                .ensure(byText("Show files versions"), not(exist))
                 .validateElementIsPresent(file.getName());
     }
 
