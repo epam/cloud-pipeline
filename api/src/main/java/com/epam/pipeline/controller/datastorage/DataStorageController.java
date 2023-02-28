@@ -685,10 +685,13 @@ public class DataStorageController extends AbstractRestController {
     public Result<AbstractDataStorageItem> getDataStorageItemsWithTags(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH) final String path,
-            @RequestParam(defaultValue = FALSE) final Boolean showVersion) {
+            @RequestParam(defaultValue = FALSE) final Boolean showVersion,
+            @RequestParam(defaultValue = FALSE) final boolean showArchived) {
         return showVersion
-                ? Result.success(dataStorageApiService.getDataStorageItemOwnerWithTags(id, path, showVersion))
-                : Result.success(dataStorageApiService.getDataStorageItemWithTags(id, path, showVersion));
+                ? Result.success(dataStorageApiService.getDataStorageItemOwnerWithTags(
+                        id, path, showVersion, showArchived))
+                : Result.success(dataStorageApiService.getDataStorageItemWithTags(
+                        id, path, showVersion, showArchived));
     }
 
     @RequestMapping(value = "/datastorage/tags/search", method = RequestMethod.POST)

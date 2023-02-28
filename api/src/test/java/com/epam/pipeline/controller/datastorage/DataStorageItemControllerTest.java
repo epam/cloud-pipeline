@@ -366,11 +366,11 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(ID_PARAM, ID_AS_STRING);
         params.add(PATH, TEST);
-        Mockito.doReturn(file).when(mockStorageApiService).getDataStorageItemWithTags(ID, TEST, false);
+        Mockito.doReturn(file).when(mockStorageApiService).getDataStorageItemWithTags(ID, TEST, false, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(TAGS_LIST_URL, ID)).params(params));
 
-        Mockito.verify(mockStorageApiService).getDataStorageItemWithTags(ID, TEST, false);
+        Mockito.verify(mockStorageApiService).getDataStorageItemWithTags(ID, TEST, false, false);
         assertResponse(mvcResult, file, DatastorageCreatorUtils.DATA_STORAGE_FILE_TYPE);
     }
 
@@ -381,11 +381,11 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         params.add(ID_PARAM, ID_AS_STRING);
         params.add(PATH, TEST);
         params.add(SHOW_VERSION, TRUE_AS_STRING);
-        Mockito.doReturn(file).when(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true);
+        Mockito.doReturn(file).when(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(TAGS_LIST_URL, ID)).params(params));
 
-        Mockito.verify(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true);
+        Mockito.verify(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true, false);
         assertResponse(mvcResult, file, DatastorageCreatorUtils.DATA_STORAGE_FILE_TYPE);
     }
 
@@ -395,11 +395,11 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add(ID_PARAM, ID_AS_STRING);
         params.add(PATH, TEST);
-        Mockito.doReturn(folder).when(mockStorageApiService).getDataStorageItemWithTags(ID, TEST, false);
+        Mockito.doReturn(folder).when(mockStorageApiService).getDataStorageItemWithTags(ID, TEST, false, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(TAGS_LIST_URL, ID)).params(params));
 
-        Mockito.verify(mockStorageApiService).getDataStorageItemWithTags(ID, TEST, false);
+        Mockito.verify(mockStorageApiService).getDataStorageItemWithTags(ID, TEST, false, false);
         assertResponse(mvcResult, folder, DatastorageCreatorUtils.DATA_STORAGE_FOLDER_TYPE);
     }
 
@@ -410,11 +410,11 @@ public class DataStorageItemControllerTest extends AbstractDataStorageController
         params.add(ID_PARAM, ID_AS_STRING);
         params.add(PATH, TEST);
         params.add(SHOW_VERSION, TRUE_AS_STRING);
-        Mockito.doReturn(folder).when(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true);
+        Mockito.doReturn(folder).when(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(TAGS_LIST_URL, ID)).params(params));
 
-        Mockito.verify(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true);
+        Mockito.verify(mockStorageApiService).getDataStorageItemOwnerWithTags(ID, TEST, true, false);
         assertResponse(mvcResult, folder, DatastorageCreatorUtils.DATA_STORAGE_FOLDER_TYPE);
     }
 

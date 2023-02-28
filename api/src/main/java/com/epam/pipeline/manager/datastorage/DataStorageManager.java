@@ -754,9 +754,10 @@ public class DataStorageManager implements SecuredEntityManager {
     @Transactional
     public AbstractDataStorageItem getDataStorageItemWithTags(final Long dataStorageId,
                                                               final String path,
-                                                              final Boolean showVersion) {
+                                                              final Boolean showVersion,
+                                                              final boolean showArchived) {
         final List<AbstractDataStorageItem> dataStorageItems = getDataStorageItems(dataStorageId, path, showVersion,
-                null, null, false).getResults();
+                null, null, showArchived).getResults();
         if (CollectionUtils.isEmpty(dataStorageItems)) {
             return null;
         }

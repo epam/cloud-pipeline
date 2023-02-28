@@ -302,14 +302,19 @@ public class DataStorageApiService {
         return dataStorageManager.deleteDataStorageObjectTags(id, path, version, tags);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public AbstractDataStorageItem getDataStorageItemWithTags(Long id, String path, Boolean showVersion) {
-        return dataStorageManager.getDataStorageItemWithTags(id, path, showVersion);
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public AbstractDataStorageItem getDataStorageItemWithTags(final Long id, final String path,
+                                                              final Boolean showVersion, final boolean showArchived) {
+        return dataStorageManager.getDataStorageItemWithTags(id, path, showVersion, showArchived);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public AbstractDataStorageItem getDataStorageItemOwnerWithTags(Long id, String path, Boolean showVersion) {
-        return dataStorageManager.getDataStorageItemWithTags(id, path, showVersion);
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public AbstractDataStorageItem getDataStorageItemOwnerWithTags(final Long id, final String path,
+                                                                   final Boolean showVersion,
+                                                                   final boolean showArchived) {
+        return dataStorageManager.getDataStorageItemWithTags(id, path, showVersion, showArchived);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
