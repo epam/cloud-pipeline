@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,9 +120,6 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
     @TestCase(value = {"EPMCMBIBPC-1209"})
     public void validateActivateNotification() {
-        if (impersonateMode()) {
-            return;
-        }
         changeStateOf(infoNotification);
 
         refresh();
@@ -145,9 +142,6 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateCreateInactiveNotificationsWithDifferentSeverity"})
     @TestCase(value = {"EPMCMBIBPC-1213"})
     public void validateDisplaySeveralActiveNotifications() {
-        if (impersonateMode()) {
-            return;
-        }
         changeStateOf(infoNotification);
         changeStateOf(warningNotification);
         changeStateOf(criticalNotification);
@@ -177,9 +171,6 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .ensureVisible(EXPAND, SEVERITY_ICON, TITLE, DATE, STATE, ACTIVE_LABEL, EDIT, DELETE)
                 .click(EXPAND)
                 .ensureBodyHasText(infoEditedBodyText);
-        if (impersonateMode()) {
-            return;
-        }
         refresh();
         validateActiveNotification(infoEditedTitle, infoEditedBodyText, INFO);
         closeNotification(infoEditedTitle);
@@ -188,9 +179,6 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateDisplaySeveralActiveNotifications"})
     @TestCase(value = {"EPMCMBIBPC-1220"})
     public void validateDeleteActiveNotification() {
-        if (impersonateMode()) {
-            return;
-        }
         navigationMenu()
                 .settings()
                 .switchToSystemEvents()
