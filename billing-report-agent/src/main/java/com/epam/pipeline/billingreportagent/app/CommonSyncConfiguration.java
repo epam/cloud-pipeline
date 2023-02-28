@@ -36,6 +36,7 @@ import com.epam.pipeline.billingreportagent.service.impl.loader.StorageLoader;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.StorageBillingMapper;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -67,6 +68,9 @@ public class CommonSyncConfiguration {
 
     @Value("${sync.storage.file.index.pattern}")
     private String fileIndexPattern;
+
+    @Value("${sync.storage.file.alias.index.pattern}")
+    private String fileAliasIndexPattern;
 
     @Value("${sync.storage.historical.billing.generation:false}")
     private boolean enableStorageHistoricalBillingGeneration;
@@ -133,6 +137,7 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.S3);
@@ -164,7 +169,10 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.FILE_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
+                        fileShareMountsService,
+                        MountType.NFS,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.NFS);
     }
@@ -188,6 +196,7 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.GS);
@@ -215,6 +224,7 @@ public class CommonSyncConfiguration {
                 new StorageToBillingRequestConverter(mapper, elasticsearchClient,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
+                        fileAliasIndexPattern,
                         fileIndexPattern,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.AZ);
