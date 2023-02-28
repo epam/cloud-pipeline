@@ -30,6 +30,7 @@ public class BillingCostDetailsRequest {
 
     BillingGrouping grouping;
     Map<String, List<String>> filters;
+    boolean isHistogram;
     BillingDiscount discount;
     boolean enabled;
 
