@@ -309,9 +309,10 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             final Duration duration = Duration.between(pointStart, pointEnd);
             final Long disk = getDisksSize(run, pointStart);
             final Long durationMinutes = minutesOf(duration);
-            final Long diskCosts = price.isOldFashioned() ? 0L : getDiskCosts(duration, disk, price);
-            final Long computeCosts = price.isOldFashioned() ? 0L : getComputeCosts(duration, price, active);
-            final Long totalCosts = price.isOldFashioned()
+            final boolean oldFashioned = price.isOldFashioned();
+            final Long diskCosts = oldFashioned ? 0L : getDiskCosts(duration, disk, price);
+            final Long computeCosts = oldFashioned ? 0L : getComputeCosts(duration, price, active);
+            final Long totalCosts = oldFashioned
                     ? getOldFashionedCosts(duration, price, active)
                     : (diskCosts + computeCosts);
             billings.add(PipelineRunBillingInfo.builder()

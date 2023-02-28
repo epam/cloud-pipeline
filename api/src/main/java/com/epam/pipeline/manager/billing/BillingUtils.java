@@ -25,10 +25,10 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
+import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
 
 import java.math.BigDecimal;
@@ -39,7 +39,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 public final class BillingUtils {
 
@@ -231,16 +230,14 @@ public final class BillingUtils {
                 .orElse(null);
     }
 
-    public static AggregationBuilder aggregateDiscountCostSum(final String field, final long discount,
-                                                              final Supplier<AggregationBuilder> defaultFunction) {
-        if (discount == 0L) {
-            return defaultFunction.get();
+    public static SumAggregationBuilder aggregateDiscountCostSum(final String field, final long discount) {
+        final SumAggregationBuilder aggregation = AggregationBuilders.sum(field).field(field);
+        if (discount != 0) {
+            aggregation.script(new Script(String.format(
+                    DISCOUNT_SCRIPT_TEMPLATE, asPercentToDecimalString(discount)))
+            );
         }
-        return AggregationBuilders.sum(field)
-                .field(field)
-                .script(new Script(String.format(
-                        BillingUtils.DISCOUNT_SCRIPT_TEMPLATE,
-                        BillingUtils.asPercentToDecimalString(discount))));
+        return aggregation;
     }
 
     private static long tenInPowerOf(final int scale) {

@@ -22,6 +22,9 @@ import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Helper class to encapsulate logic of loading cost details for specific billing entity,
  * currently it loads details for storages {@link StorageBillingChartCostDetails} only but can be easily expanded
@@ -32,23 +35,32 @@ public final class BillingChartCostDetailsLoader {
 
     public static void buildQuery(final BillingCostDetailsRequest request,
                                   final AggregationBuilder topLevelAggregation) {
-        if (StorageBillingCostDetailsLoader.isStorageBillingDetailsShouldBeLoaded(request)) {
+        if (StorageBillingCostDetailsLoader.isBillingDetailsShouldBeLoaded(request)) {
             StorageBillingCostDetailsLoader.buildQuery(request, topLevelAggregation);
-        }
-        if (ComputeBillingCostDetailsLoader.isComputeCostDetailsShallBeLoaded(request)) {
+        } else if (ComputeBillingCostDetailsLoader.isBillingDetailsShouldBeLoaded(request)) {
             ComputeBillingCostDetailsLoader.buildQuery(request, topLevelAggregation);
         }
     }
 
     public static BillingChartDetails parseResponse(final BillingCostDetailsRequest request,
                                                     final Aggregations aggregations) {
-        if (StorageBillingCostDetailsLoader.isStorageBillingDetailsShouldBeLoaded(request)) {
+        if (StorageBillingCostDetailsLoader.isBillingDetailsShouldBeLoaded(request)) {
             return StorageBillingCostDetailsLoader.parseResponse(request, aggregations);
         }
-        if (ComputeBillingCostDetailsLoader.isComputeCostDetailsShallBeLoaded(request)) {
+        if (ComputeBillingCostDetailsLoader.isBillingDetailsShouldBeLoaded(request)) {
             return ComputeBillingCostDetailsLoader.parseResponse(request, aggregations);
         }
         return null;
+    }
+
+    public static List<String> getCostDetailsAggregations(final BillingCostDetailsRequest request) {
+        if (StorageBillingCostDetailsLoader.isBillingDetailsShouldBeLoaded(request)) {
+            return StorageBillingCostDetailsLoader.getCostDetailsAggregations();
+        }
+        if (ComputeBillingCostDetailsLoader.isBillingDetailsShouldBeLoaded(request)) {
+            return ComputeBillingCostDetailsLoader.getCostDetailsAggregations();
+        }
+        return Collections.emptyList();
     }
 
 }

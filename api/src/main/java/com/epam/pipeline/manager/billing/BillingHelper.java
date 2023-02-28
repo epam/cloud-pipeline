@@ -204,7 +204,7 @@ public class BillingHelper {
     }
 
     public AggregationBuilder aggregateCostSum(final long discount) {
-        return BillingUtils.aggregateDiscountCostSum(BillingUtils.COST_FIELD, discount, this::aggregateCostSum);
+        return BillingUtils.aggregateDiscountCostSum(BillingUtils.COST_FIELD, discount);
     }
 
     public SumAggregationBuilder aggregateRunUsageSum() {

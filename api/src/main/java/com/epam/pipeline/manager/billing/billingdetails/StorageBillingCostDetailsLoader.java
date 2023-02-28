@@ -28,7 +28,6 @@ import com.epam.pipeline.utils.NumericUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -147,7 +146,7 @@ public final class StorageBillingCostDetailsLoader {
         return StorageBillingChartCostDetails.builder().tiers(tiers).build();
     }
 
-    static boolean isStorageBillingDetailsShouldBeLoaded(final BillingCostDetailsRequest request) {
+    static boolean isBillingDetailsShouldBeLoaded(final BillingCostDetailsRequest request) {
         if (!request.isEnabled()) {
             return false;
         }
@@ -163,6 +162,10 @@ public final class StorageBillingCostDetailsLoader {
                     .map(values -> values.contains(OBJECT_STORAGE_ST) && values.size() == 1).orElse(false);
             return onlyObjectStorageSTypeRequested && onlyStorageRTypeRequestedOrNothing;
         }
+    }
+
+    static List<String> getCostDetailsAggregations() {
+        return STORAGE_COST_DETAILS_AGGREGATION_MASKS;
     }
 
     private static boolean isDetailsEntryEmpty(StorageBillingDetails details) {
@@ -213,16 +216,7 @@ public final class StorageBillingCostDetailsLoader {
     private static SumAggregationBuilder buildSumAggregation(final String template, final String storageClass,
                                                              final long discount) {
         final String agg = getAggregationField(template, storageClass);
-        SumAggregationBuilder aggregation = AggregationBuilders.sum(agg).field(agg);
-        if (discount != 0) {
-            aggregation.script(new Script(
-                String.format(
-                        BillingUtils.DISCOUNT_SCRIPT_TEMPLATE,
-                        BillingUtils.asPercentToDecimalString(discount))
-                )
-            );
-        }
-        return aggregation;
+        return BillingUtils.aggregateDiscountCostSum(agg, discount);
     }
 
     private static AvgAggregationBuilder buildAvgAggregation(final String template, final String storageClass) {

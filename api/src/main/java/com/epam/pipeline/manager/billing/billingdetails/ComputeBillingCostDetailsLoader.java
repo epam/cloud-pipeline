@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.billing.billingdetails;
 
 import com.epam.pipeline.controller.vo.billing.BillingCostDetailsRequest;
 import com.epam.pipeline.entity.billing.BillingChartDetails;
-import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.ComputeBillingChartCostDetails;
 import com.epam.pipeline.manager.billing.BillingUtils;
@@ -39,20 +38,6 @@ import static com.epam.pipeline.manager.billing.BillingUtils.RESOURCE_TYPE;
 public final class ComputeBillingCostDetailsLoader {
 
     private ComputeBillingCostDetailsLoader() {}
-
-    public static boolean isComputeCostDetailsShallBeLoaded(final BillingCostDetailsRequest request) {
-        if (request.isHistogram()) {
-            return MapUtils.emptyIfNull(request.getFilters())
-                    .getOrDefault(RESOURCE_TYPE, Collections.emptyList()).contains(COMPUTE_GROUP);
-        }
-        final BillingGrouping grouping = request.getGrouping();
-        if (grouping != null) {
-            return BillingGrouping.TOOL.equals(grouping) || BillingGrouping.PIPELINE.equals(grouping)
-                    || BillingGrouping.RUN_COMPUTE_TYPE.equals(grouping)
-                    || BillingGrouping.RUN_INSTANCE_TYPE.equals(grouping);
-        }
-        return false;
-    }
 
     public static void buildQuery(final BillingCostDetailsRequest request,
                                   final AggregationBuilder topLevelAggregation) {
@@ -85,25 +70,29 @@ public final class ComputeBillingCostDetailsLoader {
         return builder.build();
     }
 
-    public static List<String> getCostDetailsAggregations() {
+    static boolean isBillingDetailsShouldBeLoaded(final BillingCostDetailsRequest request) {
+        if (request.isHistogram()) {
+            return MapUtils.emptyIfNull(request.getFilters())
+                    .getOrDefault(RESOURCE_TYPE, Collections.emptyList()).contains(COMPUTE_GROUP);
+        }
+        final BillingGrouping grouping = request.getGrouping();
+        if (grouping != null) {
+            return BillingGrouping.TOOL.equals(grouping) || BillingGrouping.PIPELINE.equals(grouping)
+                    || BillingGrouping.RUN_COMPUTE_TYPE.equals(grouping)
+                    || BillingGrouping.RUN_INSTANCE_TYPE.equals(grouping);
+        }
+        return false;
+    }
+
+    static List<String> getCostDetailsAggregations() {
         return Arrays.asList(aggregateDiskCostSum().getName(), aggregateComputeCostSum().getName());
     }
 
-    public static SumAggregationBuilder aggregateDiskCostSum() {
+    private static SumAggregationBuilder aggregateDiskCostSum() {
         return AggregationBuilders.sum(BillingUtils.DISK_COST_FIELD).field(BillingUtils.DISK_COST_FIELD);
     }
 
-    public static SumAggregationBuilder aggregateComputeCostSum() {
+    private static SumAggregationBuilder aggregateComputeCostSum() {
         return AggregationBuilders.sum(BillingUtils.COMPUTE_COST_FIELD).field(BillingUtils.COMPUTE_COST_FIELD);
-    }
-
-    public static AggregationBuilder aggregateDiskCostSum(final BillingDiscount discount) {
-        return BillingUtils.aggregateDiscountCostSum(BillingUtils.DISK_COST_FIELD, discount.getComputes(),
-                ComputeBillingCostDetailsLoader::aggregateDiskCostSum);
-    }
-
-    public static AggregationBuilder aggregateComputeCostSum(final BillingDiscount discount) {
-        return BillingUtils.aggregateDiscountCostSum(BillingUtils.COMPUTE_COST_FIELD, discount.getComputes(),
-                ComputeBillingCostDetailsLoader::aggregateComputeCostSum);
     }
 }
