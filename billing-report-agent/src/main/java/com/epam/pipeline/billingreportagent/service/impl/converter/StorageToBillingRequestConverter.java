@@ -21,32 +21,21 @@ import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
+import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.MountType;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -55,57 +44,48 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class StorageToBillingRequestConverter implements EntityToBillingRequestConverter<AbstractDataStorage> {
 
-    public static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
-    public static final String OBJECT_SIZE_AGG_NAME = "CurrentObjectSizeAggr";
-    private static final String SIZE_FIELD = "size";
-    private static final String REGION_FIELD = "storage_region";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
-    public static final String STORAGE_CLASS_FIELD = "storage_class";
-    public static final String OLD_VERSION_SIZE_FIELD_TEMPLATE = "ov_%s_size";
-
     private final AbstractEntityMapper<StorageBillingInfo> mapper;
-    private final ElasticsearchServiceClient elasticsearchService;
     private final StorageType storageType;
     private final StoragePricingService storagePricing;
-    private final String esFileAliasIndexPattern;
-    private final String esFileIndexPattern;
     private final Optional<FileShareMountsService> fileshareMountsService;
     private final MountType desiredMountType;
     private boolean enableStorageHistoricalBillingGeneration;
+    private CloudPipelineAPIClient apiClient;
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
-                                            final ElasticsearchServiceClient elasticsearchService,
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
-                                            final String esFileAliasIndexPattern,
-                                            final String esFileIndexPattern,
+                                            final CloudPipelineAPIClient apiClient,
                                             final boolean enableStorageHistoricalBillingGeneration) {
-        this(mapper, elasticsearchService, storageType, storagePricing, esFileAliasIndexPattern,
-                esFileIndexPattern, null, null, enableStorageHistoricalBillingGeneration);
+        this(mapper, storageType, storagePricing, apiClient, null, null, enableStorageHistoricalBillingGeneration);
     }
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
-                                            final ElasticsearchServiceClient elasticsearchService,
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
-                                            final String esFileAliasIndexPattern,
-                                            final String esFileIndexPattern,
+                                            final CloudPipelineAPIClient apiClient,
                                             final FileShareMountsService fileshareMountsService,
                                             final MountType desiredMountType,
                                             final boolean enableStorageHistoricalBillingGeneration) {
         this.mapper = mapper;
-        this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
         this.storagePricing = storagePricing;
-        this.esFileAliasIndexPattern = esFileAliasIndexPattern;
-        this.esFileIndexPattern = esFileIndexPattern;
+        this.apiClient = apiClient;
         this.fileshareMountsService = Optional.ofNullable(fileshareMountsService);
         this.desiredMountType = desiredMountType;
         this.enableStorageHistoricalBillingGeneration = enableStorageHistoricalBillingGeneration;
@@ -116,15 +96,18 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                          final String indexPrefix,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
-        final Long storageId = storageContainer.getEntity().getId();
-        final DataStorageType storageType = storageContainer.getEntity().getType();
-        return requestSumAggregationForStorage(storageId, storageType)
-            .map(searchResponse -> enableStorageHistoricalBillingGeneration
-                                   ? buildRequestsForGivenPeriod(storageContainer, indexPrefix, previousSync, syncStart,
-                                                                 searchResponse)
-                                   : buildRequestsForGivenDate(storageContainer, indexPrefix, searchResponse,
-                                                               syncStart))
-            .orElse(Collections.emptyList());
+        try {
+            final Long storageId = storageContainer.getEntity().getId();
+            final StorageUsage storageUsage = apiClient.getStorageUsage(String.valueOf(storageId), null);
+            return enableStorageHistoricalBillingGeneration ?
+                    buildRequestsForGivenPeriod(storageContainer, indexPrefix, previousSync, syncStart, storageUsage)
+                    : buildRequestsForGivenDate(storageContainer, indexPrefix, storageUsage, syncStart);
+        } catch (Exception e) {
+            log.error("An error during storage {} processing: {}",
+                    storageContainer.getEntity().getId(), e.getMessage());
+            log.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
     }
 
     @Override
@@ -144,116 +127,33 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
             .convertEntitiesToRequests(containers, indexName, previousSync, syncStart);
     }
 
-    private Optional<SearchResponse> requestSumAggregationForStorage(final Long storageId,
-                                                                     final DataStorageType storageType) {
-        final String indexNameByAlias = getIndexName(storageId, storageType);
-        if (elasticsearchService.isIndexExists(indexNameByAlias)) {
-            final SearchRequest searchRequest = new SearchRequest();
-            searchRequest.indices(indexNameByAlias);
-            final TermsAggregationBuilder currentSizeSumAgg = AggregationBuilders
-                    .terms(OBJECT_SIZE_AGG_NAME).field(STORAGE_CLASS_FIELD)
-                    .subAggregation(AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(SIZE_FIELD));
-            final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().aggregation(currentSizeSumAgg);
-            for (String storageClass : storageType.getStorageClasses()) {
-                final String ovSizeFieldName =
-                        String.format(OLD_VERSION_SIZE_FIELD_TEMPLATE, storageClass.toLowerCase(Locale.ROOT));
-                sourceBuilder.aggregation(AggregationBuilders.sum(ovSizeFieldName + "_agg").field(ovSizeFieldName));
-            }
-            searchRequest.source(sourceBuilder);
-            return Optional.of(elasticsearchService.search(searchRequest));
-        } else {
-            return Optional.empty();
-        }
-    }
+    private List<DocWriteRequest> buildStorageRequests(final EntityContainer<AbstractDataStorage> container,
+                                                       final LocalDateTime syncStart,
+                                                       final StorageUsage storageUsage,
+                                                       final String fullIndex) {
 
-    private String getIndexName(final Long storageId, final DataStorageType storageType) {
-        final String indexNameByAlias = getIndexNameByAlias(storageId, storageType);
-        if (indexNameByAlias == null) {
-            final String indexNamePattern = String.format(esFileIndexPattern, storageType.toString().toLowerCase(),
-                    DataStorageType.AZ.equals(storageType) ? "blob" : "file", storageId);
-            log.warn("Fail to found index by alias will use name pattern: {} for storage: {}, " +
-                    "billing can be calculated incorrectly!", indexNamePattern, storageId);
-            return indexNamePattern;
-        }
-        return indexNameByAlias;
-    }
-
-    private String getIndexNameByAlias(final Long storageId, final DataStorageType storageType) {
-        if (esFileAliasIndexPattern == null) {
-            return null;
-        }
-        final String searchIndex = String.format(esFileAliasIndexPattern,
-                storageType.toString().toLowerCase(),
-                DataStorageType.AZ.equals(storageType) ? "blob" : "file",
-                storageId);
-        try {
-            return elasticsearchService.getIndexNameByAlias(searchIndex);
-        } catch (ElasticsearchException e) {
-            log.warn(String.format("There is a problem to find index for storage %d by alias: %s!",
-                    storageId,  searchIndex), e);
-            return null;
-        }
-    }
-
-    private List<DocWriteRequest> buildRequestFromAggregation(final EntityContainer<AbstractDataStorage> container,
-                                                              final LocalDateTime syncStart,
-                                                              final SearchResponse response,
-                                                              final String fullIndex) {
-
-        final Map<Boolean, Map<String, Long>> storageSizes =
-                extractStorageSize(container.getEntity().getType(), response);
-        if (MapUtils.isEmpty(storageSizes)) {
+        final Map<Boolean, Map<String, Long>> storageSizes = new HashMap<>();
+        final Map<String, Long> currentVersions = new HashMap<>();
+        final Map<String, Long> previousVersions = new HashMap<>();
+        MapUtils.emptyIfNull(storageUsage.getUsage())
+                .forEach((storageClass, usage) -> {
+                    if (Objects.nonNull(usage.getSize()) && usage.getSize() > 0) {
+                        currentVersions.put(storageClass, usage.getSize());
+                    }
+                    if (Objects.nonNull(usage.getOldVersionsSize()) && usage.getOldVersionsSize() > 0) {
+                        previousVersions.put(storageClass, usage.getOldVersionsSize());
+                    }
+                });
+        storageSizes.put(true, currentVersions);
+        storageSizes.put(false, previousVersions);
+        if (MapUtils.isEmpty(currentVersions) && MapUtils.isEmpty(previousVersions)) {
             return Collections.emptyList();
         }
-        final SearchHits hits = response.getHits();
-        final String regionLocation =
-            Objects.isNull(hits) || hits.totalHits == 0
-            ? null
-            : (String) MapUtils.emptyIfNull(hits.getAt(0).getSourceAsMap()).get(REGION_FIELD);
-
         final StorageBillingInfo billing = createBilling(
-                container, storageSizes, regionLocation, syncStart.toLocalDate().minusDays(1)
+                container, storageSizes, container.getRegion().getRegionCode(), syncStart.toLocalDate().minusDays(1)
         );
         return Collections.singletonList(
                 getDocWriteRequest(fullIndex, container.getOwner(), container.getRegion(), billing));
-    }
-
-    private Map<Boolean, Map<String, Long>> extractStorageSize(final DataStorageType datastorageType,
-                                                               final SearchResponse response) {
-        final long totalMatches = Optional.ofNullable(response.getHits().getHits())
-            .map(hits -> hits.length)
-            .orElse(0);
-        final Aggregations aggregations = response.getAggregations();
-        if (totalMatches == 0 || aggregations == null) {
-            return Collections.emptyMap();
-        }
-        final Map<Boolean, Map<String, Long>> results = new HashMap<>();
-
-        final Map<String, Long> currentVersionsFileSizesByStorageClass = ListUtils.emptyIfNull(
-                aggregations.<ParsedTerms>get(OBJECT_SIZE_AGG_NAME).getBuckets()
-        ).stream()
-                .map(b -> {
-                    String storageClass = b.getKeyAsString();
-                    long size = new Double(
-                            b.getAggregations().<ParsedSum>get(STORAGE_SIZE_AGG_NAME).getValue()
-                    ).longValue();
-                    return ImmutablePair.of(storageClass, size);
-                }).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
-        results.put(true, currentVersionsFileSizesByStorageClass);
-
-        final Map<String, Long> oldVersionsFileSizesByStorageClass = datastorageType.getStorageClasses()
-            .stream().map(sc -> {
-                final String ovSizeFieldName =
-                        String.format(OLD_VERSION_SIZE_FIELD_TEMPLATE, sc.toLowerCase(Locale.ROOT));
-                return ImmutablePair.of(
-                        sc,
-                        Optional.ofNullable(aggregations.<ParsedSum>get(ovSizeFieldName + "_agg"))
-                                .map(ParsedSum::getValue).orElse((double) 0)
-                                .longValue()
-                );
-            }).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
-        results.put(false, oldVersionsFileSizesByStorageClass);
-        return results;
     }
 
     private DocWriteRequest getDocWriteRequest(final String fullIndex,
@@ -445,7 +345,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                               final String indexPrefix,
                                                               final LocalDateTime previousSync,
                                                               final LocalDateTime syncStart,
-                                                              final SearchResponse searchResponse) {
+                                                              final StorageUsage storageUsage) {
         final LocalDateTime previousSyncDayStart = Optional.ofNullable(previousSync)
                 .map(LocalDateTime::toLocalDate)
                 .orElse(LocalDate.now())
@@ -453,7 +353,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         return Stream.iterate(previousSyncDayStart, date -> date.plusDays(1))
             .limit(Math.max(1, ChronoUnit.DAYS.between(previousSyncDayStart, syncStart)))
             .filter(reportDate -> storageExistsOnBillingDate(container, reportDate))
-            .map(date -> buildRequestsForGivenDate(container, indexPrefix, searchResponse, date))
+            .map(date -> buildRequestsForGivenDate(container, indexPrefix, storageUsage, date))
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
     }
@@ -469,10 +369,10 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     private List<DocWriteRequest> buildRequestsForGivenDate(final EntityContainer<AbstractDataStorage> storageContainer,
                                                             final String indexPrefix,
-                                                            final SearchResponse searchResponse,
+                                                            final StorageUsage storageUsage,
                                                             final LocalDateTime date) {
         final LocalDate reportDate = date.toLocalDate().minusDays(1);
         final String fullIndex = indexPrefix + parseDateToString(reportDate);
-        return buildRequestFromAggregation(storageContainer, date, searchResponse, fullIndex);
+        return buildStorageRequests(storageContainer, date, storageUsage, fullIndex);
     }
 }

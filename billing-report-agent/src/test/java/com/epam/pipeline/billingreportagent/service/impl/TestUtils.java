@@ -92,6 +92,13 @@ public final class TestUtils {
         return region;
     }
 
+    public static AbstractCloudRegion createTestRegion(final Long regionId, final String code) {
+        final AwsRegion region = new AwsRegion();
+        region.setId(regionId);
+        region.setRegionCode(code);
+        return region;
+    }
+
     public static String buildBillingIndex(final String prefix, final LocalDateTime syncDate) {
         return prefix
                + EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(syncDate.toLocalDate());

@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.ToolDescription;
@@ -157,6 +158,9 @@ public interface CloudPipelineAPI {
 
     @GET("datastorage/{id}/load")
     Call<Result<AbstractDataStorage>> loadDataStorage(@Path(ID) Long storageId);
+
+    @GET("datastorage/path/usage")
+    Call<Result<StorageUsage>> getStorageUsage(@Query(ID) String id, @Query(PATH) String path);
 
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
