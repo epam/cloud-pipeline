@@ -41,7 +41,6 @@ public class PreferenceDao extends NamedParameterJdbcDaoSupport {
     private String upsertPreferenceQuery;
     private String loadPreferenceByNameQuery;
     private String loadAllPreferencesQuery;
-    private String loadVisiblePreferencesQuery;
     private String deletePreferenceQuery;
 
     @CachePut(value = PREFERENCES_CACHE, key="#preference.name")
@@ -75,14 +74,6 @@ public class PreferenceDao extends NamedParameterJdbcDaoSupport {
 
     public List<Preference> loadAllPreferences() {
         return getNamedParameterJdbcTemplate().query(loadAllPreferencesQuery, PreferenceParameters.getRowMapper());
-    }
-
-    /**
-     * Loads only preferences, that are visible to non-admin users
-     * @return a List of Preference
-     */
-    public List<Preference> loadVisiblePreferences() {
-        return getNamedParameterJdbcTemplate().query(loadVisiblePreferencesQuery, PreferenceParameters.getRowMapper());
     }
 
     enum PreferenceParameters {
@@ -141,10 +132,5 @@ public class PreferenceDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeletePreferenceQuery(String deletePreferenceQuery) {
         this.deletePreferenceQuery = deletePreferenceQuery;
-    }
-
-    @Required
-    public void setLoadVisiblePreferencesQuery(String loadVisiblePreferencesQuery) {
-        this.loadVisiblePreferencesQuery = loadVisiblePreferencesQuery;
     }
 }
