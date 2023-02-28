@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
@@ -201,6 +202,9 @@ public interface CloudPipelineAPI {
 
     @GET("datastorage/{id}/generateUrl")
     Call<Result<DataStorageDownloadFileUrl>> generateDownloadUrl(@Path(ID) Long storageId, @Query(PATH) String path);
+
+    @GET("datastorage/path/usage")
+    Call<Result<StorageUsage>> getStorageUsage(@Query(ID) String id, @Query(PATH) String path);
 
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();

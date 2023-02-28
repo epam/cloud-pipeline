@@ -22,6 +22,7 @@ import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -61,6 +62,10 @@ public class CloudPipelineAPIClient {
 
     public List<AbstractDataStorage> loadAllDataStorages() {
         return retryingApiExecutor.execute(cloudPipelineAPI.loadAllDataStorages());
+    }
+
+    public StorageUsage getStorageUsage(final String id, final String path) {
+        return retryingApiExecutor.execute(cloudPipelineAPI.getStorageUsage(id, path));
     }
 
     public List<InstanceType> loadAllInstanceTypesForRegion(final Long regionId) {
