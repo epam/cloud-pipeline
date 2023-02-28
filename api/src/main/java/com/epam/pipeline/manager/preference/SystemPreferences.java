@@ -1008,7 +1008,8 @@ public class SystemPreferences {
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
             20, SEARCH_GROUP, pass);
-
+    public static final BooleanPreference SEARCH_HIDE_DELETED = new BooleanPreference(
+            "search.elastic.hide.deleted", true, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_EXPORT_PAGE_SIZE = new IntPreference(
             "search.export.page.size", 5000, SEARCH_GROUP, isGreaterThan(0));
 

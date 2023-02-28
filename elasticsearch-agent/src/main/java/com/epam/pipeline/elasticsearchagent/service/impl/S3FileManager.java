@@ -288,6 +288,7 @@ public class S3FileManager implements ObjectStorageFileManager {
             Optional.ofNullable(summary.getStorageClass())
                     .ifPresent(it -> labels.put(ESConstants.STORAGE_CLASS_LABEL, it));
             file.setLabels(labels);
+            file.setLatest(summary.isLatest());
             return file;
         }
     }

@@ -33,6 +33,7 @@ public class DataStorageFile extends AbstractDataStorageItem {
     private String version;
     private Boolean deleteMarker;
     private Boolean isHidden = false;
+    private boolean latest = true;
     private Map<String, AbstractDataStorageItem> versions;
 
     public DataStorageFile() {
@@ -53,6 +54,7 @@ public class DataStorageFile extends AbstractDataStorageItem {
         file.setVersion(other.getVersion());
         file.setDeleteMarker(other.getDeleteMarker());
         file.setIsHidden(other.getIsHidden());
+        file.setLatest(other.isLatest());
         return file;
     }
 
@@ -71,6 +73,7 @@ public class DataStorageFile extends AbstractDataStorageItem {
         file.setVersion(this.getVersion());
         file.setDeleteMarker(this.getDeleteMarker());
         file.setIsHidden(this.getIsHidden());
+        file.setLatest(this.isLatest());
         return file;
     }
 

@@ -100,6 +100,7 @@ public class SearchRequestBuilder {
     private static final String ES_SORT_MISSING_LAST = "_last";
     private static final String ES_SORT_MISSING_FIRST = "_first";
     private static final String SEARCH_HIDDEN = "is_hidden";
+    private static final String SEARCH_DELETED = "is_deleted";
     private static final String INDEX_WILDCARD_PREFIX = "*";
     private static final String ES_KEYWORD_TYPE = "keyword";
     private static final String ES_DATE_TYPE = "date";
@@ -405,6 +406,9 @@ public class SearchRequestBuilder {
         final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(queryRequest.getQuery()));
         addStorageFilter(queryBuilder, queryRequest.getObjectIdentifier());
         addGlobsFilterToQuery(queryBuilder, queryRequest.getFilterGlobs());
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            queryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
         return prepareAclFiltersOrAdmin(queryBuilder);
     }
 
@@ -412,6 +416,9 @@ public class SearchRequestBuilder {
         final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         boolQueryBuilder.must(prepareFacetedQuery(query));
         boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
         MapUtils.emptyIfNull(filters)
                 .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
         return boolQueryBuilder;

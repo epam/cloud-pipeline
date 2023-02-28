@@ -222,12 +222,14 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                         Comparator.comparing(AbstractDataStorageItem::getPath))
                 .filter(CollectionUtils::isNotEmpty)
                 .map(versions -> {
-                    final DataStorageFile file = versions.get(0);
-                    file.setVersions(
-                            versions.stream().skip(1).collect(
-                                    Collectors.toMap(DataStorageFile::getVersion, v -> v)
-                            )
-                    );
+                    final DataStorageFile file = versions.stream()
+                            .filter(DataStorageFile::isLatest)
+                            .findFirst()
+                            .orElseGet(() -> versions.get(0));
+                    file.setVersions(versions
+                            .stream()
+                            .filter(version -> !StringUtils.equals(file.getVersion(), version.getVersion()))
+                            .collect(Collectors.toMap(DataStorageFile::getVersion, v -> v)));
                     return file;
                 });
     }

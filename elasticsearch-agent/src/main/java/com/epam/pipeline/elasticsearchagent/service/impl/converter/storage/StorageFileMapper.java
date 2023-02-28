@@ -88,6 +88,7 @@ public class StorageFileMapper {
                     .field("storage_name", dataStorage.getName())
                     .field("storage_region", region)
                     .field("is_hidden", isHidden(dataStorage, dataStorageFile))
+                    .field("is_deleted", Boolean.TRUE.equals(dataStorageFile.getDeleteMarker()))
                     .field(DOC_TYPE_FIELD, type.name())
                     .array("metadata", tags.entrySet().stream()
                             .map(entry -> entry.getKey() + " " + entry.getValue())

@@ -26,6 +26,7 @@
         "allowed_groups": { "type": "keyword" },
         "denied_groups": { "type": "keyword" },
         "is_hidden": { "type":  "boolean" },
+        "is_deleted": { "type":  "boolean" },
         "content": { "type": "text" }
       }
     }
