@@ -19,7 +19,8 @@
         "allowed_users": { "type": "keyword" },
         "denied_users": { "type": "keyword" },
         "allowed_groups": { "type": "keyword" },
-        "denied_groups": { "type": "keyword" }
+        "denied_groups": { "type": "keyword" },
+        "is_hidden": { "type":  "boolean" }
       }
     }
   },

@@ -892,6 +892,8 @@ public class SystemPreferences {
 
     public static final StringPreference SEARCH_ELASTIC_DENIED_GROUPS_FIELD = new StringPreference(
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
+    public static final BooleanPreference SEARCH_HIDE_DELETED = new BooleanPreference(
+            "search.elastic.hide.deleted", true, SEARCH_GROUP, pass);
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =

@@ -73,6 +73,7 @@ public class SearchRequestBuilder {
     private static final String ES_DOC_ID_FIELD = "_id";
     private static final String ES_DOC_SCORE_FIELD = "_score";
     private static final String SEARCH_HIDDEN = "is_hidden";
+    private static final String SEARCH_DELETED = "is_deleted";
     private static final String INDEX_WILDCARD_PREFIX = "*";
     private static final String STORAGE_CLASS_FIELD = "storage_class";
 
@@ -170,6 +171,9 @@ public class SearchRequestBuilder {
         final PipelineUser pipelineUser = userManager.loadUserByName(authManager.getAuthorizedUser());
         if (pipelineUser == null) {
             throw new IllegalArgumentException("Failed to find currently authorized user");
+        }
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            queryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
         }
         //no check for admins
         if (ListUtils.emptyIfNull(pipelineUser.getRoles()).stream()

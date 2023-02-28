@@ -61,6 +61,7 @@ public class StorageFileMapper {
                     .field("storage_id", dataStorage.getId())
                     .field("storage_name", dataStorage.getName())
                     .field("storage_region", region)
+                    .field("is_deleted", Boolean.TRUE.equals(dataStorageFile.getDeleteMarker()))
                     .field("storage_class", labels.getOrDefault(ESConstants.STORAGE_CLASS_LABEL, STANDARD_TIER))
                     .field(DOC_TYPE_FIELD, type.name());
 
