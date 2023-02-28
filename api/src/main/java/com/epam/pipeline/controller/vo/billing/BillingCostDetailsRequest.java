@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.vo.billing;
 
+import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import lombok.Builder;
 import lombok.Value;
@@ -29,6 +30,7 @@ public class BillingCostDetailsRequest {
 
     BillingGrouping grouping;
     Map<String, List<String>> filters;
+    BillingDiscount discount;
     boolean enabled;
 
 }

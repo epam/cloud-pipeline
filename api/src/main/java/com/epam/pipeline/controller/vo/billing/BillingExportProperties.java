@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.billing;
+package com.epam.pipeline.controller.vo.billing;
 
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.List;
+
 @Value
 @Builder
-public class StorageBillingMetrics {
+public class BillingExportProperties {
 
-    Long cost;
-    Long averageVolume;
-    Long currentVolume;
-    BillingChartDetails details;
-
-    public static StorageBillingMetrics empty() {
-        return StorageBillingMetrics.builder()
-                .cost(0L)
-                .averageVolume(0L)
-                .currentVolume(0L)
-                .build();
-    }
+    //Storage specific parameters
+    boolean includeStorageOldVersions;
+    List<String> includeStorageClasses;
 }

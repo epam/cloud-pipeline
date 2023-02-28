@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.billing.billingdetails;
 
 import com.epam.pipeline.controller.vo.billing.BillingCostDetailsRequest;
 import com.epam.pipeline.entity.billing.BillingChartDetails;
+import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails;
 import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails.StorageBillingDetails;
@@ -25,6 +26,9 @@ import com.epam.pipeline.manager.billing.BillingUtils;
 import com.epam.pipeline.manager.utils.ElasticSearchUtils;
 import com.epam.pipeline.utils.NumericUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -46,6 +50,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class StorageBillingCostDetailsLoader {
 
@@ -54,8 +60,13 @@ public final class StorageBillingCostDetailsLoader {
 
     private StorageBillingCostDetailsLoader() {}
 
-    public static final List<String> S3_STORAGE_CLASSES =
-            Arrays.asList("STANDARD", "GLACIER", "GLACIER_IR", "DEEP_ARCHIVE");
+    public static final Map<String, String> STORAGE_CLASSES =
+            Stream.of(
+                    ImmutablePair.of("STANDARD", "Standard Layer"),
+                    ImmutablePair.of("GLACIER", "Glacier"),
+                    ImmutablePair.of("GLACIER_IR", "Glacier IR"),
+                    ImmutablePair.of("DEEP_ARCHIVE", "Deep Archive")
+            ).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
 
     private static final String SC_COST_TEMPLATE = "%s_cost";
     private static final String SC_USAGE_TEMPLATE = "%s_usage_bytes";
@@ -68,13 +79,15 @@ public final class StorageBillingCostDetailsLoader {
     );
 
     public static void buildQuery(BillingCostDetailsRequest request, final AggregationBuilder topAgg) {
+        final long storageDiscount = Optional.ofNullable(request.getDiscount())
+                .map(BillingDiscount::getStorages).orElse(0).longValue();
         if (request.getGrouping() == BillingGrouping.STORAGE) {
             // Since we build topAgg as Term agg for storage (bucket is storage), we can just calculate
             // cost as sum and size as avg + for current size we can grab last value
-            for (String storageClass : S3_STORAGE_CLASSES) {
+            for (String storageClass : STORAGE_CLASSES.keySet()) {
                 final String sc = storageClass.toLowerCase(Locale.ROOT);
-                topAgg.subAggregation(buildSumAggregation(SC_COST_TEMPLATE, sc));
-                topAgg.subAggregation(buildSumAggregation(SC_OV_COST_TEMPLATE, sc));
+                topAgg.subAggregation(buildSumAggregation(SC_COST_TEMPLATE, sc, storageDiscount));
+                topAgg.subAggregation(buildSumAggregation(SC_OV_COST_TEMPLATE, sc, storageDiscount));
                 topAgg.subAggregation(buildAvgAggregation(SC_USAGE_TEMPLATE, sc));
                 topAgg.subAggregation(buildAvgAggregation(SC_OV_USAGE_TEMPLATE, sc));
                 topAgg.subAggregation(buildLastByDateHitAggregation(SC_USAGE_TEMPLATE, sc));
@@ -85,10 +98,10 @@ public final class StorageBillingCostDetailsLoader {
             // So we need to calculate size for storages as avg first and then sum it
             final TermsAggregationBuilder avgUsageOfStorageAgg = AggregationBuilders.terms(STORAGES_SIZE_DETAILS)
                     .field(BillingUtils.STORAGE_ID_FIELD).size(Integer.MAX_VALUE);
-            for (String storageClass : S3_STORAGE_CLASSES) {
+            for (String storageClass : STORAGE_CLASSES.keySet()) {
                 final String sc = storageClass.toLowerCase(Locale.ROOT);
-                topAgg.subAggregation(buildSumAggregation(SC_COST_TEMPLATE, sc));
-                topAgg.subAggregation(buildSumAggregation(SC_OV_COST_TEMPLATE, sc));
+                topAgg.subAggregation(buildSumAggregation(SC_COST_TEMPLATE, sc, storageDiscount));
+                topAgg.subAggregation(buildSumAggregation(SC_OV_COST_TEMPLATE, sc, storageDiscount));
                 avgUsageOfStorageAgg.subAggregation(buildAvgAggregation(SC_USAGE_TEMPLATE, sc));
                 avgUsageOfStorageAgg.subAggregation(buildAvgAggregation(SC_OV_USAGE_TEMPLATE, sc));
                 topAgg.subAggregation(buildPipelineSumAggregation(STORAGES_SIZE_DETAILS, SC_USAGE_TEMPLATE, sc));
@@ -101,7 +114,7 @@ public final class StorageBillingCostDetailsLoader {
     public static BillingChartDetails parseResponse(final BillingCostDetailsRequest request,
                                                     final Aggregations aggregations) {
         final List<StorageBillingDetails> tiers = new ArrayList<>();
-        for (String sc : S3_STORAGE_CLASSES) {
+        for (String sc : STORAGE_CLASSES.keySet()) {
             final StorageBillingDetails.StorageBillingDetailsBuilder detailsBuilder =
                     StorageBillingDetails.builder().storageClass(sc);
             detailsBuilder.cost(fetchSimpleAggregationValue(SC_COST_TEMPLATE, sc, aggregations));
@@ -177,9 +190,19 @@ public final class StorageBillingCostDetailsLoader {
                 .sort(BillingUtils.BILLING_DATE_FIELD, SortOrder.DESC);
     }
 
-    private static SumAggregationBuilder buildSumAggregation(final String template, final String storageClass) {
+    private static SumAggregationBuilder buildSumAggregation(final String template, final String storageClass,
+                                                             final long discount) {
         final String agg = getAggregationField(template, storageClass);
-        return AggregationBuilders.sum(agg).field(agg);
+        SumAggregationBuilder aggregation = AggregationBuilders.sum(agg).field(agg);
+        if (discount != 0) {
+            aggregation.script(new Script(
+                String.format(
+                        BillingUtils.DISCOUNT_SCRIPT_TEMPLATE,
+                        BillingUtils.asPercentToDecimalString(discount))
+                )
+            );
+        }
+        return aggregation;
     }
 
     private static AvgAggregationBuilder buildAvgAggregation(final String template, final String storageClass) {
