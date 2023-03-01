@@ -575,7 +575,7 @@ class StorageReports extends React.Component {
       return result;
     };
     const filter = metrics === StorageMetrics.volume
-      ? ['abgSize', 'oldVersionAvgSize']
+      ? ['avgSize', 'oldVersionAvgSize']
       : ['cost', 'oldVersionCost'];
     const datasets = filter
       .map(key => {
