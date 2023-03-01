@@ -188,25 +188,28 @@ export default class BaseBillingRequest extends RemotePost {
         ...costDetailsRest
       } = costDetails;
       const processedTiers = tiers.map(processTier);
-      const total = {
-        storageClass: 'TOTAL'
-      };
-      tiers.forEach((aTier) => {
-        const processKeys = (keys) => {
-          keys.forEach((aKey) => {
-            const value = aTier[aKey] || 0;
-            if (!Number.isNaN(Number(value))) {
-              total[aKey] = (total[aKey] || 0) + value;
-            }
-          });
+      if (processedTiers.length > 0) {
+        const total = {
+          storageClass: 'TOTAL'
         };
-        processKeys([...costKeys, ...sizeKeys]);
-      });
+        tiers.forEach((aTier) => {
+          const processKeys = (keys) => {
+            keys.forEach((aKey) => {
+              const value = aTier[aKey] || 0;
+              if (!Number.isNaN(Number(value))) {
+                total[aKey] = (total[aKey] || 0) + value;
+              }
+            });
+          };
+          processKeys([...costKeys, ...sizeKeys]);
+        });
+        processedTiers.push(processTier(total));
+      }
       return {
         ...rest,
         costDetails: {
           ...costDetailsRest,
-          tiers: processedTiers.concat(processTier(total))
+          tiers: processedTiers
             .reduce((result, tier) => ({
               ...result,
               [tier.storageClass]: tier

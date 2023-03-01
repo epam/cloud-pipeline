@@ -21,6 +21,14 @@ export function costMapper (value) {
   return Math.round(+value / 100.0) / 100.0;
 }
 
+export function minimumCostMapper (value) {
+  if (!value || isNaN(value)) {
+    return 0;
+  }
+  const minimumValue = (+value > 0) ? 0.01 : 0;
+  return Math.max(Math.round(+value / 100.0) / 100.0, minimumValue);
+}
+
 export function minutesToHours (minutes) {
   if (!minutes || isNaN(minutes)) {
     return 0;

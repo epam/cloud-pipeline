@@ -17,7 +17,8 @@
 const KeyMappers = {
   value: 'previous',
   usage: 'previousUsage',
-  runsCount: 'previousRunsCount'
+  runsCount: 'previousRunsCount',
+  costDetails: 'previousCostDetails'
 };
 
 export default function join (current = {}, previous = {}, keyMappers = KeyMappers) {
@@ -43,7 +44,8 @@ export default function join (current = {}, previous = {}, keyMappers = KeyMappe
       ...p,
       value: 0,
       ...c,
-      ...prevObj
+      ...prevObj,
+      costDetails: c.costDetails
     };
   }
   return result;

@@ -92,6 +92,7 @@ class GetBillingData extends BaseBillingRequest {
       if (this.dateFilter(initialDate)) {
         const momentDate = this.dateMapper(initialDate);
         res.values.push({
+          costDetails: item.costDetails,
           date: moment(momentDate).format('DD MMM YYYY'),
           value: isNaN(item.accumulatedCost) ? undefined : costMapper(item.accumulatedCost),
           cost: isNaN(item.cost) ? undefined : costMapper(item.cost),
@@ -132,12 +133,14 @@ class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
           ...o,
           previous: o.value,
           previousCost: o.cost,
-          previousInitialDate: o.initialDate
+          previousInitialDate: o.initialDate,
+          previousCostDetails: o.costDetails
         }))
       : [];
     result.forEach((o) => {
       delete o.value;
       delete o.cost;
+      delete o.costDetails;
     });
     for (let i = 0; i < (currentValues || []).length; i++) {
       const item = currentValues[i];
@@ -146,6 +149,7 @@ class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
       if (prev) {
         prev.value = item.value;
         prev.cost = item.cost;
+        prev.costDetails = item.costDetails;
       } else {
         result.push(item);
       }

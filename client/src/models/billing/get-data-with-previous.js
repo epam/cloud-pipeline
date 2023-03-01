@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {action} from 'mobx';
 import RemotePost from '../basic/RemotePost';
 import defer from '../../utils/defer';
 
