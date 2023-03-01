@@ -51,13 +51,14 @@ function StorageLayers (
     reportThemes,
     highlightTickFn,
     highlightTickStyle = {},
-    loading
+    loading,
+    discounts = ((o) => o)
   }
 ) {
   const totals = rawData.datasets
     .filter(dataset => !dataset.hidden)
     .reduce((acc, current) => {
-      acc = current.data.map((value, i) => value + (acc[i] || 0));
+      acc = current.data.map((value, i) => discounts(value) + (acc[i] || 0));
       return acc;
     }, []);
   const maximum = getMaximum(totals);
@@ -78,6 +79,7 @@ function StorageLayers (
         );
       return {
         ...dataset,
+        data: dataset.data.map((item) => discounts(item)),
         borderWidth: 2,
         borderDash: [4, 4],
         borderColor: baseColors,

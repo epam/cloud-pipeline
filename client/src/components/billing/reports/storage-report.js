@@ -337,10 +337,11 @@ class StorageReports extends React.Component {
     const costsUsageSelectorHeight = 30;
     const tiersPending = tiersRequest && tiersRequest.pending;
     const tiersData = this.tiersData;
-    const valueFormatter = metrics === StorageMetrics.volume
+    const isVolumeMetrics = metrics === StorageMetrics.volume;
+    const valueFormatter = isVolumeMetrics
       ? numberFormatter
       : costTickFormatter;
-    const topDescription = metrics === StorageMetrics.volume
+    const topDescription = isVolumeMetrics
       ? 'by volume'
       : undefined;
     const showTableDetails = /^object$/i.test(type);
@@ -431,6 +432,7 @@ class StorageReports extends React.Component {
                                   fontColor: reportThemes.textColor,
                                   fontSize: 14
                                 }}
+                                discounts={isVolumeMetrics ? undefined : storageDiscounts}
                               />
                             </div>
                           )
@@ -438,9 +440,7 @@ class StorageReports extends React.Component {
                       </ResizableContainer>
                     </Layout.Panel>
                   </div>
-                ) : (
-                  null
-                )}
+                ) : null}
                 <div key={this.layout.Panels.storages}>
                   <Layout.Panel>
                     <ResizableContainer style={{width: '100%', height: '100%'}}>
