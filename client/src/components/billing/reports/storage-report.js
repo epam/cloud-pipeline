@@ -274,7 +274,8 @@ class StorageReports extends React.Component {
       .map(key => {
         return {
           label: LAYERS_LABELS[key] || key,
-          data: getData(key, labels)
+          data: getData(key, labels),
+          isOldVersions: [LAYERS_KEYS.oldVersionCost, LAYERS_KEYS.oldVersionAvgSize].includes(key)
         };
       });
     const totalDataset = (datasets || []).reduce((acc, current) => {
@@ -427,7 +428,8 @@ class StorageReports extends React.Component {
                                   (_, tick) => tick._index === selectedIndex
                                 }
                                 highlightTickStyle={{
-                                  fontColor: reportThemes.current
+                                  fontColor: reportThemes.textColor,
+                                  fontSize: 14
                                 }}
                               />
                             </div>

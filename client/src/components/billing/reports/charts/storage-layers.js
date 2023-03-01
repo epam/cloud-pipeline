@@ -38,7 +38,6 @@ function StorageLayers (
   {
     highlightedLabel,
     axisPosition = 'left',
-    request,
     data: rawData,
     onSelect,
     onScaleSelect,
@@ -55,10 +54,6 @@ function StorageLayers (
     loading
   }
 ) {
-  // todo: connect to API and get rid of mocks
-  // if (!request) {
-  //   return null;
-  // }
   const totals = rawData.datasets
     .filter(dataset => !dataset.hidden)
     .reduce((acc, current) => {
@@ -74,9 +69,10 @@ function StorageLayers (
     labels: rawData.labels,
     datasets: rawData.datasets.map((dataset, index) => {
       const baseColors = Array(dataset.data.length)
-        .fill(reportThemes.colors[index]);
-      const backgroundColors = baseColors
-        .map((color, index) => highlightedLabel === index
+        .fill(reportThemes.current);
+      const backgroundColors = Array(dataset.data.length)
+        .fill(dataset.isOldVersions ? 'transparent' : reportThemes.current)
+        .map((color, index) => highlightedLabel === index || dataset.isOldVersions
           ? color
           : fadeout(color, 0.75)
         );
@@ -144,11 +140,25 @@ function StorageLayers (
     tooltips: {
       intersect: false,
       mode: 'index',
-      itemSort: function ({datasetIndex: a}, {datasetIndex: b}) {
-        // reverse tooltip orders
-        return b - a;
-      },
       callbacks: {
+        labelColor: function (tooltipItem, chart) {
+          const {
+            config = {}
+          } = chart;
+          const {
+            data: configData = {}
+          } = config;
+          const {
+            datasets = []
+          } = configData;
+          const {
+            isOldVersions
+          } = datasets[tooltipItem.datasetIndex] || {};
+          return {
+            borderColor: reportThemes.current,
+            backgroundColor: isOldVersions ? 'transparent' : reportThemes.current
+          };
+        },
         label: function (tooltipItem, data) {
           const {label} = data.datasets[tooltipItem.datasetIndex];
           const value = valueFormatter(tooltipItem.yLabel);

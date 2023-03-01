@@ -15,6 +15,7 @@
  */
 
 import {costTickFormatter} from '../../utilities';
+import {LAYERS_KEYS} from '../../../../../models/billing';
 
 export function getSummaryDatasetsByStorageClass (storageClass) {
   const total = /^total$/i.test(storageClass);
@@ -39,8 +40,8 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
     accumulative: {
       value: (item) => getCostDetailsSumm(
         item.costDetails,
-        'accumulativeCost',
-        'accumulativeOldVersionCost'
+        LAYERS_KEYS.accumulativeCost,
+        LAYERS_KEYS.accumulativeOldVersionCost
       ),
       options: {
         borderWidth: 3,
@@ -48,11 +49,11 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
           if (item) {
             const currentValue = getCostDetailsValue(
               item.costDetails,
-              'accumulativeCost'
+              LAYERS_KEYS.accumulativeCost
             ) || 0;
             const oldVersionsValue = getCostDetailsValue(
               item.costDetails,
-              'accumulativeOldVersionCost'
+              LAYERS_KEYS.accumulativeOldVersionCost
             ) || 0;
             const current = costTickFormatter(currentValue);
             const oldVersion = costTickFormatter(oldVersionsValue);
@@ -75,11 +76,11 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
           if (item) {
             const currentValue = getCostDetailsValue(
               item.costDetails,
-              'cost'
+              LAYERS_KEYS.cost
             ) || 0;
             const oldVersionsValue = getCostDetailsValue(
               item.costDetails,
-              'oldVersionCost'
+              LAYERS_KEYS.oldVersionCost
             ) || 0;
             const current = costTickFormatter(currentValue);
             const oldVersion = costTickFormatter(oldVersionsValue);
@@ -96,7 +97,7 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
     accumulative: {
       value: (item) => getCostDetailsSumm(
         item.costDetails,
-        'accumulativeOldVersionCost'
+        LAYERS_KEYS.accumulativeOldVersionCost
       ),
       options: {
         borderWidth: 2,
@@ -108,7 +109,7 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
     fact: {
       value: (item) => getCostDetailsSumm(
         item.costDetails,
-        'oldVersionCost'
+        LAYERS_KEYS.oldVersionCost
       ),
       options: {
         borderWidth: 1,
@@ -124,8 +125,8 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
     accumulative: {
       value: (item) => total ? item.previous : getCostDetailsSumm(
         item.previousCostDetails,
-        'accumulativeCost',
-        'accumulativeOldVersionCost'
+        LAYERS_KEYS.accumulativeCost,
+        LAYERS_KEYS.accumulativeOldVersionCost
       ),
       options: {
         isPrevious: true
@@ -134,8 +135,8 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
     fact: {
       value: (item) => total ? item.previousCost : getCostDetailsSumm(
         item.previousCostDetails,
-        'cost',
-        'oldVersionCost'
+        LAYERS_KEYS.cost,
+        LAYERS_KEYS.oldVersionCost
       ),
       options: {
         isPrevious: true,
