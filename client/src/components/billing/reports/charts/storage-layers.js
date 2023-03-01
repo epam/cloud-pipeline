@@ -59,10 +59,12 @@ function StorageLayers (
   // if (!request) {
   //   return null;
   // }
-  const totals = rawData.datasets.reduce((acc, current) => {
-    acc = current.data.map((value, i) => value + (acc[i] || 0));
-    return acc;
-  }, []);
+  const totals = rawData.datasets
+    .filter(dataset => !dataset.hidden)
+    .reduce((acc, current) => {
+      acc = current.data.map((value, i) => value + (acc[i] || 0));
+      return acc;
+    }, []);
   const maximum = getMaximum(totals);
   const disabled = isNaN(maximum);
   const {
