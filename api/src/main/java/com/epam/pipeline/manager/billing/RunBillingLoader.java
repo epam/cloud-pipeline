@@ -101,10 +101,8 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                         .aggregation(billingHelper.aggregateBy(BillingUtils.RUN_ID_FIELD)
                                 .size(Integer.MAX_VALUE)
                                 .subAggregation(billingHelper.aggregateCostSum(discount.getComputes()))
-                                .subAggregation(BillingUtils.aggregateDiscountCostSum(
-                                        BillingUtils.DISK_COST_FIELD, discount.getComputes()))
-                                .subAggregation(BillingUtils.aggregateDiscountCostSum(
-                                        BillingUtils.COMPUTE_COST_FIELD, discount.getComputes()))
+                                .subAggregation(billingHelper.aggregateDiskCostSum(discount.getComputes()))
+                                .subAggregation(billingHelper.aggregateComputeCostSum(discount.getComputes()))
                                 .subAggregation(billingHelper.aggregateRunUsageSum())
                                 .subAggregation(billingHelper.aggregateLastByDateDoc())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
@@ -129,8 +127,8 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                 .finished(BillingUtils.asDateTime(topHitFields.get(BillingUtils.FINISHED_FIELD)))
                 .duration(billingHelper.getRunUsageSum(aggregations))
                 .cost(billingHelper.getCostSum(aggregations))
-                .diskCost(billingHelper.getLongValue(aggregations, BillingUtils.DISK_COST_FIELD))
-                .computeCost(billingHelper.getLongValue(aggregations, BillingUtils.COMPUTE_COST_FIELD))
+                .diskCost(billingHelper.getDiskCostSum(aggregations))
+                .computeCost(billingHelper.getComputeCostSum(aggregations))
                 .build();
     }
 }
