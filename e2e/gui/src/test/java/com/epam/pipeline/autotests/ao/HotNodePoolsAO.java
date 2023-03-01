@@ -188,6 +188,8 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
         public CreateHotNodePoolAO addDockerImage(String registry, String group, String tool) {
             context().find(byText("Add docker image")).parent().click();
             context().find(byXpath(".//div[.='Docker image']")).click();
+            SelenideElement el1=$(byClassName("dd-docker-registry-control__container")).find(byXpath(".//input"));
+            setValue(el1, "tests");
             $(byClassName("ant-select-dropdown-menu"))
                     .shouldBe(enabled)
                     .findAll(byClassName("ant-select-dropdown-menu-item"))
