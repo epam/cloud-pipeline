@@ -48,9 +48,8 @@ if os.path.exists(libfuse_path):
 import fuse
 from fuse import FUSE, fuse_operations, fuse_file_info, c_utimbuf
 
-from pipefuse.api import CloudPipelineClient, CloudType, CloudPipelineAuditConsumer
-from pipefuse.audit import AuditFileSystemClient, LoggingAuditConsumer, ChunkingAuditConsumer, \
-    NativeSetAuditContainer, AuditDaemon
+from pipefuse.api import CloudPipelineClient, CloudType
+from pipefuse.audit import AuditFileSystemClient
 from pipefuse.buffread import BufferingReadAheadFileSystemClient
 from pipefuse.buffwrite import BufferingWriteFileSystemClient
 from pipefuse.cache import ListingCache, ThreadSafeListingCache, \
@@ -71,6 +70,9 @@ from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributes
     ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
 from pipefuse.archived import ArchivedFilesFilterFileSystemClient, ArchivedAttributesFileSystemClient
 from pipefuse.storageclassfilter import StorageClassFilterFileSystemClient
+from src.common.audit import LoggingAuditConsumer, ChunkingAuditConsumer, \
+    SetAuditContainer, AuditDaemon, DelayingAuditContainer, StoragePathAuditConsumer, \
+    CloudPipelineAuditConsumer
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 _allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
@@ -91,7 +93,7 @@ def start(mountpoint, webdav, bucket,
           disabled_operations, default_mode,
           mount_options, threads, monitoring_delay, recording,
           show_archived, storage_class_exclude,
-          audit_buffer_ttl):
+          audit_buffer_ttl, audit_buffer_size):
     try:
         os.makedirs(mountpoint)
     except OSError as e:
@@ -105,6 +107,8 @@ def start(mountpoint, webdav, bucket,
     read_ahead_max_size = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_MAX_SIZE', read_ahead_max_size))
     read_ahead_size_multiplier = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER',
                                                read_ahead_size_multiplier))
+    audit_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_TTL', audit_buffer_ttl))
+    audit_buffer_size = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_SIZE', audit_buffer_size))
     bucket_type = None
     root_path = None
     daemons = []
@@ -135,12 +139,8 @@ def start(mountpoint, webdav, bucket,
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
         if audit_buffer_ttl > 0:
             logging.info('Auditing is enabled.')
-            audit_container = NativeSetAuditContainer()
-            audit_consumer = CloudPipelineAuditConsumer(pipe=pipe, bucket_object=bucket_object)
-            audit_consumer = LoggingAuditConsumer(audit_consumer)
-            audit_consumer = ChunkingAuditConsumer(audit_consumer)
-            daemons.append(AuditDaemon(container=audit_container, consumer=audit_consumer, timeout=audit_buffer_ttl))
-            client = AuditFileSystemClient(client, container=audit_container)
+            client, daemon = get_audit_client(client, pipe, bucket_object, audit_buffer_ttl, audit_buffer_size)
+            daemons.append(daemon)
         else:
             logging.info('Auditing is disabled.')
         client = StorageHighLevelFileSystemClient(client)
@@ -229,6 +229,21 @@ def start(mountpoint, webdav, bucket,
     ro = client.is_read_only() or mount_options.get('ro', False)
     mount_options.pop('ro', None)
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, **mount_options)
+
+
+def get_audit_client(client, pipe, storage, audit_buffer_ttl, audit_buffer_size):
+    user = pipe.whoami()
+    container = SetAuditContainer()
+    container = DelayingAuditContainer(container, delay=audit_buffer_ttl)
+    consumer = CloudPipelineAuditConsumer(consumer_func=pipe.create_system_logs,
+                                          user_name=user.get('userName'),
+                                          service_name='pipe-mount')
+    consumer = LoggingAuditConsumer(consumer)
+    consumer = StoragePathAuditConsumer(consumer, storage=storage)
+    consumer = ChunkingAuditConsumer(consumer, chunk_size=audit_buffer_size)
+    client = AuditFileSystemClient(client, container=container)
+    daemon = AuditDaemon(container=container, consumer=consumer)
+    return client, daemon
 
 
 def enable_additional_operations():
@@ -378,6 +393,8 @@ if __name__ == '__main__':
                         help="Storage classes that shall be excluded from listing.")
     parser.add_argument("--audit-buffer-ttl", type=int, required=False, default=60,
                         help="Data access audit buffer time to live, seconds.")
+    parser.add_argument("--audit-buffer-size", type=int, required=False, default=100,
+                        help="Number of entries in data access audit buffer.")
     args = parser.parse_args()
 
     if args.xattrs_include_prefixes and args.xattrs_exclude_prefixes:
@@ -415,7 +432,7 @@ if __name__ == '__main__':
               default_mode=args.mode, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording,
               show_archived=args.show_archived, storage_class_exclude=args.storage_class_exclude,
-              audit_buffer_ttl=args.audit_buffer_ttl)
+              audit_buffer_ttl=args.audit_buffer_ttl, audit_buffer_size=args.audit_buffer_size)
     except Exception:
         logging.exception('Unhandled error')
         traceback.print_exc()

@@ -12,15 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import json
 import logging
-import pytz
 import requests
-import socket
 import time
-
-from pipefuse.audit import AuditConsumer, DataAccessType
 
 
 class CloudType:
@@ -214,37 +209,3 @@ class CloudPipelineClient:
                 exceptions.append(e)
             time.sleep(self.__timeout__)
         raise exceptions[-1]
-
-
-class CloudPipelineAuditConsumer(AuditConsumer):
-
-    def __init__(self, pipe, bucket_object):
-        self._pipe = pipe
-        self._log_path_prefix = bucket_object.type.lower() + '://' + bucket_object.path + '/'
-        self._log_user = self._pipe.whoami().get('userName')
-        self._log_hostname = socket.gethostname()
-        self._log_type = 'audit'
-        self._log_service = 'pipe-mount'
-        self._log_severity = 'INFO'
-        self._type_mapping = {
-            DataAccessType.READ: 'READ',
-            DataAccessType.WRITE: 'WRITE',
-            DataAccessType.DELETE: 'DELETE'
-        }
-
-    def consume(self, entries):
-        now = datetime.datetime.now(tz=pytz.utc)
-        now_str = now.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        self._pipe.create_system_logs([{
-            'eventId': int(time.time() * 10 ** 9),
-            'messageTimestamp': now_str,
-            'hostname': self._log_hostname,
-            'serviceName': self._log_service,
-            'type': self._log_type,
-            'user': self._log_user,
-            'message': self._convert_type(entry.type) + ' ' + self._log_path_prefix + entry.path,
-            'severity': self._log_severity
-        } for entry in entries])
-
-    def _convert_type(self, type):
-        return self._type_mapping.get(type, 'ACCESS')

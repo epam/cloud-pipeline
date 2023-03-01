@@ -89,7 +89,8 @@ pip install pywin32==300 && \
 cd /pipe-cli/mount && \
 cp libfuse/dokanfuse1.dll.1.5.0.3000 libfuse/dokanfuse1.dll.frozen && \
 pip install -r /pipe-cli/mount/requirements.txt && \
-pyinstaller --hidden-import=UserList \
+pyinstaller --paths "/pipe-cli" \
+            --hidden-import=UserList \
             --hidden-import=UserString \
             --hidden-import=commands \
             --hidden-import=ConfigParser \

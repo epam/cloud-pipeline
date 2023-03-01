@@ -72,6 +72,9 @@ class AbstractMount(object):
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         pass
 
+    def get_python_path(self):
+        return None
+
 
 class FrozenMount(AbstractMount):
 
@@ -134,6 +137,10 @@ class SourceMount(AbstractMount):
             mount_cmd.extend(['-o', options])
         return mount_cmd
 
+    def get_python_path(self):
+        script_folder = dirname(Config.get_base_source_dir())
+        return script_folder
+
 
 class Mount(object):
 
@@ -162,20 +169,24 @@ class Mount(object):
                   log_file=None, log_level=None, threading=False, timeout=1000, show_archive=False):
         mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, custom_options, web_dav_url, mode,
                                                log_level=log_level, threading=threading, show_archive=show_archive)
-        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
+        python_path = mount.get_python_path()
+        self.run(config, mount_cmd, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 
     def mount_storage(self, mount, config, mountpoint, options, custom_options, bucket, mode,
                       log_file=None, log_level=None, threading=False, timeout=1000, show_archive=False):
         mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, custom_options, bucket, mode,
                                                 log_level=log_level, threading=threading, show_archive=show_archive)
-        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
+        python_path = mount.get_python_path()
+        self.run(config, mount_cmd, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 
-    def run(self, config, mount_cmd, mount_timeout=5*MS_IN_SEC, log_file=None):
+    def run(self, config, mount_cmd, mount_timeout=5*MS_IN_SEC, python_path=None, log_file=None):
         output_file = log_file if log_file else os.devnull
         with open(output_file, 'w') as output:
             mount_environment = os.environ.copy()
             mount_environment['API'] = config.api
             mount_environment['API_TOKEN'] = config.get_token()
+            if python_path:
+                mount_environment['PYTHONPATH'] = python_path
             if config.proxy:
                 mount_environment['http_proxy'] = config.proxy
                 mount_environment['https_proxy'] = config.proxy
