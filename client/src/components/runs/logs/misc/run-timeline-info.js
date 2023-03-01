@@ -87,7 +87,7 @@ function RunTimelineInfo (
                 <thead>
                   <tr>
                     <th>Paused</th>
-                    <th>Resumed</th>
+                    <th>Resumed / Stopped</th>
                     <th>Duration</th>
                   </tr>
                 </thead>
