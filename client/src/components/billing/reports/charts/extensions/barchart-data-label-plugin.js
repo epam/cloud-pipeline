@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ function isNotSet (v) {
 const plugin = {
   id,
   afterDatasetsDraw: function (chart, ease, pluginOptions) {
-    const {valueFormatter = costTickFormatter} = pluginOptions || {};
+    const {valueFormatter = costTickFormatter, chartType} = pluginOptions || {};
     const ctx = chart.chart.ctx;
     const datasetLabels = chart.data.datasets
       .map((dataset, i) => {
@@ -39,7 +39,8 @@ const plugin = {
             index,
             meta,
             chart,
-            valueFormatter
+            valueFormatter,
+            chartType
           ));
         }
         return [];
@@ -135,7 +136,8 @@ const plugin = {
         borderColor = 'black',
         textBold = false,
         textColor,
-        flagColor
+        flagColor,
+        dataLabelText
       } = dataset;
       const color = textColor || borderColor;
       const {position, text} = config;
@@ -145,8 +147,11 @@ const plugin = {
         ctx.font = `${textBold ? 'bold ' : ''}9pt sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(text, position.x + position.width / 2.0, position.y + position.height);
-        if (flagColor) {
+        ctx.fillText(
+          `${dataLabelText || ''}${text}`,
+          position.x + position.width / 2.0, position.y + position.height
+        );
+        if (flagColor && !dataLabelText) {
           ctx.beginPath();
           ctx.arc(
             position.x,
@@ -162,14 +167,23 @@ const plugin = {
       }
     }
   },
-  getInitialLabelConfig: function (dataset, element, index, meta, chart, valueFormatter) {
+  getInitialLabelConfig: function (
+    dataset,
+    element,
+    index,
+    meta,
+    chart,
+    valueFormatter,
+    chartType
+  ) {
     const {
       data,
       hidden,
-      textBold = false
+      textBold = false,
+      showDataLabel = false
     } = dataset;
     const {xAxisID, yAxisID} = meta;
-    if (hidden) {
+    if (hidden && !showDataLabel) {
       return null;
     }
     const xAxis = chart.scales[xAxisID];
@@ -185,15 +199,38 @@ const plugin = {
       left: xAxis.left,
       right: xAxis.right
     };
+    const getLabelXY = () => {
+      const visibleOnlyLabel = hidden && showDataLabel;
+      let currentLabelY = yAxis.getPixelForValue(dataItem);
+      if (visibleOnlyLabel) {
+        const padding = (globalBounds.bottom - globalBounds.top) * 0.1;
+        currentLabelY = yAxis.getPixelForValue(data[index]) - padding;
+      }
+      let offset = 0;
+      if (chartType === 'stacked') {
+        const datasetIndex = element._datasetIndex;
+        if (datasetIndex > 0 && !visibleOnlyLabel) {
+          for (let i = 0; i < datasetIndex; i++) {
+            const dataset = chart.data.datasets[i];
+            const prevData = (dataset || {}).data || [];
+            const prevLabelHeight = globalBounds.bottom - yAxis
+              .getPixelForValue(prevData[index] || 0);
+            offset += prevLabelHeight;
+          }
+        }
+      }
+      return {
+        x: element.getCenterPoint().x,
+        y: currentLabelY - offset
+      };
+    };
     const labelText = valueFormatter(dataItem);
     ctx.font = `${textBold ? 'bold ' : ''}9pt sans-serif`;
     const {width: labelWidth} = ctx.measureText(labelText);
     const padding = {x: 5, y: 2};
     const margin = 3;
     const labelHeight = 10;
-    const {x} = element.getCenterPoint();
-    const y = yAxis.getPixelForValue(dataItem);
-    const dataPoint = {x, y};
+    const {x, y} = getLabelXY();
     const labelTotalWidth = labelWidth + 2.0 * (margin + padding.x);
     const labelTotalHeight = labelHeight + 2.0 * (margin + padding.y);
     const getLabelPosition = (yy = y) => {
@@ -208,7 +245,7 @@ const plugin = {
       dataset,
       globalBounds,
       label: {
-        dataPoint,
+        dataPoint: {x, y},
         getLabelPosition,
         labelHeight: labelTotalHeight,
         text: labelText

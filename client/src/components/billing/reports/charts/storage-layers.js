@@ -19,7 +19,8 @@ import {inject, observer} from 'mobx-react';
 import Chart from './base';
 import {
   BarchartDataLabelPlugin,
-  ChartClickPlugin
+  ChartClickPlugin,
+  HighlightTicksPlugin
 } from './extensions';
 import Export from '../export';
 import {costTickFormatter} from '../utilities';
@@ -82,7 +83,9 @@ function StorageLayers (
         borderWidth: 2,
         borderDash: [4, 4],
         borderColor: baseColors,
-        backgroundColor: backgroundColors
+        backgroundColor: backgroundColors,
+        flagColor: baseColors[index],
+        textColor: reportThemes.textColor
       };
     })
   };
@@ -167,9 +170,13 @@ function StorageLayers (
       }
     },
     plugins: {
-      // todo: improve labels Y-align, according to stacked chart type
+      [HighlightTicksPlugin.id]: {
+        highlightTickFn,
+        axis: 'x-axis'
+      },
       [BarchartDataLabelPlugin.id]: {
-        valueFormatter
+        valueFormatter,
+        chartType: 'stacked'
       },
       [ChartClickPlugin.id]: {
         handler: onSelect ? index => onSelect({key: aggregates[index]}) : undefined,
@@ -220,7 +227,8 @@ function StorageLayers (
           options={options}
           plugins={[
             BarchartDataLabelPlugin.plugin,
-            ChartClickPlugin.plugin
+            ChartClickPlugin.plugin,
+            HighlightTicksPlugin.plugin
           ]}
           useChartImageGenerator={useImageConsumer}
           onImageDataReceived={onImageDataReceived}

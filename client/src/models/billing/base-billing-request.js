@@ -4,6 +4,17 @@ import TimedOutCache from '../basic/timed-out-cache';
 import {bytesToGbs, costMapper} from './utils';
 import defer from '../../utils/defer';
 
+export const KEYS = {
+  cost: 'cost',
+  oldVersionCost: 'oldVersionCost',
+  accumulativeCost: 'accumulativeCost',
+  accumulativeOldVersionCost: 'accumulativeOldVersionCost',
+  size: 'size',
+  avgSize: 'avgSize',
+  oldVersionSize: 'oldVersionSize',
+  oldVersionAvgSize: 'oldVersionAvgSize'
+};
+
 /**
  * @typedef {Object} BaseBillingRequestPagination
  * @property {number} pageNum
@@ -139,8 +150,18 @@ export default class BaseBillingRequest extends RemotePost {
 
   postprocess (value) {
     const items = super.postprocess(value);
-    const costKeys = ['cost', 'oldVersionCost', 'accumulativeCost', 'accumulativeOldVersionCost'];
-    const sizeKeys = ['size', 'avgSize', 'oldVersionSize', 'oldVersionAvgSize'];
+    const costKeys = [
+      KEYS.cost,
+      KEYS.oldVersionCost,
+      KEYS.accumulativeCost,
+      KEYS.accumulativeOldVersionCost
+    ];
+    const sizeKeys = [
+      KEYS.size,
+      KEYS.avgSize,
+      KEYS.oldVersionSize,
+      KEYS.oldVersionAvgSize
+    ];
     const processTier = (tier) => {
       const result = {
         ...tier

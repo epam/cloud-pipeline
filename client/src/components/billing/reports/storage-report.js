@@ -17,8 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {
-  Pagination,
-  Table
+  Pagination
 } from 'antd';
 import moment from 'moment-timezone';
 import {computed} from 'mobx';
@@ -54,7 +53,8 @@ import {
   GetGroupedObjectStorages,
   GetGroupedObjectStoragesWithPrevious,
   GetObjectStorageLayersInfo,
-  preFetchBillingRequest
+  preFetchBillingRequest,
+  LAYERS_KEYS
 } from '../../../models/billing';
 import {StorageReportLayout, Layout} from './layout';
 import {
@@ -69,6 +69,13 @@ import {
 import styles from './storage-report.css';
 
 const tablePageSize = 10;
+
+const LAYERS_LABELS = {
+  [LAYERS_KEYS.avgSize]: 'Average size',
+  [LAYERS_KEYS.oldVersionAvgSize]: 'Old versions average size',
+  [LAYERS_KEYS.cost]: 'Cost',
+  [LAYERS_KEYS.oldVersionCost]: 'Old versions cost'
+};
 
 function injection (stores, props) {
   const {location, params} = props;
@@ -192,9 +199,9 @@ function renderTable (
     } = item || {};
     if (!showDetails) {
       switch (key) {
-        case 'size': return (usageLast || 0);
-        case 'avgSize': return (usage || 0);
-        case 'cost': return (value || 0);
+        case LAYERS_KEYS.size: return (usageLast || 0);
+        case LAYERS_KEYS.avgSize: return (usage || 0);
+        case LAYERS_KEYS.cost: return (value || 0);
         default:
           return 0;
       }
@@ -300,22 +307,22 @@ function renderTable (
     ...getDetailedCells({
       title: 'Cost',
       dataExtractor: getLayerCostValue,
-      currentKey: 'cost',
-      oldVersionsKey: 'oldVersionCost'
+      currentKey: LAYERS_KEYS.cost,
+      oldVersionsKey: LAYERS_KEYS.oldVersionCost
     }),
     ...getDetailedCells({
       title: 'Avg. Vol.',
       measure: 'GB',
       dataExtractor: getLayerSizeValue,
-      currentKey: 'avgSize',
-      oldVersionsKey: 'oldVersionAvgSize'
+      currentKey: LAYERS_KEYS.avgSize,
+      oldVersionsKey: LAYERS_KEYS.oldVersionAvgSize
     }),
     ...getDetailedCells({
       title: 'Cur. Vol.',
       measure: 'GB',
       dataExtractor: getLayerSizeValue,
-      currentKey: 'size',
-      oldVersionsKey: 'oldVersionSize'
+      currentKey: LAYERS_KEYS.size,
+      oldVersionsKey: LAYERS_KEYS.oldVersionSize
     }),
     {
       key: 'region',
@@ -574,20 +581,31 @@ class StorageReports extends React.Component {
       });
       return result;
     };
+
     const filter = metrics === StorageMetrics.volume
-      ? ['avgSize', 'oldVersionAvgSize']
-      : ['cost', 'oldVersionCost'];
+      ? [LAYERS_KEYS.avgSize, LAYERS_KEYS.oldVersionAvgSize]
+      : [LAYERS_KEYS.cost, LAYERS_KEYS.oldVersionCost];
     const datasets = filter
       .map(key => {
         return {
-          label: key,
+          label: LAYERS_LABELS[key] || key,
           data: getData(key, labels)
         };
       });
+    const totalDataset = (datasets || []).reduce((acc, current) => {
+      acc.data = current.data.map((value, index) => value + (acc.data[index] || 0));
+      return acc;
+    }, {
+      data: [],
+      label: 'Total',
+      dataLabelText: 'Total: ',
+      hidden: true,
+      showDataLabel: true
+    });
     return {
       aggregates,
       labels: labels.map(getStorageClassName),
-      datasets
+      datasets: [...datasets, totalDataset]
     };
   }
 
@@ -621,6 +639,7 @@ class StorageReports extends React.Component {
       ? 'by volume'
       : undefined;
     const showTableDetails = /^object$/i.test(type);
+    const selectedIndex = tiersData.aggregates.indexOf(storageAggregate);
     return (
       <Discounts.Consumer>
         {
@@ -692,15 +711,19 @@ class StorageReports extends React.Component {
                                 <StorageFilter />
                               </div>
                               <StorageLayers
-                                highlightedLabel={
-                                  tiersData.aggregates.indexOf(storageAggregate)
-                                }
+                                highlightedLabel={selectedIndex}
                                 loading={tiersPending}
                                 onSelect={this.onSelectLayer}
                                 data={tiersData}
                                 title={'Object storage layers'}
                                 style={{height: height - costsUsageSelectorHeight}}
                                 valueFormatter={valueFormatter}
+                                highlightTickFn={
+                                  (_, tick) => tick._index === selectedIndex
+                                }
+                                highlightTickStyle={{
+                                  fontColor: reportThemes.current
+                                }}
                               />
                             </div>
                           )

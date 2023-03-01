@@ -35,7 +35,7 @@ import {GetGroupedPipelines, GetGroupedPipelinesWithPrevious} from './get-groupe
 import {GetGroupedTools, GetGroupedToolsWithPrevious} from './get-grouped-tools-data';
 import {GetGroupedUsers} from './get-grouped-users';
 import GetObjectStorageLayersInfo from './get-object-storage-layers-info';
-import {preFetchBillingRequest} from './base-billing-request';
+import {preFetchBillingRequest, KEYS as LAYERS_KEYS} from './base-billing-request';
 
 export {
   FetchBillingCenters,
@@ -58,5 +58,6 @@ export {
   GetGroupedTools,
   GetGroupedToolsWithPrevious,
   GetObjectStorageLayersInfo,
-  preFetchBillingRequest
+  preFetchBillingRequest,
+  LAYERS_KEYS
 };
