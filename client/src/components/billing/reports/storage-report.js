@@ -21,6 +21,8 @@ import {
   Table
 } from 'antd';
 import moment from 'moment-timezone';
+import {computed} from 'mobx';
+import classNames from 'classnames';
 import {
   BarChart,
   BillingTable,
@@ -34,6 +36,11 @@ import {
   ResizableContainer
 } from './utilities';
 import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
+import {
+  getBillingGroupingSortField,
+  parseStorageMetrics,
+  StorageMetrics
+} from '../navigation/metrics';
 import {Period, getPeriod} from '../../special/periods';
 import StorageFilter, {StorageFilters} from './filters/storage-filter';
 import Export from './export';
@@ -45,9 +52,21 @@ import {
   GetGroupedFileStorages,
   GetGroupedFileStoragesWithPrevious,
   GetGroupedObjectStorages,
-  GetGroupedObjectStoragesWithPrevious
+  GetGroupedObjectStoragesWithPrevious,
+  GetObjectStorageLayersInfo,
+  preFetchBillingRequest
 } from '../../../models/billing';
 import {StorageReportLayout, Layout} from './layout';
+import {
+  getAggregateByStorageClass,
+  getBillingGroupingOrderAggregate,
+  getStorageClassName,
+  getStorageClassNameByAggregate,
+  parseStorageAggregate,
+  StorageAggregate,
+  DEFAULT_STORAGE_CLASS_ORDER, getStorageClassByAggregate
+} from '../navigation/aggregate';
+import styles from './storage-report.css';
 
 const tablePageSize = 10;
 
@@ -59,47 +78,80 @@ function injection (stores, props) {
     group: groupQ,
     period = Period.month,
     range,
-    region: regionQ
+    region: regionQ,
+    metrics: metricsQ,
+    layer: aggregateQ
   } = location.query;
+  const metrics = parseStorageMetrics(metricsQ);
+  const aggregate = /^object$/i.test(type)
+    ? parseStorageAggregate(aggregateQ)
+    : undefined;
   const periodInfo = getPeriod(period, range);
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
-  const filters = {
+  const filtersWithoutOrder = {
     group,
     user,
     type,
     cloudRegionId,
     ...periodInfo
   };
+  const filters = {
+    ...filtersWithoutOrder,
+    order: {
+      metric: getBillingGroupingSortField(metrics),
+      aggregate: getBillingGroupingOrderAggregate(aggregate)
+    }
+  };
   let filterBy = GetBillingData.FILTER_BY.storages;
-  let storages;
-  let storagesTable;
   let storageType;
-  let loadCostDetails = false;
+  const loadCostDetails = /^object$/i.test(type);
+  let StorageRequest = GetGroupedStoragesWithPrevious;
+  let StorageTableRequest = GetGroupedStorages;
+  let tiersRequest;
   if (/^file$/i.test(type)) {
     storageType = 'FILE_STORAGE';
-    storages = new GetGroupedFileStoragesWithPrevious(filters, true);
-    storagesTable = new GetGroupedFileStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.fileStorages;
+    StorageRequest = GetGroupedFileStoragesWithPrevious;
+    StorageTableRequest = GetGroupedFileStorages;
   } else if (/^object$/i.test(type)) {
-    // todo: pass loadCostDetails to requests
-    loadCostDetails = true;
     storageType = 'OBJECT_STORAGE';
-    storages = new GetGroupedObjectStoragesWithPrevious(filters, true);
-    storagesTable = new GetGroupedObjectStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.objectStorages;
-  } else {
-    storages = new GetGroupedStoragesWithPrevious(filters, true);
-    storagesTable = new GetGroupedStorages(filters, true);
+    StorageRequest = GetGroupedObjectStoragesWithPrevious;
+    StorageTableRequest = GetGroupedObjectStorages;
+    tiersRequest = new GetObjectStorageLayersInfo({
+      filters: {
+        ...filtersWithoutOrder,
+        filterBy: GetBillingData.FILTER_BY.objectStorages
+      },
+      loadCostDetails: true
+    });
   }
-  storages.fetch();
-  storagesTable.fetch();
-  const summary = new GetBillingData({
-    ...filters,
-    filterBy
+  const storages = new StorageRequest({
+    filters,
+    pagination: true,
+    loadCostDetails
   });
-  summary.fetch();
+  const storagesTable = new StorageTableRequest({
+    filters,
+    pagination: true,
+    loadCostDetails
+  });
+  (storages.fetch)();
+  (storagesTable.fetch)();
+  const summary = new GetBillingData({
+    filters: {
+      ...filters,
+      filterBy
+    },
+    loadCostDetails
+  });
+  (summary.fetch)();
+
+  if (tiersRequest) {
+    (preFetchBillingRequest)(tiersRequest);
+  }
 
   return {
     user,
@@ -108,76 +160,187 @@ function injection (stores, props) {
     summary,
     storages,
     storagesTable,
+    tiersRequest,
     storageType
   };
 }
 
-function renderTable ({storages, discounts: discountsFn, height}) {
+function renderTable (
+  {
+    storages,
+    discounts: discountsFn,
+    height,
+    aggregate,
+    showDetails
+  }
+) {
   if (!storages || !storages.loaded) {
     return null;
   }
+  const storageClass = aggregate && aggregate !== StorageAggregate.default
+    ? getStorageClassByAggregate(aggregate)
+    : 'TOTAL';
+  const storageClassName = aggregate && aggregate !== StorageAggregate.default
+    ? getStorageClassNameByAggregate(aggregate)
+    : undefined;
+  const getLayerValue = (item, key) => {
+    const {
+      costDetails = {},
+      value,
+      usage,
+      usageLast
+    } = item || {};
+    if (!showDetails) {
+      switch (key) {
+        case 'size': return (usageLast || 0);
+        case 'avgSize': return (usage || 0);
+        case 'cost': return (value || 0);
+        default:
+          return 0;
+      }
+    }
+    const {
+      tiers = {}
+    } = costDetails;
+    const tier = tiers[storageClass] || {};
+    return tier[key] || 0;
+  };
+  const getLayerValues = (item, ...keys) =>
+    keys.map((key) => getLayerValue(item, key)).reduce((r, c) => r + c, 0);
+  const getLayerCostValue = (item, ...keys) => {
+    const value = getLayerValues(item, ...keys);
+    return value || showDetails ? costTickFormatter(value || 0) : null;
+  };
+  const getLayerSizeValue = (item, ...keys) => {
+    const value = getLayerValues(item, ...keys);
+    return value || showDetails ? numberFormatter(value || 0) : null;
+  };
+  const getDetailedCellsTitle = (title, measure) => {
+    const details = [
+      measure,
+      storageClassName
+    ].filter(Boolean);
+    if (details.length > 0) {
+      return `${title} (${details.join(', ')})`;
+    }
+    return title;
+  };
+  const getDetailedCells = ({
+    title,
+    measure,
+    key = (title || '').toLowerCase(),
+    currentKey,
+    oldVersionsKey,
+    dataExtractor = ((item, ...keys) => 0)
+  }) => ([
+    {
+      key,
+      title: getDetailedCellsTitle(title, measure),
+      headerSpan: showDetails ? 2 : 1,
+      render: (item) => {
+        const total = dataExtractor(item, currentKey, oldVersionsKey);
+        return (
+          <span>
+            {total}
+          </span>
+        );
+      },
+      className: showDetails
+        ? classNames(styles.cell, styles.rightAlignedCell, styles.noPadding)
+        : styles.cell,
+      headerClassName: showDetails
+        ? classNames(styles.cell, styles.centeredCell)
+        : styles.cell
+    },
+    showDetails ? ({
+      key: `${key}-old-versions`,
+      title: '\u00A0',
+      header: false,
+      render: (item) => {
+        const oldVersions = dataExtractor(item, oldVersionsKey);
+        return (
+          <span className="cp-text-not-important">
+            <span>{'/ '}</span>
+            {oldVersions}
+          </span>
+        );
+      },
+      className: classNames(styles.cell, styles.leftAlignedCell, styles.noPadding)
+    }) : undefined
+  ].filter(Boolean));
   const columns = [
     {
       key: 'storage',
       title: 'Storage',
+      className: styles.storageCell,
       render: ({info, name}) => {
         return info && info.name ? info.pathMask || info.name : name;
-      }
+      },
+      fixed: true
     },
     {
       key: 'owner',
       title: 'Owner',
       dataIndex: 'owner',
-      render: owner => (<DisplayUser userName={owner} />)
+      render: owner => (<DisplayUser userName={owner} />),
+      className: styles.cell
     },
     {
       key: 'billingCenter',
       title: 'Billing Center',
-      dataIndex: 'billingCenter'
+      dataIndex: 'billingCenter',
+      className: styles.cell
     },
     {
       key: 'storageType',
       title: 'Type',
-      dataIndex: 'storageType'
+      dataIndex: 'storageType',
+      className: styles.cell
     },
-    {
-      key: 'cost',
+    ...getDetailedCells({
       title: 'Cost',
-      dataIndex: 'value',
-      render: (value) => value ? costTickFormatter(value) : null
-    },
-    {
-      key: 'volume',
-      title: 'Avg. Vol. (GB)',
-      dataIndex: 'usage',
-      render: (value) => value ? numberFormatter(value) : null
-    },
-    {
-      key: 'volume current',
-      title: 'Cur. Vol. (GB)',
-      dataIndex: 'usageLast',
-      render: (value) => value ? numberFormatter(value) : null
-    },
+      dataExtractor: getLayerCostValue,
+      currentKey: 'cost',
+      oldVersionsKey: 'oldVersionCost'
+    }),
+    ...getDetailedCells({
+      title: 'Avg. Vol.',
+      measure: 'GB',
+      dataExtractor: getLayerSizeValue,
+      currentKey: 'avgSize',
+      oldVersionsKey: 'oldVersionAvgSize'
+    }),
+    ...getDetailedCells({
+      title: 'Cur. Vol.',
+      measure: 'GB',
+      dataExtractor: getLayerSizeValue,
+      currentKey: 'size',
+      oldVersionsKey: 'oldVersionSize'
+    }),
     {
       key: 'region',
       title: 'Region',
-      dataIndex: 'region'
+      dataIndex: 'region',
+      className: styles.cell
     },
     {
       key: 'provider',
       title: 'Provider',
-      dataIndex: 'provider'
+      dataIndex: 'provider',
+      className: styles.cell
     },
     {
       key: 'created',
       title: 'Created date',
       dataIndex: 'created',
-      render: (value) => value ? moment.utc(value).format('DD MMM YYYY') : value
+      render: (value) => value ? moment.utc(value).format('DD MMM YYYY') : value,
+      className: styles.cell
     }
   ];
   const dataSource = Object.values(
     discounts.applyGroupedDataDiscounts(storages.value || {}, discountsFn)
   );
+  console.log(dataSource);
   const paginationEnabled = storages && storages.loaded
     ? storages.totalPages > 1
     : false;
@@ -188,17 +351,89 @@ function renderTable ({storages, discounts: discountsFn, height}) {
     return '';
   };
   return (
-    <div>
+    <div
+      className={styles.storageReport}
+    >
       <div
+        className={
+          classNames(
+            styles.storageReportTableContainer,
+            'cp-bordered'
+          )
+        }
         style={{
-          position: 'relative',
-          overflow: 'auto',
-          maxHeight: height - (paginationEnabled ? 30 : 0),
-          padding: 5
+          maxHeight: height - (paginationEnabled ? 40 : 10)
         }}
       >
-        <Table
-          className="cp-report-table"
+        <table
+          className={classNames('cp-report-table', styles.storageReportTable)}
+        >
+          <thead>
+            <tr>
+              {
+                columns
+                  .filter((column) => column.header === undefined || column.header)
+                  .map((column, index) => (
+                    <th
+                      key={column.key}
+                      className={
+                        classNames(
+                          column.headerClassName || column.className,
+                          styles.cell,
+                          styles.fixedRow,
+                          {
+                            [styles.fixedColumn]: index === 0,
+                            'fixed-column': index === 0
+                          }
+                        )
+                      }
+                      colSpan={column.headerSpan || 1}
+                    >
+                      {column.title}
+                    </th>
+                  ))
+              }
+            </tr>
+          </thead>
+          <tbody>
+            {
+              dataSource.map((item, index) => (
+                <tr
+                  key={`item-${index}`}
+                  className={getRowClassName(item)}
+                >
+                  {
+                    columns.map((column) => (
+                      <td
+                        key={column.key}
+                        className={
+                          classNames(
+                            column.className,
+                            styles.cell,
+                            {
+                              [styles.fixedColumn]: !!column.fixed,
+                              'fixed-column': !!column.fixed
+                            }
+                          )
+                        }
+                      >
+                        {
+                          column.render
+                            ? column.render(column.dataIndex ? item[column.dataIndex] : item, item)
+                            : item[column.dataIndex]
+                        }
+                      </td>
+                    ))
+                  }
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+        {
+          /*
+          <Table
+          className={classNames('cp-report-table', styles.storageReportTable)}
           rowClassName={getRowClassName}
           rowKey={({info, name}) => {
             return info && info.id ? `storage_${info.id}` : `storage_${name}`;
@@ -208,7 +443,13 @@ function renderTable ({storages, discounts: discountsFn, height}) {
           columns={columns}
           pagination={false}
           size="small"
+          scroll={{
+            x: width,
+            y: height - (paginationEnabled ? 30 : 0) - 50
+          }}
         />
+           */
+        }
       </div>
       {
         paginationEnabled && (
@@ -221,12 +462,11 @@ function renderTable ({storages, discounts: discountsFn, height}) {
             }}
           >
             <Pagination
+              disabled={storages.pending}
               current={storages.pageNum + 1}
               pageSize={storages.pageSize}
               total={storages.totalPages * storages.pageSize}
-              onChange={async (page) => {
-                await storages.fetchPage(page - 1);
-              }}
+              onChange={(page) => storages.fetchPage(page - 1)}
               size="small"
             />
           </div>
@@ -236,47 +476,11 @@ function renderTable ({storages, discounts: discountsFn, height}) {
   );
 }
 
-const getRandom = (min, max) => {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-};
-
-const detailsMock = {
-  'Deep Archive': {
-    storageClass: 'Deep Archive',
-    cost: getRandom(3000, 9000),
-    size: getRandom(500, 5000),
-    oldVersionCost: getRandom(3000, 4000),
-    oldVersionSize: getRandom(500, 5000)
-  },
-  'Glacier IR': {
-    storageClass: 'Glacier IR',
-    cost: getRandom(3000, 9000),
-    size: getRandom(500, 5000),
-    oldVersionCost: getRandom(3000, 4000),
-    oldVersionSize: getRandom(500, 5000)
-  },
-  'Glacier': {
-    storageClass: 'Glacier',
-    cost: getRandom(3000, 9000),
-    size: getRandom(500, 5000),
-    oldVersionCost: getRandom(3000, 4000),
-    oldVersionSize: getRandom(500, 5000)
-  },
-  'Standard': {
-    storageClass: 'Standard',
-    cost: getRandom(3000, 9000),
-    size: getRandom(500, 5000),
-    oldVersionCost: getRandom(3000, 4000),
-    oldVersionSize: getRandom(500, 5000)
-  }
-};
-
 const RenderTable = observer(renderTable);
 
 class StorageReports extends React.Component {
   state = {
-    dataSampleKey: StorageFilters.value.key,
-    selectedStorageLayer: undefined
+    dataSampleKey: StorageFilters.value.key
   };
 
   get layout () {
@@ -290,18 +494,21 @@ class StorageReports extends React.Component {
     return StorageReportLayout;
   }
 
-  onChangeDataSample = (key) => {
-    this.setState({
-      dataSampleKey: key
-    });
-  };
-
   onSelectLayer = ({key}) => {
-    const {selectedStorageLayer} = this.state;
-    this.setState({selectedStorageLayer: selectedStorageLayer === key
-      ? undefined
-      : key
-    });
+    const {
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate,
+      storageAggregateNavigation
+    } = filters;
+    if (typeof storageAggregateNavigation === 'function') {
+      storageAggregateNavigation(
+        storageAggregate === key
+          ? StorageAggregate.default
+          : key
+      );
+    }
   };
 
   getSummaryTitle = () => {
@@ -316,29 +523,60 @@ class StorageReports extends React.Component {
   };
 
   getTitle = () => {
-    const {type} = this.props;
+    const {
+      type,
+      filters = {}
+    } = this.props;
     if (/^file$/i.test(type)) {
       return 'File storages';
     }
     if (/^object$/i.test(type)) {
-      return 'Object storages';
+      const {
+        storageAggregate
+      } = filters;
+      if (!storageAggregate || storageAggregate === StorageAggregate.default) {
+        return 'Object storages';
+      }
+      const name = getStorageClassNameByAggregate(storageAggregate);
+      return `${name} object storages`;
     }
     return 'Storages';
   };
 
+  @computed
   get layersMock () {
-    const labels = Object.values(detailsMock).map(detail => detail.storageClass);
-    const getData = (key, labels) => {
-      const data = [];
-      labels.forEach((label, index) => {
-        const current = detailsMock[label] || {};
-        data[index] = current[key] || 0;
+    const {
+      filters = {},
+      tiersRequest
+    } = this.props;
+    let data = {};
+    const {
+      metrics
+    } = filters;
+    if (tiersRequest && tiersRequest.loaded) {
+      const [storage = {}] = Object.values(tiersRequest.value || []);
+      if (storage.costDetails && storage.costDetails.tiers) {
+        data = storage.costDetails.tiers;
+      }
+    }
+    const labels = Object.keys(data)
+      .filter((storageClass) => DEFAULT_STORAGE_CLASS_ORDER.includes(storageClass))
+      .sort((a, b) => {
+        const aIndex = DEFAULT_STORAGE_CLASS_ORDER.indexOf(a);
+        const bIndex = DEFAULT_STORAGE_CLASS_ORDER.indexOf(b);
+        return aIndex - bIndex;
       });
-      return data;
+    const aggregates = labels.map(label => getAggregateByStorageClass(label));
+    const getData = (key, labels) => {
+      const result = [];
+      labels.forEach((label) => {
+        result.push((data[label] || {})[key] || 0);
+      });
+      return result;
     };
-    const filter = this.state.dataSampleKey === 'value'
-      ? ['cost', 'oldVersionCost']
-      : ['size', 'oldVersionSize'];
+    const filter = metrics === StorageMetrics.volume
+      ? ['abgSize', 'oldVersionAvgSize']
+      : ['cost', 'oldVersionCost'];
     const datasets = filter
       .map(key => {
         return {
@@ -347,7 +585,8 @@ class StorageReports extends React.Component {
         };
       });
     return {
-      labels,
+      aggregates,
+      labels: labels.map(getStorageClassName),
       datasets
     };
   }
@@ -362,10 +601,26 @@ class StorageReports extends React.Component {
       type,
       filters = {},
       storageType,
-      reportThemes
+      reportThemes,
+      tiersRequest
     } = this.props;
-    const {period, range, region: cloudRegionId} = filters;
+    const {
+      period,
+      range,
+      region: cloudRegionId,
+      storageAggregate,
+      metrics
+    } = filters;
     const costsUsageSelectorHeight = 30;
+    const tiersPending = tiersRequest && tiersRequest.pending;
+    const tiersData = this.layersMock;
+    const valueFormatter = metrics === StorageMetrics.volume
+      ? numberFormatter
+      : costTickFormatter;
+    const topDescription = metrics === StorageMetrics.volume
+      ? 'by volume'
+      : undefined;
+    const showTableDetails = /^object$/i.test(type);
     return (
       <Discounts.Consumer>
         {
@@ -418,7 +673,7 @@ class StorageReports extends React.Component {
                     </ResizableContainer>
                   </Layout.Panel>
                 </div>
-                {/^object$/i.test(type) ? (
+                {/^object$/i.test(type) && tiersRequest ? (
                   <div key={this.layout.Panels.storageLayers}>
                     <Layout.Panel>
                       <ResizableContainer style={{width: '100%', height: '100%'}}>
@@ -434,30 +689,18 @@ class StorageReports extends React.Component {
                                   height: costsUsageSelectorHeight
                                 }}
                               >
-                                <StorageFilter
-                                  onChange={this.onChangeDataSample}
-                                  value={this.state.dataSampleKey}
-                                />
+                                <StorageFilter />
                               </div>
                               <StorageLayers
-                                highlightedLabel={this.layersMock.labels
-                                  .indexOf(this.state.selectedStorageLayer)
+                                highlightedLabel={
+                                  tiersData.aggregates.indexOf(storageAggregate)
                                 }
+                                loading={tiersPending}
                                 onSelect={this.onSelectLayer}
-                                data={this.layersMock}
+                                data={tiersData}
                                 title={'Object storage layers'}
                                 style={{height: height - costsUsageSelectorHeight}}
-                                dataSample={
-                                  StorageFilters[this.state.dataSampleKey].dataSample
-                                }
-                                previousDataSample={
-                                  StorageFilters[this.state.dataSampleKey].previousDataSample
-                                }
-                                valueFormatter={
-                                  this.state.dataSampleKey === StorageFilters.value.key
-                                    ? costTickFormatter
-                                    : numberFormatter
-                                }
+                                valueFormatter={valueFormatter}
                               />
                             </div>
                           )
@@ -474,25 +717,27 @@ class StorageReports extends React.Component {
                       {
                         ({height}) => (
                           <div>
-                            {/* <div
-                              style={{
-                                display: 'flex',
-                                flexDirection: 'row',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                height: costsUsageSelectorHeight
-                              }}
-                            >
-                              <StorageFilter
-                                onChange={this.onChangeDataSample}
-                                value={this.state.dataSampleKey}
-                              />
-                            </div> */}
+                            {
+                              !/^object$/i.test(type) && (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: costsUsageSelectorHeight
+                                  }}
+                                >
+                                  <StorageFilter />
+                                </div>
+                              )
+                            }
                             <BarChart
                               request={storages}
                               discounts={storageDiscounts}
                               title={this.getTitle()}
                               top={tablePageSize}
+                              topDescription={topDescription}
                               style={{height: height - costsUsageSelectorHeight}}
                               dataSample={
                                 StorageFilters[this.state.dataSampleKey].dataSample
@@ -500,11 +745,7 @@ class StorageReports extends React.Component {
                               previousDataSample={
                                 StorageFilters[this.state.dataSampleKey].previousDataSample
                               }
-                              valueFormatter={
-                                this.state.dataSampleKey === StorageFilters.value.key
-                                  ? costTickFormatter
-                                  : numberFormatter
-                              }
+                              valueFormatter={valueFormatter}
                               highlightTickFn={
                                 (storage) => `${(storage.groupingInfo || {}).is_deleted}` === 'true'
                               }
@@ -527,6 +768,8 @@ class StorageReports extends React.Component {
                             storages={storagesTable}
                             discounts={storageDiscounts}
                             height={height}
+                            aggregate={storageAggregate}
+                            showDetails={showTableDetails}
                           />
                         )
                       }

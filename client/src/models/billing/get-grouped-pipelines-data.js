@@ -3,14 +3,24 @@ import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
 
 export class GetGroupedPipelines extends GetGroupedInstances {
-  constructor (filters, pagination = null) {
-    super(filters, pagination);
+  /**
+   * @param {GetGroupedInstancesOptions} options
+   */
+  constructor (options = {}) {
+    super(options);
     this.grouping = 'PIPELINE';
   }
 }
 
 export class GetGroupedPipelinesWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+  /**
+   * @param {GetGroupedInstancesOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {
       end,
       endStrict,
@@ -25,8 +35,10 @@ export class GetGroupedPipelinesWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedPipelines,
-      formattedFilters,
-      pagination
+      {
+        filters: formattedFilters,
+        pagination
+      }
     );
   }
 

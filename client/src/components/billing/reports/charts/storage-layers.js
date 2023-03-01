@@ -50,7 +50,8 @@ function StorageLayers (
     onImageDataReceived,
     reportThemes,
     highlightTickFn,
-    highlightTickStyle = {}
+    highlightTickStyle = {},
+    loading
   }
 ) {
   // todo: connect to API and get rid of mocks
@@ -63,7 +64,9 @@ function StorageLayers (
   }, []);
   const maximum = getMaximum(totals);
   const disabled = isNaN(maximum);
-  const groups = rawData.labels; // mock
+  const {
+    aggregates
+  } = rawData;
   const chartData = {
     labels: rawData.labels,
     datasets: rawData.datasets.map((dataset, index) => {
@@ -169,7 +172,7 @@ function StorageLayers (
         valueFormatter
       },
       [ChartClickPlugin.id]: {
-        handler: onSelect ? index => onSelect({key: groups[index]}) : undefined,
+        handler: onSelect ? index => onSelect({key: aggregates[index]}) : undefined,
         scaleHandler: onScaleSelect,
         axis: 'x-axis'
       }
@@ -211,9 +214,8 @@ function StorageLayers (
       <div style={{flex: 1, overflow: 'hidden'}}>
         <Chart
           data={chartData}
-          // todo: connect to API
           // error={error}
-          // loading={loading}
+          loading={loading}
           type="bar"
           options={options}
           plugins={[

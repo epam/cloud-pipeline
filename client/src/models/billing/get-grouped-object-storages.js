@@ -2,19 +2,30 @@ import {GetGroupedStorages} from './get-grouped-storages';
 import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
 
-export class GetGroupedObjectStorages extends GetGroupedStorages {
-  constructor (filters, pagination = null, loadCostDetails = false) {
-    super(filters, true, pagination, loadCostDetails);
-  }
+/**
+ * @typedef {Object} GetGroupedObjectStoragesOptions
+ * @property {Object} [filters]
+ * @property {BaseBillingRequestPagination|boolean} [pagination]
+ * @property {boolean} [loadCostDetails]
+ */
 
-  async prepareBody () {
-    await super.prepareBody();
+export class GetGroupedObjectStorages extends GetGroupedStorages {
+  prepareBody () {
+    super.prepareBody();
     this.body.filters.storage_type = ['OBJECT_STORAGE'];
   }
 }
 
 export class GetGroupedObjectStoragesWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null, loadCostDetails = false) {
+  /**
+   * @param {GetGroupedObjectStoragesOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination,
+      loadCostDetails
+    } = options;
     const {
       end,
       endStrict,
@@ -29,9 +40,11 @@ export class GetGroupedObjectStoragesWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedObjectStorages,
-      formattedFilters,
-      pagination,
-      loadCostDetails
+      {
+        filters: formattedFilters,
+        pagination,
+        loadCostDetails
+      }
     );
   }
 

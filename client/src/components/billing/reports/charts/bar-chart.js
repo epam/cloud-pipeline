@@ -69,6 +69,7 @@ function BarChart (
     subChart,
     subChartTitleStyle,
     top = 10,
+    topDescription,
     valueFormatter = costTickFormatter,
     useImageConsumer = true,
     onImageDataReceived,
@@ -146,6 +147,15 @@ function BarChart (
       }
     ]
   };
+  const getTitle = () => {
+    if (top && topDescription) {
+      return `${title} (TOP ${top}, ${topDescription})`;
+    }
+    if (top) {
+      return `${title} (TOP ${top})`;
+    }
+    return title;
+  };
   const options = {
     animation: {duration: 0},
     scales: {
@@ -190,7 +200,7 @@ function BarChart (
     },
     title: {
       display: !subChart && !!title,
-      text: top ? `${title} (TOP ${top})` : title,
+      text: getTitle(),
       fontColor: reportThemes.textColor
     },
     legend: {

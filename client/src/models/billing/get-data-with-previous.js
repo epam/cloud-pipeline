@@ -18,8 +18,16 @@ import RemotePost from '../basic/RemotePost';
 import defer from '../../utils/defer';
 
 class GetDataWithPrevious extends RemotePost {
-  constructor (Model, filters, ...opts) {
+  /**
+   * @param Model
+   * @param {BaseBillingRequestOptions} options
+   */
+  constructor (Model, options) {
     super();
+    const {
+      filters = {},
+      ...restOptions
+    } = options || {};
     this.filters = filters;
     const {
       start,
@@ -43,9 +51,9 @@ class GetDataWithPrevious extends RemotePost {
       dateFilter: previousFilterFn,
       ...rest
     };
-    this.current = new Model(currentFilters, ...opts);
+    this.current = new Model({filters: currentFilters, ...restOptions});
     this.previous = hasPreviousDates
-      ? (new Model(previousFilters, ...opts))
+      ? (new Model({filters: previousFilters, ...restOptions}))
       : undefined;
   }
 

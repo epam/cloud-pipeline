@@ -220,6 +220,8 @@ function getPeriod (period, range) {
           previousEndStrict = temp;
         }
       }
+      endStrict = endStrict.endOf('D');
+      previousEndStrict = previousEndStrict.endOf('D');
       const daysInMonth = start.daysInMonth();
       previousShiftFn = (momentDate) => moment(momentDate).add(1, 'M');
       previousFilterFn = (momentDate) => momentDate.get('D') <= daysInMonth;
@@ -244,6 +246,8 @@ function getPeriod (period, range) {
           previousEndStrict = temp;
         }
       }
+      endStrict = endStrict.endOf('M');
+      previousEndStrict = previousEndStrict.endOf('M');
       previousShiftFn = (momentDate) => moment(momentDate).add(1, 'y');
       break;
     case Period.year:

@@ -20,9 +20,16 @@ import GetDataWithPrevious from './get-data-with-previous';
 import {costMapper} from './utils';
 
 class GetBillingData extends BaseBillingRequest {
-  constructor (filter, loadCostDetails = false) {
-    super(filter, false, null, loadCostDetails);
-    const {dateFilter, dateMapper} = filter;
+  /**
+   * @param {BaseBillingRequestOptions} options
+   */
+  constructor (options = {}) {
+    super(options);
+    const {
+      filters = {},
+      loadCostDetails
+    } = options;
+    const {dateFilter, dateMapper} = filters;
     this.dateMapper = dateMapper || (o => o);
     this.dateFilter = dateFilter || (() => true);
     this.loadCostDetails = loadCostDetails;
@@ -37,8 +44,8 @@ class GetBillingData extends BaseBillingRequest {
     gpu: 'GPU'
   };
 
-  async prepareBody () {
-    await super.prepareBody();
+  prepareBody () {
+    super.prepareBody();
     if (this.filters && this.filters.tick) {
       this.body.interval = this.filters.tick;
     }
@@ -99,8 +106,11 @@ class GetBillingData extends BaseBillingRequest {
 }
 
 class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
-  constructor (filter, loadCostDetails = false) {
-    super(GetBillingData, filter, loadCostDetails);
+  /**
+   * @param {BaseBillingRequestOptions} options
+   */
+  constructor (options) {
+    super(GetBillingData, options);
   }
 
   static FILTER_BY = GetBillingData.FILTER_BY;

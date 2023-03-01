@@ -20,17 +20,30 @@ import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
 import moment from 'moment-timezone';
 
+/**
+ * @typedef {Object} GetGroupedUsersOptions
+ * @property {Object} [filters]
+ * @property {BaseBillingRequestPagination|boolean} [pagination]
+ */
+
 export class GetGroupedUsers extends BaseBillingRequest {
-  constructor (filters, pagination = null) {
+  /**
+   * @param {GetGroupedUsersOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {resourceType, fetchLastDay, ...rest} = filters || {};
-    super(rest, true, pagination);
+    super({filters: rest, loadDetails: true, pagination});
     this.resourceType = resourceType;
     this.fetchLastDay = fetchLastDay;
     this.grouping = 'USER';
   }
 
-  async prepareBody () {
-    await super.prepareBody();
+  prepareBody () {
+    super.prepareBody();
     if (this.fetchLastDay && this.filters && this.filters.endStrict) {
       this.body.from = moment(this.filters.endStrict).startOf('d');
       this.body.to = moment(this.filters.endStrict).endOf('d');
@@ -75,8 +88,20 @@ export class GetGroupedUsers extends BaseBillingRequest {
   }
 }
 
+/**
+ * @typedef {Object} GetGroupedUsersWithPreviousOptions
+ * @property {Object} filters
+ * @property {BaseBillingRequestPagination|boolean} [pagination]
+ */
 export class GetGroupedUsersWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+  /**
+   * @param {GetGroupedUsersOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {
       end,
       endStrict,
@@ -91,8 +116,10 @@ export class GetGroupedUsersWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedUsers,
-      formattedFilters,
-      pagination
+      {
+        filters: formattedFilters,
+        pagination
+      }
     );
   }
 

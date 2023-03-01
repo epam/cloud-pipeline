@@ -1,10 +1,41 @@
-import {isObservableArray} from 'mobx';
+import {action, isObservableArray} from 'mobx';
 import RemotePost from '../basic/RemotePost';
+import TimedOutCache from '../basic/timed-out-cache';
+import {bytesToGbs, costMapper} from './utils';
+import defer from '../../utils/defer';
+
+/**
+ * @typedef {Object} BaseBillingRequestPagination
+ * @property {number} pageNum
+ * @property {number} pageSize
+ */
+
+/**
+ * @typedef {Object} BaseBillingRequestOptions
+ * @property {Object} [filters]
+ * @property {BaseBillingRequestPagination|boolean} [pagination]
+ * @property {boolean} [loadDetails=false]
+ * @property {boolean} [loadCostDetails=false]
+ */
+
+const cache = new TimedOutCache();
+
+/**
+ * @param {BaseBillingRequest} billingRequest
+ * @returns {Promise<void>}
+ */
+export async function preFetchBillingRequest (billingRequest) {
+  if (!billingRequest.loadBillingDataFromCache()) {
+    await billingRequest.fetch();
+  }
+}
 
 export default class BaseBillingRequest extends RemotePost {
   body = {};
 
   loadDetails;
+
+  loadCostDetails;
 
   paginated;
 
@@ -14,17 +45,32 @@ export default class BaseBillingRequest extends RemotePost {
 
   grouping;
 
-  constructor (
-    filters,
-    loadDetails = false,
-    pagination = null,
-    loadCostDetails = false
-  ) {
+  /**
+   * @param {BaseBillingRequestOptions} [options]
+   */
+  constructor (options = {}) {
     super();
-    if (`${pagination}`.toLowerCase() === 'true') {
+    const {
+      filters,
+      loadDetails = false,
+      pagination: paginationOptions,
+      loadCostDetails = false
+    } = options;
+
+    let pagination;
+    if (
+      !!paginationOptions &&
+      `${paginationOptions}`.toLowerCase() === 'true'
+    ) {
       pagination = {};
       pagination.pageSize = 10;
       pagination.pageNum = 0;
+    } else if (
+      !!paginationOptions &&
+      typeof paginationOptions === 'object' &&
+      paginationOptions.pageSize
+    ) {
+      pagination = {...paginationOptions};
     }
 
     if (pagination && pagination.pageSize) {
@@ -52,7 +98,7 @@ export default class BaseBillingRequest extends RemotePost {
       ? +this._value[firstKey].groupingInfo.totalPages : 0;
   }
 
-  async prepareBody () {
+  prepareBody () {
     this.body.from = this.filters && this.filters.start
       ? this.filters.start.toISOString() : undefined;
     this.body.to = this.filters && this.filters.end
@@ -73,6 +119,9 @@ export default class BaseBillingRequest extends RemotePost {
     if (this.filters && this.filters.cloudRegionId) {
       this.body.filters.cloudRegionId = this.filters.cloudRegionId.slice();
     }
+    if (this.filters && this.filters.order) {
+      this.body.order = {...this.filters.order};
+    }
     if (this.loadDetails) {
       this.body.loadDetails = true;
     }
@@ -88,17 +137,151 @@ export default class BaseBillingRequest extends RemotePost {
     }
   }
 
-  async fetch () {
-    await this.prepareBody();
-
-    return super.send(this.body);
+  postprocess (value) {
+    const items = super.postprocess(value);
+    const costKeys = ['cost', 'oldVersionCost', 'accumulativeCost', 'accumulativeOldVersionCost'];
+    const sizeKeys = ['size', 'avgSize', 'oldVersionSize', 'oldVersionAvgSize'];
+    const processTier = (tier) => {
+      const result = {
+        ...tier
+      };
+      const processKeys = (keys, mapper) => {
+        keys.forEach((aKey) => {
+          const value = result[aKey] || 0;
+          if (!Number.isNaN(Number(value))) {
+            result[aKey] = mapper(value);
+          }
+        });
+      };
+      processKeys(costKeys, costMapper);
+      processKeys(sizeKeys, bytesToGbs);
+      return result;
+    };
+    return (items || []).map((item) => {
+      const {
+        costDetails = {},
+        ...rest
+      } = item;
+      const {
+        tiers = [],
+        ...costDetailsRest
+      } = costDetails;
+      const processedTiers = tiers.map(processTier);
+      const total = {
+        storageClass: 'TOTAL'
+      };
+      tiers.forEach((aTier) => {
+        const processKeys = (keys) => {
+          keys.forEach((aKey) => {
+            const value = aTier[aKey] || 0;
+            if (!Number.isNaN(Number(value))) {
+              total[aKey] = (total[aKey] || 0) + value;
+            }
+          });
+        };
+        processKeys([...costKeys, ...sizeKeys]);
+      });
+      return {
+        ...rest,
+        costDetails: {
+          ...costDetailsRest,
+          tiers: processedTiers.concat(processTier(total))
+            .reduce((result, tier) => ({
+              ...result,
+              [tier.storageClass]: tier
+            }), {})
+        }
+      };
+    });
   }
 
+  getRequestKey () {
+    const {
+      from = '',
+      to = '',
+      filters = {},
+      order = {},
+      loadCostDetails = false,
+      loadDetails = false,
+      interval = '',
+      grouping = '',
+      pageNum = '',
+      pageSize = ''
+    } = this.body || {};
+    const {
+      resource_type: resourceType = [],
+      storage_type: storageType = [],
+      compute_type: computeType = [],
+      owner = [],
+      billing_center: billingCenter = [],
+      cloudRegionId = []
+    } = filters;
+    const {
+      aggregate = '',
+      metric = '',
+      desc = false
+    } = order;
+    const asArrayKey = (value) => {
+      if (value && (Array.isArray(value) || isObservableArray(value))) {
+        return value.join(',');
+      }
+      return [value].filter((o) => o !== undefined).join(',');
+    };
+    return [
+      from,
+      to,
+      loadDetails,
+      loadCostDetails,
+      interval,
+      grouping,
+      pageNum,
+      pageSize,
+      asArrayKey(computeType),
+      asArrayKey(resourceType),
+      asArrayKey(storageType),
+      asArrayKey(owner),
+      asArrayKey(billingCenter),
+      asArrayKey(cloudRegionId),
+      aggregate,
+      metric,
+      desc
+    ].join('|');
+  }
+
+  @action
+  loadBillingDataFromCache () {
+    this.prepareBody();
+    const key = this.getRequestKey();
+    if (cache.has(key)) {
+      const response = cache.get(key);
+      this.update(response);
+      this._pending = false;
+      this._postIsExecuting = false;
+      this._fetchIsExecuting = false;
+      return true;
+    }
+    return false;
+  }
+
+  @action
+  async fetch () {
+    this.prepareBody();
+    this._pending = true;
+    await defer();
+    if (!this.loadBillingDataFromCache()) {
+      await super.send(this.body);
+      if (this._value && !this.error) {
+        const key = this.getRequestKey();
+        cache.set(key, {...(this._response || {})});
+      }
+    }
+  }
+
+  @action
   async fetchPage (pageNum) {
     if (this.paginated) {
       this.pageNum = pageNum;
-
-      return this.fetch();
+      await this.fetch();
     }
   }
 }

@@ -72,17 +72,17 @@ function injection (stores, props) {
     pageSize: tablePageSize,
     pageNum: 0
   };
-  const instances = new GetGroupedInstancesWithPrevious(filters, pagination);
+  const instances = new GetGroupedInstancesWithPrevious({filters, pagination});
   instances.fetch();
-  const instancesTable = new GetGroupedInstances(filters, pagination);
+  const instancesTable = new GetGroupedInstances({filters, pagination});
   instancesTable.fetch();
-  const tools = new GetGroupedToolsWithPrevious(filters, pagination);
+  const tools = new GetGroupedToolsWithPrevious({filters, pagination});
   tools.fetch();
-  const toolsTable = new GetGroupedTools(filters, pagination);
+  const toolsTable = new GetGroupedTools({filters, pagination});
   toolsTable.fetch();
-  const pipelines = new GetGroupedPipelinesWithPrevious(filters, pagination);
+  const pipelines = new GetGroupedPipelinesWithPrevious({filters, pagination});
   pipelines.fetch();
-  const pipelinesTable = new GetGroupedPipelines(filters, pagination);
+  const pipelinesTable = new GetGroupedPipelines({filters, pagination});
   pipelinesTable.fetch();
   let filterBy = GetBillingData.FILTER_BY.compute;
   if (/^cpu$/i.test(type)) {
@@ -92,7 +92,7 @@ function injection (stores, props) {
     filterBy = GetBillingData.FILTER_BY.gpu;
   }
 
-  const summary = new GetBillingData({...filters, filterBy});
+  const summary = new GetBillingData({filters: {...filters, filterBy}});
   summary.fetch();
   return {
     user,
