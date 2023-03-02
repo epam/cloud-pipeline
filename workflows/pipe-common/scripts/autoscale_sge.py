@@ -2044,8 +2044,12 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     launch_params = {}
     for launch_param in system_launch_params:
         param_name = launch_param.get('name')
-        if launch_param.get('passToWorkers', False) and param_name in master_system_params:
-            launch_params[param_name] = str(os.getenv(param_name, master_system_params.get(param_name)))
+        if not launch_param.get('passToWorkers', False):
+            continue
+        param_value = str(os.getenv(param_name, master_system_params.get(param_name, '')))
+        if not param_value:
+            continue
+        launch_params[param_name] = param_value
     launch_params.update({
         'CP_CAP_SGE': 'false',
         'CP_CAP_AUTOSCALE': 'false',
