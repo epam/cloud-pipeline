@@ -89,8 +89,14 @@ export default class NotificationBrowser extends React.Component {
   }
 
   changeMode = (description) => {
-    this.setState({mode: description}, () => {
-      const {currentPage, mode} = this.state;
+    if (this.state.mode === description) {
+      return;
+    }
+    this.setState({
+      currentPage: 0,
+      mode: description
+    }, () => {
+      const {mode, currentPage} = this.state;
       this.fetchPage(currentPage, mode === MODES.read);
     });
   };
