@@ -187,8 +187,7 @@ function renderResourcesSubData (
       <BarChart
         request={request}
         discounts={discountsFn}
-        dataSample={dataSample}
-        previousDataSample={previousDataSample}
+        datasets={[{sample: dataSample}, {sample: previousDataSample, isPrevious: true}]}
         title={title}
         style={{height: heightCorrected}}
         top={tablePageSize}

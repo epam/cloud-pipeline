@@ -26,12 +26,15 @@ function isNotSet (v) {
 const plugin = {
   id,
   afterDatasetsDraw: function (chart, ease, pluginOptions) {
-    const {valueFormatter = costTickFormatter, chartType} = pluginOptions || {};
+    const {valueFormatter = costTickFormatter} = pluginOptions || {};
     const ctx = chart.chart.ctx;
     const datasetLabels = chart.data.datasets
       .map((dataset, i) => {
         const meta = chart.getDatasetMeta(i);
-        const {showDataLabel = true} = dataset;
+        const {
+          hidden = false,
+          showDataLabel = !hidden
+        } = dataset;
         if (meta && showDataLabel) {
           return meta.data.map((element, index) => this.getInitialLabelConfig(
             dataset,
@@ -39,8 +42,7 @@ const plugin = {
             index,
             meta,
             chart,
-            valueFormatter,
-            chartType
+            valueFormatter
           ));
         }
         return [];
@@ -137,7 +139,7 @@ const plugin = {
         textBold = false,
         textColor,
         flagColor,
-        dataLabelText
+        showFlag = true
       } = dataset;
       const color = textColor || borderColor;
       const {position, text} = config;
@@ -148,10 +150,10 @@ const plugin = {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText(
-          `${dataLabelText || ''}${text}`,
+          text,
           position.x + position.width / 2.0, position.y + position.height
         );
-        if (flagColor && !dataLabelText) {
+        if (flagColor && showFlag) {
           ctx.beginPath();
           ctx.arc(
             position.x,
@@ -173,14 +175,14 @@ const plugin = {
     index,
     meta,
     chart,
-    valueFormatter,
-    chartType
+    valueFormatter
   ) {
     const {
       data,
       hidden,
       textBold = false,
-      showDataLabel = false
+      showDataLabel = !hidden,
+      dataItemTitle = ''
     } = dataset;
     const {xAxisID, yAxisID} = meta;
     if (hidden && !showDataLabel) {
@@ -193,6 +195,9 @@ const plugin = {
       return null;
     }
     const ctx = yAxis.ctx;
+    const {
+      stacked = false
+    } = yAxis.options || {};
     const globalBounds = {
       top: yAxis.top,
       bottom: yAxis.bottom,
@@ -200,31 +205,28 @@ const plugin = {
       right: xAxis.right
     };
     const getLabelXY = () => {
-      const visibleOnlyLabel = hidden && showDataLabel;
       let currentLabelY = yAxis.getPixelForValue(dataItem);
-      if (visibleOnlyLabel) {
-        const padding = (globalBounds.bottom - globalBounds.top) * 0.1;
-        currentLabelY = yAxis.getPixelForValue(data[index]) - padding;
-      }
-      let offset = 0;
-      if (chartType === 'stacked') {
-        const datasetIndex = element._datasetIndex;
-        if (datasetIndex > 0 && !visibleOnlyLabel) {
-          for (let i = 0; i < datasetIndex; i++) {
-            const dataset = chart.data.datasets[i];
-            const prevData = (dataset || {}).data || [];
-            const prevLabelHeight = globalBounds.bottom - yAxis
-              .getPixelForValue(prevData[index] || 0);
-            offset += prevLabelHeight;
-          }
-        }
+      if (stacked) {
+        const datasetIndex = (chart.data.datasets || []).indexOf(dataset);
+        const datasets = (chart.data.datasets || [])
+          .filter((aDataset, index) => index < datasetIndex)
+          .filter((aDataset) => aDataset === dataset ||
+            (!!aDataset.stack && aDataset.stack === dataset.stack)
+          );
+        const valuesBefore = datasets
+          .map((aDataset) => (aDataset.data || [])[index] || 0)
+          .reduce((r, c) => r + c, 0);
+        currentLabelY = yAxis.getPixelForValue(dataItem + valuesBefore);
       }
       return {
         x: element.getCenterPoint().x,
-        y: currentLabelY - offset
+        y: currentLabelY
       };
     };
-    const labelText = valueFormatter(dataItem);
+    let labelText = valueFormatter(dataItem);
+    if (dataItemTitle && dataItemTitle.length) {
+      labelText = `${dataItemTitle}: ${labelText}`;
+    }
     ctx.font = `${textBold ? 'bold ' : ''}9pt sans-serif`;
     const {width: labelWidth} = ctx.measureText(labelText);
     const padding = {x: 5, y: 2};

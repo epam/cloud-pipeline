@@ -14,34 +14,37 @@
  *  limitations under the License.
  */
 
-import {costTickFormatter} from '../../utilities';
+import {costTickFormatter, numberFormatter} from '../../utilities';
 import {LAYERS_KEYS} from '../../../../../models/billing';
+import {StorageMetrics} from '../../../navigation/metrics';
+import {StorageFilters} from '../../filters/storage-filter';
+import {getStorageClassName} from '../../../navigation/aggregate';
+
+const getCostDetailsValue = (costDetails, storageClass, key) => {
+  if (
+    !costDetails ||
+    !costDetails.tiers ||
+    !costDetails.tiers[storageClass]
+  ) {
+    return undefined;
+  }
+  return costDetails.tiers[storageClass][key];
+};
+const getCostDetailsSumm = (costDetails, storageClass, ...keys) => {
+  const values = keys.map((key) => getCostDetailsValue(costDetails, storageClass, key));
+  if (values.some((value) => value !== undefined && !Number.isNaN(Number(value)))) {
+    return values.reduce((summ, value) => (summ + (value || 0)), 0);
+  }
+  return undefined;
+};
 
 export function getSummaryDatasetsByStorageClass (storageClass) {
-  const total = /^total$/i.test(storageClass);
-  const getCostDetailsValue = (costDetails, key) => {
-    if (
-      !costDetails ||
-      !costDetails.tiers ||
-      !costDetails.tiers[storageClass]
-    ) {
-      return undefined;
-    }
-    return costDetails.tiers[storageClass][key];
-  };
-  const getCostDetailsSumm = (costDetails, ...keys) => {
-    const values = keys.map((key) => getCostDetailsValue(costDetails, key));
-    if (values.some((value) => value !== undefined && !Number.isNaN(Number(value)))) {
-      return values.reduce((summ, value) => (summ + (value || 0)), 0);
-    }
-    return undefined;
-  };
   const currentDataset = {
     accumulative: {
       value: (item) => getCostDetailsSumm(
         item.costDetails,
-        LAYERS_KEYS.accumulativeCost,
-        LAYERS_KEYS.accumulativeOldVersionCost
+        storageClass,
+        LAYERS_KEYS.accumulativeCost
       ),
       options: {
         borderWidth: 3,
@@ -49,10 +52,12 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
           if (item) {
             const currentValue = getCostDetailsValue(
               item.costDetails,
+              storageClass,
               LAYERS_KEYS.accumulativeCost
             ) || 0;
             const oldVersionsValue = getCostDetailsValue(
               item.costDetails,
+              storageClass,
               LAYERS_KEYS.accumulativeOldVersionCost
             ) || 0;
             const current = costTickFormatter(currentValue);
@@ -67,6 +72,7 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
     fact: {
       value: (item) => getCostDetailsSumm(
         item.costDetails,
+        storageClass,
         'cost'
       ),
       options: {
@@ -76,10 +82,12 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
           if (item) {
             const currentValue = getCostDetailsValue(
               item.costDetails,
+              storageClass,
               LAYERS_KEYS.cost
             ) || 0;
             const oldVersionsValue = getCostDetailsValue(
               item.costDetails,
+              storageClass,
               LAYERS_KEYS.oldVersionCost
             ) || 0;
             const current = costTickFormatter(currentValue);
@@ -97,6 +105,7 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
     accumulative: {
       value: (item) => getCostDetailsSumm(
         item.costDetails,
+        storageClass,
         LAYERS_KEYS.accumulativeOldVersionCost
       ),
       options: {
@@ -109,6 +118,7 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
     fact: {
       value: (item) => getCostDetailsSumm(
         item.costDetails,
+        storageClass,
         LAYERS_KEYS.oldVersionCost
       ),
       options: {
@@ -123,31 +133,215 @@ export function getSummaryDatasetsByStorageClass (storageClass) {
 
   const previousDataset = {
     accumulative: {
-      value: (item) => total ? item.previous : getCostDetailsSumm(
+      value: (item) => getCostDetailsSumm(
         item.previousCostDetails,
-        LAYERS_KEYS.accumulativeCost,
-        LAYERS_KEYS.accumulativeOldVersionCost
+        storageClass,
+        LAYERS_KEYS.accumulativeCost
       ),
       options: {
-        isPrevious: true
+        isPrevious: true,
+        tooltipValue: (currentValue, item) => {
+          if (item) {
+            const currentValue = getCostDetailsValue(
+              item.previousCostDetails,
+              storageClass,
+              LAYERS_KEYS.accumulativeCost
+            ) || 0;
+            const oldVersionsValue = getCostDetailsValue(
+              item.previousCostDetails,
+              storageClass,
+              LAYERS_KEYS.accumulativeOldVersionCost
+            ) || 0;
+            const current = costTickFormatter(currentValue);
+            const oldVersion = costTickFormatter(oldVersionsValue);
+            const total = costTickFormatter(currentValue + oldVersionsValue);
+            return `${total} (current: ${current}; old versions: ${oldVersion})`;
+          }
+          return currentValue;
+        }
       }
     },
     fact: {
-      value: (item) => total ? item.previousCost : getCostDetailsSumm(
+      value: (item) => getCostDetailsSumm(
         item.previousCostDetails,
-        LAYERS_KEYS.cost,
-        LAYERS_KEYS.oldVersionCost
+        storageClass,
+        LAYERS_KEYS.cost
       ),
       options: {
         isPrevious: true,
         subTitle: 'cost',
-        stack: 'previous'
+        stack: 'previous',
+        tooltipValue: (currentValue, item) => {
+          if (item) {
+            const currentValue = getCostDetailsValue(
+              item.previousCostDetails,
+              storageClass,
+              LAYERS_KEYS.cost
+            ) || 0;
+            const oldVersionsValue = getCostDetailsValue(
+              item.previousCostDetails,
+              storageClass,
+              LAYERS_KEYS.oldVersionCost
+            ) || 0;
+            const current = costTickFormatter(currentValue);
+            const oldVersion = costTickFormatter(oldVersionsValue);
+            const total = costTickFormatter(currentValue + oldVersionsValue);
+            return `${total} (current: ${current}; old versions: ${oldVersion})`;
+          }
+          return currentValue;
+        }
       }
     }
   };
+
+  const previousOldVersionsDataset = {
+    accumulative: {
+      value: (item) => getCostDetailsSumm(
+        item.previousCostDetails,
+        storageClass,
+        LAYERS_KEYS.accumulativeOldVersionCost
+      ),
+      options: {
+        borderWidth: 2,
+        backgroundColor: 'transparent',
+        dashed: true,
+        showTooltip: false,
+        isPrevious: true
+      }
+    },
+    fact: {
+      value: (item) => getCostDetailsSumm(
+        item.previousCostDetails,
+        storageClass,
+        LAYERS_KEYS.oldVersionCost
+      ),
+      options: {
+        borderWidth: 1,
+        subTitle: 'cost',
+        stack: 'previous',
+        backgroundColor: 'transparent',
+        showTooltip: false,
+        isPrevious: true
+      }
+    }
+  };
+
   return [
     currentDataset,
     currentOldVersionsDataset,
-    previousDataset
+    previousDataset,
+    previousOldVersionsDataset
   ];
+}
+
+export function getDetailsDatasetsByStorageClassAndMetrics (storageClass, metrics) {
+  if (!storageClass) {
+    const filters = metrics === StorageMetrics.volume
+      ? StorageFilters.usage
+      : StorageFilters.value;
+    return [
+      {
+        sample: filters.dataSample
+      },
+      {
+        sample: filters.previousDataSample,
+        isPrevious: true
+      }
+    ];
+  }
+  const metricsName = metrics === StorageMetrics.volume ? 'avgSize' : 'cost';
+  const oldVersionMetricsName = metrics === StorageMetrics.volume
+    ? 'oldVersionAvgSize'
+    : 'oldVersionCost';
+  const formatter = metrics === StorageMetrics.volume ? numberFormatter : costTickFormatter;
+  const currentDataSample = `costDetails.tiers.${storageClass}.${metricsName}`;
+  const currentOldVersionDataSample = `costDetails.tiers.${storageClass}.${oldVersionMetricsName}`;
+  const previousDataSample = `previousCostDetails.tiers.${storageClass}.${metricsName}`;
+  return [
+    {
+      sample: [currentDataSample, currentOldVersionDataSample],
+      main: true,
+      stack: 'current-total',
+      hidden: true,
+      showDataLabel: true
+    },
+    {
+      sample: currentDataSample,
+      main: true,
+      stack: 'current',
+      flagColor: undefined,
+      tooltipValue (value, item) {
+        if (item) {
+          const currentValue = getCostDetailsValue(
+            item.costDetails,
+            storageClass,
+            metricsName
+          ) || 0;
+          const oldVersionsValue = getCostDetailsValue(
+            item.costDetails,
+            storageClass,
+            oldVersionMetricsName
+          ) || 0;
+          const current = formatter(currentValue);
+          const oldVersion = formatter(oldVersionsValue);
+          const total = formatter(currentValue + oldVersionsValue);
+          return `${total} (current: ${current}; old versions: ${oldVersion})`;
+        }
+        return value;
+      }
+    },
+    {
+      sample: currentOldVersionDataSample,
+      main: true,
+      stack: 'current',
+      backgroundColor: 'transparent',
+      flagColor: undefined,
+      showTooltip: false
+    },
+    {
+      sample: previousDataSample,
+      isPrevious: true,
+      stack: 'previous'
+    }
+  ];
+}
+
+export function getItemDetailsByMetrics (dataItem, metrics) {
+  if (!dataItem || !dataItem.costDetails || !dataItem.costDetails.tiers) {
+    return undefined;
+  }
+  const layers = Object
+    .keys(dataItem.costDetails.tiers)
+    .filter((tier) => !/^total$/i.test(tier));
+  const metricsName = metrics === StorageMetrics.volume ? 'avgSize' : 'cost';
+  const oldVersionMetricsName = metrics === StorageMetrics.volume
+    ? 'oldVersionAvgSize'
+    : 'oldVersionCost';
+  const formatter = metrics === StorageMetrics.volume ? numberFormatter : costTickFormatter;
+  const getTierInfo = (tier) => {
+    const currentValue = getCostDetailsValue(
+      dataItem.costDetails,
+      tier,
+      metricsName
+    ) || 0;
+    const oldVersionsValue = getCostDetailsValue(
+      dataItem.costDetails,
+      tier,
+      oldVersionMetricsName
+    ) || 0;
+    const current = formatter(currentValue);
+    const oldVersion = formatter(oldVersionsValue);
+    const total = formatter(currentValue + oldVersionsValue);
+    return {
+      tier,
+      current,
+      oldVersion,
+      total
+    };
+  };
+  const infos = layers.map(getTierInfo);
+  const layoutInfo = (info) =>
+    // eslint-disable-next-line max-len
+    `${getStorageClassName(info.tier)}: ${info.total} (current: ${info.current}, old version: ${info.oldVersion})`;
+  return `\n${infos.map(layoutInfo).join('\n')}`;
 }

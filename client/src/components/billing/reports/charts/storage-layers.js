@@ -78,14 +78,15 @@ function StorageLayers (
           : fadeout(color, 0.75)
         );
       return {
-        ...dataset,
-        data: dataset.data.map((item) => discounts(item)),
+        showFlag: false,
         borderWidth: 2,
         borderDash: [4, 4],
         borderColor: baseColors,
         backgroundColor: backgroundColors,
         flagColor: baseColors[index],
-        textColor: reportThemes.textColor
+        textColor: reportThemes.textColor,
+        ...dataset,
+        data: dataset.data.map((item) => discounts(item))
       };
     })
   };
@@ -189,8 +190,7 @@ function StorageLayers (
         axis: 'x-axis'
       },
       [BarchartDataLabelPlugin.id]: {
-        valueFormatter,
-        chartType: 'stacked'
+        valueFormatter
       },
       [ChartClickPlugin.id]: {
         handler: onSelect ? index => onSelect({key: aggregates[index]}) : undefined,

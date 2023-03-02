@@ -62,6 +62,7 @@ import {
   getStorageClassByAggregate
 } from '../navigation/aggregate';
 import {
+  getDetailsDatasetsByStorageClassAndMetrics, getItemDetailsByMetrics,
   getSummaryDatasetsByStorageClass
 } from './charts/object-storage/get-datasets-by-storage-class';
 import StorageTable from './storage-table';
@@ -273,6 +274,7 @@ class StorageReports extends React.Component {
     const datasets = filter
       .map(key => {
         return {
+          stack: 'details',
           label: LAYERS_LABELS[key] || key,
           data: getData(key, labels),
           isOldVersions: [LAYERS_KEYS.oldVersionCost, LAYERS_KEYS.oldVersionAvgSize].includes(key)
@@ -284,14 +286,15 @@ class StorageReports extends React.Component {
     }, {
       data: [],
       label: 'Total',
-      dataLabelText: 'Total: ',
+      dataItemTitle: 'Total',
       hidden: true,
-      showDataLabel: true
+      showDataLabel: true,
+      showFlag: true
     });
     return {
       aggregates,
       labels: labels.map(getStorageClassName),
-      datasets: [...datasets, totalDataset]
+      datasets: [totalDataset, ...datasets]
     };
   }
 
@@ -312,6 +315,41 @@ class StorageReports extends React.Component {
       ? 'TOTAL'
       : getStorageClassByAggregate(storageAggregate);
     return getSummaryDatasetsByStorageClass(storageClass);
+  }
+
+  @computed
+  get detailsDatasets () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate,
+      metrics
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return getDetailsDatasetsByStorageClassAndMetrics(undefined, metrics);
+    }
+    const total = !storageAggregate || storageAggregate === StorageAggregate.default;
+    const storageClass = total
+      ? 'TOTAL'
+      : getStorageClassByAggregate(storageAggregate);
+    return getDetailsDatasetsByStorageClassAndMetrics(storageClass, metrics);
+  }
+
+  @computed
+  get extraTooltipForItemCallback () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      metrics
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return () => undefined;
+    }
+    return (dataItem) => getItemDetailsByMetrics(dataItem, metrics);
   }
 
   render () {
@@ -469,12 +507,7 @@ class StorageReports extends React.Component {
                               top={tablePageSize}
                               topDescription={topDescription}
                               style={{height: height - costsUsageSelectorHeight}}
-                              dataSample={
-                                StorageFilters[this.state.dataSampleKey].dataSample
-                              }
-                              previousDataSample={
-                                StorageFilters[this.state.dataSampleKey].previousDataSample
-                              }
+                              datasets={this.detailsDatasets}
                               valueFormatter={valueFormatter}
                               highlightTickFn={
                                 (storage) => `${(storage.groupingInfo || {}).is_deleted}` === 'true'
@@ -482,6 +515,7 @@ class StorageReports extends React.Component {
                               highlightTickStyle={{
                                 fontColor: reportThemes.errorColor
                               }}
+                              extraTooltipForItem={this.extraTooltipForItemCallback}
                             />
                           </div>
                         )
