@@ -200,6 +200,7 @@ class PipelineAPI:
     CLONE_PIPELINE_URL = "/pipeline/{}/clone"
     LOAD_WRITABLE_STORAGES = "/datastorage/mount"
     LOAD_AVAILABLE_STORAGES = "/datastorage/available"
+    LOAD_AVAILABLE_STORAGES_WITH_LIFECYCLE = "/datastorage/lifecycle/storages"
     LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}"
     LIFECYCLE_RULES_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule"
     PROLONG_LIFECYCLE_RULES_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/prolong?path={path}&days={days}&force={force}"
@@ -662,6 +663,19 @@ class PipelineAPI:
             return [DataStorage.from_json(item) for item in result]
         except Exception as e:
             raise RuntimeError("Failed to load storages with READ and WRITE permissions. "
+                               "Error message: {}".format(str(e.message)))
+
+    def load_storages_with_lifecycle(self, lifecycle_type=None):
+        try:
+            url = str(self.api_url) + self.LOAD_AVAILABLE_STORAGES_WITH_LIFECYCLE
+            if lifecycle_type is not None:
+                url += "?lifecycleType={}".format(lifecycle_type)
+            result = self.execute_request(url)
+            if result is None:
+                return []
+            return [DataStorage.from_json(item) for item in result]
+        except Exception as e:
+            raise RuntimeError("Failed to load storages with lifecycle actions. "
                                "Error message: {}".format(str(e.message)))
 
     def load_available_storages_with_share_mount(self, from_region_id=None):
