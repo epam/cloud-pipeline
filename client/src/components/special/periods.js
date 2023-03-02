@@ -246,8 +246,8 @@ function getPeriod (period, range) {
           previousEndStrict = temp;
         }
       }
-      endStrict = endStrict.endOf('M');
-      previousEndStrict = previousEndStrict.endOf('M');
+      endStrict = endStrict.endOf('D');
+      previousEndStrict = previousEndStrict.endOf('D');
       previousShiftFn = (momentDate) => moment(momentDate).add(1, 'y');
       break;
     case Period.year:

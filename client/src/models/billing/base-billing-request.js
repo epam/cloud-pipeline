@@ -110,28 +110,38 @@ export default class BaseBillingRequest extends RemotePost {
   }
 
   prepareBody () {
+    const asArray = (value) => Array.isArray(value) || isObservableArray(value) ? value : [value];
     this.body.from = this.filters && this.filters.start
       ? this.filters.start.toISOString() : undefined;
     this.body.to = this.filters && this.filters.end
       ? this.filters.end.toISOString() : undefined;
     this.body.filters = {};
     if (this.filters && this.filters.user) {
-      this.body.filters.owner = Array.isArray(this.filters.user) ||
-      isObservableArray(this.filters.user)
-        ? this.filters.user
-        : [this.filters.user];
+      this.body.filters.owner = asArray(this.filters.user);
     }
     if (this.filters && this.filters.group) {
-      this.body.filters.billing_center = Array.isArray(this.filters.group) ||
-      isObservableArray(this.filters.group)
-        ? this.filters.group
-        : [this.filters.group];
+      this.body.filters.billing_center = asArray(this.filters.group);
     }
     if (this.filters && this.filters.cloudRegionId) {
       this.body.filters.cloudRegionId = this.filters.cloudRegionId.slice();
     }
     if (this.filters && this.filters.order) {
       this.body.order = {...this.filters.order};
+    }
+    if (this.filters && this.filters.storageNames) {
+      this.body.filters.storage_name = asArray(this.filters.storageNames);
+    }
+    if (this.filters && this.filters.storageTypes) {
+      this.body.filters.storage_type = asArray(this.filters.storageTypes);
+    }
+    if (this.filters && this.filters.tools) {
+      this.body.filters.tool = asArray(this.filters.tools);
+    }
+    if (this.filters && this.filters.instances) {
+      this.body.filters.instance_type = asArray(this.filters.instances);
+    }
+    if (this.filters && this.filters.pipelines) {
+      this.body.filters.pipeline = asArray(this.filters.pipelines);
     }
     if (this.loadDetails) {
       this.body.loadDetails = true;

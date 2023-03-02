@@ -391,7 +391,7 @@ class StorageReports extends React.Component {
       ? numberFormatter
       : costTickFormatter;
     const topDescription = isVolumeMetrics
-      ? 'by volume'
+      ? 'GB'
       : undefined;
     const showTableDetails = /^object$/i.test(type);
     const selectedIndex = tiersData.aggregates.indexOf(storageAggregate);
@@ -471,7 +471,10 @@ class StorageReports extends React.Component {
                                 loading={tiersPending}
                                 onSelect={this.onSelectLayer}
                                 data={tiersData}
-                                title={'Object storage layers'}
+                                title={
+                                  ['Object storage layers', topDescription]
+                                    .filter(Boolean).join(', ')
+                                }
                                 style={{height: height - costsUsageSelectorHeight}}
                                 valueFormatter={valueFormatter}
                                 highlightTickFn={

@@ -1,6 +1,6 @@
 import {GetGroupedStorages} from './get-grouped-storages';
-import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
+import GetGroupedStoragesDataWithPrevious from './get-grouped-storages-data-with-previous';
 
 /**
  * @typedef {Object} GetGroupedFileStoragesOptions
@@ -10,13 +10,25 @@ import join from './join-periods';
  */
 
 export class GetGroupedFileStorages extends GetGroupedStorages {
-  prepareBody () {
-    super.prepareBody();
-    this.body.filters.storage_type = ['FILE_STORAGE'];
+  /**
+   * @param {BaseBillingRequestOptions} [options]
+   */
+  constructor (options) {
+    const {
+      filters = {}
+    } = options;
+    super({
+      ...options,
+      filters: {
+        ...filters,
+        storageTypes: ['FILE_STORAGE']
+      },
+      loadDetails: true
+    });
   }
 }
 
-export class GetGroupedFileStoragesWithPrevious extends GetDataWithPrevious {
+export class GetGroupedFileStoragesWithPrevious extends GetGroupedStoragesDataWithPrevious {
   /**
    * @param {GetGroupedFileStoragesOptions} options
    */

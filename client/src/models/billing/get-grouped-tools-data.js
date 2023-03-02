@@ -1,6 +1,6 @@
 import {GetGroupedInstances} from './get-grouped-instances';
-import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
+import GetGroupedComputeDataWithPrevious from './get-grouped-compute-data-with-previous';
 
 export class GetGroupedTools extends GetGroupedInstances {
   /**
@@ -12,7 +12,7 @@ export class GetGroupedTools extends GetGroupedInstances {
   }
 }
 
-export class GetGroupedToolsWithPrevious extends GetDataWithPrevious {
+export class GetGroupedToolsWithPrevious extends GetGroupedComputeDataWithPrevious {
   /**
    * @param {GetGroupedInstancesOptions} options
    */
@@ -38,7 +38,8 @@ export class GetGroupedToolsWithPrevious extends GetDataWithPrevious {
       {
         filters: formattedFilters,
         pagination
-      }
+      },
+      'tools'
     );
   }
 
