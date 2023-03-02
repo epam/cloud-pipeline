@@ -51,6 +51,10 @@ public class FileShareMountManager {
         return fileShareMountDao.loadAllByRegionId(regionId);
     }
 
+    public List<FileShareMount> loadAll() {
+        return fileShareMountDao.loadAll();
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public FileShareMount save(final FileShareMount fileShareMount) {
         LOGGER.debug("Create new FileShareMount: " + fileShareMount);
