@@ -291,6 +291,7 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
         self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, to_string(destination_key),
                                       progress_callback=progress_callback)
         if clean:
+            self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, source_key, DataAccessType.DELETE))
             self.service.delete_blob(source_wrapper.bucket.path, source_key)
 
 
