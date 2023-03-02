@@ -29,7 +29,6 @@ import {
   numberFormatter,
   ResizableContainer
 } from './utilities';
-import {fadeout} from '../../../themes/utilities/color-utilities';
 import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
 import {
   getBillingGroupingSortField,
@@ -506,13 +505,6 @@ class StorageReports extends React.Component {
                                 highlightTickFn={
                                   (_, tick) => tick._index === selectedIndex
                                 }
-                                highlightTickStyle={{
-                                  fontColor: reportThemes.textColor,
-                                  fontSize: 14
-                                }}
-                                highlightAxisStyle={{
-                                  backgroundColor: fadeout(reportThemes.lightBlue, 0.90)
-                                }}
                                 discounts={isVolumeMetrics ? undefined : storageDiscounts}
                               />
                             </div>

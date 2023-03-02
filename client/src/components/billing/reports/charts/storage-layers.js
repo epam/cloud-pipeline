@@ -51,8 +51,6 @@ function StorageLayers (
     onImageDataReceived,
     reportThemes,
     highlightTickFn,
-    highlightTickStyle = {},
-    highlightAxisStyle = {},
     loading,
     discounts = ((o) => o)
   }
@@ -104,11 +102,11 @@ function StorageLayers (
         },
         ticks: {
           fontColor: reportThemes.subTextColor,
-          major: Object.assign({
+          major: {
             enabled: !!highlightTickFn,
             fontStyle: 'normal',
-            fontColor: reportThemes.subTextColor
-          }, highlightTickStyle)
+            fontColor: reportThemes.textColor
+          }
         }
       }],
       yAxes: [{
@@ -192,7 +190,7 @@ function StorageLayers (
       },
       [HighlightAxisPlugin.id]: {
         highlightAxis: highlightedLabel,
-        backgroundColor: highlightAxisStyle.backgroundColor
+        backgroundColor: fadeout(reportThemes.lightBlue, 0.90)
       },
       [BarchartDataLabelPlugin.id]: {
         valueFormatter
