@@ -36,6 +36,7 @@ python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
 python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+                                --paths "${PIPE_CLI_SOURCES_DIR}" \
                                 --hidden-import=UserList \
                                 --hidden-import=UserString \
                                 --hidden-import=commands \
