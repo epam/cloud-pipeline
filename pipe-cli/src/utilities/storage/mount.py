@@ -138,8 +138,7 @@ class SourceMount(AbstractMount):
         return mount_cmd
 
     def get_python_path(self):
-        script_folder = dirname(Config.get_base_source_dir())
-        return script_folder
+        return dirname(Config.get_base_source_dir())
 
 
 class Mount(object):
