@@ -40,6 +40,7 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -63,6 +64,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,6 +74,7 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 
 @RequiredArgsConstructor
 @Slf4j
+@Setter
 public class ObjectStorageIndexImpl implements ObjectStorageIndex {
 
     private static final String STANDARD_TIER = "STANDARD";
@@ -93,6 +96,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final String tagDelimiter;
     private final boolean includeVersions;
 
+    private Set<Long> storageIds;
+
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
     @Override
@@ -102,6 +107,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         final List<AbstractDataStorage> allStorages = cloudPipelineAPIClient.loadAllDataStorages();
         allStorages
                 .stream()
+                .filter(dataStorage -> CollectionUtils.isEmpty(storageIds) || storageIds.contains(dataStorage.getId()))
                 .filter(dataStorage -> dataStorage.getType() == getStorageType())
                 .filter(dataStorage -> isNotSharedOrChild(dataStorage, allStorages))
                 .forEach(this::indexStorage);

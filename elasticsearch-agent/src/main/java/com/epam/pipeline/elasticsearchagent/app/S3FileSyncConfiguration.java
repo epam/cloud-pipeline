@@ -25,11 +25,16 @@ import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
 import com.epam.pipeline.elasticsearchagent.service.impl.S3FileManager;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Configuration
 public class S3FileSyncConfiguration {
@@ -48,6 +53,8 @@ public class S3FileSyncConfiguration {
     private Integer bulkLoadTagsSize;
     @Value("${sync.s3-file.tag.value.delimiter:;}")
     private String tagDelimiter;
+    @Value("${sync.s3-file.storage.ids:}")
+    private String storageIds;
 
     @Bean
     public ObjectStorageFileManager s3FileManager() {
@@ -61,13 +68,23 @@ public class S3FileSyncConfiguration {
             final ElasticsearchServiceClient esClient,
             final ElasticIndexService indexService,
             final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
-        return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
+        final ObjectStorageIndexImpl service = new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 s3FileManager, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.S3,
                 SearchDocumentType.S3_FILE,
                 tagDelimiter,
                 includeVersions);
+        if (StringUtils.isNotBlank(storageIds)) {
+            service.setStorageIds(parseIds(storageIds));
+        }
+        return service;
+    }
+
+    private Set<Long> parseIds(final String storageIds) {
+        return Arrays.stream(storageIds.split(","))
+                .map(value -> Long.parseLong(value.trim()))
+                .collect(Collectors.toSet());
     }
 
 }
