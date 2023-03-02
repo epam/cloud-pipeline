@@ -1110,7 +1110,8 @@ def storage_mk_dir(folders):
               help='Include only files matching this pattern into processing')
 @common_options
 def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include):
-    """ Removes file or folder from a datastorage
+    """
+    Removes files/directories.
     """
     DataStorageOperations.storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include)
 
@@ -1272,6 +1273,9 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
 @common_options
 def du(name, relative_path, depth, cloud, output_mode, generation, format):
+    """
+    Displays data storage usage statistics.
+    """
     DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format)
 
 
