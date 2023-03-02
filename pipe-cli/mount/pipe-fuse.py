@@ -48,7 +48,9 @@ if os.path.exists(libfuse_path):
 import fuse
 from fuse import FUSE, fuse_operations, fuse_file_info, c_utimbuf
 
-from pipefuse.api import CloudPipelineClient, CloudType
+from pipefuse.api import CloudPipelineClient, CloudType, CloudPipelineAuditConsumer
+from pipefuse.audit import AuditFileSystemClient, LoggingAuditConsumer, ChunkingAuditConsumer, \
+    NativeSetAuditContainer, AuditDaemon
 from pipefuse.buffread import BufferingReadAheadFileSystemClient
 from pipefuse.buffwrite import BufferingWriteFileSystemClient
 from pipefuse.cache import ListingCache, ThreadSafeListingCache, \
@@ -87,8 +89,9 @@ def start(mountpoint, webdav, bucket,
           xattrs_include_prefixes, xattrs_exclude_prefixes,
           xattrs_cache_ttl, xattrs_cache_size,
           disabled_operations, default_mode,
-          mount_options, threads=False, monitoring_delay=600, recording=False,
-          show_archived=False, storage_class_exclude=None):
+          mount_options, threads, monitoring_delay, recording,
+          show_archived, storage_class_exclude,
+          audit_buffer_ttl):
     try:
         os.makedirs(mountpoint)
     except OSError as e:
@@ -104,6 +107,7 @@ def start(mountpoint, webdav, bucket,
                                                read_ahead_size_multiplier))
     bucket_type = None
     root_path = None
+    daemons = []
     if not bearer:
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
@@ -118,18 +122,27 @@ def start(mountpoint, webdav, bucket,
         path_chunks = bucket.rstrip('/').split('/')
         bucket_name = path_chunks[0]
         root_path = '/'.join(path_chunks[1:])
-        bucket_object = pipe.get_storage(bucket)
+        bucket_object = pipe.init_bucket_object(bucket)
         bucket_type = bucket_object.type
         if bucket_type == CloudType.S3:
-            client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size, storage_path=bucket)
+            client = S3StorageLowLevelClient(bucket_name, bucket_object, pipe=pipe, chunk_size=chunk_size)
             if not show_archived:
                 client = ArchivedFilesFilterFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
             client = ArchivedAttributesFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
         elif bucket_type == CloudType.GS:
-            client = GoogleStorageLowLevelFileSystemClient(bucket_name, pipe=pipe, chunk_size=chunk_size,
-                                                           storage_path=bucket)
+            client = GoogleStorageLowLevelFileSystemClient(bucket_name, bucket_object, pipe=pipe, chunk_size=chunk_size)
         else:
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
+        if audit_buffer_ttl > 0:
+            logging.info('Auditing is enabled.')
+            audit_container = NativeSetAuditContainer()
+            audit_consumer = CloudPipelineAuditConsumer(pipe=pipe, bucket_object=bucket_object)
+            audit_consumer = LoggingAuditConsumer(audit_consumer)
+            audit_consumer = ChunkingAuditConsumer(audit_consumer)
+            daemons.append(AuditDaemon(container=audit_container, consumer=audit_consumer, timeout=audit_buffer_ttl))
+            client = AuditFileSystemClient(client, container=audit_container)
+        else:
+            logging.info('Auditing is disabled.')
         client = StorageHighLevelFileSystemClient(client)
     if storage_class_exclude:
         client = StorageClassFilterFileSystemClient(client, classes=storage_class_exclude)
@@ -177,6 +190,10 @@ def start(mountpoint, webdav, bucket,
             client = WriteNullsOnUpTruncateFileSystemClient(client, capacity=trunc_buffer_size)
     else:
         logging.info('Truncating support is disabled.')
+    if threads:
+        logging.info('Threading is enabled.')
+    else:
+        logging.info('Threading is disabled.')
 
     fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
     if bucket_type == CloudType.S3:
@@ -201,6 +218,11 @@ def start(mountpoint, webdav, bucket,
         fs = RecordingFS(fs)
 
     logging.info('File system processing chain: \n%s', fs.summary())
+
+    if daemons:
+        logging.info('Initiating file system daemons...')
+        for daemon in daemons:
+            daemon.start()
 
     logging.info('Initializing file system...')
     enable_additional_operations()
@@ -347,12 +369,15 @@ if __name__ == '__main__':
                         help="String with mount options supported by FUSE")
     parser.add_argument("-l", "--logging-level", type=str, required=False, default=_default_logging_level,
                         help="Logging level.")
-    parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.")
+    parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.",
+                        default=True)
     parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
-                        help="Delay between path lock monitoring cycles.")
+                        help="Delay between path lock monitoring cycles, seconds.")
     parser.add_argument("--show-archived", action='store_true', help="Show archived files.")
     parser.add_argument("--storage-class-exclude", type=str, required=False, action="append", default=[],
                         help="Storage classes that shall be excluded from listing.")
+    parser.add_argument("--audit-buffer-ttl", type=int, required=False, default=60,
+                        help="Data access audit buffer time to live, seconds.")
     args = parser.parse_args()
 
     if args.xattrs_include_prefixes and args.xattrs_exclude_prefixes:
@@ -389,7 +414,8 @@ if __name__ == '__main__':
               disabled_operations=args.disabled_operations,
               default_mode=args.mode, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording,
-              show_archived=args.show_archived, storage_class_exclude=args.storage_class_exclude)
+              show_archived=args.show_archived, storage_class_exclude=args.storage_class_exclude,
+              audit_buffer_ttl=args.audit_buffer_ttl)
     except Exception:
         logging.exception('Unhandled error')
         traceback.print_exc()
