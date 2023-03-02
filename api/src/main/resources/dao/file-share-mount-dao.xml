@@ -68,6 +68,20 @@
                 ]]>
             </value>
         </property>
+        <property name="loadAllShareMounts">
+            <value>
+                <![CDATA[
+                    SELECT
+                        sm.id,
+                        sm.region_id,
+                        sm.mount_root,
+                        sm.mount_type,
+                        sm.mount_options
+                    FROM
+                        pipeline.file_share_mount sm
+                ]]>
+            </value>
+        </property>
         <property name="updateShareMountQuery">
             <value>
                 <![CDATA[
