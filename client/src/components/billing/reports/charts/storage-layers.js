@@ -80,7 +80,6 @@ function StorageLayers (
       return {
         showFlag: false,
         borderWidth: 2,
-        borderDash: [4, 4],
         borderColor: baseColors,
         backgroundColor: backgroundColors,
         flagColor: baseColors[index],

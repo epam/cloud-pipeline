@@ -257,17 +257,20 @@ export function getDetailsDatasetsByStorageClassAndMetrics (storageClass, metric
   const currentDataSample = `costDetails.tiers.${storageClass}.${metricsName}`;
   const currentOldVersionDataSample = `costDetails.tiers.${storageClass}.${oldVersionMetricsName}`;
   const previousDataSample = `previousCostDetails.tiers.${storageClass}.${metricsName}`;
+  const showDetailsDataLabel = (value, datasetValues, options) => {
+    const {
+      getPxSize = (() => 0)
+    } = options || {};
+    const detailsDatasets = datasetValues
+      .filter((value) => value.dataset.details &&
+        (value.value > 0 && getPxSize(value.value) > 5.0)
+      );
+    return detailsDatasets.length > 1;
+  };
   return [
     {
-      sample: [currentDataSample, currentOldVersionDataSample],
-      main: true,
-      stack: 'current-total',
-      hidden: true,
-      showDataLabel: true
-    },
-    {
       sample: currentDataSample,
-      main: true,
+      details: true,
       stack: 'current',
       flagColor: undefined,
       tooltipValue (value, item) {
@@ -288,15 +291,24 @@ export function getDetailsDatasetsByStorageClassAndMetrics (storageClass, metric
           return `${total} (current: ${current}; old versions: ${oldVersion})`;
         }
         return value;
-      }
+      },
+      showDataLabel: showDetailsDataLabel
     },
     {
       sample: currentOldVersionDataSample,
-      main: true,
+      details: true,
       stack: 'current',
       backgroundColor: 'transparent',
       flagColor: undefined,
-      showTooltip: false
+      showTooltip: false,
+      showDataLabel: showDetailsDataLabel
+    },
+    {
+      sample: [currentDataSample, currentOldVersionDataSample],
+      main: true,
+      stack: 'current-total',
+      hidden: true,
+      showDataLabel: true
     },
     {
       sample: previousDataSample,

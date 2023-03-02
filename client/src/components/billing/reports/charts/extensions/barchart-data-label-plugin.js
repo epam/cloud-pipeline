@@ -28,22 +28,65 @@ const plugin = {
   afterDatasetsDraw: function (chart, ease, pluginOptions) {
     const {valueFormatter = costTickFormatter} = pluginOptions || {};
     const ctx = chart.chart.ctx;
+    const {
+      scales = {}
+    } = chart;
     const datasetLabels = chart.data.datasets
       .map((dataset, i) => {
         const meta = chart.getDatasetMeta(i);
         const {
+          yAxisID
+        } = meta;
+        const yAxis = scales[yAxisID];
+        const {
           hidden = false,
-          showDataLabel = !hidden
+          showDataLabel: showLabel = !hidden,
+          data: items = []
         } = dataset;
-        if (meta && showDataLabel) {
-          return meta.data.map((element, index) => this.getInitialLabelConfig(
-            dataset,
-            element,
-            index,
-            meta,
-            chart,
-            valueFormatter
-          ));
+        const showDatasetLabel = (index) => {
+          if (typeof showLabel === 'function') {
+            const allData = chart.data.datasets.map((aDataset) => ({
+              dataset: aDataset,
+              value: (aDataset.data || [])[index]
+            }));
+            return showLabel(
+              items[index],
+              allData,
+              {
+                yAxis,
+                getPxValue (aValue) {
+                  return yAxis
+                    ? yAxis.getPixelForValue(aValue)
+                    : undefined;
+                },
+                getPxSize (aValue) {
+                  return yAxis
+                    ? (yAxis.bottom - yAxis.getPixelForValue(aValue))
+                    : undefined;
+                },
+                pxValue: yAxis ? yAxis.getPixelForValue(items[index]) : undefined,
+                minPxValue: yAxis ? yAxis.getPixelForValue(yAxis.min) : undefined,
+                pxSize: yAxis ? (yAxis.bottom - yAxis.getPixelForValue(items[index])) : undefined
+              }
+            );
+          }
+          return showLabel;
+        };
+        if (meta) {
+          return meta.data.map((element, index) => {
+            const show = showDatasetLabel(index);
+            if (show) {
+              return this.getInitialLabelConfig(
+                dataset,
+                element,
+                index,
+                meta,
+                chart,
+                valueFormatter
+              );
+            }
+            return undefined;
+          }).filter(Boolean);
         }
         return [];
       });
@@ -179,15 +222,10 @@ const plugin = {
   ) {
     const {
       data,
-      hidden,
       textBold = false,
-      showDataLabel = !hidden,
       dataItemTitle = ''
     } = dataset;
     const {xAxisID, yAxisID} = meta;
-    if (hidden && !showDataLabel) {
-      return null;
-    }
     const xAxis = chart.scales[xAxisID];
     const yAxis = chart.scales[yAxisID];
     const dataItem = data && data.length > index ? data[index] : null;

@@ -275,9 +275,20 @@ class StorageReports extends React.Component {
       .map(key => {
         return {
           stack: 'details',
+          details: true,
           label: LAYERS_LABELS[key] || key,
           data: getData(key, labels),
-          isOldVersions: [LAYERS_KEYS.oldVersionCost, LAYERS_KEYS.oldVersionAvgSize].includes(key)
+          isOldVersions: [LAYERS_KEYS.oldVersionCost, LAYERS_KEYS.oldVersionAvgSize].includes(key),
+          showDataLabel: (value, datasetValues, options) => {
+            const {
+              getPxSize = (() => 0)
+            } = options || {};
+            const detailsDatasets = datasetValues
+              .filter((value) => value.dataset.details &&
+                (value.value > 0 && getPxSize(value.value) > 5.0)
+              );
+            return detailsDatasets.length > 1;
+          }
         };
       });
     const totalDataset = (datasets || []).reduce((acc, current) => {
