@@ -1,7 +1,7 @@
 import BaseBillingRequest from './base-billing-request';
-import GetDataWithPrevious from './get-data-with-previous';
 import {costMapper, minutesToHours} from './utils';
 import join from './join-periods';
+import GetGroupedComputeDataWithPrevious from './get-grouped-compute-data-with-previous';
 
 /**
  * @typedef {Object} GetGroupedInstancesOptions
@@ -57,7 +57,7 @@ export class GetGroupedInstances extends BaseBillingRequest {
   }
 }
 
-export class GetGroupedInstancesWithPrevious extends GetDataWithPrevious {
+export class GetGroupedInstancesWithPrevious extends GetGroupedComputeDataWithPrevious {
   /**
    * @param {GetGroupedInstancesOptions} options
    */
@@ -83,7 +83,8 @@ export class GetGroupedInstancesWithPrevious extends GetDataWithPrevious {
       {
         filters: formattedFilters,
         pagination
-      }
+      },
+      'instances'
     );
   }
 

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import {action} from 'mobx';
 import RemotePost from '../basic/RemotePost';
 import defer from '../../utils/defer';
 
@@ -22,8 +21,13 @@ class GetDataWithPrevious extends RemotePost {
   /**
    * @param Model
    * @param {BaseBillingRequestOptions} options
+   * @param {function} [getPreviousRequestOptions]
    */
-  constructor (Model, options) {
+  constructor (
+    Model,
+    options,
+    getPreviousRequestOptions
+  ) {
     super();
     const {
       filters = {},
@@ -53,9 +57,27 @@ class GetDataWithPrevious extends RemotePost {
       ...rest
     };
     this.current = new Model({filters: currentFilters, ...restOptions});
-    this.previous = hasPreviousDates
-      ? (new Model({filters: previousFilters, ...restOptions}))
-      : undefined;
+    this.fetchPrevious = async (currentPeriodFetchPromise) => {
+      if (
+        !previousFilters || !hasPreviousDates
+      ) {
+        return Promise.resolve();
+      }
+      if (typeof getPreviousRequestOptions === 'function') {
+        await currentPeriodFetchPromise;
+        const previousRequestFilters = {
+          ...previousFilters,
+          ...getPreviousRequestOptions(this.current.value)
+        };
+        this.previous = new Model({
+          filters: previousRequestFilters,
+          ...restOptions
+        });
+      } else {
+        this.previous = new Model({filters: previousFilters, ...restOptions});
+      }
+      await this.previous.fetch();
+    };
   }
 
   send () {
@@ -66,9 +88,10 @@ class GetDataWithPrevious extends RemotePost {
     this._pending = true;
     try {
       await defer();
+      const currentPeriodFetchPromise = this.current.fetch();
       await Promise.all([
-        this.current.fetch(),
-        this.previous ? this.previous.fetch() : Promise.resolve(true)
+        currentPeriodFetchPromise,
+        this.fetchPrevious(currentPeriodFetchPromise)
       ]);
       if (this.current.error) {
         throw new Error(this.current.error);

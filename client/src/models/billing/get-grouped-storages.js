@@ -1,7 +1,7 @@
 import BaseBillingRequest from './base-billing-request';
 import {costMapper} from './utils';
-import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
+import GetGroupedStoragesDataWithPrevious from './get-grouped-storages-data-with-previous';
 
 export class GetGroupedStorages extends BaseBillingRequest {
   /**
@@ -57,7 +57,7 @@ export class GetGroupedStorages extends BaseBillingRequest {
  * @property {BaseBillingRequestPagination|boolean} [pagination]
  */
 
-export class GetGroupedStoragesWithPrevious extends GetDataWithPrevious {
+export class GetGroupedStoragesWithPrevious extends GetGroupedStoragesDataWithPrevious {
   /**
    * @param {GetGroupedStoragesWithPreviousOptions} options
    */
