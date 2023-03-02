@@ -205,7 +205,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 DataStorageParameters.getToolsToMountForAllStorageRowMapper());
     }
 
-    public List<AbstractDataStorage> loadDataStoragesByIds(final List<Long> ids) {
+    public List<AbstractDataStorage> loadDataStoragesByIds(final Collection<Long> ids) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(DataStorageParameters.DATASTORAGE_IDS.name(), ids);
         return getNamedParameterJdbcTemplate().query(loadDataStoragesByIdsQuery,

@@ -88,6 +88,13 @@ public class DataStorageLifecycleManager {
         return listStorageLifecyclePolicyRules(storageId, null);
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> listStorageIdsWithLifecycle() {
+        return dataStorageLifecycleRuleRepository.findAll()
+                .stream().map(StorageLifecycleRuleEntity::getDatastorageId).distinct()
+                .collect(Collectors.toList());
+    }
+
     public StorageLifecycleRule loadStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
         final StorageLifecycleRuleEntity lifecycleRuleEntity = loadLifecycleRuleEntity(ruleId);
         Assert.isTrue(lifecycleRuleEntity.getDatastorageId().equals(datastorageId),

@@ -20,12 +20,14 @@ import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiServic
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleType;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionSearchFilter;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -57,6 +59,20 @@ public class DataStorageLifecycleController extends AbstractRestController {
 
     @Autowired
     private DataStorageLifecycleApiService dataStorageLifecycleApiService;
+
+    @GetMapping(value = "/datastorage/lifecycle/storages")
+    @ApiOperation(
+            value = "Lists all available lifecycle rules with its storages.",
+            notes = "Lists all available lifecycle rules with its storages.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<AbstractDataStorage>> listStorageLifecyclePolicyRulesWithStorages(
+            @RequestParam(value = "lifecycleType", required = false) final StorageLifecycleType lifecycleType
+    ) {
+        return Result.success(dataStorageLifecycleApiService.listStoragesWithLifecycle(lifecycleType));
+    }
 
     @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/rule")
     @ApiOperation(

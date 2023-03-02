@@ -67,6 +67,13 @@ public class DataStorageLifecycleRestoreManager {
     private final UserManager userManager;
 
 
+    @Transactional(readOnly = true)
+    public List<Long> listStoragesWithLifecycle() {
+        return dataStoragePathRestoreActionRepository.findAll().stream()
+                .map(StorageRestoreActionEntity::getDatastorageId)
+                .distinct().collect(Collectors.toList());
+    }
+
     @Transactional
     public List<StorageRestoreAction> initiateStorageRestores(final AbstractDataStorage storage,
                                                               final StorageRestoreActionRequest request) {
