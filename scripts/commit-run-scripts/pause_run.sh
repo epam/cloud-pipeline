@@ -79,6 +79,10 @@ commit_file_and_stop_docker() {
                             "[INFO] Container was successfully committed with name: $NEW_IMAGE_NAME" \
                             "exit 126"
 
+    if [ "$SKIP_DOCKER_SQUASH" != "true" ]; then
+        pipe_exec "$SCRIPTS_DIR/squash_docker_image.sh ${NEW_IMAGE_NAME}" "$TASK_NAME"    
+    fi
+
     pipe_exec "docker logs ${CONTAINER_ID}" "${DEFAULT_TASK_NAME}"
     check_last_exit_code $? "[ERROR] Error occurred while retrieving logs from docker container ${CONTAINER_ID}" \
                             "[INFO] Docker container logs were successfully retrieved." \
@@ -158,10 +162,18 @@ download_file "${PAUSE_DISTRIBUTION_URL}common_commit_initialization.sh"
 _DOWNLOAD_RESULT=$?
 if [ "$_DOWNLOAD_RESULT" -ne 0 ];
 then
-    pipe_log_fail "[ERROR] Common commit script downloads failed. Exiting." $TASK_NAME
+    pipe_log_fail "[ERROR] Common commit script download failed. Exiting." $TASK_NAME
     echo "[ERROR] Common commit script downloads failed. Exiting"
     exit "$_DOWNLOAD_RESULT"
 fi
+
+download_file "${PAUSE_DISTRIBUTION_URL}squash_docker_image.sh"
+if [ "$?" -ne 0 ];
+then
+    pipe_log_warn "[WARN] Docker squash script download failed. Will not attempt to squash" $TASK_NAME
+    export SKIP_DOCKER_SQUASH="true"
+fi
+
 chmod +x $SCRIPTS_DIR/*
 
 . $SCRIPTS_DIR/common_commit_initialization.sh
