@@ -62,8 +62,8 @@ public class DataStorageLifecycleController extends AbstractRestController {
 
     @GetMapping(value = "/datastorage/lifecycle/storages")
     @ApiOperation(
-            value = "Lists all available lifecycle rules with its storages.",
-            notes = "Lists all available lifecycle rules with its storages.",
+            value = "Lists storages with lifecycle configuration(transition rules or restores) only.",
+            notes = "Lists storages with lifecycle configuration(transition rules or restores) only.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)

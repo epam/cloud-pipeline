@@ -51,6 +51,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
@@ -69,9 +70,9 @@ public class DataStorageLifecycleRestoreManager {
 
     @Transactional(readOnly = true)
     public List<Long> listStoragesWithLifecycle() {
-        return dataStoragePathRestoreActionRepository.findAll().stream()
-                .map(StorageRestoreActionEntity::getDatastorageId)
-                .distinct().collect(Collectors.toList());
+        return StreamSupport.stream(
+            dataStoragePathRestoreActionRepository.loadDistinctDatastorageIds().spliterator(), false
+        ).collect(Collectors.toList());
     }
 
     @Transactional

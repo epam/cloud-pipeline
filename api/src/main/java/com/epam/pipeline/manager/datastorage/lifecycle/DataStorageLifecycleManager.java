@@ -90,9 +90,9 @@ public class DataStorageLifecycleManager {
 
     @Transactional(readOnly = true)
     public List<Long> listStorageIdsWithLifecycle() {
-        return dataStorageLifecycleRuleRepository.findAll()
-                .stream().map(StorageLifecycleRuleEntity::getDatastorageId).distinct()
-                .collect(Collectors.toList());
+        return StreamSupport.stream(
+            dataStorageLifecycleRuleRepository.loadDistinctDatastorageIds().spliterator(), false
+        ).collect(Collectors.toList());
     }
 
     public StorageLifecycleRule loadStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
