@@ -309,6 +309,10 @@ class AuditContextManager:
         self._daemon = daemon
         self._container = container
 
+    @property
+    def container(self):
+        return self._container
+
     def __enter__(self):
         self._daemon.start()
         return self._container

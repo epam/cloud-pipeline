@@ -116,18 +116,19 @@ class DataStorageOperations(object):
         command = 'mv' if clean else 'cp'
         permission_to_check = os.R_OK if command == 'cp' else os.W_OK
 
-        with auditing() as audit:
-            manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, audit, command)
-            items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
-            items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                      include, exclude, force, quiet, skip_existing, verify_destination,
-                                      on_unsafe_chars, on_unsafe_chars_replacement)
-            if threads:
-                cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                                 clean, quiet, tags, io_threads, on_failures)
-            else:
-                cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                    clean, quiet, tags, io_threads, on_failures)
+        audit_ctx = auditing()
+        manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper,
+                                                           audit=audit_ctx.container, command=command)
+        items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
+        items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                  include, exclude, force, quiet, skip_existing, verify_destination,
+                                  on_unsafe_chars, on_unsafe_chars_replacement)
+        if threads:
+            cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
+                                             audit_ctx, clean, quiet, tags, io_threads, on_failures)
+        else:
+            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
+                                audit_ctx, clean, quiet, tags, io_threads, on_failures)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -573,8 +574,8 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
-                                     quiet, tags, io_threads, on_failures):
+    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                     audit_ctx, clean, quiet, tags, io_threads, on_failures):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -587,6 +588,7 @@ class DataStorageOperations(object):
                                                     manager,
                                                     source_wrapper,
                                                     destination_wrapper,
+                                                    audit_ctx,
                                                     clean,
                                                     quiet,
                                                     tags,
@@ -598,21 +600,22 @@ class DataStorageOperations(object):
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, io_threads,
-                        on_failures, lock=None):
-        transfer_results = []
-        fail_after_exception = None
-        for item in items:
-            transfer_results, fail_after_exception = cls._transfer_item(item, manager,
-                                                                        source_wrapper, destination_wrapper,
-                                                                        transfer_results,
-                                                                        clean, quiet, tags, io_threads,
-                                                                        on_failures, lock)
-        if not destination_wrapper.is_local():
-            cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                        transfer_results, clean=clean, flush_size=1)
-        if fail_after_exception:
-            raise fail_after_exception
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper,
+                        audit_ctx, clean, quiet, tags, io_threads, on_failures, lock=None):
+        with audit_ctx:
+            transfer_results = []
+            fail_after_exception = None
+            for item in items:
+                transfer_results, fail_after_exception = cls._transfer_item(item, manager,
+                                                                            source_wrapper, destination_wrapper,
+                                                                            transfer_results,
+                                                                            clean, quiet, tags, io_threads,
+                                                                            on_failures, lock)
+            if not destination_wrapper.is_local():
+                cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                            transfer_results, clean=clean, flush_size=1)
+            if fail_after_exception:
+                raise fail_after_exception
 
     @classmethod
     def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,
