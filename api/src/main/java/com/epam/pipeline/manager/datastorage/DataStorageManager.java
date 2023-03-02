@@ -27,6 +27,7 @@ import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
@@ -231,10 +232,16 @@ public class DataStorageManager implements SecuredEntityManager {
     public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId) {
         final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
                 .map(cloudRegionManager::load).orElse(null);
+        final Map<Long, ? extends AbstractCloudRegion> regions = ListUtils.emptyIfNull(cloudRegionManager.loadAll())
+                .stream()
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        final Map<Long, FileShareMount> fsMounts = ListUtils.emptyIfNull(fileShareMountManager.loadAll())
+                .stream().collect(Collectors.toMap(FileShareMount::getId, Function.identity()));
         return getDataStoragesWithToolsToMount().stream()
                 .filter(storage -> !storage.isSensitive())
-                .map(storage -> new DataStorageWithShareMount(storage, findFileShareMount(storage).orElse(null)))
-                .filter(storage -> Objects.isNull(fromRegion) || isStorageMountAllowed(storage, fromRegion))
+                .map(storage -> new DataStorageWithShareMount(storage, findFileShareMount(storage, fsMounts)
+                        .orElse(null)))
+                .filter(storage -> Objects.isNull(fromRegion) || isStorageMountAllowed(storage, fromRegion, regions))
                 .collect(Collectors.toList());
     }
 
@@ -946,29 +953,34 @@ public class DataStorageManager implements SecuredEntityManager {
         metadataManager.deleteMetadataItemKey(new EntityVO(storage.getId(), AclClass.DATA_STORAGE), DAV_MOUNT_TAG);
     }
 
-    private Optional<FileShareMount> findFileShareMount(final AbstractDataStorage storage) {
-        return Optional.ofNullable(storage.getFileShareMountId()).map(fileShareMountManager::load);
+    private Optional<FileShareMount> findFileShareMount(final AbstractDataStorage storage,
+                                                        final Map<Long, FileShareMount> fsMounts) {
+        return Optional.ofNullable(storage.getFileShareMountId()).map(fsMounts::get);
     }
 
-    private boolean isStorageMountAllowed(final DataStorageWithShareMount storage, final AbstractCloudRegion region) {
+    private boolean isStorageMountAllowed(final DataStorageWithShareMount storage,
+                                          final AbstractCloudRegion region,
+                                          final Map<Long, ? extends AbstractCloudRegion> regions) {
         switch (storage.getStorage().getType().getServiceType()) {
             case OBJECT_STORAGE:
-                return isObjectStorageMountAllowed(storage, region);
+                return isObjectStorageMountAllowed(storage, region, regions);
             case FILE_SHARE:
             default:
-                return isFileStorageMountAllowed(storage, region);
+                return isFileStorageMountAllowed(storage, region, regions);
         }
     }
 
     private boolean isObjectStorageMountAllowed(final DataStorageWithShareMount storage,
-                                                final AbstractCloudRegion region) {
-        final AbstractCloudRegion storageRegion = cloudRegionManager.load(getCloudRegionId(storage.getStorage()));
+                                                final AbstractCloudRegion region,
+                                                final Map<Long, ? extends AbstractCloudRegion> regions) {
+        final AbstractCloudRegion storageRegion = regions.get(getCloudRegionId(storage.getStorage()));
         return isRegionStorageMountAllowed(region, storageRegion, storageRegion.getMountObjectStorageRule());
     }
 
     private boolean isFileStorageMountAllowed(final DataStorageWithShareMount storage,
-                                              final AbstractCloudRegion region) {
-        final AbstractCloudRegion storageRegion = cloudRegionManager.load(storage.getShareMount().getRegionId());
+                                              final AbstractCloudRegion region,
+                                              final Map<Long, ? extends AbstractCloudRegion> regions) {
+        final AbstractCloudRegion storageRegion = regions.get(storage.getShareMount().getRegionId());
         return isRegionStorageMountAllowed(region, storageRegion, storageRegion.getMountFileStorageRule());
     }
 
