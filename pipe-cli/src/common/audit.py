@@ -253,16 +253,37 @@ class CloudPipelineAuditConsumer(AuditConsumer):
     def consume(self, entries):
         now = datetime.datetime.now(tz=pytz.utc)
         now_str = now.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        self._consumer_func([{
-            'eventId': int(time.time() * 10 ** 9),
-            'messageTimestamp': now_str,
-            'hostname': self._log_hostname,
-            'serviceName': self._log_service,
-            'type': self._log_type,
-            'user': self._log_user,
-            'message': self._convert_type(entry.type) + ' ' + entry.path,
-            'severity': self._log_severity
-        } for entry in entries])
+        events_ids_gen = self._gen_event_ids()
+        try:
+            self._consumer_func([{
+                'eventId': next(events_ids_gen),
+                'messageTimestamp': now_str,
+                'hostname': self._log_hostname,
+                'serviceName': self._log_service,
+                'type': self._log_type,
+                'user': self._log_user,
+                'message': self._convert_type(entry.type) + ' ' + entry.path,
+                'severity': self._log_severity
+            } for entry in entries])
+        finally:
+            events_ids_gen.close()
+
+    def _gen_event_ids(self):
+        """
+        Generates unique ids from epoch nanoseconds.
+        """
+        prev_event_ids = set()
+        while True:
+            next_event_id = self._time_ns()
+            while True:
+                if next_event_id not in prev_event_ids:
+                    break
+                next_event_id += 1000
+            prev_event_ids.add(next_event_id)
+            yield next_event_id
+
+    def _time_ns(self):
+        return int(time.time() * 10 ** 9)
 
     def _convert_type(self, type):
         return self._type_mapping.get(type, 'ACCESS')
