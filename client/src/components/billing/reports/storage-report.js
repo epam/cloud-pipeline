@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {Icon, Button} from 'antd';
 import {
   BarChart,
   BillingTable,
@@ -28,6 +29,7 @@ import {
   numberFormatter,
   ResizableContainer
 } from './utilities';
+import {fadeout} from '../../../themes/utilities/color-utilities';
 import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
 import {
   getBillingGroupingSortField,
@@ -197,7 +199,7 @@ class StorageReports extends React.Component {
     } = filters;
     if (typeof storageAggregateNavigation === 'function') {
       storageAggregateNavigation(
-        storageAggregate === key
+        !key || storageAggregate === key
           ? StorageAggregate.default
           : key
       );
@@ -363,6 +365,28 @@ class StorageReports extends React.Component {
     return (dataItem) => getItemDetailsByMetrics(dataItem, metrics);
   }
 
+  renderSelectedLayerButton = () => {
+    const {filters} = this.props;
+    const {storageAggregate} = filters;
+    const layer = this.tiersData.labels[this.tiersData.aggregates.indexOf(storageAggregate)];
+    if (layer) {
+      return (
+        <Button
+          size="small"
+          onClick={() => this.onSelectLayer({})}
+          style={{
+            position: 'absolute',
+            top: 5,
+            right: 5
+          }}
+        >
+          <Icon type="close" /> {layer}
+        </Button>
+      );
+    }
+    return null;
+  };
+
   render () {
     const {
       storages,
@@ -461,10 +485,12 @@ class StorageReports extends React.Component {
                                   flexDirection: 'row',
                                   justifyContent: 'center',
                                   alignItems: 'center',
-                                  height: costsUsageSelectorHeight
+                                  height: costsUsageSelectorHeight,
+                                  position: 'relative'
                                 }}
                               >
                                 <StorageFilter />
+                                {this.renderSelectedLayerButton()}
                               </div>
                               <StorageLayers
                                 highlightedLabel={selectedIndex}
@@ -480,6 +506,9 @@ class StorageReports extends React.Component {
                                 highlightTickStyle={{
                                   fontColor: reportThemes.textColor,
                                   fontSize: 14
+                                }}
+                                highlightAxisStyle={{
+                                  backgroundColor: fadeout(reportThemes.lightBlue, 0.90)
                                 }}
                                 discounts={isVolumeMetrics ? undefined : storageDiscounts}
                               />

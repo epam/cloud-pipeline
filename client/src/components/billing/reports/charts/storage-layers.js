@@ -20,7 +20,8 @@ import Chart from './base';
 import {
   BarchartDataLabelPlugin,
   ChartClickPlugin,
-  HighlightTicksPlugin
+  HighlightTicksPlugin,
+  HighlightAxisPlugin
 } from './extensions';
 import Export from '../export';
 import {costTickFormatter} from '../utilities';
@@ -51,6 +52,7 @@ function StorageLayers (
     reportThemes,
     highlightTickFn,
     highlightTickStyle = {},
+    highlightAxisStyle = {},
     loading,
     discounts = ((o) => o)
   }
@@ -188,6 +190,10 @@ function StorageLayers (
         highlightTickFn,
         axis: 'x-axis'
       },
+      [HighlightAxisPlugin.id]: {
+        highlightAxis: highlightedLabel,
+        backgroundColor: highlightAxisStyle.backgroundColor
+      },
       [BarchartDataLabelPlugin.id]: {
         valueFormatter
       },
@@ -241,7 +247,8 @@ function StorageLayers (
           plugins={[
             BarchartDataLabelPlugin.plugin,
             ChartClickPlugin.plugin,
-            HighlightTicksPlugin.plugin
+            HighlightTicksPlugin.plugin,
+            HighlightAxisPlugin.plugin
           ]}
           useChartImageGenerator={useImageConsumer}
           onImageDataReceived={onImageDataReceived}
