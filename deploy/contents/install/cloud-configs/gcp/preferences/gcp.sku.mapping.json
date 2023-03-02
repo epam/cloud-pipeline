@@ -1,41 +1,217 @@
 {
-  "cpu_ondemand_standard": {
+  "cpu_ondemand_n1_standard": {
     "prefix": "N1 Predefined Instance Core",
     "group": "N1Standard"
   },
-  "ram_ondemand_standard": {
+  "ram_ondemand_n1_standard": {
     "prefix": "N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
-  "cpu_ondemand_highcpu": {
+  "cpu_ondemand_n1_highcpu": {
     "prefix": "N1 Predefined Instance Core",
     "group": "N1Standard"
   },
-  "ram_ondemand_highcpu": {
+  "ram_ondemand_n1_highcpu": {
     "prefix": "N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
-  "cpu_ondemand_highmem": {
+  "cpu_ondemand_n1_highmem": {
     "prefix": "N1 Predefined Instance Core",
     "group": "N1Standard"
   },
-  "ram_ondemand_highmem": {
+  "ram_ondemand_n1_highmem": {
     "prefix": "N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
-  "cpu_ondemand_megamem": {
+  "cpu_ondemand_n2d_standard": {
+    "prefix": "N2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_n2d_standard": {
+    "prefix": "N2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_n2d_highcpu": {
+    "prefix": "N2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_n2d_highcpu": {
+    "prefix": "N2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_n2d_highmem": {
+    "prefix": "N2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_n2d_highmem": {
+    "prefix": "N2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_t2d_standard": {
+    "prefix": "T2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_t2d_standard": {
+    "prefix": "T2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_c2_standard": {
+    "prefix": "Compute optimized Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_c2_standard": {
+    "prefix": "Compute optimized Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_c2d_standard": {
+    "prefix": "C2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_c2d_standard": {
+    "prefix": "C2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_c2d_highcpu": {
+    "prefix": "C2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_c2d_highcpu": {
+    "prefix": "C2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_c2d_highmem": {
+    "prefix": "C2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_c2d_highmem": {
+    "prefix": "C2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_e2_standard": {
+    "prefix": "E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_e2_standard": {
+    "prefix": "E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_e2_highcpu": {
+    "prefix": "E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_e2_highcpu": {
+    "prefix": "E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_e2_highmem": {
+    "prefix": "E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_e2_highmem": {
+    "prefix": "E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_e2_micro": {
+    "prefix": "E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_e2_micro": {
+    "prefix": "E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_e2_small": {
+    "prefix": "E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_e2_small": {
+    "prefix": "E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_e2_medium": {
+    "prefix": "E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_e2_medium": {
+    "prefix": "E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_n2_standard": {
+    "prefix": "N2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_n2_standard": {
+    "prefix": "N2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_n2_highcpu": {
+    "prefix": "N2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_n2_highcpu": {
+    "prefix": "N2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_n2_highmem": {
+    "prefix": "N2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_n2_highmem": {
+    "prefix": "N2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_n1_megamem": {
     "prefix": "Memory-optimized Instance Core",
     "group": "CPU"
   },
-  "ram_ondemand_megamem": {
+  "ram_ondemand_n1_megamem": {
     "prefix": "Memory-optimized Instance Ram",
     "group": "RAM"
   },
-  "cpu_ondemand_ultramem": {
+  "cpu_ondemand_n1_ultramem": {
     "prefix": "Memory-optimized Instance Core",
     "group": "CPU"
   },
-  "ram_ondemand_ultramem": {
+  "ram_ondemand_n1_ultramem": {
+    "prefix": "Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_m1_megamem": {
+    "prefix": "Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_m1_megamem": {
+    "prefix": "Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_m1_ultramem": {
+    "prefix": "Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_m1_ultramem": {
+    "prefix": "Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_m2_megamem": {
+    "prefix": "Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_m2_megamem": {
+    "prefix": "Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_m2_ultramem": {
+    "prefix": "Memory Optimized Upgrade Premium",
+    "group": "CPU"
+  },
+  "ram_ondemand_m2_ultramem": {
+    "prefix": "Memory Optimized Upgrade Premium",
+    "group": "RAM"
+  },
+  "cpu_ondemand_m2_hypermem": {
+    "prefix": "Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_m2_hypermem": {
     "prefix": "Memory-optimized Instance Ram",
     "group": "RAM"
   },
@@ -47,11 +223,11 @@
     "prefix": "A2 Instance Ram",
     "group": "RAM"
   },
-  "cpu_ondemand_micro": {
+  "cpu_ondemand_f1_micro": {
     "prefix": "Micro Instance",
     "group": "F1Micro"
   },
-  "cpu_ondemand_small": {
+  "cpu_ondemand_g1_small": {
     "prefix": "Small Instance",
     "group": "G1Small"
   },
@@ -91,43 +267,219 @@
     "prefix": "Nvidia Tesla A100 GPU running",
     "group": "GPU"
   },
-  "cpu_preemptible_standard": {
+  "cpu_preemptible_n1_standard": {
     "prefix": "Spot Preemptible N1 Predefined Instance Core",
     "group": "N1Standard"
   },
-  "ram_preemptible_standard": {
+  "ram_preemptible_n1_standard": {
     "prefix": "Spot Preemptible N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
-  "cpu_preemptible_highcpu": {
+  "cpu_preemptible_n1_highcpu": {
     "prefix": "Spot Preemptible N1 Predefined Instance Core",
     "group": "N1Standard"
   },
-  "ram_preemptible_highcpu": {
+  "ram_preemptible_n1_highcpu": {
     "prefix": "Spot Preemptible N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
-  "cpu_preemptible_highmem": {
+  "cpu_preemptible_n1_highmem": {
     "prefix": "Spot Preemptible N1 Predefined Instance Core",
     "group": "N1Standard"
   },
-  "ram_preemptible_highmem": {
+  "ram_preemptible_n1_highmem": {
     "prefix": "Spot Preemptible N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
-  "cpu_preemptible_megamem": {
+  "cpu_preemptible_c2_standard": {
+    "prefix": "Spot Preemptible Compute optimized Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_c2_standard": {
+    "prefix": "Spot Preemptible Compute optimized Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_c2d_standard": {
+    "prefix": "Spot Preemptible C2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_c2d_standard": {
+    "prefix": "Spot Preemptible C2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_c2d_highcpu": {
+    "prefix": "Spot Preemptible C2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_c2d_highcpu": {
+    "prefix": "Spot Preemptible C2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_c2d_highmem": {
+    "prefix": "Spot Preemptible C2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_c2d_highmem": {
+    "prefix": "Spot Preemptible C2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_e2_standard": {
+    "prefix": "Spot Preemptible E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_e2_standard": {
+    "prefix": "Spot Preemptible E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_e2_highcpu": {
+    "prefix": "Spot Preemptible E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_e2_highcpu": {
+    "prefix": "Spot Preemptible E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_e2_highmem": {
+    "prefix": "Spot Preemptible E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_e2_highmem": {
+    "prefix": "Spot Preemptible E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_e2_medium": {
+    "prefix": "Spot Preemptible E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_e2_medium": {
+    "prefix": "Spot Preemptible E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_e2_micro": {
+    "prefix": "Spot Preemptible E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_e2_micro": {
+    "prefix": "Spot Preemptible E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_e2_small": {
+    "prefix": "Spot Preemptible E2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_e2_small": {
+    "prefix": "Spot Preemptible E2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_n2_standard": {
+    "prefix": "Spot Preemptible N2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_n2_standard": {
+    "prefix": "Spot Preemptible N2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_n2_highcpu": {
+    "prefix": "Spot Preemptible N2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_n2_highcpu": {
+    "prefix": "Spot Preemptible N2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_n2_highmem": {
+    "prefix": "Spot Preemptible N2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_n2_highmem": {
+    "prefix": "Spot Preemptible N2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_n2d_standard": {
+    "prefix": "Spot Preemptible N2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_n2d_standard": {
+    "prefix": "Spot Preemptible N2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_n2d_highcpu": {
+    "prefix": "Spot Preemptible N2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_n2d_highcpu": {
+    "prefix": "Spot Preemptible N2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_n2d_highmem": {
+    "prefix": "Spot Preemptible N2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_n2d_highmem": {
+    "prefix": "Spot Preemptible N2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_t2d_standard": {
+    "prefix": "Spot Preemptible T2D AMD Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_t2d_standard": {
+    "prefix": "Spot Preemptible T2D AMD Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_n1_megamem": {
     "prefix": "Spot Preemptible Memory-optimized Instance Core",
     "group": "CPU"
   },
-  "ram_preemptible_megamem": {
+  "ram_preemptible_n1_megamem": {
     "prefix": "Spot Preemptible Memory-optimized Instance Ram",
     "group": "RAM"
   },
-  "cpu_preemptible_ultramem": {
+  "cpu_preemptible_n1_ultramem": {
     "prefix": "Spot Preemptible Memory-optimized Instance Core",
     "group": "CPU"
   },
-  "ram_preemptible_ultramem": {
+  "ram_preemptible_n1_ultramem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_m1_megamem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_m1_megamem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_m1_ultramem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_m1_ultramem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_m2_megamem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_m2_megamem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_m2_ultramem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_m2_ultramem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_m2_hypermem": {
+    "prefix": "Spot Preemptible Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_m2_hypermem": {
     "prefix": "Spot Preemptible Memory-optimized Instance Ram",
     "group": "RAM"
   },
@@ -139,11 +491,11 @@
     "prefix": "Spot Preemptible A2 Instance Ram",
     "group": "RAM"
   },
-  "cpu_preemptible_micro": {
+  "cpu_preemptible_f1_micro": {
     "prefix": "Spot Preemptible Micro Instance",
     "group": "F1Micro"
   },
-  "cpu_preemptible_small": {
+  "cpu_preemptible_g1_small": {
     "prefix": "Spot Preemptible Small Instance",
     "group": "G1Small"
   },
