@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import datetime
+import shutil
 from collections import OrderedDict
 import codecs
 import glob
@@ -32,7 +33,8 @@ def get_processing_roots(should_force_processing, measurement_index_file):
         result = HcsProcessingDirsGenerator(
             lookup_paths, measurement_index_file, should_force_processing,
             skip=get_list_run_param('HCS_SKIP_FILES'),
-            objmeta_file=os.getenv('HCS_OBJECT_META_FILE', None)).generate_paths()
+            objmeta_file=os.getenv('HCS_OBJECT_META_FILE', None),
+            hs_file=os.getenv('HCS_HARMONY_HS_FILE', '_hs.txt')).generate_paths()
     else:
         result = []
         image_names = get_list_run_param('HCS_TARGET_IMG_NAMES')
@@ -47,12 +49,14 @@ def get_processing_roots(should_force_processing, measurement_index_file):
 
 class HcsProcessingDirsGenerator:
 
-    def __init__(self, lookup_paths, measurement_index_file_path, force_processing=False, skip=[], objmeta_file=None):
+    def __init__(self, lookup_paths, measurement_index_file_path, force_processing=False, skip=[],
+                 objmeta_file=None, hs_file=None):
         self.lookup_paths = lookup_paths
         self.measurement_index_file_path = measurement_index_file_path
         self.force_processing = force_processing
         self.skip = skip
         self.objmeta_file = objmeta_file
+        self.hs_file = hs_file
 
     @staticmethod
     def is_folder_content_modified_after(dir_path, modification_date):
@@ -101,9 +105,10 @@ class HcsProcessingDirsGenerator:
         stat_file_modification_date = HcsParsingUtils.get_file_last_modification_time(stat_file)
         return self.is_folder_content_modified_after(hcs_folder_root_path, stat_file_modification_date)
 
-    def get_obj_metadata(self, path):
-        if not self.objmeta_file:
+    def get_obj_metadata(self, root, file_name):
+        if not file_name:
             return None
+        path = os.path.join(root, file_name)
         if not os.path.exists(path):
             log_run_info('Specified object metadata file {} does not exist.'.format(path))
             return None
@@ -168,6 +173,11 @@ class HcsProcessingDirsGenerator:
         result = version + json.dumps(filtered, indent=2, separators=(',', ': '), ensure_ascii=False) + '\n' + timestamp + checksum
         with codecs.open(objmeta_file_path, 'w', encoding="utf-8") as file:
             file.write(result)
+        for delete in ids:
+            folder = os.path.join(root, delete)
+            log_run_info('Deleting folder {}'.format(folder))
+            if os.path.exists(folder):
+                shutil.rmtree(folder)
 
     def build_roots_with_preview(self, hcs_roots):
         result = {}
@@ -182,7 +192,7 @@ class HcsProcessingDirsGenerator:
                 names[hcs_img_name] = [root]
             else:
                 names[hcs_img_name].append(root)
-        metadata = self.get_obj_metadata(os.path.join(lookup_path, self.objmeta_file))
+        metadata = self.get_obj_metadata(lookup_path, self.objmeta_file)
         for name, roots in names.items():
             with_id = len(roots) > 1
             if with_id:
@@ -196,6 +206,35 @@ class HcsProcessingDirsGenerator:
                     ids_to_clean.append(invalid_id)
                 else:
                     result[root] = HcsParsingUtils.build_preview_file_path(root, with_id=with_id)
-        if ids_to_clean:
+        if ids_to_clean and not self.is_harmony_sync_in_progress(lookup_path):
             self.reset_upload(lookup_path, ids_to_clean)
         return result
+
+    def is_harmony_sync_in_progress(self, root):
+        if not self.hs_file or not self.objmeta_file:
+            return False
+        hs_timestamp = self.get_file_timestamp(os.path.join(root, self.hs_file))
+        objmeta_timestamp = self.get_file_timestamp(os.path.join(root, self.objmeta_file))
+        if not hs_timestamp or not objmeta_timestamp:
+            return False
+        return hs_timestamp > objmeta_timestamp
+
+    def get_file_timestamp(self, path):
+        result = None
+        try:
+            with open(path, 'r') as source:
+                for line in source.readlines():
+                    if line.startswith('Timestamp'):
+                        value = line.split('\t')[1]
+                        # Crop one millisecond digit from the end of the date
+                        if len(value) > 32:
+                            date_str = value[:len(value) - 7]
+                            value = date_str + value[-6:]
+                        parsed = datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
+                        log_run_info("Timestamp for {} is {}".format(path, str(parsed)))
+                        return parsed
+        except BaseException as e:
+            log_run_info('Failed to read timestamp from {}: {}'.format(path, str(e)))
+        return result
+
+
