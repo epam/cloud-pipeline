@@ -83,6 +83,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
+import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -188,6 +189,8 @@ public class DataStorageManager implements SecuredEntityManager {
     @Autowired
     private ToolManager toolManager;
 
+    @Autowired
+    private StoragePermissionManager storagePermissionManager;
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
 
@@ -210,11 +213,10 @@ public class DataStorageManager implements SecuredEntityManager {
         if (CollectionUtils.isEmpty(storages)) {
             return Collections.emptyList();
         }
-        final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
-                .map(cloudRegionManager::load).orElse(null);
         final Map<Long, ? extends AbstractCloudRegion> regions = ListUtils.emptyIfNull(cloudRegionManager.loadAll())
                 .stream()
                 .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId).map(regions::get).orElse(null);
         final Map<Long, FileShareMount> fsMounts = ListUtils.emptyIfNull(fileShareMountManager.loadAll())
                 .stream().collect(Collectors.toMap(FileShareMount::getId, Function.identity()));
         return storages
