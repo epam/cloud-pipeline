@@ -230,6 +230,16 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId) {
+        final List<AbstractDataStorage> storages = getDataStoragesWithToolsToMount();
+        storagePermissionManager.filterStorage(storages, Arrays.asList("READ", "WRITE"), false);
+        return getDataStoragesWithShareMountObject(fromRegionId, storages);
+    }
+
+    public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(
+            final Long fromRegionId, final List<AbstractDataStorage> storages) {
+        if (CollectionUtils.isEmpty(storages)) {
+            return Collections.emptyList();
+        }
         final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
                 .map(cloudRegionManager::load).orElse(null);
         final Map<Long, ? extends AbstractCloudRegion> regions = ListUtils.emptyIfNull(cloudRegionManager.loadAll())
@@ -237,7 +247,8 @@ public class DataStorageManager implements SecuredEntityManager {
                 .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
         final Map<Long, FileShareMount> fsMounts = ListUtils.emptyIfNull(fileShareMountManager.loadAll())
                 .stream().collect(Collectors.toMap(FileShareMount::getId, Function.identity()));
-        return getDataStoragesWithToolsToMount().stream()
+        return storages
+                .stream()
                 .filter(storage -> !storage.isSensitive())
                 .map(storage -> new DataStorageWithShareMount(storage, findFileShareMount(storage, fsMounts)
                         .orElse(null)))

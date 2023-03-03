@@ -52,7 +52,6 @@ import com.epam.pipeline.manager.datastorage.StorageEventsService;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
-import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
 import com.epam.pipeline.manager.security.acl.storage.StorageAclRead;
 import com.epam.pipeline.manager.security.acl.storage.StorageAclReadAndWrite;
 import com.epam.pipeline.manager.security.acl.storage.StorageAclReadOrWrite;
@@ -95,10 +94,7 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorages();
     }
 
-    @PostFilter("hasRole('ADMIN')"
-                + " OR @storagePermissionManager.storageWithSharePermission(filterObject, 'READ')"
-                + " OR @storagePermissionManager.storageWithSharePermission(filterObject, 'WRITE')")
-    @AclMaskDelegateList
+    //Workaround for performance: all permission logic is handled inside method
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }

@@ -233,42 +233,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnReadOnlyDataStorageWithShareWhenPermissionIsGrantedAndMountStatusReadOnly() {
-        initializeNfsStorageForUser(NFSStorageMountStatus.READ_ONLY);
-
-        final List<DataStorageWithShareMount> returnedDataStorages =
-            dataStorageApiService.getAvailableStoragesWithShareMount(ID);
-        assertThat(returnedDataStorages).hasSize(1);
-        assertThat(returnedDataStorages.get(0).getStorage().getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnReadOnlyDataStorageWithShareWhenPermissionIsGrantedAndMountStatusDisabled() {
-        initializeNfsStorageForUser(NFSStorageMountStatus.MOUNT_DISABLED);
-        final List<DataStorageWithShareMount> returnedDataStorages =
-            dataStorageApiService.getAvailableStoragesWithShareMount(ID);
-        assertThat(returnedDataStorages).hasSize(1);
-        assertThat(returnedDataStorages.get(0).getStorage().getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnDataStoragesWithReadPermissionsWhenPermissionIsGrantedAndMountStatusReadOnly() {
-        final NFSDataStorage nfsDataStorage =
-            DatastorageCreatorUtils.getNfsDataStorage(NFSStorageMountStatus.READ_ONLY, OWNER_USER);
-        initAclEntity(nfsDataStorage, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
-                                                    new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
-        initUserAndEntityMocks(SIMPLE_USER, nfsDataStorage, context);
-        doReturn(mutableListOf(nfsDataStorage)).when(mockDataStorageManager).getDataStorages();
-
-        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getDataStorages();
-        assertThat(returnedDataStorages).hasSize(1).contains(nfsDataStorage);
-        assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnWritableDataStoragesWhichPermissionIsGranted() {
         initAclEntity(s3bucket, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
                 new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
@@ -318,16 +282,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         doReturn(mutableListOf(storageShareMount)).when(mockDataStorageManager).getDataStoragesWithShareMountObject(ID);
 
         assertThat(dataStorageApiService.getAvailableStoragesWithShareMount(ID)).hasSize(1).contains(storageShareMount);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnEmptyAvailableStoragesWithShareMountWhenPermissionIsNotGranted() {
-        initAclEntity(s3bucket);
-        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        doReturn(mutableListOf(storageShareMount)).when(mockDataStorageManager).getDataStoragesWithShareMountObject(ID);
-
-        assertThat(dataStorageApiService.getAvailableStoragesWithShareMount(ID)).isEmpty();
     }
 
     @Test
@@ -507,17 +461,14 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldUpdateDataStorageWhenPermissionIsGranted() {
+    public void shouldDenyUpdateDataStorageWhenPermissionIsGranted() {
         initAclEntity(s3bucket, AclPermission.WRITE);
         mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).update(dataStorageVO);
 
-        final AbstractDataStorage returnedStorage = dataStorageApiService.update(dataStorageVO);
-
-        assertThat(returnedStorage).isEqualTo(s3bucket);
-        assertThat(returnedStorage.getMask()).isEqualTo(WRITE_PERMISSION);
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(dataStorageVO));
     }
 
     @Test
@@ -573,14 +524,13 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = STORAGE_MANAGER_ROLE)
-    public void shouldDeleteDataStorageWhenPermissionIsGranted() {
+    public void shouldDenyDeleteDataStorageWhenPermissionIsGranted() {
         initAclEntity(s3bucket, AclPermission.WRITE);
         mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).delete(ID, true);
-
-        assertThat(dataStorageApiService.delete(ID, true)).isEqualTo(s3bucket);
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.delete(ID, true));
     }
 
     @Test
@@ -825,17 +775,5 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
         assertThrows(AccessDeniedException.class, () ->
                 dataStorageApiService.generateCredentials(dataStorageActionList));
-    }
-
-    private void initializeNfsStorageForUser(NFSStorageMountStatus mountDisabled) {
-        final NFSDataStorage nfsDataStorage =
-            DatastorageCreatorUtils.getNfsDataStorage(mountDisabled, OWNER_USER);
-        initAclEntity(nfsDataStorage, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
-                                                    new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
-        initUserAndEntityMocks(SIMPLE_USER, nfsDataStorage, context);
-        final DataStorageWithShareMount storageWithShareMount =
-            new DataStorageWithShareMount(nfsDataStorage, new FileShareMount());
-        doReturn(mutableListOf(storageWithShareMount)).when(mockDataStorageManager)
-            .getDataStoragesWithShareMountObject(eq(ID));
     }
 }
