@@ -62,22 +62,6 @@
                 ]]>
             </value>
         </property>
-        <property name="loadVisiblePreferencesQuery">
-            <value>
-                <![CDATA[
-                    SELECT
-                        p.preference_name,
-                        p.created_date,
-                        p.value,
-                        p.preference_group,
-                        p.description,
-                        p.visible,
-                        p.preference_type
-                    FROM pipeline.preference p
-                    WHERE p.visible
-                ]]>
-            </value>
-        </property>
         <property name="deletePreferenceQuery">
             <value>
                 <![CDATA[
