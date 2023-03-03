@@ -95,6 +95,7 @@ public class PipelineConfigurationManagerTest {
         assertThat(config.getParameters()).isEqualTo(TEST_PARAMS);
         assertThat(config.getDockerImage()).isEqualTo(TEST_REPO + "/" + TEST_IMAGE);
         assertThat(config.getTimeout()).isEqualTo(TEST_LONG);
+        assertThat(config.getNotifications()).isNotNull();
 
         verify(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
     }

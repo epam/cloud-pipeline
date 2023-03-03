@@ -241,7 +241,8 @@ public class PipelineRunManager {
 
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(),
+                configuration.getNotifications());
         run.setParent(tool);
         run.setAclClass(AclClass.TOOL);
 
@@ -317,7 +318,8 @@ public class PipelineRunManager {
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(),
+                configuration.getNotifications());
         run.setParent(pipeline);
 
         if (isClusterRun) {
@@ -1176,8 +1178,8 @@ public class PipelineRunManager {
         for (int i = 0; i < nodeCount; i++) {
             launchPipeline(configuration, pipeline, version,
                     runVO.getInstanceType(), runVO.getParentNodeId(),
-                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids(),
-                    runVO.getNotifications());
+                    runVO.getConfigurationName(), parentId, run.getId(), null, null,
+                    runVO.getRunSids(), configuration.getNotifications());
         }
     }
 
@@ -1191,7 +1193,6 @@ public class PipelineRunManager {
             return configuration.getCmdTemplate();
         }
     }
-
 
     private void validateRunParameters(PipelineConfiguration configuration, Pipeline pipeline) {
         for (Map.Entry<String, PipeConfValueVO> param : configuration.getParameters().entrySet()) {

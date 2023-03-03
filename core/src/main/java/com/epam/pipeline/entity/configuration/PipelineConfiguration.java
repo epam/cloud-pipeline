@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.configuration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -62,6 +63,7 @@ public class PipelineConfiguration {
     private static final String RUN_AS = "run_as";
     private static final String SHARED_WITH_USERS = "share_with_users";
     private static final String SHARED_WITH_ROLES = "share_with_roles";
+    private static final String NOTIFICATIONS = "notifications";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -141,6 +143,9 @@ public class PipelineConfiguration {
 
     @JsonProperty(value = SHARED_WITH_ROLES)
     private List<RunSid> sharedWithRoles;
+
+    @JsonProperty(value = NOTIFICATIONS)
+    private List<PipelineStartNotificationRequest> notifications;
 
     private Map<String, String> tags;
 

@@ -158,6 +158,11 @@ public class PipelineConfigurationManager {
         } else {
             configuration.setInstanceImage(defaultConfig.getInstanceImage());
         }
+        if (runVO.getNotifications() != null) {
+            configuration.setNotifications(runVO.getNotifications());
+        } else {
+            configuration.setNotifications(defaultConfig.getNotifications());
+        }
 
         if (MapUtils.isNotEmpty(runVO.getKubeLabels())) {
             configuration.setKubeLabels(runVO.getKubeLabels());
