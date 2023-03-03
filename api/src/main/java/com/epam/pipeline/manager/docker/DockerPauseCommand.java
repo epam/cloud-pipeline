@@ -38,6 +38,7 @@ public class DockerPauseCommand extends AbstractDockerCommand {
     private final String defaultTaskName;
     private final String preCommitCommand;
     private final String postCommitCommand;
+    private final String squashLayersCount;
 
     private final String runPauseScriptUrl;
 
@@ -61,6 +62,7 @@ public class DockerPauseCommand extends AbstractDockerCommand {
         command.add(preCommitCommand);
         command.add(postCommitCommand);
         command.add(globalDistributionUrl);
+        command.add(squashLayersCount);
         return command;
     }
 }
