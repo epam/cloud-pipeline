@@ -83,6 +83,7 @@ if ! is_null "$docker_wd" ; then
     echo "[INFO] Got WORKDIR: $WORKDIR"
 fi
 if ! is_null "$docker_entrypoint"; then
+    docker_entrypoint=$(echo "$docker_entrypoint" | tr -d '\n')
     ENTRYPOINT="ENTRYPOINT $docker_entrypoint"
     echo "[INFO] Got ENTRYPOINT: $ENTRYPOINT"
 fi
@@ -119,7 +120,11 @@ fi
 echo "[INFO] Re-tagging a squashed image ($squashed_image) to the initial image ($image_to_squash)"
 docker tag "$squashed_image" "$image_to_squash"
 
+echo "[INFO] Deleting a temporary squashed image $squashed_image"
+docker rmi $squashed_image
+
 echo "[INFO] Deleting a build directory at $squash_dir"
+cd - &> /dev/null
 rm -rf "$squash_dir"
 
 echo "[INFO] $image_to_squash was squashed"
