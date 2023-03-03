@@ -18,21 +18,33 @@ import React from 'react';
 import {inject} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Checkbox} from 'antd';
+import moment from 'moment-timezone';
+import {
+  USER_NOTIFICATIONS_CONFIGURATION_ATTRIBUTE,
+  parseMuteEmailNotificationValue,
+  buildMuteEmailNotificationValue
+} from '../../../../../models/notifications/CurrentUserNotifications';
 
 function MuteEmailNotifications ({
   metadata,
   onChange,
   disabled,
+  readOnly,
   style,
   userNotifications
 }) {
   const {value} = metadata || {};
-  const muted = `${value}` === 'true';
+  const {
+    muted
+  } = parseMuteEmailNotificationValue(value);
   const handleChange = event => {
-    if (muted && !event.target.checked) {
-      userNotifications && userNotifications.hideNotifications();
-    }
-    onChange && onChange(event.target.checked);
+    const displayAfter = moment.utc();
+    const payload = buildMuteEmailNotificationValue({
+      muted: event.target.checked,
+      displayAfter
+    });
+    userNotifications.setUserConfiguration(event.target.checked, displayAfter);
+    onChange && onChange(payload);
   };
   return (
     <div
@@ -46,7 +58,7 @@ function MuteEmailNotifications ({
       <Checkbox
         onChange={handleChange}
         checked={muted}
-        disabled={disabled}
+        disabled={disabled || readOnly}
       >
         Mute email notifications
       </Checkbox>
@@ -55,12 +67,13 @@ function MuteEmailNotifications ({
 }
 
 MuteEmailNotifications.isOptional = true;
-MuteEmailNotifications.metadataKey = 'ui.ssh.mute.notifications';
+MuteEmailNotifications.metadataKey = USER_NOTIFICATIONS_CONFIGURATION_ATTRIBUTE;
 
 MuteEmailNotifications.propTypes = {
   metadata: PropTypes.object,
   onChange: PropTypes.func,
   disabled: PropTypes.bool,
+  readOnly: PropTypes.bool,
   style: PropTypes.object
 };
 

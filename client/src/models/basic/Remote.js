@@ -105,6 +105,10 @@ class Remote {
     return this.constructor.isJson ? (response.json()) : (response.blob());
   }
 
+  async preFetch () {
+    // empty
+  }
+
   async fetch () {
     this._loadRequired = false;
     if (!this._fetchPromise) {
@@ -112,6 +116,7 @@ class Remote {
         this._pending = true;
         const {prefix, fetchOptions} = this.constructor;
         try {
+          await this.preFetch();
           await defer();
           let headers = fetchOptions.headers;
           if (!headers) {

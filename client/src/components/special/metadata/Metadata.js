@@ -696,14 +696,11 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   renderSpecialTag = (metadataItem) => {
     const {key, index} = metadataItem || {};
-    const {specialTagsProperties = {}, extraKeys = []} = this.props;
+    const {specialTagsProperties = {}} = this.props;
     const readOnly = this.props.readOnly ||
       this.isReadOnlyTag(metadataItem.key);
     if (key && SpecialTags.hasOwnProperty(key)) {
       const Component = SpecialTags[key];
-      if (Component.isOptional && !extraKeys.includes(key)) {
-        return null;
-      }
       const onRemove = async () => {
         const {error, refresh} = await this.applyRemoveChanges({item: {key}});
         if (error) {
@@ -1207,6 +1204,13 @@ export default class Metadata extends localization.LocalizedReactComponent {
         });
       }
     });
+    const getExtraKeyIndex = (key) => {
+      const index = extraKeys.indexOf(key);
+      if (index === -1) {
+        return Infinity;
+      }
+      return index;
+    };
     value
       .sort((a, b) => {
         if (a.key < b.key) {
@@ -1217,7 +1221,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
         return 0;
       })
       .sort((a, b) =>
-        Number(this.isSpecialItem(b.key)) - Number(this.isSpecialItem(a.key))
+        (Number(this.isSpecialItem(b.key)) - Number(this.isSpecialItem(a.key))) ||
+        (getExtraKeyIndex(a.key) - getExtraKeyIndex(b.key))
       );
     return value.map((value, index) => { return {...value, index}; });
   }
