@@ -301,7 +301,7 @@ export function getDetailsDatasetsByStorageClassAndMetrics (storageClass, metric
       backgroundColor: 'transparent',
       flagColor: undefined,
       showTooltip: false,
-      showDataLabel: showDetailsDataLabel
+      showDataLabel: false
     },
     {
       sample: [currentDataSample, currentOldVersionDataSample],

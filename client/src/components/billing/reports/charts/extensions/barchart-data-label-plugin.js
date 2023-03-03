@@ -54,6 +54,7 @@ const plugin = {
               allData,
               {
                 yAxis,
+                dataset,
                 getPxValue (aValue) {
                   return yAxis
                     ? yAxis.getPixelForValue(aValue)
@@ -145,10 +146,16 @@ const plugin = {
       for (let i = 0; i < labels.length; i++) {
         const config = labels[i];
         const {
+          dataset
+        } = config;
+        const {
           dataPoint,
           getLabelPosition,
           labelHeight
         } = config.label;
+        const {
+          details = false
+        } = dataset || {};
         const findSpace = () => {
           const destinationY = dataPoint.y - labelHeight / 2.0;
           return spaces
@@ -161,22 +168,28 @@ const plugin = {
               return {
                 space,
                 distance: Math.abs(y - destinationY),
+                above: y < destinationY,
                 position: getLabelPosition(y)
               };
             });
         };
-        const found = findSpace().sort((a, b) => a.distance - b.distance);
+        const found = findSpace()
+          .filter((info) => !details || !info.above)
+          .sort((a, b) => a.distance - b.distance);
         const [space] = found;
         if (space) {
           addLabel(space.position);
           config.label.position = space.position;
+          config.label.visible = true;
+        } else {
+          config.label.visible = false;
         }
       }
     }
   },
   drawLabel: function (ctx, label) {
     const {dataset = {}, label: config} = label;
-    if (config) {
+    if (config && config.visible) {
       const {
         borderColor = 'black',
         textBold = false,

@@ -282,8 +282,12 @@ class StorageReports extends React.Component {
           isOldVersions: [LAYERS_KEYS.oldVersionCost, LAYERS_KEYS.oldVersionAvgSize].includes(key),
           showDataLabel: (value, datasetValues, options) => {
             const {
+              dataset,
               getPxSize = (() => 0)
             } = options || {};
+            if (dataset.isOldVersions) {
+              return false;
+            }
             const detailsDatasets = datasetValues
               .filter((value) => value.dataset.details &&
                 (value.value > 0 && getPxSize(value.value) > 5.0)
