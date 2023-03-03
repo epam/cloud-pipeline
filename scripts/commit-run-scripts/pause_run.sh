@@ -80,7 +80,7 @@ commit_file_and_stop_docker() {
                             "exit 126"
 
     if [ "$SKIP_DOCKER_SQUASH" != "true" ]; then
-        pipe_exec "$SCRIPTS_DIR/squash_docker_image.sh ${NEW_IMAGE_NAME}" "$TASK_NAME"    
+        pipe_exec "$SCRIPTS_DIR/squash_docker_image.sh ${NEW_IMAGE_NAME}" "$TASK_NAME"
     fi
 
     pipe_exec "docker logs ${CONTAINER_ID}" "${DEFAULT_TASK_NAME}"
