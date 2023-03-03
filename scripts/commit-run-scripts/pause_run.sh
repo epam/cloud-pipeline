@@ -80,7 +80,7 @@ commit_file_and_stop_docker() {
                             "exit 126"
 
     if [ "$SKIP_DOCKER_SQUASH" != "true" ]; then
-        pipe_exec "$SCRIPTS_DIR/squash_docker_image.sh ${NEW_IMAGE_NAME}" "$TASK_NAME"
+        pipe_exec "$SCRIPTS_DIR/squash_docker_image.sh ${NEW_IMAGE_NAME} ${LAYERS_COUNT_TO_SQUASH}" "$TASK_NAME"
     fi
 
     pipe_exec "docker logs ${CONTAINER_ID}" "${DEFAULT_TASK_NAME}"
@@ -145,6 +145,8 @@ export DEFAULT_TASK_NAME=${9}
 export PRE_COMMIT_COMMAND=${10}
 export POST_COMMIT_COMMAND=${11}
 export GLOBAL_DISTRIBUTION_URL=${12}
+export LAYERS_COUNT_TO_SQUASH=${13}
+
 
 export TASK_NAME="PausePipelineRun"
 export CP_PYTHON2_PATH=python
@@ -171,6 +173,12 @@ download_file "${PAUSE_DISTRIBUTION_URL}squash_docker_image.sh"
 if [ "$?" -ne 0 ];
 then
     pipe_log_warn "[WARN] Docker squash script download failed. Will not attempt to squash" $TASK_NAME
+    export SKIP_DOCKER_SQUASH="true"
+fi
+if  [ -z "$LAYERS_COUNT_TO_SQUASH" ] || \
+    [ -z "${LAYERS_COUNT_TO_SQUASH##*[!0-9]*}" ] || \
+    (( "$LAYERS_COUNT_TO_SQUASH" <= "0" )); then
+    pipe_log_warn "[INFO] Docker squash is disabled (LAYERS_COUNT_TO_SQUASH==${LAYERS_COUNT_TO_SQUASH})." $TASK_NAME
     export SKIP_DOCKER_SQUASH="true"
 fi
 

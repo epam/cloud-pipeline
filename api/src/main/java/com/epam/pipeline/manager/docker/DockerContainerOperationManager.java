@@ -498,6 +498,7 @@ public class DockerContainerOperationManager {
                 .defaultTaskName(run.getTaskName())
                 .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
                 .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
+                .squashLayersCount(preferenceManager.getPreference(SystemPreferences.PAUSE_LAYERS_COUNT_TO_SQUASH))
                 .build()
                 .getCommand();
 

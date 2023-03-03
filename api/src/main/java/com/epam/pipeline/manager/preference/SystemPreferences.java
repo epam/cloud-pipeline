@@ -146,6 +146,8 @@ public class SystemPreferences {
             "/root/post_commit.sh", COMMIT_GROUP, isNotBlank);
     public static final IntPreference PAUSE_TIMEOUT = new IntPreference("pause.timeout", 24 * 60 * 60,
             COMMIT_GROUP, isGreaterThan(0));
+    public static final IntPreference PAUSE_LAYERS_COUNT_TO_SQUASH = new IntPreference("pause.layers.count.to.squash", 25,
+            COMMIT_GROUP, isGreaterThanOrEquals(-1));
     // List of ',' separated env vars to be cleaned up from docker image before commit
     public static final StringPreference ADDITIONAL_ENVS_TO_CLEAN = new StringPreference(
             "commit.additional.envs.to.clean", "CP_EXEC_TIMEOUT", COMMIT_GROUP, pass);

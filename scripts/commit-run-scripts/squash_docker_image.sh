@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LAYERS_COUNT_TO_SQUASH="25"
-
 function is_null() {
     if [ -z "$1" ] || [ "$1" == "null" ]; then
         return 0
@@ -24,6 +22,7 @@ function is_null() {
 }
 
 image_to_squash="$1"
+layers_count_to_squash="${2:-25}"
 
 if [ -z "$image_to_squash" ]; then
     echo "[ERROR] Image to squash is not specified, exiting"
@@ -44,8 +43,8 @@ if [ -z "$image_to_squash_layers" ]; then
 fi
 echo "[INFO] Image to squash id is $image_to_squash_id with $image_to_squash_layers layers"
 
-if (( "$image_to_squash_layers" < "$LAYERS_COUNT_TO_SQUASH" )); then
-    echo "[INFO] Will not squash an image this time, as it did not reach a layer count threshold yet. Will squash once it has $LAYERS_COUNT_TO_SQUASH layers"
+if (( "$image_to_squash_layers" < "$layers_count_to_squash" )); then
+    echo "[INFO] Will not squash an image this time, as it did not reach a layer count threshold yet. Will squash once it has $layers_count_to_squash layers"
     exit 0
 fi
 
