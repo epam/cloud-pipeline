@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">3h7m47.53s</div>
+<div class="counter">3h31m43.96s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,18 +73,65 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="validationOfApacheSparkCluster - EPMCMBIBPC-3152"></a>
-<h3 class="failures">validationOfApacheSparkCluster - EPMCMBIBPC-3152</h3>
+<a name="validationOfSlurmCluster - EPMCMBIBPC-3151"></a>
+<h3 class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</h3>
 <span class="code">
-<pre>Element not found {visible(By.className: ant-select-dropdown)}
-Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1677376144366.37.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1677376144366.37.html
+<pre>Element should contains messages {By.className: ReactVirtualized__List}
+Element: '&lt;div aria-label=&quot;grid&quot; aria-readonly=&quot;true&quot; class=&quot;ReactVirtualized__Grid ReactVirtualized__List log__logs-table&quot; role=&quot;grid&quot; tabindex=&quot;0&quot;&gt;042:[2023-03-05 05:27:04] Waiting for execution hosts to connect. 0 out of 1 are ready
+043:[2023-03-05 05:27:14] Waiting for execution hosts to connect. 0 out of 1 are ready
+044:[2023-03-05 05:27:25] Waiting for execution hosts to connect. 0 out of 1 are ready
+045:[2023-03-05 05:27:36] Waiting for execution hosts to connect. 0 out of 1 are ready
+046:[2023-03-05 05:27:46] Waiting for execution hosts to connect. 0 out of 1 are ready
+047:[2023-03-05 05:27:57] Waiting for execution hosts to connect. 0 out of 1 are ready
+048:[2023-03-05 05:28:07] Waiting for execution hosts to connect. 0 out of 1 are ready
+049:[2023-03-05 05:28:18] Waiting for execution hosts to connect. 0 out of 1 are ready
+050:[2023-03-05 05:28:29] Waiting for execution hosts to connect. 0 out of 1 are ready
+051:[2023-03-05 05:28:39] Waiting for execution hosts to connect. 0 out of 1 are ready
+052:[2023-03-05 05:28:50] Waiting for execution hosts to connect. 0 out of 1 are ready
+053:[2023-03-05 05:29:01] Waiting for execution hosts to connect. 0 out of 1 are ready
+054:[2023-03-05 05:29:11] Waiting for execution hosts to connect. 0 out of 1 are ready
+055:[2023-03-05 05:29:22] Waiting for execution hosts to connect. 0 out of 1 are ready
+056:[2023-03-05 05:29:32] Waiting for execution hosts to connect. 0 out of 1 are ready
+057:[2023-03-05 05:29:43] Waiting for execution hosts to connect. 0 out of 1 are ready
+058:[2023-03-05 05:29:54] Waiting for execution hosts to connect. 0 out of 1 are ready
+059:[2023-03-05 05:30:04] Waiting for execution hosts to connect. 0 out of 1 are ready
+060:[2023-03-05 05:30:15] Waiting for execution hosts to connect. 0 out of 1 are ready
+061:[2023-03-05 05:30:25] NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached&lt;/div&gt;'
+Actual value: Following messages wasn't found in log:
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+All SLURM hosts are connected
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1677994381009.57.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1677994381009.57.html
 Timeout: 150 s.
-Caused by: NoSuchElementException: Cannot locate an element using visible(By.className: ant-select-dropdown)
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
@@ -92,18 +139,8 @@ Caused by: NoSuchElementException: Cannot locate an element using visible(By.cla
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
 	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.selectValue(AccessObject.java:511)
-	at com.epam.pipeline.autotests.ao.AccessObject.selectValue(AccessObject.java:499)
-	at com.epam.pipeline.autotests.LaunchClusterTest.validationOfApacheSparkCluster(LaunchClusterTest.java:347)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:191)
+	at com.epam.pipeline.autotests.LaunchClusterTest.validationOfSlurmCluster(LaunchClusterTest.java:330)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -117,17 +154,6 @@ Caused by: NoSuchElementException: Cannot locate an element using visible(By.cla
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using visible(By.className: ant-select-dropdown)
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'd89ad3b423f1', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: RemoteWebDriver
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 32 more
 </pre>
 </span>
 </div>
@@ -144,81 +170,81 @@ Driver info: driver.version: RemoteWebDriver
 </thead>
 <tr>
 <td class="success">autoScaledClusterWithDefaultChildNodesValidationTest - EPMCMBIBPC-2628</td>
-<td>49m24.53s</td>
+<td>51m30.36s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeMastersConfig - EPMCMBIBPC-3161</td>
-<td>11m40.59s</td>
+<td>12m31.54s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeOnDemand - EPMCMBIBPC-3160</td>
-<td>12m16.29s</td>
+<td>11m50.37s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">autoScaledClusterWorkersPriceTypeSpot - EPMCMBIBPC-3156</td>
-<td>11m20.66s</td>
+<td>12m12.47s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledCluster - EPMCMBIBPC-3153</td>
-<td>18m21.22s</td>
+<td>19m16.88s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlock - EPMCMBIBPC-3154</td>
-<td>11m41.04s</td>
+<td>12m14.86s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterCPUDeadlockWithAdditionalRestrictions - EPMCMBIBPC-3159</td>
-<td>10m36.33s</td>
+<td>11m12.87s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">hybridAutoScaledClusterInstanceTypeFamily - EPMCMBIBPC-3155</td>
-<td>12m1.46s</td>
+<td>12m44.17s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">invalidValuesOnConfigureClusterPopUp - EPMCMBIBPC-2620</td>
-<td>34.707s</td>
+<td>35.296s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchAutoScaledClusterTest - EPMCMBIBPC-2618</td>
-<td>12m32.55s</td>
+<td>13m54.03s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">launchPipelineWithLaunchFlag - EPMCMBIBPC-975</td>
-<td>11m53.42s</td>
+<td>9m59.32s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validationOfApacheSparkCluster - EPMCMBIBPC-3152</td>
-<td>2m47.51s</td>
-<td class="failures">failed</td>
+<td class="success">validationOfApacheSparkCluster - EPMCMBIBPC-3152</td>
+<td>11m10.81s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfGECluster - EPMCMBIBPC-3150</td>
-<td>9m48.92s</td>
+<td>10m48.78s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
-<td>12m48.31s</td>
-<td class="success">passed</td>
+<td class="failures">validationOfSlurmCluster - EPMCMBIBPC-3151</td>
+<td>21m42.22s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Run with id 38497 has been stopped.
-Run with id 38496 has been stopped.
+<pre>Run with id 38819 has been stopped.
+Run with id 38818 has been stopped.
 </pre>
 </span>
 </div>
@@ -230,7 +256,7 @@ Run with id 38496 has been stopped.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Feb 26, 2023 6:26:54 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 5, 2023 9:05:21 PM</p>
 </div>
 </div>
 </body>
