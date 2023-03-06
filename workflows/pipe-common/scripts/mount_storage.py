@@ -73,7 +73,7 @@ class PermissionHelper:
     def is_storage_available_for_mount(cls, storage, run):
         if not storage.tools_to_mount:
             return True
-        if run is None or not run["actualDockerImage"]:
+        if not run or not run.get("actualDockerImage"):
             return False
 
         tool = run["actualDockerImage"]
@@ -109,7 +109,8 @@ class MountStorageTask:
 
     def __init__(self, task):
         self.api = PipelineAPI(os.environ['API'], 'logs')
-        self.run_id = int(os.getenv('RUN_ID', -1))
+        self.run_id = int(os.getenv('RUN_ID', 0))
+        self.region_id = int(os.getenv('CLOUD_REGION_ID', 0))
         self.task_name = task
         if platform.system() == 'Windows':
             available_mounters = [S3Mounter, GCPMounter]
@@ -155,7 +156,7 @@ class MountStorageTask:
                 current_wait_iteration = 1
                 while current_wait_iteration <= wait_before_mount_attempts:
                     current_run = self.api.load_run(self.run_id)
-                    if current_run == None:
+                    if not current_run:
                         Logger.warn('Cannot load run info, while waiting for the sensitive pod IP assignment. Will not wait anymore', task_name=self.task_name)
                         break
                     else:
@@ -176,24 +177,26 @@ class MountStorageTask:
 
             self.wait_before_mount()
 
-            # use -1 as default in order to don't mount any NFS if CLOUD_REGION_ID is not provided
-            cloud_region_id = int(os.getenv('CLOUD_REGION_ID', -1))
-            if cloud_region_id == -1:
-                Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, \
-                 and no storage will be filtered by mount storage rule of a region', task_name=self.task_name)
+            if not self.region_id:
+                Logger.warn('Cannot filter storages by region because cloud region id is not configured. '
+                            'No file storages will be mounted and object storages from all regions will be mounted.',
+                            task_name=self.task_name)
 
-            run = None
-            if self.run_id != -1:
+            if self.run_id:
                 Logger.info('Fetching run info...', task_name=self.task_name)
                 run = self.api.load_run(self.run_id)
             else:
-                Logger.warn('Cannot load run info, run id is not specified.', task_name=self.task_name)
+                Logger.warn('Cannot load run info because run id is not configured.', task_name=self.task_name)
+                run = None
 
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
-            available_storages_with_mounts = self.api.load_available_storages_with_share_mount(cloud_region_id if cloud_region_id != -1 else None)
-            # filtering nfs storages in order to fetch only nfs from the same region
-            available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
-                                              or x.file_share_mount.region_id == cloud_region_id]
+            available_storages_with_mounts = self.api.load_available_storages_with_share_mount(self.region_id or None)
+            # filtering out shared storages, as they cause "overlapped" mounts and break the "original" storage mountpoint
+            available_storages_with_mounts = [x for x in available_storages_with_mounts if not x.storage.shared]
+
+            # filtering out all nfs storages if region id is missing
+            if not self.region_id:
+                available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE]
 
             # Filter out storages, which are requested to be skipped
             # NOTE: Any storage, defined by CP_CAP_FORCE_MOUNTS will still be mounted
@@ -261,7 +264,8 @@ class MountStorageTask:
                     Logger.info('Storage disabled for mounting, skipping.', task_name=self.task_name)
                     continue
                 if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
-                    storage_not_allowed_msg = 'Storage {} is not allowed for {} image'.format(storage_and_mount.storage.name, run.get("actualDockerImage", ""))
+                    storage_not_allowed_msg = 'Storage {} is not allowed for {} image'\
+                        .format(storage_and_mount.storage.name, (run or {}).get("actualDockerImage", ""))
                     if storage_and_mount.storage.id in force_storages_list:
                         Logger.info(storage_not_allowed_msg + ', but it is forced to be mounted', task_name=self.task_name)
                     else:
@@ -711,7 +715,7 @@ class NFSMounter(StorageMounter):
                 'path': self.get_path()}
 
     def build_mount_command(self, params):
-        command = 'mount -t {protocol}'
+        command = '/bin/mount -t {protocol}'
 
         mount_options = self.storage.mount_options if self.storage.mount_options else self.share_mount.mount_options
 

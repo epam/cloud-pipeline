@@ -24,7 +24,10 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
@@ -41,6 +44,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
@@ -50,6 +54,10 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObject;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -59,12 +67,17 @@ import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.MountStorageRule;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.ObjectNotFoundException;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
@@ -81,6 +94,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
+import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.utils.DataStorageUtils;
@@ -111,6 +125,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -138,6 +153,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
     public static final String DAV_MOUNT_TAG = "dav-mount";
     private static final String SHARED_STORAGE_SUFFIX = "share";
+    private static final String READ_PERMISSION = "READ";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -193,6 +209,15 @@ public class DataStorageManager implements SecuredEntityManager {
     @Autowired
     private ToolManager toolManager;
 
+    @Autowired
+    private DataStorageLifecycleManager dataStorageLifecycleManager;
+
+    @Autowired
+    private DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
+
+    @Autowired
+    private StoragePermissionManager storagePermissionManager;
+
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
 
@@ -205,18 +230,29 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(final Long fromRegionId) {
+        final List<AbstractDataStorage> storages = getDataStoragesWithToolsToMount();
+        storagePermissionManager.filterStorage(storages, Arrays.asList("READ", "WRITE"), false);
+        return getDataStoragesWithShareMountObject(fromRegionId, storages);
+    }
+
+    public List<DataStorageWithShareMount> getDataStoragesWithShareMountObject(
+            final Long fromRegionId, final List<AbstractDataStorage> storages) {
+        if (CollectionUtils.isEmpty(storages)) {
+            return Collections.emptyList();
+        }
         final AbstractCloudRegion fromRegion = Optional.ofNullable(fromRegionId)
                 .map(cloudRegionManager::load).orElse(null);
-        return getDataStoragesWithToolsToMount().stream()
-                .filter(dataStorage -> !dataStorage.isSensitive())
-                .map(storage -> {
-                    if (storage.getFileShareMountId() != null) {
-                        return new DataStorageWithShareMount(storage,
-                                fileShareMountManager.load(storage.getFileShareMountId()));
-                    } else {
-                        return new DataStorageWithShareMount(storage, null);
-                    }
-                }).filter(storage -> filterDataStorage(storage, fromRegion))
+        final Map<Long, ? extends AbstractCloudRegion> regions = ListUtils.emptyIfNull(cloudRegionManager.loadAll())
+                .stream()
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        final Map<Long, FileShareMount> fsMounts = ListUtils.emptyIfNull(fileShareMountManager.loadAll())
+                .stream().collect(Collectors.toMap(FileShareMount::getId, Function.identity()));
+        return storages
+                .stream()
+                .filter(storage -> !storage.isSensitive())
+                .map(storage -> new DataStorageWithShareMount(storage, findFileShareMount(storage, fsMounts)
+                        .orElse(null)))
+                .filter(storage -> Objects.isNull(fromRegion) || isStorageMountAllowed(storage, fromRegion, regions))
                 .collect(Collectors.toList());
     }
 
@@ -372,7 +408,7 @@ public class DataStorageManager implements SecuredEntityManager {
                                     dataStorageVO.getSourceStorageId() != null);
         verifyStoragePolicy(dataStorageVO.getStoragePolicy());
         validateMirroringParameters(dataStorageVO);
-        
+
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
         final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
@@ -490,6 +526,8 @@ public class DataStorageManager implements SecuredEntityManager {
             }
             tagProviderManager.deleteStorageTags(dataStorage);
         }
+        dataStorageLifecycleManager.deleteStorageLifecyclePolicyRules(id);
+        storageLifecycleRestoreManager.deleteRestoreActions(id);
         dataStorageDao.deleteDataStorage(id);
         return dataStorage;
     }
@@ -503,8 +541,9 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadRootDataStorages();
     }
 
-    public DataStorageListing getDataStorageItems(final Long dataStorageId,
-            final String path, Boolean showVersion, Integer pageSize, String marker) {
+    public DataStorageListing getDataStorageItems(final Long dataStorageId, final String path,
+                                                  final Boolean showVersion, final Integer pageSize,
+                                                  final String marker, final boolean showArchived) {
         AbstractDataStorage dataStorage = load(dataStorageId);
         if (showVersion) {
             Assert.isTrue(dataStorage.isVersioningEnabled(), messageHelper
@@ -512,6 +551,11 @@ public class DataStorageManager implements SecuredEntityManager {
         }
         Assert.isTrue(pageSize == null || pageSize > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+        if (!showArchived && DataStorageType.S3.equals(dataStorage.getType())) {
+            final DataStorageLifecycleRestoredListingContainer restoredListing = loadRestoredPaths(dataStorage, path);
+            return storageProviderManager.getRestoredItems(dataStorage, path, showVersion, pageSize, marker,
+                    restoredListing);
+        }
         return storageProviderManager.getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
@@ -554,7 +598,7 @@ public class DataStorageManager implements SecuredEntityManager {
     private List<String> adjustPermissions(final List<String> permissions) {
         return Optional.ofNullable(permissions)
                 .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> Collections.singletonList("READ"));
+                .orElseGet(() -> Collections.singletonList(READ_PERMISSION));
     }
 
     private Duration resolveDuration(final long hours) {
@@ -728,9 +772,10 @@ public class DataStorageManager implements SecuredEntityManager {
     @Transactional
     public AbstractDataStorageItem getDataStorageItemWithTags(final Long dataStorageId,
                                                               final String path,
-                                                              final Boolean showVersion) {
+                                                              final Boolean showVersion,
+                                                              final boolean showArchived) {
         final List<AbstractDataStorageItem> dataStorageItems = getDataStorageItems(dataStorageId, path, showVersion,
-                null, null).getResults();
+                null, null, showArchived).getResults();
         if (CollectionUtils.isEmpty(dataStorageItems)) {
             return null;
         }
@@ -745,6 +790,47 @@ public class DataStorageManager implements SecuredEntityManager {
                             item.setTags(tagProviderManager.loadFileTags(dataStorage, path, version)));
         }
         return dataStorageFile;
+    }
+
+    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(final DataStorageObjectSearchByTagRequest req) {
+        final Set<Long> requestedStorageIds = new HashSet<>(CollectionUtils.emptyIfNull(req.getDatastorageIds()));
+        final Map<Long, List<DataStorageTag>> searchTagsResult =
+                tagProviderManager.search(getDatastoragesByIds(req.getDatastorageIds()), req.getTags());
+
+        if (MapUtils.isNotEmpty(searchTagsResult)) {
+            // by tagProviderManager.search we found tags for datastorage_root, and now we need to map it on
+            // actual storages
+            final Map<Long, List<AbstractDataStorage>> storagesByRootId = dataStorageDao
+                .loadDataStoragesByRootIds(searchTagsResult.keySet()).stream()
+                .filter(dataStorage -> checkStoragePermissions(dataStorage, READ_PERMISSION))
+                .filter(ds -> CollectionUtils.isEmpty(requestedStorageIds) || requestedStorageIds.contains(ds.getId()))
+                .collect(Collectors.groupingBy(AbstractDataStorage::getRootId));
+
+            final Map<Long, List<DataStorageTag>> results = new HashMap<>();
+            searchTagsResult.forEach(
+                (rootId, tags) -> tags.forEach(
+                    rootTag -> storagesByRootId.getOrDefault(rootId, Collections.emptyList())
+                        .stream()
+                        .filter(dataStorage -> rootTag.getObject().getPath().startsWith(dataStorage.getPrefix()))
+                        .max(Comparator.comparingInt(s -> s.getPrefix().length()))
+                        .ifPresent(dataStorage -> {
+                            final DataStorageTag storageTag = new DataStorageTag(
+                                new DataStorageObject(
+                                        dataStorage.resolveRelativePath(rootTag.getObject().getPath()),
+                                        rootTag.getObject().getVersion()
+                                ),
+                                rootTag.getKey(), rootTag.getValue()
+                            );
+                            results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageTag);
+                        })
+                )
+            );
+            return results.entrySet().stream()
+                    .map(e -> new DataStorageTagSearchResult(e.getKey(), e.getValue()))
+                    .collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     @Transactional
@@ -804,7 +890,11 @@ public class DataStorageManager implements SecuredEntityManager {
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
         final Set<String> storageSizeMasks = resolveSizeMasks(loadSizeCalculationMasksMapping(), dataStorage);
-        return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks);
+        final Set<String> storageClasses = storagePermissionManager.storageArchiveReadPermissions(dataStorage)
+                ? dataStorage.getType().getStorageClasses()
+                : Collections.singleton(DataStorageType.Constants.STANDARD_STORAGE_CLASS);
+        final boolean allowVersions = permissionManager.isOwnerOrAdmin(dataStorage.getOwner());
+        return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks, storageClasses, allowVersions);
     }
 
     public Map<String, Set<String>> loadSizeCalculationMasksMapping() {
@@ -874,24 +964,53 @@ public class DataStorageManager implements SecuredEntityManager {
         metadataManager.deleteMetadataItemKey(new EntityVO(storage.getId(), AclClass.DATA_STORAGE), DAV_MOUNT_TAG);
     }
 
-    private boolean filterDataStorage(DataStorageWithShareMount storage, AbstractCloudRegion region) {
-        if (Objects.isNull(region)) {
-            return true;
+    private Optional<FileShareMount> findFileShareMount(final AbstractDataStorage storage,
+                                                        final Map<Long, FileShareMount> fsMounts) {
+        return Optional.ofNullable(storage.getFileShareMountId()).map(fsMounts::get);
+    }
+
+    private boolean isStorageMountAllowed(final DataStorageWithShareMount storage,
+                                          final AbstractCloudRegion region,
+                                          final Map<Long, ? extends AbstractCloudRegion> regions) {
+        switch (storage.getStorage().getType().getServiceType()) {
+            case OBJECT_STORAGE:
+                return isObjectStorageMountAllowed(storage, region, regions);
+            case FILE_SHARE:
+            default:
+                return isFileStorageMountAllowed(storage, region, regions);
         }
+    }
 
-        final AbstractCloudRegion storageRegion = storage.getStorage().getType().equals(DataStorageType.NFS)
-                ? cloudRegionManager.load(storage.getShareMount().getRegionId())
-                : cloudRegionManager.load(getCloudRegionId(storage.getStorage()));
+    private boolean isObjectStorageMountAllowed(final DataStorageWithShareMount storage,
+                                                final AbstractCloudRegion region,
+                                                final Map<Long, ? extends AbstractCloudRegion> regions) {
+        final AbstractCloudRegion storageRegion = regions.get(getCloudRegionId(storage.getStorage()));
+        return isRegionStorageMountAllowed(region, storageRegion, storageRegion.getMountObjectStorageRule());
+    }
 
-        switch (storageRegion.getMountStorageRule()) {
+    private boolean isFileStorageMountAllowed(final DataStorageWithShareMount storage,
+                                              final AbstractCloudRegion region,
+                                              final Map<Long, ? extends AbstractCloudRegion> regions) {
+        final AbstractCloudRegion storageRegion = regions.get(storage.getShareMount().getRegionId());
+        return isRegionStorageMountAllowed(region, storageRegion, storageRegion.getMountFileStorageRule());
+    }
+
+    private boolean isRegionStorageMountAllowed(final AbstractCloudRegion source,
+                                                final AbstractCloudRegion target,
+                                                final MountStorageRule rule) {
+        switch (rule) {
             case CLOUD:
-                return region.getProvider().equals(storageRegion.getProvider());
+                return source.getProvider().equals(target.getProvider());
             case ALL:
                 return true;
             case NONE:
             default:
                 return false;
         }
+    }
+
+    private boolean checkStoragePermissions(final AbstractDataStorage dataStorage, final String permission) {
+        return permissionManager.storagePermission(dataStorage, permission);
     }
 
     private Long getCloudRegionId(final AbstractDataStorage dataStorage) {
@@ -1161,12 +1280,26 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
-    private void checkDataStorageObjectExists(final AbstractDataStorage dataStorage,
-                                              final String path,
-                                              final String version) {
-        Assert.isTrue(storageProviderManager.findFile(dataStorage, path, version).isPresent(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
-                        path, dataStorage.getRoot()));
+    public void checkDataStorageObjectExists(final AbstractDataStorage dataStorage,
+                                             final String path,
+                                             final String version) {
+        storageProviderManager.findFile(dataStorage, path, version)
+                .orElseThrow(() ->
+                        new ObjectNotFoundException(
+                                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
+                                        path, dataStorage.getRoot())));
+    }
+
+    public DataStorageItemType getItemType(final Long id,
+                                           final String path,
+                                           final String version) {
+        return storageProviderManager.getItemType(load(id), path, version);
+    }
+
+    public DataStorageItemType getItemType(final AbstractDataStorage dataStorage,
+                                             final String path,
+                                             final String version) {
+        return storageProviderManager.getItemType(dataStorage, path, version);
     }
 
     private void assertToolsToMount(final DataStorageVO dataStorageVO) {
@@ -1298,5 +1431,42 @@ public class DataStorageManager implements SecuredEntityManager {
             return String.join(PipelineStringUtils.DASH,
                                sharedPathNamePrefix, SHARED_STORAGE_SUFFIX, Long.toString(latestMirrorNumber + 1));
         }
+    }
+
+    private DataStorageLifecycleRestoredListingContainer loadRestoredPaths(final AbstractDataStorage storage,
+                                                                           final String path) {
+        final String normalizedPath = ProviderUtils.delimiterIfEmpty(ProviderUtils.withLeadingDelimiter(path));
+        final List<StorageRestoreAction> restoredItems = storageLifecycleRestoreManager
+                .loadSucceededRestoreActions(storage, path);
+
+        if (CollectionUtils.isEmpty(restoredItems)) {
+            return DataStorageLifecycleRestoredListingContainer.builder()
+                    .folderRestored(false)
+                    .restoredFiles(Collections.emptyList())
+                    .build();
+        }
+        final boolean parentFolderRestored = restoredItems.stream()
+                .filter(action -> StorageRestorePathType.FOLDER.equals(action.getType()))
+                .map(StorageRestoreAction::getPath)
+                .map(restoredPath -> ProviderUtils.DELIMITER.equals(restoredPath)
+                        ? restoredPath : ProviderUtils.withoutTrailingDelimiter(restoredPath))
+                .anyMatch(normalizedPath::startsWith);
+        if (parentFolderRestored) {
+            return DataStorageLifecycleRestoredListingContainer.builder()
+                    .folderRestored(true)
+                    .restoredFiles(Collections.emptyList())
+                    .build();
+        }
+        return DataStorageLifecycleRestoredListingContainer.builder()
+                .folderRestored(false)
+                .restoredFiles(getRestoredFilePaths(restoredItems))
+                .build();
+    }
+
+    private List<String> getRestoredFilePaths(final List<StorageRestoreAction> restoredItems) {
+        return ListUtils.emptyIfNull(restoredItems).stream()
+                .filter(action -> StorageRestorePathType.FILE.equals(action.getType()))
+                .map(StorageRestoreAction::getPath)
+                .collect(Collectors.toList());
     }
 }

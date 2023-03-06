@@ -15,6 +15,43 @@
  */
 
 import Remote from '../basic/Remote';
+import RemotePost from '../basic/RemotePost';
+import continuousFetch from '../../utils/continuous-fetch';
+
+const DEFAULT_STATUSES = [
+  'RUNNING',
+  'PAUSED',
+  'PAUSING',
+  'RESUMING'
+];
+
+export class UserRunCount extends RemotePost {
+  static fetchOptions = {
+    headers: {
+      'Content-type': 'application/json; charset=UTF-8'
+    },
+    mode: 'cors',
+    credentials: 'include',
+    method: 'POST'
+  };
+
+  url = '/run/count';
+
+  constructor (user, statuses, countChildNodes = false) {
+    super();
+    this.user = user;
+    this.countChildNodes = countChildNodes;
+    this.statuses = statuses || DEFAULT_STATUSES;
+  }
+
+  fetch () {
+    return super.send({
+      statuses: this.statuses,
+      userModified: this.countChildNodes,
+      owners: this.user ? [this.user] : undefined
+    });
+  }
+}
 
 export default class RunCount extends Remote {
   static defaultValue = 0;
@@ -41,10 +78,6 @@ export default class RunCount extends Remote {
 
   constructor () {
     super();
-    const fetch = ::this.silentFetch;
-    (function tick () {
-      fetch();
-      setTimeout(tick, 5000);
-    })();
+    continuousFetch({request: this});
   }
 }

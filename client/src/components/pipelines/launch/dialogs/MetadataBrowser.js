@@ -25,6 +25,7 @@ import MetadataFolder from '../../browser/MetadataFolder';
 import LoadingView from '../../../special/LoadingView';
 import {
   expandItem,
+  formatTreeItems,
   generateTreeData,
   getExpandedKeys,
   getTreeItemByKey,
@@ -35,7 +36,7 @@ import {
 import styles from './Browser.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 
-@inject('folders')
+@inject('folders', 'preferences')
 @inject(({routing, folders}, params) => ({
   tree: folders.loadWithoutMetadata(params.initialFolderId ? params.initialFolderId : null)
 }))
@@ -175,27 +176,28 @@ export default class MetadataBrowser extends React.Component {
     if (!items) {
       return [];
     }
-    return items.map(item => {
-      if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf} />
-        );
-      } else {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}>
-            {this.generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
-      }
-    });
+    return formatTreeItems(items, {preferences: this.props.preferences})
+      .map(item => {
+        if (item.isLeaf) {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}/>
+          );
+        } else {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}>
+              {this.generateTreeItems(item.children)}
+            </Tree.TreeNode>
+          );
+        }
+      });
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
@@ -231,11 +233,11 @@ export default class MetadataBrowser extends React.Component {
       };
       folder.children = generateTreeData(
         this.props.tree.value,
-        false,
-        folder,
-        [],
-        [ItemTypes.metadata],
-        this.props.hiddenObjectsTreeFilter()
+        {
+          parent: folder,
+          types: [ItemTypes.metadata],
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
       folder.isLeaf = folder.children.length === 0;
       folder.expanded = true;
@@ -280,7 +282,7 @@ export default class MetadataBrowser extends React.Component {
     let expandedKeys = this.state.expandedKeys;
     const intId = parseInt(id, 10);
     if (this.rootItems) {
-      const item = getTreeItemByKey(`${ItemTypes.metadataFolder}_${id}`, this.rootItems);
+      const item = getTreeItemByKey(`${ItemTypes.metadataFolder}_${id}/metadata`, this.rootItems);
       if (item) {
         expandItem(item, this.rootItems);
         expandedKeys = getExpandedKeys(this.rootItems);
@@ -292,7 +294,7 @@ export default class MetadataBrowser extends React.Component {
       metadataClassName: null,
       selectedMetadata: [],
       folderId: intId,
-      selectedKeys: [`${ItemTypes.metadataFolder}_${id}`],
+      selectedKeys: [`${ItemTypes.metadataFolder}_${id}/metadata`],
       expandedKeys
     });
   };

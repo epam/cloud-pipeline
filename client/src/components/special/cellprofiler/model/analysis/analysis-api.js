@@ -14,91 +14,20 @@
  *  limitations under the License.
  */
 
-import {observable} from 'mobx';
-import {getAnalysisMethodURL} from './analysis-endpoint-utilities';
+import EndpointAPI from '../../../../../models/basic/endpoint-api';
 
-class AnalysisApi {
-  @observable endpoint;
+class AnalysisApi extends EndpointAPI {
   constructor (endpoint) {
-    this.endpoint = endpoint;
-  }
-
-  getMethodURL = (uri, query) => {
-    const url = getAnalysisMethodURL(this.endpoint, uri);
-    if (!query) {
-      return url;
-    }
-    if (typeof query === 'string') {
-      return `${url}?${query.startsWith('?') ? query.slice(1) : query}`;
-    }
-    if (typeof query === 'object') {
-      const parameters = Object.entries(query)
-        .filter(([, value]) => value !== undefined && value !== null);
-      if (parameters.length) {
-        const queryString = parameters
-          .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-          .join('&');
-        return `${url}?${queryString}`;
-      }
-    }
-    return url;
-  }
-
-  /**
-   * @typedef {Object} APICallOptions
-   * @property {string} [uri]
-   * @property {string} [url]
-   * @property {string} [httpMethod=GET]
-   * @property {string|object} [body]
-   * @property {string|object} [query]
-   * @property {boolean} [isJSON=true]
-   */
-
-  /**
-   * @param {APICallOptions} options
-   */
-  apiCall = async (options = {}) => {
-    const {
-      uri,
-      url: rawURL,
-      body,
-      httpMethod = body ? 'POST' : 'GET',
-      query,
-      isJSON = true
-    } = options || {};
-    const url = rawURL || this.getMethodURL(uri, query);
-    let bodyFormatted;
-    let contentType;
-    if (typeof body === 'object') {
-      bodyFormatted = JSON.stringify(body);
-      contentType = 'application/json; charset=UTF-8';
-    } else if (typeof body !== 'undefined') {
-      bodyFormatted = body;
-    }
-    const response = await fetch(
-      url,
+    super(
+      endpoint,
       {
-        method: httpMethod,
-        body: bodyFormatted,
-        credentials: 'include',
-        mode: 'cors',
-        headers: {
-          ...(contentType ? {'Content-Type': contentType} : {})
-        }
+        fetchToken: true,
+        credentials: true,
+        name: 'Analysis endpoint',
+        testConnectionURI: 'hcs/pipelines'
       }
     );
-    if (!response.ok) {
-      throw new Error(`${uri || url}: ${response.statusText} ${response.status}`);
-    }
-    if (isJSON) {
-      const json = await response.json();
-      if (!/^ok$/i.test(json.status)) {
-        throw new Error(`${uri || url}: ${json.status} ${json.message || json.error}`);
-      }
-      return json.payload;
-    }
-    return response.text();
-  };
+  }
 
   buildPipeline = (measurementUUID) => this.apiCall({
     uri: 'hcs/pipelines',
@@ -129,14 +58,21 @@ class AnalysisApi {
   runPipeline = (pipelineId) => this.apiCall({
     uri: 'hcs/run/pipelines',
     query: {pipelineId},
+    httpMethod: 'POST',
+    ignoreResponse: true
+  });
+
+  runPipelineModule = (pipelineId, moduleId) => this.apiCall({
+    uri: 'hcs/run/pipelines',
+    query: {pipelineId, moduleId},
     httpMethod: 'POST'
   });
 
-  attachFiles = (pipelineId, ...files) => this.apiCall({
+  attachFiles = (pipelineId, filesPayload) => this.apiCall({
     uri: 'hcs/pipelines/files',
     query: {pipelineId},
     httpMethod: 'POST',
-    body: files
+    body: filesPayload
   });
 
   createModule = (pipelineId, cpModule) => this.apiCall({
@@ -173,6 +109,11 @@ class AnalysisApi {
       statuses: modulesStatuses.map((status, idx) => ({cpModule: modules[idx], status}))
     };
   }
+
+  generateVideo = (options) => this.apiCall({
+    uri: 'hcs/clip',
+    query: options
+  })
 }
 
 export default AnalysisApi;

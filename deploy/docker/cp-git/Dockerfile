@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gitlab/gitlab-ce:9.4.0-ce.0
+ARG BASE_IMAGE="gitlab/gitlab-ce:9.4.0-ce.0"
+
+FROM $BASE_IMAGE
 
 ADD update_config.sh /update_config.sh
 RUN chmod +x /update_config.sh

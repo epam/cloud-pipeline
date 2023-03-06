@@ -5,11 +5,13 @@ const URL = require('url');
 const {log, error} = require('./application/models/log');
 const localSettingsPath = require('./local-settings-path');
 const getUserName = require('./read-os-user-name');
+const homeDirectorySettings = require('./home-directory-settings-path');
 
 const DEFAULT_APP_NAME = 'Cloud Data';
 
 function readCustomConfiguration () {
   const config = localSettingsPath();
+  log(`Settings.json path: ${config}`);
   if (fs.existsSync(config)) {
     try {
       const buffer = fs.readFileSync(config);
@@ -22,14 +24,44 @@ function readCustomConfiguration () {
   return undefined;
 }
 
-function getAppVersion() {
+function readCompilationAsset(assetName) {
   try {
-    const versionFile = path.join(__dirname, 'VERSION');
-    if (fs.existsSync(versionFile)) {
-      return fs.readFileSync(versionFile).toString();
+    const assetFile = path.join(__dirname, assetName);
+    if (fs.existsSync(assetFile)) {
+      return fs.readFileSync(assetFile).toString();
     }
   } catch (_) {}
   return undefined;
+}
+
+function getCompilationAssetPath(assetName) {
+  try {
+    const assetFile = path.join(__dirname, assetName);
+    if (fs.existsSync(assetFile)) {
+      return assetFile;
+    }
+  } catch (_) {}
+  return undefined;
+}
+
+function getAppVersion() {
+  return readCompilationAsset('VERSION')
+}
+
+function getComponentVersion() {
+  return readCompilationAsset('COMPONENT_VERSION')
+}
+
+function getUpdateScriptWindows() {
+  return getCompilationAssetPath('update-win.ps1');
+}
+
+function getUpdateScriptDarwin() {
+  return getCompilationAssetPath('update-darwin.sh');
+}
+
+function getUpdateScriptLinux() {
+  return getCompilationAssetPath('update-linux.sh');
 }
 
 function readCertificates (root) {
@@ -45,23 +77,23 @@ function readCertificates (root) {
   return certificates;
 }
 
-function readLocalConfiguration(root) {
-  const certificates = readCertificates(root);
+function readLocalConfiguration(localConfigurationPath) {
   try {
-    if (fs.existsSync(path.resolve(root, 'webdav.config'))) {
-      log(`Reading local configuration ${path.resolve(root, 'webdav.config')}...`);
-      const buffer = fs.readFileSync(path.resolve(root, 'webdav.config'));
+    if (fs.existsSync(localConfigurationPath)) {
+      const certificates = readCertificates(path.dirname(localConfigurationPath));
+      log(`Reading local configuration ${localConfigurationPath}...`);
+      const buffer = fs.readFileSync(localConfigurationPath);
       const json = JSON.parse(buffer.toString());
-      log(`Reading local configuration ${path.resolve(root, 'webdav.config')}:\n${JSON.stringify(json, undefined, ' ')}`);
+      log(`Local configuration ${localConfigurationPath} contents:\n${JSON.stringify(json, undefined, ' ')}`);
       if (Object.keys(json).length > 0) {
         return Object.assign({certificates, ignoreCertificateErrors: true}, json);
       }
     } else {
-      log(`No local configuration at path ${path.resolve(root, 'webdav.config')}`);
+      log(`No local configuration at path ${localConfigurationPath}`);
     }
     return undefined;
   } catch (e) {
-    log(`Error reading local configuration ${path.resolve(root, 'webdav.config')}`);
+    log(`Error reading local configuration ${localConfigurationPath}`);
     error(e);
     return undefined;
   }
@@ -174,18 +206,23 @@ async function readGlobalConfiguration() {
 }
 
 module.exports = async function () {
-  const localConfiguration = readLocalConfiguration(path.join(require('os').homedir(), '.pipe-webdav-client'));
-  const predefinedConfiguration = readLocalConfiguration(__dirname);
+  const localConfiguration = readLocalConfiguration(homeDirectorySettings);
   const globalConfig = await readGlobalConfiguration();
   const custom = readCustomConfiguration();
-  log(`Global configuration:\n${JSON.stringify(globalConfig, undefined, ' ')}`);
-  log(`webdav.config configuration (legacy):\n${JSON.stringify(globalConfig, undefined, ' ')}`);
+  log(`Global configuration (from pipe-cli):\n${JSON.stringify(globalConfig, undefined, ' ')}`);
+  log(`webdav.config configuration (from home directory):\n${JSON.stringify(localConfiguration, undefined, ' ')}`);
   log(`Settings.json configuration:\n${JSON.stringify(custom, undefined, ' ')}`);
+  const platformSpecificPriority = process.platform === 'darwin'
+    ? {...(custom || {}), ...(localConfiguration || {})}
+    : {...(localConfiguration || {}), ...(custom || {})};
+  if (process.platform === 'darwin') {
+    log(`For darwin platform the following priority is set for configurations: home directory config (highest) / settings.json / pipe-cli`);
+  } else {
+    log(`For ${process.platform} platform the following priority is set for configurations: settings.json (highest) / home directory config / settings.json / pipe-cli`);
+  }
   const config = {
-    ...(predefinedConfiguration || {}),
     ...(globalConfig || {}),
-    ...(localConfiguration || {}),
-    ...(custom || {}),
+    ...platformSpecificPriority,
     version: getAppVersion()
   };
   const osUserName = await getUserName();
@@ -205,6 +242,12 @@ module.exports = async function () {
   config.username = userNameCorrected;
   config.name = (custom ? custom.name : undefined) || DEFAULT_APP_NAME;
   config.version = getAppVersion();
+  config.componentVersion = getComponentVersion();
+  config.updateScripts = {
+    windows: getUpdateScriptWindows(),
+    macos: getUpdateScriptDarwin(),
+    linux: getUpdateScriptLinux()
+  };
   log(`Parsed configuration:\n${JSON.stringify(config, undefined, ' ')}`);
   return config;
 }

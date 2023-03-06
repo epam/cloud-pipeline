@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.QuotaService;
@@ -84,6 +85,9 @@ public class UserManager {
 
     @Autowired
     private UserDao userDao;
+
+    @Autowired
+    private UserNotificationManager userNotificationManager;
 
     @Autowired
     private RoleDao roleDao;
@@ -265,6 +269,7 @@ public class UserManager {
         PipelineUser userContext = loadUserById(id);
         permissionHandler.deleteGrantedAuthority(userContext.getUserName(), true);
         userDao.deleteUserRoles(id);
+        userNotificationManager.deleteByUserId(id);
         userDao.deleteUser(id);
         log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
         return userContext;

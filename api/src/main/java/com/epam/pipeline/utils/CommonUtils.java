@@ -88,8 +88,9 @@ public final class CommonUtils {
                     HashMap::new));
     }
 
+    @SafeVarargs
     public static <T> Optional<T> first(Supplier<Optional<T>>... suppliers) {
-        return Arrays.asList(suppliers).stream()
+        return Arrays.stream(suppliers)
                 .map(Supplier::get)
                 .flatMap(o -> o.map(Stream::of).orElseGet(Stream::empty))
                 .findFirst();

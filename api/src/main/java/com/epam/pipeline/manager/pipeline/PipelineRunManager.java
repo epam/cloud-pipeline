@@ -144,6 +144,7 @@ public class PipelineRunManager {
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private static final String LIMIT_MOUNTS_NONE = "none";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
+    private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -251,13 +252,13 @@ public class PipelineRunManager {
         checkRunLaunchLimits(runVO);
         final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
-                configuration.getSharedWithRoles()));
+        runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(),
+                configuration.getNotifications());
         run.setParent(tool);
         run.setAclClass(AclClass.TOOL);
 
@@ -327,14 +328,14 @@ public class PipelineRunManager {
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager
                 .getPipelineConfigurationForPipeline(pipeline, runVO);
-        runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
-                configuration.getSharedWithRoles()));
+        runVO.setRunSids(configuration.mergeRunSids(runVO.getRunSids()));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(),
+                configuration.getNotifications());
         run.setParent(pipeline);
 
         if (isClusterRun) {
@@ -347,6 +348,7 @@ public class PipelineRunManager {
     public void prolongIdleRun(Long runId) {
         PipelineRun run = loadPipelineRun(runId);
         run.setLastIdleNotificationTime(null);
+        run.setLastNotificationTime(null);
         run.setProlongedAtTime(DateUtils.nowUTC());
         updateProlongIdleRunAndLastIdleNotificationTime(run);
     }
@@ -391,7 +393,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region, 
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region,
                 parentRun.orElse(null), entityIds, configurationId, sensitive);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
@@ -409,6 +411,8 @@ public class PipelineRunManager {
             run.setTags(configuration.getTags());
             pipelineRunDao.updateRunTags(run);
         }
+        run.parseParameters();
+        updateMetadataEntities(run);
         return run;
     }
 
@@ -1208,8 +1212,8 @@ public class PipelineRunManager {
         for (int i = 0; i < nodeCount; i++) {
             launchPipeline(configuration, pipeline, version,
                     runVO.getInstanceType(), runVO.getParentNodeId(),
-                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids(),
-                    runVO.getNotifications());
+                    runVO.getConfigurationName(), parentId, run.getId(), null, null,
+                    runVO.getRunSids(), configuration.getNotifications());
         }
     }
 
@@ -1223,7 +1227,6 @@ public class PipelineRunManager {
             return configuration.getCmdTemplate();
         }
     }
-
 
     private void validateRunParameters(PipelineConfiguration configuration, Pipeline pipeline) {
         for (Map.Entry<String, PipeConfValueVO> param : configuration.getParameters().entrySet()) {
@@ -1528,21 +1531,6 @@ public class PipelineRunManager {
                 : formatRegistryPath(parsedImage.getKey(), parsedImage.getValue());
     }
 
-    private List<RunSid> mergeRunSids(final List<RunSid> runSidsFromVO,
-                                      final List<RunSid> userSidsFromConfiguration,
-                                      final List<RunSid> roleSidsFromConfiguration) {
-        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(runSidsFromVO));
-        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(userSidsFromConfiguration), true));
-        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(roleSidsFromConfiguration), false));
-        return new ArrayList<>(runSids);
-    }
-
-    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
-        return runsSids.stream()
-                .peek(runSid -> runSid.setIsPrincipal(principal))
-                .collect(Collectors.toList());
-    }
-
     private void checkRunLaunchLimits(final PipelineStart runVO) {
         final int totalStaticNodesCount = Optional.of(runVO)
                                               .map(PipelineStart::getNodeCount)
@@ -1563,8 +1551,10 @@ public class PipelineRunManager {
             return;
         }
         final String dataKey = runStatusParameter.get().getValue();
-        Assert.isTrue(StringUtils.hasText(dataKey), String.format(
-                "Parameter '%s' was specified for pipeline run '%d' but empty", CP_REPORT_RUN_STATUS, run.getId()));
+        if (!StringUtils.hasText(dataKey)) {
+            LOGGER.error("Parameter {} was specified for pipeline run {} but empty", CP_REPORT_RUN_STATUS, run.getId());
+            return;
+        }
         final RunStatusMetadata runStatusMetadata = RunStatusMetadata.builder()
                 .runId(run.getId())
                 .status(run.getStatus().name())
@@ -1572,6 +1562,9 @@ public class PipelineRunManager {
                 .startDate(run.getStartDate())
                 .endDate(run.getEndDate())
                 .build();
+
+        final Optional<String> reportEndDateParameter = run.getParameterValue(CP_REPORT_RUN_PROCESSED_DATE);
+
         final List<MetadataEntity> metadataEntities = metadataEntityManager
                 .loadEntitiesByIds(new HashSet<>(entitiesIds)).stream()
                 .peek(metadataEntity -> {
@@ -1579,12 +1572,26 @@ public class PipelineRunManager {
                         metadataEntity.setData(new HashMap<>());
                     }
                     addRunStatusMetadata(metadataEntity.getData(), dataKey, runStatusMetadata);
+                    if (run.getStatus().isFinal() && Objects.nonNull(run.getEndDate()) &&
+                            reportEndDateParameter.isPresent()) {
+                        addProcessedDate(metadataEntity.getData(), reportEndDateParameter.get(),
+                                run.getEndDate());
+                    }
                 })
                 .collect(Collectors.toList());
         metadataEntityManager.updateMetadataEntities(metadataEntities);
     }
 
-    private void addRunStatusMetadata(final Map<String, PipeConfValue> currentData, final String dataKey,
+    private void addProcessedDate(final Map<String, PipeConfValue> data,
+                                  final String key,
+                                  final Date endDate) {
+        final PipeConfValue value = new PipeConfValue(PipeConfValueType.DATE.toString(),
+                DateUtils.formatDate(endDate));
+        data.put(key, value);
+    }
+
+    private void addRunStatusMetadata(final Map<String, PipeConfValue> currentData,
+                                      final String dataKey,
                                       final RunStatusMetadata runStatusMetadata) {
         final List<RunStatusMetadata> runStatuses = currentData.containsKey(dataKey)
                 ? prepareExistingRunStatusMetadata(currentData.get(dataKey), runStatusMetadata)

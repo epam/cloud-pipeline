@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,6 +153,7 @@ public class DetachedConfigurationsTest
                     .setName(pathParameterName)
                     .close()
                     .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611)
             )
             .sleep(5, SECONDS)
             .editConfiguration(pipelineDefaultProfile, profile -> {
@@ -160,7 +161,9 @@ public class DetachedConfigurationsTest
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
-                    .click(SAVE);
+                    .sleep(3, SECONDS)
+                    .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611);
             })
             .sleep(5, SECONDS)
             .editConfiguration(pipelineProfile1611, profile -> {

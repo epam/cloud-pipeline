@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.ldap;
 
+import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.ldap.LdapEntity;
 import com.epam.pipeline.entity.ldap.LdapEntityType;
 import com.epam.pipeline.entity.ldap.LdapSearchRequest;
@@ -30,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,6 +92,47 @@ public class LdapBlockedUsersManagerTest {
         verify(ldapManager).search(request2, expectedFilter2);
     }
 
+    @Test
+    public void shouldReturnBlockedUsersOnlyWhenSearchMethodIsFindActiveAndIntersect() {
+        final PipelineUser user1 = user(USER_NAME_1, ID_1);
+        final PipelineUser blockedUser = user(USER_NAME_2, ID_2);
+        final PipelineUser user3 = user(USER_NAME_3, ID_3);
+
+        doReturn(PAGE_SIZE).when(preferenceManager).getPreference(
+                SystemPreferences.LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE);
+        doReturn(LdapBlockedUserSearchMethod.LOAD_ACTIVE_AND_INTERCEPT.name())
+                .when(preferenceManager).getPreference(SystemPreferences.LDAP_BLOCKED_USER_SEARCH_METHOD);
+        doReturn("${USERS_LIST}").when(preferenceManager).getPreference(
+                SystemPreferences.LDAP_BLOCKED_USER_FILTER);
+        doReturn(NAME_ATTRIBUTE).when(preferenceManager).getPreference(
+                SystemPreferences.LDAP_BLOCKED_USER_NAME_ATTRIBUTE);
+        final String expectedFilter1 = "(|(nameAttribute=name1)(nameAttribute=name2))";
+        final String expectedFilter2 = "(|(nameAttribute=name3))";
+        final LdapSearchRequest request1 = LdapSearchRequest.builder()
+                .size(PAGE_SIZE)
+                .type(LdapEntityType.USER)
+                .nameAttribute(NAME_ATTRIBUTE)
+                .build();
+        final LdapSearchRequest request2 = LdapSearchRequest.builder()
+                .size(1) // since only one user remains
+                .type(LdapEntityType.USER)
+                .nameAttribute(NAME_ATTRIBUTE)
+                .build();
+        doReturn(ldapResponse(USER_NAME_1.toUpperCase(Locale.ROOT)))
+                .when(ldapManager).search(request1, expectedFilter1);
+        doReturn(ldapResponse(USER_NAME_3.toUpperCase(Locale.ROOT)))
+                .when(ldapManager).search(request2, expectedFilter2);
+
+        final List<PipelineUser> result = blockedUsersManager.filterBlockedUsers(
+                Arrays.asList(user1, blockedUser, user3));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(blockedUser);
+
+        verify(ldapManager).search(request1, expectedFilter1);
+        verify(ldapManager).search(request2, expectedFilter2);
+    }
+
     private PipelineUser user(final String userName, final Long id) {
         final PipelineUser pipelineUser = getPipelineUser(userName, id);
         pipelineUser.setBlocked(false);
@@ -97,9 +140,10 @@ public class LdapBlockedUsersManagerTest {
         return pipelineUser;
     }
 
-    private LdapSearchResponse ldapResponse(final String userName) {
-        return LdapSearchResponse.completed(Collections.singletonList(
-                new LdapEntity(userName, LdapEntityType.USER, null)));
+    private LdapSearchResponse ldapResponse(final String... userNames) {
+        List<LdapEntity> result = Arrays.stream(userNames)
+                .map(user -> new LdapEntity(user, LdapEntityType.USER, null)).collect(Collectors.toList());
+        return LdapSearchResponse.completed(result);
     }
 
     private LdapSearchResponse emptyLdapResponse() {

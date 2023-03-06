@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,12 +41,11 @@ import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY
-} from '../../special/splitPanel/SplitPanel';
+} from '../../special/splitPanel';
 import styles from './Browser.css';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import MetadataPanel from '../../special/metadataPanel/MetadataPanel';
 import DropdownWithMultiselect from '../../special/DropdownWithMultiselect';
-import AdaptedLink from '../../special/AdaptedLink';
 import MetadataEntityFields from '../../../models/folderMetadata/MetadataEntityFields';
 import UploadButton from '../../special/UploadButton';
 import AddInstanceForm from './forms/AddInstanceForm';
@@ -58,11 +57,9 @@ import roleModel from '../../../utils/roleModel';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import PropTypes from 'prop-types';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
-import MetadataEntityDeleteFromProject
-from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import DeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
-import ConfigurationBrowser from '../launch/dialogs/ConfigurationBrowser';
-import FolderProject from '../../../models/folders/FolderProject';
+import ConfigurationBrowser from '../launch/dialogs/configuration-browser';
 import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
@@ -73,13 +70,23 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
-import getDefaultColumns from './metadata-controls/get-default-columns';
+import getDefaultMetadataProperties, {
+  METADATA_KEYS
+} from './metadata-controls/get-default-metadata-properties';
+import PredefinedFilterButton from './metadata-controls/predefined-filter-button';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
 import ngsProject, {ngsProjectMachineRuns, ngsProjectSamples} from '../../../utils/ngs-project';
 import * as metadataFilterUtilities from './metadata-controls/metadata-filters';
 import NGSMetadataUpdateSampleSheet from '../../../models/metadata/NGSMetadataUpdateSampleSheet';
 import NGSMetadataDeleteSampleSheet from '../../../models/metadata/NGSMetadataDeleteSampleSheet';
+import RunsAttribute, {isRunsValue} from '../../special/metadata/special/runs-attribute';
+import AttributeValue from '../../special/metadata/special/attribute-value';
+import {
+  getConditionStyles,
+  getPredefinedFilterForItem,
+  parseScheme
+} from './metadata-controls/predefined-filter-utilities';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -88,6 +95,10 @@ const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
+const FILTER_OPERATORS = {
+  greater: 'GE',
+  less: 'LE'
+};
 
 function filterColumns (column) {
   return !column.predefined || ['externalId', 'createdDate'].includes(column.name);
@@ -116,6 +127,16 @@ function getDefaultColumnName (displayName) {
     return 'createdDate';
   }
   return unmapColumnName(displayName);
+}
+
+function getDefaultSorting (sorting = [], columns = []) {
+  return sorting.map(rule => {
+    const [field, order = 'ASC'] = rule.trim().split(':');
+    return {
+      field,
+      desc: /^desc$/i.test(order)
+    };
+  }).filter(rule => columns.find(col => mapColumnName(col) === rule.field));
 }
 
 function getColumnTitle (key) {
@@ -200,9 +221,6 @@ export default class Metadata extends React.Component {
   metadataRequest = {};
   externalMetadataEntity = {};
 
-  selectedConfiguration = null;
-  expansionExpression = '';
-
   state = {
     loading: false,
     metadata: false,
@@ -232,13 +250,15 @@ export default class Metadata extends React.Component {
     addInstanceFormVisible: false,
     operationInProgress: false,
     configurationBrowserVisible: false,
-    currentProjectId: null,
-    currentMetadataEntityForCurrentProject: [],
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false,
     currentMetadata: [],
-    defaultColumnsFetched: false,
-    defaultColumnsFetching: false
+    currentMetadataConditions: [],
+    predefinedFilters: [],
+    predefinedConditions: [],
+    defaultOrderBy: [],
+    defaultMetadataPropertiesFetched: false,
+    defaultMetadataPropertiesFetching: false
   };
 
   uploadButton;
@@ -327,6 +347,32 @@ export default class Metadata extends React.Component {
     return null;
   }
 
+  get predefinedFilters () {
+    const {predefinedFilters = []} = this.state;
+    const {metadataClass} = this.props;
+    return predefinedFilters
+      .filter(predefined => [metadataClass, '*'].includes(predefined.metadataClass));
+  }
+
+  get predefinedConditions () {
+    const {predefinedConditions = []} = this.state;
+    const {metadataClass} = this.props;
+    return predefinedConditions
+      .filter(predefined => [metadataClass, '*'].includes(predefined.metadataClass));
+  }
+
+  getColumnType = (key) => {
+    if (key === 'createdDate') {
+      return 'Date';
+    }
+    const entityField = this.currentClassEntityFields
+      .find(field => field.name === key);
+    if (entityField) {
+      return entityField.type;
+    }
+    return 'string';
+  };
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -344,15 +390,52 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onDateRangeChanged = (range) => {
-    let filterModel = {...this.state.filterModel};
+  onDateRangeChanged = (range, key) => {
+    const filterModel = {...this.state.filterModel};
     const {
       from,
-      to
+      to,
+      emptyValue
     } = range || {};
-    filterModel.startDateFrom = from;
-    filterModel.endDateTo = to;
-    this.setState(
+    if (key === 'createdDate') {
+      filterModel.startDateFrom = from;
+      filterModel.endDateTo = to;
+      return this.setState(
+        {filterModel},
+        () => {
+          this.clearSelection();
+          this.loadData();
+        }
+      );
+    }
+    const filtered = this.state.filterModel.filters
+      .filter(filter => filter.key !== key);
+    let periodFilters;
+    if (emptyValue) {
+      periodFilters = [{
+        key,
+        values: []
+      }];
+    } else if (from || to) {
+      const wrapFilter = (aDate, operator) => {
+        if (aDate) {
+          return {
+            key,
+            operator,
+            values: [aDate]
+          };
+        }
+        return undefined;
+      };
+      periodFilters = [
+        wrapFilter(from, FILTER_OPERATORS.greater),
+        wrapFilter(to, FILTER_OPERATORS.less)
+      ].filter(Boolean);
+    } else {
+      periodFilters = [];
+    }
+    filterModel.filters = [...filtered, ...periodFilters];
+    return this.setState(
       {filterModel},
       () => {
         this.clearSelection();
@@ -400,10 +483,10 @@ export default class Metadata extends React.Component {
     }
   };
 
-  handleFilterApplied = (key, dataArray) => {
+  handleFilterApplied = (key, fieldFilter) => {
     const filterModel = {...this.state.filterModel};
-    if (key && dataArray && dataArray.length) {
-      const filterObj = {key: unmapColumnName(key), values: dataArray};
+    if (key && !!fieldFilter) {
+      const filterObj = {key: unmapColumnName(key), values: fieldFilter};
       const currentFilterIndex = filterModel.filters
         .findIndex(filter => filter.key === unmapColumnName(key));
       if (currentFilterIndex > -1) {
@@ -441,7 +524,8 @@ export default class Metadata extends React.Component {
         .map(o => ({
           key: unmapColumnName(o.key),
           values: o.values || [],
-          predefined: isPredefined(unmapColumnName(o.key))
+          predefined: isPredefined(unmapColumnName(o.key)),
+          ...(o.operator && {operator: o.operator})
         }));
     }
     if (!selectedItemsAreShowing) {
@@ -498,7 +582,13 @@ export default class Metadata extends React.Component {
         currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
-    this.setState({loading: false, currentMetadata});
+    const conditions = currentMetadata
+      .map(item => getPredefinedFilterForItem(item, this.predefinedConditions));
+    this.setState({
+      loading: false,
+      currentMetadata,
+      currentMetadataConditions: conditions
+    });
   };
 
   sortSelectedItems = () => {
@@ -558,7 +648,9 @@ export default class Metadata extends React.Component {
       endDateTo
     } = filterModel;
     const filter = filters.find(filter => filter.key === unmapColumnName(key));
-    const values = filter ? (filter.values || []) : [];
+    const values = filter
+      ? filter.values
+      : undefined;
     const button = (
       <Button
         shape="circle"
@@ -574,16 +666,42 @@ export default class Metadata extends React.Component {
           border: 'none'
         }}
       >
-        <Icon type="filter" />
-      </Button>);
-
-    if (key === 'createdDate') {
+        <Icon
+          type="filter"
+          className={
+            classNames(
+              {'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))}
+            )
+          }
+        />
+      </Button>
+    );
+    if (/^date$/i.test(this.getColumnType(key))) {
+      let dateInfo = {};
+      if (key === 'createdDate') {
+        dateInfo.from = startDateFrom;
+        dateInfo.to = endDateTo;
+      } else {
+        const currentFilters = filters
+          .filter(filter => filter.key === unmapColumnName(key));
+        dateInfo.emptyValue = currentFilters.length === 1 &&
+          currentFilters[0].values &&
+          currentFilters[0].values.length === 0;
+        const filterFrom = currentFilters
+          .find(filter => filter.operator === FILTER_OPERATORS.greater);
+        const filterTo = currentFilters
+          .find(filter => filter.operator === FILTER_OPERATORS.less);
+        dateInfo.from = filterFrom ? filterFrom.values[0] : undefined;
+        dateInfo.to = filterTo ? filterTo.values[0] : undefined;
+      }
       return (
         <RangeDatePicker
-          from={startDateFrom}
-          to={endDateTo}
+          from={dateInfo.from}
+          to={dateInfo.to}
           onChange={(e) => this.onDateRangeChanged(e, key)}
           visibilityChanged={handleControlVisibility}
+          supportEmptyValue={key !== 'createdDate'}
+          emptyValue={dateInfo.emptyValue}
         >
           {button}
         </RangeDatePicker>
@@ -600,37 +718,6 @@ export default class Metadata extends React.Component {
       </FilterControl>
     );
   }
-
-  renderDataStorageLinks = (data) => {
-    const urls = [];
-    let title = '';
-    if (data.dataStorageLinks) {
-      for (let i = 0; i < data.dataStorageLinks.length; i++) {
-        const link = data.dataStorageLinks[i];
-        let url = `/storage/${link.dataStorageId}`;
-        const parts = (link.absolutePath || link.path).split('/');
-        const name = parts[parts.length - 1];
-        title = `${title} ${name}`;
-        if (link.path && link.path.length) {
-          url = `/storage/${link.dataStorageId}?path=${link.path}`;
-        }
-        urls.push((
-          <AdaptedLink
-            key={i}
-            to={url}
-            location={this.props.router ? this.props.router.location : {}}>{name}</AdaptedLink>
-        ));
-      }
-      return <span title={title}>{urls.map((url, index) => {
-        return (
-          <Row key={index}>
-            {url}
-          </Row>
-        );
-      })}</span>;
-    }
-    return <span title={data.value}>{data.value}</span>;
-  };
 
   onDeleteSelectedItems = () => {
     const removeConfiguration = async () => {
@@ -1057,7 +1144,8 @@ export default class Metadata extends React.Component {
 
   onRowClick = (item) => {
     const [selectedItem] =
-      this.state.currentMetadata.filter(column => column.rowKey === item.rowKey);
+      this.state.currentMetadata
+        .filter(column => column.rowKey === item.rowKey);
     if (this.state.selectedItem && this.state.selectedItem.rowKey === selectedItem.rowKey) {
       this.setState({selectedItem: null, metadata: false});
     } else {
@@ -1074,7 +1162,7 @@ export default class Metadata extends React.Component {
     filterModel.searchQueries = [];
     this.setState(
       {
-        filterModel,
+        filterModel: {...filterModel},
         searchQuery: undefined
       },
       () => {
@@ -1112,17 +1200,51 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onSelectConfigurationConfirm = async (selectedConfiguration, expansionExpression) => {
-    this.selectedConfiguration = selectedConfiguration;
-    this.expansionExpression = expansionExpression;
-
-    await this.runConfiguration(false);
+  onSelectConfigurationConfirm = async (selectedConfiguration, expression) => {
+    this.onCloseConfigurationBrowser();
+    if (!selectedConfiguration) {
+      return;
+    }
+    const {
+      id,
+      entries = []
+    } = selectedConfiguration || {};
+    const hide = message.loading('Launching...', 0);
+    const parameters = await getPathParameters(this.props.pipelinesLibrary, this.props.folderId);
+    const mapParameters = (entry) => ({
+      ...entry,
+      configuration: {
+        ...(entry.configuration || {}),
+        parameters: {
+          ...parameters,
+          ...((entry.configuration || {}).parameters || {})
+        }
+      }
+    });
+    const request = new ConfigurationRun(expression);
+    await request.send({
+      id,
+      entries: entries.map(mapParameters),
+      entitiesIds: this.state.selectedItems.map(item => item.rowKey.value),
+      metadataClass: this.props.metadataClass,
+      folderId: parseInt(this.props.folderId)
+    });
+    hide();
+    this.setState({
+      configurationBrowserVisible: false
+    });
+    if (request.error) {
+      message.error(request.error);
+    } else {
+      this.setState({
+        selectedItemsCanBeSkipped: true
+      }, () => {
+        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      });
+    }
   };
 
   onCloseConfigurationBrowser = () => {
-    this.selectedConfiguration = null;
-    this.expansionExpression = '';
-
     this.setState({
       configurationBrowserVisible: false
     });
@@ -1194,72 +1316,6 @@ export default class Metadata extends React.Component {
     }
   };
 
-  loadCurrentProject = async () => {
-    const folderProjectRequest =
-      new FolderProject(this.props.folderId, 'FOLDER');
-    await folderProjectRequest.fetch();
-    if (folderProjectRequest.error) {
-      message.error(folderProjectRequest.error, 5);
-    } else {
-      if (folderProjectRequest.value) {
-        const currentProjectId = folderProjectRequest.value.id;
-        const metadataEntityFieldsRequest =
-          new MetadataEntityFields(currentProjectId);
-        await metadataEntityFieldsRequest.fetch();
-        if (metadataEntityFieldsRequest.error) {
-          message.error(metadataEntityFieldsRequest.error, 5);
-        } else {
-          const currentMetadataEntityForCurrentProject = metadataEntityFieldsRequest.value || [];
-          this.setState({
-            currentMetadataEntityForCurrentProject,
-            currentProjectId
-          });
-        }
-      }
-    }
-  };
-
-  runConfiguration = async (isCluster) => {
-    const hide = message.loading('Launching...', 0);
-
-    const parameters = await getPathParameters(this.props.pipelinesLibrary, this.props.folderId);
-    const mapParameters = (entry) => ({
-      ...entry,
-      configuration: {
-        ...(entry.configuration || {}),
-        parameters: {
-          ...parameters,
-          ...((entry.configuration || {}).parameters || {})
-        }
-      }
-    });
-
-    const request = new ConfigurationRun(this.expansionExpression);
-    await request.send({
-      id: this.selectedConfiguration ? this.selectedConfiguration.id : null,
-      entries: isCluster
-        ? (this.selectedConfiguration.entries || []).map(mapParameters)
-        : (this.selectedConfiguration.entries || []).slice()
-          .filter(entry => entry.default)
-          .map(mapParameters),
-      entitiesIds: this.state.selectedItems.map(item => item.rowKey.value),
-      metadataClass: this.props.metadataClass,
-      folderId: parseInt(this.props.folderId)
-    });
-    hide();
-    this.setState({
-      configurationBrowserVisible: false
-    });
-    if (request.error) {
-      message.error(request.error);
-    } else {
-      this.setState({
-        selectedItemsCanBeSkipped: true
-      }, () => {
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
-      });
-    }
-  };
   cellIsSpreading = (row, column) => {
     const spreadSelection = this.getSpreadSelection();
     if (spreadSelection) {
@@ -1410,7 +1466,11 @@ export default class Metadata extends React.Component {
             currentMetadata.splice(index, 1, item);
           }
         });
-        this.setState({currentMetadata});
+        this.setState({
+          currentMetadata,
+          currentMetadataConditions: currentMetadata
+            .map(item => getPredefinedFilterForItem(item, this.predefinedConditions))
+        });
         return Promise.resolve();
       })
       .catch(e => message.error(e.message, 5))
@@ -1718,19 +1778,14 @@ export default class Metadata extends React.Component {
     };
 
     const renderConfigurationBrowser = () => {
-      return this.state.currentProjectId ? (
-        <Row>
-          <ConfigurationBrowser
-            onCancel={this.onCloseConfigurationBrowser}
-            onSelect={this.onSelectConfigurationConfirm}
-            visible={this.state.configurationBrowserVisible}
-            initialFolderId={this.state.currentProjectId}
-            currentMetadataEntity={
-              this.state.currentMetadataEntityForCurrentProject.map(entity => entity)
-            }
-            metadataClassName={this.props.metadataClass}
-          />
-        </Row>
+      return this.props.folderId ? (
+        <ConfigurationBrowser
+          onCancel={this.onCloseConfigurationBrowser}
+          onSelect={this.onSelectConfigurationConfirm}
+          visible={this.state.configurationBrowserVisible}
+          folderId={Number(this.props.folderId)}
+          metadataClassName={this.props.metadataClass}
+        />
       ) : null;
     };
 
@@ -1790,6 +1845,7 @@ export default class Metadata extends React.Component {
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
           {this.renderTableActions()}
+          {this.renderPredefinedFilters()}
           {renderTable()}
           {renderConfigurationBrowser()}
           {renderCopyEntitiesDialog()}
@@ -1828,6 +1884,7 @@ export default class Metadata extends React.Component {
                 this.props.onReloadTree(true);
               }
             }}
+            pathAttributes={this.currentClassEntityPathFields.map(o => o.name)}
           />
         }
       </ContentMetadataPanel>
@@ -1837,7 +1894,7 @@ export default class Metadata extends React.Component {
   deleteMetadataClassConfirm = () => {
     const onDeleteMetadataClass = async () => {
       const hide = message.loading(`Removing class '${this.props.metadataClass}'...`, -1);
-      const request = new MetadataEntityDeleteFromProject(
+      const request = new DeleteFromProject(
         this.props.folderId,
         this.props.metadataClass
       );
@@ -2023,6 +2080,7 @@ export default class Metadata extends React.Component {
   };
 
   get tableColumns () {
+    const {currentMetadataConditions = []} = this.state;
     const onHeaderClicked = (e, key) => {
       if (e) {
         e.stopPropagation();
@@ -2094,18 +2152,27 @@ export default class Metadata extends React.Component {
     const cellWrapper = (props, reactElementFn) => {
       const {column, index} = props;
       const item = props.original;
+      const cellClassName = getCellClassName(item, styles.metadataColumnCell);
+      const selected = cellClassName.search('selected') > -1;
+      const condition = currentMetadataConditions[index];
+      const {
+        style,
+        className: filterClassName
+      } = getConditionStyles(condition, selected);
       const className = classNames(
-        getCellClassName(item, styles.metadataColumnCell),
+        cellClassName,
+        filterClassName,
         {
-          'cp-library-metadata-table-cell-selected':
-            getCellClassName(item, styles.metadataColumnCell).search('selected') > -1
-        });
+          'cp-library-metadata-table-cell-selected': selected
+        }
+      );
       return (
         <div
           className={className}
           style={{
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            textOverflow: 'ellipsis',
+            ...style
           }}
         >
           <AutoFillEntitiesMarker
@@ -2166,13 +2233,19 @@ export default class Metadata extends React.Component {
           Cell: props => cellWrapper(props, () => {
             const data = props.value;
             const item = props.original;
+            const condition = currentMetadataConditions[props.index];
+            const icon = index === 0 && condition && condition.scheme && condition.scheme.icon
+              ? (<Icon type={condition.scheme.icon} style={{marginRight: 5}} />)
+              : undefined;
             if (this.isSampleSheetColumn(key)) {
               return (
                 <MetadataSampleSheetValue
                   value={data ? data.value : undefined}
                   onChange={content => this.onEditSampleSheet(item, content)}
                   onRemove={() => this.onRemoveSampleSheet(item)}
-                />
+                >
+                  {icon}
+                </MetadataSampleSheetValue>
               );
             }
             if (data) {
@@ -2200,7 +2273,7 @@ export default class Metadata extends React.Component {
                       item
                     )}
                   >
-                    {value}
+                    {icon}{value}
                   </a>
                 );
               }
@@ -2209,21 +2282,37 @@ export default class Metadata extends React.Component {
                   title={data.value}
                   className={styles.actionLink}
                   onClick={(e) => this.onReferenceTypesClick(e, data)}>
-                  {data.value}
+                  {icon}{data.value}
                 </a>;
               }
               if (data.type.toLowerCase() === 'path') {
-                return this.renderDataStorageLinks(data);
+                return (
+                  <AttributeValue
+                    value={data.value}
+                    showFileNameOnly
+                  >
+                    {icon}
+                  </AttributeValue>
+                );
               }
               if (/^date$/i.test(data.type)) {
                 return (
                   <span title={data.value}>
+                    {icon}
                     {displayDate(data.value)}
                   </span>
                 );
               }
+              if (isRunsValue(data.value)) {
+                return (
+                  <RunsAttribute
+                    value={data.value}
+                  />
+                );
+              }
               return (
                 <span title={data.value}>
+                  {icon}
                   {data.value}
                 </span>
               );
@@ -2237,7 +2326,9 @@ export default class Metadata extends React.Component {
     const {
       filterModel = {},
       selectedItems = [],
-      selectedItemsAreShowing
+      selectedItemsAreShowing,
+      totalCount,
+      loading
     } = this.state;
     const selectedItemsString =
       `${selectedItems.length} selected item${selectedItems.length === 1 ? '' : 's'}`;
@@ -2258,7 +2349,7 @@ export default class Metadata extends React.Component {
             key="clear_filters"
             size="small"
             onClick={this.onClearFilters}
-            style={{marginLeft: 5, marginRight: 5}}
+            style={{margin: '0 5px'}}
           >
             <Icon
               type="close"
@@ -2276,7 +2367,7 @@ export default class Metadata extends React.Component {
       if (selectedItemsAreShowing && selectedItems.length > 0) {
         return (
           <span
-            style={{marginLeft: 5}}
+            style={{margin: '0 5px'}}
             key="info"
           > Currently viewing {selectedItemsString}
           </span>
@@ -2347,7 +2438,7 @@ export default class Metadata extends React.Component {
         </Menu>
       );
       return (
-        <Button.Group>
+        <Button.Group style={{margin: '0 5px'}}>
           <Button
             size="small"
             onClick={this.handleClickShowSelectedItems}
@@ -2373,10 +2464,9 @@ export default class Metadata extends React.Component {
     };
     const renderRunButton = () => {
       if (
-        this.state.currentProjectId &&
+        this.props.folderId &&
         roleModel.writeAllowed(this.props.folder.value) &&
-        !this.props.readOnly &&
-        roleModel.isManager.entities(this)
+        !this.props.readOnly
       ) {
         return (
           <Button
@@ -2391,6 +2481,7 @@ export default class Metadata extends React.Component {
       }
       return null;
     };
+    const totalRecordsInfo = `${totalCount || 'No'} record${totalCount !== 1 ? 's' : ''} found`;
     return (
       <Row
         className={classNames(
@@ -2399,15 +2490,26 @@ export default class Metadata extends React.Component {
         )}
         type="flex"
         justify="space-between"
-        align="middle"
+        align="center"
       >
         <div
           style={{
             display: 'inline-flex',
             flexDirection: 'row',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexWrap: 'wrap'
           }}
         >
+          {
+            <span
+              style={{marginRight: 5}}
+            >
+              {totalRecordsInfo}
+              {
+                loading && (<Icon type="loading" />)
+              }
+            </span>
+          }
           {renderSelectionControl()}
           {renderClearFiltersButton()}
           {renderSelectionInfo()}
@@ -2415,6 +2517,39 @@ export default class Metadata extends React.Component {
         {renderRunButton()}
       </Row>
     );
+  };
+
+  renderPredefinedFilters = () => {
+    const {selectedItemsAreShowing} = this.state;
+    if (!selectedItemsAreShowing && this.predefinedFilters.length > 0) {
+      return (
+        <div
+          className={
+            classNames(
+              styles.metadataPredefinedFilters,
+              'cp-library-metadata-additional-actions'
+            )
+          }
+        >
+          {
+            this.predefinedFilters.map((filter, index) => {
+              return (
+                <PredefinedFilterButton
+                  className={styles.metadataPredefinedFilter}
+                  key={`predefined_filter_${index}_${filter.name || filter.title || ''}`}
+                  filter={filter}
+                  onClick={this.handleClickPredefinedFilter}
+                  currentFilter={this.state.filterModel}
+                  folderId={this.props.folderId}
+                  metadataClass={this.props.metadataClass}
+                />
+              );
+            })
+          }
+        </div>
+      );
+    }
+    return null;
   };
 
   handleClickShowSelectedItems = () => {
@@ -2425,11 +2560,36 @@ export default class Metadata extends React.Component {
     }, () => this.paginationOnChange(FIRST_PAGE));
   }
 
+  handleClickPredefinedFilter = (filter) => {
+    if (!filter) {
+      this.onClearFilters();
+      return;
+    }
+    const {filterModel} = this.state;
+    this.setState(
+      {
+        filterModel: {
+          ...(filterModel || {}),
+          ...(filter || {}),
+          searchQueries: [],
+          page: 1
+        },
+        searchQuery: undefined
+      },
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
+    );
+  }
+
   paginationOnChange = async (page) => {
     const {filterModel} = this.state;
     filterModel.page = page;
     this.setState(
-      {filterModel},
+      {
+        filterModel: {...filterModel}
+      },
       () => {
         this.clearSelection();
         this.loadData();
@@ -2585,7 +2745,7 @@ export default class Metadata extends React.Component {
     this.onFolderChanged();
     authenticatedUserInfo
       .fetchIfNeededOrWait()
-      .then(() => this.fetchDefaultColumnsIfRequested());
+      .then(() => this.fetchDefaultMetadataProperties());
     document.addEventListener('keydown', this.resetSelection);
     window.addEventListener('mouseup', this.handleFinishSelection);
   };
@@ -2602,7 +2762,7 @@ export default class Metadata extends React.Component {
     ) {
       this.onFolderChanged(folderChanged);
     } else {
-      this.fetchDefaultColumnsIfRequested();
+      (this.fetchDefaultMetadataProperties)();
     }
     if (prevProps.initialSelection !== this.props.initialSelection) {
       this.updateInitialSelection();
@@ -2619,6 +2779,7 @@ export default class Metadata extends React.Component {
     }
     const newState = {
       currentMetadata: [],
+      currentMetadataConditions: [],
       columns: [],
       searchQuery: undefined,
       selectedItem: null,
@@ -2636,40 +2797,98 @@ export default class Metadata extends React.Component {
       totalCount: 0
     };
     if (folderChanged) {
-      newState.defaultColumnsFetched = false;
-      newState.defaultColumnsFetching = false;
+      newState.defaultMetadataPropertiesFetched = false;
+      newState.defaultMetadataPropertiesFetching = true;
       newState.defaultColumnsNames = [];
     }
     this.setState(newState, () => {
       this.clearSelection();
-      return Promise.all([
+      const promises = [
         folderChanged
-          ? this.fetchDefaultColumnsIfRequested()
+          ? this.fetchDefaultMetadataProperties(folderChanged)
           : this.loadColumns({reset: true}),
-        folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
-        this.loadData(),
-        this.loadCurrentProject()
-      ]);
+        folderChanged ? this.props.entityFields.fetch() : Promise.resolve()
+      ];
+      return Promise.all(promises).then(() => {
+        const {defaultOrderBy, columns} = this.state;
+        this.setState(prevState => ({
+          filterModel: {
+            ...prevState.filterModel,
+            orderBy: getDefaultSorting(
+              defaultOrderBy,
+              columns
+            )
+          }
+        }), async () => {
+          await this.loadData();
+        });
+      });
     });
   };
 
-  fetchDefaultColumnsIfRequested = () => {
-    const {defaultColumnsFetched, defaultColumnsFetching} = this.state;
+  fetchDefaultMetadataProperties = (folderChanged = false) => {
+    const {
+      defaultMetadataPropertiesFetched,
+      defaultMetadataPropertiesFetching
+    } = this.state;
     const {authenticatedUserInfo, folderId} = this.props;
-    if (authenticatedUserInfo.loaded && !defaultColumnsFetched && !defaultColumnsFetching) {
-      this.setState({
-        defaultColumnsFetching: true
-      }, () => {
-        getDefaultColumns(folderId, authenticatedUserInfo.value)
-          .then(defaultColumns => {
-            this.setState({
-              defaultColumnsNames: (defaultColumns || []).map(getDefaultColumnName),
-              defaultColumnsFetching: false,
-              defaultColumnsFetched: true
-            }, () => this.loadColumns({reset: true}));
-          });
-      });
-    }
+    return new Promise((resolve) => {
+      if (
+        authenticatedUserInfo.loaded &&
+        ((!defaultMetadataPropertiesFetched &&
+        !defaultMetadataPropertiesFetching) || folderChanged)
+      ) {
+        this.setState({
+          defaultMetadataPropertiesFetching: true
+        }, () => {
+          getDefaultMetadataProperties(folderId, authenticatedUserInfo.value)
+            .then(metadata => {
+              const {columns, filters, columnsSorting} = METADATA_KEYS;
+              const defaultColumnsNames = (metadata[columns] || []).map(getDefaultColumnName);
+              const predefined = Object.entries(metadata[filters] || {})
+                .map(([key, filters]) => {
+                  const classes = key.split(/\s*,\s*/g);
+                  return classes
+                    .map(metadataClass => filters.map(filter => ({...filter, metadataClass})))
+                    .reduce((r, c) => ([...r, ...c]), []);
+                })
+                .reduce((r, c) => ([...r, ...c]), [])
+                .map(fc => ({
+                  ...fc,
+                  scheme: parseScheme(fc.scheme),
+                  isCondition: /(^|\+)(condition)($|\+)/i.test(fc.type),
+                  isFilter: !fc.type || /(^|\+)(filter)($|\+)/i.test(fc.type)
+                }));
+              this.setState({
+                defaultColumnsNames,
+                defaultMetadataPropertiesFetching: false,
+                defaultMetadataPropertiesFetched: true,
+                predefinedFilters: predefined
+                  .filter(fc => fc.isFilter),
+                predefinedConditions: predefined
+                  .filter(fc => fc.isCondition),
+                defaultOrderBy: metadata[columnsSorting]
+              }, () => {
+                this.loadColumns({reset: true})
+                  .then(() => {
+                    const {columns: metadataColumns} = this.state;
+                    this.setState(prevState => ({
+                      filterModel: {
+                        ...prevState.filterModel,
+                        orderBy: getDefaultSorting(
+                          metadata[columnsSorting],
+                          metadataColumns
+                        )
+                      }
+                    }), () => resolve());
+                  });
+              });
+            });
+        });
+      } else {
+        resolve();
+      }
+    });
   };
 
   leavePageWithSelectedItems (nextLocation) {

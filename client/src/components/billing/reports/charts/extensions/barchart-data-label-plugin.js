@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,19 +28,66 @@ const plugin = {
   afterDatasetsDraw: function (chart, ease, pluginOptions) {
     const {valueFormatter = costTickFormatter} = pluginOptions || {};
     const ctx = chart.chart.ctx;
+    const {
+      scales = {}
+    } = chart;
     const datasetLabels = chart.data.datasets
       .map((dataset, i) => {
         const meta = chart.getDatasetMeta(i);
-        const {showDataLabel = true} = dataset;
-        if (meta && showDataLabel) {
-          return meta.data.map((element, index) => this.getInitialLabelConfig(
-            dataset,
-            element,
-            index,
-            meta,
-            chart,
-            valueFormatter
-          ));
+        const {
+          yAxisID
+        } = meta;
+        const yAxis = scales[yAxisID];
+        const {
+          hidden = false,
+          showDataLabel: showLabel = !hidden,
+          data: items = []
+        } = dataset;
+        const showDatasetLabel = (index) => {
+          if (typeof showLabel === 'function') {
+            const allData = chart.data.datasets.map((aDataset) => ({
+              dataset: aDataset,
+              value: (aDataset.data || [])[index]
+            }));
+            return showLabel(
+              items[index],
+              allData,
+              {
+                yAxis,
+                dataset,
+                getPxValue (aValue) {
+                  return yAxis
+                    ? yAxis.getPixelForValue(aValue)
+                    : undefined;
+                },
+                getPxSize (aValue) {
+                  return yAxis
+                    ? (yAxis.bottom - yAxis.getPixelForValue(aValue))
+                    : undefined;
+                },
+                pxValue: yAxis ? yAxis.getPixelForValue(items[index]) : undefined,
+                minPxValue: yAxis ? yAxis.getPixelForValue(yAxis.min) : undefined,
+                pxSize: yAxis ? (yAxis.bottom - yAxis.getPixelForValue(items[index])) : undefined
+              }
+            );
+          }
+          return showLabel;
+        };
+        if (meta) {
+          return meta.data.map((element, index) => {
+            const show = showDatasetLabel(index);
+            if (show) {
+              return this.getInitialLabelConfig(
+                dataset,
+                element,
+                index,
+                meta,
+                chart,
+                valueFormatter
+              );
+            }
+            return undefined;
+          }).filter(Boolean);
         }
         return [];
       });
@@ -99,10 +146,16 @@ const plugin = {
       for (let i = 0; i < labels.length; i++) {
         const config = labels[i];
         const {
+          dataset
+        } = config;
+        const {
           dataPoint,
           getLabelPosition,
           labelHeight
         } = config.label;
+        const {
+          details = false
+        } = dataset || {};
         const findSpace = () => {
           const destinationY = dataPoint.y - labelHeight / 2.0;
           return spaces
@@ -115,27 +168,34 @@ const plugin = {
               return {
                 space,
                 distance: Math.abs(y - destinationY),
+                above: y < destinationY,
                 position: getLabelPosition(y)
               };
             });
         };
-        const found = findSpace().sort((a, b) => a.distance - b.distance);
+        const found = findSpace()
+          .filter((info) => !details || !info.above)
+          .sort((a, b) => a.distance - b.distance);
         const [space] = found;
         if (space) {
           addLabel(space.position);
           config.label.position = space.position;
+          config.label.visible = true;
+        } else {
+          config.label.visible = false;
         }
       }
     }
   },
   drawLabel: function (ctx, label) {
     const {dataset = {}, label: config} = label;
-    if (config) {
+    if (config && config.visible) {
       const {
         borderColor = 'black',
         textBold = false,
         textColor,
-        flagColor
+        flagColor,
+        showFlag = true
       } = dataset;
       const color = textColor || borderColor;
       const {position, text} = config;
@@ -145,8 +205,11 @@ const plugin = {
         ctx.font = `${textBold ? 'bold ' : ''}9pt sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(text, position.x + position.width / 2.0, position.y + position.height);
-        if (flagColor) {
+        ctx.fillText(
+          text,
+          position.x + position.width / 2.0, position.y + position.height
+        );
+        if (flagColor && showFlag) {
           ctx.beginPath();
           ctx.arc(
             position.x,
@@ -162,16 +225,20 @@ const plugin = {
       }
     }
   },
-  getInitialLabelConfig: function (dataset, element, index, meta, chart, valueFormatter) {
+  getInitialLabelConfig: function (
+    dataset,
+    element,
+    index,
+    meta,
+    chart,
+    valueFormatter
+  ) {
     const {
       data,
-      hidden,
-      textBold = false
+      textBold = false,
+      dataItemTitle = ''
     } = dataset;
     const {xAxisID, yAxisID} = meta;
-    if (hidden) {
-      return null;
-    }
     const xAxis = chart.scales[xAxisID];
     const yAxis = chart.scales[yAxisID];
     const dataItem = data && data.length > index ? data[index] : null;
@@ -179,21 +246,44 @@ const plugin = {
       return null;
     }
     const ctx = yAxis.ctx;
+    const {
+      stacked = false
+    } = yAxis.options || {};
     const globalBounds = {
       top: yAxis.top,
       bottom: yAxis.bottom,
       left: xAxis.left,
       right: xAxis.right
     };
-    const labelText = valueFormatter(dataItem);
+    const getLabelXY = () => {
+      let currentLabelY = yAxis.getPixelForValue(dataItem);
+      if (stacked) {
+        const datasetIndex = (chart.data.datasets || []).indexOf(dataset);
+        const datasets = (chart.data.datasets || [])
+          .filter((aDataset, index) => index < datasetIndex)
+          .filter((aDataset) => aDataset === dataset ||
+            (!!aDataset.stack && aDataset.stack === dataset.stack)
+          );
+        const valuesBefore = datasets
+          .map((aDataset) => (aDataset.data || [])[index] || 0)
+          .reduce((r, c) => r + c, 0);
+        currentLabelY = yAxis.getPixelForValue(dataItem + valuesBefore);
+      }
+      return {
+        x: element.getCenterPoint().x,
+        y: currentLabelY
+      };
+    };
+    let labelText = valueFormatter(dataItem);
+    if (dataItemTitle && dataItemTitle.length) {
+      labelText = `${dataItemTitle}: ${labelText}`;
+    }
     ctx.font = `${textBold ? 'bold ' : ''}9pt sans-serif`;
     const {width: labelWidth} = ctx.measureText(labelText);
     const padding = {x: 5, y: 2};
     const margin = 3;
     const labelHeight = 10;
-    const {x} = element.getCenterPoint();
-    const y = yAxis.getPixelForValue(dataItem);
-    const dataPoint = {x, y};
+    const {x, y} = getLabelXY();
     const labelTotalWidth = labelWidth + 2.0 * (margin + padding.x);
     const labelTotalHeight = labelHeight + 2.0 * (margin + padding.y);
     const getLabelPosition = (yy = y) => {
@@ -208,7 +298,7 @@ const plugin = {
       dataset,
       globalBounds,
       label: {
-        dataPoint,
+        dataPoint: {x, y},
         getLabelPosition,
         labelHeight: labelTotalHeight,
         text: labelText

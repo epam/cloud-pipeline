@@ -43,7 +43,9 @@ class HCSPreview extends React.Component {
         <HcsImage
           storage={storage}
           path={file}
-          style={{height: '80vh'}}
+          style={{
+            height: 'calc(100vh - 75px)'
+          }}
         >
           {children}
         </HcsImage>

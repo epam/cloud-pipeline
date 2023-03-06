@@ -16,8 +16,36 @@
 
 import React from 'react';
 import {Icon, Tooltip} from 'antd';
+import {inject, observer} from 'mobx-react';
+import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
 
-const Capability = ({capability, selected, style, nested = []}) => {
+function renderCloudRestriction (cloudSetting, awsRegions) {
+  const regions = awsRegions && awsRegions.loaded ? (awsRegions.value || []) : [];
+  const {
+    cloud: capabilityProvider,
+    regionIdentifier: capabilityRegionName,
+    regionId: capabilityRegionId
+  } = parseCapabilityCloudSetting(cloudSetting);
+  let regionName;
+  if (capabilityRegionName) {
+    regionName = capabilityRegionName;
+  } else if (capabilityRegionId) {
+    const region = regions.find((r) => r.id === capabilityRegionId);
+    regionName = region ? region.name : undefined;
+  }
+  if (capabilityProvider && regionName) {
+    return `${capabilityProvider.toUpperCase()}, region ${regionName.toLowerCase()}`;
+  }
+  if (capabilityProvider) {
+    return capabilityProvider.toUpperCase();
+  }
+  if (regionName) {
+    return `Region ${regionName.toLowerCase()}`;
+  }
+  return null;
+}
+
+const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
   if (!capability) {
     return null;
   }
@@ -73,7 +101,7 @@ const Capability = ({capability, selected, style, nested = []}) => {
                       <li
                         key={`${o}-${i}`}
                       >
-                        {o.toUpperCase()}
+                        {renderCloudRestriction(o, awsRegions)}
                       </li>
                     ))
                   }
@@ -83,7 +111,7 @@ const Capability = ({capability, selected, style, nested = []}) => {
           </div>
         )}
         trigger={['hover']}
-        overlayStyle={{zIndex: 1051}}
+        overlayStyle={{zIndex: 1071}}
         placement="left"
       >
         <div
@@ -141,4 +169,4 @@ const Capability = ({capability, selected, style, nested = []}) => {
   );
 };
 
-export default Capability;
+export default inject('awsRegions')(observer(Capability));

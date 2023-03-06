@@ -20,6 +20,8 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -65,6 +67,14 @@ public class PipelineConfigurationManagerTest {
     @Mock
     private PipelineVersionManager pipelineVersionManager;
 
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private CloudRegionManager regionManager;
+
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private PreferenceManager preferenceManager;
+
     @InjectMocks
     private final PipelineConfigurationManager pipelineConfigurationManager = new PipelineConfigurationManager();
 
@@ -98,6 +108,7 @@ public class PipelineConfigurationManagerTest {
         assertThat(config.getParameters()).isEqualTo(TEST_PARAMS);
         assertThat(config.getDockerImage()).isEqualTo(TEST_REPO + "/" + TEST_IMAGE);
         assertThat(config.getTimeout()).isEqualTo(TEST_LONG);
+        assertThat(config.getNotifications()).isNotNull();
 
         verify(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,23 @@ import Remote from '../basic/Remote';
 import RemotePost from '../basic/RemotePost';
 
 export const names = {
+  allowedInstanceMaxCount: 'launch.max.runs.user',
+  allowedInstanceMaxCountGroup: 'launch.max.runs.group',
   allowedInstanceTypes: 'cluster.allowed.instance.types',
   allowedToolInstanceTypes: 'cluster.allowed.instance.types.docker',
   allowedPriceTypes: 'cluster.allowed.price.types',
-  jobsVisibility: 'launch.run.visibility'
+  jobsVisibility: 'launch.run.visibility',
+  jwtTokenExpirationRefreshThreshold: 'launch.jwt.token.expiration.refresh.threshold'
 };
 
 export class ContextualPreferenceLoad extends Remote {
-
   constructor (level, name, resourceId) {
     super();
     this.url = `/contextual/preference/load?name=${name}&level=${level}&resourceId=${resourceId}`;
   }
-
 }
 
 export class ContextualPreferenceUpdate extends RemotePost {
-
   constructor () {
     super();
     this.constructor.fetchOptions = {
@@ -47,11 +47,9 @@ export class ContextualPreferenceUpdate extends RemotePost {
     };
     this.url = '/contextual/preference';
   }
-
 }
 
 export class ContextualPreferenceDelete extends RemotePost {
-
   constructor (name, level, resourceId) {
     super();
     this.constructor.fetchOptions = {

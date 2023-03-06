@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
@@ -31,6 +32,7 @@ import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';
 import '../../../staticStyles/EndpointInput.css';
 
+@inject('authenticatedUserInfo')
 @observer
 export default class EndpointInput extends React.Component {
   static propTypes = {
@@ -45,6 +47,21 @@ export default class EndpointInput extends React.Component {
     value: '',
     validation: {}
   };
+
+  @computed
+  get additionalConfigurationEditable () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const {
+        admin,
+        roles = []
+      } = authenticatedUserInfo.value;
+      return admin || !!roles.find(o => /^ROLE_ADVANCED_USER$/i.test(o.name));
+    }
+    return false;
+  }
 
   validatePort = (port) => {
     if (!port) {
@@ -460,9 +477,11 @@ export default class EndpointInput extends React.Component {
         </Row>
         <Row type="flex" className={styles.endpointCodeEditorContainer}>
           <CodeEditor
-            readOnly={this.props.disabled}
+            readOnly={this.props.disabled || !this.additionalConfigurationEditable}
             ref={this.initializeEditor}
-            placeholder="Add any additional nginx configuration here"
+            placeholder={ this.additionalConfigurationEditable ? 
+                          "Add any additional nginx configuration here" : 
+                          "You have no permissions to modify the additional nginx configuration" }
             lineNumbers={false}
             className={styles.endpointCodeEditor}
             language="shell"

@@ -194,6 +194,29 @@ class CloudPipelineApi {
   requestDavAccess(identifier, duration) {
     return this.apiPostRequest('datastorage/davmount', {id: identifier, time: duration});
   }
+
+  getAppInfo() {
+    return new Promise((resolve, reject) => {
+      this.apiGetRequest('app/info')
+        .then(info => {
+          if (info && info.components) {
+            return Promise.resolve(info.components['cloud-pipeline-webdav-client']);
+          }
+          return Promise.resolve(undefined);
+        })
+        .then(resolve)
+        .catch(reject);
+    });
+  }
+
+  getAppDistributionUrl() {
+    return new Promise((resolve, reject) => {
+      this.getPreference('base.cloud.data.distribution.url')
+        .then(value => Promise.resolve(JSON.parse(value)))
+        .then(resolve)
+        .catch(reject);
+    });
+  }
 }
 
 export default new CloudPipelineApi();

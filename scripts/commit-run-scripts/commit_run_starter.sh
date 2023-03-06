@@ -54,6 +54,8 @@ fi
 export PRE_COMMIT_COMMAND=${18}
 export POST_COMMIT_COMMAND=${19}
 
+export GLOBAL_DISTRIBUTION_URL=${20}
+
 export TASK_NAME="CommitPipelineRun"
 
 export RUNS_ROOT='/runs'

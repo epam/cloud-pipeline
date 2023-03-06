@@ -23,12 +23,10 @@ import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.*;
 import com.epam.pipeline.entity.preference.Preference;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
-import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.tool.ToolSymlinkRequest;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -38,9 +36,7 @@ import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +55,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 
 public class ToolManagerTest extends AbstractManagerTest {
 
@@ -89,7 +86,6 @@ public class ToolManagerTest extends AbstractManagerTest {
     private static final Long DOCKER_SIZE = 123456L;
     private static final String REGION_NAME = "region";
     private static final String REGION_CODE = "us-east-1";
-    private static final String ON_DEMAND = "OnDemand";
     public static final String CENTOS = "centos";
     public static final String CENTOS_VERSION = "6.10";
     private static final String TEST_SOURCE_IMAGE = "library/image";
@@ -105,11 +101,8 @@ public class ToolManagerTest extends AbstractManagerTest {
     @MockBean
     private DockerClientFactory dockerClientFactory;
 
-    @Autowired
+    @MockBean
     private InstanceOfferManager instanceOfferManager;
-
-    @Autowired
-    private CloudRegionManager cloudRegionManager;
 
     @Mock
     private DockerClient dockerClient;
@@ -138,9 +131,6 @@ public class ToolManagerTest extends AbstractManagerTest {
         regionVO.setName(REGION_NAME);
         regionVO.setRegionCode(REGION_CODE);
         regionVO.setProvider(CloudProvider.AWS);
-
-        final AbstractCloudRegion region = cloudRegionManager.create(regionVO);
-        final AbstractCloudRegion anotherRegion = cloudRegionManager.create(regionVO);
 
         firstRegistry = new DockerRegistry();
         firstRegistry.setPath(TEST_REPO);
@@ -173,21 +163,11 @@ public class ToolManagerTest extends AbstractManagerTest {
         Mockito.when(dockerClient.getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.any()))
                 .thenReturn(toolVersion);
 
-        InstanceType instanceType = new InstanceType();
-        instanceType.setName(TEST_ALLOWED_INSTANCE_TYPE);
-        instanceType.setRegionId(region.getId());
-        instanceType.setTermType(ON_DEMAND);
-        InstanceType anotherRegionInstanceType = new InstanceType();
-        anotherRegionInstanceType.setName(TEST_ANOTHER_REGION_ALLOWED_INSTANCE_TYPE);
-        anotherRegionInstanceType.setTermType(ON_DEMAND);
-        anotherRegionInstanceType.setRegionId(anotherRegion.getId());
-        List<InstanceType> instanceTypes = Arrays.asList(instanceType, anotherRegionInstanceType);
-        instanceOfferManager.updateOfferedInstanceTypes(instanceTypes);
-    }
-
-    @After
-    public void tearDown() {
-        instanceOfferManager.updateOfferedInstanceTypes(Collections.emptyList());
+        Mockito.when(instanceOfferManager.isToolInstanceAllowedInAnyRegion(eq(TEST_ALLOWED_INSTANCE_TYPE), any()))
+                .thenReturn(true);
+        Mockito.when(instanceOfferManager.isToolInstanceAllowedInAnyRegion(
+                eq(TEST_ANOTHER_REGION_ALLOWED_INSTANCE_TYPE), any()))
+                .thenReturn(true);
     }
 
     @Test
@@ -477,8 +457,7 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         toolManager.updateToolVersionScanStatus(
                 tool.getId(), ToolScanStatus.COMPLETED, new Date(), LATEST_TAG,
-                new ToolOSVersion(TEST, TEST), LAYER_REF, DIGEST, new HashMap<>()
-        );
+                new ToolOSVersion(TEST, TEST), LAYER_REF, DIGEST, new HashMap<>(), null, null);
         toolManager.updateToolVulnerabilities(Collections.emptyList(), tool.getId(), LATEST_TAG);
         toolManager.updateToolDependencies(Collections.emptyList(), tool.getId(), LATEST_TAG);
         Assert.assertNotNull(toolManager.load(tool.getId()));
@@ -525,7 +504,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         ToolScanStatus status = ToolScanStatus.COMPLETED;
 
         toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, new ToolOSVersion(TEST, TEST),
-                layerRef, digest, new HashMap<>());
+                layerRef, digest, new HashMap<>(), null, null);
         toolManager.updateWhiteListWithToolVersionStatus(tool.getId(), LATEST_TAG, true);
         ToolVersionScanResult versionScan = toolManager.loadToolVersionScan(
                 tool.getId(), LATEST_TAG).get();
@@ -539,7 +518,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         now = new Date();
 
         toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, new ToolOSVersion(TEST, TEST),
-                layerRef, digest, new HashMap<>());
+                layerRef, digest, new HashMap<>(), null, null);
         Assert.assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(now, versionScan.getScanDate());
@@ -566,7 +545,8 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
 
         toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, scanDate,
-                latestVersion, new ToolOSVersion(CENTOS, CENTOS_VERSION), testRef, testRef, new HashMap<>());
+                latestVersion, new ToolOSVersion(CENTOS, CENTOS_VERSION), testRef, testRef, new HashMap<>(),
+                null, null);
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
         ToolOSVersion toolOSVersion = loaded.getToolVersionScanResults().get(LATEST_TAG).getToolOSVersion();
@@ -598,7 +578,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         toolManager.create(tool, true);
 
         toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, scanDate,
-                latestVersion, new ToolOSVersion(TEST, TEST), testRef, testRef, new HashMap<>());
+                latestVersion, new ToolOSVersion(TEST, TEST), testRef, testRef, new HashMap<>(), null, null);
 
         ToolScanResult loaded = toolManager.loadToolScanResult(tool);
         Assert.assertEquals(
@@ -674,7 +654,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         ToolScanStatus status = ToolScanStatus.FAILED;
 
         toolManager.updateToolVersionScanStatus(tool.getId(), status, now, LATEST_TAG, layerRef,
-                digest, new HashMap<>());
+                digest, new HashMap<>(), null, null);
         ToolVersionScanResult versionScan = toolManager.loadToolVersionScan(
                 tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(status, versionScan.getStatus());
@@ -699,7 +679,7 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         toolManager.updateToolVersionScanStatus(
                 tool.getId(), status, scanDate, LATEST_TAG, new ToolOSVersion(TEST, TEST), layerRef, digest,
-                new HashMap<>());
+                new HashMap<>(), null, null);
         ToolVersionScanResult versionScan =
                 toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(status, versionScan.getStatus());
@@ -712,7 +692,7 @@ public class ToolManagerTest extends AbstractManagerTest {
         Date newScanDate = new Date();
 
         toolManager.updateToolVersionScanStatus(
-                tool.getId(), status, newScanDate, LATEST_TAG, layerRef, digest, new HashMap<>());
+                tool.getId(), status, newScanDate, LATEST_TAG, layerRef, digest, new HashMap<>(), null, null);
         Assert.assertEquals(1, toolManager.loadToolScanResult(tool).getToolVersionScanResults().values().size());
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(newScanDate, versionScan.getScanDate());
@@ -795,10 +775,10 @@ public class ToolManagerTest extends AbstractManagerTest {
         assertThrows(IllegalArgumentException.class, 
             () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
                     DateUtils.now(), LATEST_TAG, new ToolOSVersion(CENTOS, CENTOS_VERSION), LAYER_REF, DIGEST,
-                    new HashMap<>()));
+                    new HashMap<>(), null, null));
         assertThrows(IllegalArgumentException.class, 
             () -> toolManager.updateToolVersionScanStatus(symlink.getId(), ToolScanStatus.COMPLETED, 
-                    DateUtils.now(), LATEST_TAG, LAYER_REF, DIGEST, new HashMap<>()));
+                    DateUtils.now(), LATEST_TAG, LAYER_REF, DIGEST, new HashMap<>(), null, null));
         assertThrows(IllegalArgumentException.class, 
             () -> toolManager.updateToolDependencies(Collections.emptyList(), symlink.getId(), LATEST_TAG));
         assertThrows(IllegalArgumentException.class, 
@@ -863,5 +843,4 @@ public class ToolManagerTest extends AbstractManagerTest {
         tool.setToolGroup(toolGroupName);
         return tool;
     }
-
 }

@@ -67,10 +67,14 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.ldap.LdapTemplateProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
@@ -100,6 +104,9 @@ import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.cluster.pool.NodePoolUsageRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
+import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
@@ -376,6 +383,12 @@ public class AspectTestBeans {
     protected OntologyRepository mockOntologyRepository;
 
     @MockBean
+    protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
+
+    @MockBean
+    protected DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
+
+    @MockBean
     protected PreferenceDao mockPreferenceDao;
 
     @MockBean
@@ -404,6 +417,21 @@ public class AspectTestBeans {
 
     @MockBean
     protected LdapTemplateProvider ldapTemplateProvider;
+
+    @MockBean
+    protected BillingManager billingManager;
+
+    @MockBean(name = "pipelineBillingDetailsLoader")
+    protected EntityBillingDetailsLoader pipelineBillingDetailsLoader;
+
+    @MockBean(name = "toolBillingDetailsLoader")
+    protected EntityBillingDetailsLoader toolBillingDetailsLoader;
+
+    @MockBean(name = "storageBillingDetailsLoader")
+    protected EntityBillingDetailsLoader storageBillingDetailsLoader;
+
+    @MockBean(name = "userBillingDetailsLoader")
+    protected EntityBillingDetailsLoader userBillingDetailsLoader;
 
     @MockBean
     protected QuotaRepository quotaRepository;
@@ -437,4 +465,13 @@ public class AspectTestBeans {
 
     @MockBean
     protected BitbucketMapper bitbucketMapper;
+
+    @MockBean
+    protected DataStorageLifecycleManager storageLifecycleManager;
+
+    @MockBean
+    protected DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
+
+    @MockBean
+    protected UserNotificationRepository userNotificationRepository;
 }

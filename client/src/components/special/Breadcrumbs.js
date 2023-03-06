@@ -27,11 +27,10 @@ import Owner from './owner';
 import styles from './Breadcrumbs.css';
 import HiddenObjects from '../../utils/hidden-objects';
 
-@inject('pipelinesLibrary')
+@inject('pipelinesLibrary', 'preferences')
 @HiddenObjects.injectTreeFilter
 @observer
 export default class Breadcrumbs extends React.Component {
-
   static propTypes = {
     id: PropTypes.number,
     type: PropTypes.string,
@@ -51,62 +50,70 @@ export default class Breadcrumbs extends React.Component {
     subject: PropTypes.object
   };
 
-  state = {
-    rootItems: undefined
-  };
+  @computed
+  get inlineMetadataEntities () {
+    const {
+      preferences
+    } = this.props;
+    return preferences.inlineMetadataEntities;
+  }
 
-  reload = () => {
-    if (!this.props.pipelinesLibrary.loaded) {
-      return;
+  @computed
+  get rootItems () {
+    const {
+      pipelinesLibrary,
+      preferences
+    } = this.props;
+    if (!pipelinesLibrary.loaded || !preferences.loaded) {
+      return [];
     }
     const rootElements = [{
       id: 'root',
       name: 'Library',
-      ...this.props.pipelinesLibrary.value
+      ...pipelinesLibrary.value
     }];
-    const rootItems = generateTreeData(
+    return generateTreeData(
       {childFolders: rootElements},
-      false,
-      null,
-      undefined,
-      undefined,
-      this.props.hiddenObjectsTreeFilter()
+      {
+        filter: this.props.hiddenObjectsTreeFilter(),
+        inlineMetadataEntities: this.inlineMetadataEntities
+      }
     );
-    this.setState({
-      rootItems
-    });
-  };
+  }
 
   @computed
   get items () {
     let items = [];
+    const rootItems = this.rootItems;
     if (this.props.type === ItemTypes.metadata) {
-      items = findPath(`${ItemTypes.folder}_${this.props.id || 'root'}`, this.state.rootItems);
+      items = findPath(`${ItemTypes.folder}_${this.props.id || 'root'}`, rootItems);
       if (!items) {
         return [];
       }
-      items.push({
-        name: 'Metadata',
-        id: `${ItemTypes.metadataFolder}_${this.props.id}`,
-        url: `/folder/${this.props.id}/metadata`
-      });
+      if (!this.inlineMetadataEntities) {
+        items.push({
+          name: 'Metadata',
+          id: `${ItemTypes.metadataFolder}_${this.props.id}/metadata`,
+          url: `/folder/${this.props.id}/metadata`
+        });
+      }
       items.push({
         name: this.props.displayTextEditableField,
         id: `${ItemTypes.folder}_${this.props.id}`,
         url: null
       });
     } else if (this.props.type === ItemTypes.metadataFolder) {
-      items = findPath(`${ItemTypes.folder}_${this.props.id || 'root'}`, this.state.rootItems);
+      items = findPath(`${ItemTypes.folder}_${this.props.id || 'root'}`, rootItems);
       if (!items) {
         return [];
       }
       items.push({
         name: this.props.displayTextEditableField,
-        id: `${ItemTypes.metadataFolder}_${this.props.id}`,
+        id: `${ItemTypes.metadataFolder}_${this.props.id}/metadata`,
         url: null
       });
     } else {
-      items = findPath(`${this.props.type}_${this.props.id || 'root'}`, this.state.rootItems);
+      items = findPath(`${this.props.type}_${this.props.id || 'root'}`, rootItems);
     }
     if (items && items.length > 0) {
       items[0].icon = this.props.icon;
@@ -172,7 +179,10 @@ export default class Breadcrumbs extends React.Component {
                   {lock}
                   <EditableField
                     text={this.props.textEditableField}
-                    displayText={this.props.displayTextEditableField || `${this.props.textEditableField || item.name}`}
+                    displayText={
+                      this.props.displayTextEditableField ||
+                      `${this.props.textEditableField || item.name}`
+                    }
                     editClassName={styles.breadcrumbsInput}
                     style={{
                       paddingLeft: '0px',
@@ -252,22 +262,11 @@ export default class Breadcrumbs extends React.Component {
     );
   }
 
-  componentDidMount () {
-    this.reload();
-  };
-
   componentWillReceiveProps (nextProps) {
     if (`${this.props.id}` !== `${nextProps.id}` || this.props.type !== nextProps.type) {
-      (async() => {
+      (async () => {
         await this.props.pipelinesLibrary.fetch();
-        this.reload();
       })();
-    }
-  }
-
-  componentDidUpdate () {
-    if (!this.state.rootItems && this.props.pipelinesLibrary.loaded) {
-      this.reload();
     }
   }
 }

@@ -496,3 +496,13 @@
   height: 1px;
   margin: 5px 0;
 }
+
+.version-filter-input {
+  width: 100%;
+  height: 30px;
+  margin: 10px 0;
+}
+
+.run-table {
+  overflow-y: auto;
+}

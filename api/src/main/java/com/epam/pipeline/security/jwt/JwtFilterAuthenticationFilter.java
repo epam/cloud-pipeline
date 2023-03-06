@@ -59,7 +59,7 @@ public class JwtFilterAuthenticationFilter extends OncePerRequestFilter {
                 log.info("Successfully authenticate user with name: " + context.getUsername());
             }
         } catch (TokenVerificationException e) {
-            log.info("JWT authentication failed!", e);
+            log.info("JWT authentication failed: {}", e.getMessage());
         }
         filterChain.doFilter(request, response);
     }

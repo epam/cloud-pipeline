@@ -41,6 +41,7 @@ import {
 import Metadata, {ApplyChanges} from '../../special/metadata/Metadata';
 import InstanceTypesManagementForm from './InstanceTypesManagementForm';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import {CP_CAP_RUN_CAPABILITIES} from '../../pipelines/launch/form/utilities/parameters';
 
 @roleModel.authenticationInfo
 @inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles')
@@ -884,6 +885,7 @@ class EditRoleDialog extends React.Component {
               value={metadata}
               applyChanges={ApplyChanges.callback}
               onChange={this.onChangeMetadata}
+              extraKeys={[CP_CAP_RUN_CAPABILITIES]}
             />
             <div
               key="INSTANCE_MANAGEMENT"

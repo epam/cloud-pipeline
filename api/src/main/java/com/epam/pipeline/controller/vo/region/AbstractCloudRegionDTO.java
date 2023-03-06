@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.vo.region;
 
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.MountStorageRule;
+import com.epam.pipeline.entity.region.StorageLifecycleServiceProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -46,8 +47,14 @@ public abstract class AbstractCloudRegionDTO {
     private String name;
     @JsonProperty(value = "default")
     private boolean isDefault;
-    private MountStorageRule mountStorageRule = MountStorageRule.NONE;
+    private String globalDistributionUrl;
+    private String dnsHostedZoneId;
+    private String dnsHostedZoneBase;
+    @JsonProperty(value = "mountStorageRule")
+    private MountStorageRule mountObjectStorageRule = MountStorageRule.NONE;
+    private MountStorageRule mountFileStorageRule = MountStorageRule.NONE;
     private MountStorageRule mountCredentialsRule = MountStorageRule.NONE;
+    private StorageLifecycleServiceProperties storageLifecycleServiceProperties;
 
     public abstract CloudProvider getProvider();
     public abstract void setProvider(CloudProvider provider);

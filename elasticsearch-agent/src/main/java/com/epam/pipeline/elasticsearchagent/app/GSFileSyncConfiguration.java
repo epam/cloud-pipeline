@@ -45,6 +45,9 @@ public class GSFileSyncConfiguration {
     @Value("${sync.gs-file.bulk.load.tags.size:100}")
     private Integer bulkLoadTagsSize;
 
+    @Value("${sync.gs-file.tag.value.delimiter:;}")
+    private String tagDelimiter;
+
     @Bean
     public ObjectStorageFileManager gsFileManager() {
         return new GsBucketFileManager();
@@ -61,7 +64,8 @@ public class GSFileSyncConfiguration {
                 gsFileManager, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.GS,
-                SearchDocumentType.GS_FILE);
+                SearchDocumentType.GS_FILE,
+                tagDelimiter, false);
     }
 
 }

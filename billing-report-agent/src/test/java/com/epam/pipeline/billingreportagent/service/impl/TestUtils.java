@@ -20,6 +20,8 @@ import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConver
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AwsRegion;
 import com.fasterxml.jackson.core.JsonFactory;
 import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.common.Strings;
@@ -82,6 +84,19 @@ public final class TestUtils {
         instance.setCloudRegionId(regionId);
         instance.setNodeType(nodeType);
         return instance;
+    }
+
+    public static AbstractCloudRegion createTestRegion(final Long regionId) {
+        final AwsRegion region = new AwsRegion();
+        region.setId(regionId);
+        return region;
+    }
+
+    public static AbstractCloudRegion createTestRegion(final Long regionId, final String code) {
+        final AwsRegion region = new AwsRegion();
+        region.setId(regionId);
+        region.setRegionCode(code);
+        return region;
     }
 
     public static String buildBillingIndex(final String prefix, final LocalDateTime syncDate) {

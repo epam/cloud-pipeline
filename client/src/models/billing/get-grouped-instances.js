@@ -1,16 +1,25 @@
 import BaseBillingRequest from './base-billing-request';
-import GetDataWithPrevious from './get-data-with-previous';
 import {costMapper, minutesToHours} from './utils';
 import join from './join-periods';
+import GetGroupedComputeDataWithPrevious from './get-grouped-compute-data-with-previous';
+
+/**
+ * @typedef {Object} GetGroupedInstancesOptions
+ * @property {Object} filters
+ * @property {BaseBillingRequestPagination|boolean} [pagination]
+ */
 
 export class GetGroupedInstances extends BaseBillingRequest {
-  constructor (filters, pagination = null) {
-    super(filters, true, pagination);
+  /**
+   * @param {GetGroupedInstancesOptions} options
+   */
+  constructor (options = {}) {
+    super({...options, loadDetails: true});
     this.grouping = 'RUN_INSTANCE_TYPE';
   }
 
-  async prepareBody () {
-    await super.prepareBody();
+  prepareBody () {
+    super.prepareBody();
     if (this.filters.type) {
       this.body.filters.compute_type = [this.filters.type.toUpperCase()];
     }
@@ -48,8 +57,15 @@ export class GetGroupedInstances extends BaseBillingRequest {
   }
 }
 
-export class GetGroupedInstancesWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+export class GetGroupedInstancesWithPrevious extends GetGroupedComputeDataWithPrevious {
+  /**
+   * @param {GetGroupedInstancesOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {
       end,
       endStrict,
@@ -64,8 +80,11 @@ export class GetGroupedInstancesWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedInstances,
-      formattedFilters,
-      pagination
+      {
+        filters: formattedFilters,
+        pagination
+      },
+      'instances'
     );
   }
 

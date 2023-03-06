@@ -58,6 +58,8 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     private static final String DELETE_ENTRIES_BY_SID_QUERY = "delete from acl_entry where sid=?";
     private static final String LOAD_ENTRIES_BY_SIDS_COUNT_QUERY =
         "SELECT count(*) FROM pipeline.acl_entry where sid IN (@in@)";
+    private static final String LOAD_OWNER_ENTRIES_BY_SID_COUNT_QUERY =
+            "SELECT count(*) FROM pipeline.acl_object_identity where owner_sid=?";
     private static final String LOAD_ENTRIES_SUMMARY_BY_SID_QUERY =
         "SELECT entries.acl_object_identity,"
         + " identities.object_id_identity,"
@@ -69,12 +71,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Autowired
     private MessageHelper messageHelper;
+    private AclCache aclCache;
 
     public JdbcMutableAclServiceImpl(DataSource dataSource, LookupStrategy lookupStrategy,
             AclCache aclCache) {
         super(dataSource, lookupStrategy, aclCache);
         setClassIdentityQuery(CLASS_IDENTITY_QUERY);
         setSidIdentityQuery(SID_IDENTITY_QUERY);
+        this.aclCache = aclCache;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -130,6 +134,12 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSidById(Long sidId) {
         jdbcTemplate.update(DELETE_ENTRIES_BY_SID_QUERY, sidId);
+        final Integer ownerEntries = jdbcTemplate.queryForObject(
+                LOAD_OWNER_ENTRIES_BY_SID_COUNT_QUERY, Integer.class, sidId);
+        if (ownerEntries > 0) {
+            log.debug("Sid {} in an owner of {} entity(s). Leaving ACL record.", sidId, ownerEntries);
+            return;
+        }
         jdbcTemplate.update(DELETE_SID_BY_ID_QUERY, sidId);
     }
 
@@ -196,6 +206,10 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
         final MutableAcl aclFolder = getOrCreateObjectIdentity(entity);
         aclFolder.setOwner(createOrGetSid(owner, true));
         updateAcl(aclFolder);
+    }
+
+    public void putInCache(final MutableAcl acl) {
+        aclCache.putInCache(acl);
     }
 
     public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {

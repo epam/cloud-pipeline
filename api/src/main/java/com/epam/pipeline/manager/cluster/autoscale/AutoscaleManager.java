@@ -23,6 +23,8 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
+import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameterType;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -95,10 +97,6 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
     @Component
     static class AutoscaleManagerCore {
-
-        private static final String TARGET_AZ_PARAMETER_NAME = "CP_CAP_TARGET_AVAILABILITY_ZONE";
-        private static final String TARGET_NETWORK_INTERFACE_PARAMETER_NAME = "CP_CAP_TARGET_NETWORK_INTERFACE";
-
         private final PipelineRunManager pipelineRunManager;
         private final ParallelExecutorService executorService;
         private final AutoscalerService autoscalerService;
@@ -435,10 +433,12 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             // If we failed to load a matching pipeline run for a pod, we delete it here, since
             // PodMonitor wont't process it either
             log.debug("Trying to clear resources for run {}.", runId);
-            try {
-                runCleaners.forEach(cleaner -> cleaner.cleanResources(runId));
-            } catch (Exception e) {
-                log.error("Error during resources clean up: {}", e.getMessage());
+            for (final RunCleaner cleaner : runCleaners) {
+                try {
+                    cleaner.cleanResources(runId);
+                } catch (Exception e) {
+                    log.error("Error during resources clean up.", e);
+                }
             }
             deletePod(pod, client);
             removeNodeUpTask(runId);
@@ -484,7 +484,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 Instant start = Instant.now();
                 //save required instance
                 pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
-                RunInstance instance = cloudFacade.scaleUpNode(longId, requiredInstance.getInstance());
+                RunInstance instance = cloudFacade
+                        .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters());
                 //save instance ID and IP
                 pipelineRunManager.updateRunInstance(longId, instance);
                 autoscalerService.registerDisks(longId, instance);
@@ -556,21 +557,34 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             final InstanceRequest instanceRequest = new InstanceRequest();
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
-            setAvailabilityZoneIfSpecified(instanceRequest, run);
-            setNetworkInterfaceIfSpecified(instanceRequest, run);
+            instanceRequest.setRuntimeParameters(buildRuntimeParameters(run));
             return instanceRequest;
         }
 
-        private void setAvailabilityZoneIfSpecified(final InstanceRequest requiredInstance, final PipelineRun run) {
-            run.getParameterValue(TARGET_AZ_PARAMETER_NAME)
-                .filter(StringUtils::isNotBlank)
-                .ifPresent(availabilityZone -> requiredInstance.getInstance().setAvailabilityZone(availabilityZone));
+        private Map<String, String> buildRuntimeParameters(final PipelineRun run) {
+            final Map<String, RuntimeParameter> parametersMapping = preferenceManager
+                    .getPreference(SystemPreferences.CLUSTER_RUN_PARAMETERS_MAPPING);
+            final Map<String, String> runtimeParameters = new HashMap<>();
+            MapUtils.emptyIfNull(parametersMapping).forEach((runParameterName, parameter) ->
+                run.getParameterValue(runParameterName)
+                        .filter(StringUtils::isNotBlank)
+                        .flatMap(parameterValue ->
+                                Optional.ofNullable(getRuntimeParameterValue(parameter, parameterValue)))
+                        .filter(StringUtils::isNotBlank)
+                        .ifPresent(parameterValue -> runtimeParameters.put(parameter.getArgumentName(), parameterValue))
+            );
+            return runtimeParameters;
         }
 
-        private void setNetworkInterfaceIfSpecified(final InstanceRequest requiredInstance, final PipelineRun run) {
-            run.getParameterValue(TARGET_NETWORK_INTERFACE_PARAMETER_NAME)
-                    .filter(StringUtils::isNotBlank)
-                    .ifPresent(ni -> requiredInstance.getInstance().setNetworkInterfaceId(ni));
+        private String getRuntimeParameterValue(final RuntimeParameter parameter, final String parameterValue) {
+            if (runtimeParameterIsFlag(parameter.getType())) {
+                return Boolean.TRUE.toString().equalsIgnoreCase(parameterValue) ? "True" : null;
+            }
+            return parameterValue;
+        }
+
+        private boolean runtimeParameterIsFlag(final RuntimeParameterType type) {
+            return Objects.nonNull(type) && type == RuntimeParameterType.BOOLEAN;
         }
 
         private int getPoolNodeUpTasksCount() {

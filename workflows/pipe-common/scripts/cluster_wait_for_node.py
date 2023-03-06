@@ -51,7 +51,7 @@ class WaitForNode(Task):
             # approximately 10 minutes
             attempts = 60
             master = self.get_node_info(task_name, run_id, parameters=parameters)
-            while not master and attempts > 0:
+            while (not master or not master.ip or not master.name) and attempts > 0:
                 master = self.get_node_info(task_name, run_id, parameters=parameters)
                 attempts -= 1
                 Logger.info('Waiting for node ...', task_name=self.task_name)
@@ -146,6 +146,8 @@ def main():
 
     try:
         node = WaitForNode().await_node_start(args.task_name, args.run_id, parameters=args.parameter)
+        if not node.name or not node.ip:
+            Logger.warn('Master name or ip cannot be determined. IP: {}. Name: {}'.format(node.ip, node.name))
         print(node.name + " " + node.ip)
         exit(0)
     except Exception as e:

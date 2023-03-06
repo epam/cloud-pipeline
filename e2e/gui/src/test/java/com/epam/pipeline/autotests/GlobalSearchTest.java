@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -108,7 +109,9 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                                 .selectTool(testingTool)
                                                 .click(OK)
                                 )
+                                .ensure(byText("Estimated price per hour:"), visible)
                                 .click(SAVE)
+                                .ensureDisable(SAVE)
                 );
         navigationMenu()
                 .library()
@@ -149,6 +152,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2657"})
     public void searchResultCancel() {
+        home();
         search()
                 .search(folder)
                 .enter()
@@ -310,6 +314,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2660"})
     public void searchForStorage() {
+        home();
         search()
                 .search(storage)
                 .enter()
@@ -650,6 +655,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2654"})
     public void folderSearch() {
+        home();
         search()
                 .search(innerFolder1)
                 .sleep(3, SECONDS)
@@ -667,6 +673,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2655"})
     public void folderSearchByEnterKey() {
+        home();
         search()
                 .search(innerFolder1)
                 .enter()
@@ -683,6 +690,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     @Test
     @TestCase(value = {"EPMCMBIBPC-2656"})
     public void negativeFolderSearch() {
+        home();
         search()
                 .click(PIPELINES)
                 .search(innerFolder1)

@@ -70,6 +70,18 @@ public final class AclExpressions {
             "(hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'OWNER')) "
             + AND + STORAGE_SHARED;
 
+    public static final String ARCHIVED_PERMISSIONS =
+            "hasRole('ROLE_STORAGE_ARCHIVE_MANAGER') OR hasRole('ROLE_STORAGE_ARCHIVE_READER')";
+
+    public static final String STORAGE_SHOW_ARCHIVED_PERMISSIONS = "(#showArchived == false"
+            + OR + STORAGE_ID_OWNER + OR + ARCHIVED_PERMISSIONS + ")";
+
+    public static final String STORAGE_LIFECYCLE_READER = STORAGE_ID_OWNER + OR + STORAGE_ID_READ + AND
+            + ARCHIVED_PERMISSIONS;
+
+    public static final String STORAGE_LIFECYCLE_MANAGER = STORAGE_ID_OWNER + OR + STORAGE_ID_WRITE + AND
+            + "hasRole('ROLE_STORAGE_ARCHIVE_MANAGER')";
+
     public static final String STORAGE_ID_PERMISSIONS =
             "("
                 + "hasRole('ADMIN') "
@@ -98,7 +110,8 @@ public final class AclExpressions {
 
     public static final String METADATA_FILTER = ADMIN_ONLY + OR +
             "@metadataPermissionManager.metadataPermission(" +
-            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')";
+            "filterObject.entity.entityId, filterObject.entity.entityClass, 'READ')" + OR +
+            "filterObject.entity.entityClass.name() == 'PIPELINE_USER'" + AND + "hasRole('USER_METADATA_READER')";
 
     public static final String ACL_ENTITY_OWNER =
             "hasRole('ADMIN') or @grantPermissionManager.ownerPermission(#id, #aclClass)";

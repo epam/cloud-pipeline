@@ -21,20 +21,22 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -43,6 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -64,7 +67,8 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
-import io.reactivex.Observable;
+
+import javax.annotation.PostConstruct;
 
 /**
  * A service component for monitoring resource usage.
@@ -84,23 +88,15 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     public static final String TRUE_VALUE_STRING = "true";
 
-    private final InstanceOfferManager instanceOfferManager;
     private final ResourceMonitoringManagerCore core;
 
     @Autowired
-    public ResourceMonitoringManager(final InstanceOfferManager instanceOfferManager,
-                                     final ResourceMonitoringManagerCore core) {
-        this.instanceOfferManager = instanceOfferManager;
+    public ResourceMonitoringManager(final ResourceMonitoringManagerCore core) {
         this.core = core;
     }
 
     @PostConstruct
     public void init() {
-        Observable<List<InstanceType>> instanceTypesObservable = instanceOfferManager.getAllInstanceTypesObservable();
-        instanceTypesObservable
-                .subscribe(instanceTypes -> core.updateInstanceMap(
-                        instanceTypes.stream().collect(
-                                Collectors.toMap(InstanceType::getName, t -> t, (t1, t2) -> t1))));
         scheduleFixedDelaySecured(core::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
                 "Resource Usage Monitoring");
     }
@@ -124,7 +120,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private final MessageHelper messageHelper;
         private final PreferenceManager preferenceManager;
         private final StopServerlessRunManager stopServerlessRunManager;
-        private Map<String, InstanceType> instanceTypeMap = new HashMap<>();
+        private final InstanceOfferManager instanceOfferManager;
 
         @Autowired
         ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
@@ -133,7 +129,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                       final MonitoringESDao monitoringDao,
                                       final MessageHelper messageHelper,
                                       final PreferenceManager preferenceManager,
-                                      final StopServerlessRunManager stopServerlessRunManager) {
+                                      final StopServerlessRunManager stopServerlessRunManager,
+                                      final InstanceOfferManager instanceOfferManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
             this.messageHelper = messageHelper;
@@ -141,6 +138,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             this.monitoringDao = monitoringDao;
             this.preferenceManager = preferenceManager;
             this.stopServerlessRunManager = stopServerlessRunManager;
+            this.instanceOfferManager = instanceOfferManager;
         }
 
         @Scheduled(cron = "0 0 0 ? * *")
@@ -228,12 +226,19 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     .stream()
                     .filter(r -> runsIdToNotify.contains(r.getId()))
                     .filter(r -> !r.hasTag(UTILIZATION_LEVEL_HIGH))
-                    .peek(r -> r.addTag(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING));
+                    .peek(r -> {
+                        r.addTag(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
+                        Optional.ofNullable(getTimestampTag(UTILIZATION_LEVEL_HIGH))
+                                .ifPresent(tag -> r.addTag(tag, DateUtils.nowUTCStr()));
+                    });
             final Stream<PipelineRun> runsToRemoveTag = running.values()
                     .stream()
                     .filter(r -> !runsIdToNotify.contains(r.getId()))
                     .filter(r -> r.hasTag(UTILIZATION_LEVEL_HIGH))
-                    .peek(r -> r.removeTag(UTILIZATION_LEVEL_HIGH));
+                    .peek(r -> {
+                        r.removeTag(UTILIZATION_LEVEL_HIGH);
+                        r.removeTag(getTimestampTag(UTILIZATION_LEVEL_HIGH));
+                    });
             return Stream.concat(runsToAddTag, runsToRemoveTag).collect(Collectors.toList());
         }
 
@@ -305,9 +310,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         private void processRuns(Map<String, PipelineRun> running, Map<String, Double> cpuMetrics,
                                  double idleCpuLevel, int actionTimeout, IdleRunAction action) {
-            List<PipelineRun> runsToUpdateNotificationTime = new ArrayList<>(running.size());
-            List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
+            final List<PipelineRun> runsToUpdateNotificationTime = new ArrayList<>(running.size());
+            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
             final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
+            final Map<String, InstanceType> instanceTypeMap = instanceOfferManager.getAllInstanceTypes().stream()
+                    .collect(Collectors.toMap(InstanceType::getName,
+                    Function.identity(), (t1, t2) -> t1));
             for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
                 PipelineRun run = entry.getValue();
                 Double metric = cpuMetrics.get(entry.getKey());
@@ -335,11 +343,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                     List<PipelineRun> runsToUpdateNotificationTime, Double cpuUsageRate,
                                     List<PipelineRun> runsToUpdateTags) {
             if (shouldPerformActionOnIdleRun(run, actionTimeout)) {
-                performActionOnIdleRun(run, action, cpuUsageRate, pipelinesToNotify, runsToUpdateNotificationTime);
+                performActionOnIdleRun(run, action, cpuUsageRate, pipelinesToNotify,
+                        runsToUpdateNotificationTime, runsToUpdateTags);
                 return;
             }
             if (Objects.isNull(run.getLastIdleNotificationTime())) {
                 run.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
+                Optional.ofNullable(getTimestampTag(UTILIZATION_LEVEL_LOW))
+                        .ifPresent(tag -> run.addTag(tag, DateUtils.nowUTCStr()));
                 runsToUpdateTags.add(run);
                 run.setLastIdleNotificationTime(DateUtils.nowUTC());
                 runsToUpdateNotificationTime.add(run);
@@ -357,14 +368,16 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                           final List<PipelineRun> runsToUpdateTags) {
             run.setLastIdleNotificationTime(null);
             run.removeTag(UTILIZATION_LEVEL_LOW);
+            run.removeTag(getTimestampTag(UTILIZATION_LEVEL_LOW));
             runsToUpdateNotificationTime.add(run);
             runsToUpdateTags.add(run);
         }
 
-        private void performActionOnIdleRun(PipelineRun run, IdleRunAction action,
-                                            double cpuUsageRate,
-                                            List<Pair<PipelineRun, Double>> pipelinesToNotify,
-                                            List<PipelineRun> runsToUpdate) {
+        private void performActionOnIdleRun(final PipelineRun run, IdleRunAction action,
+                                            final double cpuUsageRate,
+                                            final List<Pair<PipelineRun, Double>> pipelinesToNotify,
+                                            final List<PipelineRun> runsToUpdate,
+                                            final List<PipelineRun> runsToUpdateTags) {
             log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), cpuUsageRate,
                     action));
             switch (action) {
@@ -378,14 +391,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     break;
                 case PAUSE_OR_STOP:
                     if (run.getInstance().getSpot()) {
-                        performStop(run, cpuUsageRate);
+                        performStop(run, cpuUsageRate, runsToUpdateTags);
                     } else {
                         performPause(run, cpuUsageRate);
                     }
 
                     break;
                 case STOP:
-                    performStop(run, cpuUsageRate);
+                    performStop(run, cpuUsageRate, runsToUpdateTags);
                     break;
                 default:
                     performNotify(run, cpuUsageRate, pipelinesToNotify);
@@ -400,12 +413,19 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
         }
 
-        private void performStop(PipelineRun run, double cpuUsageRate) {
+        private void performStop(final PipelineRun run,
+                                 final double cpuUsageRate,
+                                 final List<PipelineRun> runsToUpdateTags) {
             if (run.isNonPause() || run.isClusterRun()) {
                 log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
                 return;
             }
             pipelineRunManager.stop(run.getId());
+            final String stopTag = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_STOP_REASON);
+            if (StringUtils.isNotBlank(stopTag)) {
+                run.addTag(stopTag, "IDLE_RUN");
+                runsToUpdateTags.add(run);
+            }
             notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
                     NotificationType.IDLE_RUN_STOPPED);
         }
@@ -444,36 +464,62 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     : preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT).longValue();
         }
 
-        public void updateInstanceMap(Map<String, InstanceType> types) {
-            instanceTypeMap.clear();
-            instanceTypeMap.putAll(types);
-        }
-
         private void processLongPausedRuns() {
             final LongPausedRunAction action = LongPausedRunAction.valueOf(preferenceManager.getPreference(
                     SystemPreferences.SYSTEM_LONG_PAUSED_ACTION));
+            final int actionTimeout = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES);
 
             final List<PipelineRun> pausedRuns = pipelineRunManager
                     .loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSED)).stream()
                     .map(run -> pipelineRunManager.loadPipelineRunWithStatuses(run.getId()))
                     .collect(Collectors.toList());
 
-            processLongPausedRuns(pausedRuns, action);
+            processLongPausedRuns(pausedRuns, action, actionTimeout);
         }
 
-        private void processLongPausedRuns(final List<PipelineRun> pausedRuns, final LongPausedRunAction action) {
+        private void processLongPausedRuns(final List<PipelineRun> pausedRuns,
+                                           final LongPausedRunAction action,
+                                           final int actionTimeout) {
             if (CollectionUtils.isEmpty(pausedRuns)) {
                 return;
             }
-
             if (LongPausedRunAction.STOP.equals(action)) {
-                ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(pausedRuns.stream()
-                        .filter(run -> !run.isNonPause())
-                        .collect(Collectors.toList())))
-                        .forEach(run -> pipelineRunManager.terminateRun(run.getId()));
+                final Map<Boolean, List<PipelineRun>> runs = pausedRuns.stream()
+                        .collect(Collectors.partitioningBy(
+                            run -> !run.isNonPause() && isReadyForAction(run, actionTimeout)));
+                final List<PipelineRun> runsToStop = ListUtils.emptyIfNull(runs.get(true));
+                final List<PipelineRun> terminatedRuns =
+                        ListUtils.emptyIfNull(notificationManager.notifyLongPausedRunsBeforeStop(runsToStop))
+                        .stream()
+                        .map(run -> pipelineRunManager.terminateRun(run.getId()))
+                        .collect(Collectors.toList());
+
+                final String stopTag = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_STOP_REASON);
+                if (StringUtils.isNotBlank(stopTag)) {
+                    terminatedRuns.forEach(run -> run.addTag(stopTag, "LONG_PAUSED"));
+                    pipelineRunManager.updateRunsTags(terminatedRuns);
+                }
+
+                final List<PipelineRun> runsToNotify = ListUtils.emptyIfNull(runs.get(false));
+                notificationManager.notifyLongPausedRuns(runsToNotify);
             } else {
                 notificationManager.notifyLongPausedRuns(pausedRuns);
             }
+        }
+
+        private boolean isReadyForAction(final PipelineRun pausedRun, final int actionTimeout) {
+            return ListUtils.emptyIfNull(pausedRun.getRunStatuses()).stream()
+                    .filter(status -> TaskStatus.PAUSED.equals(status.getStatus()))
+                    .max(Comparator.comparing(RunStatus::getTimestamp))
+                    .map(status ->
+                            status.getTimestamp().isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout)))
+                    .orElse(false);
+        }
+
+        private String getTimestampTag(final String tagName) {
+            final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
+            return StringUtils.isNotEmpty(suffix) ? tagName + suffix : null;
         }
     }
 }

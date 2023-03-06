@@ -55,8 +55,6 @@ import java.util.stream.Collectors;
 public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private static final String REST_API_PREFIX = "/restapi/**";
-    private static final String ROUTE_URL = "/restapi/route";
-    private static final String PROLONG_URL = "/restapi/run/**/prolong**";
 
     @Value("${jwt.key.public}")
     private String publicKey;
@@ -66,6 +64,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Value("${jwt.disable.session:true}")
     private boolean disableJwtSession;
+
+    @Value("${api.security.redirected.urls:/restapi/route,/restapi/**/prolong**,/restapi/static-resources/**}")
+    private String[] redirectedResources;
     
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
@@ -166,11 +167,6 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
         return impersonationOperationsRootUrl + "/start";
     }
 
-    //List of urls under REST that should be redirected back after authorization
-    private String[] redirectedUrls() {
-        return new String[] { ROUTE_URL, PROLONG_URL };
-    }
-
     private RequestCache requestCache() {
         final HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
         requestCache.setRequestMatcher(getRedirectRequestMatcher());
@@ -179,7 +175,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     //Only one of redirectedUrls
     private RequestMatcher getRedirectRequestMatcher() {
-        return new OrRequestMatcher(Arrays.stream(redirectedUrls())
+        return new OrRequestMatcher(Arrays.stream(redirectedResources)
                 .map(AntPathRequestMatcher::new)
                 .collect(Collectors.toCollection(ArrayList::new)));
     }

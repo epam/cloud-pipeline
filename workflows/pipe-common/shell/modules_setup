@@ -47,11 +47,11 @@ cd /tmp/modules-tmp
 if [ "$CP_CAP_MODULE_PREINSTALLED" != "true" ]; then
     # Grab the sources of modules
     if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
-        MODULES_SOURCES_URL_S3="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/modules/sources/modules-4.2.4.tar.gz"
+        MODULES_SOURCES_URL_S3="${GLOBAL_DISTRIBUTION_URL}tools/modules/sources/modules-4.2.4.tar.gz"
         MODULES_SOURCES_URL_ALT="https://github.com/cea-hpc/modules/releases/download/v4.2.4/modules-4.2.4.tar.gz"
         MODULES_SOURCES_URL="${CP_CAP_DISTR_MODULES_SOURCES:-$MODULES_SOURCES_URL_S3}"
     elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
-        MODULES_SOURCES_URL_S3="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lmod/sources/Lmod-8.3.tar.gz"
+        MODULES_SOURCES_URL_S3="${GLOBAL_DISTRIBUTION_URL}tools/lmod/sources/Lmod-8.3.tar.gz"
         MODULES_SOURCES_URL_ALT="https://github.com/TACC/Lmod/archive/8.3.tar.gz"
         MODULES_SOURCES_URL="${CP_CAP_DISTR_MODULES_SOURCES:-$MODULES_SOURCES_URL_S3}"
     fi

@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.rest.Result;
@@ -49,6 +50,9 @@ public interface PipelineDataStorageClient {
     String ID = "id";
     String SHOW_VERSION = "showVersion";
     String AUTHORIZATION = "Authorization";
+
+    @GET("restapi/datastorage/findByPath")
+    Call<Result<AbstractDataStorage>> getStorage(@Query(ID) String id, @Header(AUTHORIZATION) String token);
 
     @GET("restapi/datastorage/{id}/load")
     Call<Result<AbstractDataStorage>> getStorage(@Path(ID) long id, @Header(AUTHORIZATION) String token);
@@ -140,4 +144,9 @@ public interface PipelineDataStorageClient {
                                               @Query(PATH) String path,
                                               @Query(VERSION) String version,
                                               @Header(AUTHORIZATION) String token);
+
+    @GET("restapi/datastorage/{id}/type")
+    Call<Result<DataStorageItemType>> getItemType(@Path(ID) Long storageId,
+                                                  @Query(PATH) String path,
+                                                  @Header(AUTHORIZATION) String token);
 }

@@ -160,8 +160,6 @@ function BarChartWithQuota (
     axisPosition = 'left',
     requests = [],
     discounts: discountsFn,
-    dataSample = 'value',
-    previousDataSample = 'previous',
     onSelect,
     onScaleSelect,
     title,
@@ -180,6 +178,8 @@ function BarChartWithQuota (
   if (!requests) {
     return null;
   }
+  const dataSample = 'value';
+  const previousDataSample = 'previous';
   const loading = requests.filter(r => r.loading).length > 0;
   const loaded = requests.filter(r => !r.loaded).length === 0;
   const value = loaded ? requests.map(r => r.value || {}) : {};

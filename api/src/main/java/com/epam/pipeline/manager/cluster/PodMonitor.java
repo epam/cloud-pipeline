@@ -302,19 +302,8 @@ public class PodMonitor extends AbstractSchedulingManager {
         }
 
         private long toRunningDuration(final List<RunStatus> statuses) {
-            long duration = 0L;
-            for (int i = 0; i < statuses.size() - 1; i++) {
-                final RunStatus previous = statuses.get(i);
-                final RunStatus current = statuses.get(i + 1);
-                if (isRunning(previous)) {
-                    duration += secondsBetween(previous, current);
-                }
-            }
             final RunStatus last = statuses.get(statuses.size() - 1);
-            if (isRunning(last)) {
-                duration += secondsBetween(last.getTimestamp(), DateUtils.nowUTC());
-            }
-            return duration;
+            return isRunning(last) ? secondsBetween(last.getTimestamp(), DateUtils.nowUTC()) : 0;
         }
 
         private boolean isRunning(final RunStatus status) {
@@ -472,7 +461,13 @@ public class PodMonitor extends AbstractSchedulingManager {
 
         private void cleanRunResources(final PipelineRun run) {
             LOGGER.debug("Clearing resources for run {}.", run.getId());
-            cleaners.forEach(cleaner -> cleaner.cleanResources(run));
+            for (final RunCleaner cleaner : cleaners) {
+                try {
+                    cleaner.cleanResources(run);
+                } catch (Exception e) {
+                    LOGGER.error("Error during resources clean up", e);
+                }
+            }
         }
 
         private void savePodStatus(PipelineRun run, Pod pod, KubernetesClient client) {

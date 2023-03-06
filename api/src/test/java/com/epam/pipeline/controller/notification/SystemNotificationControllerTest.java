@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -55,8 +56,8 @@ public class SystemNotificationControllerTest extends AbstractControllerTest {
     private static final String BY_ID_URL = NOTIFICATION_URL + "/%d";
     private static final String CONFIRM_URL = NOTIFICATION_URL + "/confirm";
     private static final String AFTER = "after";
-    private static final String DATE_AS_STRING = "1970-01-01 03:00:01";
     private static final Date DATE = new Date(ONE_SECOND);
+    private static final String DATE_AS_STRING = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(DATE);
     private final SystemNotification systemNotification = getSystemNotification();
     private final List<SystemNotification> systemNotificationList = Collections.singletonList(systemNotification);
     private final SystemNotificationFilterVO systemNotificationFilterVO = getSystemNotificationFilterVO();

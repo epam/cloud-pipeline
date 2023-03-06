@@ -20,45 +20,87 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import styles from './hcs-sequence-selector.css';
 
+function sequenceArraysAreEqual (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b || a.length !== b.length) {
+    return false;
+  }
+  const aSorted = a.slice().sort();
+  const bSorted = b.slice().sort();
+  for (let i = 0; i < aSorted.length; i++) {
+    if (aSorted[i] !== bSorted[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 class HcsSequenceSelector extends React.Component {
   state = {
     expandedKeys: []
   }
 
   componentDidMount () {
-    const {selectedSequence} = this.props;
-    if (selectedSequence) {
-      this.onTogglePanel(selectedSequence);
-    }
+    const {selection = []} = this.props;
+    this.onTogglePanel(selection.map(a => a.sequence));
   }
 
   componentDidUpdate (prevProps) {
-    const {selectedSequence} = this.props;
-    if (!prevProps.selectedSequence && prevProps.selectedSequence !== selectedSequence) {
-      this.onTogglePanel(selectedSequence);
+    const {selection = []} = this.props;
+    const currentSequences = selection.map(a => a.sequence);
+    const previousSequences = (prevProps.selection || []).map(a => a.sequence);
+    if (!sequenceArraysAreEqual(currentSequences, previousSequences)) {
+      this.onTogglePanel(currentSequences);
     }
   }
 
-  get selectedTimePoint () {
-    const {selectedTimePoint} = this.props;
-    if (typeof selectedTimePoint === 'string') {
-      return Number(selectedTimePoint);
-    }
-    return selectedTimePoint;
+  getSelectedTimePoints = (sequence) => {
+    const {selection = []} = this.props;
+    return selection
+      .filter(o => o.sequence === sequence)
+      .map(o => o.timePoint);
   }
+
+  sequenceTimePointIsSelected = (sequence, timePoint) => {
+    return this.getSelectedTimePoints(sequence).includes(timePoint);
+  };
 
   onTogglePanel = (keys) => {
     return this.setState({expandedKeys: keys});
   };
 
-  onChangeTimePoint = (sequenceId, timePoint) => {
-    const {onChangeTimePoint} = this.props;
-    onChangeTimePoint && onChangeTimePoint(sequenceId, timePoint);
+  onChangeTimePoint = (sequenceId, timePoint, event) => {
+    const {
+      onChange,
+      selection = [],
+      multiple
+    } = this.props;
+    const append = multiple && event && event.nativeEvent && event.nativeEvent.shiftKey;
+    if (typeof onChange === 'function') {
+      if (append) {
+        const exists = this.sequenceTimePointIsSelected(sequenceId, timePoint.id);
+        if (exists && selection.length === 1) {
+          return;
+        }
+        if (exists) {
+          onChange(
+            selection.filter(o => o.sequence !== sequenceId || o.timePoint !== timePoint.id)
+          );
+        } else {
+          onChange([...selection, {sequence: sequenceId, timePoint: timePoint.id}]);
+        }
+      } else {
+        onChange([{sequence: sequenceId, timePoint: timePoint.id}]);
+      }
+    }
   };
 
   renderCollapseHeader = (sequence = {}) => {
-    const {selectedSequence} = this.props;
+    const {selection = []} = this.props;
     const timePoints = (sequence.timeSeries || []).length;
+    const selected = selection.some(o => o.sequence === sequence.id);
     return (
       <div>
         <span className="cp-title">
@@ -67,7 +109,7 @@ class HcsSequenceSelector extends React.Component {
         <span style={{marginLeft: '10px'}}>
           {`${timePoints} time point${timePoints > 1 ? 's' : ''}`}
         </span>
-        {sequence.id === selectedSequence && (
+        {selected && (
           <span
             className={classNames(
               styles.activeBadge,
@@ -83,8 +125,7 @@ class HcsSequenceSelector extends React.Component {
 
   render () {
     const {
-      sequences,
-      selectedSequence
+      sequences
     } = this.props;
     if (
       !sequences ||
@@ -93,7 +134,7 @@ class HcsSequenceSelector extends React.Component {
     ) {
       return null;
     }
-    const {expandedKeys} = this.state;
+    const {expandedKeys = []} = this.state;
     return (
       <div className={styles.container}>
         <span
@@ -117,25 +158,29 @@ class HcsSequenceSelector extends React.Component {
               <div
                 className={styles.timepointsContainer}
               >
-                {(sequence.timeSeries || []).map(timePoint => (
-                  <div
-                    className={classNames(
-                      styles.timepoint,
-                      this.selectedTimePoint === timePoint.id &&
-                      selectedSequence === sequence.id
-                        ? 'cp-timepoint-button-active'
-                        : 'cp-timepoint-button',
-                      {
-                        [styles.active]: this.selectedTimePoint === timePoint.id &&
-                        selectedSequence === sequence.id
+                {(sequence.timeSeries || []).map(timePoint => {
+                  const selected = this.sequenceTimePointIsSelected(sequence.id, timePoint.id);
+                  return (
+                    <div
+                      className={
+                        classNames(
+                          styles.timepoint,
+                          {
+                            [styles.active]: selected,
+                            'cp-timepoint-button-active': selected,
+                            'cp-timepoint-button': !selected
+                          }
+                        )
                       }
-                    )}
-                    key={timePoint.id}
-                    onClick={() => this.onChangeTimePoint(sequence.sequence, timePoint)}
-                  >
-                    {timePoint.name}
-                  </div>
-                ))}
+                      key={timePoint.id}
+                      onClick={
+                        (event) => this.onChangeTimePoint(sequence.sequence, timePoint, event)
+                      }
+                    >
+                      {timePoint.name}
+                    </div>
+                  );
+                })}
               </div>
             </Collapse.Panel>
           ))}
@@ -147,9 +192,9 @@ class HcsSequenceSelector extends React.Component {
 
 HcsSequenceSelector.propTypes = {
   sequences: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  selectedSequence: PropTypes.string,
-  selectedTimePoint: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  onChangeTimePoint: PropTypes.func
+  selection: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  onChange: PropTypes.func,
+  multiple: PropTypes.bool
 };
 
 export default HcsSequenceSelector;

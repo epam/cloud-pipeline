@@ -85,9 +85,11 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public RunInstance scaleUpNode(final Long runId, final RunInstance instance) {
+    public RunInstance scaleUpNode(final Long runId, final RunInstance instance,
+                                   final Map<String, String> runtimeParameters) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
-        final RunInstance scaledUpInstance = getInstanceService(region).scaleUpNode(region, runId, instance);
+        final RunInstance scaledUpInstance = getInstanceService(region)
+                .scaleUpNode(region, runId, instance, runtimeParameters);
         kubernetesManager.createNodeService(scaledUpInstance);
         return scaledUpInstance;
     }
@@ -206,6 +208,7 @@ public class CloudFacadeImpl implements CloudFacade {
                         envVars.put(SystemParams.CLOUD_PROVIDER.name(), r.getProvider().name());
                         envVars.put(SystemParams.CLOUD_REGION.name(), r.getRegionCode());
                         envVars.put(SystemParams.CLOUD_REGION_ID.name(), String.valueOf(r.getId()));
+                        envVars.put(SystemParams.GLOBAL_DISTRIBUTION_URL.name(), getGlobalDistributionUrl(r));
                     }
                     return envVars;
                 })
@@ -218,6 +221,11 @@ public class CloudFacadeImpl implements CloudFacade {
                     return true;
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2));
+    }
+
+    private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
+        return Optional.ofNullable(region.getGlobalDistributionUrl())
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
     }
 
     @Override
@@ -275,15 +283,15 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public InstanceDNSRecord createDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
-        final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
-        return getInstanceService(cloudRegion).getOrCreateInstanceDNSRecord(cloudRegion, dnsRecord);
+    public InstanceDNSRecord createDNSRecord(final Long regionId, final InstanceDNSRecord record) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).getOrCreateInstanceDNSRecord(region, record);
     }
 
     @Override
-    public InstanceDNSRecord removeDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
-        final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
-        return getInstanceService(cloudRegion).deleteInstanceDNSRecord(cloudRegion, dnsRecord);
+    public InstanceDNSRecord removeDNSRecord(final Long regionId, final InstanceDNSRecord record) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).deleteInstanceDNSRecord(region, record);
     }
 
     @Override

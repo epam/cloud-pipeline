@@ -37,20 +37,24 @@ class AbstractMount(object):
     __metaclass__ = ABCMeta
 
     def get_mount_webdav_cmd(self, config, mountpoint, options, custom_options, web_dav_url, mode, threading=False,
-                             log_level=None):
-        additional_args = self._append_arguments(['--webdav', web_dav_url], threading, log_level, custom_options)
+                             log_level=None, show_archive=False):
+        additional_args = self._append_arguments(['--webdav', web_dav_url], threading, log_level, custom_options,
+                                                 show_archive)
         return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
     def get_mount_storage_cmd(self, config, mountpoint, options, custom_options, bucket, mode, threading=False,
-                              log_level=None):
-        additional_args = self._append_arguments(['--bucket', bucket], threading, log_level, custom_options)
+                              log_level=None, show_archive=False):
+        additional_args = self._append_arguments(['--bucket', bucket], threading, log_level, custom_options,
+                                                 show_archive)
         return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
-    def _append_arguments(self, args, threading, log_level, custom_options):
+    def _append_arguments(self, args, threading, log_level, custom_options, show_archive):
         if threading:
             args.append('--threads')
         if log_level:
             args.extend(['--logging-level', log_level])
+        if show_archive:
+            args.append('--show-archive')
         if custom_options:
             args.extend(self._build_custom_option_arguments(custom_options))
         return args
@@ -67,6 +71,9 @@ class AbstractMount(object):
     @abstractmethod
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         pass
+
+    def get_python_path(self):
+        return None
 
 
 class FrozenMount(AbstractMount):
@@ -130,11 +137,14 @@ class SourceMount(AbstractMount):
             mount_cmd.extend(['-o', options])
         return mount_cmd
 
+    def get_python_path(self):
+        return dirname(Config.get_base_source_dir())
+
 
 class Mount(object):
 
     def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
-                       log_file=None, log_level=None, threading=False, mode=700, timeout=1000):
+                       log_file=None, log_level=None, threading=False, mode=700, timeout=1000, show_archive=False):
         config = Config.instance()
         username = self.normalize_username(config.get_current_user())
         mount = FrozenMount() if is_frozen() else SourceMount()
@@ -142,10 +152,12 @@ class Mount(object):
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
             self.mount_dav(mount, config, mountpoint, options, custom_options, web_dav_url, mode,
-                           log_file=log_file, log_level=log_level, threading=threading, timeout=timeout)
+                           log_file=log_file, log_level=log_level, threading=threading, timeout=timeout,
+                           show_archive=show_archive)
         else:
             self.mount_storage(mount, config, mountpoint, options, custom_options, bucket, mode,
-                               log_file=log_file, log_level=log_level, threading=threading, timeout=timeout)
+                               log_file=log_file, log_level=log_level, threading=threading, timeout=timeout,
+                               show_archive=show_archive)
 
     # Split username by @ to get only first part of the user name,
     # because webdav trail user name as well to get get user folder name
@@ -153,23 +165,27 @@ class Mount(object):
         return username.split('@')[0]
 
     def mount_dav(self, mount, config, mountpoint, options, custom_options, web_dav_url, mode,
-                  log_file=None, log_level=None, threading=False, timeout=1000):
+                  log_file=None, log_level=None, threading=False, timeout=1000, show_archive=False):
         mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, custom_options, web_dav_url, mode,
-                                               log_level=log_level, threading=threading)
-        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
+                                               log_level=log_level, threading=threading, show_archive=show_archive)
+        python_path = mount.get_python_path()
+        self.run(config, mount_cmd, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 
     def mount_storage(self, mount, config, mountpoint, options, custom_options, bucket, mode,
-                      log_file=None, log_level=None, threading=False, timeout=1000):
+                      log_file=None, log_level=None, threading=False, timeout=1000, show_archive=False):
         mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, custom_options, bucket, mode,
-                                                log_level=log_level, threading=threading)
-        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
+                                                log_level=log_level, threading=threading, show_archive=show_archive)
+        python_path = mount.get_python_path()
+        self.run(config, mount_cmd, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 
-    def run(self, config, mount_cmd, mount_timeout=5*MS_IN_SEC, log_file=None):
+    def run(self, config, mount_cmd, mount_timeout=5*MS_IN_SEC, python_path=None, log_file=None):
         output_file = log_file if log_file else os.devnull
         with open(output_file, 'w') as output:
             mount_environment = os.environ.copy()
             mount_environment['API'] = config.api
             mount_environment['API_TOKEN'] = config.get_token()
+            if python_path:
+                mount_environment['PYTHONPATH'] = python_path
             if config.proxy:
                 mount_environment['http_proxy'] = config.proxy
                 mount_environment['https_proxy'] = config.proxy

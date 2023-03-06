@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitGroup;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -51,7 +52,6 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.GitUtils;
-import joptsimple.internal.Strings;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -100,6 +100,7 @@ public class GitManager {
     private static final String ANY_SUB_PATH = "*";
     private static final String ROOT_PATH = "/";
     public static final String REVERT_MESSAGE = "Revert %s to commit %s";
+    private static final String GIT_REPO_EXTENSION = ".git";
 
     private CmdExecutor cmdExecutor = new CmdExecutor();
 
@@ -116,12 +117,6 @@ public class GitManager {
 
     @Value("${working.directory}")
     private String workingDirPath;
-
-    @Value("${git.src.directory}")
-    private String srcDirectory;
-
-    @Value("${git.docs.directory}")
-    private String docsDirectory;
 
     @Value("${templates.directory}")
     private String templatesDirectoryPath;
@@ -140,9 +135,10 @@ public class GitManager {
     }
 
     public GitlabClient getGitlabClient(String gitHost, String gitToken, Long gitAdminId, String gitAdminName) {
+        final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
         return GitlabClient
                 .initializeGitlabClientFromHostAndToken(gitHost, gitToken, authManager.getAuthorizedUser(),
-                        gitAdminId, gitAdminName);
+                        gitAdminId, gitAdminName, apiVersion);
     }
 
     private GitlabClient getGitlabClientForPipeline(Pipeline pipeline) {
@@ -160,9 +156,10 @@ public class GitManager {
         boolean externalHost = !StringUtils.isNullOrEmpty(providedToken);
         String token = externalHost ? providedToken :
                 preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
+        final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
         return GitlabClient.initializeGitlabClientFromRepositoryAndToken(
                 rootClient ? adminName : authManager.getAuthorizedUser(),
-                repository, token, adminId, adminName, externalHost);
+                repository, token, adminId, adminName, externalHost, apiVersion);
     }
 
     public GitCredentials getGitCredentials(Long id) {
@@ -208,9 +205,10 @@ public class GitManager {
         return pipelineRepositoryService.getRepositoryContents(pipeline, path, version, recursive);
     }
 
-    public List<GitRepositoryEntry> getPipelineSources(Long id, String version)
-            throws GitClientException {
-        return this.getPipelineSources(id, version, srcDirectory, false);
+    public List<GitRepositoryEntry> getPipelineSources(Long id, String version) throws GitClientException {
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        return pipelineRepositoryService
+                .getRepositoryContents(pipeline, findRepoSrcPath(pipeline), version, false);
     }
 
     public List<GitRepositoryEntry> getPipelineSources(Long id,
@@ -222,10 +220,8 @@ public class GitManager {
         List<GitRepositoryEntry> entries;
         if (StringUtils.isNullOrEmpty(path)) {
             final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-            final String sources = RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType())
-                    ? Strings.EMPTY
-                    : srcDirectory;
-            entries = pipelineRepositoryService.getRepositoryContents(pipeline, sources, version, recursive);
+            entries = pipelineRepositoryService.getRepositoryContents(
+                    pipeline, findRepoSrcPath(pipeline), version, recursive);
             if (!RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) && appendConfigurationFileIfNeeded) {
                 final GitRepositoryEntry configurationEntry = getConfigurationFileEntry(id, version,
                         pipeline.getConfigurationPath());
@@ -270,21 +266,22 @@ public class GitManager {
     }
 
     public GitCommitEntry createOrRenameFolder(Long id, PipelineSourceItemVO folderVO) throws GitClientException {
-        String folderName = FilenameUtils.getName(folderVO.getPath());
+        final String folderPath = GitUtils.withoutLeadingDelimiter(folderVO.getPath());
+        String folderName = FilenameUtils.getName(folderPath);
         Assert.isTrue(GitUtils.checkGitNaming(folderName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_FOLDER_NAME, folderName));
         Pipeline pipeline = pipelineManager.load(id, true);
         if (folderVO.getPreviousPath() == null) {
             // Previous path is missing: creating folder
             return pipelineRepositoryService.createFolder(pipeline,
-                    folderVO.getPath(),
+                    folderPath,
                     folderVO.getLastCommitId(),
                     folderVO.getComment());
         }
         // else: renaming folder
         return pipelineRepositoryService.renameFolder(pipeline,
-                folderVO.getPreviousPath(),
-                folderVO.getPath(),
+                GitUtils.withoutLeadingDelimiter(folderVO.getPreviousPath()),
+                folderPath,
                 folderVO.getLastCommitId(),
                 folderVO.getComment());
     }
@@ -293,12 +290,13 @@ public class GitManager {
                                        final String folder,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
-        return pipelineRepositoryService.removeFolder(pipeline, folder, lastCommitId, commitMessage, srcDirectory);
+        return pipelineRepositoryService.removeFolder(pipeline, GitUtils.withoutLeadingDelimiter(folder),
+                lastCommitId, commitMessage, GitUtils.withoutLeadingDelimiter(pipeline.getCodePath()));
     }
 
     public GitCommitEntry modifyFile(Pipeline pipeline,
                                      PipelineSourceItemVO sourceItemVO) throws GitClientException {
-        String sourcePath = sourceItemVO.getPath();
+        final String sourcePath = GitUtils.withoutLeadingDelimiter(sourceItemVO.getPath());
         Arrays.stream(sourcePath.split(PATH_DELIMITER)).forEach(pathPart ->
             Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, sourcePath)));
@@ -312,7 +310,7 @@ public class GitManager {
         }
         return pipelineRepositoryService.renameFile(pipeline,
                 sourcePath,
-                sourceItemVO.getPreviousPath(),
+                GitUtils.withoutLeadingDelimiter(sourceItemVO.getPreviousPath()),
                 sourceItemVO.getLastCommitId(),
                 sourceItemVO.getComment());
     }
@@ -322,17 +320,18 @@ public class GitManager {
         Assert.hasLength(sourceItemRevertVO.getCommitToRevert(), "Commit to revert should be provided!");
         Assert.hasLength(sourceItemRevertVO.getPath(), "Path to file should be provided!");
 
+        final String sourcePath = GitUtils.withoutLeadingDelimiter(sourceItemRevertVO.getPath());
         final byte[] content = getPipelineFileContents(
-                        pipeline,
-                        sourceItemRevertVO.getCommitToRevert(),
-                        sourceItemRevertVO.getPath()
+                pipeline,
+                sourceItemRevertVO.getCommitToRevert(),
+                sourcePath
         );
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(getRevertMessage(sourceItemRevertVO));
 
         final GitPushCommitActionEntry revertGitAction = new GitPushCommitActionEntry();
-        revertGitAction.setFilePath(sourceItemRevertVO.getPath());
+        revertGitAction.setFilePath(sourcePath);
         revertGitAction.setContent(Base64.getEncoder().encodeToString(content));
         revertGitAction.setEncoding(BASE64_ENCODING);
         revertGitAction.setAction(ACTION_UPDATE);
@@ -354,11 +353,11 @@ public class GitManager {
      * @return docs file list of specified pipeline version
      * @throws GitClientException if something goes wrong
      */
-    public List<GitRepositoryEntry> getPipelineDocs(Long id, String version)
-            throws GitClientException {
+    public List<GitRepositoryEntry> getPipelineDocs(Long id, String version) throws GitClientException {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
-
-        return pipelineRepositoryService.getRepositoryContents(pipeline, docsDirectory, version, false);
+        final String docsPath = pipeline.getDocsPath();
+        Assert.notNull(docsPath, messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_DOCS_NOT_FOUND, id));
+        return pipelineRepositoryService.getRepositoryContents(pipeline, docsPath, version, false);
     }
 
     public File getConfigFile(Pipeline pipeline, String version) {
@@ -393,7 +392,8 @@ public class GitManager {
                         pipelineName,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL),
+                        preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY));
     }
 
     public GitProject createRepository(final String pipelineName, final String description) throws GitClientException {
@@ -402,7 +402,8 @@ public class GitManager {
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         true,
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL),
+                        preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY)
                 );
     }
 
@@ -419,8 +420,9 @@ public class GitManager {
         String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
+        final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
         return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, gitToken,
-                authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
+                authManager.getAuthorizedUser(), gitAdminId, gitAdminName, apiVersion);
     }
 
     public GitProject createEmptyRepository(final String pipelineName,
@@ -430,7 +432,8 @@ public class GitManager {
                 description,
                 preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                 false,
-                preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
+                preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL),
+                preferenceManager.getPreference(SystemPreferences.GITLAB_PROJECT_VISIBILITY)
         );
     }
 
@@ -524,7 +527,7 @@ public class GitManager {
                                                                           final Integer pageSize) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
-                GitRepositoryUrl.from(pipeline.getRepository()),
+                getGitlabRepositoryPath(pipeline),
                 new GitReaderLogsPathFilter(getContextPathList(path)), version, page, pageSize
         ));
     }
@@ -533,7 +536,7 @@ public class GitManager {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         final GitReaderEntryListing<GitReaderObject> listing =
                 callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTree(
-                    GitRepositoryUrl.from(pipeline.getRepository()),
+                        getGitlabRepositoryPath(pipeline),
                         new GitReaderLogsPathFilter(getContextPathList(path)),
                         version, 0L, 1
                 ));
@@ -552,7 +555,7 @@ public class GitManager {
                                                                                         final Integer pageSize) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
-                GitRepositoryUrl.from(pipeline.getRepository()),
+                getGitlabRepositoryPath(pipeline),
                 new GitReaderLogsPathFilter(getContextPathList(path)),
                 version, page, pageSize
         ));
@@ -564,7 +567,7 @@ public class GitManager {
         final GitReaderLogsPathFilter paths) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryTreeLogs(
-                GitRepositoryUrl.from(pipeline.getRepository()), version, paths
+                getGitlabRepositoryPath(pipeline), version, paths
         ));
     }
 
@@ -575,7 +578,7 @@ public class GitManager {
         final GitCommitsFilter filter) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommits(
-                GitRepositoryUrl.from(pipeline.getRepository()), page, pageSize,
+                getGitlabRepositoryPath(pipeline), page, pageSize,
                 buildFiltersWithUsersFromGitLab(filter), getFilesToIgnore()
         ));
     }
@@ -584,7 +587,7 @@ public class GitManager {
                                                   final GitCommitsFilter filter) {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, filter.getRef());
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiffs(
-                GitRepositoryUrl.from(pipeline.getRepository()),
+                getGitlabRepositoryPath(pipeline),
                 includeDiff, buildFiltersWithUsersFromGitLab(filter), getFilesToIgnore()
         ));
     }
@@ -593,7 +596,7 @@ public class GitManager {
                                                       final String path) {
         final Pipeline pipeline = pipelineManager.load(id);
         return callGitReaderApi(gitReaderClient -> gitReaderClient.getRepositoryCommitDiff(
-                GitRepositoryUrl.from(pipeline.getRepository()),
+                getGitlabRepositoryPath(pipeline),
                 commit,
                 new GitReaderLogsPathFilter(
                         ListUtils.union(getContextPathList(path), getFilesToIgnore())
@@ -757,5 +760,28 @@ public class GitManager {
 
     private String getConfigFilePath(final String configPath) {
         return StringUtils.isNullOrEmpty(configPath) ? CONFIG_FILE_NAME : configPath;
+    }
+
+    private String getGitlabRepositoryPath(final Pipeline pipeline) {
+        final boolean hashedRepositoriesSupported = preferenceManager.getPreference(
+                SystemPreferences.GITLAB_HASHED_REPO_SUPPORT);
+        final GitRepositoryUrl gitRepositoryUrl = GitRepositoryUrl.from(pipeline.getRepository());
+        final String namespace = gitRepositoryUrl.getNamespace()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid repository URL format"));
+        final String project = gitRepositoryUrl.getProject()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid repository URL format"));
+        if (hashedRepositoriesSupported) {
+            final GitProjectStorage projectStorage = getDefaultGitlabClient().getProjectStorage(project);
+            if (Objects.nonNull(projectStorage)) {
+                return projectStorage.getDiskPath() + GIT_REPO_EXTENSION;
+            }
+        }
+        return Paths.get(namespace, project + GIT_REPO_EXTENSION).toString();
+    }
+
+    private String findRepoSrcPath(final Pipeline pipeline) {
+        Assert.notNull(pipeline.getCodePath(),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_SRC_NOT_FOUND, pipeline.getId()));
+        return pipeline.getCodePath();
     }
 }

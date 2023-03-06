@@ -22,159 +22,230 @@ import {observer} from 'mobx-react';
 import CellProfilerParameter from './parameter';
 import styles from './cell-profiler.css';
 
-class CellProfilerModule extends React.Component {
-  renderHeader () {
-    const {
-      cpModule,
-      onExpandedChange,
-      movable,
-      removable
-    } = this.props;
-    if (!cpModule) {
-      return null;
-    }
-    const prevent = (e) => {
-      if (e) {
-        e.stopPropagation();
-      }
-    };
-    const moveUp = (e) => {
-      prevent(e);
-      cpModule.moveUp();
-    };
-    const moveDown = (e) => {
-      prevent(e);
-      cpModule.moveDown();
-    };
-    const remove = (e) => {
-      prevent(e);
-      cpModule.remove();
-    };
-    return (
-      <div
-        className={
-          classNames(
-            styles.cellProfilerCpModuleHeader,
-            'cell-profiler-module-header'
-          )
-        }
-        onClick={onExpandedChange}
-      >
-        <Icon
-          type="right"
-          className={styles.expandIndicator}
-        />
-        <b className={styles.title}>
-          {cpModule.displayName}
+function Circle ({className, pending, empty}) {
+  return (
+    <svg
+      className={
+        classNames(
+          className,
+          styles.cpModuleExecutionIndicator,
           {
-            cpModule.hasExecutionResults && (
-              <Icon type="file" />
-            )
+            [styles.pending]: pending,
+            [styles.empty]: empty
           }
-        </b>
-        {
-          !cpModule.hidden && movable && (
-            <Button
-              className={styles.action}
-              size="small"
-              disabled={cpModule.isFirst}
-              onClick={moveUp}
-            >
-              <Icon
-                type="up"
-              />
-            </Button>
-          )
-        }
-        {
-          !cpModule.hidden && movable && (
-            <Button
-              className={styles.action}
-              size="small"
-              disabled={cpModule.isLast}
-              onClick={moveDown}
-            >
-              <Icon
-                type="down"
-              />
-            </Button>
-          )
-        }
-        {
-          !cpModule.hidden && removable && (
-            <Button
-              className={styles.action}
-              size="small"
-              type="danger"
-              onClick={remove}
-            >
-              <Icon
-                type="delete"
-              />
-            </Button>
-          )
-        }
-      </div>
-    );
-  }
-
-  render () {
-    const {
-      cpModule,
-      expanded
-    } = this.props;
-    if (!cpModule) {
-      return null;
-    }
-    const params = cpModule.getAllVisibleParameters();
-    return (
-      <div
-        className={
-          classNames(
-            styles.cellProfilerCpModule,
-            'cell-profiler-module',
-            {
-              expanded,
-              [styles.expanded]: expanded
-            }
-          )
-        }
-      >
-        {
-          this.renderHeader()
-        }
-        {
-          expanded && (
-            <div
-              className={styles.cellProfilerCpModuleContent}
-            >
-              {
-                params.map((parameter) => (
-                  <CellProfilerParameter
-                    key={parameter.parameter.id}
-                    parameterValue={parameter}
-                  />
-                ))
-              }
-            </div>
-          )
-        }
-      </div>
-    );
-  }
+        )
+      }
+      viewBox="0 0 6 6"
+      width="6"
+      height="6"
+    >
+      <circle
+        cx="3"
+        cy="3"
+        r="2"
+      />
+    </svg>
+  );
 }
 
-CellProfilerModule.propTypes = {
+function CellProfilerModuleHeaderRenderer (props) {
+  const {
+    cpModule,
+    movable,
+    removable,
+    hasErrors = false
+  } = props;
+  if (!cpModule) {
+    return null;
+  }
+  /**
+   * @type {Analysis}
+   */
+  const analysis = cpModule.analysis;
+  /**
+   * @type {AnalysisPipeline}
+   */
+  const pipeline = cpModule.pipeline;
+  // eslint-disable-next-line
+  const outputImage = analysis
+    ? analysis.getOutputImageForModule(cpModule)
+    : undefined;
+  const hasOutputImage = !!outputImage;
+  const selected = pipeline &&
+    pipeline.graphicsOutput &&
+    pipeline.graphicsOutput.outputIsSelectedAsOverlayImage(outputImage);
+  const renderIcon = () => {
+    if (!cpModule.statusReporting) {
+      return null;
+    }
+    if (cpModule.pending || cpModule.done) {
+      return (
+        <Circle
+          className={
+            classNames({
+              'cp-primary': cpModule.pending,
+              'cp-success': cpModule.done
+            })
+          }
+          pending={cpModule.pending}
+        />
+      );
+    } else {
+      return (
+        <Circle
+          className="cp-text-not-important"
+          empty
+        />
+      );
+    }
+  };
+  const prevent = (e) => {
+    if (e) {
+      e.stopPropagation();
+    }
+  };
+  const moveUp = (e) => {
+    prevent(e);
+    cpModule.moveUp();
+  };
+  const moveDown = (e) => {
+    prevent(e);
+    cpModule.moveDown();
+  };
+  const remove = (e) => {
+    prevent(e);
+    cpModule.remove();
+  };
+  const onSelectOutput = (event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (!pipeline || !pipeline.graphicsOutput) {
+      return;
+    }
+    if (selected) {
+      (pipeline.graphicsOutput.setOverlayImage)(undefined, analysis.hcsImageViewer);
+    } else {
+      (pipeline.graphicsOutput.setOverlayImage)(outputImage, analysis.hcsImageViewer);
+    }
+  };
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        flex: 1
+      }}
+      className={hasErrors ? 'cp-error' : ''}
+    >
+      <b style={{marginRight: 'auto'}}>
+        {renderIcon()}
+        {cpModule.displayName}
+        {
+          hasOutputImage && (
+            <Icon
+              type="picture"
+              className={
+                classNames({
+                  'cp-text-not-important': !selected,
+                  'cp-primary': selected
+                })
+              }
+              style={{
+                cursor: 'pointer',
+                marginLeft: 5,
+                fontWeight: 'normal'
+              }}
+              onClick={onSelectOutput}
+            />
+          )
+        }
+      </b>
+      {
+        !cpModule.hidden && movable && (
+          <Button
+            className={styles.action}
+            size="small"
+            disabled={cpModule.isFirst}
+            onClick={moveUp}
+          >
+            <Icon
+              type="up"
+            />
+          </Button>
+        )
+      }
+      {
+        !cpModule.hidden && movable && (
+          <Button
+            className={styles.action}
+            size="small"
+            disabled={cpModule.isLast}
+            onClick={moveDown}
+          >
+            <Icon
+              type="down"
+            />
+          </Button>
+        )
+      }
+      {
+        !cpModule.hidden && removable && (
+          <Button
+            className={styles.action}
+            size="small"
+            type="danger"
+            onClick={remove}
+          >
+            <Icon
+              type="delete"
+            />
+          </Button>
+        )
+      }
+    </div>
+  );
+}
+
+function CellProfilerModuleRenderer ({cpModule}) {
+  if (!cpModule) {
+    return null;
+  }
+  const params = cpModule.getAllVisibleParameters();
+  return (
+    <div>
+      {
+        params.map((parameter) => (
+          <CellProfilerParameter
+            key={parameter.parameter.id}
+            parameterValue={parameter}
+          />
+        ))
+      }
+    </div>
+  );
+}
+
+CellProfilerModuleRenderer.propTypes = {
+  cpModule: PropTypes.object
+};
+
+CellProfilerModuleHeaderRenderer.propTypes = {
   cpModule: PropTypes.object,
-  expanded: PropTypes.bool,
-  onExpandedChange: PropTypes.func,
   removable: PropTypes.bool,
   movable: PropTypes.bool
 };
 
-CellProfilerModule.defaultProps = {
+CellProfilerModuleHeaderRenderer.defaultProps = {
   removable: true,
   movable: true
 };
 
-export default observer(CellProfilerModule);
+const CellProfilerModule = observer(CellProfilerModuleRenderer);
+const CellProfilerModuleHeader = observer(CellProfilerModuleHeaderRenderer);
+
+export {
+  CellProfilerModule,
+  CellProfilerModuleHeader
+};

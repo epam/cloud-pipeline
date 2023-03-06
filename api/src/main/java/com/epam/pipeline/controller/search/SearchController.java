@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.search;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
+import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchResult;
@@ -27,6 +28,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +36,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
@@ -65,5 +71,20 @@ public class SearchController extends AbstractRestController {
             })
     public Result<FacetedSearchResult> facetedSearch(@RequestBody final FacetedSearchRequest searchRequest) {
         return Result.success(searchManager.facetedSearch(searchRequest));
+    }
+
+    @PostMapping(value = "/search/facet/export")
+    @ResponseBody
+    @ApiOperation(
+            value = "Export faceted search result as a csv file.",
+            notes = "Export faceted search result as a csv file.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public void export(@RequestBody final FacetedSearchExportRequest searchExportRequest,
+                       final HttpServletResponse response) throws IOException {
+        final String reportFileName = StringUtils.isNotBlank(searchExportRequest.getCsvFileName())
+                ? searchExportRequest.getCsvFileName()
+                : String.format("facet_report_%s.csv", LocalDateTime.now());
+        writeFileToResponse(response, searchManager.export(searchExportRequest), reportFileName);
     }
 }

@@ -139,7 +139,7 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
 
     if [ -z $CP_SLURM_PACKAGE_URL ]; then
-        CP_SLURM_PACKAGE_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/slurm/rpm/slurm-19.05.5-1.el7.x86_64.tar"
+        CP_SLURM_PACKAGE_URL="${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-19.05.5-1.el7.x86_64.tar"
         CP_SLURM_SOURCE_URL="https://download.schedmd.com/slurm/slurm-19.05.5.tar.bz2"
     fi
 

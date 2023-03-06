@@ -21,6 +21,7 @@ import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
+import com.epam.pipeline.billingreportagent.model.ToolAddress;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
@@ -96,7 +97,8 @@ public class RunToBillingRequestConverterImplTest {
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
 
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-                .entity(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU)).build();
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
         final Collection<PipelineRunBillingInfo> billings =
                 converter.convertRunToBillings(runContainer,
                         LocalDate.of(2019, 12, 4).atStartOfDay(),
@@ -117,7 +119,8 @@ public class RunToBillingRequestConverterImplTest {
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
 
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-            .entity(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU)).build();
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
         final Collection<PipelineRunBillingInfo> billings =
             converter.convertRunToBillings(runContainer,
                                            LocalDate.of(2019, 12, 1).atStartOfDay(),
@@ -144,7 +147,8 @@ public class RunToBillingRequestConverterImplTest {
         final PipelineRun run = run();
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-            .entity(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU)).build();
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
 
         final Collection<PipelineRunBillingInfo> billings =
             converter.convertRunToBillings(runContainer,
@@ -166,8 +170,9 @@ public class RunToBillingRequestConverterImplTest {
 
         final EntityContainer<PipelineRunWithType> runContainer =
             EntityContainer.<PipelineRunWithType>builder()
-                .entity(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU))
+                .entity(runEntity(run, Collections.emptyList()))
                 .owner(testUserWithMetadata)
+                .region(TestUtils.createTestRegion(REGION_ID))
                 .build();
 
         final LocalDateTime prevSync = LocalDate.of(2019, 12, 4).atStartOfDay();
@@ -215,7 +220,8 @@ public class RunToBillingRequestConverterImplTest {
                 disk(40L, LocalDateTime.of(2020, 5, 21, 22, 30)),
                 disk(60L, LocalDateTime.of(2020, 5, 24, 14, 0)));
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-                .entity(new PipelineRunWithType(run, disks, ComputeType.CPU)).build();
+                .entity(runEntity(run, disks))
+                .build();
         final Collection<PipelineRunBillingInfo> billings =
                 converter.convertRunToBillings(runContainer,
                         LocalDate.of(2020, 5, 21).atStartOfDay(),
@@ -253,7 +259,8 @@ public class RunToBillingRequestConverterImplTest {
         disks.add(disk(20L, LocalDateTime.of(2020, 5, 21, 12, 0)));
         disks.add(disk(20L, LocalDateTime.of(2020, 5, 21, 12, 0)));
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-                .entity(new PipelineRunWithType(run, disks, ComputeType.CPU)).build();
+                .entity(runEntity(run, disks))
+                .build();
         final Collection<PipelineRunBillingInfo> billings =
                 converter.convertRunToBillings(runContainer,
                         LocalDate.of(2020, 5, 21).atStartOfDay(),
@@ -280,7 +287,8 @@ public class RunToBillingRequestConverterImplTest {
         disks.add(disk(20L, LocalDateTime.of(2020, 5, 21, 12, 0)));
         disks.add(disk(20L, LocalDateTime.of(2020, 5, 21, 12, 0)));
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-                .entity(new PipelineRunWithType(run, disks, ComputeType.CPU)).build();
+                .entity(runEntity(run, disks))
+                .build();
         final Collection<PipelineRunBillingInfo> billings =
                 converter.convertRunToBillings(runContainer,
                         LocalDate.of(2020, 5, 21).atStartOfDay(),
@@ -742,5 +750,9 @@ public class RunToBillingRequestConverterImplTest {
 
     private RunStatus status(final TaskStatus status, final LocalDateTime date) {
         return new RunStatus(RUN_ID, status, date);
+    }
+
+    private PipelineRunWithType runEntity(final PipelineRun run, final List<NodeDisk> disks) {
+        return new PipelineRunWithType(run, ToolAddress.empty(), null, null, disks, ComputeType.CPU);
     }
 }

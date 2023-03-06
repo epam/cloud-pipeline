@@ -20,4 +20,5 @@ include 'billing-report-agent'
 include 'cloud-pipeline-webdav-client'
 include 'git-reader'
 include 'monitoring-service'
+include 'storage-lifecycle-service'
 

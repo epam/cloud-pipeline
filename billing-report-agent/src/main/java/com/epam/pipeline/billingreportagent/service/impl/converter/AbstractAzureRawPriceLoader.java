@@ -86,7 +86,7 @@ public abstract class AbstractAzureRawPriceLoader {
         }
     }
 
-    protected abstract List<AzurePricingEntity> getAzurePricing(final AzureRegion region) throws IOException;
+    protected abstract List<AzurePricingEntity> getAzurePricing(AzureRegion region) throws IOException;
 
     protected AzurePricingClient buildRetrofitClient(final String azureApiUrl) {
         final OkHttpClient client = new OkHttpClient.Builder()

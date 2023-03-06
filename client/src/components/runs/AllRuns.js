@@ -14,152 +14,228 @@
  * limitations under the License.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
-import {Card, Col, Menu, Row} from 'antd';
+import {computed} from 'mobx';
+import {Alert, Card, Col, Menu, Row} from 'antd';
 import classNames from 'classnames';
+import moment from 'moment-timezone';
 import * as styles from './AllRuns.css';
 import RunTable from './RunTable';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
 import AdaptedLink from '../special/AdaptedLink';
-import pipelineRun from '../../models/pipelines/PipelineRun';
-import pipelines from '../../models/pipelines/Pipelines';
-import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import parseQueryParameters from '../../utils/queryParameters';
 import {openReRunForm} from './actions';
-import moment from 'moment-timezone';
+import continuousFetch from '../../utils/continuous-fetch';
+import PipelineRunSingleFilter from '../../models/pipelines/PipelineRunSingleFilter';
 
-const getStatusForServer = status => (status === 'active'
+const getStatusForServer = active => active
   ? ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
-  : ['SUCCESS', 'FAILURE', 'STOPPED']);
+  : ['SUCCESS', 'FAILURE', 'STOPPED'];
 const pageSize = 20;
 const refreshInterval = 10000;
 
-@connect({
-  pipelineRun
-})
 @roleModel.authenticationInfo
-@inject(({routing, counter, pipelineRun, authenticatedUserInfo}, {params}) => {
-  let runFilter;
-  let runParams;
-  let allUsers = false;
-  if (params.status === 'active') {
-    const queryParameters = parseQueryParameters(routing);
-    allUsers = queryParameters.hasOwnProperty('all')
-      ? (queryParameters.all === undefined ? true : queryParameters.all === 'true')
-      : false;
-    if (!allUsers && authenticatedUserInfo.loaded) {
-      runParams = {
-        page: 1,
-        pageSize: pageSize,
-        statuses: getStatusForServer(params.status),
-        owners: [authenticatedUserInfo.value.userName],
-        userModified: false
-      };
-      runFilter = pipelineRun.runFilter(runParams, true);
-    } else if (allUsers) {
-      runParams = {
-        page: 1,
-        pageSize: pageSize,
-        statuses: getStatusForServer(params.status),
-        userModified: false
-      };
-      runFilter = pipelineRun.runFilter(runParams, true);
-    }
-  } else {
-    runParams = {
-      page: 1,
-      pageSize: pageSize,
-      statuses: getStatusForServer(params.status),
-      userModified: false
-    };
-    runFilter = pipelineRun.runFilter(runParams, true);
-  }
+@inject('counter', 'pipelines')
+@inject(({routing}, {params}) => {
+  const {
+    status = 'active'
+  } = params;
+  const query = parseQueryParameters(routing);
+  const all = query.hasOwnProperty('all') && /^(true|undefined)$/i.test(`${query.all}`);
+  const active = /^active$/i.test(status);
   return {
-    runFilter,
-    initialRunParams: runParams,
-    counter,
-    pipelines: pipelines,
-    status: params.status,
-    authenticatedUserInfo,
-    pipelineRun,
-    allUsers
+    active,
+    all
   };
 })
 @observer
-class AllRuns extends Component {
-
-  initializeRunFilter = (filterParams) => {
-    this._runFilter = this.props.pipelineRun.runFilter(filterParams, true);
-    this._initialRunParams = filterParams;
+class AllRuns extends React.Component {
+  state = {
+    page: 1,
+    pending: false,
+    error: undefined,
+    filters: {},
+    total: 0,
+    runs: []
   };
-  reloadTable = () => {
-    this.runFilter && this.runFilter.fetch();
-    this.props.counter && this.props.counter.fetch();
-  };
 
-  handleTableChange (pagination, filter) {
-    const {current} = pagination;
-    this.setState({
-      activeRuns: this.state.activeRuns,
-      currentPage: current,
-      filter
-    });
+  @computed
+  get pipelines () {
+    const {pipelines} = this.props;
+    if (pipelines.loaded) {
+      return (pipelines.value || []).slice();
+    }
+    return [];
   }
 
-  filterArrayChanged = (oldFilter, newFilter, key) => {
-    const oldArray = oldFilter[key] ? oldFilter[key] : [];
-    const newArray = newFilter[key] ? newFilter[key] : [];
-    if (oldArray.length !== newArray.length) {
-      return true;
-    } else {
-      for (let i = 0; i < oldArray.length; i++) {
-        if (newArray.indexOf(oldArray[i]) === -1) {
-          return true;
-        }
-      }
+  componentDidMount () {
+    this.resetFilters();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      this.props.active !== prevProps.active ||
+      this.props.all !== prevProps.all
+    ) {
+      this.resetFilters();
     }
-    return false;
+  }
+
+  componentWillUnmount () {
+    this.stopContinuousRequest();
+    this.runTable = undefined;
+  }
+
+  stopContinuousRequest = () => {
+    if (typeof this.stop === 'function') {
+      this.stop();
+      this.stop = undefined;
+    }
   };
 
-  filterStatusesChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'statuses');
+  resetFilters = () => {
+    if (this.runTable) {
+      this.runTable.clearState();
+    }
+    this.setState({
+      page: 1,
+      error: undefined,
+      filters: {}
+    }, this.fetchPage);
   };
 
-  filterPipelinesChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'pipelineIds');
+  getFilterParams = async () => {
+    const {filters = {}} = this.state;
+    const {
+      active,
+      all,
+      authenticatedUserInfo
+    } = this.props;
+    const params = {
+      userModified: false
+    };
+    if (filters.statuses && filters.statuses.length) {
+      params.userModified = true;
+      params.statuses = filters.statuses;
+    } else {
+      params.statuses = getStatusForServer(active);
+    }
+    const parseDateFilter = filtersDate => {
+      if (filtersDate && filtersDate.length === 1) {
+        return moment(filtersDate[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS');
+      }
+      return undefined;
+    };
+    const startDateFrom = parseDateFilter(filters.started);
+    const endDateTo = parseDateFilter(filters.completed);
+    if (startDateFrom) {
+      params.userModified = true;
+      params.startDateFrom = startDateFrom;
+    }
+    if (endDateTo) {
+      params.userModified = true;
+      params.endDateTo = endDateTo;
+    }
+    if (filters.parentRunIds && filters.parentRunIds.length === 1) {
+      params.userModified = true;
+      params.parentId = filters.parentRunIds[0];
+    }
+    if (filters.pipelineIds && filters.pipelineIds.length) {
+      params.userModified = true;
+      params.pipelineIds = filters.pipelineIds;
+    }
+    if (filters.dockerImages && filters.dockerImages.length) {
+      params.userModified = true;
+      params.dockerImages = filters.dockerImages;
+    }
+    if (active && !all) {
+      try {
+        await authenticatedUserInfo.fetchIfNeededOrWait();
+        if (authenticatedUserInfo.loaded && authenticatedUserInfo.value) {
+          params.owners = [authenticatedUserInfo.value.userName].filter(Boolean);
+        }
+      } catch (_) {}
+    } else if (filters.owners && filters.owners.length) {
+      params.userModified = true;
+      params.owners = filters.owners;
+    }
+    return params;
+  }
+
+  fetchPage = () => {
+    this.stopContinuousRequest();
+    this.setState({pending: true}, async () => {
+      const {page} = this.state;
+      const {active} = this.props;
+      const payload = await this.getFilterParams();
+      const requestPayload = {
+        ...payload,
+        page: page,
+        pageSize
+      };
+      const request = new PipelineRunSingleFilter(
+        requestPayload,
+        true,
+        false
+      );
+      let token = this.token;
+      const call = () => request.filter(requestPayload);
+      const before = () => {
+        token = this.token = (this.token || 0) + 1;
+      };
+      const after = () => {
+        if (this.token === token) {
+          const state = {
+            pending: false,
+            total: 0,
+            runs: [],
+            error: undefined
+          };
+          if (request.loaded) {
+            state.total = request.total;
+            state.runs = request.value || [];
+          } else {
+            // error
+            state.error = request.error || 'Error fetching runs';
+          }
+          this.setState(state);
+        }
+      };
+      const {
+        stop
+      } = continuousFetch({
+        continuous: active,
+        intervalMS: refreshInterval,
+        call,
+        afterInvoke: after,
+        beforeInvoke: before
+      });
+      this.stop = stop;
+    });
   };
 
-  filterDockerImagesChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'dockerImages');
+  initializeRunTable = (control) => {
+    if (control) {
+      this.runTable = control;
+    }
   };
 
-  filterOwnerChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'owners');
+  handleTableChange = (pagination, filter) => {
+    const {current} = pagination;
+    this.setState({
+      page: current,
+      filters: filter
+    }, this.fetchPage);
   };
 
-  filterStartDateChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'started');
+  launchPipeline = (run) => {
+    return openReRunForm(run, this.props);
   };
 
-  filterEndDateChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'completed');
-  };
-
-  filterParentIdChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'parentRunIds');
-  };
-
-  filterChanged = (oldFilter, newFilter) => {
-    return this.filterStatusesChanged(oldFilter, newFilter) ||
-      this.filterPipelinesChanged(oldFilter, newFilter) ||
-      this.filterDockerImagesChanged(oldFilter, newFilter) ||
-      this.filterOwnerChanged(oldFilter, newFilter) ||
-      this.filterStartDateChanged(oldFilter, newFilter) ||
-      this.filterEndDateChanged(oldFilter, newFilter) ||
-      this.filterParentIdChanged(oldFilter, newFilter);
+  onSelectRun = ({id}) => {
+    this.props.router.push(`/run/${id}`);
   };
 
   navigateToActiveRuns = (my = false) => {
@@ -168,201 +244,92 @@ class AllRuns extends Component {
   };
 
   renderOwnersSwitch = () => {
-    if (this.props.status !== 'active') {
+    const {
+      active,
+      all,
+      counter
+    } = this.props;
+    const {
+      total
+    } = this.state;
+    if (
+      !active ||
+      (!all && counter.value <= total)
+    ) {
       return null;
     }
-    if (!this.props.counter.loaded || !this.runFilter || !this.runFilter.loaded) {
-      return null;
-    }
-    if (!this.props.allUsers &&
-      this.props.counter.value <= this.runFilter.total) {
-      return null;
-    }
-    if (this.props.allUsers) {
+    if (all) {
       return (
         <Row style={{marginBottom: 5, padding: 2}}>
-          Currently viewing <b>all available active runs</b>. <a onClick={() => this.navigateToActiveRuns(true)}>View only <b>your active runs</b></a>
+          Currently viewing <b>all available active runs</b>.
+          {' '}
+          <a onClick={() => this.navigateToActiveRuns(true)}>
+            View only <b>your active runs</b>
+          </a>
         </Row>
       );
-    } else {
+    }
+    return (
+      <Row style={{marginBottom: 5, padding: 2}}>
+        Currently viewing only
+        {' '}
+        <b>
+          your active runs ({total} out of {this.props.counter.value})
+        </b>.
+        {' '}
+        <a
+          onClick={() => this.navigateToActiveRuns(false)}
+        >
+          View <b>other available active runs</b>
+        </a>
+      </Row>
+    );
+  };
+
+  renderTable = () => {
+    const {
+      page,
+      pending,
+      error,
+      total,
+      runs = []
+    } = this.state;
+    const {
+      active,
+      all
+    } = this.props;
+    if (error) {
       return (
-        <Row style={{marginBottom: 5, padding: 2}}>
-          Currently viewing only <b>your active runs ({this.runFilter.total} out of {this.props.counter.value})</b>. <a onClick={() => this.navigateToActiveRuns(false)}>View <b>other available active runs</b></a>
-        </Row>
+        <Alert message={error} type="error" />
       );
     }
+    return (
+      <RunTable
+        onInitialized={this.initializeRunTable}
+        useFilter
+        loading={pending}
+        dataSource={runs}
+        handleTableChange={this.handleTableChange}
+        statuses={getStatusForServer(active)}
+        pipelines={this.pipelines}
+        pagination={{
+          total: total,
+          pageSize,
+          current: page
+        }}
+        ownersDisabled={active && !all}
+        reloadTable={this.fetchPage}
+        launchPipeline={this.launchPipeline}
+        onSelect={this.onSelectRun}
+      />
+    );
   };
-
-  state = {activeRuns: 0, currentPage: 1, filter: {}};
-
-  initializeRunTable = (control) => {
-    if (control) {
-      this.runTable = control;
-    }
-  };
-  launchPipeline = (run) => {
-    return openReRunForm(run, this.props);
-  };
-  onSelectRun = ({id}) => {
-    this.props.router.push(`/run/${id}`);
-  };
-  refreshTimer;
-  startTimer = () => {
-    if (!this.refreshTimer) {
-      this.refreshTimer = setInterval(this.reloadTable, refreshInterval);
-    }
-  };
-  endTimer = () => {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-      this.refreshTimer = null;
-    }
-  };
-
-  @observable _runFilter;
-  @observable _initialRunParams;
-
-  @computed
-  get runFilter () {
-    return this.props.runFilter || this._runFilter;
-  }
-
-  @computed
-  get initialRunParams () {
-    return this.props.initialRunParams || this._initialRunParams;
-  }
-
-  @computed
-  get currentRunParams () {
-    return {
-      statuses: this.state.filter && this.state.filter.statuses && this.state.filter.statuses.length
-        ? this.state.filter.statuses
-        : getStatusForServer(this.props.status),
-      pipelineIds: this.state.filter && this.state.filter.pipelineIds
-        ? this.state.filter.pipelineIds
-        : undefined,
-      dockerImages: this.state.filter && this.state.filter.dockerImages
-        ? this.state.filter.dockerImages
-        : undefined,
-      owners: this.props.status === 'active' && !this.props.allUsers && this.props.authenticatedUserInfo.loaded
-        ? [this.props.authenticatedUserInfo.value.userName]
-        : (this.state.filter && this.state.filter.owners
-          ? this.state.filter.owners
-          : undefined),
-      started: this.state.filter && this.state.filter.started
-        ? this.state.filter.started
-        : undefined,
-      completed: this.state.filter && this.state.filter.completed
-        ? this.state.filter.completed
-        : undefined,
-      parentRunIds: this.state.filter && this.state.filter.parentRunIds
-        ? this.state.filter.parentRunIds
-        : undefined
-    };
-  }
-
-  @computed
-  get userModifiedFilter () {
-    if (!this.initialRunParams) {
-      return false;
-    }
-    return this.filterStatusesChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterPipelinesChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterDockerImagesChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterOwnerChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterStartDateChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterEndDateChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterParentIdChanged(this.initialRunParams, this.currentRunParams);
-  }
-
-  getFilterParams () {
-    const statuses = this.state.filter.statuses && this.state.filter.statuses.length
-      ? this.state.filter.statuses
-      : getStatusForServer(this.props.params.status);
-    const startDateFrom = this.state.filter.started && this.state.filter.started.length === 1
-      ? moment(this.state.filter.started[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS')
-      : undefined;
-    const endDateTo = this.state.filter.completed && this.state.filter.completed.length === 1
-      ? moment(this.state.filter.completed[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS')
-      : undefined;
-    const parentId = this.state.filter.parentRunIds && this.state.filter.parentRunIds.length === 1
-      ? this.state.filter.parentRunIds[0] : undefined;
-
-    return {
-      page: this.state.currentPage,
-      pageSize,
-      statuses: statuses,
-      pipelineIds: this.state.filter.pipelineIds,
-      dockerImages: this.state.filter.dockerImages,
-      owners: (!this.props.allUsers && this.props.status === 'active' && this.props.authenticatedUserInfo.loaded)
-        ? [this.props.authenticatedUserInfo.value.userName]
-        : this.state.filter.owners,
-      startDateFrom,
-      endDateTo,
-      parentId,
-      userModified: this.userModifiedFilter
-    };
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.params.status !== this.props.params.status) {
-      this.setState(
-        {
-          activeRuns: this.props.counter.value,
-          currentPage: 1,
-          filter: {}
-        }, () => {
-          if (this.runTable && this.runTable.clearState) {
-            this.runTable.clearState();
-          }
-        }
-      );
-    }
-  }
-
-  componentDidMount () {
-    if (this.props.status.toLowerCase() === 'active') {
-      this.startTimer();
-    } else {
-      this.endTimer();
-    }
-  }
-
-  componentWillUnmount () {
-    this.endTimer();
-  }
-
-  componentDidUpdate (prevProps, prevState) {
-    if ((!this.props.counter.pending && prevState.activeRuns !== this.props.counter.value) ||
-      (prevState.currentPage !== this.state.currentPage) ||
-      this.filterChanged(prevState.filter, this.state.filter)) {
-      this.setState(
-        {
-          activeRuns: this.props.counter.value,
-          status: this.props.params.status
-        }
-      );
-      if (!this.runFilter) {
-        this.initializeRunFilter(this.getFilterParams());
-      } else {
-        this.runFilter.filter(this.getFilterParams(), true);
-      }
-    }
-    if (!this.runFilter && this.props.authenticatedUserInfo.loaded) {
-      this.initializeRunFilter(this.getFilterParams());
-    }
-    if (prevProps.status !== this.props.status) {
-      if (this.props.status.toLowerCase() === 'active') {
-        this.startTimer();
-      } else {
-        this.endTimer();
-      }
-    }
-  }
 
   render () {
-    const {status} = this.props.params;
-
+    const {
+      active,
+      counter
+    } = this.props;
     return (
       <Card
         className={
@@ -378,13 +345,17 @@ class AllRuns extends Component {
         <Row type="flex" align="bottom">
           <Col offset={2} span={20}>
             <Row type="flex" justify="center">
-              <Menu mode="horizontal" selectedKeys={[status]} className={styles.tabsMenu}>
+              <Menu
+                mode="horizontal"
+                selectedKeys={active ? ['active'] : ['completed']}
+                className={styles.tabsMenu}
+              >
                 <Menu.Item key="active">
                   <AdaptedLink
                     id="active-runs-button"
                     to={SessionStorageWrapper.getActiveRunsLink()}
                     location={location}>Active Runs
-                    {this.props.counter.value ? ` (${this.props.counter.value})` : ''}</AdaptedLink>
+                    {counter.value ? ` (${counter.value})` : ''}</AdaptedLink>
                 </Menu.Item>
                 <Menu.Item key="completed">
                   <AdaptedLink
@@ -410,23 +381,11 @@ class AllRuns extends Component {
         {
           this.renderOwnersSwitch()
         }
-        <Row>
-          <RunTable
-            onInitialized={this.initializeRunTable}
-            useFilter={true}
-            loading={this.props.authenticatedUserInfo.pending || !this.runFilter || this.runFilter.pending}
-            dataSource={this.runFilter ? this.runFilter.value : []}
-            handleTableChange={::this.handleTableChange}
-            statuses={getStatusForServer(this.props.params.status)}
-            pipelines={this.props.pipelines.pending ? [] : (this.props.pipelines.value || []).map(p => p)}
-            pagination={{total: this.runFilter ? this.runFilter.total : 0, pageSize, current: this.state.currentPage}}
-            ownersDisabled={this.props.status === 'active' && !this.props.allUsers}
-            reloadTable={this.reloadTable}
-            launchPipeline={this.launchPipeline}
-            onSelect={this.onSelectRun}
-          />
-        </Row>
-      </Card>);
+        {
+          this.renderTable()
+        }
+      </Card>
+    );
   }
 }
 

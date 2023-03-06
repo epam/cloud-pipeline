@@ -14,17 +14,276 @@
  *  limitations under the License.
  */
 
+import moment from 'moment-timezone';
 import PipelineRunFilter from '../../../../../models/pipelines/PipelineRunSingleFilter';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
 import LoadTool from '../../../../../models/tools/LoadTool';
+import whoAmI from '../../../../../models/user/WhoAmI';
+import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
+import storages from '../../../../../models/dataStorage/DataStorageAvailable';
+import LoadToolVersionSettings from '../../../../../models/tools/LoadToolVersionSettings';
 
 const DEFAULT_DOCKER_IMAGE = 'library/cellprofiler-web-api';
 
+export async function getAnalysisSettings (refresh = false) {
+  if (refresh) {
+    await preferences.fetch();
+  } else {
+    await preferences.fetchIfNeededOrWait();
+  }
+  return preferences.hcsAnalysisConfiguration || {};
+}
+
+export async function getAnalysisEndpointSetting () {
+  const configuration = await getAnalysisSettings();
+  const {
+    endpoint,
+    api = endpoint
+  } = configuration;
+  return api;
+}
+
+const containsPlaceholder = (placeholder) =>
+  (string) =>
+    (new RegExp(`{${placeholder}}`, 'i')).test(string);
+const hasUserPlaceholder = containsPlaceholder('user');
+const hasUserStoragePlaceholder = containsPlaceholder('user-storage');
+const fetchUserRequired = (specsFolder, resultsFolder) =>
+  hasUserPlaceholder(specsFolder) ||
+  hasUserStoragePlaceholder(specsFolder) ||
+  hasUserPlaceholder(resultsFolder) ||
+  hasUserStoragePlaceholder(resultsFolder);
+
+export async function getDockerImageInfo (dockerImage, dockerImageVersion = 'latest') {
+  if (!dockerImage) {
+    throw new Error('Batch analysis: analysis tool not specified');
+  }
+  let toolRequestPayload = dockerImage;
+  let registry;
+  if (Number.isNaN(Number(dockerImage))) {
+    const [
+      toolAndVersion,
+      group,
+      parsedRegistry
+    ] = dockerImage.split('/').reverse();
+    registry = parsedRegistry;
+    if (!group) {
+      throw new Error('Batch analysis: tool image format is incorrect (group is missing)');
+    }
+    const [
+      tool,
+      version = 'latest'
+    ] = toolAndVersion.split(':');
+    dockerImageVersion = version;
+    toolRequestPayload = [group, tool].filter(Boolean).join('/');
+  }
+  const toolRequest = new LoadTool(toolRequestPayload, registry);
+  await toolRequest.fetch();
+  if (toolRequest.error) {
+    throw new Error(toolRequest.error);
+  }
+  if (!toolRequest.value) {
+    throw new Error(`tool ${dockerImage} not found`);
+  }
+  const toolInfo = toolRequest.value;
+  const toolSettings = new LoadToolVersionSettings(toolInfo.id, dockerImageVersion);
+  await toolSettings.fetch();
+  if (toolSettings.error) {
+    throw new Error(toolSettings.error);
+  }
+  const info = (toolSettings.value || []).find(o => o.version === dockerImageVersion);
+  let versionSettings = {};
+  if (info && info.settings && info.settings.length > 0) {
+    versionSettings = info.settings[0].configuration;
+  }
+  return {
+    dockerImage: `${toolInfo.registry}/${toolInfo.image}:${dockerImageVersion}`,
+    dockerImageWithoutVersion: `${toolInfo.registry}/${toolInfo.image}`,
+    tool: toolInfo,
+    settings: versionSettings
+  };
+}
+
+export async function getBatchAnalysisDockerImage (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    dockerImage: analysisDockerImage,
+    batch = {}
+  } = settings || {};
+  let {
+    dockerImage = analysisDockerImage,
+    dockerImageVersion = 'latest'
+  } = batch;
+  try {
+    return getDockerImageInfo(dockerImage, dockerImageVersion);
+  } catch (e) {
+    throw new Error(`Batch analysis: ${e.message}`);
+  }
+}
+
+export async function getBatchAnalysisSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    batch = {}
+  } = settings || {};
+  let {
+    specsFolder,
+    resultsFolder,
+    defaultStorage,
+    rawImageDataRoot: predefinedRawImageDataRoot,
+    mounts = [],
+    tempFilesPath,
+    ...rest
+  } = batch;
+  if (!specsFolder) {
+    throw new Error('Batch analysis: specs folder not specified');
+  }
+  if (!resultsFolder) {
+    throw new Error('Batch analysis: results folder not specified');
+  }
+  let userName;
+  let userStorage = defaultStorage;
+  const date = moment.utc().format('YYYY-MM-DD');
+  if (fetchUserRequired(specsFolder, resultsFolder)) {
+    await whoAmI.fetchIfNeededOrWait();
+    if (whoAmI.error || !whoAmI.loaded) {
+      throw new Error('Batch analysis: not authenticated');
+    }
+    userName = whoAmI.value.userName;
+    await storages.fetchIfNeededOrWait();
+    if (whoAmI.value.defaultStorageId) {
+      const aStorage = (storages.value || [])
+        .find(s => Number(s.id) === Number(whoAmI.value.defaultStorageId));
+      if (aStorage) {
+        userStorage = aStorage.pathMask;
+      }
+    }
+  }
+  const replacePlaceholders = (string) => {
+    let result = string;
+    if (/{user}/i.test(result)) {
+      result = result.replace(/{user}/ig, userName);
+    }
+    if (/{user-storage}/i.test(result)) {
+      if (!userStorage) {
+        throw new Error('Batch analysis: default user storage not specified');
+      }
+      result = result.replace(/{user-storage}/ig, userStorage);
+    }
+    return result.replace(/{date}/ig, date);
+  };
+  specsFolder = replacePlaceholders(specsFolder);
+  resultsFolder = replacePlaceholders(resultsFolder);
+  const specsStorage = await createObjectStorageWrapper(
+    storages,
+    specsFolder,
+    {write: true, read: true},
+    {generateCredentials: false, isURL: true}
+  );
+  if (!specsStorage) {
+    throw new Error(`Batch analysis: storage for path "${specsFolder}" not found`);
+  }
+  const resultsStorage = await createObjectStorageWrapper(
+    storages,
+    resultsFolder,
+    {write: true, read: true},
+    {generateCredentials: false, isURL: true}
+  );
+  if (!resultsStorage) {
+    throw new Error(`Batch analysis: storage for path "${resultsFolder}" not found`);
+  }
+  const dockerImageInfo = await getBatchAnalysisDockerImage(false);
+  const additionalMounts = new Set(mounts.map(o => Number(o)));
+  let rawImagesPath;
+  if (predefinedRawImageDataRoot) {
+    const rawImagesStorage = await createObjectStorageWrapper(
+      storages,
+      predefinedRawImageDataRoot,
+      {read: true, write: false},
+      {generateCredentials: true, isURL: true}
+    );
+    if (rawImagesStorage) {
+      additionalMounts.add(rawImagesStorage.id);
+      rawImagesPath = rawImagesStorage.getRelativePath(predefinedRawImageDataRoot);
+    }
+  }
+  return {
+    ...dockerImageInfo,
+    ...rest,
+    specs: {
+      folder: specsStorage.getRelativePath(specsFolder),
+      storage: specsStorage
+    },
+    results: {
+      folder: resultsStorage.getRelativePath(resultsFolder),
+      storage: resultsStorage
+    },
+    mounts: [...additionalMounts],
+    rawImagesPath,
+    tempFilesPath
+  };
+}
+
+export async function getExternalEvaluationsSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    hcsFilesFolder,
+    batch = {}
+  } = settings || {};
+  const {
+    otherEvaluations = {}
+  } = batch;
+  const {
+    specPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/spec.json',
+    resultsPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/Results.csv',
+    analysisPath = '{HCS_FILE_INFO.previewDir}/eval/{EVALUATION_ID}/AnalysisFile.aas'
+  } = otherEvaluations;
+  return {
+    hcsFilesFolder,
+    specPath,
+    resultsPath,
+    analysisPath
+  };
+}
+
+export async function getVideoSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    api: mainAPI,
+    video
+  } = settings || {};
+  const {
+    api = mainAPI,
+    ...rest
+  } = video || {};
+  return {
+    ...rest,
+    api
+  };
+}
+
+export async function getBatchAnalysisSimilarCheckSettings (refresh = false) {
+  const settings = await getAnalysisSettings(refresh);
+  const {
+    batch = {}
+  } = settings || {};
+  const {
+    similar = {}
+  } = batch;
+  const {
+    'max-different-parameters': maxDifferentParameters,
+    mode = 'total'
+  } = similar;
+  return {
+    maxDifferentParameters,
+    mode
+  };
+}
+
 export async function findJobWithDockerImage (options = {}) {
-  await preferences.fetchIfNeededOrWait();
-  const configuration = preferences.hcsAnalysisConfiguration || {};
+  const configuration = await getAnalysisSettings();
   const {
     dockerImage = DEFAULT_DOCKER_IMAGE,
     jobId
@@ -32,25 +291,21 @@ export async function findJobWithDockerImage (options = {}) {
   if (jobId) {
     return {
       id: jobId,
-      status: 'RUNNING'
+      status: 'RUNNING',
+      __predefined__: true
     };
   }
   if (!dockerImage) {
     throw new Error('CellProfiler docker image is not specified');
   }
   const {
+    dockerImage: fullDockerImage
+  } = await getDockerImageInfo(dockerImage);
+  const {
     userInfo
   } = options;
   let owners;
-  let dockerImageRegExp;
-  if (typeof dockerImage === 'string') {
-    const withVersion = dockerImage.split('/').pop().split(':').length === 2;
-    dockerImageRegExp = new RegExp(`${dockerImage}${withVersion ? '$' : ''}`, 'i');
-  } else if (typeof dockerImage.test === 'function') {
-    dockerImageRegExp = dockerImage;
-  } else {
-    throw new Error(`Unknown docker image format: ${dockerImage}`);
-  }
+  const dockerImageRegExp = new RegExp(`^${fullDockerImage}$`, 'i');
   if (userInfo) {
     await userInfo.fetchIfNeededOrWait();
     if (userInfo.loaded) {}
@@ -60,7 +315,7 @@ export async function findJobWithDockerImage (options = {}) {
     page: 1,
     pageSize: 1000,
     userModified: false,
-    statuses: ['RUNNING', 'PAUSING', 'PAUSED', 'RESUMING'],
+    statuses: ['RUNNING'],
     owners
   }, true, false);
   await request.filter();
@@ -72,8 +327,7 @@ export async function findJobWithDockerImage (options = {}) {
 }
 
 export async function launchJobWithDockerImage () {
-  await preferences.fetchIfNeededOrWait();
-  const configuration = preferences.hcsAnalysisConfiguration || {};
+  const configuration = await getAnalysisSettings();
   const {
     dockerImage = DEFAULT_DOCKER_IMAGE
   } = configuration;
@@ -113,8 +367,7 @@ async function jobIsInitialized (job) {
       const defaultUrl = parsed.find(o => o.isDefault) || parsed[0];
       if (defaultUrl && defaultUrl.url) {
         const {url} = defaultUrl;
-        await preferences.fetchIfNeededOrWait();
-        const configuration = preferences.hcsAnalysisConfiguration || {};
+        const configuration = await getAnalysisSettings();
         const {
           endpointRegion
         } = configuration;
@@ -152,12 +405,13 @@ export async function waitForJobToBeInitialized (job, attempt = 0) {
   if (endpoint) {
     return endpoint;
   }
+  const interval = job.__predefined__ ? 0 : REFETCH_INTERVAL_MS;
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       fetchJobInfo(job.id)
         .then(info => waitForJobToBeInitialized(info, attempt + 1))
         .then(resolve)
         .catch(reject);
-    }, REFETCH_INTERVAL_MS);
+    }, interval);
   });
 }

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from user_model import UserModel
+from internal.model.mask import Mask
+from internal.model.tool_model import ToolModel
+from internal.model.user_model import UserModel
 
 
 class StorageModel(object):
+
     def __init__(self):
         self.identifier = None
         self.name = None
@@ -24,35 +27,41 @@ class StorageModel(object):
         self.path = None
         self.share_mount_id = None
         self.mount_source = None
-        self.users = []
+        self.users = {}
+        self.tools_to_mount = []
 
     @classmethod
     def load(cls, json):
         instance = StorageModel()
-        entity_json = json['entity'] if 'entity' in json else None
-        permissions_json = json['permissions'] if 'permissions' in json else None
+        entity_json = json.get('entity', {})
+        permissions_json = json.get('permissions', [])
         if not entity_json:
             return None
         instance.identifier = entity_json['id']
         instance.name = entity_json['name']
         instance.mask = entity_json['mask']
         instance.type = entity_json['type']
-        instance.share_mount_id = entity_json['fileShareMountId'] if 'fileShareMountId' in entity_json else None
-        instance.path = entity_json['pathMask'] if 'pathMask' in entity_json else None
-        if 'owner' in entity_json and entity_json['owner'].lower() != 'unauthorized':
+        instance.share_mount_id = entity_json.get('fileShareMountId')
+        instance.path = entity_json.get('pathMask')
+        for tool_json in entity_json.get('toolsToMount', []):
+            tool = ToolModel.load(tool_json)
+            if tool:
+                instance.tools_to_mount.append(tool)
+        entity_owner = entity_json.get('owner', '')
+        if entity_owner.strip().lower() != 'unauthorized':
             user = UserModel()
-            user.username = entity_json['owner']
-            instance.users.append(user)
-        if permissions_json is not None:
-            for permission_json in permissions_json:
-                if 'sid' in permission_json and 'mask' in permission_json:
-                    mask = int(permission_json['mask'])
-                    if mask & 1 == 1 and mask & 4 == 4:
-                        sid_json = permission_json['sid']
-                        if 'principal' in sid_json and sid_json['principal'] and 'name' in sid_json:
-                            user = UserModel()
-                            user.username = sid_json['name']
-                            instance.users.append(user)
+            user.username = entity_owner
+            instance.users[user] = Mask.ALL
+        for permission_json in permissions_json:
+            sid_json = permission_json.get('sid', {})
+            sid_mask = permission_json.get('mask')
+            sid_name = sid_json.get('name')
+            sid_principal = sid_json.get('principal')
+            if not sid_name or not sid_principal or not sid_mask:
+                continue
+            user = UserModel()
+            user.username = sid_name
+            instance.users[user] = Mask.from_full(sid_mask)
         return instance
 
     def is_nfs(self):

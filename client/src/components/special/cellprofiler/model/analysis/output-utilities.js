@@ -16,21 +16,85 @@
 
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import storages from '../../../../../models/dataStorage/DataStorageAvailable';
+import GenerateDownloadUrl from '../../../../../models/dataStorage/GenerateDownloadUrl';
+import DataStorageTags from '../../../../../models/dataStorage/tags/DataStorageTags';
 
-export async function getOutputFileAccessInfo (path) {
+const expirationTimeoutMS = 1000 * 60; // 1 minute
+
+/**
+ * @param output
+ * @returns {Promise<AnalysisOutputResult>}
+ */
+export async function getOutputFileAccessInfo (output) {
+  const {
+    file: path
+  } = output;
   const objectStorage = await createObjectStorageWrapper(
     storages,
     path,
-    {write: false, read: true}
+    {write: false, read: true},
+    {generateCredentials: false}
   );
   if (objectStorage) {
-    if (objectStorage.pathMask) {
-      const e = (new RegExp(`^${objectStorage.pathMask}/(.+)$`, 'i')).exec(path);
-      if (e && e.length) {
-        return objectStorage.generateFileUrl(e[1]);
+    let url;
+    let handle;
+    const setExpirationTimeout = () => {
+      clearTimeout(handle);
+      handle = setTimeout(() => {
+        url = undefined;
+      }, expirationTimeoutMS);
+    };
+    const fetchUrl = async () => {
+      if (url) {
+        return url;
+      }
+      url = objectStorage.generateFileUrl(objectStorage.getRelativePath(path));
+      setExpirationTimeout();
+      return url;
+    };
+    return {
+      ...output,
+      fetchUrl
+    };
+  }
+  return undefined;
+}
+
+/**
+ * @param {{url: string?, storageId: string?, path: string?, checkExists: boolean?}} options
+ * @returns {Promise<string>}
+ */
+export async function generateResourceUrl (options = {}) {
+  const {
+    url,
+    storageId,
+    path,
+    checkExists = false
+  } = options;
+  if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+    return url;
+  }
+  if (typeof url === 'string') {
+    const accessInfo = await getOutputFileAccessInfo({file: url});
+    if (accessInfo) {
+      return accessInfo.fetchUrl();
+    }
+    return url;
+  }
+  if (storageId && path) {
+    if (checkExists) {
+      const tags = new DataStorageTags(storageId, path);
+      await tags.fetch();
+      if (tags.error) {
+        return undefined;
       }
     }
-    return objectStorage.generateFileUrl(path);
+    const request = new GenerateDownloadUrl(storageId, path);
+    await request.fetch();
+    if (request.error) {
+      throw new Error(request.error);
+    }
+    return request.value.url;
   }
   return undefined;
 }

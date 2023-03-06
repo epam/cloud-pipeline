@@ -3,21 +3,47 @@
     "_doc": {
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
+        "created_date": { "type": "date" },
+        "resource_type": { "type": "keyword" },
+        "cloudRegionId": { "type": "keyword" },
+        "cloud_region_name": { "type": "keyword" },
+        "cloud_region_provider": { "type": "keyword" },
+
         "run_id": { "type": "keyword", "store": true },
+        "compute_type": { "type": "keyword" },
+        "instance_type":  { "type": "keyword" },
+
         "pipeline": { "type": "keyword" },
         "pipeline_name": { "type": "keyword" },
-        "resource_type": { "type": "keyword" },
-        "compute_type": { "type": "keyword" },
-        "cost": {"type": "long"},
-        "run_price": {"type": "long"},
-        "usage_minutes": {"type": "long"},
+        "pipeline_version": { "type": "keyword" },
+        "pipeline_owner_id": { "type": "keyword" },
+        "pipeline_owner_name": { "type": "keyword" },
+        "pipeline_created_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
+
+        "tool": { "type": "keyword" },
+        "tool_registry_id": { "type": "keyword" },
+        "tool_registry_name": { "type": "keyword" },
+        "tool_group_id": { "type": "keyword" },
+        "tool_group_name": { "type": "keyword" },
+        "tool_id": { "type": "keyword" },
+        "tool_name": { "type": "keyword" },
+        "tool_version": { "type": "keyword" },
+        "tool_owner_id": { "type": "keyword" },
+        "tool_owner_name": { "type": "keyword" },
+        "tool_created_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
+
+        "usage_minutes": { "type": "long" },
+        "paused_minutes": { "type": "long" },
+        "run_price": { "type": "long" },
+        "compute_price": { "type": "long" },
+        "disk_price": { "type": "long" },
+        "cost": { "type": "long" },
+
         "owner": { "type": "keyword" },
+        "owner_id": { "type": "keyword" },
         "groups": { "type": "keyword" },
-        "tool": {"type": "keyword"},
-        "instance_type":  { "type": "keyword" },
         "billing_center":  { "type": "keyword" },
-        "cloudRegionId": { "type": "keyword" },
-        "created_date": { "type": "date" },
+
         "started_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "finished_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" }
       }

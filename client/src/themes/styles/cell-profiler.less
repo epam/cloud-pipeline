@@ -26,6 +26,29 @@
   border-bottom: 1px @card-border-color solid;
 }
 
-.cell-profiler-module-header:hover {
+.cell-profiler-module:not(.empty) .cell-profiler-module-header:hover {
   background-color: darken(@card-background-color, 5%);
+}
+
+.cell-profiler-results-table {
+  background-color: @card-background-color;
+}
+
+.cell-profiler-results-table td,
+.cell-profiler-results-table th {
+  border: 1px solid @table-border-color;
+}
+
+.cell-profiler-job:nth-child(even) {
+  background-color: @even-element-background;
+}
+
+.cell-profiler-job:hover {
+  background-color: @table-element-hover-background-color;
+  color: @table-element-hover-color;
+}
+
+.cell-profiler-job.selected {
+  background-color: @table-element-selected-background-color;
+  color: @table-element-selected-color;
 }

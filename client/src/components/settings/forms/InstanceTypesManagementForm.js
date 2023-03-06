@@ -27,6 +27,7 @@ import {
 import {
   Button,
   Input,
+  InputNumber,
   message,
   Row,
   Select
@@ -34,26 +35,46 @@ import {
 import LoadingView from '../../special/LoadingView';
 
 const valueNames = {
+  allowedInstanceMaxCount: 'allowedInstanceMaxCount',
+  allowedInstanceMaxCountGroup: 'allowedInstanceMaxCountGroup',
   allowedInstanceTypes: 'allowedInstanceTypes',
   allowedToolInstanceTypes: 'allowedToolInstanceTypes',
   allowedPriceTypes: 'allowedPriceTypes',
-  jobsVisibility: 'jobsVisibility'
+  jobsVisibility: 'jobsVisibility',
+  jwtTokenExpirationRefreshThreshold: 'jwtTokenExpirationRefreshThreshold'
 };
 
 @inject(({preferences}, props) => {
   const loadPreference = (field) => {
     if (props.resourceId && props.level) {
-      return {
-        [field]: new ContextualPreferenceLoad(props.level, names[field], props.resourceId)
-      };
+      if (
+        (field === valueNames.allowedInstanceMaxCountGroup && props.level === 'ROLE') ||
+        (field === valueNames.allowedInstanceMaxCount && props.level === 'USER') ||
+        (
+          ![
+            valueNames.allowedInstanceMaxCount,
+            valueNames.allowedInstanceMaxCountGroup,
+            valueNames.jwtTokenExpirationRefreshThreshold
+          ]
+            .includes(field)
+        ) ||
+        (field === valueNames.jwtTokenExpirationRefreshThreshold && props.level === 'USER')
+      ) {
+        return {
+          [field]: new ContextualPreferenceLoad(props.level, names[field], props.resourceId)
+        };
+      }
     }
     return {};
   };
   return {
+    ...loadPreference(valueNames.allowedInstanceMaxCount),
+    ...loadPreference(valueNames.allowedInstanceMaxCountGroup),
     ...loadPreference(valueNames.allowedInstanceTypes),
     ...loadPreference(valueNames.allowedToolInstanceTypes),
     ...loadPreference(valueNames.allowedPriceTypes),
     ...loadPreference(valueNames.jobsVisibility),
+    ...loadPreference(valueNames.jwtTokenExpirationRefreshThreshold),
     preferences
   };
 })
@@ -85,10 +106,13 @@ export default class InstanceTypesManagementForm extends React.Component {
 
   @computed
   get pending () {
-    return this.valuePending(valueNames.allowedPriceTypes) ||
+    return this.valuePending(valueNames.allowedInstanceMaxCount) ||
+      this.valuePending(valueNames.allowedInstanceMaxCountGroup) ||
+      this.valuePending(valueNames.allowedPriceTypes) ||
       this.valuePending(valueNames.allowedInstanceTypes) ||
       this.valuePending(valueNames.allowedToolInstanceTypes) ||
-      this.valuePending(valueNames.jobsVisibility);
+      this.valuePending(valueNames.jobsVisibility) ||
+      this.valuePending(valueNames.jwtTokenExpirationRefreshThreshold);
   }
 
   @computed
@@ -102,8 +126,14 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   onValueChanged = (field) => (e) => {
+    let value;
+    if (typeof e === 'object') {
+      value = e.target.value;
+    } else {
+      value = e || '';
+    }
     const state = this.state;
-    state[field] = e.target.value;
+    state[field] = value;
     this.setState(state, this.reportModified);
   };
 
@@ -113,10 +143,13 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   getModified () {
-    return this.valueModified(valueNames.allowedInstanceTypes) ||
+    return this.valueModified(valueNames.allowedInstanceMaxCount) ||
+      this.valueModified(valueNames.allowedInstanceMaxCountGroup) ||
+      this.valueModified(valueNames.allowedInstanceTypes) ||
       this.valueModified(valueNames.allowedToolInstanceTypes) ||
       this.valueModified(valueNames.allowedPriceTypes) ||
-      this.valueModified(valueNames.jobsVisibility);
+      this.valueModified(valueNames.jobsVisibility) ||
+      this.valueModified(valueNames.jwtTokenExpirationRefreshThreshold);
   }
 
   valueModified = (field) => {
@@ -174,12 +207,23 @@ export default class InstanceTypesManagementForm extends React.Component {
     }, this.reportModified);
   };
 
-  valueInputDecorator = (field, disabled) =>
-    <Input
+  valueInputDecorator = (field, disabled, type) => {
+    if (type === 'number') {
+      return <InputNumber
+        disabled={disabled}
+        style={{flex: 1}}
+        value={this.getValue(field)}
+        onChange={this.onValueChanged(field)}
+        parser={value => `${value}`.replace(/\D/g, '')}
+      />;
+    }
+    return <Input
       disabled={disabled}
       style={{flex: 1}}
       value={this.getValue(field)}
-      onChange={this.onValueChanged(field)} />;
+      onChange={this.onValueChanged(field)}
+    />;
+  }
 
   operationWrapper = (fn) => (...opts) => {
     this.setState({
@@ -193,6 +237,9 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   applyValue = async (field) => {
+    if (!this.props[field]) {
+      return;
+    }
     await this.props[field].fetchIfNeededOrWait();
     if (
       this.state[field] !== undefined ||
@@ -227,10 +274,13 @@ export default class InstanceTypesManagementForm extends React.Component {
 
   reset = async () => {
     this.setState({
+      [valueNames.allowedInstanceMaxCount]: undefined,
+      [valueNames.allowedInstanceMaxCountGroup]: undefined,
       [valueNames.allowedInstanceTypes]: undefined,
       [valueNames.allowedToolInstanceTypes]: undefined,
       [valueNames.allowedPriceTypes]: undefined,
       [valueNames.jobsVisibility]: undefined,
+      [valueNames.jwtTokenExpirationRefreshThreshold]: undefined,
       jobsVisibilityUpdated: false
     }, this.reportModified);
   };
@@ -240,24 +290,33 @@ export default class InstanceTypesManagementForm extends React.Component {
   onApplyClicked = async () => {
     const hide = message.loading('Updating launch options...', 0);
     const results = [];
+    results.push(await this.applyValue(valueNames.allowedInstanceMaxCount));
+    results.push(await this.applyValue(valueNames.allowedInstanceMaxCountGroup));
     results.push(await this.applyValue(valueNames.allowedInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedToolInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedPriceTypes));
     results.push(await this.applyValue(valueNames.jobsVisibility));
+    results.push(await this.applyValue(valueNames.jwtTokenExpirationRefreshThreshold));
     const errors = results.filter(r => !!r);
     if (errors.length) {
       hide();
       message.error(errors.join('\n'), 5);
     } else {
+      await this.reloadValue(valueNames.allowedInstanceMaxCount);
+      await this.reloadValue(valueNames.allowedInstanceMaxCountGroup);
       await this.reloadValue(valueNames.allowedInstanceTypes);
       await this.reloadValue(valueNames.allowedToolInstanceTypes);
       await this.reloadValue(valueNames.allowedPriceTypes);
       await this.reloadValue(valueNames.jobsVisibility);
+      await this.reloadValue(valueNames.jwtTokenExpirationRefreshThreshold);
       this.setState({
+        [valueNames.allowedInstanceMaxCount]: undefined,
+        [valueNames.allowedInstanceMaxCountGroup]: undefined,
         [valueNames.allowedInstanceTypes]: undefined,
         [valueNames.allowedToolInstanceTypes]: undefined,
         [valueNames.allowedPriceTypes]: undefined,
         [valueNames.jobsVisibility]: undefined,
+        [valueNames.jwtTokenExpirationRefreshThreshold]: undefined,
         jobsVisibilityUpdated: false
       }, hide);
     }
@@ -278,6 +337,32 @@ export default class InstanceTypesManagementForm extends React.Component {
         style={Object.assign({flex: 1, overflow: 'auto'}, style)}
       >
         <div style={{padding: 2, width: '100%'}}>
+          {
+            this.props.level !== 'TOOL' &&
+            <Row type="flex" style={{marginTop: 5}}>
+              <b>Allowed instance max count</b>
+            </Row>
+          }
+          {
+            this.props.level === 'USER' &&
+            <Row type="flex">
+              {this.valueInputDecorator(
+                valueNames.allowedInstanceMaxCount,
+                disabled,
+                'number'
+              )}
+            </Row>
+          }
+          {
+            this.props.level === 'ROLE' &&
+            <Row type="flex">
+              {this.valueInputDecorator(
+                valueNames.allowedInstanceMaxCountGroup,
+                disabled,
+                'number'
+              )}
+            </Row>
+          }
           {
             this.props.level !== 'TOOL' &&
             <Row type="flex" style={{marginTop: 5}}>
@@ -338,6 +423,22 @@ export default class InstanceTypesManagementForm extends React.Component {
               </Select.Option>
             </Select>
           </Row>
+          {
+            this.props.level === 'USER' && (
+              <div style={{marginTop: 5, width: '100%'}}>
+                <Row type="flex">
+                  <b>Instance token refresh ratio</b>
+                </Row>
+                <Row type="flex">
+                  {this.valueInputDecorator(
+                    valueNames.jwtTokenExpirationRefreshThreshold,
+                    disabled,
+                    'number'
+                  )}
+                </Row>
+              </div>
+            )
+          }
           {
             this.props.showApplyButton && (
               <Row type="flex" justify="end" style={{marginTop: 10}}>

@@ -20,12 +20,15 @@ import {
   Button,
   Modal,
   message,
-  Switch
+  Switch,
+  Icon,
+  Upload
 } from 'antd';
 import SampleSheet from '../edit-form';
 import CodeEditor from '../../CodeEditor';
 import {isSampleSheetContent} from '../utilities';
 import styles from './sample-sheet-edit-dialog.css';
+import readBlobContents from '../../../../utils/read-blob-contents';
 
 class SampleSheetEditDialog extends React.Component {
   state = {
@@ -78,11 +81,26 @@ class SampleSheetEditDialog extends React.Component {
     }
   };
 
+  onUpload = (file) => {
+    readBlobContents(file)
+      .then((content) => {
+        if (isSampleSheetContent(content)) {
+          this.setState({content});
+        } else {
+          throw new Error(`${file.name} is not a valid SampleSheet`);
+        }
+      })
+      .catch(e => message.error(e.message, 5));
+    return false;
+  };
+
   render () {
     const {
       visible,
       onClose,
-      title
+      title,
+      removable,
+      onRemove
     } = this.props;
     const {
       content,
@@ -94,6 +112,13 @@ class SampleSheetEditDialog extends React.Component {
         onCancel={onClose}
         closable={false}
         width="80%"
+        style={{
+          top: 50
+        }}
+        bodyStyle={{
+          height: 'calc(100vh - 200px)',
+          overflow: 'auto'
+        }}
         title={(
           <div
             className={styles.title}
@@ -102,22 +127,48 @@ class SampleSheetEditDialog extends React.Component {
             <div>
               <span style={{marginRight: 5}}>View as text</span>
               <Switch onChange={this.toggleTextMode} />
+              <div style={{display: 'inline-flex', marginLeft: 5}}>
+                <Upload
+                  fileList={[]}
+                  key="upload"
+                  beforeUpload={this.onUpload}
+                  multiple={false}
+                >
+                  <Button>
+                    <Icon type="upload" /> Upload
+                  </Button>
+                </Upload>
+              </div>
             </div>
           </div>
         )}
         footer={(
           <div className={styles.footer}>
-            <Button
-              onClick={onClose}
-            >
-              CANCEL
-            </Button>
-            <Button
-              type="primary"
-              onClick={this.onSaveClicked}
-            >
-              SAVE
-            </Button>
+            <div>
+              {
+                removable && (
+                  <Button
+                    type="danger"
+                    onClick={onRemove}
+                  >
+                    REMOVE
+                  </Button>
+                )
+              }
+            </div>
+            <div>
+              <Button
+                onClick={onClose}
+              >
+                CANCEL
+              </Button>
+              <Button
+                type="primary"
+                onClick={this.onSaveClicked}
+              >
+                SAVE
+              </Button>
+            </div>
           </div>
         )}
       >
@@ -150,9 +201,11 @@ class SampleSheetEditDialog extends React.Component {
 
 SampleSheetEditDialog.propTypes = {
   content: PropTypes.string,
+  removable: PropTypes.bool,
   disabled: PropTypes.bool,
   onClose: PropTypes.func,
   onSave: PropTypes.func,
+  onRemove: PropTypes.func,
   title: PropTypes.string,
   visible: PropTypes.bool
 };

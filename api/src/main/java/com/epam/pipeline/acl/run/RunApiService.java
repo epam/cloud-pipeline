@@ -265,6 +265,12 @@ public class RunApiService {
                 .commitRun(runId, registryId, imageName, deleteFiles, stopPipeline, checkSize);
     }
 
+    @PreAuthorize("@runPermissionManager.runPermission(#runId, 'EXECUTE')")
+    @AclMask
+    public Long getContainerLayersCount(final Long runId) {
+        return pipelineRunDockerOperationManager.getContainerLayers(runId);
+    }
+
     @PreAuthorize(RUN_ID_WRITE)
     @AclMask
     public PipelineRun updateCommitRunStatus(Long runId, CommitStatus commitStatus) {

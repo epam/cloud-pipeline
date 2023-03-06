@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
@@ -73,7 +74,7 @@ public class ConfigurationRunner {
     /**
      * Schedules execution of a {@link RunConfiguration} and creates a number
      * of associated {@link PipelineRun} instances. Default values of {@link RunConfiguration}
-     * may be overriden by {@code runConfiguration} parameter. If {@code entitiesIds} or {@code metadataClass}
+     * may be overridden by {@code runConfiguration} parameter. If {@code entitiesIds} or {@code metadataClass}
      * are passed method will try to resolve {@link RunConfiguration} parameters according to
      * {@link MetadataEntity} instances. For {@code metadataClass} method will try to find
      * {@link MetadataEntity} instances in the whole project with matching {@link MetadataClass}.
@@ -110,15 +111,24 @@ public class ConfigurationRunner {
             .collect(Collectors.groupingBy(AbstractRunConfigurationEntry::getExecutionEnvironment))
             .entrySet()
             .stream()
-            .map(env -> AnalysisConfiguration
-                .builder()
-                .configurationId(configuration.getId())
-                .entries(env.getValue())
-                .entitiesIds(entitiesIds)
-                .expansionExpression(expansionExpression)
-                .refreshToken(refreshToken)
-                .build())
-            .collect(Collectors.toList());
+                .map(env -> {
+                    List<PipelineStartNotificationRequest> notifications = null;
+                    if (CollectionUtils.isNotEmpty(env.getValue())) {
+                        notifications = env.getValue().get(0) instanceof RunConfigurationEntry ?
+                                ((RunConfigurationEntry) env.getValue().get(0)).getConfiguration().getNotifications() :
+                                null;
+                    }
+                    return AnalysisConfiguration
+                            .builder()
+                            .configurationId(configuration.getId())
+                            .entries(env.getValue())
+                            .entitiesIds(entitiesIds)
+                            .expansionExpression(expansionExpression)
+                            .notifications(notifications)
+                            .refreshToken(refreshToken)
+                            .build();
+                })
+                .collect(Collectors.toList());
         final int configurationsNodes = configurations.stream()
             .map(AnalysisConfiguration::getEntries)
             .flatMap(Collection::stream)
@@ -157,6 +167,4 @@ public class ConfigurationRunner {
         dbConfiguration.setEntries(mergedEntries);
         return dbConfiguration;
     }
-
-
 }

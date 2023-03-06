@@ -42,17 +42,19 @@ class DetailViewWithMesh extends DetailView {
     const { id, height, width } = this;
     const layerViewState = viewStates[id];
     if (this.overlayImages) {
-      this.overlayImages.forEach((image) => {
+      this.overlayImages.forEach((image, idx) => {
         let url;
         let ignoreColor;
         let ignoreColorAccuracy;
+        let color;
         if (typeof image === 'string') {
           url = image;
           ignoreColor = true;
           ignoreColorAccuracy = 0.1;
         } else if (typeof image === 'object' && image.url) {
           url = image.url;
-          ignoreColor = !!image.ignoreColor;
+          color = image.color;
+          ignoreColor = !!color || !!image.ignoreColor;
           ignoreColorAccuracy = image.ignoreColorAccuracy || 0.1;
         }
         if (url) {
@@ -60,9 +62,10 @@ class DetailViewWithMesh extends DetailView {
             new ImageOverlayLayer({
               loader,
               url,
+              color,
               ignoreColor,
               ignoreColorAccuracy,
-              id: `image-${getLayerId(id)}`,
+              id: `image-${idx}-${getLayerId(id)}`,
               viewState: { ...layerViewState, height, width },
             }),
           );

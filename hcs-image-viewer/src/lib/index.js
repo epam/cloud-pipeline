@@ -15,6 +15,15 @@
  */
 
 import Viewer from './viewer';
+import { defaultChannelsColors } from './state/viewer-state/default-color-palette';
 import * as constants from './state/constants';
+import { fetchSourceInfo } from './state/utilities/fetch-source-info';
+import HcsWorkerPool from './state/utilities/workers.pool';
 
-export { Viewer, constants };
+export {
+  HcsWorkerPool,
+  Viewer,
+  constants,
+  fetchSourceInfo,
+  defaultChannelsColors,
+};

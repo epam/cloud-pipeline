@@ -80,7 +80,7 @@ class UsagePlot extends React.PureComponent {
     const color = this.plotColors[index % this.plotColors.length];
     let {formatter} = config;
     if (!formatter) {
-      formatter = o => o.toFixed(2);
+      formatter = o => o !== undefined && o !== null ? o.toFixed(2) : '';
     }
     return (
       <g key={index}>

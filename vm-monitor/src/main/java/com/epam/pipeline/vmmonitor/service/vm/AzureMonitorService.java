@@ -59,7 +59,7 @@ public class AzureMonitorService implements VMMonitorService<AzureRegion> {
                 .listByTag(region.getResourceGroup(), instanceTag.getKey(), instanceTag.getValue());
         final Iterable<GenericResource> iterable = resources::listIterator;
         return StreamSupport.stream(iterable.spliterator(), false)
-                .filter(resource -> resource.resourceType().equals(VIRTUAL_MACHINES))
+                .filter(resource -> resource.resourceType().equalsIgnoreCase(VIRTUAL_MACHINES))
                 .map(resource -> azure.virtualMachines().getById(resource.id()))
                 .filter(azureVm -> azureVm != null && azureVm.powerState().equals(PowerState.RUNNING)
                         && azureVm.provisioningState().equals(SUCCEEDED_STATE))

@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -41,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.elasticsearch.action.search.MultiSearchRequest;
@@ -48,12 +50,12 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -69,6 +71,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -87,8 +90,9 @@ public class SearchRequestBuilder {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
-    private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
-    private static final String SIZE_FIELD = "size";
+    private static final String STORAGE_SIZE_BY_TIER_AGG_NAME = "sizeSumByTier";
+    private static final String STORAGE_SIZE_AGG_NAME = "sizeSum";
+
     private static final String NAME_FIELD = "id";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
     private static final String ES_DOC_ID_FIELD = "_id";
@@ -96,10 +100,14 @@ public class SearchRequestBuilder {
     private static final String ES_SORT_MISSING_LAST = "_last";
     private static final String ES_SORT_MISSING_FIRST = "_first";
     private static final String SEARCH_HIDDEN = "is_hidden";
+    private static final String SEARCH_DELETED = "is_deleted";
     private static final String INDEX_WILDCARD_PREFIX = "*";
     private static final String ES_KEYWORD_TYPE = "keyword";
     private static final String ES_DATE_TYPE = "date";
     private static final String ES_LONG_TYPE = "long";
+    private static final String ES_STORAGE_ID_FIELD = "storage_id";
+    private static final String ES_STORAGE_NAME_FIELD = "storage_name";
+    private static final String STORAGE_CLASS_FIELD = "storage_class";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -111,7 +119,7 @@ public class SearchRequestBuilder {
                                       final String aggregation,
                                       final Set<String> metadataSourceFields) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(getQuery(searchRequest.getQuery()))
+                .query(getQuery(searchRequest))
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
 
@@ -147,35 +155,52 @@ public class SearchRequestBuilder {
 
     public MultiSearchRequest buildStorageSumRequest(final Long storageId, final DataStorageType storageType,
                                                      final String path, final boolean allowNoIndex,
-                                                     final Set<String> storageSizeMasks) {
+                                                     final Set<String> storageSizeMasks,
+                                                     final Set<String> storageClasses, final boolean allowVersions) {
+        final String searchIndex = String.format(
+                ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId
+        );
         final MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
-        multiSearchRequest.add(buildSumAggRequest(storageId, storageType, path, allowNoIndex, null));
+        multiSearchRequest.add(buildSumAggRequest(
+                searchIndex, path, storageClasses, allowNoIndex, null, allowVersions));
         if (CollectionUtils.isNotEmpty(storageSizeMasks)) {
-            multiSearchRequest.add(buildSumAggRequest(storageId, storageType, path, allowNoIndex, storageSizeMasks));
+            multiSearchRequest.add(buildSumAggRequest(
+                    searchIndex, path, storageClasses, allowNoIndex, storageSizeMasks, allowVersions));
         }
         return multiSearchRequest;
     }
 
-    private SearchRequest buildSumAggRequest(final Long storageId, final DataStorageType storageType,
-                                             final String path, final boolean allowNoIndex,
-                                             final Set<String> storageSizeMasks) {
-        final String searchIndex =
-            String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId);
-        final SumAggregationBuilder sizeSumAggregator = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
-                .field(SIZE_FIELD);
+    private SearchRequest buildSumAggRequest(final String searchIndex, final String path,
+                                             final Set<String> storageClasses, final boolean allowNoIndex,
+                                             final Set<String> storageSizeMasks, final boolean allowVersions) {
         final BoolQueryBuilder fileFilteringQuery = QueryBuilders.boolQuery();
         CollectionUtils.emptyIfNull(storageSizeMasks)
             .forEach(mask -> fileFilteringQuery.mustNot(QueryBuilders.wildcardQuery(NAME_FIELD, mask)));
         if (StringUtils.isNotBlank(path)) {
             fileFilteringQuery.must(QueryBuilders.prefixQuery(NAME_FIELD, path));
         }
+
+        final BoolQueryBuilder storageClassesQuery = QueryBuilders.boolQuery();
+        SetUtils.emptyIfNull(storageClasses).forEach(storageClass ->
+                storageClassesQuery.should(QueryBuilders.termsQuery(STORAGE_CLASS_FIELD, storageClass)));
+        fileFilteringQuery.must(storageClassesQuery);
+
         final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder()
-            .aggregation(sizeSumAggregator)
-            .query(fileFilteringQuery)
-            .size(0);
-        final SearchRequest request = new SearchRequest()
-                .indices(searchIndex)
-                .source(sizeSumSearch);
+                .query(fileFilteringQuery)
+                .size(0);
+
+        final TermsAggregationBuilder sizeSumAgg = AggregationBuilders
+                .terms(STORAGE_SIZE_BY_TIER_AGG_NAME).field(STORAGE_CLASS_FIELD)
+                .subAggregation(AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field("size"));
+        sizeSumSearch.aggregation(sizeSumAgg);
+        if (allowVersions) {
+            for (String storageClass : storageClasses) {
+                final String ovSizeFieldName = String.format("ov_%s_size", storageClass.toLowerCase(Locale.ROOT));
+                sizeSumSearch.aggregation(AggregationBuilders
+                        .sum(ovSizeFieldName + "_agg").field(ovSizeFieldName));
+            }
+        }
+        final SearchRequest request = new SearchRequest().indices(searchIndex).source(sizeSumSearch);
         if (allowNoIndex) {
             request.indicesOptions(IndicesOptions.LENIENT_EXPAND_OPEN);
         }
@@ -377,8 +402,13 @@ public class SearchRequestBuilder {
                 .preTags("<highlight>"));
     }
 
-    private QueryBuilder getQuery(final String query) {
-        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(query));
+    private QueryBuilder getQuery(final ElasticSearchRequest queryRequest) {
+        final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().must(getBasicQuery(queryRequest.getQuery()));
+        addStorageFilter(queryBuilder, queryRequest.getObjectIdentifier());
+        addGlobsFilterToQuery(queryBuilder, queryRequest.getFilterGlobs());
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            queryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
         return prepareAclFiltersOrAdmin(queryBuilder);
     }
 
@@ -386,6 +416,9 @@ public class SearchRequestBuilder {
         final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         boolQueryBuilder.must(prepareFacetedQuery(query));
         boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
         MapUtils.emptyIfNull(filters)
                 .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
         return boolQueryBuilder;
@@ -487,5 +520,28 @@ public class SearchRequestBuilder {
 
     private String buildKeywordName(final String fieldName) {
         return String.format("%s.keyword", fieldName);
+    }
+
+    private void addGlobsFilterToQuery(final BoolQueryBuilder queryBuilder, final Set<String> globs) {
+        if (CollectionUtils.isEmpty(globs)) {
+            return;
+        }
+        final String pathPrefix = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PREFIX_FILTER_FIELD);
+        globs.stream()
+                .filter(StringUtils::isNotBlank)
+                .map(ProviderUtils::withoutLeadingDelimiter)
+                .forEach(glob -> queryBuilder.must(glob.contains(INDEX_WILDCARD_PREFIX)
+                        ? QueryBuilders.wildcardQuery(pathPrefix, glob)
+                        : QueryBuilders.matchQuery(pathPrefix, glob)));
+    }
+
+    private void addStorageFilter(final BoolQueryBuilder queryBuilder, final String storageIdentifier) {
+        if (StringUtils.isBlank(storageIdentifier)) {
+            return;
+        }
+        final MatchQueryBuilder storageIdentifierQuery = NumberUtils.isDigits(storageIdentifier)
+                ? QueryBuilders.matchQuery(ES_STORAGE_ID_FIELD, storageIdentifier)
+                : QueryBuilders.matchQuery(buildKeywordName(ES_STORAGE_NAME_FIELD), storageIdentifier);
+        queryBuilder.must(storageIdentifierQuery);
     }
 }

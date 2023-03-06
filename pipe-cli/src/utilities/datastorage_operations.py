@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import click
+import datetime
 import logging
 import multiprocessing
 import os
 import platform
-
-import click
-import datetime
 import prettytable
 import sys
+from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
 
@@ -29,17 +29,19 @@ from src.api.folder import Folder
 from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
-from src.utilities.du import DataUsageHelper
-from src.utilities.du_format_type import DuFormatType
+from src.utilities.audit import auditing
+from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
+from src.utilities.user_operations_manager import UserOperationsManager
 
 FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
+ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
 
 class AllowedUnsafeCharsValues(object):
@@ -113,17 +115,20 @@ class DataStorageOperations(object):
 
         command = 'mv' if clean else 'cp'
         permission_to_check = os.R_OK if command == 'cp' else os.W_OK
-        manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
+
+        audit_ctx = auditing()
+        manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper,
+                                                           audit=audit_ctx.container, command=command)
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                   include, exclude, force, quiet, skip_existing, verify_destination,
                                   on_unsafe_chars, on_unsafe_chars_replacement)
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                             clean, quiet, tags, io_threads, on_failures)
+                                             audit_ctx, clean, quiet, tags, io_threads, on_failures)
         else:
             cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                clean, quiet, tags, io_threads, on_failures)
+                                audit_ctx, clean, quiet, tags, io_threads, on_failures)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -198,8 +203,6 @@ class DataStorageOperations(object):
 
     @classmethod
     def storage_remove_item(cls, path, yes, version, hard_delete, recursive, exclude, include):
-        """ Removes file or folder
-        """
         if version and hard_delete:
             click.echo('"version" argument should\'t be combined with "hard-delete" option', err=True)
             sys.exit(1)
@@ -221,9 +224,12 @@ class DataStorageOperations(object):
                           abort=True)
         click.echo('Removing {} ...'.format(path), nl=False)
 
-        manager = source_wrapper.get_delete_manager(versioning=version or hard_delete)
-        manager.delete_items(source_wrapper.path, version=version, hard_delete=hard_delete,
-                             exclude=exclude, include=include, recursive=recursive and not source_wrapper.is_file())
+        with auditing() as audit:
+            manager = source_wrapper.get_delete_manager(audit=audit, versioning=version or hard_delete)
+            manager.delete_items(source_wrapper.path,
+                                 version=version, hard_delete=hard_delete,
+                                 exclude=exclude, include=include,
+                                 recursive=recursive and not source_wrapper.is_file())
         click.echo(' done.')
 
     @classmethod
@@ -297,11 +303,12 @@ class DataStorageOperations(object):
         if not recursive and not source_wrapper.is_file():
             click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
             sys.exit(1)
-        manager = source_wrapper.get_restore_manager()
-        manager.restore_version(version, exclude, include, recursive=recursive)
+        with auditing() as audit:
+            manager = source_wrapper.get_restore_manager(audit=audit)
+            manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
-    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended):
+    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):
         """Lists storage contents
         """
         if path:
@@ -314,10 +321,18 @@ class DataStorageOperations(object):
             if root_bucket is None:
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
+            if show_archive and root_bucket.type != 'S3':
+                click.echo('Error: --show-archive option is not available for this provider.', err=True)
+                sys.exit(1)
+            if show_archive and not UserOperationsManager()\
+                    .has_storage_archive_permissions(root_bucket.identifier, root_bucket.owner):
+                click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
+                sys.exit(1)
             else:
                 relative_path = original_path if original_path != '/' else ''
                 cls.__print_data_storage_contents(root_bucket, relative_path, show_details, recursive,
-                                                  page_size=page, show_versions=show_versions, show_all=show_all)
+                                                  page_size=page, show_versions=show_versions, show_all=show_all,
+                                                  show_archive=show_archive)
         else:
             # If no argument is specified - list brief details of all buckets
             cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all,
@@ -366,40 +381,15 @@ class DataStorageOperations(object):
         DataStorage.delete_object_tags(root_bucket.identifier, relative_path, tags, version)
 
     @classmethod
-    def du(cls, storage_name, relative_path=None, format='M', depth=None):
-        if depth and not storage_name:
-            click.echo("Error: bucket path must be provided with --depth option", err=True)
-            sys.exit(1)
-        du_helper = DataUsageHelper(format)
-        items_table = prettytable.PrettyTable()
-        fields = ["Storage", "Files count", "Size (%s)" % DuFormatType.pretty_type(format)]
-        items_table.field_names = fields
-        items_table.align = "l"
-        items_table.border = False
-        items_table.padding_width = 2
-        items_table.align['Size'] = 'r'
-        if storage_name:
-            if not relative_path or relative_path == "/":
-                relative_path = ''
-            storage = DataStorage.get(storage_name)
-            if storage is None:
-                raise RuntimeError('Storage "{}" was not found'.format(storage_name))
-            if storage.type.lower() == 'nfs':
-                if depth:
-                    raise RuntimeError('--depth option is not supported for NFS storages')
-                items_table.add_row(du_helper.get_nfs_storage_summary(storage_name, relative_path))
-            else:
-                for item in du_helper.get_cloud_storage_summary(storage, relative_path, depth):
-                    items_table.add_row(item)
-        else:
-            # If no argument is specified - list all buckets
-            items = du_helper.get_total_summary()
-            if items is None:
-                click.echo("No datastorages available.")
-                sys.exit(0)
-            for item in items:
-                items_table.add_row(item)
-        click.echo(items_table)
+    def du(cls, storage_name, relative_path=None, depth=None, perform_on_cloud=False,
+           output_mode='brief', generation="all", size_format='M'):
+        du_command = DataUsageCommand(storage_name, relative_path, depth,
+                                      perform_on_cloud, output_mode, generation, size_format)
+        if not du_command.validate():
+            # Bad input
+            sys.exit(22)
+        du_leafs = DataUsageHelper().fetch_data(du_command)
+        click.echo(DuOutput.format_table(du_command, du_leafs))
         click.echo()
 
     @classmethod
@@ -428,14 +418,15 @@ class DataStorageOperations(object):
 
     @classmethod
     def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
-                                      show_versions=False, show_all=False, show_extended=False):
+                                      show_versions=False, show_all=False, show_extended=False, show_archive=False):
 
         items = []
         header = None
         if bucket_model is not None:
             wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(bucket_model, relative_path)
             manager = wrapper.get_list_manager(show_versions=show_versions)
-            items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
+            items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all,
+                                       show_archive=show_archive)
         else:
             hidden_object_manager = HiddenObjectManager()
             # If no argument is specified - list brief details of all buckets
@@ -543,14 +534,17 @@ class DataStorageOperations(object):
 
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
-                      custom_options=None, quiet=False, threading=False, mode=700, timeout=1000):
+                      custom_options=None, quiet=False, threading=False, mode=700, timeout=1000, show_archive=False):
         if not file and not bucket:
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
             sys.exit(1)
+        if show_archive and not UserOperationsManager().has_storage_archive_permissions(bucket):
+            click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
+            sys.exit(1)
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
                                log_file=log_file, log_level=log_level,  threading=threading,
-                               mode=mode, timeout=timeout)
+                               mode=mode, timeout=timeout, show_archive=show_archive)
 
     @classmethod
     def umount_storage(cls, mountpoint, quiet=False):
@@ -580,8 +574,8 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
-                                     quiet, tags, io_threads, on_failures):
+    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                     audit_ctx, clean, quiet, tags, io_threads, on_failures):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -594,6 +588,7 @@ class DataStorageOperations(object):
                                                     manager,
                                                     source_wrapper,
                                                     destination_wrapper,
+                                                    audit_ctx,
                                                     clean,
                                                     quiet,
                                                     tags,
@@ -605,21 +600,22 @@ class DataStorageOperations(object):
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, io_threads,
-                        on_failures, lock=None):
-        transfer_results = []
-        fail_after_exception = None
-        for item in items:
-            transfer_results, fail_after_exception = cls._transfer_item(item, manager,
-                                                                        source_wrapper, destination_wrapper,
-                                                                        transfer_results,
-                                                                        clean, quiet, tags, io_threads,
-                                                                        on_failures, lock)
-        if not destination_wrapper.is_local():
-            cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                        transfer_results, clean=clean, flush_size=1)
-        if fail_after_exception:
-            raise fail_after_exception
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper,
+                        audit_ctx, clean, quiet, tags, io_threads, on_failures, lock=None):
+        with audit_ctx:
+            transfer_results = []
+            fail_after_exception = None
+            for item in items:
+                transfer_results, fail_after_exception = cls._transfer_item(item, manager,
+                                                                            source_wrapper, destination_wrapper,
+                                                                            transfer_results,
+                                                                            clean, quiet, tags, io_threads,
+                                                                            on_failures, lock)
+            if not destination_wrapper.is_local():
+                cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                            transfer_results, clean=clean, flush_size=1)
+            if fail_after_exception:
+                raise fail_after_exception
 
     @classmethod
     def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,
@@ -637,6 +633,13 @@ class DataStorageOperations(object):
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                transfer_results, clean=clean)
         except Exception as e:
+            err_msg = str(e)
+            if isinstance(e, ClientError) \
+                    and err_msg and 'InvalidObjectState' in err_msg and 'storage class' in err_msg:
+                if not quiet:
+                    click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
+                               .format(full_path))
+                return transfer_results, fail_after_exception
             if on_failures == AllowedFailuresValues.FAIL:
                 err_msg = u'File transferring has failed {}. Exiting...'.format(full_path)
                 logging.warn(err_msg)

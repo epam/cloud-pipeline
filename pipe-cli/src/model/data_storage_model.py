@@ -29,6 +29,7 @@ class DataStorageModel(DataStorageItemModel):
         self.region = None
         self.mount_status = None
         self.tools_to_mount = set()
+        self.owner = None
 
     @classmethod
     def load(cls, json):
@@ -52,6 +53,8 @@ class DataStorageModel(DataStorageItemModel):
             cls.parse_policy(instance.policy, json['storagePolicy'])
         if 'toolsToMount' in json:
             cls.parse_tool_to_mount(instance, json)
+        if 'owner' in json:
+            instance.owner = json['owner']
         cls.parse_mount_status(instance, json)
         return instance
 

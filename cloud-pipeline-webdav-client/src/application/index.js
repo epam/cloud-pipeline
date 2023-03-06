@@ -13,6 +13,7 @@ import useTokenExpirationWarning from './components/utilities/use-token-expirati
 import useHotKeys from './components/utilities/use-hot-keys';
 import CreateDirectoryDialog from './components/file-system-tab/create-directory-dialog';
 import RequestStorageAccess from './components/request-storage-access';
+import UpdateNotification from './components/update-notification';
 import './application.css';
 
 function Application() {
@@ -223,6 +224,7 @@ function Application() {
           operations={activeOperations}
         />
       </Layout.Footer>
+      <UpdateNotification />
     </Layout>
   );
 }

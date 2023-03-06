@@ -14,12 +14,6 @@
  *  limitations under the License.
  */
 
-export {
-  allModules,
-  IdentifyPrimaryObjects,
-  IdentifySecondaryObjects,
-  OverlayOutlines,
-  RelateObjects,
-  SaveImages,
-  NamesAndTypes
-} from './implementation';
+import allModules from './implementation';
+
+export default allModules;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,13 @@ public class SupportButton {
     }
 
     public static class Icon {
+        private String name;
         private String icon;
         private String content;
+
+        public String getName() {
+            return name;
+        }
 
         public String getIcon() {
             return icon;
@@ -44,6 +49,10 @@ public class SupportButton {
 
         public String getContent() {
             return content;
+        }
+
+        public void setName(final String name) {
+            this.name = name;
         }
 
         public void setIcon(final String icon) {

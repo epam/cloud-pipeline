@@ -35,6 +35,8 @@ import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEsti
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import AllowedInstancesCountWarning from
+  '../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../run-name';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
@@ -52,9 +54,16 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import SensitiveBucketsWarning from './sensitive-buckets-warning';
 import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
 import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStoragesBrowser';
-import {
-  applyCustomCapabilitiesParameters
+import RunCapabilities, {
+  RUN_CAPABILITIES_MODE,
+  getEnabledCapabilities,
+  updateCapabilities,
+  applyCustomCapabilitiesParameters,
+  CapabilitiesDisclaimer,
+  checkRequiredCapabilitiesErrors
 } from '../../pipelines/launch/form/utilities/run-capabilities';
+import ToolLayersCheckWarning from './check/tool-layers/warning';
+import DiskSizeWarning from "./warnings/disk-size-warning";
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -249,7 +258,10 @@ function runFn (
     let launchVersion;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
-    const {dataStorageAvailable} = stores;
+    const {
+      dataStorageAvailable,
+      authenticatedUserInfo
+    } = stores;
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
@@ -400,7 +412,8 @@ function runFn (
               name: launchName,
               alias: payload.runNameAlias,
               version: launchVersion,
-              title
+              title,
+              payload
             }}
             ref={ref}
             platform={platform}
@@ -426,7 +439,10 @@ function runFn (
                 : undefined
             }
             preferences={stores.preferences}
+            dockerRegistries={stores.dockerRegistries}
             skipCheck={skipCheck}
+            dockerImage={payload.dockerImage}
+            authenticatedUserInfo={authenticatedUserInfo}
           />
         ),
         style: {
@@ -435,6 +451,27 @@ function runFn (
         okText: 'Launch',
         onOk: async function () {
           if (component) {
+            if (component.state.runCapabilities) {
+              payload.params = updateCapabilities(
+                payload.params,
+                component.state.runCapabilities,
+                stores.preferences
+              );
+            }
+            payload.params = applyCustomCapabilitiesParameters(
+              payload.params,
+              stores.preferences
+            );
+            if (
+              checkRequiredCapabilitiesErrors(
+                getEnabledCapabilities(payload.params),
+                stores.preferences
+              )
+            ) {
+              const error = 'You need to specify required capabilities';
+              message.error(error, 5);
+              return Promise.reject(new Error(error));
+            }
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
             payload.hddSize = component.state.hddSize;
@@ -535,7 +572,12 @@ export class RunConfirmation extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
-    skipCheck: PropTypes.bool
+    skipCheck: PropTypes.bool,
+    dockerImage: PropTypes.string,
+    dockerRegistries: PropTypes.object,
+    runCapabilities: PropTypes.array,
+    onChangeRunCapabilities: PropTypes.func,
+    showRunCapabilities: PropTypes.bool
   };
 
   static defaultProps = {
@@ -669,6 +711,16 @@ export class RunConfirmation extends React.Component {
     return this.getInstanceTypes().find(t => t.name === this.state.instanceType);
   }
 
+  get runCapabilitiesErrorSolved () {
+    if (this.props.runCapabilities && this.props.preferences) {
+      return !checkRequiredCapabilitiesErrors(
+        this.props.runCapabilities,
+        this.props.preferences
+      );
+    }
+    return false;
+  }
+
   setOnDemand = (onDemand) => {
     this.setState({
       isSpot: !onDemand
@@ -773,6 +825,27 @@ export class RunConfirmation extends React.Component {
         </Select>
       </Provider>
     );
+  };
+
+  renderCapabilitiesDisclaimer = () => {
+    const {
+      preferences,
+      parameters
+    } = this.props;
+    return (
+      <Provider preferences={preferences}>
+        <CapabilitiesDisclaimer
+          style={{margin: 2}}
+          showIcon
+          parameters={parameters}
+        />
+      </Provider>
+    );
+  };
+
+  onChangeRunCapabilities = (capabilities) => {
+    const {onChangeRunCapabilities} = this.props;
+    onChangeRunCapabilities && onChangeRunCapabilities(capabilities);
   };
 
   render () {
@@ -1048,9 +1121,58 @@ export class RunConfirmation extends React.Component {
           hddSize={this.props.hddSize}
           onDiskSizeChanged={this.props.onChangeHddSize}
         />
+        <DiskSizeWarning
+          disk={this.props.hddSize}
+          style={{margin: 2}}
+          showIcon
+        />
         <SensitiveBucketsWarning
           parameters={this.props.parameters}
           style={{margin: 2}}
+        />
+        {
+          this.renderCapabilitiesDisclaimer()
+        }
+        {this.props.showRunCapabilities ? (
+          <Alert
+            type={this.runCapabilitiesErrorSolved ? 'info' : 'error'}
+            style={{margin: 2}}
+            showIcon
+            message={
+              <div style={{display: 'flex', flexDirection: 'column'}}>
+                <span style={{marginBottom: 5}}>
+                  {this.runCapabilitiesErrorSolved
+                    ? 'All required run capabilities are selected.'
+                    : 'Some of the required run capabilities are missing.'
+                  }
+                </span>
+                <Provider
+                  awsRegions={awsRegions}
+                  preferences={this.props.preferences}
+                  dockerRegistries={this.props.dockerRegistries}
+                >
+                  <RunCapabilities
+                    values={this.props.runCapabilities}
+                    onChange={this.onChangeRunCapabilities}
+                    platform={this.props.platform}
+                    dockerImage={this.props.dockerImage}
+                    provider={this.currentCloudProvider}
+                    region={this.currentRegion}
+                    mode={RUN_CAPABILITIES_MODE.launch}
+                    tagStyle={{height: '20px'}}
+                    style={{padding: '2px'}}
+                    showError={false}
+                    getPopupContainer={node => node}
+                  />
+                </Provider>
+              </div>
+            }
+          />
+        ) : null}
+        <ToolLayersCheckWarning
+          style={{margin: 2}}
+          toolId={this.props.dockerImage}
+          showIcon
         />
       </div>
     );
@@ -1094,7 +1216,17 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
-    skipCheck: PropTypes.bool
+    dockerRegistries: PropTypes.object,
+    runInfo: PropTypes.shape({
+      name: PropTypes.string,
+      alias: PropTypes.string,
+      version: PropTypes.string,
+      title: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+      payload: PropTypes.object
+    }),
+    skipCheck: PropTypes.bool,
+    authenticatedUserInfo: PropTypes.object,
+    dockerImage: PropTypes.string
   };
 
   static defaultProps = {
@@ -1108,8 +1240,19 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     hddSize: 0,
     instanceType: null,
     limitMounts: null,
-    runNameAlias: null
+    runNameAlias: null,
+    runCapabilities: null
   };
+
+  get runCapabilitiesError () {
+    if (this.props.parameters && this.props.preferences) {
+      return checkRequiredCapabilitiesErrors(
+        Object.keys(this.props.parameters),
+        this.props.preferences
+      );
+    }
+    return false;
+  }
 
   onChangeSpotType = (isSpot) => {
     this.setState({
@@ -1160,6 +1303,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
 
   onChangeRunNameAlias = (alias) => {
     this.setState({runNameAlias: alias});
+  };
+
+  onChangeRunCapabilities = (capabilities) => {
+    this.setState({runCapabilities: (capabilities || []).slice()});
   };
 
   renderModalTitle = () => {
@@ -1232,12 +1379,17 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             limitMounts={this.props.limitMounts}
             onChangeLimitMounts={this.onChangeLimitMounts}
             onChangeHddSize={this.onChangeHddSize}
+            runCapabilities={this.state.runCapabilities}
+            onChangeRunCapabilities={this.onChangeRunCapabilities}
             nodeCount={this.props.nodeCount}
             hddSize={this.props.hddSize}
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
+            showRunCapabilities={this.runCapabilitiesError}
             preferences={this.props.preferences}
             skipCheck={this.props.skipCheck}
+            dockerImage={this.props.dockerImage}
+            dockerRegistries={this.props.dockerRegistries}
           />
         </Row>
         {
@@ -1256,6 +1408,12 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
+        <Provider authenticatedUserInfo={this.props.authenticatedUserInfo}>
+          <AllowedInstancesCountWarning
+            payload={this.props.runInfo.payload}
+            style={{margin: '4px 2px'}}
+          />
+        </Provider>
       </div>
     );
   }
@@ -1266,7 +1424,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       isSpot: this.props.isSpot,
       instanceType: this.props.instanceType,
       hddSize: this.props.hddSize,
-      limitMounts: this.props.limitMounts
+      limitMounts: this.props.limitMounts,
+      runCapabilities: getEnabledCapabilities(this.props.parameters)
     }, async () => {
       this._estimatedPriceType = new PipelineRunEstimatedPrice(
         this.props.pipelineId,

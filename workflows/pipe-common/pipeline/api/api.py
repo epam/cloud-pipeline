@@ -180,11 +180,14 @@ class PipelineAPI:
     TOOL_VERSIONS_URL = 'tool/{tool_id}/tags'
     ENABLE_TOOL_URL = 'tool/register'
     UPDATE_TOOL_URL = 'tool/update'
+    DELETE_TOOL_URL = 'tool/delete'
     RUN_URL = 'run'
     GET_RUN_URL = '/run/{}'
     GET_TASK_URL = '/run/{}/task?taskName={}'
     FILTER_RUNS = 'run/filter'
+    TERMINATE_RUN = 'run/{}/terminate'
     DATA_STORAGE_URL = "/datastorage"
+    DATA_STORAGE_LOAD_ALL_URL = "datastorage/loadAll"
     DATA_STORAGE_RULES_URL = "datastorage/rule/load"
     REGISTRY_CERTIFICATES_URL = "dockerRegistry/loadCerts"
     REGISTRY_LOAD_ALL_URL = "dockerRegistry/loadTree"
@@ -197,8 +200,18 @@ class PipelineAPI:
     CLONE_PIPELINE_URL = "/pipeline/{}/clone"
     LOAD_WRITABLE_STORAGES = "/datastorage/mount"
     LOAD_AVAILABLE_STORAGES = "/datastorage/available"
+    LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}"
+    LIFECYCLE_RULES_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule"
+    PROLONG_LIFECYCLE_RULES_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/prolong?path={path}&days={days}&force={force}"
+    LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution"
+    LOAD_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution{filter}"
+    UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}/status?status={status}"
+    DELETE_LIFECYCLE_RULES_EXECUTION_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}"
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
+    LOAD_STORAGE_ITEM_CONTENT_URL = '/datastorage/{id}/content?path={path}'
     LOAD_METADATA = "/metadata/load"
+    SAVE_METADATA_ENTITY = "metadataEntity/save"
+    FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
     LOAD_DTS = "/dts"
     LOAD_CONFIGURATION = '/configuration/%d'
@@ -219,6 +232,28 @@ class PipelineAPI:
     LOAD_CURRENT_USER = 'whoami'
     LOAD_ROLES = 'role/loadAll?loadUsers={}'
     LOAD_ROLE = 'role/{}'
+    LOAD_ROLE_BY_NAME = 'role?name={}'
+    LOAD_USER_BY_NAME = 'user?name={}'
+    LOAD_USER = 'user/{}'
+    RUN_CONFIGURATION = '/runConfiguration'
+    NOTIFICATION_SETTING_URL = 'notification/settings'
+    NOTIFICATION_TEMPLATE_URL = 'notification/template'
+    LIFECYCLE_RESTORE_ACTION_URL = "/datastorage/{id}/lifecycle/restore"
+    LIFECYCLE_RESTORE_ACTION_FILTER_URL = "/datastorage/{id}/lifecycle/restore/filter"
+    DATA_STORAGE_PATH_SIZE_URL = '/datastorage/path/size'
+    SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL = '/datastorage/tags/search'
+    DATA_STORAGE_ITEM_TAG_LIST_URL = '/datastorage/{id}/tags/list?path={path}&showVersions={show_versions}'
+    DATA_STORAGE_ITEM_TAGS_BATCH_UPSERT_URL = '/datastorage/{id}/tags/batch/upsert'
+    DATA_STORAGE_ITEM_TAGS_BATCH_INSERT_URL = '/datastorage/{id}/tags/batch/insert'
+    DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL = '/datastorage/{id}/tags/batch/delete'
+    DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL = '/datastorage/{id}/tags/batch/deleteAll'
+    DATA_STORAGE_LOAD_URL = "/datastorage/{id}/load"
+    DATA_STORAGE_LIST_ITEMS_URL = "datastorage/{id}/list"
+    DATA_STORAGE_DELETE_URL = '/datastorage/{id}/delete'
+    CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
+    GRANT_PERMISSIONS_URL = "/grant"
+    PERMISSION_URL = "/permissions"
+
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -235,7 +270,7 @@ class PipelineAPI:
         self.timeout = timeout
         self.connection_timeout = connection_timeout
 
-    def check_response(self, response):
+    def check_response(self, response, not_found_msg=None):
         if response.status_code != 200:
             sys.stderr.write("API responded with status {}\n".format(str(response.status_code)))
             return False
@@ -244,11 +279,13 @@ class PipelineAPI:
             return True
         if 'message' in data:
             sys.stderr.write("API returned error message: {}\n".format(data['message']))
-            return False
+            if not_found_msg and not_found_msg in data['message']:
+                return True
+            return True
         sys.stderr.write("API responded with not expected message: {}\n".format(str(response)))
         return False
 
-    def execute_request(self, url, method='get', data=None):
+    def execute_request(self, url, method='get', data=None, not_found_msg=None):
         count = 0
         while count < self.attempts:
             count += 1
@@ -265,7 +302,7 @@ class PipelineAPI:
                                             timeout=self.connection_timeout)
                 else:
                     raise RuntimeError('Unsupported request method: {}'.format(method))
-                if self.check_response(response):
+                if self.check_response(response, not_found_msg=not_found_msg):
                     result = response.json()
                     return result['payload'] if 'payload' in result else None
             except Exception as e:
@@ -284,6 +321,13 @@ class PipelineAPI:
             'status': status,
             'date': date
         })
+
+    def get_preference_efficiently(self, name):
+        return self._request('GET', 'preferences/' + name)
+
+    def get_preference_value(self, name):
+        preference = self.get_preference_efficiently(name) or {}
+        return preference.get('value')
 
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self.api_url, endpoint)
@@ -649,6 +693,14 @@ class PipelineAPI:
             raise RuntimeError("Failed to load metadata for the given entity. "
                                "Error message: {}".format(str(e.message)))
 
+    def load_metadata_efficiently(self, entity_id, entity_class):
+        all_metadata = self.load_all_metadata_efficiently([entity_id], entity_class)
+        return (all_metadata[0] if all_metadata else {}).get('data', {})
+
+    def load_all_metadata_efficiently(self, entity_ids, entity_class):
+        data = [{"entityId": entity_id, "entityClass": entity_class} for entity_id in entity_ids]
+        return self._request('POST', self.LOAD_METADATA, data=data) or []
+
     def load_entities(self, entities_ids):
         try:
             result = self.execute_request(str(self.api_url) + self.LOAD_ENTITIES_DATA, method='post',
@@ -656,6 +708,25 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to load entities data. "
+                               "Error message: {}".format(str(e.message)))
+
+    def save_metadata_entity(self, entity):
+        try:
+            result = self.execute_request(str(self.api_url) + self.SAVE_METADATA_ENTITY, method='post',
+                                          data=json.dumps(entity))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to save metadata entities. "
+                               "Error message: {}".format(str(e.message)))
+
+    def find_metadata_entity(self, folder_id, external_id, class_name):
+        try:
+            result = self.execute_request(str(self.api_url) +
+                                          self.FIND_METADATA_ENTITY % (external_id, folder_id, class_name),
+                                          method='get', not_found_msg='not found')
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to find metadata entities. "
                                "Error message: {}".format(str(e.message)))
 
     def load_dts_registry(self):
@@ -681,6 +752,18 @@ class PipelineAPI:
         except BaseException as e:
             raise RuntimeError("Failed to get system preference %s. "
                                "Error message: %s" % (preference_name, e.message))
+
+    def get_contextual_preference(self, preference_name, preference_level, resource_id):
+        try:
+            url = self.api_url \
+                  + '/contextual/preference/load?name=' +  preference_name \
+                  + '&level=' + preference_level \
+                  + '&resourceId=' + str(resource_id)
+            result = self.execute_request(url, method='get')
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
+                               "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
 
     def load_tool_version_settings(self, tool_id, version):
         get_tool_version_settings_url = self.TOOL_VERSION_SETTINGS % tool_id
@@ -711,8 +794,6 @@ class PipelineAPI:
             return {} if result is None else result
         except Exception as e:
             raise RuntimeError("Failed to add hook to pipeline repository. \n {}".format(e))
-
-
 
     def search(self, query, types, page_size=50, offset=0, aggregate=True, highlight=True):
         try:
@@ -934,6 +1015,17 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
 
+    def generate_user_token(self, user_name, duration=None):
+        try:
+            if duration:
+                expiration_query = '&expiration=' + str(duration)
+            url = str(self.api_url) \
+                  + '/user/token?name=' + user_name \
+                  + (expiration_query if duration else '')
+            return self.execute_request(url, method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
+
     def load_roles(self, load_users=False):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
@@ -946,3 +1038,329 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load role by ID '{}'.", "Error message: {}".format(str(role_id),
                                                                                              str(e.message)))
+
+    def load_user_by_name(self, user):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_USER_BY_NAME.format(user))
+        except Exception as e:
+            raise RuntimeError("Failed to load user by name '{}'.", "Error message: {}".format(str(user),
+                                                                                               str(e.message)))
+
+    def load_user(self, user_id):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_USER.format(user_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load user by id '{}'.", "Error message: {}".format(str(user_id),
+                                                                                             str(e.message)))
+
+    def load_role_by_name(self, name):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLE_BY_NAME.format(name))
+        except Exception as e:
+            raise RuntimeError("Failed to load role by name '{}'.", "Error message: {}".format(str(name),
+                                                                                               str(e.message)))
+
+    def load_users(self):
+        return self._request('GET', 'users') or []
+
+    def run_configuration(self, data):
+        try:
+            result = self.execute_request(str(self.api_url) + self.RUN_CONFIGURATION, method='post',
+                                          data=json.dumps(data))
+            return [] if result is None else result
+        except Exception as e:
+            raise RuntimeError("Failed to launch configuration %s. "
+                               "Error message: {}".format(str(data['id']), str(e.message)))
+
+    def get_edge_external_url(self, region=None):
+        endpoint = 'cluster/edge/externalUrl'
+        if region:
+            endpoint += '?region=' + region
+        return self._request('GET', endpoint)
+
+    def load_lifecycle_rules_for_storage(self, datastorage_id):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RULES_FOR_STORAGE_URL.format(id=datastorage_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load lifecycle rules by datastorage ID '{}'.",
+                               "Error message: {}".format(str(datastorage_id), str(e.message)))
+
+    def load_lifecycle_rule(self, datastorage_id, rule_id):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL.format(
+                                            id=datastorage_id, rule_id=rule_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load lifecycle rule by ID '{}'.",
+                               "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
+        try:
+            return self.execute_request(str(self.api_url) + self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+                                            id=datastorage_id, rule_id=rule_id), data=json.dumps(execution),
+                                        method='post')
+        except Exception as e:
+            raise RuntimeError("Failed to create lifecycle rule execution for rule ID '{}'.",
+                               "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def create_lifecycle_rule(self, datastorage_id, rule):
+        try:
+            return self.execute_request(str(self.api_url) + self.LIFECYCLE_RULES_FOR_STORAGE_URL.format(
+                                            id=datastorage_id), data=json.dumps(rule), method='post')
+        except Exception as e:
+            raise RuntimeError("Failed to create lifecycle rule for datastorage ID '{}'.",
+                               "Error message: {}".format(str(datastorage_id), str(e.message)))
+
+    def delete_lifecycle_rule(self, datastorage_id, rule_id):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL.format(
+                                            id=datastorage_id, rule_id=rule_id), method='delete')
+        except Exception as e:
+            raise RuntimeError("Failed to create lifecycle rule for datastorage ID '{}'.",
+                               "Error message: {}".format(str(datastorage_id), str(e.message)))
+
+    def load_lifecycle_rule_executions(self, datastorage_id, rule_id, path=None, status=None):
+
+        def _format_param(param_str, name, value):
+            if param_str:
+                return param_str + "&{}={}".format(name, value)
+            else:
+                return "?{}={}".format(name, value)
+
+        try:
+            params = None
+            if path:
+                params = _format_param(params, "path", path)
+            if status:
+                params = _format_param(params, "status", status)
+
+            return self.execute_request(str(self.api_url) +
+                                        self.LOAD_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+                                            id=datastorage_id, rule_id=rule_id, filter=params if params else ""))
+        except Exception as e:
+            raise RuntimeError("Failed to load lifecycle rule executions for rule ID '{}'.",
+                               "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+                                            id=datastorage_id, execution_id=execution_id, status=status), method='put')
+        except Exception as e:
+            raise RuntimeError("Failed to update lifecycle rule execution status by ID '{}' status to update: {}.",
+                               "Error message: {}".format(str(execution_id), status, str(e.message)))
+
+    def delete_lifecycle_rule_execution(self, datastorage_id, execution_id):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.DELETE_LIFECYCLE_RULES_EXECUTION_URL.format(
+                                            id=datastorage_id, execution_id=execution_id), method='delete')
+        except Exception as e:
+            raise RuntimeError("Failed to delete lifecycle rule execution by ID '{}'.",
+                               "Error message: {}".format(str(execution_id), str(e.message)))
+
+    def prolong_lifecycle_rule(self, datastorage_id, rule_id, path, days, force=False):
+        try:
+            return self.execute_request(str(self.api_url) + self.PROLONG_LIFECYCLE_RULES_URL.format(
+                                            id=datastorage_id, rule_id=rule_id, path=path, days=days, force=force))
+        except Exception as e:
+            raise RuntimeError("Failed to prolong lifecycle rule '{}'.",
+                               "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def load_datastorage_item_content(self, storage_id, path, version=None):
+        try:
+            formed_url = self.LOAD_STORAGE_ITEM_CONTENT_URL.format(id=storage_id, path=path)
+            if version:
+                formed_url = formed_url + "&version={version}".format(version=version)
+            return self._request(endpoint=formed_url, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage item content: storage_id - '{}', path - '{}', version - '{}'.",
+                               "Error message: {}".format(storage_id, path, version, str(e.message)))
+
+    def search_datastorage_items_by_tag(self, request):
+        try:
+            return self._request(
+                endpoint=self.SEARCH_DATA_STORAGE_ITEMS_BY_TAG_URL, http_method="post", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to search datastorage items by tag: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def load_datastorage(self, storage_id):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LOAD_URL.format(id=storage_id), http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage by id: '{}'.",
+                               "Error message: {}".format(storage_id, str(e.message)))
+
+    def load_datastorage_item_with_tags(self, storage_id, path, show_versions=False):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAG_LIST_URL.format(id=storage_id, path=path, show_versions=show_versions),
+                http_method="get"
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage item with tags: storage_id - '{}', path - '{}', show_versions - '{}'.",
+                               "Error message: {}".format(storage_id, path, show_versions, str(e.message)))
+
+    def insert_datastorage_item_tags(self, storage_id, request):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_INSERT_URL.format(id=storage_id), http_method="put", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to batch insert tags: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def upsert_datastorage_item_tags(self, storage_id, request):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_UPSERT_URL.format(id=storage_id), http_method="put", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to batch upsert tags: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def delete_datastorage_item_tags(self, storage_id, request):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_URL.format(id=storage_id), http_method="delete", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to batch delete tags: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def delete_all_datastorage_item_tags(self, storage_id, request):
+        try:
+            return self._request(
+                endpoint=self.DATA_STORAGE_ITEM_TAGS_BATCH_DELETE_ALL_URL.format(id=storage_id), http_method="delete", data=request
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to batch delete all tags: request - '{}'.",
+                               "Error message: {}".format(request, str(e.message)))
+
+    def load_notification_templates(self):
+        try:
+            return self.execute_request(str(self.api_url) + self.NOTIFICATION_TEMPLATE_URL)
+        except Exception as e:
+            raise RuntimeError("Failed to load notification templates. Error message {}", str(e.message))
+
+    def load_notification_settings(self):
+        try:
+            return self.execute_request(str(self.api_url) + self.NOTIFICATION_SETTING_URL)
+        except Exception as e:
+            raise RuntimeError("Failed to load notification settings. Error message {}", str(e.message))
+
+    def filter_lifecycle_restore_action(self, datastorage_id, filter_obj):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RESTORE_ACTION_FILTER_URL.format(id=datastorage_id),
+                                        data=json.dumps(filter_obj),  method='post')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to load lifecycle restore actions for storage: '{}', and filters: '{}'.".format(
+                    str(datastorage_id), filter_obj), "Error message: {}".format(str(e.message)))
+
+    def update_lifecycle_restore_action(self, datastorage_id, restore_action):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RESTORE_ACTION_URL.format(id=datastorage_id),
+                                        data=json.dumps(restore_action), method='put')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to update lifecycle restore actions for storage: '{}', action: '{}'.".format(
+                    str(datastorage_id), restore_action), "Error message: {}".format(str(e.message)))
+
+    def get_paths_size(self, paths):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.DATA_STORAGE_PATH_SIZE_URL,
+                                        data=json.dumps(paths), method='post')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed get size for paths: '{}'. Error message: {}".format(','.join(paths), str(e.message)))
+
+    def load_categorical_attributes_dictionary(self):
+        try:
+            return self._request(endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+
+    def upsert_categorical_attribute(self, attribute):
+        try:
+            return self._request(
+                endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="post", data=attribute
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+
+    def grant_permissions(self, permissions_object):
+        try:
+            return self._request(
+                endpoint=self.GRANT_PERMISSIONS_URL, http_method="post", data=permissions_object
+            )
+        except Exception as e:
+            raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
+
+    def get_permissions(self, entity_id, entity_class):
+        try:
+            result = self._request(endpoint='grant?id={}&aclClass={}'
+                                   .format(entity_id, entity_class), http_method="get")
+            return result['permissions'] if 'permissions' in result else None
+        except Exception as e:
+            raise RuntimeError("Failed to load permissions, entity_id: {} error: {}".format(entity_id, str(e.message)))
+
+    def terminate_run(self, run_id):
+        try:
+            return self._request(endpoint=self.TERMINATE_RUN.format(str(run_id)), http_method="post")
+        except Exception as e:
+            raise RuntimeError("Failed to terminate run. \n {}".format(e))
+
+    def data_storage_load_all(self):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LOAD_ALL_URL, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load data storages. \n {}".format(e))
+
+    def load_pipelines_by_owners(self, owners, statuses):
+        try:
+            data = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'owners': owners, 'statuses': statuses}
+            result = self._request(endpoint=self.FILTER_RUNS, http_method="post", data=data)
+            return result['elements'] if 'elements' in result else []
+        except Exception as e:
+            raise RuntimeError("Failed to load pipelines \n {}".format(e))
+
+    def delete_tool(self, image):
+        try:
+            return self._request(endpoint='tool/delete?image={}'.format(image), http_method="delete")
+        except Exception as e:
+            raise RuntimeError("Failed to delete tool \n {}".format(e))
+
+    def load_datastorage_items(self, storage_id):
+        try:
+            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
+
+    def delete_user_home_storage(self, user_id):
+        try:
+            return self._request(endpoint='user/{}'.format(str(user_id)), http_method="put", data={})
+        except Exception as e:
+            raise RuntimeError("Failed to delete user home storage '{}'.".format(user_id))
+
+    def stop_run(self, run_id):
+        try:
+            data = {'status': 'STOPPED', 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}
+            return self._request(endpoint='run/{}/status'.format(str(run_id)), http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to stop run. \n {}".format(e))
+
+    def get_entity_permissions(self, entity_id, entity_class):
+        request_url = '%s?id=%s&aclClass=%s' % (self.PERMISSION_URL, str(entity_id), entity_class)
+        try:
+            return self._request(endpoint=request_url, http_method="get")
+        except Exception as e:
+            raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
+                entity_class, str(entity_id), str(e)))
+

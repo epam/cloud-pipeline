@@ -273,6 +273,7 @@ public class GrantPermissionManager {
         MutableAcl updatedAcl = aclService.updateAcl(acl);
         AclSecuredEntry aclSecuredEntry = convertAclToEntryForUser(entity, updatedAcl, sid);
         updateEventsWithChildrenAndIssues(entity);
+        aclService.putInCache(updatedAcl);
         return aclSecuredEntry;
     }
 
@@ -316,6 +317,7 @@ public class GrantPermissionManager {
         LOGGER.info("Deleting permissions for sid: name={} isPrincipal={}. Entity: class={} id={}",
                 user, isPrincipal, aclClass, id);
         updateEventsWithChildrenAndIssues(entity);
+        aclService.putInCache(acl);
         return aclSecuredEntry;
     }
 
@@ -328,6 +330,7 @@ public class GrantPermissionManager {
         MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
         LOGGER.info("Deleting all permissions. Entity: class={} id={}", aclClass, id);
         acl = deleteAllAces(acl);
+        aclService.putInCache(acl);
         return convertAclToEntry(entity, acl);
     }
 
@@ -817,7 +820,6 @@ public class GrantPermissionManager {
         return cloudProfileCredentialsManagerProvider.hasAssignedUserOrRole(profileId, currentUser.getId(),
                 currentUser.getRoles());
     }
-
     private List<Sid> convertUserToSids(String user) {
         String principal = user.toUpperCase();
         UserContext eventOwner = userManager.loadUserContext(user.toUpperCase());

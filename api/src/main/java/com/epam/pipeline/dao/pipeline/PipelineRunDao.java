@@ -36,6 +36,7 @@ import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -612,6 +613,25 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PipelineRunParameters.CONFIGURATION_ID.name(), filter.getConfigurationIds());
             clausesCount++;
         }
+
+        if (MapUtils.isNotEmpty(filter.getTags())) {
+            appendAnd(whereBuilder, clausesCount);
+            final String keyValuePattern = "r.tags @> '{\"%s\": \"%s\"}'::jsonb";
+            clausesCount++;
+            final String tagsFilterConditions = filter.getTags().entrySet().stream()
+                    .map(entry -> String.format(keyValuePattern, entry.getKey(), entry.getValue()))
+                    .collect(Collectors.joining(AND));
+            whereBuilder.append(tagsFilterConditions);
+        }
+
+        if (StringUtils.isNotBlank(filter.getPrettyUrl())) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder.append(String.format(" r.pretty_url like :%s", PipelineRunParameters.PRETTY_URL.name()));
+            params.addValue(PipelineRunParameters.PRETTY_URL.name(),
+                    String.format("%%\"path\":\"%s\"%%", filter.getPrettyUrl()));
+            clausesCount++;
+        }
+
         appendProjectFilter(projectFilter, params, whereBuilder, clausesCount);
         appendAclFilters(filter, params, whereBuilder, clausesCount);
 

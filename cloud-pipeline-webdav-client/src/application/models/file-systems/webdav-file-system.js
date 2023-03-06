@@ -169,7 +169,7 @@ class WebdavFileSystem extends FileSystem {
                 content.isObjectStorage = true;
               }
             });
-            return result.filter(o => !o.isObjectStorage || !isHiddenStorage(o.name));
+            return result.filter(o => !isHiddenStorage(o.name));
           };
           this.webdavClient.getDirectoryContents(directoryCorrected)
             .then(contents => {
@@ -289,7 +289,13 @@ class WebdavFileSystem extends FileSystem {
       if (!this.webdavClient) {
         reject(`${this.appName || 'Cloud Data'} client was not initialized`);
       }
-      this.webdavClient.getDirectoryContents(root || '')
+      this.isDirectory(root)
+        .then(isDirectory => {
+          if (!isDirectory) {
+            return Promise.resolve([{filename: root, type: 'file'}]);
+          }
+          return this.webdavClient.getDirectoryContents(root || '');
+        })
         .then(contents => {
           const mapped = contents
             .map(o => ({
@@ -304,10 +310,22 @@ class WebdavFileSystem extends FileSystem {
           ]);
         })
         .then(contents => resolve(contents.reduce((r, c) => ([...r, ...c]), [])))
-        .catch(() => resolve([]));
+        .catch((e) => {
+          log(`error fetching directory contents "${root}": ${e.message}`);
+          resolve([]);
+        });
     });
     return getContents(item);
   }
+  async buildDestination(directory) {
+    const isDirectory = await this.isDirectory(directory);
+    if (!isDirectory) {
+      const parentDirectory = this.joinPath(...this.parsePath(directory).slice(0, -1));
+      return super.buildDestination(parentDirectory);
+    }
+    return super.buildDestination(directory);
+  }
+
   getContentsStream(path) {
     return new Promise((resolve, reject) => {
       if (!this.webdavClient) {
@@ -328,14 +346,21 @@ class WebdavFileSystem extends FileSystem {
         reject(`${this.appName || 'Cloud Data'} client was not initialized`);
       } else {
         const parentDirectory = this.joinPath(...this.parsePath(destinationPath).slice(0, -1));
-        const createDirectorySafe = async () => {
+        const createDirectorySafe = async (aDir) => {
+          if (!aDir || !aDir.length) {
+            return;
+          }
+          await createDirectorySafe(this.joinPath(...this.parsePath(aDir).slice(0, -1)));
           try {
-            if (await this.webdavClient.exists(parentDirectory) === false) {
-              await this.webdavClient.createDirectory(parentDirectory);
+            if (await this.webdavClient.exists(aDir) === false) {
+              log('creating directory', aDir);
+              await this.webdavClient.createDirectory(aDir);
             }
-          } catch (_) {}
+          } catch (_) {
+            log(`error creating directory: ${_.message}`);
+          }
         };
-        createDirectorySafe()
+        createDirectorySafe(parentDirectory)
           .then(() => {
             log(`Copying ${size} bytes to ${destinationPath}...`);
             this.watchCopyProgress(stream, callback, size, 99);

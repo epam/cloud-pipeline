@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import os
 
 from pipeline import TaskStatus
 
@@ -41,6 +42,7 @@ def main():
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--cloud", type=str, default=None)
+    parser.add_argument("--dedicated", type=bool, required=False)
     parser.add_argument("--label", type=str, default=[], required=False, action='append')
     parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
@@ -67,6 +69,9 @@ def main():
     pre_pull_images = args.image
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get('pool_id')
+    is_dedicated = args.dedicated if args.dedicated else False
+    global_distribution_url = os.getenv('GLOBAL_DISTRIBUTION_URL',
+                                        default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
 
     if not kube_ip or not kubeadm_token:
         raise RuntimeError('Kubernetes configuration is required to create a new node')
@@ -121,7 +126,8 @@ def main():
             ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id,
                                                          pool_id, kms_encyr_key_id, num_rep, time_rep, kube_ip,
                                                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                                         pre_pull_images)
+                                                         global_distribution_url,
+                                                         pre_pull_images, is_dedicated)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)
         nodename, nodename_full = cloud_provider.get_instance_names(ins_id)

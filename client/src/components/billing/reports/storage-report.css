@@ -1,0 +1,88 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.storage-report {
+  padding: 5px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.storage-report-table-container {
+  position: relative;
+  overflow: auto;
+  width: 100%;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.storage-report-table {
+  border-spacing: 0;
+  border-collapse: separate;
+  min-width: 100%;
+}
+
+.storage-report-table .storage-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.storage-report-table .right-aligned-cell {
+  text-align: right;
+}
+
+.storage-report-table .right-aligned-cell.no-padding {
+  padding-right: 2px;
+}
+
+.storage-report-table .left-aligned-cell {
+  text-align: left;
+}
+
+.storage-report-table .left-aligned-cell.no-padding {
+  padding-left: 2px;
+}
+
+.storage-report-table .centered-cell {
+  text-align: center;
+}
+
+.storage-report-table .fixed-row {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.storage-report-table .fixed-column {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.storage-report-table .fixed-column.fixed-row {
+  z-index: 2;
+}
+
+.storage-report-table .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 6px 12px;
+}
+
+.storage-report-table tr > *:first-child {
+  padding-left: 20px;
+}

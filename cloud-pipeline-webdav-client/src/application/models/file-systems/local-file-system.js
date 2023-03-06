@@ -82,6 +82,15 @@ class LocalFileSystem extends FileSystem {
     });
     return Promise.resolve(utilities.getDirectoryFiles(item).map(mapper));
   }
+  async buildDestination(directory) {
+    if (fs.existsSync(directory)) {
+      if (fs.lstatSync(directory).isDirectory()) {
+        return super.buildDestination(directory);
+      } else {
+        return super.buildDestination(path.dirname(directory));
+      }
+    }
+  }
   getContentsStream(path) {
     return new Promise((resolve, reject) => {
       try {

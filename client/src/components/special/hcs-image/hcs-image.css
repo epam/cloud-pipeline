@@ -28,13 +28,14 @@
   text-align: initial;
   height: 100%;
   overflow: auto;
-  padding: 10px;
+  padding: 0;
 }
 
 .hcs-image-container {
   position: relative;
   display: flex;
   flex-direction: row;
+  padding: 0;
 }
 
 .alert-container {
@@ -62,12 +63,47 @@
   position: relative;
 }
 
+.hcs-batch-job-info {
+  flex: 1;
+  height: 100%;
+  overflow: auto;
+}
+
 .hcs-image {
   width: 100%;
   height: 100%;
   min-height: 200px;
   overflow: hidden;
+  position: absolute;
+}
+
+.hcs-image.hidden {
+  opacity: 0;
+}
+
+.hcs-image-analysis-results {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+}
+
+.hcs-image-analysis-results-background {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  opacity: 0.85;
+  border-right: none !important;
+  border-left: none !important;
+}
+
+.hcs-image-analysis-results-content {
   position: relative;
+  padding: 5px;
+  overflow: auto;
+  max-height: 33vh;
 }
 
 .hcs-image-controls {
@@ -161,4 +197,18 @@
   left: 10px;
   z-index: 2;
   line-height: 1;
+}
+
+.hcs-image-analysis-jobs {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.hcs-image-analysis-jobs-panel {
+  width: 350px;
+  height: 100%;
+  overflow: auto;
 }

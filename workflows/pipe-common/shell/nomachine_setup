@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,24 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# SEE `nomachine_setup_deps` FOR THE DEPS PREPARATION STEPS
+
 NOMACHINE_INSTALL_TASK="NoMachineInitialization"
 NM_TARGET_VERSION="${CP_CAP_DESKTOP_NM_VERSION:-6.5.6-9}"
 CP_NM_WAIT_TIMEOUT="${CP_NM_WAIT_TIMEOUT:-10}"
 export CP_NM_NOMACHINE_PORT="${CP_NM_NOMACHINE_PORT:-4000}"
 export CP_NM_LOCAL_PORT="${CP_NM_LOCAL_PORT:-8089}"
-
-# Check if required proxy settings are correct
-export CP_NM_PROXY_HOST="${CP_NM_PROXY_HOST:-$(echo $CP_CAP_NM_PROXY_HOST)}"
-if [ -z $CP_NM_PROXY_HOST ]; then
-    pipe_log_fail "NoMachine proxy host is not set (CP_NM_PROXY_HOST). Exiting..." "$NOMACHINE_INSTALL_TASK"
-    exit 1
-fi
-
-export CP_NM_PROXY_PORT="${CP_NM_PROXY_PORT:-$(echo $CP_CAP_NM_PROXY_PORT)}"
-if [ -z $CP_NM_PROXY_PORT ]; then
-    pipe_log_fail "NoMachine proxy port is not set (CP_NM_PROXY_PORT). Exiting..." "$NOMACHINE_INSTALL_TASK"
-    exit 1
-fi
 
 function install_prerequisites {
   if [[ "$IS_RPM_BASED" = 0 ]]; then
@@ -59,19 +48,37 @@ function get_installed_nm_version {
 function update_nm {
   nm_version=$1
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
-    yum downgrade -y nomachine.rpm && \
-    yum install -y nomachine.rpm && \
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm
+    if [ $? -ne 0 ]; then
+      return 1
+    fi
+    
+    # First try to downgrade to the target version, if it's lower then a current
+    local _downgrade_result=1
+    yum downgrade -y nomachine.rpm
+    _downgrade_result=$?
+
+    # And install a target version:
+    # - If it was downgraded in a previous step - nothing happens
+    # - Otherwise it will be installed
+    local _install_result=1
+    yum install -y nomachine.rpm
+    _install_result=$?
+
+    # If both operations failed - fail the installation
+    if [ $_downgrade_result -ne 0 ] && [ $_install_result -ne 0 ]; then
+      return 1
+    fi
+
     rm -f nomachine.rpm
   else
-    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
     dpkg -i nomachine.deb && \
     rm -f nomachine.deb
   fi
 }
 
 function remove_nm {
-  is_rpm=$1
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     yum remove -y nomachine
   else
@@ -83,14 +90,14 @@ function install_nm {
   nm_version=$1
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     os_ver=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
-    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/xfce4-$os_ver.tar.gz" -O xfcedesktop.tar.gz && \
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/xfce4-$os_ver.tar.gz" -O xfcedesktop.tar.gz && \
     mkdir -p xfcedesktop && \
     tar -xzvf xfcedesktop.tar.gz -C xfcedesktop && \
     yum install -y --nogpgcheck xfcedesktop/*.rpm && \
     rm -rf xfcedesktop* && \
     rm -f /etc/xdg/autostart/xfce-polkit* && \
     /bin/dbus-uuidgen > /etc/machine-id && \
-    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
     yum install -y nomachine.rpm && \
     rm -f nomachine.rpm && \
     sed -i '/DefaultDesktopCommand/c\DefaultDesktopCommand "/usr/bin/startxfce4"' /usr/NX/etc/node.cfg
@@ -103,7 +110,7 @@ function install_nm {
     apt-get install -yq --no-upgrade \
                         xfce4 \
                         xfce4-xkb-plugin && \
-    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
     dpkg -i nomachine.deb && \
     rm -f nomachine.deb
   fi
@@ -111,7 +118,7 @@ function install_nm {
 
 function config_nm {
   $CP_PYTHON2_PATH -m pip install -I $CP_PIP_EXTRA_ARGS flask && \
-  wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
+  wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
   mkdir -p nomachine-common/ /etc/nomachine/ && \
   tar -C nomachine-common/ -zxvf nomachine-common.tar.gz && \
   mv nomachine-common/create_chrome_launcher.sh /tmp/ && \
@@ -122,7 +129,7 @@ function config_nm {
   rm -rf nomachine-common* && \
   cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.template
   if [[ $? -ne 0 ]]; then
-    exit 1
+    return 1
   fi
 
   if [[ "$IS_RPM_BASED" = 0 ]]; then
@@ -141,22 +148,60 @@ function config_nm {
 }
 
 function install_nm_extras {
+  CP_NM_EXTRA_INSTALL_CHROME_VERSION="${CP_NM_EXTRA_INSTALL_CHROME_VERSION:-104.0.5112.79-1}"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm" -O /opt/google-chrome-stable_current_x86_64.rpm && \
-    yum install -y /opt/google-chrome-stable_current_*.rpm && \
-    rm -f /opt/google-chrome-stable_current_*.rpm
+    # Google chrome installation may be stuck, when updating. So just wait a bit and proceed further
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.rpm" -O /opt/google-chrome.rpm && \
+    timeout ${CP_NM_EXTRA_INSTALL_TIMEOUT:-1}m yum install -y /opt/google-chrome.rpm && \
+    rm -f /opt/google-chrome.rpm
   else
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | tee /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update -y && \
-    apt-get install --no-upgrade -y google-chrome-stable
+    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.deb" -O /opt/google-chrome.deb && \
+    apt-get install --no-upgrade -y /opt/google-chrome.deb && \
+    rm -f /opt/google-chrome.deb
   fi
   if [[ $? -ne 0 ]]; then
-    exit 1
+    return 1
   fi
   mkdir -p /home/${OWNER}/Desktop/ && \
   bash /tmp/create_chrome_launcher.sh && \
   rm -f /tmp/create_chrome_launcher.sh
+}
+
+function run_nomachine() {
+    su -l "$OWNER" bash -c "cp -rT /etc/nomachine/xfce/ \$HOME/"
+
+    mkdir -p /home/${OWNER}/Desktop
+    chown ${OWNER} /home/${OWNER}/Desktop
+    chmod o+rwx /home/${OWNER}/Desktop
+
+    \cp /usr/NX/etc/server.cfg.template /usr/NX/etc/server.cfg
+
+    sed -i '/#CreateDisplay/c\CreateDisplay 1' /usr/NX/etc/server.cfg
+    sed -i "/#DisplayOwner/c\DisplayOwner $OWNER" /usr/NX/etc/server.cfg
+
+    sed -i '/#UserScriptAfterSessionStart/c\UserScriptAfterSessionStart "/etc/nomachine/set_xkb.sh"' /usr/NX/etc/node.cfg
+
+    cat >/etc/nomachine/set_xkb.sh <<'EOL'
+#!/bin/sh
+DISPLAY=:1001.0
+XAUTHORITY=/home/$2/.Xauthority /usr/bin/setxkbmap -model pc105 -layout us,fr,de -option grp:ctrl_shift_toggle -display $DISPLAY
+EOL
+    chmod +x /etc/nomachine/set_xkb.sh
+
+    CP_VNC_CAPS_FILE="/caps.sh"
+    if [ -f $CP_VNC_CAPS_FILE ]; then
+        chmod +x $CP_VNC_CAPS_FILE
+        bash -c $CP_VNC_CAPS_FILE
+        rm -f $CP_VNC_CAPS_FILE
+    fi
+
+    nohup "${CP_PYTHON2_PATH}" "${COMMON_REPO_DIR}/scripts/serve_desktop.py" \
+        --serving-port "${CP_NM_LOCAL_PORT}" \
+        --desktop-port "${CP_NM_NOMACHINE_PORT}" \
+        --template-path "${COMMON_REPO_DIR}/resources/linux/template.nxs" \
+        >"/var/log/nomachine_desktop.log" 2>&1 &
+    /etc/NX/nxserver --startup
+    tail -f /usr/NX/var/log/nxserver.log
 }
 
 /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
@@ -231,7 +276,7 @@ else
 fi
 
 NOMACHINE_EXECUTION_LOG="/var/log/nomachine_execution.log"
-bash /etc/nomachine/nomachine_launcher.sh > $NOMACHINE_EXECUTION_LOG 2>&1 &
+run_nomachine > $NOMACHINE_EXECUTION_LOG 2>&1 &
 if [ $? -ne 0 ]; then
     pipe_log_fail "Failed to start NoMachine, details are available in $NOMACHINE_EXECUTION_LOG" "$NOMACHINE_INSTALL_TASK"
     exit 1

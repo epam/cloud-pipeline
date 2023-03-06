@@ -26,31 +26,36 @@ import {
 } from '@hms-dbmi/viv';
 import DetailViewWithMesh from './view';
 
+const defaultHooks = { handleValue: () => {}, handleCoordinate: () => {} };
+const defaultViewStates = [];
+const defaultLensBorderColor = [255, 255, 255];
+const defaultExtensions = [];
+
 function VivViewer(props) {
   const {
     loader,
     contrastLimits,
     colors,
     channelsVisible,
-    viewStates: viewStatesProp = [],
+    viewStates: viewStatesProp = defaultViewStates,
     colormap,
     overview,
     overviewOn,
     selections,
-    hoverHooks = { handleValue: () => {}, handleCoordinate: () => {} },
+    hoverHooks = defaultHooks,
     height,
     width,
     lensEnabled = false,
     lensSelection = 0,
     lensRadius = 100,
-    lensBorderColor = [255, 255, 255],
+    lensBorderColor = defaultLensBorderColor,
     lensBorderRadius = 0.02,
     clickCenter = true,
     transparentColor,
     onViewStateChange,
     onHover,
     onViewportLoad,
-    extensions = [],
+    extensions = defaultExtensions,
     deckProps,
     mesh,
     onCellClick,

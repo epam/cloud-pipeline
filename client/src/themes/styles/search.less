@@ -21,10 +21,6 @@
   color: @primary-text-color;
 }
 
-.cp-search-actions > * {
-  border-right: 1px solid @panel-border-color;
-}
-
 .cp-search-clear-button {
   color: @application-color-faded;
 }
@@ -59,6 +55,7 @@
   position: sticky;
   top: 0;
   font-weight: bold;
+  z-index: 2;
 }
 
 .cp-search-results-table-header-cell {
@@ -261,35 +258,16 @@ a.cp-search-result-item.disabled,
 
 .cp-search-faceted-button {
   color: @application-color;
-  background-color: @panel-background-color;
-  border: 1px solid @input-border;
 }
 
-.cp-search-faceted-button:hover,
-.cp-search-faceted-button:focus {
+.cp-search-faceted-button.selected,
+.cp-search-faceted-button .selected {
   color: @primary-color;
-  background-color: @panel-background-color;
-  border-color: @primary-color;
-}
-
-.cp-search-faceted-button.selected {
-  color: @primary-text-color;
-  background-color: @primary-color;
-  border-color: @primary-color;
-}
-
-.cp-search-faceted-button.selected:hover,
-.cp-search-faceted-button.selected:focus {
-  color: @primary-text-color;
-  background-color: @primary-hover-color;
-  border-color: @primary-hover-color;
 }
 
 .cp-search-faceted-button.disabled,
 .cp-search-faceted-button:hover.disabled {
   color: @btn-disabled-color;
-  background-color: transparent;
-  border-color: transparent;
   cursor: default;
 }
 
@@ -325,4 +303,8 @@ a.cp-search-result-item.disabled,
 .cp-fast-search-result-item.cp-table-element-hover {
   background-color: @table-element-hover-background-color;
   color: @table-element-hover-color;
+}
+
+.cp-tabs-no-content.cp-faceted-filters .ant-tabs-content {
+  padding: 0!important;
 }

@@ -61,6 +61,7 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_CLOUD_REGION_FILE_STORAGE_HOSTS="$CP_CLOUD_REGION_FILE_STORAGE_HOSTS" \
     -env CP_API_ENABLE_STORAGE_EVENTS_SYNC="${CP_AWS_API_ENABLE_STORAGE_EVENTS_SYNC:-false}" \
     -env CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET="${CP_AWS_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET}" \
+    -env CP_API_CACHE_TYPE="${CP_API_CACHE_TYPE:-REDIS}" \
     -s cp-docker-registry \
     -env CP_DOCKER_EXTERNAL_PORT=${CP_AWS_DOCKER_EXTERNAL_PORT} \
     -env CP_DOCKER_INTERNAL_PORT=${CP_AWS_DOCKER_INTERNAL_PORT} \
@@ -89,6 +90,8 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_BILLING_DISABLE_GS="true" \
     -env CP_BILLING_DISABLE_AZURE_BLOB="true" \
     -env CP_BILLING_CENTER_KEY="billing-group" \
+    -env CP_BILLING_DISABLE_AZURE_NETAPP="true" \
+    -env CP_BILLING_DISABLE_AZURE_FILES="true" \
     -s cp-share-srv \
     -s cp-monitoring-srv \
     -m \

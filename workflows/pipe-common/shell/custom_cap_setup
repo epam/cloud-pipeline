@@ -50,8 +50,15 @@ for var in $(compgen -e); do
 
     _cap_commands=$(echo "$_all_custom_caps" | jq -r ".${_cap_name}.commands")
     if is_jq_null "$_cap_commands"; then
-        echo "[ERROR] '$_cap_name' capability is enabled via '$var', but cannot get commands from 'launch.capabilities'"
-        continue
+        echo "[WARN] '$_cap_name' capability is enabled via '$var', but cannot get commands from 'launch.capabilities'. Will try to search in the nested nodes."
+
+        _cap_commands=$(echo "$_all_custom_caps" | jq -r ".[].capabilities.${_cap_name}.commands // empty")
+        if is_jq_null "$_cap_commands"; then
+            echo "[ERROR] '$_cap_name' capability is not found in the nested capabilities as well."
+            continue
+        else
+            echo "[INFO] '$_cap_name' capability commands were found in the nested capabilities."
+        fi
     fi
 
     echo "Running '$_cap_name' commands:"

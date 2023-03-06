@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.docker.scan;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
@@ -298,7 +299,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
                 + ":" + UUID.randomUUID();
     }
 
-    private ToolVersionScanResult doScan(Tool tool, String tag, DockerRegistry registry)
+    private ToolVersionScanResult doScan(final Tool tool, final String tag, final DockerRegistry registry)
             throws ToolScanExternalServiceException {
 
         if (clairService == null) {
@@ -311,14 +312,16 @@ public class AggregatingToolScanManager implements ToolScanManager {
         }
 
         try {
-            String clairRef = scanLayers(tool, tag, registry);
-            String digest = getDockerClient(tool.getImage(), registry)
-                    .getVersionAttributes(registry, tool.getImage(), tag).getDigest();
+            final String clairRef = scanLayers(tool, tag, registry);
+            final DockerClient client = getDockerClient(tool.getImage(), registry);
+            final String digest = client.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
+            final List<ImageHistoryLayer> imageHistory = client.getImageHistory(registry, tool.getImage(), tag);
+            final String defaultCmd = toolManager.loadToolDefaultCommand(imageHistory);
 
-            ClairScanResult clairResult = getScanResult(tool, clairService.getScanResult(clairRef));
-            DockerComponentScanResult dockerScanResult = dockerComponentService == null ? null :
+            final ClairScanResult clairResult = getScanResult(tool, clairService.getScanResult(clairRef));
+            final DockerComponentScanResult dockerScanResult = dockerComponentService == null ? null :
                     getScanResult(tool, dockerComponentService.getScanResult(clairRef));
-            return convertResults(clairResult, dockerScanResult, tool, tag, digest);
+            return convertResults(clairResult, dockerScanResult, tool, tag, digest, defaultCmd, imageHistory.size());
         } catch (IOException e) {
             throw new ToolScanExternalServiceException(tool, e);
         }
@@ -431,7 +434,9 @@ public class AggregatingToolScanManager implements ToolScanManager {
                                                  final DockerComponentScanResult compScanResult,
                                                  final Tool tool,
                                                  final String tag,
-                                                 final String digest) {
+                                                 final String digest,
+                                                 final String defaultCmd,
+                                                 final int layersCount) {
         final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
         final List<Vulnerability> vulnerabilities = Optional.ofNullable(clairScanResult)
                 .map(result -> ListUtils.emptyIfNull(result.getFeatures()).stream())
@@ -477,7 +482,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
                 .orElseGet(() -> createEmptyToolOsVersion(tool, tag));
 
         final ToolVersionScanResult result = new ToolVersionScanResult(tag, osVersion, vulnerabilities,
-                dependencies, ToolScanStatus.COMPLETED, clairScanResult.getName(), digest);
+                dependencies, ToolScanStatus.COMPLETED, clairScanResult.getName(), digest, defaultCmd, layersCount);
         result.setVulnerabilitiesCount(vulnerabilitiesCount);
         return result;
     }

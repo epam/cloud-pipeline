@@ -20,13 +20,31 @@ REQUEST_FOLDER_FOR_ID="$2"
 REQUEST_TYPE="$3"
 FS_SETUP_TASK="$4"
 
-if [ "$REQUEST_TYPE" == "POST" ] &&  [ ! -z "$CP_CAP_SHARE_FS_SIZE" ] ; then
-    _SIZE_REQUEST="?size=${CP_CAP_SHARE_FS_SIZE}"
-else
-    _SIZE_REQUEST=""
+_REQUEST_PARAMS=""
+_DELIMITER="?"
+
+if [ "$REQUEST_TYPE" == "POST" ] ; then
+    if  [ ! -z "$CP_CAP_SHARE_FS_SIZE" ] ; then
+        _REQUEST_PARAMS="${_DELIMITER}size=${CP_CAP_SHARE_FS_SIZE}"
+        _DELIMITER="&"
+    fi
+
+    if  [ ! -z "$CP_CAP_SHARE_FS_DEPLOYMENT_TYPE" ] ; then
+        _REQUEST_PARAMS="${_REQUEST_PARAMS}${_DELIMITER}type=${CP_CAP_SHARE_FS_DEPLOYMENT_TYPE}"
+        _DELIMITER="&"
+    fi
+
+    if  [ ! -z "$CP_CAP_SHARE_FS_THROUGHPUT" ] ; then
+        _REQUEST_PARAMS="${_REQUEST_PARAMS}${_DELIMITER}throughput=${CP_CAP_SHARE_FS_THROUGHPUT}"
+        _DELIMITER="&"
+    fi
+
+    if  [ ! -z "$_REQUEST_PARAMS" ] ; then
+        pipe_log_info "Creating LustreFS with parameters: ${_REQUEST_PARAMS}" "$FS_SETUP_TASK"
+    fi
 fi
 
-_MOUNT_STORAGE_JSON=$(curl -k -s --fail -X $REQUEST_TYPE --header "Authorization: Bearer $API_TOKEN" $API/lustre/${REQUEST_FOLDER_FOR_ID}${_SIZE_REQUEST})
+_MOUNT_STORAGE_JSON=$(curl -k -s --fail -X $REQUEST_TYPE --header "Authorization: Bearer $API_TOKEN" $API/lustre/${REQUEST_FOLDER_FOR_ID}${_REQUEST_PARAMS})
 _STORAGE_PATH=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mountPath')
 _MOUNT_OPTIONS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.mountOptions')
 _STORAGE_STATUS=$(echo "$_MOUNT_STORAGE_JSON" | jq -r '.payload.status')

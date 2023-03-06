@@ -1,5 +1,5 @@
 function OpenPortIfRequired($Port) {
-    $FilewallRuleName="Cloud Pipeline Inbound $Port Port"
+    $FilewallRuleName = "Cloud Pipeline Inbound $Port Port"
     try {
         Get-NetFirewallRule -DisplayName $FilewallRuleName -ErrorAction Stop
     } catch {
@@ -28,14 +28,14 @@ function InitializeDisks {
         | ForEach-Object { AllowRegularUsersAccess -Path $_ }
 }
 
-function InstallNoMachineIfRequired {
-    $restartRequired=$false
+function InstallNoMachineIfRequired($GlobalDistributionUrl) {
+    $restartRequired = $false
     $nomachineInstalled = Get-Service -Name nxservice `
     | Measure-Object `
     | ForEach-Object { $_.Count -gt 0 }
     if (-not($nomachineInstalled)) {
         Write-Host "Installing NoMachine..."
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nomachine/nomachine_7.6.2_4.exe" -Outfile .\nomachine.exe
+        Invoke-WebRequest "${GlobalDistributionUrl}tools/nomachine/nomachine_7.6.2_4.exe" -Outfile .\nomachine.exe
         cmd /c "nomachine.exe /verysilent"
         @"
 
@@ -51,7 +51,7 @@ ConnectionsUserLimit 1
 }
 
 function InstallOpenSshServerIfRequired {
-    $restartRequired=$false
+    $restartRequired = $false
     $openSshServerInstalled = Get-WindowsCapability -Online `
         | Where-Object { $_.Name -match "OpenSSH\.Server*" } `
         | ForEach-Object { $_.State -eq "Installed" }
@@ -65,7 +65,7 @@ function InstallOpenSshServerIfRequired {
 }
 
 function InstallWebDAVIfRequired {
-    $restartRequired=$false
+    $restartRequired = $false
     $webDAVInstalled = Get-WindowsFeature `
         | Where-Object { $_.Name -match "WebDAV-Redirector" } `
         | ForEach-Object { $_.InstallState -eq "Installed" }
@@ -77,20 +77,20 @@ function InstallWebDAVIfRequired {
     return $restartRequired
 }
 
-function InstallPGinaIfRequired {
-    $restartRequired=$false
+function InstallPGinaIfRequired($GlobalDistributionUrl) {
+    $restartRequired = $false
     $pGinaInstalled = Get-Service -Name pgina `
         | Measure-Object `
         | ForEach-Object { $_.Count -gt 0 }
     if (-not($pGinaInstalled)) {
         Write-Host "Installing pGina..."
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/pGina-3.2.4.0-setup.exe" -OutFile "pGina-3.2.4.0-setup.exe"
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/vcredist_x64.exe" -OutFile "vcredist_x64.exe"
+        Invoke-WebRequest "${GlobalDistributionUrl}tools/pgina/pGina-3.2.4.0-setup.exe" -OutFile "pGina-3.2.4.0-setup.exe"
+        Invoke-WebRequest "${GlobalDistributionUrl}tools/pgina/vcredist_x64.exe" -OutFile "vcredist_x64.exe"
         .\pGina-3.2.4.0-setup.exe /S /D=C:\Program Files\pGina
         WaitForProcess -ProcessName "pGina-3.2.4.0-setup"
         .\vcredist_x64.exe /quiet
         WaitForProcess -ProcessName "vcredist_x64"
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/pGina.Plugin.AuthenticateAllPlugin.dll" -OutFile "C:\Program Files\pGina\Plugins\Contrib\pGina.Plugin.AuthenticateAllPlugin.dll"
+        Invoke-WebRequest "${GlobalDistributionUrl}tools/pgina/pGina.Plugin.AuthenticateAllPlugin.dll" -OutFile "C:\Program Files\pGina\Plugins\Contrib\pGina.Plugin.AuthenticateAllPlugin.dll"
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{d0befefb-3d2c-44da-bbad-3b2d04557246}" -Name "Disabled" -Type "DWord" -Value "1"
         Set-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{d0befefb-3d2c-44da-bbad-3b2d04557246}" -Name "Disabled" -Type "DWord" -Value "1"
         $restartRequired=$true
@@ -99,7 +99,7 @@ function InstallPGinaIfRequired {
 }
 
 function InstallDockerIfRequired {
-    $restartRequired=$false
+    $restartRequired = $false
     $dockerInstalled = Get-Service -Name docker `
         | Measure-Object `
         | ForEach-Object { $_.Count -gt 0 }
@@ -135,28 +135,28 @@ function WaitForProcess($ProcessName) {
     }
 }
 
-function InstallPythonIfRequired($PythonDir) {
+function InstallPythonIfRequired($PythonDir, $GlobalDistributionUrl) {
     if (-not(Test-Path "$PythonDir")) {
         Write-Host "Installing python..."
-        Invoke-WebRequest -Uri "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python-3.8.9-amd64.exe" -OutFile "$workingDir\python-3.8.9-amd64.exe"
+        Invoke-WebRequest -Uri "${GlobalDistributionUrl}tools/python/3/python-3.8.9-amd64.exe" -OutFile "$workingDir\python-3.8.9-amd64.exe"
         & "$workingDir\python-3.8.9-amd64.exe" /quiet TargetDir=$PythonDir InstallAllUsers=1 PrependPath=1
         WaitForProcess -ProcessName "python-3.8.9-amd64"
     }
 }
 
-function InstallChromeIfRequired {
+function InstallChromeIfRequired($GlobalDistributionUrl) {
     if (-not(Test-Path "C:\Program Files\Google\Chrome\Application\chrome.exe")) {
         Write-Host "Installing chrome..."
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/chrome/ChromeSetup.exe" -Outfile "$workingDir\ChromeSetup.exe"
+        Invoke-WebRequest "${GlobalDistributionUrl}tools/chrome/ChromeSetup.exe" -Outfile "$workingDir\ChromeSetup.exe"
         & $workingDir\ChromeSetup.exe /silent /install
         WaitForProcess -ProcessName "ChromeSetup"
     }
 }
 
-function InstallDokanyIfRequired($DokanyDir) {
+function InstallDokanyIfRequired($DokanyDir, $GlobalDistributionUrl) {
     if (-not (Test-Path "$DokanyDir")) {
         Write-Host "Installing Dokany..."
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dokany/DokanSetup.exe" -OutFile "$workingDir\DokanSetup.exe"
+        Invoke-WebRequest "${GlobalDistributionUrl}tools/dokany/DokanSetup.exe" -OutFile "$workingDir\DokanSetup.exe"
         & "$workingDir\DokanSetup.exe" /quiet /silent /verysilent
         WaitForProcess -ProcessName "DokanSetup"
     }
@@ -217,10 +217,10 @@ function ConfigureAndRestartDockerDaemon {
     Restart-Service docker -Force
 }
 
-function DownloadSigWindowsToolsIfRequired {
+function DownloadSigWindowsToolsIfRequired($GlobalDistributionUrl) {
     if (-not(Test-Path .\sig-windows-tools)) {
         NewDirIfRequired -Path .\sig-windows-tools
-        Invoke-WebRequest "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/sig-windows-tools-00012ee6d171b105e7009bff8b2e42d96a45426f.zip" -Outfile .\sig-windows-tools.zip
+        Invoke-WebRequest "${GlobalDistributionUrl}tools/kube/1.15.4/win/sig-windows-tools-00012ee6d171b105e7009bff8b2e42d96a45426f.zip" -Outfile .\sig-windows-tools.zip
         tar -xvf .\sig-windows-tools.zip --strip-components=1 -C sig-windows-tools
     }
 }
@@ -245,7 +245,7 @@ function PatchSigWindowsTools($KubeHost, $KubePort, $Dns) {
     $kubeClusterHelperContent | Set-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
 }
 
-function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $KubeDir, $Interface) {
+function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $KubeDir, $Interface, $GlobalDistributionUrl) {
     $configfile = @"
 {
     "Cri" : {
@@ -260,7 +260,7 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
         "Name" : "flannel",
         "Source" : [{
             "Name" : "flanneld",
-            "Url" : "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/flanneld.exe"
+            "Url" : "${GlobalDistributionUrl}tools/kube/1.15.4/win/flanneld.exe"
             }
         ],
         "Plugin" : {
@@ -271,7 +271,7 @@ function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $Ku
     "Kubernetes" : {
         "Source" : {
             "Release" : "1.15.4",
-            "Url" : "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/win/kubernetes-node-windows-amd64.tar.gz"
+            "Url" : "${GlobalDistributionUrl}tools/kube/1.15.4/win/kubernetes-node-windows-amd64.tar.gz"
         },
         "ControlPlane" : {
             "IpAddress" : "$KubeHost",
@@ -427,6 +427,7 @@ $kubeToken = "@KUBE_TOKEN@"
 $kubeCertHash = "@KUBE_CERT_HASH@"
 $kubeNodeToken = "@KUBE_NODE_TOKEN@"
 $dnsProxyPost = "@dns_proxy_post@"
+$globalDistributionUrl = "@GLOBAL_DISTRIBUTION_URL@"
 
 $interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
 $interfacePost = "vEthernet ($interface)"
@@ -459,7 +460,7 @@ InitializeDisks
 $restartRequired = $false
 
 Write-Host "Installing nomachine if required..."
-$restartRequired = (InstallNoMachineIfRequired | Select-Object -Last 1) -or $restartRequired
+$restartRequired = (InstallNoMachineIfRequired -GlobalDistributionUrl $globalDistributionUrl | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Installing OpenSSH server if required..."
@@ -471,7 +472,7 @@ $restartRequired = (InstallWebDAVIfRequired | Select-Object -Last 1) -or $restar
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Installing pGina if required..."
-$restartRequired = (InstallPGinaIfRequired | Select-Object -Last 1) -or $restartRequired
+$restartRequired = (InstallPGinaIfRequired -GlobalDistributionUrl $globalDistributionUrl | Select-Object -Last 1) -or $restartRequired
 Write-Host "Restart required: $restartRequired"
 
 Write-Host "Installing docker if required..."
@@ -493,13 +494,13 @@ Write-Host "Starting WebDAV services..."
 StartWebDAVServices
 
 Write-Host "Installing python if required..."
-InstallPythonIfRequired -PythonDir $pythonDir
+InstallPythonIfRequired -PythonDir $pythonDir -GlobalDistributionUrl $globalDistributionUrl
 
 Write-Host "Installing chrome if required..."
-InstallChromeIfRequired
+InstallChromeIfRequired -GlobalDistributionUrl $globalDistributionUrl
 
 Write-Host "Installing Dokany if required..."
-InstallDokanyIfRequired -DokanyDir $dokanyDir
+InstallDokanyIfRequired -DokanyDir $dokanyDir -GlobalDistributionUrl $globalDistributionUrl
 
 Write-Host "Installing NICE DCV if required..."
 InstallNiceDcvIfRequired
@@ -522,13 +523,13 @@ Write-Host "Configuring docker daemon..."
 ConfigureAndRestartDockerDaemon
 
 Write-Host "Downloading Sig Windows Tools if required..."
-DownloadSigWindowsToolsIfRequired
+DownloadSigWindowsToolsIfRequired -GlobalDistributionUrl $globalDistributionUrl
 
 Write-Host "Patching KubeClusterHelper.psm1 script to ignore all preflight errors..."
 PatchSigWindowsTools -KubeHost $kubeHost -KubePort $kubePort -Dns $dnsProxyPost
 
 Write-Host "Generating Sig Windows Tools config file..."
-InitSigWindowsToolsConfigFile -KubeHost $kubeHost -KubeToken $kubeToken -KubeCertHash $kubeCertHash -KubeDir $kubeDir -Interface $interface
+InitSigWindowsToolsConfigFile -KubeHost $kubeHost -KubeToken $kubeToken -KubeCertHash $kubeCertHash -KubeDir $kubeDir -Interface $interface -GlobalDistributionUrl $globalDistributionUrl
 
 Write-Host "Installing kubernetes using Sig Windows Tools if required..."
 InstallKubeUsingSigWindowsToolsIfRequired -KubeDir $kubeDir

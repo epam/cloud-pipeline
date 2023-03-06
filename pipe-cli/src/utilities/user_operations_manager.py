@@ -17,6 +17,9 @@ import sys
 import click
 
 from prettytable import prettytable
+
+from src.api.entity import Entity
+from src.api.pipeline_run import PipelineRun
 from src.api.user import User
 
 
@@ -39,6 +42,9 @@ class UserOperationsManager:
             click.echo("[%s] %s" % (event.get('status', ''), event.get('message', '')))
 
     def get_instance_limits(self, verbose=False):
+        username = self.user['userName']
+        active_runs_count = PipelineRun.count_user_runs(target_statuses=['RUNNING', 'RESUMING'], owner=username)
+        click.echo('Active runs detected for a user: [{}: {}]'.format(username, active_runs_count))
         active_limits = User.load_launch_limits(verbose)
         if len(active_limits) == 0:
             click.echo('No restrictions on runs launching configured')
@@ -64,6 +70,9 @@ class UserOperationsManager:
     def is_admin(self):
         return 'ROLE_ADMIN' in self.get_all_user_roles()
 
+    def is_owner(self, owner):
+        return owner and owner == self.whoami().get('userName')
+
     def get_all_user_roles(self):
         user_groups = self.user.get('groups', [])
         user_roles = [role.get('name') for role in self.user.get('roles', [])]
@@ -71,3 +80,27 @@ class UserOperationsManager:
 
     def whoami(self):
         return self.user
+
+    def has_storage_archive_permissions(self, storage_identifier, owner=None):
+        if self.is_admin():
+            return True
+        if not owner:
+            owner = self.get_owner(storage_identifier, 'DATA_STORAGE')
+        if not owner:
+            return False
+        if self.is_owner(owner):
+            return True
+        user_roles = self.get_all_user_roles()
+        if 'ROLE_STORAGE_ARCHIVE_MANAGER' in user_roles or 'ROLE_STORAGE_ARCHIVE_READER' in user_roles:
+            return True
+        return False
+
+    @staticmethod
+    def get_owner(identifier, acl_class):
+        try:
+            entity = Entity.load_by_id_or_name(identifier, acl_class)
+            return entity.get('owner')
+        except RuntimeError as e:
+            if 'Access is denied' in str(e):
+                return None
+            raise e

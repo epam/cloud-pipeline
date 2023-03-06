@@ -450,7 +450,7 @@ class RunsFilter extends React.Component {
     return (this.props.keywords.value || []).map(k => k);
   }
 
-  handleTableChange (pagination) {
+  handleTableChange = (pagination) => {
     const {current} = pagination;
     this.setState({
       currentPage: current

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .clickEditStorageButton()
             .clickDeleteStorageButton()
             .clickCrossButton()
-            .cancel()
+            .clickCancel()
             .validateStorage(storage);
     }
 
@@ -373,27 +373,29 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .validateDescription("new description");
     }
 
+    /* Test is disables as "LTS duration" field is removed
+       from Create/Edit storage forms */
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(dependsOnMethods = {"changeDescriptionAndValidate"})
+    @Test(dependsOnMethods = {"changeDescriptionAndValidate"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-474"})
     public void changeLtsDurationAndValidate() {
         navigateToLibrary()
             .selectStorage(editableStorage)
             .clickEditStorageButton()
-            .setDurations("", "5")
             .clickSaveButton()
             .selectStorage(editableStorage)
             .validateLtsDuration("5");
     }
 
+    /* Test is disables as "STS duration" field is removed
+       from Create/Edit storage forms */
     @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
-    @Test(dependsOnMethods = {"changeLtsDurationAndValidate"})
+    @Test(dependsOnMethods = {"changeLtsDurationAndValidate"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-473"})
     public void changeStsDurationAndValidate() {
         navigateToLibrary()
             .selectStorage(editableStorage)
             .clickEditStorageButton()
-            .setDurations("3","5")
             .clickSaveButton()
             .selectStorage(editableStorage)
             .validateStsDuration("3");

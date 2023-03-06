@@ -105,7 +105,7 @@ class S3Storage {
           fetchTempCredentials(
             this._storage.id,
             {
-              read: true,
+              read: this._storage.read === undefined ? true : this._storage.read,
               write: this._storage.write === undefined ? true : this._storage.write
             })
             .then(resolve)

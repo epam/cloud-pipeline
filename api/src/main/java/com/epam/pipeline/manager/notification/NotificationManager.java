@@ -47,11 +47,11 @@ import java.util.stream.Stream;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationGroup;
 import com.epam.pipeline.entity.notification.NotificationMessage;
-import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import com.epam.pipeline.entity.notification.NotificationType;
+import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -61,8 +61,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -91,9 +90,9 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 @Service
+@Slf4j
 public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
     private static final double PERCENT = 100.0;
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationManager.class);
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
 
     @Autowired
@@ -106,7 +105,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     private MonitoringNotificationDao monitoringNotificationDao;
 
     @Autowired
-    private NotificationSettingsManager notificationSettingsManager;
+    private NotificationSettingsManager settingsManager;
 
     @Autowired
     private ContextualNotificationManager contextualNotificationManager;
@@ -137,8 +136,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyLongRunningTask(PipelineRun run, Long duration, NotificationSettings settings) {
-        LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
+    public void notifyLongRunningTask(final PipelineRun run, final Long duration, final NotificationSettings settings) {
+        log.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
 
         final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
                 .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
@@ -151,7 +150,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return;
         }
 
-        NotificationMessage notificationMessage = new NotificationMessage();
+        final NotificationMessage notificationMessage = new NotificationMessage();
 
         if (settings.isKeepInformedOwner()) {
             PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
@@ -162,12 +161,12 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
         if (notificationMessage.getTemplate() == null) {
-            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_NOT_FOUND,
+            log.error(messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_NOT_FOUND,
                     settings.getTemplateId()));
         }
 
         notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold(), duration));
-        monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+        saveNotification(notificationMessage);
     }
 
     /**
@@ -178,19 +177,19 @@ public class NotificationManager implements NotificationService { // TODO: rewri
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyIssue(Issue issue, AbstractSecuredEntity entity, String htmlText) {
-        NotificationSettings newIssueSettings = notificationSettingsManager.load(NotificationType.NEW_ISSUE);
+    public void notifyIssue(final Issue issue, final AbstractSecuredEntity entity, final String htmlText) {
+        final NotificationSettings newIssueSettings = settingsManager.load(NotificationType.NEW_ISSUE);
         if (newIssueSettings == null || !newIssueSettings.isEnabled()) {
-            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
+            log.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
                             "new issue"));
             return;
         }
 
-        NotificationMessage message = new NotificationMessage();
+        final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(newIssueSettings.getTemplateId()));
         message.setCopyUserIds(getMentionedUsers(issue.getText()));
 
-        Issue copyWithHtml = issue.toBuilder().text(htmlText).build();
+        final Issue copyWithHtml = issue.toBuilder().text(htmlText).build();
         message.setTemplateParameters(jsonMapper.convertValue(copyWithHtml,
                                                               new TypeReference<Map<String, Object>>() {}));
 
@@ -199,28 +198,28 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             message.setToUserId(owner.getId());
         }
 
-        monitoringNotificationDao.createMonitoringNotification(message);
+        saveNotification(message);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyIssueComment(IssueComment comment, Issue issue, String htmlText) {
-        NotificationSettings newIssueCommentSettings = notificationSettingsManager
+    public void notifyIssueComment(final IssueComment comment, final Issue issue, final String htmlText) {
+        final NotificationSettings newIssueCommentSettings = settingsManager
                 .load(NotificationType.NEW_ISSUE_COMMENT);
         if (newIssueCommentSettings == null || !newIssueCommentSettings.isEnabled()) {
-            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
+            log.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
                     "new issue"));
             return;
         }
 
-        NotificationMessage message = new NotificationMessage();
+        final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(newIssueCommentSettings.getTemplateId()));
 
-        AbstractSecuredEntity entity = entityManager.load(issue.getEntity().getEntityClass(),
+        final AbstractSecuredEntity entity = entityManager.load(issue.getEntity().getEntityClass(),
                                                           issue.getEntity().getEntityId());
-        List<PipelineUser> referencedUsers = userManager.loadUsersByNames(Arrays.asList(entity.getOwner(),
+        final List<PipelineUser> referencedUsers = userManager.loadUsersByNames(Arrays.asList(entity.getOwner(),
                                                                                         issue.getAuthor()));
-        List<Long> ccUserIds = getMentionedUsers(comment.getText());
+        final List<Long> ccUserIds = getMentionedUsers(comment.getText());
         referencedUsers.stream()
             .filter(u -> u.getUserName().equals(entity.getOwner()))
             .findFirst()
@@ -236,36 +235,36 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             message.setToUserId(author.getId());
         }
 
-        IssueComment copyWithHtml = comment.toBuilder().text(htmlText).build();
+        final IssueComment copyWithHtml = comment.toBuilder().text(htmlText).build();
 
-        Map<String, Object> commentParams = jsonMapper.convertValue(copyWithHtml,
+        final Map<String, Object> commentParams = jsonMapper.convertValue(copyWithHtml,
                                                                     new TypeReference<Map<String, Object>>() {});
         commentParams.put("issue", jsonMapper.convertValue(issue, new TypeReference<Map<String, Object>>() {}));
         message.setTemplateParameters(commentParams);
 
-        monitoringNotificationDao.createMonitoringNotification(message);
+        saveNotification(message);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyRunStatusChanged(PipelineRun pipelineRun) {
+    public void notifyRunStatusChanged(final PipelineRun pipelineRun) {
         contextualNotificationManager.notifyRunStatusChanged(pipelineRun);
 
-        NotificationSettings runStatusSettings = notificationSettingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
+        final NotificationSettings runStatusSettings = settingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
         if (runStatusSettings == null || !runStatusSettings.isEnabled()) {
-            LOGGER.info("No template configured for pipeline run status changes notifications or it was disabled!");
+            log.info("No template configured for pipeline run status changes notifications or it was disabled!");
             return;
         }
 
         final List<TaskStatus> runStatusesToReport = ListUtils.emptyIfNull(runStatusSettings.getStatusesToInform());
         if (!CollectionUtils.isEmpty(runStatusesToReport) && !runStatusesToReport.contains(pipelineRun.getStatus())) {
-            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION,
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION,
                     pipelineRun.getStatus(),
                     runStatusesToReport.stream().map(TaskStatus::name).collect(Collectors.joining(", "))));
             return;
         }
 
-        NotificationMessage message = new NotificationMessage();
+        final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(runStatusSettings.getTemplateId()));
         message.setTemplateParameters(PipelineRunMapper.map(pipelineRun));
 
@@ -276,7 +275,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             message.setToUserId(pipelineOwner.getId());
         }
 
-        monitoringNotificationDao.createMonitoringNotification(message);
+        saveNotification(message);
     }
 
     /**
@@ -289,8 +288,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyIdleRuns(List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
-                               NotificationType notificationType) {
+    public void notifyIdleRuns(final List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
+                               final NotificationType notificationType) {
         if (CollectionUtils.isEmpty(pipelineCpuRatePairs)) {
             return;
         }
@@ -298,9 +297,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         Assert.isTrue(NotificationGroup.IDLE_RUN == notificationType.getGroup(),
                       "Only IDLE_RUN group notification types are allowed");
 
-        NotificationSettings idleRunSettings = notificationSettingsManager.load(notificationType);
+        final NotificationSettings idleRunSettings = settingsManager.load(notificationType);
         if (idleRunSettings == null || !idleRunSettings.isEnabled()) {
-            LOGGER.info("No template configured for idle pipeline run notifications or it was disabled!");
+            log.info("No template configured for idle pipeline run notifications or it was disabled!");
             return;
         }
 
@@ -321,7 +320,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForIdleRun(idleRunSettings, ccUserIds, pipelineOwners, idleCpuLevel, pair))
                 .collect(Collectors.toList());
-        monitoringNotificationDao.createMonitoringNotifications(messages);
+        saveNotifications(messages);
 
         if (NotificationType.IDLE_RUN.equals(notificationType)) {
             final List<Long> runIds = filtered.stream()
@@ -336,13 +335,13 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics,
             final NotificationType notificationType) {
         if (CollectionUtils.isEmpty(pipelinesMetrics)) {
-            LOGGER.debug("No pipelines are high loaded, notifications won't be sent!");
+            log.debug("No pipelines are high loaded, notifications won't be sent!");
             return;
         }
 
-        final NotificationSettings notificationSettings = notificationSettingsManager.load(notificationType);
+        final NotificationSettings notificationSettings = settingsManager.load(notificationType);
         if (notificationSettings == null || !notificationSettings.isEnabled()) {
-            LOGGER.info("No template configured for high consuming pipeline run notifications or it was disabled!");
+            log.info("No template configured for high consuming pipeline run notifications or it was disabled!");
             return;
         }
 
@@ -350,7 +349,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .filter(run -> shouldNotify(run.getLeft().getId(), notificationSettings))
                 .collect(Collectors.toList());
 
-        LOGGER.debug("High resource consuming notifications for pipelines: " +
+        log.debug("High resource consuming notifications for pipelines: " +
                 filtered.stream()
                         .map(p -> p.getLeft().getId().toString())
                         .collect(Collectors.joining(",")) + " will be sent!");
@@ -381,17 +380,17 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final List<Long> runIds = filtered.stream()
                 .map(pm -> pm.getLeft().getId()).collect(Collectors.toList());
-        monitoringNotificationDao.createMonitoringNotifications(messages);
+        saveNotifications(messages);
         monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyStuckInStatusRuns(final List<PipelineRun> runs) {
-        final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_STATUS);
+        final NotificationSettings settings = settingsManager.load(NotificationType.LONG_STATUS);
 
         if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
-            LOGGER.info("No template configured for stuck status notifications or it was disabled!");
+            log.info("No template configured for stuck status notifications or it was disabled!");
             return;
         }
 
@@ -403,7 +402,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         runs.stream()
                 .filter(run -> isRunStuckInStatus(settings, now, threshold, run))
                 .forEach(run -> {
-                    LOGGER.debug("Sending stuck status {} notification for run {}.",
+                    log.debug("Sending stuck status {} notification for run {}.",
                             run.getStatus(), run.getId());
                     final NotificationMessage notificationMessage = new NotificationMessage();
                     if (settings.isKeepInformedOwner()) {
@@ -413,7 +412,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                     notificationMessage.setCopyUserIds(getCCUsers(settings));
                     notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
                     notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
-                    monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+                    saveNotification(notificationMessage);
                 });
     }
 
@@ -463,16 +462,16 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                               final List<NFSQuotaNotificationRecipient> recipients,
                                               final LocalDateTime activationTime) {
         final NotificationSettings notificationSettings =
-            notificationSettingsManager.load(NotificationType.STORAGE_QUOTA_EXCEEDING);
+            settingsManager.load(NotificationType.STORAGE_QUOTA_EXCEEDING);
         if (notificationSettings == null || !notificationSettings.isEnabled()) {
-            LOGGER.info("No template configured for storage quotas notifications or it was disabled!");
+            log.info("No template configured for storage quotas notifications or it was disabled!");
             return;
         }
-        LOGGER.info("Storage quota exceeding notification for datastorage id={} will be sent!", storage.getId());
+        log.info("Storage quota exceeding notification for datastorage id={} will be sent!", storage.getId());
 
         final List<Long> ccUserIds = mapRecipientsToUserIds(recipients);
         if (CollectionUtils.isEmpty(ccUserIds)) {
-            LOGGER.info("Resolved list of users is empty, skipping notification creation...");
+            log.info("Resolved list of users is empty, skipping notification creation...");
             return;
         }
 
@@ -481,7 +480,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         quotaNotificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
         quotaNotificationMessage.setTemplateParameters(
             buildQuotasPlaceholdersDict(storage, exceededQuota, newStatus, activationTime));
-        monitoringNotificationDao.createMonitoringNotification(quotaNotificationMessage);
+        saveNotification(quotaNotificationMessage);
     }
 
     @Override
@@ -489,38 +488,36 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     public void notifyOnBillingQuotaExceeding(final AppliedQuota appliedQuota) {
         Optional.ofNullable(getNotificationSettings(NotificationType.BILLING_QUOTA_EXCEEDING))
                 .ifPresent(settings -> {
-                    LOGGER.info("Sending notification for billing quota {}", appliedQuota.getQuota());
+                    log.info("Sending notification for billing quota {}", appliedQuota.getQuota());
                     final List<Long> ccUserIds = mapRecipientsToUserIds(appliedQuota.getQuota().getRecipients());
                     if (CollectionUtils.isEmpty(ccUserIds)) {
-                        LOGGER.info("Resolved list of users is empty, skipping notification creation...");
+                        log.info("Resolved list of users is empty, skipping notification creation...");
                         return;
                     }
                     final NotificationMessage message = new NotificationMessage();
                     message.setCopyUserIds(ccUserIds);
                     message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
                     message.setTemplateParameters(buildBillingQuotaParams(appliedQuota));
-                    monitoringNotificationDao.createMonitoringNotification(message);
+                    saveNotification(message);
                 });
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyInactiveUsers(final List<PipelineUser> inactiveUsers, final List<PipelineUser> ldapBlockedUsers) {
-        if (CollectionUtils.isEmpty(inactiveUsers) && CollectionUtils.isEmpty(ldapBlockedUsers)) {
-            LOGGER.debug("No inactive users found");
+    public void notifyPipelineUsers(final List<PipelineUser> pipelineUsers, final NotificationType type) {
+        if (CollectionUtils.isEmpty(pipelineUsers)) {
+            log.debug("No users found for '{}' notification", type.name());
             return;
         }
-        final NotificationSettings notificationSettings =
-                notificationSettingsManager.load(NotificationType.INACTIVE_USERS);
+        final NotificationSettings notificationSettings = settingsManager.load(type);
         if (notificationSettings == null || !notificationSettings.isEnabled()) {
-            LOGGER.info("No template configured for users notifications or it was disabled!");
+            log.info("No template configured for '{}' users notifications or it was disabled!", type.name());
             return;
         }
 
         final List<Long> ccUserIds = getCCUsers(notificationSettings);
 
-        final List<Long> storageIdsToLoad = Stream.concat(ListUtils.emptyIfNull(inactiveUsers).stream(),
-                ListUtils.emptyIfNull(ldapBlockedUsers).stream())
+        final List<Long> storageIdsToLoad = ListUtils.emptyIfNull(pipelineUsers).stream()
                 .map(PipelineUser::getDefaultStorageId)
                 .filter(Objects::nonNull)
                 .distinct()
@@ -531,23 +528,22 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage notificationMessage = new NotificationMessage();
         notificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-        notificationMessage.setTemplateParameters(
-                buildUsersTemplateArguments(inactiveUsers, ldapBlockedUsers, userStorages));
+        notificationMessage.setTemplateParameters(buildUsersTemplateArguments(pipelineUsers, userStorages));
         notificationMessage.setCopyUserIds(ccUserIds);
-        monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+        saveNotification(notificationMessage);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyFullNodePools(final List<NodePool> nodePools) {
         if (CollectionUtils.isEmpty(nodePools)) {
-            LOGGER.debug("No full node pools found to notify");
+            log.debug("No full node pools found to notify");
             return;
         }
         final NotificationSettings notificationSettings =
-                notificationSettingsManager.load(NotificationType.FULL_NODE_POOL);
+                settingsManager.load(NotificationType.FULL_NODE_POOL);
         if (notificationSettings == null || !notificationSettings.isEnabled()) {
-            LOGGER.info("No template configured for node pool notifications or it was disabled!");
+            log.info("No template configured for node pool notifications or it was disabled!");
             return;
         }
 
@@ -555,78 +551,23 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .filter(pool -> shouldNotify(pool.getId(), notificationSettings))
                 .collect(Collectors.toList());
 
-        LOGGER.debug("Notification for node pools [{}] will be send", filteredPools.stream()
+        if (CollectionUtils.isEmpty(filteredPools)) {
+            log.debug("No full node pools found to notify");
+            return;
+        }
+
+        log.debug("Notification for node pools [{}] will be send", filteredPools.stream()
                 .map(NodePool::getId)
                 .map(String::valueOf)
                 .collect(Collectors.joining(",")));
 
         final List<Long> ccUserIds = getCCUsers(notificationSettings);
         final NotificationMessage message = buildMessageForFullNodePool(filteredPools, notificationSettings, ccUserIds);
-        monitoringNotificationDao.createMonitoringNotification(message);
+        saveNotification(message);
         monitoringNotificationDao.updateNotificationTimestamp(filteredPools.stream()
                 .map(NodePool::getId)
                 .collect(Collectors.toList()), NotificationType.FULL_NODE_POOL);
     }
-
-    private List<Long> mapRecipientsToUserIds(final List<? extends Sid> recipients) {
-        final Stream<PipelineUser> plainUsersStream = recipients.stream()
-            .filter(Sid::isPrincipal)
-            .map(Sid::getName)
-            .map(userManager::loadUserByName);
-        final Stream<PipelineUser> usersFromGroupsStream = recipients.stream()
-            .filter(recipient -> !recipient.isPrincipal())
-            .map(Sid::getName)
-            .map(userManager::loadUsersByGroupOrRole)
-            .flatMap(Collection::stream);
-        return Stream.concat(plainUsersStream, usersFromGroupsStream)
-            .filter(Objects::nonNull)
-            .map(PipelineUser::getId)
-            .distinct()
-            .collect(Collectors.toList());
-    }
-
-    private Map<String, Object> buildQuotasPlaceholdersDict(final NFSDataStorage storage,
-                                                            final NFSQuotaNotificationEntry quota,
-                                                            final NFSStorageMountStatus newStatus,
-                                                            final LocalDateTime activationTime) {
-        final Map<String, Object> templateParameters = new HashMap<>();
-        templateParameters.put("storageId", storage.getId());
-        templateParameters.put("storageName", storage.getName());
-        templateParameters.put("threshold", NFSQuotaNotificationEntry.NO_ACTIVE_QUOTAS_NOTIFICATION.equals(quota)
-                                            ? "no_active_quotas"
-                                            : quota.toThreshold());
-        templateParameters.put("previousMountStatus", storage.getMountStatus());
-        templateParameters.put("newMountStatus", newStatus);
-        templateParameters.put("activationTime", activationTime);
-        return templateParameters;
-    }
-
-    private boolean isRunStuckInStatus(final NotificationSettings settings,
-                                       final LocalDateTime now,
-                                       final Long threshold,
-                                       final PipelineRun run) {
-        final List<RunStatus> runStatuses = run.getRunStatuses();
-        if (CollectionUtils.isEmpty(runStatuses)) {
-            LOGGER.debug("Status timestamps are not available for run {}. " +
-                    "Skipping stuck status duration check.", run.getId());
-            return false;
-        }
-
-        final Optional<RunStatus> lastStatus = runStatuses.stream()
-                .filter(status -> run.getStatus().equals(status.getStatus()))
-                .max(Comparator.comparing(RunStatus::getTimestamp));
-
-        return lastStatus
-                .map(status -> {
-                    final long secondsFromStatusUpdate = status.getTimestamp().until(now, ChronoUnit.SECONDS);
-                    return secondsFromStatusUpdate >= threshold && shouldNotify(run.getId(), settings);
-                })
-                .orElseGet(() -> {
-                    LOGGER.debug("Failed to find status {} timestamp for run {}.", run.getStatus(), run.getId());
-                    return false;
-                });
-    }
-
 
     /**
      * Creates a custom notification.
@@ -644,8 +585,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 MessageConstants.ERROR_NOTIFICATION_RECEIVER_NOT_SPECIFIED));
 
         final NotificationMessage message = toMessage(messageVO);
-        monitoringNotificationDao.createMonitoringNotification(message);
-
+        saveNotification(message);
         return message;
     }
 
@@ -658,9 +598,79 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     public void removeNotificationTimestamps(final Long id, final NotificationType type) {
         monitoringNotificationDao.deleteNotificationTimestampsForIdAndType(id, type);
     }
+
     public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long id,
                                                                          final NotificationType type) {
         return monitoringNotificationDao.loadNotificationTimestamp(id, type);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void saveNotifications(final List<NotificationMessage> messages) {
+        monitoringNotificationDao.createMonitoringNotifications(messages);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void saveNotification(final NotificationMessage message) {
+        monitoringNotificationDao.createMonitoringNotification(message);
+    }
+
+    private List<Long> mapRecipientsToUserIds(final List<? extends Sid> recipients) {
+        final Stream<PipelineUser> plainUsersStream = recipients.stream()
+                .filter(Sid::isPrincipal)
+                .map(Sid::getName)
+                .map(userManager::loadUserByName);
+        final Stream<PipelineUser> usersFromGroupsStream = recipients.stream()
+                .filter(recipient -> !recipient.isPrincipal())
+                .map(Sid::getName)
+                .map(userManager::loadUsersByGroupOrRole)
+                .flatMap(Collection::stream);
+        return Stream.concat(plainUsersStream, usersFromGroupsStream)
+                .filter(Objects::nonNull)
+                .map(PipelineUser::getId)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private Map<String, Object> buildQuotasPlaceholdersDict(final NFSDataStorage storage,
+                                                            final NFSQuotaNotificationEntry quota,
+                                                            final NFSStorageMountStatus newStatus,
+                                                            final LocalDateTime activationTime) {
+        final Map<String, Object> templateParameters = new HashMap<>();
+        templateParameters.put("storageId", storage.getId());
+        templateParameters.put("storageName", storage.getName());
+        templateParameters.put("threshold", NFSQuotaNotificationEntry.NO_ACTIVE_QUOTAS_NOTIFICATION.equals(quota)
+                ? "no_active_quotas"
+                : quota.toThreshold());
+        templateParameters.put("previousMountStatus", storage.getMountStatus());
+        templateParameters.put("newMountStatus", newStatus);
+        templateParameters.put("activationTime", activationTime);
+        return templateParameters;
+    }
+
+    private boolean isRunStuckInStatus(final NotificationSettings settings,
+                                       final LocalDateTime now,
+                                       final Long threshold,
+                                       final PipelineRun run) {
+        final List<RunStatus> runStatuses = run.getRunStatuses();
+        if (CollectionUtils.isEmpty(runStatuses)) {
+            log.debug("Status timestamps are not available for run {}. " +
+                    "Skipping stuck status duration check.", run.getId());
+            return false;
+        }
+
+        final Optional<RunStatus> lastStatus = runStatuses.stream()
+                .filter(status -> run.getStatus().equals(status.getStatus()))
+                .max(Comparator.comparing(RunStatus::getTimestamp));
+
+        return lastStatus
+                .map(status -> {
+                    final long secondsFromStatusUpdate = status.getTimestamp().until(now, ChronoUnit.SECONDS);
+                    return secondsFromStatusUpdate >= threshold && shouldNotify(run.getId(), settings);
+                })
+                .orElseGet(() -> {
+                    log.debug("Failed to find status {} timestamp for run {}.", run.getStatus(), run.getId());
+                    return false;
+                });
     }
 
     private boolean shouldNotify(final Long id, final NotificationSettings notificationSettings) {
@@ -674,7 +684,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .orElse(true);
     }
 
-    private <T> Map<String, PipelineUser> getPipelinesOwners(List<Pair<PipelineRun, T>> pipelineCpuRatePairs) {
+    private <T> Map<String, PipelineUser> getPipelinesOwners(final List<Pair<PipelineRun, T>> pipelineCpuRatePairs) {
         return userManager.loadUsersByNames(pipelineCpuRatePairs.stream()
                 .map(p -> p.getLeft().getOwner())
                 .collect(Collectors.toList())).stream()
@@ -745,7 +755,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     private NotificationMessage buildMessageForLongPausedRun(final PipelineRun run, final List<Long> ccUsers,
                                                              final NotificationSettings settings,
                                                              final Map<String, PipelineUser> pipelineOwners) {
-        LOGGER.debug("Sending long paused run notification for run {}.", run.getId());
+        log.debug("Sending long paused run notification for run {}.", run.getId());
         final NotificationMessage message = new NotificationMessage();
         if (settings.isKeepInformedOwner()) {
             message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
@@ -758,17 +768,17 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     private List<PipelineRun> createNotificationsForLongPausedRuns(final List<PipelineRun> pausedRuns,
                                                                    final NotificationType notificationType) {
-        final NotificationSettings settings = notificationSettingsManager.load(notificationType);
+        final NotificationSettings settings = settingsManager.load(notificationType);
 
         if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
-            LOGGER.info("No template configured for long paused status notifications or it was disabled!");
+            log.info("No template configured for long paused status notifications or it was disabled!");
             return Collections.emptyList();
         }
 
         final LocalDateTime now = DateUtils.nowUTC();
         final Long threshold = settings.getThreshold();
         if (threshold == null || threshold <= 0) {
-            LOGGER.debug("Threshold is not specified for notification type '{}'", notificationType.name());
+            log.debug("Threshold is not specified for notification type '{}'", notificationType.name());
             return Collections.emptyList();
         }
 
@@ -786,8 +796,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final List<NotificationMessage> messages = filtered.stream()
                 .map(run -> buildMessageForLongPausedRun(run, ccUsers, settings, pipelineOwners))
                 .collect(Collectors.toList());
-        monitoringNotificationDao.createMonitoringNotifications(messages);
-
+        saveNotifications(messages);
         return filtered;
     }
 
@@ -797,12 +806,12 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
         final RunInstance instance = run.getInstance();
         if (Objects.isNull(instance)) {
-            LOGGER.debug("Cannot get instance info for run '{}'", run.getId());
+            log.debug("Cannot get instance info for run '{}'", run.getId());
             return true;
         }
         final String nodeType = instance.getNodeType();
         if (StringUtils.isBlank(nodeType)) {
-            LOGGER.debug("Cannot get node type for run '{}'", run.getId());
+            log.debug("Cannot get node type for run '{}'", run.getId());
             return true;
         }
         return Arrays.stream(instanceTypesToExclude.split(","))
@@ -814,7 +823,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                                        final Map<String, PipelineUser> pipelineOwners,
                                                        final double idleCpuLevel,
                                                        final Pair<PipelineRun, Double> pair) {
-        LOGGER.debug("Sending idle run notification for run '{}'.", pair.getLeft().getId());
+        log.debug("Sending idle run notification for run '{}'.", pair.getLeft().getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
         message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft()));
@@ -836,18 +845,11 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     }
 
     private Map<String, Object> buildUsersTemplateArguments(final List<PipelineUser> pipelineUsers,
-                                                            final List<PipelineUser> ldapUsers,
                                                             final Map<Long, String> userStorages) {
         final Map<String, Object> templateArguments = new HashMap<>();
 
         if (!CollectionUtils.isEmpty(pipelineUsers)) {
             templateArguments.put("pipelineUsers", pipelineUsers.stream()
-                    .map(user -> buildUserTemplateArguments(user, userStorages))
-                    .collect(Collectors.toList()));
-        }
-
-        if (!CollectionUtils.isEmpty(ldapUsers)) {
-            templateArguments.put("ldapUsers", ldapUsers.stream()
                     .map(user -> buildUserTemplateArguments(user, userStorages))
                     .collect(Collectors.toList()));
         }
@@ -947,9 +949,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     private NotificationSettings getNotificationSettings(final NotificationType type) {
         final NotificationSettings settings =
-                notificationSettingsManager.load(type);
+                settingsManager.load(type);
         if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
-            LOGGER.info("No template configured for {} notification or it was disabled!", type);
+            log.info("No template configured for {} notification or it was disabled!", type);
             return null;
         }
         return settings;

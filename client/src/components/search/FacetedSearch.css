@@ -27,9 +27,22 @@
   align-items: center;
 }
 
-.container .search,
+.container .search {
+  padding: 5px 6px;
+}
+
 .container .content {
-  padding: 5px;
+  padding: 0 5px;
+}
+
+.search-mode-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 14px !important;
+  padding: 5px !important;
+  font-size: small;
+  margin-left: 5px;
 }
 
 .clear-query {
@@ -48,10 +61,23 @@
   overflow: auto;
 }
 
-.container .content .panel.faceted-filters {
+.container .content .panel.faceted-filters-container {
   display: flex;
   flex-direction: column;
   position: relative;
+}
+
+.container .content .panel .faceted-filters {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  padding: 5px 2px 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.container .content .panel .faceted-filters.single-group {
+  padding: 0;
 }
 
 .container .content .panel.search-results {
@@ -68,16 +94,33 @@
   font-size: large;
 }
 
+.container .search .search-input input {
+  padding-right: 105px;
+}
+
+.search-input .suffix-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
 .container .search .find {
   margin-left: 5px;
 }
 
 .container .actions {
-  margin: 0 6px;
+  margin-left: 5px;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
+  padding: 3px 0;
+}
+
+.container .actions .export-button {
+  display: flex;
+  align-self: stretch;
+  margin-left: auto;
 }
 
 .container .actions > * {
@@ -86,7 +129,6 @@
 
 .container .actions .toggle-presentation-mode {
   height: 100%;
-  padding-top: 2px;
 }
 
 .container .actions .pagination {
@@ -117,14 +159,14 @@
 }
 
 .container .clear-filters-btn.disabled {
-  transform: translateY(-22px);
+  transform: translateY(-30px);
 }
 
 .sorting-controls-container {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  padding: 3px;
+  padding: 0 3px;
 }
 
 .sorting-btn {

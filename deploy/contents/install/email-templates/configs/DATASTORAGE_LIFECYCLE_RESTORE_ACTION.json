@@ -1,0 +1,6 @@
+{
+  "keepInformedAdmins":false,
+  "keepInformedOwner":false,
+  "enabled":true,
+  "subject":"Files under path #$templateParameters[\"path\"] in storage #$templateParameters[\"storageName\"] have been restored"
+}

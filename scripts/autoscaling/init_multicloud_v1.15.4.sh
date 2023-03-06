@@ -1,4 +1,7 @@
 #!/bin/bash
+launch_token="/etc/user_data_launched"
+if [[ -f "$launch_token" ]]; then exit 0; fi
+
 user_data_log="/var/log/user_data.log"
 exec > "$user_data_log" 2>&1
 
@@ -78,6 +81,12 @@ function setup_swap_device {
     fi
 }
 
+GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
+if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
+  GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
+fi
+export GLOBAL_DISTRIBUTION_URL
+
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
@@ -121,13 +130,20 @@ mkdir -p $MOUNT_POINT/runs
 mkdir -p $MOUNT_POINT/reference
 rm -rf $MOUNT_POINT/lost+found
 
+ssh_node_port="@NODE_SSH_PORT@"
+
+if [ "$ssh_node_port" ]  && [[ "$ssh_node_port" != "@"*"@" ]]; then
+  sed -i "/#Port/c\Port $ssh_node_port" /etc/ssh/sshd_config
+  systemctl restart sshd
+fi
+
 systemctl stop docker
 
 _DOCKER_SYS_IMGS="/ebs/docker-system-images"
 rm -rf $_DOCKER_SYS_IMGS
 _KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
 if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
-  _KUBE_SYSTEM_PODS_DISTR="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
+  _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
 fi
 mkdir -p $_DOCKER_SYS_IMGS
 _WO="--timeout=10 --waitretry=1 --tries=10"
@@ -390,7 +406,7 @@ EOF
 
 _PRE_PULL_DOCKERS="@PRE_PULL_DOCKERS@"
 _API_USER="@API_USER@"
-if [[ ! -z "${_PRE_PULL_DOCKERS}" ]]; then
+if [[ ! -z "${_PRE_PULL_DOCKERS}" ]] && [[ "${_PRE_PULL_DOCKERS}" != "@"*"@" ]] ; then
   echo "Pre-pulling requested docker images ${_PRE_PULL_DOCKERS}"
   IFS=',' read -ra DOCKERS <<< "$_PRE_PULL_DOCKERS"
   for _DOCKER in "${DOCKERS[@]}"; do
@@ -400,4 +416,5 @@ if [[ ! -z "${_PRE_PULL_DOCKERS}" ]]; then
   done
 fi
 
+touch "$launch_token"
 nc -l -k 8888 &

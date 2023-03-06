@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.interactions.Actions;
 
 import java.io.File;
 import java.util.Arrays;
@@ -24,8 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.interactions.Actions;
+
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.exist;
@@ -97,6 +99,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $$(".pipeline-code-form__button").findBy(text("Save")).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
+        $("ant-modal-content").waitUntil(not(exist), C.DEFAULT_TIMEOUT);
 
         return this;
     }
@@ -135,7 +138,9 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
-        $(".ant-table-tbody").findAll("tr")
+        $(".ant-table-tbody")
+                .waitUntil(visible, C.DEFAULT_TIMEOUT)
+                .findAll("tr")
                 .shouldHaveSize(3)
                 .get(0).shouldHave(text(folderName));
         return this;
@@ -223,7 +228,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         }
 
         public PipelineCodeTabAO saveAndCommitWithMessage(String message) {
-            return openCommitDialog().typeInField(message).ok();
+            return openCommitDialog().typeInField(message).ok().sleep(2, SECONDS);
         }
 
         private CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {

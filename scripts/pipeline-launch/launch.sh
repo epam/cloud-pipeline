@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,6 +65,22 @@ function clone_repository {
                   echo "[WARNING] Try #${_RETRY_ITERATION}. Failed to clone ${_REPOSITORY_URL} to ${_REPOSITORY_LOCAL_PATH}"
                   sleep "$_RETRIES_TIMEOUT"
             else
+                  cd $SCRIPTS_DIR
+
+                  if [ -z "$BRANCH" ];
+                  then
+                        git -c http.sslVerify=false checkout $REPO_REVISION -q
+                  else
+                        git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
+                  fi
+
+                  if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ];
+                  then
+                        git -c http.sslVerify=false submodule init
+                        git -c http.sslVerify=false submodule update
+                  fi
+
+                  _CLONE_RESULT=$?
                   break
             fi
       done
@@ -333,8 +349,76 @@ function upgrade_installed_packages {
       return $?
 }
 
-# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
-function configure_package_manager {
+function configure_package_manager_pip {
+    if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+        # Converts regional s3 endpoints
+        # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+        # to regional website s3 endpoints
+        # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
+        _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+            | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            # If the conversion was successful
+            CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
+        else
+            CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI_BASE_URL_DEFAULT
+    export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+}
+
+function run_pre_common_commands {
+      preference_value="$(get_pipe_preference_low_level "launch.pre.common.commands" "{}")"
+      linux_commands=$(echo "$preference_value" | jq -r '.linux' | grep -v "^null$")
+      if [ -z "$linux_commands" ]; then
+        echo "Additional commands for Linux distribution were not found."
+        return
+      fi
+      os_commands=$(echo "$linux_commands" | jq -r ".$CP_OS" | grep -v "^null$")
+      if [ -z "$os_commands" ]; then
+        echo "Additional commands for $CP_OS were not found."
+        return
+      fi
+      os_ver_commands=$(echo "$os_commands" | jq -r ".[\"$CP_VER\"]" | grep -v "^null$")
+      os_default_commands=$(echo "$os_commands" | jq -r ".default" | grep -v "^null$")
+      if [ -z "$os_ver_commands" ] && [ -z "$os_default_commands" ] ; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      if [ "$os_ver_commands" ] && [ "$os_default_commands" ]; then
+        commands=$( echo "$os_default_commands" "$os_ver_commands" | jq -s '.[0] * .[1]' | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      elif [ "$os_ver_commands" ]; then
+        commands=$( echo "$os_ver_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      else
+        commands=$( echo "$os_default_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      fi
+      declare -a command_list="($commands)"
+      if [ ${#command_list[@]} -eq 0 ]; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      echo "${#command_list[@]} additional commands were found for $CP_OS:$CP_VER"
+      SUCCESS_COMMANDS_NUM=0
+      for command in "${command_list[@]}"; do
+        eval "$command"
+        PRE_COMMAND_RESULT=$?
+        if [ "$PRE_COMMAND_RESULT" -ne 0 ]; then
+          echo "[WARN] '$command' command done with exit code $PRE_COMMAND_RESULT, review any issues above."
+        else
+          SUCCESS_COMMANDS_NUM=$((SUCCESS_COMMANDS_NUM+1))
+        fi
+      done
+      echo "$SUCCESS_COMMANDS_NUM out of ${#command_list[@]} additional commands were successfully executed for $CP_OS:$CP_VER"
+}
+
+# This function define the distribution name and version
+function define_distro_name_and_version {
       # Get the distro name and version
       CP_OS=
       CP_VER=
@@ -361,10 +445,12 @@ function configure_package_manager {
             CP_OS=$(uname -s)
             CP_VER=$(uname -r)
       fi
-
       export CP_OS
       export CP_VER
+}
 
+# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
+function configure_package_manager {
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
             echo "deb [check-valid-until=no] http://cdn-fastly.deb.debian.org/debian jessie main" > /etc/apt/sources.list.d/jessie.list
@@ -379,10 +465,13 @@ function configure_package_manager {
       CP_REPO_RETRY_COUNT=${CP_REPO_RETRY_COUNT:-3}
       if [ "${CP_REPO_ENABLED,,}" == 'true' ]; then
             # System package manager setup
-            local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
+            local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/repos"}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
             if [ "$CP_OS" == "centos" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        # Remove nvidia repositories, as they cause run initialization failure
+                        rm -f /etc/yum.repos.d/cuda.repo
+
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
                         yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q >> /var/log/yum.cp.log 2>&1
 
@@ -408,6 +497,11 @@ function configure_package_manager {
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        # Remove nvidia repositories, as they cause run initialization failure
+                        rm -f /etc/apt/sources.list.d/cuda.list \
+                              /etc/apt/sources.list.d/nvidia-ml.list \
+                              /etc/apt/sources.list.d/tensorRT.list 
+
                         apt-get update -qq -y --allow-insecure-repositories && \
                         apt-get install curl apt-transport-https gnupg -y -qq && \
                         sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
@@ -421,12 +515,9 @@ function configure_package_manager {
                         fi
                   done
             fi
-            # Pip setup
-            local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
-            local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
-            export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-      fi
 
+            configure_package_manager_pip
+      fi
 }
 
 # Generates apt-get or yum command to install specified list of packages (second argument)
@@ -568,7 +659,7 @@ function install_private_packages {
       #    Delete an existing installation, if it's a paused run
       #    We can probably keep it, but it will fail if we need to update a resumed run
       rm -rf "${_install_path}/conda"
-      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
+      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"}"
 
       # Download the distro from a public bucket
       echo "Getting python distro from $CP_CONDA_DISTRO_URL"
@@ -626,6 +717,136 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function configure_owner_account() {
+    OWNER_ID="$(resolve_owner_id)"
+    export OWNER_ID
+
+    if [ "$OWNER" ]; then
+        # Crop OWNER account by @ if present
+        IFS='@' read -r -a owner_info <<< "$OWNER"
+        export OWNER="${owner_info[0]}"
+        export OWNER_HOME="${OWNER_HOME:-/home/$OWNER}"
+        export OWNER_GROUPS="${OWNER_GROUPS:-root}"
+        if check_cp_cap "CP_CAP_UID_SEED_DISABLED"; then
+            if check_user_created "$OWNER"; then
+                return 0
+            else
+                create_user "$OWNER" "$OWNER" "" "" "$OWNER_HOME" "$OWNER_GROUPS"
+                return "$?"
+            fi
+        else
+            UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
+            export UID_SEED
+            export OWNER_UID=$(( UID_SEED + OWNER_ID ))
+            export OWNER_GID="$OWNER_UID"
+            if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
+                return 0
+            else
+                create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS"
+                return "$?"
+            fi
+        fi
+    else
+        echo "OWNER is not set - skipping owner account configuration"
+        return 1
+    fi
+}
+
+function get_pipe_preference_low_level() {
+    # Returns Cloud Pipeline preference value similarly to get_pipe_preference
+    # but doesn't require pipe commons to be installed. Therefore can be used
+    # safely anywhere in launch.sh.
+    local _preference="$1"
+    local _default_value="$2"
+
+    _value="$(curl -X GET \
+                   --insecure \
+                   -s \
+                   --max-time 30 \
+                   --header "Accept: application/json" \
+                   --header "Authorization: Bearer $API_TOKEN" \
+                   "$API/preferences/$_preference" \
+        | jq -r '.payload.value // empty')"
+
+    if [ "$?" == "0" ] && [ "$_value" ]; then
+        echo "$_value"
+    else
+        echo "$_default_value"
+    fi
+}
+
+function resolve_owner_id() {
+    # Returns current cloud pipeline user id
+    curl -X GET \
+         --insecure \
+         -s \
+         --max-time 30 \
+         --header "Accept: application/json" \
+         --header "Authorization: Bearer $API_TOKEN" \
+         "$API/whoami" \
+        | jq -r '.payload.id // 0'
+}
+
+function check_user_created() {
+    local _user_name="$1"
+    local _user_uid="$2"
+    local _user_gid="$3"
+
+    if id "$OWNER" >/dev/null 2>&1; then
+        _existing_user_uid="$(id "$_user_name" -u)"
+        _existing_user_gid="$(id "$_user_name" -g)"
+        echo "User $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) already exists"
+        if [ "$_user_uid" ] && [ "$_user_uid" != "$_existing_user_uid" ] \
+            || [ "$_user_gid" ] && [ "$_user_gid" != "$_existing_user_gid" ]; then
+            echo "Existing user $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) configuration is different from the expected one (uid: $_user_uid, gid: $_user_gid)"
+        fi
+        return 0
+    else
+        return 1
+    fi
+}
+
+function create_user() {
+    local _user_name="$1"
+    local _user_pass="$2"
+    local _user_uid="$3"
+    local _user_gid="$4"
+    local _user_home="$5"
+    local _user_groups="$6"
+
+    echo "Creating user $_user_name..."
+    if [ "$_user_uid" ] && [ "$_user_gid" ]; then
+        if check_installed "useradd" && check_installed "groupadd"; then
+            groupadd "$_user_name" -g "$_user_gid"
+            useradd -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home"
+        elif check_installed "adduser" && check_installed "addgroup"; then
+            addgroup "$_user_name" -g "$_user_gid"
+            adduser -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home" -D
+        else
+            echo "Cannot create user $_user_name: useradd/groupadd and adduser/addgroup commands are not installed"
+            return 1
+        fi
+    else
+        if check_installed "useradd"; then
+            useradd -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home"
+        elif check_installed "adduser"; then
+            adduser -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home" -D
+        else
+            echo "Cannot create user $_user_name: useradd and adduser commands are not installed"
+            return 1
+        fi
+    fi
+    if [ "$?" != "0" ]; then
+        echo "Cannot create user $_user_name: creation command has failed"
+        return 1
+    fi
+    echo "$_user_name:$_user_pass" | chpasswd
+    _existing_user_uid="$(id "$_user_name" -u)"
+    _existing_user_gid="$(id "$_user_name" -g)"
+    echo "User ${_user_name} (uid: $_existing_user_uid, gid: $_existing_user_gid) has been created"
+    return 0
+}
+
 function configureHyperThreading() {
     mount -o rw,remount /sys
     if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
@@ -654,6 +875,34 @@ function configureHyperThreading() {
         fi
       done
     fi
+}
+
+function self_terminate_on_cleanup_timeout() {
+      local _min_terminate_timeout_min=1
+      if [ -z "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" ]; then
+            return 0
+      fi
+      if (( "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" < "$_min_terminate_timeout_min" )); then
+            pipe_log_info "Cleanup termination timeout is less than a minimal value ${_min_terminate_timeout_min}. It will be adjusted." "CleanupEnvironment"
+            CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN="$_min_terminate_timeout_min"  
+      fi
+
+      local _node_name=$(echo $(pipe view-runs $RUN_ID --node-details | grep nodeName) | cut -d' ' -f2)
+      if [ -z "$_node_name" ]; then
+            pipe_log_fail "Cannot get node name for a current run" "CleanupEnvironment"
+            return 1
+      fi
+
+      pipe_log_info "Will wait for ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min to let the run stop normally. Otherwise it will be terminated." "CleanupEnvironment"
+
+      sleep $(( $CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN * 60 ))
+
+      local _run_status_after_timeout=$(echo $(pipe view-runs $RUN_ID | grep Status) | cut -d' ' -f2)
+      if [ "$_run_status_after_timeout" == "RUNNING" ]; then
+            pipe_log_success "Run #${RUN_ID} is still running after ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min. Terminating a node." "CleanupEnvironment"
+            pipe terminate-node -y "$_node_name"
+            return 0
+      fi
 }
 
 ######################################################
@@ -722,6 +971,35 @@ if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
 
+export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
+echo "Using global distribution $GLOBAL_DISTRIBUTION_URL..."
+
+# Check jq is installed
+if ! jq --version > /dev/null 2>&1; then
+    echo "Installing jq"
+    # check curl or wget commands
+    _JQ_INSTALL_RESULT=
+    if check_installed "wget"; then
+      wget -q --no-check-certificate "${GLOBAL_DISTRIBUTION_URL}tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
+      _JQ_INSTALL_RESULT=$?
+    elif check_installed "curl"; then
+      curl -s -k "${GLOBAL_DISTRIBUTION_URL}tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq
+      _JQ_INSTALL_RESULT=$?
+    else
+      echo "[ERROR] 'wget' or 'curl' commands not found to install 'jq'."
+    fi
+    if [ "$_JQ_INSTALL_RESULT" -ne 0 ]; then
+      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
+    fi
+    chmod +x /usr/bin/jq
+fi
+
+# Define the name and version of the distribution
+define_distro_name_and_version
+
+# Invoke any additional commands for the distribution
+run_pre_common_commands
+
 # Perform any distro/version specific package manage configuration
 configure_package_manager
 
@@ -782,17 +1060,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
-check_python_module_installed "pip --version" || { curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | $CP_PYTHON2_PATH; };
-
-# Check jq is installed
-if ! jq --version > /dev/null 2>&1; then
-    echo "Installing jq"
-    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
-    if [ $? -ne 0 ]; then
-      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
-    fi
-    chmod +x /usr/bin/jq
-fi
+check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH; };
 
 ######################################################
 # Configure the dependencies if needed
@@ -1015,35 +1283,9 @@ echo
 echo Configure owner account
 echo "-"
 ######################################################
-if [ "$OWNER" ]
-then
 
-      # Crop OWNER account by @ if present
-	IFS='@' read -r -a owner_info <<< "$OWNER"
-	export OWNER="${owner_info[0]}"
-	export OWNER_HOME="/home/$OWNER"
-
-      export _OWNER_CONFIGURED=1
-
-      # Create OWNER account if not exists
-	if id "$OWNER" >/dev/null 2>&1
-	then
-		echo "User ${OWNER} already exists"
-	else
-            if check_installed "useradd"; then
-                  useradd -s "/bin/bash" "$OWNER" -G root -d $OWNER_HOME
-            elif check_installed "adduser"; then
-                  adduser -s "/bin/bash" $OWNER -d $OWNER_HOME -D -G root
-            else
-                  echo "Cannot add user $OWNER. useradd and adduser commands not installed"
-                  export _OWNER_CONFIGURED=0
-            fi
-		echo "$OWNER:$OWNER" | chpasswd
-	fi
-else
-	echo "OWNER is not set - skipping owner account configuration"
-fi
-
+configure_owner_account
+export _OWNER_CONFIGURED="$?"
 
 echo "------"
 echo
@@ -1267,6 +1509,20 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo
 fi
 
+######################################################
+echo "Setting up Gitlab credentials"
+echo "-"
+######################################################
+set_git_credentials
+
+_GIT_CREDS_RESULT=$?
+
+if [ ${_GIT_CREDS_RESULT} -ne 0 ];
+then
+    echo "Failed to get user's Gitlab credentials"
+fi
+echo "------"
+
 # check whether we shall get code from repository before executing a command or not
 if [ -z "$GIT_REPO" ] ;
 then
@@ -1282,14 +1538,6 @@ else
       then
             echo "[ERROR] Pipeline repository clone failed. Exiting"
             exit "$_CLONE_RESULT"
-      fi
-      cd $SCRIPTS_DIR
-
-      if [ -z "$BRANCH" ]
-      then
-            git -c http.sslVerify=false checkout $REPO_REVISION -q
-      else
-            git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
       fi
       cd -
 fi
@@ -1398,9 +1646,9 @@ if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
     cp /root/.ssh/* /home/${OWNER}/.ssh/ && \
     chown -R ${OWNER} /home/${OWNER}/.ssh
     ssh_fix_permissions /home/${OWNER}/.ssh
-    echo "Passworldess SSH for ${OWNER} is configured"
+    echo "Passwordless SSH for ${OWNER} is configured"
 else
-    echo "[ERROR] Failed to configure passworldess SSH for \"${OWNER}\""
+    echo "[ERROR] Failed to configure passwordless SSH for \"${OWNER}\""
 fi
 # Double check that root's SSH permissions are correct
 ssh_fix_permissions /root/.ssh
@@ -1492,19 +1740,6 @@ echo
 ######################################################
 
 
-######################################################
-echo "Setting up Gitlab credentials"
-echo "-"
-######################################################
-set_git_credentials
-
-_GIT_CREDS_RESULT=$?
-
-if [ ${_GIT_CREDS_RESULT} -ne 0 ];
-then
-    echo "Failed to get user's Gitlab credentials"
-fi
-echo "------"
 ######################################################
 
 MOUNT_GIT_TASK_NAME="MountRepository"
@@ -1674,7 +1909,7 @@ echo Symlink common locations for OWNER and root
 echo "-"
 ######################################################
 
-if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -ne 0 ]
+if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -eq 0 ]
 then
       symlink_common_locations "$OWNER" "$OWNER_HOME"
       # Just double check the permissions for the OWNER on the OWNER_HOME
@@ -1824,6 +2059,28 @@ fi
 ######################################################
 
 ######################################################
+# Setup "EFA" support
+######################################################
+
+echo "Check if AWS EFA support is needed"
+echo "-"
+if [ "$CP_CAP_EFA_ENABLED" == "true" ]; then
+    echo "EFA support is requested, proceeding with installation..."
+    _LSPCI_INSTALL_COMMAND=
+    get_install_command_by_current_distr _LSPCI_INSTALL_COMMAND "pciutils"
+    eval "$_LSPCI_INSTALL_COMMAND"
+    if [ `lspci | grep -E "EFA|efa|Elastic Fabric Adapter" | wc -l` -gt 0 ]; then
+          efa_setup
+    else
+        echo "AWS EFA device cannot be found, drivers won't be installed"
+    fi
+else
+    echo "EFA support is not requested"
+fi
+
+######################################################
+
+######################################################
 # Setup "Singularity" support
 ######################################################
 
@@ -1893,6 +2150,49 @@ fi
 
 ######################################################
 
+######################################################
+# Enable API_TOKEN refresher
+######################################################
+
+echo "Setup API_TOKEN refresher"
+echo "-"
+
+if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
+    echo "API_TOKEN refresh is not requested"
+else
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
+fi
+
+######################################################
+
+
+######################################################
+# Enable mount restrictor
+######################################################
+
+echo "Setup mount restrictor"
+echo "-"
+
+if [ "$CP_MOUNT_RESTRICTOR_DISABLED" != "true" ]; then
+      initialise_wrappers "mount" "mount_restrictor" "$CP_USR_BIN"
+fi
+
+######################################################
+
+
+######################################################
+# Custom shells
+######################################################
+
+echo "Setup custom shells"
+echo "-"
+
+if [ "$CP_CAP_SHELL_LIST" ]; then
+      custom_shells_setup "$CP_CAP_SHELL_LIST"
+fi
+
+
+######################################################
 
 ######################################################
 echo Executing task
@@ -1990,6 +2290,11 @@ then
 else
       echo "No data storage rules defined, skipping ${FINALIZATION_TASK_NAME} step"
 fi
+
+# It may happen that the shared filesystem may cause a job to "hang" indefinitely
+# even if the script has exited. To address this, we wait a preconfigured amount of minutes
+# and *terminate* an underlying node. So that it won't be reassigned in that bad state
+self_terminate_on_cleanup_timeout &
 
 if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
    ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \

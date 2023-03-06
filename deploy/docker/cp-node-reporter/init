@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The following environment variables shall be set
+# CP_API_JWT_ADMIN
+# CP_API_SRV_INTERNAL_HOST
+# CP_API_SRV_INTERNAL_PORT
+
+function contains() {
+    local list="$1"
+    local item="$2"
+    for list_item in ${list//,/ }; do
+        if [ "$item" == "$list_item" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function matches() {
+    local item="$1"
+    local include="$2"
+    local exclude="$3"
+
+    [ "$include" ] && ([ "$include" == "*" ] || contains "$include" "$item") \
+    || [ "$exclude" ] && [ "$exclude" != "*" ] && ! contains "$exclude" "$item"
+}
+
+export CP_NODE_REPORTER_STATS_PORT="${CP_NODE_REPORTER_STATS_PORT:-8000}"
+export CP_RESOURCES_DIR="${CP_RESOURCES_DIR:-/opt/node-reporter/resources}/$NODE_NAME"
+export CP_LOGGING_DIR="${CP_LOGGING_DIR:-/opt/node-reporter/logs}/$NODE_NAME"
+
+mkdir -p "$CP_RESOURCES_DIR" "$CP_LOGGING_DIR"
+
+reporter_pids=""
+
+if matches "$NODE_NAME" "$CP_NODE_REPORTER_OOM_HOSTS_INCLUDE" "$CP_NODE_REPORTER_OOM_HOSTS_EXCLUDE"; then
+    echo "Launching oom reporter..."
+    nohup bash "$CP_NODE_REPORTER_OOM_HOME/reporter.sh" \
+        --api-url "https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/" \
+        --api-token "$CP_API_JWT_ADMIN" \
+        --node-name "$NODE_NAME" \
+        --sync-file "$CP_RESOURCES_DIR/sync_file" \
+        --debug \
+        >>"$CP_LOGGING_DIR/oom.log" 2>&1 &
+    reporter_pids="$reporter_pids $!"
+fi
+
+if matches "$NODE_NAME" "$CP_NODE_REPORTER_STATS_HOSTS_INCLUDE" "$CP_NODE_REPORTER_STATS_HOSTS_EXCLUDE"; then
+    echo "Launching stats reporter..."
+    PYTHONPATH="$CP_NODE_REPORTER_STATS_HOME" \
+        CP_LOGGING_FILE="$CP_LOGGING_DIR/stats.log" \
+        nohup gunicorn --workers=1 --threads=1 -b "0.0.0.0:$CP_NODE_REPORTER_STATS_PORT" "reporter:app" \
+        >/dev/null 2>&1 &
+    reporter_pids="$reporter_pids $!"
+fi
+
+echo "Waiting for reporters..."
+wait $reporter_pids

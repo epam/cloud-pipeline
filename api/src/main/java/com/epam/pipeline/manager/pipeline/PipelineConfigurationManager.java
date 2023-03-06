@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
+import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
@@ -28,12 +30,15 @@ import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.utils.RegExpUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -50,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -83,6 +89,9 @@ public class PipelineConfigurationManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private CloudRegionManager regionManager;
 
     public PipelineConfiguration getPipelineConfigurationForPipeline(final Pipeline pipeline,
                                                                      final PipelineStart runVO) {
@@ -121,6 +130,13 @@ public class PipelineConfigurationManager {
         if (toolRun) {
             mergeParametersFromTool(configuration, tool);
         }
+
+        getParametersFromNetworkConfig(runVO.getInstanceType(), runVO.getCloudRegionId())
+                .forEach((key, parameter) -> {
+                    if(!configuration.getParameters().containsKey(key)) {
+                        configuration.getParameters().put(key, parameter);
+                    }
+                });
 
         //client always sends actual node count value
         configuration.setNodeCount(Optional.ofNullable(runVO.getNodeCount()).orElse(0));
@@ -179,6 +195,17 @@ public class PipelineConfigurationManager {
             configuration.setInstanceImage(runVO.getInstanceImage());
         } else {
             configuration.setInstanceImage(defaultConfig.getInstanceImage());
+        }
+        if (runVO.getNotifications() != null) {
+            configuration.setNotifications(runVO.getNotifications());
+        } else {
+            configuration.setNotifications(defaultConfig.getNotifications());
+        }
+
+        if (MapUtils.isNotEmpty(runVO.getKubeLabels())) {
+            configuration.setKubeLabels(runVO.getKubeLabels());
+        } else {
+            configuration.setKubeLabels(defaultConfig.getKubeLabels());
         }
 
         //client always sends actual node-count
@@ -270,17 +297,10 @@ public class PipelineConfigurationManager {
         return hasBooleanParameter(entry, NFS_CLUSTER_ROLE);
     }
 
-    private static boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
-        return entry.getParameters().entrySet().stream().anyMatch(e ->
-                e.getKey().equals(parameterName) && e.getValue().getValue() != null
-                        && e.getValue().getValue().equalsIgnoreCase("true"));
-    }
-
-    private void setEndpointsErasure(PipelineConfiguration configuration) {
-        if (MapUtils.isEmpty(configuration.getParameters())) {
-            return;
-        }
-        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_RUN_ENDPOINTS));
+    public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
+        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
+                .map(ConfigurationEntry::getConfiguration)
+                .orElseGet(PipelineConfiguration::new);
     }
 
     public PipelineConfiguration getConfigurationFromRun(PipelineRun run) {
@@ -318,6 +338,55 @@ public class PipelineConfigurationManager {
         }
         configuration.buildEnvVariables();
         return configuration;
+    }
+
+    private Map<String, PipeConfValueVO> getParametersFromNetworkConfig(final String instanceType,
+                                                                        final Long cloudRegionId) {
+        final Map<String, PipeConfValueVO> parameters = new HashMap<>();
+        final AbstractCloudRegion runRegion = regionManager.loadOrDefault(cloudRegionId);
+        final CloudRegionsConfiguration cloudRegionsConfiguration = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_NETWORKS_CONFIG);
+
+        if (cloudRegionsConfiguration == null) {
+            return Collections.emptyMap();
+        }
+
+        ListUtils.emptyIfNull(cloudRegionsConfiguration.getRegions())
+                .stream()
+                .filter(r -> runRegion.getRegionCode().equals(r.getName()) || runRegion.getId().equals(r.getRegionId()))
+                .flatMap(networkConfiguration -> ListUtils.emptyIfNull(networkConfiguration.getAmis()).stream())
+                .filter(
+                        ami -> {
+                            final String instanceRegExp = RegExpUtils.getRegExpFormGlob(ami.getInstanceMask());
+                            return Pattern.compile(instanceRegExp).matcher(instanceType).find();
+                        }
+                ).findFirst()
+                .map(AMIConfiguration::getRunParameters)
+                .ifPresent(p -> p.forEach((k, v) -> parameters.put(k, buildPipeConfValue(v))));
+        return parameters;
+    }
+
+    private static PipeConfValueVO buildPipeConfValue(Object value) {
+        String type = PipeConfValueVO.DEFAULT_TYPE;
+        if (value instanceof Integer || value instanceof Long) {
+            type = "int";
+        } else if (value instanceof Boolean) {
+            type = "boolean";
+        }
+        return new PipeConfValueVO(value.toString(), type);
+    }
+
+    private static boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
+        return entry.getParameters().entrySet().stream().anyMatch(e ->
+                e.getKey().equals(parameterName) && e.getValue().getValue() != null
+                        && e.getValue().getValue().equalsIgnoreCase("true"));
+    }
+
+    private void setEndpointsErasure(PipelineConfiguration configuration) {
+        if (MapUtils.isEmpty(configuration.getParameters())) {
+            return;
+        }
+        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_RUN_ENDPOINTS));
     }
 
     private String chooseDockerImage(PipelineStart runVO, PipelineConfiguration defaultConfig) {
@@ -390,12 +459,6 @@ public class PipelineConfigurationManager {
             runVO.setConfigurationName(entry.getName());
         }
         return defaultConfiguration;
-    }
-
-    public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
-        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
-                .map(ConfigurationEntry::getConfiguration)
-                .orElseGet(PipelineConfiguration::new);
     }
 
     private String mergeRunAs(final PipelineStart runVO, final PipelineConfiguration configuration) {

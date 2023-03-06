@@ -20,7 +20,9 @@ import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
+import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AwsPriceStorageListComposerLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureBlobStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureEARawPriceLoader;
@@ -70,9 +72,6 @@ public class CommonSyncConfiguration {
     @Value("${sync.billing.center.key}")
     private String billingCenterKey;
 
-    @Value("${sync.storage.file.index.pattern}")
-    private String fileIndexPattern;
-
     @Value("${sync.storage.historical.billing.generation:false}")
     private boolean enableStorageHistoricalBillingGeneration;
 
@@ -107,15 +106,27 @@ public class CommonSyncConfiguration {
     public StorageSynchronizer s3Synchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
                                               final ElasticsearchServiceClient elasticsearchClient,
+                                              final CloudPipelineAPIClient apiClient,
                                               final @Value("${sync.storage.price.load.mode:api}")
                                                       String priceMode,
                                               final @Value("${sync.aws.json.price.endpoint.template}")
                                                       String endpointTemplate) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3",
-                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
-                        endpointTemplate));
+                new StoragePricingService(
+                        new AwsPriceStorageListComposerLoader(
+                                new AwsStoragePriceListLoader(
+                                        "AmazonS3",
+                                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                                        endpointTemplate
+                                ),
+                                new AwsStoragePriceListLoader(
+                                        "AmazonS3GlacierDeepArchive",
+                                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                                        endpointTemplate
+                                )
+                        )
+                );
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
@@ -124,10 +135,10 @@ public class CommonSyncConfiguration {
                 elasticsearchClient,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern,
+                        apiClient,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.S3);
     }
@@ -137,6 +148,7 @@ public class CommonSyncConfiguration {
     public StorageSynchronizer efsSynchronizer(final StorageLoader loader,
                                                final ElasticIndexService indexService,
                                                final ElasticsearchServiceClient elasticsearchClient,
+                                               final CloudPipelineAPIClient apiClient,
                                                final @Value("${sync.storage.price.load.mode:api}")
                                                        String priceMode,
                                                final @Value("${sync.aws.json.price.endpoint.template}")
@@ -155,10 +167,10 @@ public class CommonSyncConfiguration {
                 elasticsearchClient,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper,
                         StorageType.FILE_STORAGE,
                         pricingService,
-                        fileIndexPattern,
+                        apiClient,
                         fileShareMountsService,
                         MountType.NFS,
                         enableStorageHistoricalBillingGeneration),
@@ -169,7 +181,8 @@ public class CommonSyncConfiguration {
     @ConditionalOnProperty(value = "sync.storage.gs.disable", matchIfMissing = true, havingValue = FALSE)
     public StorageSynchronizer gsSynchronizer(final StorageLoader loader,
                                               final ElasticIndexService indexService,
-                                              final ElasticsearchServiceClient elasticsearchClient) {
+                                              final ElasticsearchServiceClient elasticsearchClient,
+                                              final CloudPipelineAPIClient apiClient) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
                 new StoragePricingService(new GcpStoragePriceListLoader());
@@ -181,10 +194,10 @@ public class CommonSyncConfiguration {
                 elasticsearchClient,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern,
+                        apiClient,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.GS);
     }
@@ -198,6 +211,7 @@ public class CommonSyncConfiguration {
         final CloudRegionLoader regionLoader,
         final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
         final AzureEARawPriceLoader rawEAPriceLoader,
+        final CloudPipelineAPIClient apiClient,
         final @Value("${sync.storage.azure-blob.category:General Block Blob}") String blobStorageCategory,
         final @Value("${sync.storage.azure-blob.redundancy:LRS}") String redundancyType) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE,
@@ -216,10 +230,10 @@ public class CommonSyncConfiguration {
                 elasticsearchClient,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
-                        fileIndexPattern,
+                        apiClient,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.AZ);
     }
@@ -233,11 +247,13 @@ public class CommonSyncConfiguration {
                                                        final CloudRegionLoader regionLoader,
                                                        final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
                                                        final AzureEARawPriceLoader rawEAPriceLoader,
+                                                       final CloudPipelineAPIClient apiClient,
                                                        final @Value("${sync.storage.azure-netapp.tier:Standard}")
                                                                String storageTier) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AzureNetAppStoragePriceListLoader(regionLoader, rawRateCardPriceLoader, rawEAPriceLoader, storageTier));
+            new StoragePricingService(new AzureNetAppStoragePriceListLoader(
+                    regionLoader, rawRateCardPriceLoader, rawEAPriceLoader, storageTier));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
@@ -246,10 +262,10 @@ public class CommonSyncConfiguration {
                 elasticsearchClient,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper,
                         StorageType.FILE_STORAGE,
                         pricingService,
-                        fileIndexPattern,
+                        apiClient,
                         fileShareMountsService,
                         MountType.NFS,
                         enableStorageHistoricalBillingGeneration),
@@ -265,11 +281,13 @@ public class CommonSyncConfiguration {
                                                       final CloudRegionLoader regionLoader,
                                                       final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
                                                       final AzureEARawPriceLoader rawEAPriceLoader,
+                                                      final CloudPipelineAPIClient apiClient,
                                                       final @Value("${sync.storage.azure-files.tier:Cool LRS}")
                                                               String storageTier) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
-        final StoragePricingService pricingService =
-            new StoragePricingService(new AzureFilesStoragePriceListLoader(regionLoader, rawRateCardPriceLoader, rawEAPriceLoader, storageTier));
+        final StoragePricingService pricingService = new StoragePricingService(
+                new AzureFilesStoragePriceListLoader(
+                        regionLoader, rawRateCardPriceLoader, rawEAPriceLoader, storageTier));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        storageIndexName,
@@ -278,10 +296,10 @@ public class CommonSyncConfiguration {
                                        elasticsearchClient,
                                        loader,
                                        indexService,
-                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                                       new StorageToBillingRequestConverter(mapper,
                                                                             StorageType.FILE_STORAGE,
                                                                             pricingService,
-                                                                            fileIndexPattern,
+                                                                            apiClient,
                                                                             fileShareMountsService,
                                                                             MountType.SMB,
                                                                             enableStorageHistoricalBillingGeneration),

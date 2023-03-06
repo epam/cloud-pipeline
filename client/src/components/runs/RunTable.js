@@ -21,7 +21,6 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Link} from 'react-router';
 import {
-  Alert,
   Checkbox,
   Icon,
   Input,
@@ -35,10 +34,6 @@ import UserAutoComplete from '../special/UserAutoComplete';
 import StopPipeline from '../../models/pipelines/StopPipeline';
 import PausePipeline from '../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../models/pipelines/ResumePipeline';
-import {
-  PipelineRunCommitCheck,
-  PIPELINE_RUN_COMMIT_CHECK_FAILED
-} from '../../models/pipelines/PipelineRunCommitCheck';
 import {stopRun, canPauseRun, canStopRun, runPipelineActions, terminateRun} from './actions';
 import StatusIcon from '../special/run-status-icon';
 import AWSRegionTag from '../special/AWSRegionTag';
@@ -48,7 +43,7 @@ import DayPicker from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
 import moment from 'moment-timezone';
 import displayDate from '../../utils/displayDate';
-import evaluateRunDuration from '../../utils/evaluateRunDuration';
+import evaluateRunPrice from '../../utils/evaluate-run-price';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
@@ -59,6 +54,7 @@ import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
 import MultizoneUrl from '../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../utils/multizone';
 import getMaintenanceDisabledButton from './controls/get-maintenance-mode-disabled-button';
+import confirmPause from './actions/pause-confirmation';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -81,7 +77,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
     onSelect: PropTypes.func,
     useFilter: PropTypes.bool,
     versionsDisabled: PropTypes.bool,
-    ownersDisabled: PropTypes.bool
+    ownersDisabled: PropTypes.bool,
+    dockerImagesDisabled: PropTypes.bool,
+    hideColumns: PropTypes.arrayOf(PropTypes.string)
   };
 
   state = {
@@ -192,11 +190,13 @@ export default class RunTable extends localization.LocalizedReactComponent {
           isArray: true,
           searchString: null
         },
-        versions: {
+        dockerImages: {
           visible: false,
-          value: null,
-          finalValue: null,
-          filtered: false
+          value: [],
+          finalValue: [],
+          filtered: false,
+          isArray: true,
+          searchString: null
         },
         owners: {
           visible: false,
@@ -482,7 +482,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
 
   getDockerImageFilter = () => {
     const parameter = 'dockerImages';
-    if (this.dockerImages && this.dockerImages.length > 1) {
+    if (
+      !this.props.dockerImagesDisabled &&
+      this.dockerImages &&
+      this.dockerImages.length > 1
+    ) {
       const clear = () => {
         this.state[parameter].value = [];
         this.state[parameter].searchString = null;
@@ -697,31 +701,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
 
   showPauseConfirmDialog = async (event, run) => {
     event.stopPropagation();
-    const checkRequest = new PipelineRunCommitCheck(run.id);
-    await checkRequest.fetch();
-    let content;
-    if (checkRequest.loaded && !checkRequest.value) {
-      content = (
-        <Alert
-          type="error"
-          message={PIPELINE_RUN_COMMIT_CHECK_FAILED} />
-      );
+    const confirmed = await confirmPause({id: run.id, run});
+    if (confirmed) {
+      return this.pausePipeline(run.id);
     }
-    Modal.confirm({
-      title: (
-        <Row>
-          Do you want to pause {this.renderPipelineName(run, true, true) || this.localizedString('pipeline')}?
-        </Row>
-      ),
-      content,
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk: () => this.pausePipeline(run.id),
-      okText: 'PAUSE',
-      cancelText: 'CANCEL',
-      width: 450
-    });
   };
 
   showResumeConfirmDialog = (event, run) => {
@@ -761,7 +744,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         case 'resuming':
           return <span id={`run-${record.id}-resuming`}>RESUMING</span>;
         case 'running':
-          if (canPauseRun(record)) {
+          if (canPauseRun(record, this.props.preferences)) {
             const buttonId = `run-${record.id}-pause-button`;
             if (this.maintenanceMode) {
               return getMaintenanceDisabledButton('PAUSE', buttonId);
@@ -901,21 +884,17 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (!item.pricePerHour) {
       return null;
     }
-    const diff = evaluateRunDuration(item) * item.pricePerHour;
-    const price = Math.ceil(diff * 100.0) / 100.0;
+    const info = evaluateRunPrice(item);
     if (item.masterRun) {
-      const {
-        workersPrice = 0
-      } = item;
       return (
         <JobEstimatedPriceInfo>
-          Cost: {(price + workersPrice).toFixed(2)}$ ({price.toFixed(2)}$)
+          Cost: {info.total.toFixed(2)}$ ({info.master.toFixed(2)}$)
         </JobEstimatedPriceInfo>
       );
     }
     return (
       <JobEstimatedPriceInfo>
-        Cost: {price.toFixed(2)}$
+        Cost: {info.total.toFixed(2)}$
       </JobEstimatedPriceInfo>
     );
   };
@@ -953,6 +932,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
   };
 
   getColumns = () => {
+    const {hideColumns} = this.props;
     const statusesFilter = this.props.useFilter ? this.getStatusesFilter() : {};
     const parentRunFilter = this.props.useFilter ? this.getInputFilter('parentRunIds', 'Parent run id') : {};
     const pipelineFilter = this.props.useFilter ? this.getPipelinesFilter() : {};
@@ -1287,7 +1267,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       actionsPauseRunColumn,
       actionsRunColumn,
       actionsLogColumn
-    ];
+    ].filter(column => !(hideColumns || []).includes(column.dataIndex));
   };
 
   prepareSourceItem = (item) => {

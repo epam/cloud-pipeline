@@ -140,7 +140,8 @@ export default function getQuotaDatasets (
   compute,
   storages,
   quotas,
-  data = []
+  data = [],
+  maximum = undefined
 ) {
   let accessor = () => quotas?.overallGlobal || {};
   if (compute && !storages) {
@@ -170,14 +171,18 @@ export default function getQuotaDatasets (
       affectivePeriods = [Period.quarter, Period.year];
       break;
   }
-  const {
-    max: maximum = Infinity
-  } = getVisibleDataRange(data);
+  let maximumValue = maximum;
+  if (maximumValue === undefined) {
+    const {
+      max = Infinity
+    } = getVisibleDataRange(data);
+    maximumValue = max;
+  }
   const quotaValues = affectivePeriods
     .map(getQuotaPeriodForReportPeriod)
     .map(quotaPeriod => ({period: quotaPeriod, quota: quotaInfo[quotaPeriod]}))
     .filter(info => info.quota !== undefined && !Number.isNaN(Number(info.quota)))
-    .filter(info => info.quota <= maximum); // filter quotas that not in displayed range
+    .filter(info => info.quota <= maximumValue); // filter quotas that not in displayed range
   return getRangedQuotaDatasets(quotaValues, data, dataRequest.filters)
     .map(rangedDataset => ({
       data: rangedDataset.dataset,

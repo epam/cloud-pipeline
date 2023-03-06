@@ -204,6 +204,5 @@ public class SMTPNotificationManagerTest extends AbstractSpringTest {
         MimeMessage[] receivedMessages = greenMail.getReceivedMessages();
         assertEquals(1, receivedMessages.length);
         assertNull(receivedMessages[0].getRecipients(Message.RecipientType.TO));
-        assertEquals(1, receivedMessages[0].getRecipients(Message.RecipientType.CC).length);
     }
 }

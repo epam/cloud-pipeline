@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM library/centos:7.7.1908
 
 # Prerequisites
 RUN yum install -y \

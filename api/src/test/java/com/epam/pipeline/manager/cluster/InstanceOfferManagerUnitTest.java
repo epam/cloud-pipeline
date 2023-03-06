@@ -17,8 +17,10 @@
 package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
@@ -37,6 +39,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -93,7 +96,6 @@ public class InstanceOfferManagerUnitTest {
     private final InstanceType m4InstanceType = instanceType(M4_LARGE, defaultRegion);
     private final InstanceType m5InstanceType = instanceType(M5_LARGE, defaultRegion);
     private final InstanceType t2InstanceType = instanceType(T2_LARGE, defaultRegion);
-    private final InstanceType dv3InstanceType = instanceType(DV3, anotherRegion);
 
     private final InstanceOfferDao instanceOfferDao = mock(InstanceOfferDao.class);
     private final PipelineVersionManager versionManager = mock(PipelineVersionManager.class);
@@ -112,8 +114,14 @@ public class InstanceOfferManagerUnitTest {
         when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultRegion);
         when(cloudRegionManager.load(defaultRegion.getId())).thenReturn(defaultRegion);
         when(cloudRegionManager.load(anotherRegion.getId())).thenReturn(anotherRegion);
-        instanceOfferManager.updateOfferedInstanceTypes(Arrays.asList(m4InstanceType, m5InstanceType, t2InstanceType,
-                dv3InstanceType));
+        final List<InstanceOffer> offersDefault = Arrays.asList(
+                instanceOffer(M4_LARGE, defaultRegion),
+                instanceOffer(M5_LARGE, defaultRegion),
+                instanceOffer(T2_LARGE, defaultRegion));
+        when(instanceOfferDao.loadInstanceOffers(argThat(new InstanceRequestByRegion(defaultRegion.getId()))))
+                .thenReturn(offersDefault);
+        when(instanceOfferDao.loadInstanceOffers(argThat(new InstanceRequestByRegion(anotherRegion.getId()))))
+                .thenReturn(Collections.singletonList(instanceOffer(DV3, anotherRegion)));
     }
 
     @Test
@@ -338,10 +346,36 @@ public class InstanceOfferManagerUnitTest {
         return instanceType;
     }
 
+    private InstanceOffer instanceOffer(final String name, final AbstractCloudRegion region) {
+        final InstanceOffer instanceOffer = new InstanceOffer();
+        instanceOffer.setInstanceType(name);
+        instanceOffer.setTermType(TERM_TYPE);
+        instanceOffer.setCloudProvider(region.getProvider());
+        instanceOffer.setRegionId(region.getId());
+        return instanceOffer;
+    }
+
     private AwsRegion region(final Long id) {
         final AwsRegion region = new AwsRegion();
         region.setId(id);
         region.setProvider(CloudProvider.AWS);
         return region;
     }
+
+    class InstanceRequestByRegion extends ArgumentMatcher<InstanceOfferRequestVO> {
+        private long regionId;
+
+        InstanceRequestByRegion(long id) {
+            this.regionId = id;
+        }
+
+        @Override
+        public boolean matches(Object argument) {
+            if (!(argument instanceof InstanceOfferRequestVO)) {
+                return false;
+            }
+            return ((InstanceOfferRequestVO) argument).getRegionId().equals(regionId);
+        }
+    }
+
 }

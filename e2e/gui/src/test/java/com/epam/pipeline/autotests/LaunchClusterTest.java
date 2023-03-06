@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -234,7 +234,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .ensure(taskWithName(gridEngineAutoscalingTask), visible)
                 .click(taskWithName(gridEngineAutoscalingTask))
-                .waitForLog(String.format("Additional worker with host=%s has been stopped.",
+                .waitForLog(String.format("Additional worker %s has been scaled down.",
                         String.format("pipeline-%s", childRunID2)));
 
         navigationMenu()

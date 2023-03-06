@@ -37,9 +37,9 @@ DISABLE_ACCESS = 'disable_external_access'
 
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
+    if str(r1.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
+    elif str(r1.type).split('/')[-1].lower() == "networkinterfaces" and not str(r2.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
     return 0
 
@@ -54,13 +54,14 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         self.resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images=[]):
+                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                     global_distribution_url, pre_pull_images=[], is_dedicated=False):
         try:
             ins_key = utils.read_ssh_key(ins_key)
             swap_size = utils.get_swap_size(self.zone, ins_type, is_spot, "AZURE")
             user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, ins_platform, kube_ip,
                                                           kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                                          swap_size, pre_pull_images)
+                                                          global_distribution_url, swap_size, pre_pull_images)
             instance_name = "az-" + uuid.uuid4().hex[0:16]
             access_config = utils.get_access_config(self.cloud_region)
             disable_external_access = False
@@ -82,12 +83,12 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         vm_name = None
         private_ip = None
         for resource in self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
-            if str(resource.type).split('/')[-1] == "virtualMachines":
+            if str(resource.type).split('/')[-1].lower() == "virtualmachines":
                 vm_name = resource.name
                 private_ip = self.network_client.network_interfaces \
                     .get(self.resource_group_name, vm_name + '-nic').ip_configurations[0].private_ip_address
                 break
-            if str(resource.type).split('/')[-1] == "virtualMachineScaleSet":
+            if str(resource.type).split('/')[-1].lower() == "virtualmachinescaleset":
                 scale_set_name = resource.name
                 vm_name, private_ip = self.__get_instance_name_and_private_ip_from_vmss(scale_set_name)
                 break
@@ -99,18 +100,18 @@ class AzureInstanceProvider(AbstractInstanceProvider):
 
     def find_instance(self, run_id):
         for resource in self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
-            if str(resource.type).split('/')[-1] == "virtualMachines":
+            if str(resource.type).split('/')[-1].lower() == "virtualmachines":
                 return resource.name
-            elif str(resource.type).split('/')[-1] == "virtualMachineScaleSets":
+            elif str(resource.type).split('/')[-1].lower() == "virtualmachinescalesets":
                 instance_name, _ = self.__get_instance_name_and_private_ip_from_vmss(resource.name)
                 return instance_name
         return None
 
     def find_nodes_with_run_id(self, run_id):
         for resource in self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
-            if str(resource.type).split('/')[-1] == "virtualMachines":
+            if str(resource.type).split('/')[-1].lower() == "virtualmachines":
                 return [resource.name]
-            elif str(resource.type).split('/')[-1] == "virtualMachineScaleSets":
+            elif str(resource.type).split('/')[-1].lower() == "virtualmachinescalesets":
                 return self.generate_scale_set_vm_names(resource.name)
         return []
 
@@ -166,22 +167,22 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         for resource in self.resource_client.resources.list(
                 filter="tagName eq 'Name' and tagValue eq '" + old_id + "'"):
             resource_group = resource.id.split('/')[4]
-            resource_type = str(resource.type).split('/')[-1]
-            if resource_type == "virtualMachines":
+            resource_type = str(resource.type).split('/')[-1].lower()
+            if resource_type == "virtualmachines":
                 ins_id = resource.name
                 resource = self.compute_client.virtual_machines.get(resource_group, resource.name)
                 resource.tags["Name"] = new_id
                 self.compute_client.virtual_machines.create_or_update(resource_group, resource.name, resource)
-            elif resource_type == "virtualMachineScaleSets":
+            elif resource_type == "virtualmachinescalesets":
                 resource = self.compute_client.virtual_machine_scale_sets.get(resource_group, resource.name)
                 resource.tags["Name"] = new_id
                 self.compute_client.virtual_machine_scale_sets.create_or_update(resource_group, resource.name, resource)
                 ins_id, _ = self.__get_instance_name_and_private_ip_from_vmss(resource.name)
-            elif resource_type == "networkInterfaces":
+            elif resource_type == "networkinterfaces":
                 resource = self.network_client.network_interfaces.get(resource_group, resource.name)
                 resource.tags["Name"] = new_id
                 self.network_client.network_interfaces.create_or_update(resource_group, resource.name, resource)
-            elif resource_type == "publicIPAddresses":
+            elif resource_type == "publicipaddresses":
                 resource = self.network_client.public_ip_addresses.get(resource_group, resource.name)
                 resource.tags["Name"] = new_id
                 self.network_client.public_ip_addresses.create_or_update(resource_group, resource.name, resource)
@@ -484,7 +485,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         api version) """
         provider = self.resource_client.providers.get(resource.id.split('/')[6])
         rt = next((t for t in provider.resource_types
-                   if t.resource_type == '/'.join(resource.type.split('/')[1:])), None)
+                   if t.resource_type.lower() == '/'.join(resource.type.split('/')[1:]).lower()), None)
         if rt and 'api_versions' in rt.__dict__:
             api_version = [v for v in rt.__dict__['api_versions'] if 'preview' not in v.lower()]
             return api_version[0] if api_version else rt.__dict__['api_versions'][0]
@@ -495,8 +496,8 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         # we need to sort resources to be sure that vm and nic will be deleted first,
         # because it has attached resorces(disks and ip)
         resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
-        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].startswith('virtualMachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
-        if str(resources[0].type).split('/')[-1] == 'virtualMachines':
+        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].lower().startswith('virtualmachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
+        if str(resources[0].type).split('/')[-1].lower() == 'virtualmachines':
             self.__detach_disks_and_nic(vm_name)
         for resource in resources:
             self.resource_client.resources.delete(

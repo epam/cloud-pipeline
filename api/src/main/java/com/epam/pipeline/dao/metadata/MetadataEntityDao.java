@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
+import com.epam.pipeline.entity.metadata.MetadataFilterOperator;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -61,7 +62,6 @@ import static java.lang.String.format;
 public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
 
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
-    private Pattern dataValuePatten = Pattern.compile("@VALUE@");
     private Pattern wherePattern = Pattern.compile("@WHERE_CLAUSE@");
     private Pattern orderPattern = Pattern.compile("@ORDER_CLAUSE@");
     private Pattern searchPattern = Pattern.compile("@QUERY@");
@@ -152,11 +152,10 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateMetadataEntityDataKey(MetadataEntity metadataEntity, String key, String value, String type) {
-        String query = dataKeyPattern.matcher(updateMetadataEntityDataKeyQuery)
-                .replaceFirst(format("'{%s}'", key));
-        query = dataValuePatten.matcher(query)
-                .replaceFirst(format("'{\"type\": \"%s\", \"value\": \"%s\"}'", type, value));
-        getNamedParameterJdbcTemplate().update(query, MetadataEntityParameters.getParameters(metadataEntity));
+        MapSqlParameterSource parameters = MetadataEntityParameters.getParameters(metadataEntity);
+        parameters.addValue("KEY", format("{%s}", key));
+        parameters.addValue("VALUE", JsonMapper.convertDataToJsonStringForQuery(new PipeConfValue(type, value)));
+        getNamedParameterJdbcTemplate().update(updateMetadataEntityDataKeyQuery, parameters);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -268,7 +267,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                         MetadataEntityParameters.getClassMapper());
     }
 
-
     public Set<MetadataEntity> loadExisting(Long folderId, String className, Set<String> externalIds) {
         String idClause = externalIds.stream().map(s -> format("('%s')", s))
                 .collect(Collectors.joining(","));
@@ -295,7 +293,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         return new HashSet<>(getJdbcTemplate().query(format(loadBylIdsQuery, idClause),
                 MetadataEntityParameters.getRowMapper()));
     }
-
 
     private String buildFilterQuery(MetadataFilter filter) {
         String baseQuery = filter.isRecursive() ? recursiveFilterQuery : baseFilterQuery;
@@ -368,11 +365,31 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
         filters.forEach(filter -> {
             clause.append(AND);
+            final MetadataFilterOperator operator = filter.getOperator() != null ?
+                    filter.getOperator() :
+                    MetadataFilterOperator.DEFAULT;
             final String filterClause = filter.isPredefined()
-                    ? addFilterClause(filter, "%s::text ILIKE '%%%s%%'", getDBName(filter.getKey()))
-                    : addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey());
+                    ? addFilterClause(filter, getTemplate(operator, true),
+                    getDBName(filter.getKey()), operator)
+                    : (CollectionUtils.isEmpty(filter.getValues())
+                        ? getEmptyFieldClause(filter.getKey())
+                        : addFilterClause(filter, getTemplate(operator, false), filter.getKey(), operator));
             clause.append(filterClause);
         });
+    }
+
+    private String getEmptyFieldClause(final String key) {
+        return "(" +
+                format("(e.data #>> '{%s,value}') IS NULL", key) +
+                format(" OR trim(e.data #>> '{%s,value}') = ''", key) +
+                format(" OR (e.data #>> '{%s,value}') IN ('{}', '[]')", key) +
+                ")";
+    }
+
+    private String getTemplate(final MetadataFilterOperator operator, final boolean isPredefined) {
+        return (isPredefined ? "%s::text " : "e.data #>> '{%s,value}' ") +
+                "%s " +
+                (MetadataFilterOperator.DEFAULT.equals(operator) ? "'%%%s%%'" : "'%s'");
     }
 
     private String getDBName(final String filterKey) {
@@ -383,13 +400,16 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         return field.getDbName();
     }
 
-    private String addFilterClause(MetadataFilter.FilterQuery filter, String template, String dbName) {
+    private String addFilterClause(final MetadataFilter.FilterQuery filter,
+                                   final String template,
+                                   final String dbName,
+                                   final MetadataFilterOperator operator) {
         if (CollectionUtils.isEmpty(filter.getValues())) {
             return StringUtils.EMPTY;
         }
         String clauses = filter.getValues()
                 .stream()
-                .map(value -> format(template, dbName, value))
+                .map(value -> format(template, dbName, operator.getValue(), value))
                 .collect(Collectors.joining(OR));
         return format("( %s )", clauses);
     }
@@ -474,7 +494,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             return params;
         }
 
-
         static ResultSetExtractor<Collection<MetadataClassDescription>> getClassMapper() {
             return (rs) -> {
                 Map<Long, MetadataClassDescription> results = new HashMap<>();
@@ -495,7 +514,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 return results.values();
             };
         }
-
 
         static RowMapper<MetadataEntity> getRowMapper() {
             return (rs, rowNum) -> {

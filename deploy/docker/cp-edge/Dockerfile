@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ RUN yum install -y python \
                    zlib-devel \
                    cronie \
                    sshpass \
-                   perl && \
+                   perl \
+                   netcat && \
     yum group install -y "Development Tools" && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install rsa==4.0 \
@@ -89,6 +90,7 @@ RUN touch /var/log/sync-routes.log && \
 ## Main config file
 ADD	nginx.conf /etc/nginx/nginx.conf
 ADD endpoints-config /etc/nginx/endpoints-config
+ADD static /etc/nginx/static
 ADD mime.types /etc/nginx/mime.types
 
 ## Logs dir
@@ -103,6 +105,7 @@ ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
 ADD validate_cookie_fsbrowser.lua /etc/nginx/validate_cookie_fsbrowser.lua
 ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
+ADD validate_proxy_auth.lua /etc/nginx/validate_proxy_auth.lua
 COPY maintenance*.lua /etc/nginx/
 
 ## DAV auth page

@@ -96,6 +96,9 @@ public class PipelineRunManagerUnitTest {
     private static final String PARAM_NAME_1 = "param-1";
     private static final String ENV_VAR_NAME = "TEST_ENV";
     private static final String ENV_VAR_VALUE = "value";
+    private static final String PROCESSED_VALUE = "Processed";
+    private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
+    private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
 
     @Mock
     private NodesManager nodesManager;
@@ -301,15 +304,44 @@ public class PipelineRunManagerUnitTest {
     }
 
     @Test
+    public void shouldUpdateLastProcessedDate() {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(ID);
+        pipelineRun.setEntitiesIds(singletonList(ID));
+        pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setEndDate(TEST_DATE);
+
+        pipelineRun.setPipelineRunParameters(Arrays.asList(
+                new PipelineRunParameter(CP_REPORT_RUN_PROCESSED_DATE, PROCESSED_VALUE),
+                new PipelineRunParameter(CP_REPORT_RUN_STATUS, "Status")));
+
+        final MetadataEntity currentMetadata = new MetadataEntity();
+        currentMetadata.setData(new HashMap<>());
+        doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
+                .loadEntitiesByIds(Collections.singleton(ID));
+
+        new JsonMapper().init();
+
+        pipelineRunManager.updatePipelineStatus(pipelineRun);
+        final ArgumentCaptor<List<MetadataEntity>> captor = ArgumentCaptor.forClass((Class) List.class);
+        verify(metadataEntityManager).loadEntitiesByIds(Collections.singleton(ID));
+        verify(metadataEntityManager).updateMetadataEntities(captor.capture());
+        final MetadataEntity updatedMetadataEntity = captor.getValue().get(0);
+        assertThat(updatedMetadataEntity.getData())
+                .hasSize(2)
+                .containsKey(PROCESSED_VALUE);
+    }
+
+    @Test
     public void shouldUpdateMetadataRunStatus() {
-        final String parameterKey = "CP_REPORT_RUN_STATUS";
         final String parameterValue = "Analysis status";
         final PipelineRun pipelineRun = new PipelineRun();
         pipelineRun.setId(ID);
         pipelineRun.setEntitiesIds(singletonList(ID));
         pipelineRun.setStatus(TaskStatus.STOPPED);
         pipelineRun.setStartDate(TEST_DATE);
-        pipelineRun.setPipelineRunParameters(singletonList(new PipelineRunParameter(parameterKey, parameterValue)));
+        pipelineRun.setPipelineRunParameters(singletonList(
+                new PipelineRunParameter(CP_REPORT_RUN_STATUS, parameterValue)));
 
         final Map<String, PipeConfValue> currentData = new HashMap<>();
         currentData.put(TEST_STRING, new PipeConfValue(PipeConfValueType.STRING.toString(), TEST_STRING));

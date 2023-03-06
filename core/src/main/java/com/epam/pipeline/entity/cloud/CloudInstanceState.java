@@ -17,5 +17,5 @@
 package com.epam.pipeline.entity.cloud;
 
 public enum CloudInstanceState {
-    RUNNING, TERMINATED, STOPPED
+    RUNNING, TERMINATED, STOPPED, STOPPING
 }

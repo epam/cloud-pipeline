@@ -70,6 +70,7 @@ import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
   from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
+import {METADATA_KEYS} from './metadata-controls/get-default-metadata-properties';
 import Metadata, {SpecialTags} from '../../special/metadata/Metadata';
 import ItemsTable, {isJson} from '../../special/metadata/items-table';
 import Issues from '../../special/issues/Issues';
@@ -80,7 +81,7 @@ import {
   ISSUES_PANEL_KEY
 } from '../../special/splitPanel';
 import DropDownWrapper from '../../special/dropdown-wrapper';
-import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
+import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import UploadButton from '../../special/UploadButton';
@@ -112,7 +113,7 @@ function splitFolderPaths (foldersStructure) {
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
 @HiddenObjects.checkFolders(props => (props?.params ? props.params.id : props.id))
-@inject('awsRegions')
+@inject('awsRegions', 'preferences')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
   if (params.params) {
@@ -246,6 +247,12 @@ export default class Folder extends localization.LocalizedReactComponent {
       return null;
     }
     const {value} = metadata;
+    const ignoredKey = () => {
+      return Object.values(METADATA_KEYS).includes(key);
+    };
+    if (ignoredKey()) {
+      return null;
+    }
     const renderSpecialMetadataComponent = () => {
       const SpecialMetadataComponent = SpecialTags[key];
       return (
@@ -775,8 +782,6 @@ export default class Folder extends localization.LocalizedReactComponent {
       path: path,
       shared: storage.serviceType === ServiceTypes.objectStorage && storage.shared,
       storagePolicy: {
-        longTermStorageDuration: storage.longTermStorageDuration,
-        shortTermStorageDuration: storage.shortTermStorageDuration,
         backupDuration: storage.backupDuration,
         versioningEnabled: storage.versioningEnabled
       },
@@ -839,15 +844,11 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       if (this.state.editableStorage.policySupported &&
         storage.serviceType !== ServiceTypes.fileShare &&
-        (storage.longTermStorageDuration !== undefined ||
-        storage.shortTermStorageDuration !== undefined ||
-        storage.backupDuration !== undefined || !storage.versioningEnabled)) {
+        (storage.backupDuration !== undefined || !storage.versioningEnabled)) {
         const updatePolicyRequest = new DataStorageUpdateStoragePolicy();
         await updatePolicyRequest.send({
           id: this.state.editableStorage.id,
           storagePolicy: {
-            longTermStorageDuration: storage.longTermStorageDuration,
-            shortTermStorageDuration: storage.shortTermStorageDuration,
             backupDuration: storage.backupDuration,
             versioningEnabled: storage.versioningEnabled
           }
@@ -965,7 +966,18 @@ export default class Folder extends localization.LocalizedReactComponent {
   createPipelineRequest = new CreatePipeline();
 
   createPipeline = async (opts = {}) => {
-    const {name, description, repository, repositoryType, token} = opts;
+    const {
+      name,
+      description,
+      repository,
+      repositoryType,
+      branch,
+      token,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
+    } = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -974,7 +986,12 @@ export default class Folder extends localization.LocalizedReactComponent {
       templateId: this.state.pipelineTemplate ? this.state.pipelineTemplate.id : undefined,
       repository: repository,
       repositoryType,
-      repositoryToken: token
+      repositoryToken: token,
+      branch,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
     });
     hide();
     if (this.createPipelineRequest.error) {
@@ -1069,11 +1086,13 @@ export default class Folder extends localization.LocalizedReactComponent {
   checkRequest = new CheckPipelineRepository();
 
   checkRepositoryExistence = async (pipelineOpts, callback) => {
-    const {repository, token} = pipelineOpts;
+    const {repository, repositoryType, branch, token} = pipelineOpts;
     if ((token && token.length) || (repository && repository.length)) {
       const hide = message.loading('Checking repository existence...', -1);
       await this.checkRequest.send({
         repository,
+        type: repositoryType,
+        branch,
         token
       });
       hide();
@@ -1138,17 +1157,33 @@ export default class Folder extends localization.LocalizedReactComponent {
   updatePipelineRequest = new UpdatePipeline();
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
-  editPipeline = async ({name, description, token}) => {
+  editPipeline = async (values) => {
+    const {
+      name,
+      description,
+      token,
+      branch,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
+    } = values || {};
     const {pipelineType} = this.state.editablePipeline;
     const objectName = /^versioned_storage$/i.test(pipelineType)
       ? 'versioned storage'
       : 'pipeline';
     const hide = message.loading(`Updating ${this.localizedString(objectName)} ${name}...`, 0);
+    const pipelineId = this.state.editablePipeline.id;
     await this.updatePipelineRequest.send({
-      id: this.state.editablePipeline.id,
+      id: pipelineId,
       name: name,
       description: description,
-      parentFolderId: this._currentFolder.folder.id
+      parentFolderId: this._currentFolder.folder.id,
+      branch,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
@@ -1165,7 +1200,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           message.error(this.updatePipelineTokenRequest.error, 5);
         } else {
           this.closeEditPipelineDialog();
-          await this.props.folder.fetch();
+          await Promise.all([
+            this.props.folder.fetch(),
+            this.props.pipelines.getPipeline(pipelineId).fetch()
+          ]);
           if (this.props.onReloadTree) {
             this.props.onReloadTree(!this._currentFolder.folder.parentId);
           }
@@ -1173,7 +1211,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       } else {
         hide();
         this.closeEditPipelineDialog();
-        await this.props.folder.fetch();
+        await Promise.all([
+          this.props.folder.fetch(),
+          this.props.pipelines.getPipeline(pipelineId).fetch()
+        ]);
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this._currentFolder.folder.parentId);
         }
@@ -1314,7 +1355,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         <Table
           key={CONTENT_PANEL_KEY}
           className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
-          dataSource={this._currentFolder.data}
+          dataSource={formatTreeItems(this._currentFolder.data, {preferences: this.props.preferences})}
           columns={this.columns}
           rowKey={(item) => item.key}
           title={null}
@@ -1977,11 +2018,12 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
       let data = generateTreeData(
         this.props.folder.value,
-        true,
-        {id: this.props.folderId},
-        [],
-        this.props.supportedTypes,
-        this.props.hiddenObjectsTreeFilter(this.props.filterItems)
+        {
+          ignoreChildren: true,
+          parent: {id: this.props.folderId},
+          types: this.props.supportedTypes,
+          filter: this.props.hiddenObjectsTreeFilter(this.props.filterItems)
+        }
       );
       if (this.props.isRoot) {
         this._currentFolder = {

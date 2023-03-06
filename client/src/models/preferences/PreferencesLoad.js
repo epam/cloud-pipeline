@@ -16,9 +16,21 @@
 
 import Remote from '../basic/Remote';
 import {computed} from 'mobx';
+import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
+// eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
+
+export const RUN_CAPABILITIES = {
+  dinD: 'DinD',
+  singularity: 'Singularity',
+  systemD: 'SystemD',
+  noMachine: 'NoMachine',
+  module: 'Module',
+  disableHyperThreading: 'Disable Hyper-Threading',
+  dcv: 'NICE DCV'
+};
 
 class PreferencesLoad extends Remote {
   constructor () {
@@ -59,6 +71,11 @@ class PreferencesLoad extends Remote {
   @computed
   get deploymentName () {
     return this.getPreferenceValue('ui.pipeline.deployment.name');
+  }
+
+  @computed
+  get myCostsDisclaimer () {
+    return this.getPreferenceValue('ui.my.costs.disclaimer');
   }
 
   @computed
@@ -132,6 +149,21 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  @computed
+  get displayNameTag () {
+    return this.getPreferenceValue('faceted.filter.display.name.tag');
+  }
+
+  @computed
+  get facetedFilterDownloadFileTag () {
+    return this.getPreferenceValue('faceted.filter.download.file.tag');
+  }
+
+  @computed
+  get storageDownloadAttribute () {
+    return this.getPreferenceValue('ui.storage.download.attribute');
   }
 
   @computed
@@ -290,6 +322,13 @@ class PreferencesLoad extends Remote {
             .filter(o => o.length);
         };
         const mapCapability = ([key, entry]) => {
+          if (
+            typeof entry === 'boolean' ||
+            entry.visible === false ||
+            Object.keys(RUN_CAPABILITIES).includes(key)
+          ) {
+            return undefined;
+          }
           const {
             capabilities = {}
           } = entry;
@@ -302,12 +341,16 @@ class PreferencesLoad extends Remote {
             os: parseOS(entry?.os),
             custom: true,
             params: entry?.params || {},
-            capabilities: Object.entries(capabilities).map(mapCapability)
+            disclaimer: entry?.disclaimer || '',
+            capabilities: Object.entries(capabilities)
+              .map(c => mapCapability(c, entry)),
+            multiple: Boolean(entry?.multiple)
           };
         };
         return Object
           .entries(capabilities || {})
-          .map(mapCapability);
+          .map(mapCapability)
+          .filter(Boolean);
       } catch (e) {
         console.warn(
           'Error parsing "launch.capabilities" preference:',
@@ -344,6 +387,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get userNotificationsEnabled () {
+    return `${this.getPreferenceValue('system.notifications.enable')}` === 'true';
+  }
+
+  @computed
   get storagePolicyBackupVisibleNonAdmins () {
     const value = this.getPreferenceValue('storage.policy.backup.visible.non.admins');
     return value === undefined || `${value}` !== 'false';
@@ -375,6 +423,22 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get dataStorageItemPreviewMasks () {
+    const extensions = this.getPreferenceValue('ui.storage.static.preview.mask') || '';
+    return extensions
+      .split(/[,;\s]/g)
+      .filter(o => o.length)
+      .map(o => o.startsWith('.') ? o.slice(1) : o)
+      .map(o => new RegExp(`\\.${o}$`, 'i'));
+  }
+
+  @computed
+  get inlineMetadataEntities () {
+    const value = this.getPreferenceValue('ui.library.metadata.inline');
+    return `${value}`.toLowerCase() === 'true';
+  }
+
   get dataSharingBaseApi () {
     return this.getPreferenceValue('data.sharing.base.api');
   }
@@ -396,6 +460,204 @@ class PreferencesLoad extends Remote {
       }
     }
     return {};
+  }
+
+  get toolPredefinedKubeLabels () {
+    const value = this.getPreferenceValue('ui.tool.kube.labels');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.tool.kube.labels" preference:', e.message);
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get commitMaxLayers () {
+    const value = this.getPreferenceValue('commit.max.layers');
+    if (!value || Number.isNaN(Number(value))) {
+      return undefined;
+    }
+    return Number(value);
+  }
+
+  @computed
+  get systemRunTagDateSuffix () {
+    return this.getPreferenceValue('system.run.tag.date.suffix') || '_date';
+  }
+
+  @computed
+  get hiddenRunCapabilities () {
+    const value = this.getPreferenceValue('launch.capabilities');
+    if (value) {
+      try {
+        const capabilities = JSON.parse(value);
+        const getCapabilityByKey = (key) => {
+          const capabilityKey = Object
+            .keys(RUN_CAPABILITIES)
+            .find((aKey) => aKey.toLowerCase() === (key || '').toLowerCase());
+          if (capabilityKey) {
+            return RUN_CAPABILITIES[capabilityKey];
+          }
+          return undefined;
+        };
+        return Object
+          .entries(capabilities || {})
+          .filter(([, value]) => (typeof value === 'boolean' && !value) ||
+            (typeof value === 'object' && !value.visible)
+          )
+          .map(([key]) => getCapabilityByKey(key))
+          .filter(Boolean);
+      } catch (e) {
+        console.warn(
+          'Error parsing "launch.capabilities" preference:',
+          e
+        );
+      }
+    }
+    return [];
+  }
+
+  getJobMaintenanceConfigurationRules (preference) {
+    const value = this.getPreferenceValue(preference);
+    const defaultSettings = {
+      pause: true,
+      resume: true
+    };
+    try {
+      return {
+        ...defaultSettings,
+        ...JSON.parse(value)
+      };
+    } catch (e) {
+      console.warn(
+        `Error parsing "${preference}" preference:`,
+        e
+      );
+    }
+    return defaultSettings;
+  }
+
+  @computed
+  get toolJobMaintenanceConfiguration () {
+    return this.getJobMaintenanceConfigurationRules('ui.run.maintenance.tool.enabled');
+  }
+
+  @computed
+  get pipelineJobMaintenanceConfiguration () {
+    return this.getJobMaintenanceConfigurationRules('ui.run.maintenance.pipeline.enabled');
+  }
+
+  @computed
+  get launchDiskSizeThresholds () {
+    const value = this.getPreferenceValue('launch.job.disk.size.thresholds');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "launch.job.disk.size.thresholds" preference:', e.message);
+      }
+    }
+    return [];
+  }
+
+  /**
+   * @typedef {object} DownloadCommandTemplate
+   * @property {string} template
+   * @property {string} [before]
+   * @property {string} [after]
+   */
+
+  /**
+   * @typedef {object} FacetedFilterDownloadConfiguration
+   * @property {RegExp[]} allow
+   * @property {RegExp[]} deny
+   * @property {number} [maximum]
+   * @property {{[group: string]: DownloadCommandTemplate}} command
+   */
+
+  /**
+   * @returns {FacetedFilterDownloadConfiguration}
+   */
+  @computed
+  get facetedFilterDownload () {
+    const processMask = (mask) => {
+      if (!mask) {
+        return /.+/;
+      }
+      let escaped = escapeRegExp(mask, ESCAPE_CHARACTERS.filter((ch) => ch !== '*'));
+      escaped = escaped.replace(/[*]/g, '.+');
+      if (/^[\\/]/.test(escaped)) {
+        escaped = '^'.concat(escaped);
+      } else {
+        escaped = '(^|\\/|\\\\)'.concat(escaped);
+      }
+      escaped = escaped.concat('$');
+      return new RegExp(escaped, 'i');
+    };
+    const processMasks = (masks) => {
+      if (typeof masks === 'string') {
+        return [processMask(masks)];
+      }
+      return masks.map(processMask);
+    };
+    const processCommandTemplate = (command) => {
+      if (!command) {
+        return {};
+      }
+      if (typeof command === 'string') {
+        return {
+          default: {
+            template: command
+          }
+        };
+      }
+      if (
+        typeof command === 'object' &&
+        typeof command.template === 'string'
+      ) {
+        return {
+          default: command
+        };
+      }
+      const keys = Object.keys(command);
+      return keys
+        .map((key) => {
+          const value = command[key];
+          if (typeof value === 'string') {
+            return {
+              [key]: {template: value}
+            };
+          }
+          return {[key]: value};
+        })
+        .reduce((r, c) => ({...r, ...c}), {});
+    };
+    const processPreference = (preference = {}) => {
+      const {
+        allow = [],
+        deny = [],
+        command,
+        ...rest
+      } = preference || {};
+      return {
+        allow: processMasks(allow),
+        deny: processMasks(deny),
+        command: processCommandTemplate(command),
+        ...rest
+      };
+    };
+    const value = this.getPreferenceValue('faceted.filter.download');
+    if (value) {
+      try {
+        return processPreference(JSON.parse(value));
+      } catch (e) {
+        console.warn('Error parsing "ui.tool.kube.labels" preference:', e.message);
+      }
+    }
+    return processPreference();
   }
 
   toolScanningEnabledForRegistry (registry) {

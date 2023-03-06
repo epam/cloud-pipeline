@@ -46,6 +46,9 @@ spec:
             - mountPath: /opt/share-srv/prefs
               name: share-pref
               readOnly: true
+            - mountPath: /opt/share-srv/static
+              name: share-static
+              readOnly: true
       volumes:
         - name: share-pki
           hostPath:
@@ -68,5 +71,8 @@ spec:
         - name: share-pref
           hostPath:
             path: /opt/share-srv/prefs
+        - name: share-static
+          hostPath:
+            path: /opt/share-srv/static
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

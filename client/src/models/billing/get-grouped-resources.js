@@ -5,9 +5,22 @@ import {GetGroupedComputeTypes} from './get-grouped-compute-types';
 import QuotaGroups from '../../components/billing/quotas/utilities/quota-groups';
 import join from './join-periods';
 
+/**
+ * @typedef {Object} GetGroupedResourcesOptions
+ * @property {Object} filters
+ * @property {BaseBillingRequestPagination|boolean} [pagination]
+ */
+
 export class GetGroupedResources extends RemotePost {
-  constructor (filters, pagination = null) {
+  /**
+   * @param {GetGroupedResourcesOptions} options
+   */
+  constructor (options = {}) {
     super();
+    const {
+      filters,
+      pagination
+    } = options;
     this.filters = filters;
     this.pagination = pagination;
   }
@@ -62,7 +75,14 @@ export class GetGroupedResources extends RemotePost {
 }
 
 export class GetGroupedResourcesWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+  /**
+   * @param {GetGroupedResourcesOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {
       end,
       endStrict,
@@ -77,8 +97,10 @@ export class GetGroupedResourcesWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedResources,
-      formattedFilters,
-      pagination
+      {
+        filters: formattedFilters,
+        pagination
+      }
     );
   }
 

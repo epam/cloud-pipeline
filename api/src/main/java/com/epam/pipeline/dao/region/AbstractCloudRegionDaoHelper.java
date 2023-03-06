@@ -16,10 +16,14 @@
 
 package com.epam.pipeline.dao.region;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.MountStorageRule;
+import com.epam.pipeline.entity.region.StorageLifecycleServiceProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.SneakyThrows;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.sql.ResultSet;
@@ -41,8 +45,25 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         params.addValue(CloudRegionParameters.OWNER.name(), region.getOwner());
         params.addValue(CloudRegionParameters.CREATED_DATE.name(), region.getCreatedDate());
         params.addValue(CloudRegionParameters.CLOUD_PROVIDER.name(), region.getProvider().name());
-        params.addValue(CloudRegionParameters.MOUNT_STORAGE_RULE.name(), region.getMountStorageRule().name());
+        params.addValue(CloudRegionParameters.MOUNT_STORAGE_RULE.name(), region.getMountObjectStorageRule().name());
+        params.addValue(CloudRegionParameters.MOUNT_FILE_STORAGE_RULE.name(), region.getMountFileStorageRule().name());
         params.addValue(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name(), region.getMountCredentialsRule().name());
+        params.addValue(CloudRegionParameters.GLOBAL_DISTRIBUTION_URL.name(), region.getGlobalDistributionUrl());
+        params.addValue(CloudRegionParameters.DNS_HOSTED_ZONE_ID.name(), region.getDnsHostedZoneId());
+        params.addValue(CloudRegionParameters.DNS_HOSTED_ZONE_BASE.name(), region.getDnsHostedZoneBase());
+
+        final String slsPropertiesJson = Optional.ofNullable(region.getStorageLifecycleServiceProperties())
+                .map(props -> {
+                    if (MapUtils.isNotEmpty(props.getProperties())) {
+                        return JsonMapper.convertDataToJsonStringForQuery(
+                                region.getStorageLifecycleServiceProperties());
+                    } else {
+                        return null;
+                    }
+                }).orElse(null);
+        params.addValue(CloudRegionParameters.STORAGE_LIFECYCLE_SERVICE_PROPERTIES.name(),
+                slsPropertiesJson);
+
         params.addValues(getProviderParameters(region, credentials).getValues());
         return withFilledMissingValues(params);
     }
@@ -65,9 +86,21 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         region.setDefault(rs.getBoolean(CloudRegionParameters.IS_DEFAULT.name()));
         region.setOwner(rs.getString(CloudRegionParameters.OWNER.name()));
         region.setCreatedDate(new Date(rs.getTimestamp(CloudRegionParameters.CREATED_DATE.name()).getTime()));
-        region.setMountStorageRule(MountStorageRule.valueOf(
+        region.setMountObjectStorageRule(MountStorageRule.valueOf(
                 rs.getString(CloudRegionParameters.MOUNT_STORAGE_RULE.name())));
+        region.setMountFileStorageRule(MountStorageRule.valueOf(
+                rs.getString(CloudRegionParameters.MOUNT_FILE_STORAGE_RULE.name())));
         region.setMountCredentialsRule(MountStorageRule.valueOf(
                 rs.getString(CloudRegionParameters.MOUNT_CREDENTIALS_RULE.name())));
+        region.setGlobalDistributionUrl(rs.getString(CloudRegionParameters.GLOBAL_DISTRIBUTION_URL.name()));
+        region.setDnsHostedZoneId(rs.getString(CloudRegionParameters.DNS_HOSTED_ZONE_ID.name()));
+        region.setDnsHostedZoneBase(rs.getString(CloudRegionParameters.DNS_HOSTED_ZONE_BASE.name()));
+
+        final String slsJsonString = rs.getString(CloudRegionParameters.STORAGE_LIFECYCLE_SERVICE_PROPERTIES.name());
+        if (!rs.wasNull()) {
+            region.setStorageLifecycleServiceProperties(
+                    JsonMapper.parseData(slsJsonString, new TypeReference<StorageLifecycleServiceProperties>() {})
+            );
+        }
     }
 }

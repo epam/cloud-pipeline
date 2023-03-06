@@ -63,14 +63,18 @@ function ColorPresenter (
     color,
     onClick,
     borderless,
-    style
+    style,
+    ignoreAlpha = false
   }
 ) {
   if (!color) {
     return null;
   }
   const parsed = parseColor(color) || {r: 0, g: 0, b: 0};
-  const {a = 1} = parsed;
+  let {a = 1} = parsed;
+  if (ignoreAlpha) {
+    a = 1;
+  }
   const opaqueColor = a === 1 ? undefined : {...parsed, a: 1};
   let opaqueGraphics;
   if (opaqueColor) {
@@ -131,15 +135,33 @@ class ColorPicker extends React.Component {
     const {
       onChange,
       hex,
+      channels,
       ignoreAlpha
     } = this.props;
-    if (onChange) {
-      onChange(hex ? buildHexColor(rgb, ignoreAlpha) : buildColor(rgb));
+    if (!onChange) {
+      return;
+    }
+    if (hex) {
+      onChange(buildHexColor(rgb, ignoreAlpha));
+    } else if (channels) {
+      const {r, g, b, a} = rgb;
+      onChange({
+        r,
+        g,
+        b,
+        a: ignoreAlpha ? 1.0 : (a || 1.0)
+      });
+    } else {
+      onChange(buildColor(rgb));
     }
   }
 
   render () {
-    const {color, disabled} = this.props;
+    const {
+      color,
+      disabled,
+      ignoreAlpha
+    } = this.props;
     const {visible} = this.state;
     if (disabled) {
       return (
@@ -147,6 +169,7 @@ class ColorPicker extends React.Component {
           className={styles.colorPicker}
           color={color}
           style={{cursor: 'default'}}
+          ignoreAlpha={ignoreAlpha}
         />
       );
     }
@@ -168,6 +191,7 @@ class ColorPicker extends React.Component {
           className={styles.colorPicker}
           onClick={() => this.onVisibilityChange(true)}
           color={color}
+          ignoreAlpha={ignoreAlpha}
         />
       </Popover>
     );
@@ -179,6 +203,7 @@ ColorPicker.propTypes = {
   onChange: PropTypes.func,
   disabled: PropTypes.bool,
   hex: PropTypes.bool,
+  channels: PropTypes.bool,
   ignoreAlpha: PropTypes.bool
 };
 

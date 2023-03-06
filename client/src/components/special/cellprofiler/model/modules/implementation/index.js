@@ -14,28 +14,41 @@
  *  limitations under the License.
  */
 
-import {IdentifyPrimaryObjects} from './identify-primary-objects';
-import {IdentifySecondaryObjects} from './identify-secondary-objects';
-import {RelateObjects} from './relate-objects';
-import {OverlayOutlines} from './overlay-outlines';
-import {NamesAndTypes} from './names-and-types';
-import {SaveImages} from './save-images';
+import advanced from './advanced';
+import fileProcessing from './file-processing';
+import objectsProcessing from './object-processing';
+import {defineResults, defineResultsInternal} from './define-results';
+import findCells from './find-cells';
+import findCytoplasm from './find-cytoplasm';
+import findMembrane from './find-membrane';
+import findNuclei from './find-nuclei';
+import findNeurites from './find-neurites';
+import findSpots from './find-spots';
+import imageProcessing from './image-processing';
+import measurement from './measurement';
+// import worms from './worms';
 
-const allModules = [
-  IdentifyPrimaryObjects,
-  IdentifySecondaryObjects,
-  RelateObjects,
-  OverlayOutlines,
-  SaveImages,
-  NamesAndTypes
+const cellProfilerModules = [
+  ...fileProcessing,
+  ...objectsProcessing,
+  ...advanced,
+  ...imageProcessing,
+  ...measurement,
+  // ...worms,
+  defineResultsInternal
 ];
 
-export {
-  allModules,
-  IdentifyPrimaryObjects,
-  IdentifySecondaryObjects,
-  OverlayOutlines,
-  RelateObjects,
-  SaveImages,
-  NamesAndTypes
-};
+export {cellProfilerModules};
+
+export default [
+  ...[
+    findNuclei,
+    findCells,
+    findCytoplasm,
+    findMembrane,
+    findNeurites,
+    findSpots,
+    defineResults
+  ].map(o => ({group: 'Main', ...o})),
+  ...cellProfilerModules
+];

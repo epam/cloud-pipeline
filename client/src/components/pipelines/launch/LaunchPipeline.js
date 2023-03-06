@@ -38,13 +38,15 @@ import queryParameters from '../../../utils/queryParameters';
 import LaunchPipelineForm from './form/LaunchPipelineForm';
 import getToolLaunchingOptions from './utilities/get-tool-launching-options';
 import versionedStorageLaunchInfoEqual from './utilities/versioned-storage-launch-info-equal';
+import roleModel from '../../../utils/roleModel';
 
 const DTS_ENVIRONMENT = 'DTS';
 
 @localization.localizedComponent
 @submitsRun
 @runPipelineActions
-@inject('awsRegions', 'pipelines', 'preferences')
+@roleModel.authenticationInfo
+@inject('awsRegions', 'pipelines', 'preferences', 'dockerRegistries')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
   const isVersionedStorage = components.vs;
@@ -249,7 +251,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           : undefined,
         cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
           ? versionSettingValue('cloudRegionId')
-          : undefined
+          : undefined,
+        notifications: versionSettingValue('notifications') || []
       };
     } else if (this.props.run && !this.runPending && !this.props.run.error) {
       const parameters = {

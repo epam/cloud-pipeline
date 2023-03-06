@@ -59,6 +59,9 @@ function useHCSImageState() {
   const setChannelProperties = useCallback((channel, properties) => {
     viewerDispatch({ type: viewerActions.setChannelProperties, channel, properties });
   }, [viewerDispatch]);
+  const setDefaultChannelsColors = useCallback((defaultColors = {}) => {
+    viewerDispatch({ type: viewerActions.setDefaultChannelsColors, defaultColors });
+  }, [viewerDispatch]);
   const setColorMap = useCallback((colorMap) => {
     viewerDispatch({ type: viewerActions.setColorMap, colorMap });
   }, [viewerDispatch]);
@@ -80,6 +83,7 @@ function useHCSImageState() {
     setImageViewportLoading,
     setImageViewportLoaded,
     setChannelProperties,
+    setDefaultChannelsColors,
     setColorMap,
     setLensEnabled,
     setLensChannel,
@@ -93,6 +97,7 @@ function useHCSImageState() {
     setImageViewportLoading,
     setImageViewportLoaded,
     setChannelProperties,
+    setDefaultChannelsColors,
     setColorMap,
     setLensEnabled,
     setLensChannel,

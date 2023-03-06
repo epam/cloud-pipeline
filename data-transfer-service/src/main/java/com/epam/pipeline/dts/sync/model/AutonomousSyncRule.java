@@ -34,17 +34,20 @@ public class AutonomousSyncRule {
     private String cron;
     private Boolean deleteSource;
     private List<TransferTrigger> transferTriggers;
+    private Boolean checkSyncToken;
     private AutonomousSyncRule parentRule;
 
     public AutonomousSyncRule(final String source,
                               final String destination,
                               final String cron,
                               final Boolean deleteSource,
-                              final List<TransferTrigger> transferTriggers) {
+                              final List<TransferTrigger> transferTriggers,
+                              final Boolean checkSyncToken) {
         this.source = source;
         this.destination = destination;
         this.cron = cron;
         this.deleteSource = deleteSource;
+        this.checkSyncToken = checkSyncToken;
         this.transferTriggers = transferTriggers;
     }
 
