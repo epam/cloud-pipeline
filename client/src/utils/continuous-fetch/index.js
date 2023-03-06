@@ -50,20 +50,21 @@ function makePromise (fn) {
 
 const currentRequests = new Map();
 
-function unregister (identifier) {
+function unregister (identifier, callStop = true) {
   if (!identifier) {
     return;
   }
   if (currentRequests.has(identifier)) {
-    const stop = currentRequests.get(identifier);
-    if (stop && typeof stop === 'function') {
-      if (stop.verbose) {
-        log(`Unregistering request "${identifier}"`);
+    if (callStop) {
+      const stop = currentRequests.get(identifier);
+      if (stop && typeof stop === 'function') {
+        if (stop.verbose) {
+          log(`Unregistering request "${identifier}"`);
+        }
+        stop();
       }
-      stop();
-    } else {
-      currentRequests.delete(identifier);
     }
+    currentRequests.delete(identifier);
   }
 }
 
@@ -101,11 +102,12 @@ function wrapRequestFetch (request) {
  * @property {function} [afterInvoke]
  * @property {boolean} [verbose=false]
  * @property {boolean} [continuous=true]
+ * @property {string} [identifier]
  */
 
 /**
  * @param {ContinuousFetchOptions} options
- * @returns {{resume: function, stop: function, reset: function, pause: function}}
+ * @returns {{resume: function, stop: function, reset: function, pause: function, fetch: function}}
  */
 export default function continuousFetch (options = {}) {
   const {
@@ -128,7 +130,8 @@ export default function continuousFetch (options = {}) {
       stop: NOOP,
       reset: NOOP,
       pause: NOOP,
-      resume: NOOP
+      resume: NOOP,
+      fetch: NOOP
     };
   }
   const verboseName = identifier || 'request';
@@ -242,7 +245,7 @@ export default function continuousFetch (options = {}) {
       // eslint-disable-next-line
       log(`Continuous request "${verboseName}": stopped`);
     }
-    unregister(identifier);
+    unregister(identifier, false);
   };
   stop.verbose = verbose;
   register(identifier, stop);
@@ -250,6 +253,7 @@ export default function continuousFetch (options = {}) {
     stop,
     reset,
     pause,
-    resume
+    resume,
+    fetch: doSingleFetch
   };
 }

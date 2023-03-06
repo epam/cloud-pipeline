@@ -180,7 +180,12 @@ class AllRuns extends React.Component {
         false
       );
       let token = this.token;
-      const call = () => request.filter(requestPayload);
+      const call = async () => {
+        await request.filter(requestPayload);
+        if (request.networkError) {
+          throw new Error(request.networkError);
+        }
+      };
       const before = () => {
         token = this.token = (this.token || 0) + 1;
       };
