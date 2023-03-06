@@ -32,9 +32,17 @@ import '../../../staticStyles/HomePage.css';
 import getStyle from '../../../utils/browserDependentStyle';
 import moment from 'moment-timezone';
 import styles from './HomePage.css';
+import continuousFetch from '../../../utils/continuous-fetch';
 
 const PAGE_SIZE = 50;
 const UPDATE_TIMEOUT = 15000;
+
+const ContinuousFetchIdentifiers = {
+  activeRuns: 'activeRuns',
+  completedRuns: 'completedRuns',
+  services: 'services',
+  issues: 'issues'
+};
 
 @roleModel.authenticationInfo
 @inject('myIssues', 'preferences')
@@ -77,6 +85,20 @@ export default class HomePage extends React.Component {
     containerWidth: null,
     containerHeight: null,
     configureModalVisible: false
+  };
+
+  stopInterval = {
+    [ContinuousFetchIdentifiers.activeRuns]: () => {},
+    [ContinuousFetchIdentifiers.completedRuns]: () => {},
+    [ContinuousFetchIdentifiers.services]: () => {},
+    [ContinuousFetchIdentifiers.issues]: () => {}
+  };
+
+  fetchData = {
+    [ContinuousFetchIdentifiers.activeRuns]: () => {},
+    [ContinuousFetchIdentifiers.completedRuns]: () => {},
+    [ContinuousFetchIdentifiers.services]: () => {},
+    [ContinuousFetchIdentifiers.issues]: () => {}
   };
 
   initializeContainer = (container) => {
@@ -196,23 +218,57 @@ export default class HomePage extends React.Component {
     );
   }
 
-  updateInterval;
-
   refresh = async () => {
-    let updateActiveRuns = false;
-    let updateCompletedRuns = false;
+    Object.values(this.fetchData || {}).forEach((fetchData) => fetchData());
+  };
+
+  refreshActiveRuns = async () => {
+    let update = false;
     for (let key in this.panels) {
       if (this.panels.hasOwnProperty(key) && this.panels[key] && this.panels[key].contentPanel) {
-        updateActiveRuns = updateActiveRuns ||
+        update = update ||
           this.panels[key].contentPanel.usesActiveRuns;
-        updateCompletedRuns = updateCompletedRuns ||
+      }
+    }
+    if (update) {
+      await this.props.activeRuns.filter();
+      if (this.props.activeRuns.networkError) {
+        throw new Error(this.props.activeRuns.networkError);
+      }
+    }
+    this.forceUpdatePanels();
+  };
+
+  refreshCompletedRuns = async () => {
+    let update = false;
+    for (let key in this.panels) {
+      if (this.panels.hasOwnProperty(key) && this.panels[key] && this.panels[key].contentPanel) {
+        update = update ||
           this.panels[key].contentPanel.usesCompletedRuns;
       }
     }
-    updateActiveRuns && await this.props.activeRuns.filter();
-    updateCompletedRuns && await this.props.completedRuns.filter();
+    if (update) {
+      await this.props.completedRuns.filter();
+      if (this.props.completedRuns.networkError) {
+        throw new Error(this.props.completedRuns.networkError);
+      }
+    }
+    this.forceUpdatePanels();
+  };
+
+  refreshServices = async () => {
     await this.props.services.filter();
+    if (this.props.services.networkError) {
+      throw new Error(this.props.services.networkError);
+    }
+    this.forceUpdatePanels();
+  };
+
+  refreshIssues = async () => {
     await this.props.myIssues.fetch();
+    if (this.props.myIssues.networkError) {
+      throw new Error(this.props.myIssues.networkError);
+    }
     this.forceUpdatePanels();
   };
 
@@ -241,14 +297,40 @@ export default class HomePage extends React.Component {
   };
 
   componentDidMount () {
-    this.updateInterval = setInterval(() => {
-      this.refresh();
-    }, UPDATE_TIMEOUT);
+    const initializeContinuousFetch = (id, call) => {
+      const {
+        stop,
+        fetch: fetchData
+      } = continuousFetch({
+        continuous: true,
+        intervalMS: UPDATE_TIMEOUT,
+        call,
+        fetchImmediate: true
+      });
+      this.stopInterval[id] = stop;
+      this.fetchData[id] = fetchData;
+    };
+    initializeContinuousFetch(
+      ContinuousFetchIdentifiers.activeRuns,
+      this.refreshActiveRuns.bind(this)
+    );
+    initializeContinuousFetch(
+      ContinuousFetchIdentifiers.completedRuns,
+      this.refreshCompletedRuns.bind(this)
+    );
+    initializeContinuousFetch(
+      ContinuousFetchIdentifiers.services,
+      this.refreshServices.bind(this)
+    );
+    initializeContinuousFetch(
+      ContinuousFetchIdentifiers.issues,
+      this.refreshIssues.bind(this)
+    );
     window.addEventListener('resize', this.onWindowResized);
   }
 
   componentWillUnmount () {
-    clearInterval(this.updateInterval);
+    Object.values(this.stopInterval || {}).forEach((stop) => stop());
     localStorage.setItem('LAST_VISITED', moment.utc().format('YYYY-MM-DD HH:mm:ss'));
     window.removeEventListener('resize', this.onWindowResized);
   }
