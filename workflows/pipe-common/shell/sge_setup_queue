@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ create_queue() {
   QUEUE=$1
   HOSTLIST=$2
   PE=$3
-
+  CP_CAP_SGE_TERMINATE_METHOD=${CP_CAP_SGE_TERMINATE_METHOD:-NONE}
   cat >./grid <<EOL
         qname                 $QUEUE
         hostlist              $HOSTLIST
@@ -65,7 +65,7 @@ create_queue() {
         starter_method        NONE
         suspend_method        NONE
         resume_method         NONE
-        terminate_method      NONE
+        terminate_method      $CP_CAP_SGE_TERMINATE_METHOD
         notify                00:00:01
         owner_list            NONE
         user_lists            NONE
