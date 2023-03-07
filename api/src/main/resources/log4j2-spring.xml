@@ -155,6 +155,10 @@
             <AppenderRef ref="Spring-Appender"/>
             <AppenderRef ref="Console-Appender"/>
         </Logger>
+        <Logger name="com.mchange" level="DEBUG" additivity="false">
+            <AppenderRef ref="App-Appender"/>
+            <AppenderRef ref="Console-Appender"/>
+        </Logger>
         <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" additivity="false">
             <level value="DEBUG" />
             <AppenderRef ref="Requests-Appender"/>
