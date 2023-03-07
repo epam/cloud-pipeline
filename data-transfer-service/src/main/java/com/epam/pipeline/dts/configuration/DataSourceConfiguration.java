@@ -28,16 +28,12 @@ import java.beans.PropertyVetoException;
 public class DataSourceConfiguration {
 
     @Bean
-    public DataSource dataSource(
-            @Value("${spring.datasource.url}") String dataSourceUrl,
-            @Value("${spring.datasource.username}") String user,
-            @Value("${spring.datasource.password}") String password,
-            @Value("${spring.datasource.driver-class-name}") String driver,
-            @Value("${datasource.pool.initial-size}") Integer initialPoolSize,
-            @Value("${datasource.pool.max-size}") Integer maxPoolSize,
-            @Value("${datasource.pool.connection.timeout:0}") Integer connectionTimeout,
-            @Value("${datasource.pool.debug.unreturned:false}") boolean debugUnreturnedConnections,
-            @Value("${datasource.pool.unreturned.timeout:0}") Integer unreturnedTimeout)
+    public DataSource dataSource(@Value("${spring.datasource.url}") String dataSourceUrl,
+                                 @Value("${spring.datasource.username}") String user,
+                                 @Value("${spring.datasource.password}") String password,
+                                 @Value("${spring.datasource.driver-class-name}") String driver,
+                                 @Value("${datasource.pool.initial-size}") Integer initialPoolSize,
+                                 @Value("${datasource.pool.max-size}") Integer maxPoolSize)
             throws PropertyVetoException {
         ComboPooledDataSource dataSource = new ComboPooledDataSource();
         dataSource.setDriverClass(driver);
@@ -46,9 +42,6 @@ public class DataSourceConfiguration {
         dataSource.setPassword(password);
         dataSource.setMaxPoolSize(maxPoolSize);
         dataSource.setInitialPoolSize(initialPoolSize);
-        dataSource.setCheckoutTimeout(connectionTimeout);
-        dataSource.setDebugUnreturnedConnectionStackTraces(debugUnreturnedConnections);
-        dataSource.setUnreturnedConnectionTimeout(unreturnedTimeout);
         return dataSource;
     }
 }
