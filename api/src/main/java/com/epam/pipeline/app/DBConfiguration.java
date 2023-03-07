@@ -47,6 +47,18 @@ public class DBConfiguration {
     @Value("${database.initial.pool.size}")
     private int initialPoolSize;
 
+    @Value("${datasource.pool.connection.timeout:0}")
+    private Integer connectionTimeout;
+
+    @Value("${datasource.pool.debug.unreturned:false}")
+    private boolean debugUnreturnedConnections;
+
+    @Value("${datasource.pool.unreturned.timeout:0}")
+    private Integer unreturnedTimeout;
+
+    @Value("${datasource.pool.helper.threads:3}")
+    private Integer helperThreads;
+
     @Bean(destroyMethod = "close")
     public DataSource dataSource() throws PropertyVetoException {
         ComboPooledDataSource dataSource = new ComboPooledDataSource();
@@ -56,6 +68,10 @@ public class DBConfiguration {
         dataSource.setPassword(jdbcPassword);
         dataSource.setMaxPoolSize(maxPoolSize);
         dataSource.setInitialPoolSize(initialPoolSize);
+        dataSource.setCheckoutTimeout(connectionTimeout);
+        dataSource.setDebugUnreturnedConnectionStackTraces(debugUnreturnedConnections);
+        dataSource.setUnreturnedConnectionTimeout(unreturnedTimeout);
+        dataSource.setNumHelperThreads(helperThreads);
         return dataSource;
     }
 }
