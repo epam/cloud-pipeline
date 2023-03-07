@@ -21,18 +21,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
-import com.epam.pipeline.entity.git.GitCommitEntry;
-import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.GitGroup;
-import com.epam.pipeline.entity.git.GitProject;
-import com.epam.pipeline.entity.git.GitProjectStorage;
-import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
-import com.epam.pipeline.entity.git.GitPushCommitEntry;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
-import com.epam.pipeline.entity.git.GitRepositoryUrl;
-import com.epam.pipeline.entity.git.GitTagEntry;
-import com.epam.pipeline.entity.git.GitlabUser;
+import com.epam.pipeline.entity.git.*;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -602,6 +591,12 @@ public class GitManager {
                         ListUtils.union(getContextPathList(path), getFilesToIgnore())
                 )
         ));
+    }
+
+    public GitlabIssue createIssue(final Long id, final GitlabIssue issue) throws GitClientException {
+        final Pipeline loadedPipeline = pipelineManager.load(id);
+        final String project = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
+        return getDefaultGitlabClient().createIssue(project, issue);
     }
 
     private List<String> getContextPathList(String path) {

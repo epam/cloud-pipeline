@@ -16,24 +16,7 @@
 
 package com.epam.pipeline.manager.git;
 
-import com.epam.pipeline.entity.git.GitCommitEntry;
-import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.GitFile;
-import com.epam.pipeline.entity.git.GitGroup;
-import com.epam.pipeline.entity.git.GitGroupRequest;
-import com.epam.pipeline.entity.git.GitHookRequest;
-import com.epam.pipeline.entity.git.GitProject;
-import com.epam.pipeline.entity.git.GitProjectRequest;
-import com.epam.pipeline.entity.git.GitProjectStorage;
-import com.epam.pipeline.entity.git.GitPushCommitEntry;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
-import com.epam.pipeline.entity.git.GitRepositoryUrl;
-import com.epam.pipeline.entity.git.GitTagEntry;
-import com.epam.pipeline.entity.git.GitTokenRequest;
-import com.epam.pipeline.entity.git.GitlabBranch;
-import com.epam.pipeline.entity.git.GitlabUser;
-import com.epam.pipeline.entity.git.GitlabVersion;
-import com.epam.pipeline.entity.git.UpdateGitFileRequest;
+import com.epam.pipeline.entity.git.*;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
@@ -423,6 +406,10 @@ public class GitlabClient {
             throws GitClientException {
         return execute(gitLabApi.forkProject(apiVersion,
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
+    }
+
+    public GitlabIssue createIssue(final String project, final GitlabIssue issue) throws GitClientException {
+        return execute(gitLabApi.createIssue(apiVersion, makeProjectId(namespace, project), issue));
     }
 
     public Optional<GitlabUser> findUser(final String userName) throws GitClientException {

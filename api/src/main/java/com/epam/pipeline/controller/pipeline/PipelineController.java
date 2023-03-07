@@ -30,12 +30,8 @@ import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
-import com.epam.pipeline.entity.git.GitCommitEntry;
-import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.*;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
-import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -850,5 +846,20 @@ public class PipelineController extends AbstractRestController {
             final HttpServletResponse response) throws IOException {
         final VersionStorageReportFile report = pipelineApiService.generateReportForVersionedStorage(id, filter);
         writeFileToResponse(response, report.getContent(), report.getName());
+    }
+
+    @PostMapping(value = "/pipeline/{id}/issue")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates Issue in corresponding Gitlab project.",
+            notes = "Creates Issue in corresponding Gitlab project.",
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitlabIssue> createIssue(
+            @PathVariable(value = ID) final Long id,
+            @RequestBody final GitlabIssue issue) throws IOException {
+        return Result.success(pipelineApiService.createIssue(id, issue));
     }
 }
