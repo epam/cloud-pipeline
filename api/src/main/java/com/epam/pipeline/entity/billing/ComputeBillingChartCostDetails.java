@@ -19,23 +19,17 @@ package com.epam.pipeline.entity.billing;
 import lombok.Builder;
 import lombok.Value;
 
-@Value
 @Builder
-public class InstanceBillingMetrics {
+@Value
+public class ComputeBillingChartCostDetails implements BillingChartDetails {
 
-    Long runsNumber;
-    Long runsDuration;
-    Long runsCost;
-    Long runsDiskCost;
-    Long runsComputeCost;
+    Long diskCost;
+    Long accumulatedDiskCost;
+    Long computeCost;
+    Long accumulatedComputeCost;
 
-    public static InstanceBillingMetrics empty() {
-        return InstanceBillingMetrics.builder()
-                .runsNumber(0L)
-                .runsDuration(0L)
-                .runsCost(0L)
-                .runsDiskCost(0L)
-                .runsDiskCost(0L)
-                .build();
+    @Override
+    public BillingChartCostDetailsType getType() {
+        return BillingChartCostDetailsType.COMPUTE_BILLING;
     }
 }

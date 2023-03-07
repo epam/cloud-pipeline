@@ -29,6 +29,8 @@ public class RunBillingWriterTest extends AbstractBillingWriterTest<RunBilling> 
                         .started(START_DATE_TIME)
                         .duration(ONE_HOUR)
                         .cost(ONE_DOLLAR)
+                        .diskCost(ONE_DOLLAR)
+                        .computeCost(ONE_DOLLAR)
                         .build(),
                 RunBilling.builder()
                         .runId(ID_2)
@@ -42,6 +44,8 @@ public class RunBillingWriterTest extends AbstractBillingWriterTest<RunBilling> 
                         .finished(FINISH_DATE_TIME)
                         .duration(TEN_HOURS)
                         .cost(TEN_DOLLARS)
+                        .diskCost(TEN_DOLLARS)
+                        .computeCost(TEN_DOLLARS)
                         .build());
     }
 }

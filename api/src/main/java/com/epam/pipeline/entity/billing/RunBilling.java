@@ -19,4 +19,6 @@ public class RunBilling {
     LocalDateTime finished;
     Long duration;
     Long cost;
+    Long diskCost;
+    Long computeCost;
 }
