@@ -119,7 +119,7 @@ public class BillingChartCostDetailsLoaderTest {
         assertAggregations(
             agg -> BillingChartCostDetailsLoader.buildQuery(
                     BillingCostDetailsRequest.builder().enabled(true)
-                            .grouping(BillingGrouping.TOOL).build(), agg),
+                            .grouping(BillingGrouping.USER).build(), agg),
                 ZERO, ZERO
         );
 

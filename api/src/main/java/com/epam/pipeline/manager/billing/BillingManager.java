@@ -30,7 +30,6 @@ import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.billing.billingdetails.BillingChartCostDetailsLoader;
-import com.epam.pipeline.manager.billing.billingdetails.StorageBillingCostDetailsLoader;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.billing.order.BillingOrderApplier;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -340,7 +339,8 @@ public class BillingManager {
                         .query(query));
 
         try {
-            return searchForGrouping(elasticsearchLowLevelClient, searchRequest, grouping.getCorrespondingField())
+            return searchForGrouping(elasticsearchLowLevelClient, searchRequest, grouping.getCorrespondingField(),
+                    costDetailsRequest)
                     .map(response -> getBillingChartInfoForGrouping(
                             from, to, grouping, response, isLoadDetails, costDetailsRequest))
                     .filter(CollectionUtils::isNotEmpty)
@@ -352,12 +352,14 @@ public class BillingManager {
     }
 
     private Optional<SearchResponse> searchForGrouping(final RestClient lowLevelClient, final SearchRequest request,
-                                                       final String groupingName) throws IOException {
+                                                       final String groupingName,
+                                                       final BillingCostDetailsRequest costDetailsRequest)
+            throws IOException {
         final String searchEndpoint = String.format(BillingUtils.ES_INDICES_SEARCH_PATTERN,
                 String.join(BillingUtils.ES_ELEMENTS_SEPARATOR, request.indices()));
         final HttpEntity httpEntity = new NStringEntity(request.source().toString(), ContentType.APPLICATION_JSON);
         final Map<String, String> parameters = new HashMap<>();
-        parameters.put(BillingUtils.ES_FILTER_PATH, buildResponseFilterForGrouping(groupingName));
+        parameters.put(BillingUtils.ES_FILTER_PATH, buildResponseFilterForGrouping(groupingName, costDetailsRequest));
         parameters.put(RestSearchAction.TYPED_KEYS_PARAM, Boolean.TRUE.toString());
         final Request lowLevelRequest = new Request(HttpPost.METHOD_NAME, searchEndpoint);
         MapUtils.emptyIfNull(parameters).forEach(lowLevelRequest::addParameter);
@@ -373,7 +375,7 @@ public class BillingManager {
         return Optional.of(SearchResponse.fromXContent(parser));
     }
 
-    private String buildResponseFilterForGrouping(final String groupingName) {
+    private String buildResponseFilterForGrouping(final String groupingName, final BillingCostDetailsRequest request) {
         final String groupingBuckets = String.format(BillingUtils.FIRST_LEVEL_TERMS_AGG_BUCKETS_PATTERN, groupingName);
         final List<String> responseFilters =
             Stream.concat(
@@ -384,7 +386,7 @@ public class BillingManager {
                     billingHelper.aggregateStorageUsageTotalSumBucket().getName(),
                     billingHelper.aggregateLastByDateDoc().getName()
                 ),
-                StorageBillingCostDetailsLoader.STORAGE_COST_DETAILS_AGGREGATION_MASKS.stream()
+                BillingChartCostDetailsLoader.getCostDetailsAggregations(request).stream()
             ).map(aggName -> String.join(BillingUtils.ES_DOC_FIELDS_SEPARATOR, groupingBuckets,
                 BillingUtils.ES_WILDCARD + aggName)).collect(Collectors.toList());
         responseFilters.add(groupingBuckets + BillingUtils.ES_DOC_FIELDS_SEPARATOR + BillingUtils.ES_WILDCARD +
@@ -487,12 +489,11 @@ public class BillingManager {
                                                 final Aggregations aggregations,
                                                 final boolean loadDetails,
                                                 final BillingCostDetailsRequest costDetailsRequest) {
-        final ParsedSum sumAggResult = aggregations.get(BillingUtils.COST_FIELD);
-        final long costVal = new Double(sumAggResult.getValue()).longValue();
         final BillingChartInfo.BillingChartInfoBuilder builder = BillingChartInfo.builder()
             .periodStart(from.atStartOfDay())
             .periodEnd(to.atTime(LocalTime.MAX))
-            .cost(costVal);
+            .cost(BillingUtils.parseSum(aggregations, BillingUtils.COST_FIELD));
+
         final Map<String, String> groupingInfo = new HashMap<>();
         final EntityBillingDetailsLoader detailsLoader = billingDetailsLoaders.get(grouping);
         final Map<String, String> defaultDetails = billingHelper.getLastByDateDocFields(aggregations)
@@ -549,13 +550,10 @@ public class BillingManager {
                                           final BillingCostDetailsRequest costDetailsRequest) {
         final Aggregations intervalAggregations = bucket.getAggregations();
         final BillingChartInfo.BillingChartInfoBuilder builder = BillingChartInfo.builder()
-            .groupingInfo(null);
-        final ParsedSum sumAggResult = intervalAggregations.get(BillingUtils.COST_FIELD);
-        final long costVal = new Double(sumAggResult.getValue()).longValue();
-        builder.cost(costVal);
-        final ParsedSimpleValue accumulatedSumAggResult = intervalAggregations.get(BillingUtils.ACCUMULATED_COST);
-        final long accumulatedCostVal = new Double(accumulatedSumAggResult.getValueAsString()).longValue();
-        builder.accumulatedCost(accumulatedCostVal);
+                .groupingInfo(null)
+                .cost(BillingUtils.parseSum(intervalAggregations, BillingUtils.COST_FIELD))
+                .accumulatedCost(BillingUtils.parseAccumulatedSum(intervalAggregations, BillingUtils.ACCUMULATED_COST));
+
         final DateTime date = (DateTime) bucket.getKey();
         final LocalDate periodStart = LocalDate.of(date.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
         builder.periodStart(periodStart.atStartOfDay());

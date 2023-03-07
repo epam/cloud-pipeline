@@ -38,6 +38,8 @@
         "compute_price": { "type": "long" },
         "disk_price": { "type": "long" },
         "cost": { "type": "long" },
+        "disk_cost": { "type": "long" },
+        "compute_cost": { "type": "long" },
 
         "owner": { "type": "keyword" },
         "owner_id": { "type": "keyword" },

@@ -114,6 +114,8 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field("compute_price", scaled(run.getComputePricePerHour()))
                 .field("disk_price", scaled(run.getDiskPricePerHour()))
                 .field("cost", billingInfo.getCost())
+                .field("disk_cost", billingInfo.getDiskCost())
+                .field("compute_cost", billingInfo.getComputeCost())
 
                 .field("started_date", asString(run.getStartDate()))
                 .field("finished_date", asString(run.getEndDate()));

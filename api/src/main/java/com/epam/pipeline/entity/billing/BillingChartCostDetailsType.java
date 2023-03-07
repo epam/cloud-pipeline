@@ -17,5 +17,5 @@
 package com.epam.pipeline.entity.billing;
 
 public enum BillingChartCostDetailsType {
-    STORAGE_BILLING
+    STORAGE_BILLING, COMPUTE_BILLING
 }
