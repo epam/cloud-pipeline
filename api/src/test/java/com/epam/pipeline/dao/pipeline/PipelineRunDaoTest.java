@@ -386,7 +386,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     public void searchGroupingRun() {
         Pipeline testPipeline = getPipeline();
         PipelineRun parent = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
-        PipelineRun child = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
+        createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
         PipelineRun lonely = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
         parent.setTags(Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1));
         pipelineRunDao.updateRunTags(parent);
@@ -399,8 +399,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertEquals(2, runs.size());
         assertEquals(lonely.getId(), runs.get(0).getId());
         assertEquals(parent.getId(), runs.get(1).getId());
-        assertEquals(1, runs.get(1).getChildRuns().size());
-        assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
+        assertEquals(1, runs.get(1).getChildRunsCount().intValue());
 
         assertThat(runs.get(1).getTags(), is(parent.getTags()));
         assertEquals(2L, pipelineRunDao.countRootRuns(filterVO, null).longValue());
