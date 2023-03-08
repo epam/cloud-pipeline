@@ -425,7 +425,7 @@ class StorageReports extends React.Component {
       const cellStyle = `padding: 0 5px;`;
       const rows = infos.map(info => {
         return `<tr style="${rowStyle}">
-          <td style="${cellStyle}">${info.tier}</td>
+          <td style="${cellStyle}">${getStorageClassName(info.tier)}</td>
           <td style="${cellStyle}">${info.current}</td>
           <td style="${cellStyle}">${info.oldVersion}</td>
           <td style="${cellStyle}">${info.total}</td>
