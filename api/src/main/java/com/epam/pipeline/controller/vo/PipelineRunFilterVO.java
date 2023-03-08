@@ -50,6 +50,7 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     private String prettyUrl;
 
     private boolean userModified = true;
+    private boolean eagerGrouping = true;
     private Map<String, String> tags;
 
     //these filters are used for ACL filtering

@@ -112,6 +112,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String updateRunInstanceQuery;
     private String updatePodIPQuery;
     private String loadRunsGroupingQuery;
+    private String loadRunsCountGroupingQuery;
     private String countRunGroupsQuery;
     private String createPipelineRunSidsQuery;
     private String deleteRunSidsByRunIdQuery;
@@ -340,13 +341,31 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .query(query, params, PipelineRunParameters.getExtendedRowMapper()));
     }
 
-    public List<PipelineRun> searchPipelineGroups(PagingRunFilterVO filter,
-                                                  PipelineRunFilterVO.ProjectFilter projectFilter) {
+    /**
+     * @deprecated because it is extremely inefficient. It collects unlimited amount of child runs.
+     * Use {@link #searchPipelineGroups(PagingRunFilterVO, PipelineRunFilterVO.ProjectFilter)} instead.
+     */
+    @Deprecated
+    public List<PipelineRun> eagerSearchPipelineGroups(PagingRunFilterVO filter,
+                                                       PipelineRunFilterVO.ProjectFilter projectFilter) {
         MapSqlParameterSource params = getPagingParameters(filter);
         String query = wherePattern.matcher(loadRunsGroupingQuery)
                 .replaceFirst(makeFilterCondition(filter, projectFilter, params, false));
         Collection<PipelineRun> runs = getNamedParameterJdbcTemplate()
                 .query(query, params, PipelineRunParameters.getRunGroupExtractor());
+        return addServiceUrls(runs.stream()
+                .filter(run -> run.getParentRunId() == null)
+                .sorted(getPipelineRunComparator())
+                .collect(Collectors.toList()));
+    }
+
+    public List<PipelineRun> searchPipelineGroups(PagingRunFilterVO filter,
+                                                  PipelineRunFilterVO.ProjectFilter projectFilter) {
+        MapSqlParameterSource params = getPagingParameters(filter);
+        String query = wherePattern.matcher(loadRunsCountGroupingQuery)
+                .replaceFirst(makeFilterCondition(filter, projectFilter, params, true));
+        Collection<PipelineRun> runs = getNamedParameterJdbcTemplate()
+                .query(query, params, PipelineRunParameters.getExtendedRowMapper(false, true));
         return addServiceUrls(runs.stream()
                 .filter(run -> run.getParentRunId() == null)
                 .sorted(getPipelineRunComparator())
@@ -758,6 +777,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         END_DATE,
         PARAMETERS,
         PARENT_ID,
+        CHILD_RUNS_COUNT,
         STATUS,
         COMMIT_STATUS,
         LAST_CHANGE_COMMIT_TIME,
@@ -893,11 +913,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 Map<Long, PipelineRun> runs = new HashMap<>();
                 Map<Long, List<PipelineRun>> childRuns = new HashMap<>();
                 while (rs.next()) {
-                    PipelineRun run = parsePipelineRun(rs);
-                    run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
-                    if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
-                        run.setQueued(rs.getBoolean(QUEUED.name()));
-                    }
+                    PipelineRun run = parseExtendedPipelineRun(rs);
                     runs.put(run.getId(), run);
                     if (run.getParentRunId() != null) {
                         childRuns.putIfAbsent(run.getParentRunId(), new ArrayList<>());
@@ -915,9 +931,13 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             };
         }
 
-
-        static RowMapper<PipelineRun> getRowMapper() {
-            return (rs, rowNum) -> parsePipelineRun(rs);
+        static PipelineRun parseExtendedPipelineRun(final ResultSet rs) throws SQLException {
+            PipelineRun run = parsePipelineRun(rs);
+            run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
+            if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
+                run.setQueued(rs.getBoolean(QUEUED.name()));
+            }
+            return run;
         }
 
         public static PipelineRun parsePipelineRun(ResultSet rs) throws SQLException {
@@ -1026,19 +1046,27 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             return run;
         }
 
+        static RowMapper<PipelineRun> getRowMapper() {
+            return (rs, rowNum) -> parsePipelineRun(rs);
+        }
+
         static RowMapper<PipelineRun> getExtendedRowMapper() {
             return getExtendedRowMapper(false);
         }
 
         static RowMapper<PipelineRun> getExtendedRowMapper(final boolean loadEnvVars) {
+            return getExtendedRowMapper(loadEnvVars, false);
+        }
+
+        static RowMapper<PipelineRun> getExtendedRowMapper(final boolean loadEnvVars,
+                                                           final boolean loadChildRunsCount) {
             return (rs, rowNum) -> {
-                PipelineRun run = parsePipelineRun(rs);
-                run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
-                if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
-                    run.setQueued(rs.getBoolean(QUEUED.name()));
-                }
+                PipelineRun run = parseExtendedPipelineRun(rs);
                 if (loadEnvVars) {
                     run.setEnvVars(getEnvVarsRowMapper().mapRow(rs, rowNum));
+                }
+                if (loadChildRunsCount) {
+                    run.setChildRunsCount(rs.getInt(CHILD_RUNS_COUNT.name()));
                 }
                 return run;
             };
@@ -1227,6 +1255,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunsGroupingQuery(String loadRunsGroupingQuery) {
         this.loadRunsGroupingQuery = loadRunsGroupingQuery;
+    }
+
+    @Required
+    public void setLoadRunsCountGroupingQuery(String loadRunsCountGroupingQuery) {
+        this.loadRunsCountGroupingQuery = loadRunsCountGroupingQuery;
     }
 
     @Required

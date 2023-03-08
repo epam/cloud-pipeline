@@ -432,8 +432,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertEquals(2, runs.size());
         assertEquals(lonely.getId(), runs.get(0).getId());
         assertEquals(parent.getId(), runs.get(1).getId());
-        assertEquals(1, runs.get(1).getChildRuns().size());
-        assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
+        assertEquals(1, runs.get(1).getChildRunsCount().intValue());
 
         assertThat(runs.get(1).getTags(), is(parent.getTags()));
         assertEquals(2L, pipelineRunDao.countRootRuns(filterVO, null).longValue());
