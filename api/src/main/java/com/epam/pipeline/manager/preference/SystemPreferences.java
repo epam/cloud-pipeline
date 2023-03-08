@@ -787,6 +787,8 @@ public class SystemPreferences {
             "system.usage.users.clean.delay",  Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_USAGE_USERS_STORE_DAYS = new IntPreference(
             "system.usage.users.store.days", 365, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_DISABLE_STORAGE_LINKS = new BooleanPreference(
+            "system.disable.storage.links", false, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

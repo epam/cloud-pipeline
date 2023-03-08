@@ -558,6 +558,9 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public void analyzePipelineRunsParameters(List<PipelineRun> pipelineRuns) {
+        if (preferenceManager.getPreference(SystemPreferences.SYSTEM_DISABLE_STORAGE_LINKS)) {
+            return;
+        }
         List<AbstractDataStorage> dataStorages = getDataStorages();
         pipelineRuns.forEach(pipelineRun -> {
             if (pipelineRun.getPipelineRunParameters() == null) {
