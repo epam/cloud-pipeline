@@ -48,6 +48,7 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     private String prettyUrl;
 
     private boolean userModified = true;
+    private boolean eagerGrouping = true;
 
     //these filters are used for ACL filtering
     @JsonIgnore
