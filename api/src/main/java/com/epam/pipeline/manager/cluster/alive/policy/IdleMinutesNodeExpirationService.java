@@ -47,7 +47,7 @@ public class IdleMinutesNodeExpirationService implements NodeExpirationService {
             if (keepAliveMinutes == null) {
                 return true;
             }
-            final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
+            final PipelineRun pipelineRun = runManager.loadPipelineRun(runId, false);
             final Date endDate = pipelineRun.getEndDate();
             if (endDate == null) {
                 return true;

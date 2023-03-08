@@ -188,7 +188,7 @@ public class ServerlessConfigurationManager {
         final Integer waitTime = preferenceManager.getPreference(SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE);
 
         for (int i = 0; i < maxRetryCount; i++) {
-            final PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
+            final PipelineRun pipelineRun = runManager.loadPipelineRun(runId, false);
             if (MapUtils.isNotEmpty(pipelineRun.getServiceUrl())) {
                 return pipelineRun;
             }

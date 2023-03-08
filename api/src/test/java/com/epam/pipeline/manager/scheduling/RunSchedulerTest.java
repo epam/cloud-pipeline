@@ -92,7 +92,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
         final RunConfiguration runConfiguration = createRunConfiguration();
 
         Mockito.when(pipelineRunDao.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
-        Mockito.when(pipelineRunManager.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
+        Mockito.when(pipelineRunManager.loadPipelineRun(Mockito.anyLong(), Mockito.eq(false)))
+                .thenReturn(pipelineRun);
         Mockito.when(pipelineRunDockerOperationManager.pauseRun(Mockito.anyLong(), Mockito.anyBoolean()))
                 .thenReturn(pipelineRun);
         Mockito.when(configurationManager.load(Mockito.anyLong())).thenReturn(runConfiguration);

@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -114,6 +115,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private static final long ONE = 1L;
 
         private final PipelineRunManager pipelineRunManager;
+        private final RunStatusManager runStatusManager;
         private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
         private final NotificationManager notificationManager;
         private final MonitoringESDao monitoringDao;
@@ -130,7 +132,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                       final MessageHelper messageHelper,
                                       final PreferenceManager preferenceManager,
                                       final StopServerlessRunManager stopServerlessRunManager,
-                                      final InstanceOfferManager instanceOfferManager) {
+                                      final InstanceOfferManager instanceOfferManager,
+                                      final RunStatusManager runStatusManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
             this.messageHelper = messageHelper;
@@ -139,6 +142,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             this.preferenceManager = preferenceManager;
             this.stopServerlessRunManager = stopServerlessRunManager;
             this.instanceOfferManager = instanceOfferManager;
+            this.runStatusManager = runStatusManager;
         }
 
         @Scheduled(cron = "0 0 0 ? * *")
@@ -471,10 +475,13 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES);
 
             final List<PipelineRun> pausedRuns = pipelineRunManager
-                    .loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSED)).stream()
-                    .map(run -> pipelineRunManager.loadPipelineRunWithStatuses(run.getId()))
-                    .collect(Collectors.toList());
+                    .loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSED));
+            final Map<Long, List<RunStatus>> statuses = runStatusManager.loadRunStatus(
+                    pausedRuns.stream()
+                    .map(PipelineRun::getId)
+                    .collect(Collectors.toList()));
 
+            pausedRuns.forEach(run -> run.setRunStatuses(statuses.get(run.getId())));
             processLongPausedRuns(pausedRuns, action, actionTimeout);
         }
 
