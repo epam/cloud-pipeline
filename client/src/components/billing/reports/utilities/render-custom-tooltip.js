@@ -94,6 +94,7 @@ function setTooltipStyles (tooltip, model, chart) {
     left: ${left}px;
     top: ${top}px;
     will-change: left, top;
+    border-radius: 5px;
   `;
   tooltipContainer.style.cssText = `
     display: flex;
