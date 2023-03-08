@@ -87,6 +87,7 @@ import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -128,6 +129,7 @@ import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 
+@Slf4j
 @Service
 public class PipelineRunManager {
 
@@ -714,8 +716,14 @@ public class PipelineRunManager {
             return new PagedResult<>(Collections.emptyList(), 0);
         }
         PagedResult<List<PipelineRun>> result;
+        // todo: Get rid of grouping requests altogether.
+        //  Use a single sql request which always counts child runs.
         if (filter.useGrouping()) {
-            result = searchRunsGrouping(filter, projectFilter);
+            if (filter.isEagerGrouping()) {
+                result = eagerSearchRunsGrouping(filter, projectFilter);
+            } else {
+                result = searchRunsGrouping(filter, projectFilter);
+            }
         } else {
             List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filter, projectFilter);
             int count = pipelineRunDao.countFilteredPipelineRuns(filter, projectFilter);
@@ -1198,6 +1206,19 @@ public class PipelineRunManager {
         LOGGER.debug("Retrieved image size: {} b, image size on disk: {} Gb, total disk size: {} Gb",
                 imageSizeBytes, requiredDiskSizeGb, requiredDiskSizeGb + requestedDiskSize);
         configuration.setEffectiveDiskSize(Math.toIntExact(requiredDiskSizeGb + requestedDiskSize));
+    }
+
+
+    /**
+     * @deprecated because its underlying method is deprecated.
+     * @see PipelineRunDao#eagerSearchPipelineGroups(PagingRunFilterVO, PipelineRunFilterVO.ProjectFilter)
+     */
+    @Deprecated
+    private PagedResult<List<PipelineRun>> eagerSearchRunsGrouping(PagingRunFilterVO filter,
+                                                                   PipelineRunFilterVO.ProjectFilter projectFilter) {
+        log.debug("Executing deprecated eager filter runs grouping request...");
+        List<PipelineRun> groupedRuns = pipelineRunDao.eagerSearchPipelineGroups(filter, projectFilter);
+        return new PagedResult<>(groupedRuns, pipelineRunDao.countRootRuns(filter, projectFilter));
     }
 
     private PagedResult<List<PipelineRun>> searchRunsGrouping(PagingRunFilterVO filter,
