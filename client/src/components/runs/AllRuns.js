@@ -176,7 +176,7 @@ class AllRuns extends React.Component {
       };
       const request = new PipelineRunSingleFilter(
         requestPayload,
-        true,
+        false,
         false
       );
       let token = this.token;

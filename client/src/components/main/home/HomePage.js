@@ -58,14 +58,14 @@ const ContinuousFetchIdentifiers = {
       userModified: false,
       statuses: ['RUNNING', 'PAUSING', 'PAUSED', 'RESUMING'],
       ...myRunsSubFilter
-    }, true),
+    }),
     completedRuns: new PipelineRunFilter({
       page: 1,
       pageSize: PAGE_SIZE,
       userModified: false,
       statuses: ['STOPPED', 'FAILURE', 'SUCCESS'],
       ...myRunsSubFilter
-    }, true),
+    }),
     myIssues: stores.myIssues,
     services: new PipelineRunServices({
       page: 1,

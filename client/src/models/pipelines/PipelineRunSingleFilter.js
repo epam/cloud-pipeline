@@ -22,10 +22,10 @@ export default class PipelineRunSingleFilter extends RemotePost {
   static auto = false;
   params;
 
-  constructor (params, loadLinks = false, fetch = true) {
+  constructor (params, fetch = true) {
     super();
     this.params = params;
-    this.url = `/run/filter?loadLinks=${loadLinks}`;
+    this.url = '/run/filter';
     if (fetch) {
       this.filter();
     }
