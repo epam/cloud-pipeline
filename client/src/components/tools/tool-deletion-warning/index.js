@@ -226,7 +226,7 @@ async function fetchActiveRuns (dockerImages) {
     userModified: false,
     statuses: ['RUNNING', 'PAUSING', 'PAUSED', 'RESUMING'],
     dockerImages
-  }, false, false);
+  }, false);
   await request.filter();
   if (request.loaded) {
     return {

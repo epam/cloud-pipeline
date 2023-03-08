@@ -19,10 +19,10 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import moment from 'moment-timezone';
-import pipelineRun from '../../models/pipelines/PipelineRun';
 import {openReRunForm} from '../runs/actions';
 import RunTable from '../runs/RunTable';
 import compareArrays from '../../utils/compareArrays';
+import PipelineRunFilter from '../../models/pipelines/PipelineRunFilter';
 import styles from './Tools.css';
 
 const PAGE_SIZE = 20;
@@ -83,7 +83,7 @@ export default class ToolHistory extends React.Component {
       statuses: DEFAULT_RUN_STATUSES,
       owners: []
     };
-    this._runFilter = pipelineRun.runFilter(filterParams, true);
+    this._runFilter = new PipelineRunFilter(filterParams);
   };
 
   handleTableChange = (pagination, filter) => {
@@ -120,7 +120,7 @@ export default class ToolHistory extends React.Component {
       endDateTo,
       userModified: modified
     };
-    this.runFilter.filter(params, true);
+    this.runFilter.filter(params);
   };
 
   reloadTable = () => {

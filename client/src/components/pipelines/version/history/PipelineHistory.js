@@ -18,6 +18,7 @@ import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {Link} from 'react-router';
 import {Row} from 'antd';
+import moment from 'moment-timezone';
 import pipelines from '../../../../models/pipelines/Pipelines';
 import styles from './PipelineHistory.css';
 import RunTable from '../../../runs/RunTable';
@@ -25,7 +26,7 @@ import connect from '../../../../utils/connect';
 import pipelineRun from '../../../../models/pipelines/PipelineRun';
 import parseQueryParameters from '../../../../utils/queryParameters';
 import {openReRunForm} from '../../../runs/actions';
-import moment from 'moment-timezone';
+import PipelineRunFilter from '../../../../models/pipelines/PipelineRunFilter';
 
 const pageSize = 20;
 
@@ -50,7 +51,7 @@ const pageSize = 20;
 
   return {
     allVersions,
-    runFilter: pipelineRun.runFilter(filterParams, true),
+    runFilter: new PipelineRunFilter(filterParams),
     pipeline: pipelines.getPipeline(params.id),
     pipelineId: params.id,
     version: params.version,
@@ -60,8 +61,7 @@ const pageSize = 20;
 })
 @observer
 export default class PipelineHistory extends Component {
-
-  handleTableChange (pagination, filter) {
+  handleTableChange = (pagination, filter) => {
     const {current, pageSize} = pagination;
     let modified = false;
     const statuses = filter.statuses ? filter.statuses : undefined;
@@ -103,8 +103,8 @@ export default class PipelineHistory extends Component {
       params.versions = [this.props.version];
     }
 
-    this.props.runFilter.filter(params, true);
-  }
+    this.props.runFilter.filter(params);
+  };
 
   launchPipeline = (run) => {
     return openReRunForm(run, this.props);
@@ -142,12 +142,12 @@ export default class PipelineHistory extends Component {
         {this.renderVersionsSwitch()}
         <RunTable
           onInitialized={this.initializeRunTable}
-          useFilter={true}
+          useFilter
           className={styles.runTable}
           loading={this.props.runFilter.pending}
           dataSource={this.props.runFilter.value}
-          handleTableChange={::this.handleTableChange}
-          versionsDisabled={true}
+          handleTableChange={this.handleTableChange}
+          versionsDisabled
           pipelines={this.props.pipeline.pending ? [] : [this.props.pipeline.value]}
           pagination={{total: this.props.runFilter.total, pageSize}}
           reloadTable={this.reloadTable}

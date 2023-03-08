@@ -23,11 +23,11 @@ import LoadingView from '../../special/LoadingView';
 import EditableField from '../../special/EditableField';
 import {Alert, Icon, Row} from 'antd';
 import connect from '../../../utils/connect';
-import pipelineRun from '../../../models/pipelines/PipelineRun';
 import {openReRunForm} from '../../runs/actions';
 import moment from 'moment-timezone';
 import styles from './Browser.css';
 import HiddenObjects from '../../../utils/hidden-objects';
+import PipelineRunFilter from '../../../models/pipelines/PipelineRunFilter';
 
 const PAGE_SIZE = 20;
 
@@ -44,7 +44,7 @@ const PAGE_SIZE = 20;
     userModified: false
   };
   return {
-    runFilter: pipelineRun.runFilter(filterParams, true),
+    runFilter: new PipelineRunFilter(filterParams),
     folder: folders.load(params.id),
     folderId: params.id,
     id: params.id,
@@ -54,7 +54,6 @@ const PAGE_SIZE = 20;
 })
 @observer
 export default class ProjectHistory extends React.Component {
-
   launchPipeline = (run) => {
     return openReRunForm(run, this.props);
   };
@@ -68,7 +67,7 @@ export default class ProjectHistory extends React.Component {
     this.runTable = control;
   };
 
-  handleTableChange (pagination, filter) {
+  handleTableChange = (pagination, filter) => {
     const {current, pageSize} = pagination;
     let modified = false;
     const statuses = filter.statuses ? filter.statuses : undefined;
@@ -105,8 +104,8 @@ export default class ProjectHistory extends React.Component {
       parentId,
       userModified: modified
     };
-    this.props.runFilter.filter(params, true);
-  }
+    this.props.runFilter.filter(params);
+  };
 
   render () {
     if (this.props.folder.pending && !this.props.folder.loaded) {
@@ -123,7 +122,10 @@ export default class ProjectHistory extends React.Component {
             <tr>
               <td>
                 <Row type="flex" className={styles.itemHeader} align="middle">
-                  <Icon type="clock-circle-o" className={`${styles.editableControl} ${folderTitleClassName}`} />
+                  <Icon
+                    type="clock-circle-o"
+                    className={`${styles.editableControl} ${folderTitleClassName}`}
+                  />
                   {
                     this.props.folder.value.locked &&
                     <Icon
@@ -131,7 +133,7 @@ export default class ProjectHistory extends React.Component {
                       type="lock" />
                   }
                   <EditableField
-                    readOnly={true}
+                    readOnly
                     className={folderTitleClassName}
                     allowEpmty={false}
                     editStyle={{flex: 1}}
@@ -146,12 +148,16 @@ export default class ProjectHistory extends React.Component {
         </table>
         <RunTable
           onInitialized={this.initializeRunTable}
-          useFilter={true}
+          useFilter
           className={styles.runTable}
           loading={this.props.runFilter.pending}
           dataSource={this.props.runFilter.value}
-          handleTableChange={::this.handleTableChange}
-          pipelines={this.props.pipelines.pending ? [] : (this.props.pipelines.value || []).map(p => p)}
+          handleTableChange={this.handleTableChange}
+          pipelines={
+            this.props.pipelines.pending
+              ? []
+              : (this.props.pipelines.value || []).map(p => p)
+          }
           pagination={{total: this.props.runFilter.total, pageSize: PAGE_SIZE}}
           reloadTable={this.reloadTable}
           launchPipeline={this.launchPipeline}

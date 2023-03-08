@@ -55,6 +55,7 @@ import MultizoneUrl from '../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../utils/multizone';
 import getMaintenanceDisabledButton from './controls/get-maintenance-mode-disabled-button';
 import confirmPause from './actions/pause-confirmation';
+import DataStorageLink from '../special/data-storage-link';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -1138,26 +1139,8 @@ export default class RunTable extends localization.LocalizedReactComponent {
       const valueSelector = () => {
         return runParameter.resolvedValue || runParameter.value || '';
       };
-      if (runParameter.dataStorageLinks) {
+      if (/^(input|output|common|path)$/i.test(runParameter.type)) {
         const valueParts = valueSelector().split(/[,|]/);
-        const urls = [];
-        for (let i = 0; i < valueParts.length; i++) {
-          const value = valueParts[i].trim();
-          const [link] = runParameter.dataStorageLinks.filter(link => {
-            return link.absolutePath && value.toLowerCase() === link.absolutePath.toLowerCase();
-          });
-          if (link) {
-            let url = `/storage/${link.dataStorageId}`;
-            if (link.path && link.path.length) {
-              url = `/storage/${link.dataStorageId}?path=${link.path}`;
-            }
-            urls.push((
-              <Link key={i} to={url}>{value}</Link>
-            ));
-          } else {
-            urls.push(<span key={i}>{value}</span>);
-          }
-        }
         return (
           <tr key={runParameter.name}>
             <td style={{verticalAlign: 'top', paddingLeft: 5}}>
@@ -1165,7 +1148,21 @@ export default class RunTable extends localization.LocalizedReactComponent {
             </td>
             <td>
               <ul>
-                {urls.map((url, index) => <li key={index}>{url}</li>)}
+                {
+                  valueParts.map((value, index) => (
+                    <li
+                      key={`${value}-${index}`}
+                    >
+                      <DataStorageLink
+                        key={`link-${value}-${index}`}
+                        path={value}
+                        isFolder={/^output$/i.test(runParameter.type) ? true : undefined}
+                      >
+                        {value}
+                      </DataStorageLink>
+                    </li>
+                  ))
+                }
               </ul>
             </td>
           </tr>

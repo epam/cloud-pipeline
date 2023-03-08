@@ -317,7 +317,7 @@ export async function findJobWithDockerImage (options = {}) {
     userModified: false,
     statuses: ['RUNNING'],
     owners
-  }, true, false);
+  }, false);
   await request.filter();
   if (request.error) {
     throw new Error(request.error);

@@ -428,7 +428,7 @@ export async function getBatchJobs (filters = {}) {
   if (pipeline) {
     appendTag('analysisPipeline', pipeline);
   }
-  const request = new PipelineRunSingleFilter(payload, false, false);
+  const request = new PipelineRunSingleFilter(payload, false);
   await request.filter();
   if (request.error) {
     throw new Error(request.error);
