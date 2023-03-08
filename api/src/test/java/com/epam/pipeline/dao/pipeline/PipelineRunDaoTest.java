@@ -419,7 +419,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     public void searchGroupingRun() {
         Pipeline testPipeline = getPipeline();
         PipelineRun parent = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
-        PipelineRun child = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
+        createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
         PipelineRun lonely = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
         parent.setTags(Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1));
         pipelineRunDao.updateRunTags(parent);
