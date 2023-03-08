@@ -172,7 +172,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                 try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
                     Pod pod = client.pods().inNamespace(kubeNamespace).withName(run.getPodId()).get();
                     //check maybe run was already processed with master node
-                    PipelineRun currentRunState = pipelineRunManager.loadPipelineRun(run.getId());
+                    PipelineRun currentRunState = pipelineRunManager.loadPipelineRun(run.getId(), false);
                     if (pod == null && currentRunState.getStatus().isFinal()) {
                         LOGGER.debug("Run ID {} is already in final status {}",
                                 run.getId(), currentRunState.getStatus());
@@ -348,7 +348,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                 String runIdLabel = getRunIdLabel(worker);
                 LOGGER.debug("Clearing worker {} node for parent run {}.", runIdLabel, run.getId());
                 Long workerId = Long.parseLong(runIdLabel);
-                PipelineRun workerRun = pipelineRunManager.loadPipelineRun(workerId);
+                PipelineRun workerRun = pipelineRunManager.loadPipelineRun(workerId, false);
                 getPodLogs(workerRun, worker);
                 workerRun.setTerminating(false);
                 workerRun.setStatus(run.getStatus());
