@@ -177,7 +177,7 @@ public class InstanceOfferManager {
 
     public PipelineRunPrice getPipelineRunEstimatedPrice(Long runId, Long regionId) {
         final Long actualRegionId = defaultRegionIfNull(regionId);
-        PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
+        PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId, false);
         RunInstance runInstance = pipelineRun.getInstance();
         boolean spot = isSpotRequest(runInstance.getSpot());
         double computePricePerHour = getPricePerHourForInstance(runInstance.getNodeType(), spot, actualRegionId);

@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -135,6 +136,8 @@ public class ResourceMonitoringManagerTest {
     private AuthManager authManager;
     @Mock
     private PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+    @Mock
+    private RunStatusManager runStatusManager;
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -165,7 +168,8 @@ public class ResourceMonitoringManagerTest {
                                                                         monitoringESDao,
                                                                         messageHelper,
                                                                         preferenceManager,
-                                                                        instanceOfferManager);
+                                                                        instanceOfferManager,
+                                                                        runStatusManager);
         resourceMonitoringManager = new ResourceMonitoringManager(core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
@@ -689,8 +693,8 @@ public class ResourceMonitoringManagerTest {
         final PipelineRun longPausedRun = getPausedRun(LONG_PAUSED_ACTION_TIMEOUT + 1);
         final List<PipelineRun> runs = Collections.singletonList(longPausedRun);
         when(pipelineRunManager.loadRunsByStatuses(any())).thenReturn(runs);
-        when(pipelineRunManager.loadPipelineRunWithStatuses(eq(PAUSED_RUN_ID)))
-                .thenReturn(longPausedRun);
+        when(runStatusManager.loadRunStatus(eq(Collections.singletonList(PAUSED_RUN_ID))))
+                .thenReturn(Collections.singletonMap(PAUSED_RUN_ID, longPausedRun.getRunStatuses()));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
                 .thenReturn(LongPausedRunAction.STOP.name());
 

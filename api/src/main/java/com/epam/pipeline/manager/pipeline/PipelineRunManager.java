@@ -263,7 +263,7 @@ public class PipelineRunManager {
     public PipelineRun runPod(PipelineStart runVO) {
         Assert.notNull(runVO.getCmdTemplate(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "cmd_template"));
-        PipelineRun parentRun = loadPipelineRun(runVO.getUseRunId());
+        PipelineRun parentRun = loadPipelineRun(runVO.getUseRunId(), false);
         Assert.state(parentRun.getStatus() == TaskStatus.RUNNING,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_RUNNING, runVO.getUseRunId()));
         checkRunLaunchLimits(runVO);
@@ -330,7 +330,7 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void prolongIdleRun(Long runId) {
-        PipelineRun run = loadPipelineRun(runId);
+        PipelineRun run = loadPipelineRun(runId, false);
         run.setLastIdleNotificationTime(null);
         run.setLastNotificationTime(null);
         run.setProlongedAtTime(DateUtils.nowUTC());
@@ -472,7 +472,7 @@ public class PipelineRunManager {
     }
 
     private Optional<PipelineRun> resolveParentRun(final Long parentRunId, final PipelineConfiguration configuration) {
-        return resolveParentRunId(parentRunId, configuration).map(this::loadPipelineRun);
+        return resolveParentRunId(parentRunId, configuration).map(id -> loadPipelineRun(id, false));
     }
 
     private Optional<Long> resolveParentRunId(final Long parentRunId, final PipelineConfiguration configuration) {
@@ -492,6 +492,11 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public PipelineRun loadPipelineRun(Long id) {
+        return loadPipelineRun(id, true);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public PipelineRun loadPipelineRun(Long id, boolean withLinks) {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, id));
@@ -502,7 +507,9 @@ public class PipelineRunManager {
         }
         pipelineRun.setPipelineRunParameters(
                 replaceParametersWithEnvVars(pipelineRun.getPipelineRunParameters(), pipelineRun.getEnvVars()));
-        dataStorageManager.analyzePipelineRunsParameters(Collections.singletonList(pipelineRun));
+        if (withLinks) {
+            dataStorageManager.analyzePipelineRunsParameters(Collections.singletonList(pipelineRun));
+        }
         return pipelineRun;
     }
 
@@ -513,7 +520,7 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public AbstractSecuredEntity loadRunParent(Long runId) {
-        PipelineRun run = loadPipelineRun(runId);
+        PipelineRun run = loadPipelineRun(runId, false);
         return loadRunParent(run);
     }
 
@@ -537,7 +544,7 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public PipelineConfiguration loadRunConfiguration(Long id) throws GitClientException {
-        PipelineRun pipelineRun = loadPipelineRun(id);
+        PipelineRun pipelineRun = loadPipelineRun(id, false);
         return versionManager
                 .loadParametersFromScript(pipelineRun.getPipelineId(),
                         pipelineRun.getVersion(), pipelineRun.getConfigName());
@@ -1089,7 +1096,7 @@ public class PipelineRunManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final List<InstanceDisk> disks) {
-        final PipelineRun run = loadPipelineRun(runId);
+        final PipelineRun run = loadPipelineRun(runId, false);
         final RunInstance instance = run.getInstance();
         if (disks.isEmpty()) {
             LOGGER.warn("Run #{} price per hour won't be adjusted since no disks are provided.", runId);
@@ -1166,7 +1173,7 @@ public class PipelineRunManager {
     }
 
     private void setParentInstance(PipelineRun run, Long parentNodeId) {
-        PipelineRun parentRun = loadPipelineRun(parentNodeId);
+        PipelineRun parentRun = runCRUDService.loadRunById(parentNodeId);
         run.setInstance(parentRun.getInstance());
     }
 
