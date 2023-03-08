@@ -355,5 +355,8 @@ export function getItemDetailsByMetrics (dataItem, metrics) {
   const layoutInfo = (info) =>
     // eslint-disable-next-line max-len
     `${getStorageClassName(info.tier)}: ${info.total} (current: ${info.current}, old version: ${info.oldVersion})`;
-  return `\n${infos.map(layoutInfo).join('\n')}`;
+  return {
+    text: `\n${infos.map(layoutInfo).join('\n')}`,
+    infos
+  };
 }

@@ -24,7 +24,7 @@ import {
 } from './extensions';
 import Export from '../export';
 import {discounts} from '../discounts';
-import {costTickFormatter} from '../utilities';
+import {costTickFormatter, renderCustomTooltip} from '../utilities';
 import QuotaSummaryChartsTitle from './quota-summary-chart';
 
 function toValueFormat (value) {
@@ -132,7 +132,8 @@ function BarChart (
     quotaGroup,
     highlightTickFn,
     highlightTickStyle = {},
-    extraTooltipForItem = ((o) => undefined)
+    extraTooltipForItem = ((o) => undefined),
+    renderTooltipFn
   }
 ) {
   if (!request) {
@@ -277,6 +278,15 @@ function BarChart (
         // reverse tooltip orders
         return b - a;
       },
+      enabled: !renderTooltipFn,
+      ...(renderTooltipFn && {
+        custom: function (model) {
+          const item = model.dataPoints && model.dataPoints.length > 0
+            ? filteredData[model.dataPoints[0].index]
+            : undefined;
+          renderCustomTooltip(item, model, this._chart, renderTooltipFn);
+        }
+      }),
       callbacks: {
         label: function (tooltipItem, chart) {
           const dataset = chart.datasets[tooltipItem.datasetIndex];

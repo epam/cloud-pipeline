@@ -20,3 +20,4 @@ export {default as numberFormatter} from './number-formatter';
 export {getUserDisplayInfo, default as DisplayUser} from './display-user';
 export {default as ResizableContainer} from './resizable-container';
 export {default as getPeriodMonths} from './get-period-months';
+export {default as renderCustomTooltip} from './render-custom-tooltip';

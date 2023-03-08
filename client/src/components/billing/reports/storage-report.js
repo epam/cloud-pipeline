@@ -390,6 +390,73 @@ class StorageReports extends React.Component {
     return null;
   };
 
+  getCustomChartTooltip = (item, model) => {
+    if (!item || !model) {
+      return;
+    }
+    const {infos} = this.extraTooltipForItemCallback(item.item) || {};
+    const getMarker = (index) => {
+      const colors = model.labelColors[index];
+      const makerStyles = `
+        background: ${colors.backgroundColor};
+        border: 1px solid ${colors.borderColor};
+        width: 13px;
+        height: 13px;
+        display: block;
+      `;
+      return `<div style="background: currentColor">
+        <span style="${makerStyles}">
+        </span>
+      </div>`;
+    };
+    const getMainInfo = () => {
+      const bodyLines = model.body.map(({lines}) => lines);
+      return bodyLines.map((line, index) => {
+        return line && line.length > 0
+          ? `<div style="display: flex; align-items: center">
+            ${getMarker(index)}
+            <span style="margin-left: 5px">${line}</span>
+          </div>`
+          : undefined;
+      }).filter(Boolean).join('');
+    };
+    const getTable = () => {
+      const rowStyle = `border-bottom: 1px solid ${model.bodyFontColor};`;
+      const cellStyle = `padding: 0 5px;`;
+      const rows = infos.map(info => {
+        return `<tr style="${rowStyle}">
+          <td style="${cellStyle}">${info.tier}</td>
+          <td style="${cellStyle}">${info.current}</td>
+          <td style="${cellStyle}">${info.oldVersion}</td>
+          <td style="${cellStyle}">${info.total}</td>
+        </tr>`;
+      }).join('');
+      return `
+        <table style="border-collapse: collapse; margin-top: 10px;">
+          <tr style="${rowStyle}">
+            <th style="${cellStyle}">Storage class</th>
+            <th style="${cellStyle}">Current</th>
+            <th style="${cellStyle}">Old ver.</th>
+            <th style="${cellStyle}">Total</th>
+          </tr>
+          ${rows}
+        </table>
+      `;
+    };
+    const titleStyles = `
+      display: inline-block;
+      margin-bottom: 3px;`;
+    const title = (model.title || [])
+      .map(title => `<b style="${titleStyles}">${title}</b>`)
+      .join('');
+    const body = `<div style="display: flex; flex-direction: column">
+        ${getMainInfo()}
+        ${getTable()}
+      </div>
+    `;
+    return title.concat(body);
+  };
+
   render () {
     const {
       storages,
@@ -554,7 +621,7 @@ class StorageReports extends React.Component {
                               highlightTickStyle={{
                                 fontColor: reportThemes.errorColor
                               }}
-                              extraTooltipForItem={this.extraTooltipForItemCallback}
+                              renderTooltipFn={this.getCustomChartTooltip}
                             />
                           </div>
                         )
