@@ -24,7 +24,7 @@ class PipelineRunFilter extends Remote {
   static auto = false;
   refreshInterval;
 
-  constructor (params, loadLinks = false) {
+  constructor (params) {
     super();
     let stringifiedParams;
     try {
@@ -40,7 +40,7 @@ class PipelineRunFilter extends Remote {
       body: stringifiedParams
     };
     this.params = params;
-    this.url = `/run/filter?loadLinks=${loadLinks}`;
+    this.url = '/run/filter';
   };
 
   startRefreshInterval () {

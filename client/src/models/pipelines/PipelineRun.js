@@ -112,7 +112,7 @@ class PipelineRun extends Remote {
   }
   /* eslint-enable */
 
-  runFilter = (params, loadLinks = false) => (new PipelineRunFilter(params, loadLinks));
+  runFilter = (params) => new PipelineRunFilter(params);
   _logCache = new Map();
 
   logs (runId, taskName, parameters) {

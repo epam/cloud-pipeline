@@ -24,11 +24,11 @@ class PipelineRunFilter extends RemotePost {
   static auto = false;
   refreshInterval;
 
-  constructor (params, loadLinks = false) {
+  constructor (params) {
     super();
     this.params = params;
     this.showOnlyActiveWorkers = false;
-    this.url = `/run/filter?loadLinks=${loadLinks}`;
+    this.url = '/run/filter';
     this.fetch();
   };
 

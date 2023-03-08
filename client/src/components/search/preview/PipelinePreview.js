@@ -48,7 +48,7 @@ const PAGE_SIZE = 20;
         pageSize: PAGE_SIZE,
         pipelineIds: [params.item.id],
         userModified: false
-      }, false)
+      })
       : null,
     metadata: metadataLoad(params, 'PIPELINE', stores)
   };
