@@ -26,10 +26,13 @@ def get_service_name():
 
 HA_ELECTION_PERIOD_SEC = int(os.environ['HA_ELECTION_PERIOD_SEC'])
 HA_VOTE_EXPIRATION_PERIOD_SEC = int(os.environ['HA_VOTE_EXPIRATION_PERIOD_SEC'])
+HA_ELECTION_SET_SELF_LABELS = os.getenv('HA_ELECTION_SET_SELF_LABELS', 'False').lower() == 'true'
 SERVICE_NAME = get_service_name()
 ELECTION_TIME_LABEL = SERVICE_NAME + "/service-leader-election-time"
 LEADER_NAME_LABEL = SERVICE_NAME + "/service-leader"
-
+LEADERSHIP_TYPE_LABEL = SERVICE_NAME + "/service-leader-type"
+LEADERSHIP_TYPE_LEADER = "leader"
+LEADERSHIP_TYPE_COMMON = "common"
 
 def get_my_pod_name():
     return os.environ['HOSTNAME']
@@ -67,7 +70,25 @@ def set_leader_labels(api, name, election_time):
     deploy.labels[LEADER_NAME_LABEL] = name
     deploy.update()
     print("[{}] selected as leader".format(name))
+    check_self_labels(api, name)
 
+def check_self_labels(api, leader_name):
+    if not HA_ELECTION_SET_SELF_LABELS:
+        return
+    my_name = get_my_pod_name()
+    leadership_type = LEADERSHIP_TYPE_LEADER \
+                        if leader_name == my_name \
+                        else LEADERSHIP_TYPE_COMMON
+    
+    pod = pykube.Pod.objects(api).get_by_name(my_name)
+    my_current_leadership_type = ""
+    if LEADERSHIP_TYPE_LABEL in pod.labels:
+        my_current_leadership_type = pod.labels[LEADERSHIP_TYPE_LABEL]
+    if my_current_leadership_type != leadership_type:
+        pod.labels[LEADERSHIP_TYPE_LABEL] = leadership_type
+        pod.update()
+        print("[{}] labeled as {}={}".format(
+            my_name, LEADERSHIP_TYPE_LABEL, leadership_type))
 
 def get_leader_name(metadata):
     name = None
@@ -98,6 +119,7 @@ def check_leader_info_labels(sync_start_epochs):
             vote_diff = sync_start_epochs - prev_leader_selection_time
             if my_name != leader_name and is_pod_alive(api, leader_name) and vote_diff < HA_VOTE_EXPIRATION_PERIOD_SEC:
                 print("Keep [{}] as active leader.".format(leader_name))
+                check_self_labels(api, leader_name)
                 return
         else:
             print("Leader [{}] without election timestamp was found, change the leader to current one."
