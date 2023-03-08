@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,26 @@ import java.util.concurrent.TimeUnit;
 
 import com.epam.pipeline.config.JsonMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.stereotype.Component;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.DispatcherServlet;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+
+import javax.servlet.FilterChain;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 @Configuration
 public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
@@ -97,4 +105,19 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
         return new JsonMapper();
     }
 
+    @WebFilter(urlPatterns = {"/*"})
+    @Component
+    @ConditionalOnProperty(name = "server.override.host.header")
+    public static class HeaderFilter extends OncePerRequestFilter {
+
+        @Value("${kube.current.pod.name}")
+        private String kubePodName;
+
+        @Override
+        protected void doFilterInternal(final HttpServletRequest request,
+                                        final HttpServletResponse response,
+                                        final FilterChain filterChain) {
+            response.setHeader("Host", kubePodName);
+        }
+    }
 }
