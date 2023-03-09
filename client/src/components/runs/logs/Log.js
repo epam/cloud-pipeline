@@ -1970,17 +1970,18 @@ class Logs extends localization.LocalizedReactComponent {
           {this.props.params.mode.toLowerCase() === 'plain' ? 'GRAPH VIEW' : 'PLAIN VIEW'}
         </AdaptedLink>;
 
-      const parts = [
-        startDate && `from=${encodeURIComponent(startDate)}`,
-        endDate && `to=${encodeURIComponent(endDate)}`
-      ].filter(Boolean);
-      const query = parts.length > 0 ? `?${parts.join('&')}` : '';
-
-      ShowMonitorButton = (
-        <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
-          MONITOR
-        </Link>
-      );
+      if (instance && instance.nodeName) {
+        const parts = [
+          startDate && `from=${encodeURIComponent(startDate)}`,
+          endDate && `to=${encodeURIComponent(endDate)}`
+        ].filter(Boolean);
+        const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+        ShowMonitorButton = (
+          <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
+            MONITOR
+          </Link>
+        );
+      }
     }
 
     return (
