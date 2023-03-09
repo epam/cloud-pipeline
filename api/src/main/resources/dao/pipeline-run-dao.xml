@@ -1532,7 +1532,7 @@
 				        END AS queued
                     FROM
                         pipeline.pipeline_run r
-                    @WHERE@
+                    WHERE parent_id ISNULL @WHERE@
                     ORDER BY r.run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
                  ]]>
