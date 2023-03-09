@@ -20,24 +20,19 @@ import {computed} from 'mobx';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {Alert, Button, Card, Dropdown, Icon, Menu, Modal, Row, Table} from 'antd';
-import RunTable from './RunTable';
+import RunTable from './run-table';
 import AdaptedLink from '../special/AdaptedLink';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
 import styles from './AllRuns.css';
 import queryParameters from '../../utils/queryParameters';
 import Filter from '../../utils/filter/filter';
 import Composer from '../../utils/filter/composer';
-import PipelineRunSearch from '../../models/pipelines/PipelineRunSearch';
 import PipelineRunSearchKeywords from '../../models/pipelines/PipelineRunSearchKeywords';
-import pipelines from '../../models/pipelines/Pipelines';
 import FilterInput from '../../utils/filter/inputControl/FilterInput';
 import SaveFilterForm from './SaveFilterForm';
 
-const pageSize = 20;
-
 @inject(({routing}) => ({
   keywords: PipelineRunSearchKeywords,
-  pipelines,
   query: decodeURIComponent(queryParameters(routing).search || '')
 }))
 @observer
@@ -48,11 +43,11 @@ class RunsFilter extends React.Component {
   state = {
     error: null,
     filter: null,
+    searchFilter: undefined,
     displayError: false,
     autocomplete: null,
     saveFilter: false,
     appliedFilter: null,
-    currentPage: 1,
     savedFiltersDropDownVisible: false
   };
 
@@ -70,45 +65,12 @@ class RunsFilter extends React.Component {
     }
   }
 
-  _filter = (page, filter) => {
-    this.setState({loading: true}, async () => {
-      const runFilter = new PipelineRunSearch();
-      await runFilter.send({
-        filterExpression: filter,
-        page,
-        pageSize: pageSize,
-        timezoneOffsetInMinutes: -(new Date()).getTimezoneOffset()
-      });
-      if (runFilter.error) {
-        this.setState({
-          runs: [],
-          error: runFilter.error,
-          displayError: true,
-          loading: false,
-          appliedFilter: null,
-          currentPage: 1
-        });
-      } else {
-        this.setState({
-          error: null,
-          displayError: false,
-          loading: false,
-          runs: runFilter.loaded ? runFilter.value.elements : [],
-          total: runFilter.loaded ? runFilter.value.totalCount : [],
-          appliedFilter: this.state.filter.toStringExpression(),
-          currentPage: page
-        });
-      }
-    });
-  };
-
   onFilter = () => {
     if (this.state.filter && this.state.filter.toStringExpression() !== this.state.appliedFilter) {
-      this._filter(1, this.state.filter);
+      this.setState({searchFilter: this.state.filter});
     } else if (this.state.error) {
       this.setState({
-        displayError: true,
-        loading: false
+        displayError: true
       });
     }
   };
@@ -305,22 +267,6 @@ class RunsFilter extends React.Component {
     return undefined;
   };
 
-  launchPipeline = ({pipelineId, version, id, configName}) => {
-    if (pipelineId && version && id) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`);
-    } else if (pipelineId && version && configName) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/${configName}`);
-    } else if (pipelineId && version) {
-      this.props.router.push(`/launch/${pipelineId}/${version}/default`);
-    } else if (id) {
-      this.props.router.push(`/launch/${id}`);
-    }
-  };
-
-  onSelectRun = ({id}) => {
-    this.props.router.push(`/run/${id}`);
-  };
-
   openSaveFilterForm = () => {
     this.setState({
       saveFilter: true
@@ -457,21 +403,6 @@ class RunsFilter extends React.Component {
     return (this.props.keywords.value || []).map(k => k);
   }
 
-  handleTableChange (pagination) {
-    const {current} = pagination;
-    this.setState({
-      currentPage: current
-    });
-  }
-
-  componentDidUpdate (prevProps, prevState) {
-    if (prevState.currentPage !== this.state.currentPage &&
-      !this.state.error &&
-      this.state.filter) {
-      this._filter(this.state.currentPage, this.state.filter);
-    }
-  }
-
   render () {
     if (this.props.keywords.pending) {
       return <LoadingView />;
@@ -534,18 +465,9 @@ class RunsFilter extends React.Component {
         </Row>
         <Row>
           <RunTable
-            useFilter={false}
-            loading={this.state.loading}
-            dataSource={this.state.runs}
-            handleTableChange={this.handleTableChange}
-            pipelines={
-              this.props.pipelines.pending
-                ? []
-                : (this.props.pipelines.value || []).map(p => p)
-            }
-            pagination={{total: this.state.total, pageSize, current: this.state.currentPage}}
-            launchPipeline={this.launchPipeline}
-            onSelect={this.onSelectRun}
+            disableFilters
+            search
+            searchFilters={this.state.searchFilter}
           />
         </Row>
         <SaveFilterForm

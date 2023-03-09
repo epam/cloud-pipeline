@@ -100,6 +100,43 @@ export function run (parent, callback) {
   };
 }
 
+export function openReRunForm (run, props) {
+  const {
+    router,
+    routing
+  } = props;
+  let push;
+  if (router && typeof router.push === 'function') {
+    push = router.push.bind(router);
+  }
+  if (routing && typeof routing.push === 'function') {
+    push = routing.push.bind(routing);
+  }
+  if (!run || !push) {
+    return Promise.resolve();
+  }
+  const {
+    pipelineId,
+    version,
+    id,
+    configName
+  } = run;
+  let link;
+  if (pipelineId && version && id) {
+    link = `/launch/${pipelineId}/${version}/${configName || 'default'}/${id}`;
+  } else if (pipelineId && version && configName) {
+    link = `/launch/${pipelineId}/${version}/${configName}`;
+  } else if (pipelineId && version) {
+    link = `/launch/${pipelineId}/${version}/default`;
+  } else if (id) {
+    link = `/launch/${id}`;
+  }
+  if (link) {
+    push(link);
+  }
+  return Promise.resolve(link);
+}
+
 export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTypesRequest) {
   if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
     let availableInstanceTypes = [];

@@ -22,13 +22,17 @@ const REFRESH_INTERVAL = 5000;
 class PipelineRunFilter extends Remote {
   static defaultValue = [];
   static auto = false;
+  static getPayload = (params) => ({
+    eagerGrouping: false,
+    ...(params || {})
+  });
   refreshInterval;
 
   constructor (params) {
     super();
     let stringifiedParams;
     try {
-      stringifiedParams = JSON.stringify(params);
+      stringifiedParams = JSON.stringify(PipelineRunFilter.getPayload(params));
     } catch (___) {}
     this.constructor.fetchOptions = {
       headers: {
@@ -65,7 +69,7 @@ class PipelineRunFilter extends Remote {
   filter (params) {
     this.params = params;
     try {
-      this.constructor.fetchOptions.body = JSON.stringify(params);
+      this.constructor.fetchOptions.body = JSON.stringify(PipelineRunFilter.getPayload(params));
     } catch (___) {}
     this.fetch();
   }

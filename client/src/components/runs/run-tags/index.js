@@ -17,7 +17,7 @@
 import React from 'react';
 import {Popover, Row} from 'antd';
 import {inject, observer} from 'mobx-react';
-import AdaptedLink from '../../special/AdaptedLink';
+import {Link} from 'react-router';
 import styles from './run-tags.css';
 import moment from 'moment-timezone';
 import RunTagDatePopover from './run-tag-date-popover';
@@ -66,7 +66,6 @@ function Tag (
     tag,
     value,
     instance,
-    location,
     theme,
     onMouseEnter,
     onMouseLeave,
@@ -94,13 +93,12 @@ function Tag (
       {(display || '').toUpperCase()}
     </span>
   );
-  if (instance && instance.nodeName && isInstanceLink(tag) && location) {
+  if (instance && instance.nodeName && isInstanceLink(tag)) {
     const instanceLink = `/cluster/${instance.nodeName}/monitor`;
     return (
-      <AdaptedLink
+      <Link
         id={tag}
         to={instanceLink}
-        location={location}
         className={styles.link}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -108,7 +106,7 @@ function Tag (
         onFocus={onFocus}
       >
         {element}
-      </AdaptedLink>
+      </Link>
     );
   }
   return element;
@@ -117,7 +115,6 @@ function Tag (
 function RunTagsComponent (
   {
     className,
-    location,
     onlyKnown,
     overflow,
     tagClassName,
@@ -154,7 +151,6 @@ function RunTagsComponent (
               tag={tag}
               value={tags[tag]}
               instance={instance}
-              location={location}
               theme={theme}
             />
           </RunTagDatePopover>
