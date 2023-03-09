@@ -342,11 +342,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
     /**
      * @deprecated because it is extremely inefficient. It collects unlimited amount of child runs.
-     * Use {@link #searchPipelineGroups(PagingRunFilterVO, PipelineRunFilterVO.ProjectFilter)} instead.
+     * Use {@link #searchPipelineParentRuns(PagingRunFilterVO, PipelineRunFilterVO.ProjectFilter)} instead.
      */
     @Deprecated
-    public List<PipelineRun> eagerSearchPipelineGroups(PagingRunFilterVO filter,
-                                                       PipelineRunFilterVO.ProjectFilter projectFilter) {
+    public List<PipelineRun> eagerSearchPipelineParentRuns(PagingRunFilterVO filter,
+                                                           PipelineRunFilterVO.ProjectFilter projectFilter) {
         MapSqlParameterSource params = getPagingParameters(filter);
         String query = wherePattern.matcher(loadRunsGroupingQuery)
                 .replaceFirst(makeFilterCondition(filter, projectFilter, params, false));
@@ -358,17 +358,14 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .collect(Collectors.toList()));
     }
 
-    public List<PipelineRun> searchPipelineGroups(PagingRunFilterVO filter,
-                                                  PipelineRunFilterVO.ProjectFilter projectFilter) {
+    public List<PipelineRun> searchPipelineParentRuns(PagingRunFilterVO filter,
+                                                      PipelineRunFilterVO.ProjectFilter projectFilter) {
         MapSqlParameterSource params = getPagingParameters(filter);
         String query = wherePattern.matcher(loadRunsCountGroupingQuery)
-                .replaceFirst(makeFilterCondition(filter, projectFilter, params, true));
-        Collection<PipelineRun> runs = getNamedParameterJdbcTemplate()
+                .replaceFirst(makeFilterCondition(filter, projectFilter, params, false));
+        List<PipelineRun> runs = getNamedParameterJdbcTemplate()
                 .query(query, params, PipelineRunParameters.getExtendedRowMapper(false, true));
-        return addServiceUrls(runs.stream()
-                .filter(run -> run.getParentRunId() == null)
-                .sorted(getPipelineRunComparator())
-                .collect(Collectors.toList()));
+        return addServiceUrls(runs);
     }
 
     public Integer countRootRuns(PipelineRunFilterVO filter, PipelineRunFilterVO.ProjectFilter projectFilter) {
