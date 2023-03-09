@@ -26,7 +26,8 @@ export {
   submitsRun,
   modifyPayloadForAllowedInstanceTypes,
   run,
-  RunConfirmation
+  RunConfirmation,
+  openReRunForm
 } from './run';
 export {default as runPipelineActions} from './runPipelineActions';
 export {

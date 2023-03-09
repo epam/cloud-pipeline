@@ -36,7 +36,9 @@ function renderTitle (run) {
     nodeType = run.instance.nodeType;
     nodeDisk = run.instance.nodeDisk ? `${run.instance.nodeDisk} Gb` : undefined;
   }
-  nodeCount = run.nodeCount ? `cluster (${run.nodeCount + 1} nodes)` : undefined;
+  nodeCount = run.childRunsCount && run.childRunsCount > 0
+    ? `cluster (${run.childRunsCount + 1} nodes)`
+    : undefined;
   return [
     podId,
     nodeCount,
@@ -156,8 +158,16 @@ export default function renderRunCard (run) {
     </Row>,
     <Row key="title" style={{fontSize: 'smaller'}}>
       {renderTitle(run)}
-      {run.sensitive ? ',' : null}
-      {run.sensitive ? (<span className="cp-sensitive" style={{whiteSpace: 'pre'}}> sensitive</span>) : null}
+      {
+        run.sensitive
+          ? ','
+          : null
+      }
+      {
+        run.sensitive
+          ? (<span className="cp-sensitive" style={{whiteSpace: 'pre'}}> sensitive</span>)
+          : null
+      }
     </Row>,
     <Row key="time" style={{fontSize: 'smaller'}}>
       {renderTime(run)}{renderEstimatedPrice(run)}

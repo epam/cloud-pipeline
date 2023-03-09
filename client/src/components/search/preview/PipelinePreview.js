@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/* eslint-disable max-len */
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
@@ -89,7 +89,15 @@ export default class PipelinePreview extends React.Component {
   renderVersions = () => {
     if (this.props.versions) {
       if (this.props.versions.pending) {
-        return <Row className={styles.contentPreview} type="flex" justify="center"><Icon type="loading" /></Row>;
+        return (
+          <Row
+            className={styles.contentPreview}
+            type="flex"
+            justify="center"
+          >
+            <Icon type="loading" />
+          </Row>
+        );
       }
       if (this.props.versions.error) {
         return (
@@ -132,7 +140,15 @@ export default class PipelinePreview extends React.Component {
   renderRunHistory = () => {
     if (this.props.history) {
       if (this.props.history.pending) {
-        return <Row className={styles.contentPreview} type="flex" justify="center"><Icon type="loading" /></Row>;
+        return (
+          <Row
+            className={styles.contentPreview}
+            type="flex"
+            justify="center"
+          >
+            <Icon type="loading" />
+          </Row>
+        );
       }
       if (this.props.history.error) {
         return (
