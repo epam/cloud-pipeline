@@ -691,18 +691,18 @@ public class PipelineRunManager {
             return new PagedResult<>(Collections.emptyList(), 0);
         }
         PagedResult<List<PipelineRun>> result;
-        // todo: Get rid of grouping requests altogether.
-        //  Use a single sql request which always counts child runs.
+        // todo: Use grouping request if parentId is specified. Otherwise use non grouping request.
+        //  Non grouping requests return both parent and child runs in plain list (no nested runs).
+        //  Grouping requests return only parent runs.
+        // todo: Get rid of userModified and eagerGrouping flags
         if (filter.useGrouping()) {
             if (filter.isEagerGrouping()) {
-                result = eagerSearchRunsGrouping(filter, projectFilter);
+                result = eagerSearchParentRuns(filter, projectFilter);
             } else {
-                result = searchRunsGrouping(filter, projectFilter);
+                result = searchParentRuns(filter, projectFilter);
             }
         } else {
-            List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filter, projectFilter);
-            int count = pipelineRunDao.countFilteredPipelineRuns(filter, projectFilter);
-            result = new PagedResult<>(runs, count);
+            result = searchRuns(filter, projectFilter);
         }
         if (loadStorageLinks && CollectionUtils.isNotEmpty(result.getElements())) {
             dataStorageManager.analyzePipelineRunsParameters(result.getElements());
@@ -1177,20 +1177,29 @@ public class PipelineRunManager {
 
     /**
      * @deprecated because its underlying method is deprecated.
-     * @see PipelineRunDao#eagerSearchPipelineGroups(PagingRunFilterVO, PipelineRunFilterVO.ProjectFilter)
+     * @see PipelineRunDao#eagerSearchPipelineParentRuns(PagingRunFilterVO, PipelineRunFilterVO.ProjectFilter)
      */
     @Deprecated
-    private PagedResult<List<PipelineRun>> eagerSearchRunsGrouping(PagingRunFilterVO filter,
-                                                                   PipelineRunFilterVO.ProjectFilter projectFilter) {
-        log.debug("Executing deprecated eager filter runs grouping request...");
-        List<PipelineRun> groupedRuns = pipelineRunDao.eagerSearchPipelineGroups(filter, projectFilter);
-        return new PagedResult<>(groupedRuns, pipelineRunDao.countRootRuns(filter, projectFilter));
+    private PagedResult<List<PipelineRun>> eagerSearchParentRuns(PagingRunFilterVO filter,
+                                                                 PipelineRunFilterVO.ProjectFilter projectFilter) {
+        log.debug("Executing deprecated eager search parent runs request...");
+        List<PipelineRun> runs = pipelineRunDao.eagerSearchPipelineParentRuns(filter, projectFilter);
+        Integer totalCount = pipelineRunDao.countRootRuns(filter, projectFilter);
+        return new PagedResult<>(runs, totalCount);
     }
 
-    private PagedResult<List<PipelineRun>> searchRunsGrouping(PagingRunFilterVO filter,
-                                                              PipelineRunFilterVO.ProjectFilter projectFilter) {
-        List<PipelineRun> groupedRuns = pipelineRunDao.searchPipelineGroups(filter, projectFilter);
-        return new PagedResult<>(groupedRuns, pipelineRunDao.countRootRuns(filter, projectFilter));
+    private PagedResult<List<PipelineRun>> searchParentRuns(PagingRunFilterVO filter,
+                                                            PipelineRunFilterVO.ProjectFilter projectFilter) {
+        List<PipelineRun> runs = pipelineRunDao.searchPipelineParentRuns(filter, projectFilter);
+        Integer totalCount = pipelineRunDao.countRootRuns(filter, projectFilter);
+        return new PagedResult<>(runs, totalCount);
+    }
+
+    private PagedResult<List<PipelineRun>> searchRuns(PagingRunFilterVO filter,
+                                                      PipelineRunFilterVO.ProjectFilter projectFilter) {
+        List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filter, projectFilter);
+        int totalCount = pipelineRunDao.countFilteredPipelineRuns(filter, projectFilter);
+        return new PagedResult<>(runs, totalCount);
     }
 
     private void setParentInstance(PipelineRun run, Long parentNodeId) {

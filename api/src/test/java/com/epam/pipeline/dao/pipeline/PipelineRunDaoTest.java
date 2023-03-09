@@ -395,7 +395,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         filterVO.setPageSize(TEST_PAGE_SIZE);
         filterVO.setStatuses(Collections.singletonList(TaskStatus.SUCCESS));
 
-        List<PipelineRun> runs = pipelineRunDao.searchPipelineGroups(filterVO, null);
+        List<PipelineRun> runs = pipelineRunDao.searchPipelineParentRuns(filterVO, null);
         assertEquals(2, runs.size());
         assertEquals(lonely.getId(), runs.get(0).getId());
         assertEquals(parent.getId(), runs.get(1).getId());
@@ -1197,7 +1197,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertEquals(expectedFieldValue,
                 fieldFunction.apply(pipelineRunDao.searchPipelineRuns(pagingRunFilterVO).get(0)));
         assertEquals(expectedFieldValue,
-                fieldFunction.apply(pipelineRunDao.searchPipelineGroups(pagingRunFilterVO, null).get(0)));
+                fieldFunction.apply(pipelineRunDao.searchPipelineParentRuns(pagingRunFilterVO, null).get(0)));
     }
 
     private void createRunWithStartEndDates(final LocalDateTime startDate, final LocalDateTime endDate) {
