@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.git;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,6 +29,7 @@ import lombok.NoArgsConstructor;
 public class GitlabUpload {
     private String alt;
     private String url;
-    private String full_path;
+    @JsonProperty("full_path")
+    private String fullPath;
     private String markdown;
 }
