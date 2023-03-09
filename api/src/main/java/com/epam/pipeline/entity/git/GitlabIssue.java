@@ -16,12 +16,13 @@
 
 package com.epam.pipeline.entity.git;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Data
@@ -31,15 +32,26 @@ import java.util.List;
 public class GitlabIssue {
 
     private Long id;
+    @JsonProperty("project_id")
     private Long projectId;
     private String title;
     private String description;
     private String state;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private String type;
+    private String severity;
+    @JsonProperty("created_at")
+    private ZonedDateTime createdAt;
+    @JsonProperty("updated_at")
+    private ZonedDateTime updatedAt;
+    @JsonProperty("closed_at")
+    private ZonedDateTime closedAt;
     private String confidential;
+    @JsonProperty("milestone_id")
     private String milestoneId;
     private List<String> labels;
     private GitlabUser author;
+    @JsonProperty("closed_by")
+    private GitlabUser closedBy;
+    private List<String> attachments;
     private List<GitlabUser> assignees;
 }

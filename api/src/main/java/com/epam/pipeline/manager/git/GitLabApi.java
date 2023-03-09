@@ -17,14 +17,17 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.*;
+import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
+import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 import retrofit2.http.Streaming;
@@ -331,9 +334,35 @@ public interface GitLabApi {
      *
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param idOrName The ID or URL-encoded path of the project
+     * @param issue The Issue to be created. Attachments should be specified as list of files paths.
      */
     @POST("api/{api_version}/projects/{project}/issues")
     Call<GitlabIssue> createIssue(@Path(API_VERSION) String apiVersion,
-                                 @Path(PROJECT) String idOrName,
-                                 @Body GitlabIssue issue);
+                                  @Path(PROJECT) String idOrName,
+                                  @Body GitlabIssue issue);
+
+    /**
+     * Lists project issues
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param labels Labels
+     */
+    @GET("api/{api_version}/projects/{project}/issues")
+    Call<List<GitlabIssue>> getIssues(@Path(API_VERSION) String apiVersion,
+                                      @Path(PROJECT) String idOrName,
+                                      @Query("labels") List<String> labels);
+
+    /**
+     * Uploads file to specified project
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param file File to be uploaded
+     */
+    @Multipart
+    @POST("api/{api_version}/projects/{project}/uploads")
+    Call<GitlabUpload> upload(@Path(API_VERSION) String apiVersion,
+                              @Path(PROJECT) String idOrName,
+                              @Part MultipartBody.Part file);
 }

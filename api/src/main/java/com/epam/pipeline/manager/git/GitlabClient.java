@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,15 @@ import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.UriUtils;
 import retrofit2.HttpException;
 import retrofit2.Response;
@@ -53,6 +57,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.git.RestApiUtils.execute;
@@ -409,7 +414,30 @@ public class GitlabClient {
     }
 
     public GitlabIssue createIssue(final String project, final GitlabIssue issue) throws GitClientException {
-        return execute(gitLabApi.createIssue(apiVersion, makeProjectId(namespace, project), issue));
+        if (!CollectionUtils.isEmpty(issue.getAttachments())) {
+            final List<GitlabUpload> uploads = issue.getAttachments().stream()
+                    .map(a -> upload(project, a))
+                    .collect(Collectors.toList());
+            final String attachments = uploads.stream()
+                    .map(u -> String.format("!%s", u.getMarkdown()))
+                    .collect(Collectors.joining("\n\n"));
+            issue.setDescription(String.format("%s\n\n%s", issue.getDescription(), attachments));
+        }
+        return execute(gitLabApi.createIssue(apiVersion, project, issue));
+    }
+
+    public GitlabUpload upload(final String project, final String path) throws GitClientException {
+        final File file = new File(path);
+        final MultipartBody.Part filePart = MultipartBody.Part.createFormData(
+                "file",
+                file.getName(),
+                RequestBody.create(MediaType.parse("*/*"), file)
+        );
+        return execute(gitLabApi.upload(apiVersion, project, filePart));
+    }
+
+    public List<GitlabIssue> getIssues(final String project, final List<String> labels) throws GitClientException {
+        return execute(gitLabApi.getIssues(apiVersion, project, labels));
     }
 
     public Optional<GitlabUser> findUser(final String userName) throws GitClientException {

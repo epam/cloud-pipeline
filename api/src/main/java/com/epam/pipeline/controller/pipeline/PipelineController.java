@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,6 +83,7 @@ public class PipelineController extends AbstractRestController {
     private static final int BYTES_IN_KB = 1024;
     private static final String INCLUDE_DIFF = "include_diff";
     private static final String COMMIT = "commit";
+    private static final String ON_BEHALF = "on_behalf_of_current_user";
 
     @Autowired
     private PipelineApiService pipelineApiService;
@@ -851,8 +852,8 @@ public class PipelineController extends AbstractRestController {
     @PostMapping(value = "/pipeline/{id}/issue")
     @ResponseBody
     @ApiOperation(
-            value = "Creates Issue in corresponding Gitlab project.",
-            notes = "Creates Issue in corresponding Gitlab project.",
+            value = "Creates Issue in pipeline corresponding Gitlab project.",
+            notes = "Creates Issue in pipeline corresponding Gitlab project.",
             produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -861,5 +862,21 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = ID) final Long id,
             @RequestBody final GitlabIssue issue) throws IOException {
         return Result.success(pipelineApiService.createIssue(id, issue));
+    }
+
+    @GetMapping(value = "/pipeline/{id}/issues")
+    @ResponseBody
+    @ApiOperation(
+            value = "Gets pipeline corresponding Gitlab project issues. ",
+            notes = "Gets pipeline corresponding Gitlab project issues. " +
+                    "Attachments should be specified as list of files paths.",
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<GitlabIssue>> getIssues(@PathVariable(value = ID) final Long id,
+                                               @RequestParam(value = ON_BEHALF, required = false)
+                                               final Boolean onBehalfOfCurrentUser) {
+        return Result.success(pipelineApiService.getIssues(id, onBehalfOfCurrentUser));
     }
 }

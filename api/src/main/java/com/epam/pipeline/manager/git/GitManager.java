@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.template.Template;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.CmdExecutor;
@@ -44,6 +45,7 @@ import com.epam.pipeline.utils.GitUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +60,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -596,7 +599,22 @@ public class GitManager {
     public GitlabIssue createIssue(final Long id, final GitlabIssue issue) throws GitClientException {
         final Pipeline loadedPipeline = pipelineManager.load(id);
         final String project = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
+        final PipelineUser authorizedUser = authManager.getCurrentUser();
+        final List<String> labels = Optional.ofNullable(issue.getLabels()).orElse(new ArrayList<>());
+        labels.add(String.format("On behalf of: %s", authorizedUser.getUserName()));
+        issue.setLabels(labels);
         return getDefaultGitlabClient().createIssue(project, issue);
+    }
+
+    public List<GitlabIssue> getIssues(final Long id, final Boolean onBehalfOfCurrentUser) throws GitClientException {
+        final Pipeline loadedPipeline = pipelineManager.load(id);
+        final String project = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
+        final List<String> labels = new ArrayList<>();
+        if (BooleanUtils.isTrue(onBehalfOfCurrentUser)) {
+            final PipelineUser authorizedUser = authManager.getCurrentUser();
+            labels.add(String.format("On behalf of: %s", authorizedUser.getUserName()));
+        }
+        return getDefaultGitlabClient().getIssues(project, labels);
     }
 
     private List<String> getContextPathList(String path) {
