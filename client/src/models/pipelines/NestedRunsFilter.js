@@ -19,9 +19,13 @@ import {observable, computed} from 'mobx';
 
 const REFRESH_INTERVAL = 5000;
 
-class PipelineRunFilter extends RemotePost {
+class NestedRunsFilter extends RemotePost {
   static defaultValue = [];
   static auto = false;
+  static getPayload = (params) => ({
+    eagerGrouping: false,
+    ...(params || {})
+  });
   refreshInterval;
 
   constructor (params) {
@@ -69,7 +73,11 @@ class PipelineRunFilter extends RemotePost {
   }
 
   async fetch () {
-    return super.send(this.params);
+    return this.send(this.params);
+  }
+
+  async send (body, abortSignal) {
+    await super.send(NestedRunsFilter.getPayload(body), abortSignal);
   }
 
   postprocess (value) {
@@ -79,4 +87,4 @@ class PipelineRunFilter extends RemotePost {
   }
 }
 
-export default PipelineRunFilter;
+export default NestedRunsFilter;

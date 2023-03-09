@@ -48,6 +48,7 @@ export class UserRunCount extends RemotePost {
     return super.send({
       statuses: this.statuses,
       userModified: this.countChildNodes,
+      eagerGrouping: false,
       owners: this.user ? [this.user] : undefined
     });
   }
@@ -70,7 +71,8 @@ export default class RunCount extends Remote {
         'PAUSING',
         'RESUMING'
       ],
-      userModified: false
+      userModified: false,
+      eagerGrouping: false
     })
   };
 

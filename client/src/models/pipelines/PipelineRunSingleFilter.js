@@ -44,6 +44,14 @@ export default class PipelineRunSingleFilter extends RemotePost {
     return this.send(params || this.params);
   }
 
+  async send (body, abortSignal) {
+    const payload = {
+      eagerGrouping: false,
+      ...(body || {})
+    };
+    await super.send(payload, abortSignal);
+  }
+
   postprocess (value) {
     this._total = value.payload.totalCount;
     if (value.payload.totalCount === 0) { return []; }

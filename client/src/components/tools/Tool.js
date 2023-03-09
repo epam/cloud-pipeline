@@ -1256,10 +1256,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       return undefined;
     }
     return (
-      <ToolHistory
-        image={this.toolImage}
-        router={this.props.router}
-      />
+      <ToolHistory image={this.toolImage} />
     );
   };
 

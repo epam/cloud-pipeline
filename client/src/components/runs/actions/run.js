@@ -105,9 +105,17 @@ export function run (parent, callback) {
 export function openReRunForm (run, props) {
   const {
     router,
+    routing,
     pipelines
   } = props;
-  if (!run || !router) {
+  let push;
+  if (router && typeof router.push === 'function') {
+    push = router.push.bind(router);
+  }
+  if (routing && typeof routing.push === 'function') {
+    push = routing.push.bind(routing);
+  }
+  if (!run || !push) {
     return Promise.resolve();
   }
   const wrapPipelineInfoPromise = (pipelineRequest, callback) => new Promise((resolve, reject) => {
@@ -171,7 +179,7 @@ export function openReRunForm (run, props) {
           link = `/launch/${id}${query}`;
         }
         if (link) {
-          router.push(link);
+          push(link);
         }
         resolve(link);
       });

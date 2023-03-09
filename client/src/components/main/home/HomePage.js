@@ -34,7 +34,7 @@ import moment from 'moment-timezone';
 import styles from './HomePage.css';
 import continuousFetch from '../../../utils/continuous-fetch';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 const UPDATE_TIMEOUT = 15000;
 
 const ContinuousFetchIdentifiers = {
