@@ -178,9 +178,9 @@ public class Utils {
         return findRunId(new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
+                return context.findElements(className("un-table__run")).stream()
                         .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-pipeline")).stream()
+                                element.findElements(byClassName("un-table-columns__run-row-pipeline")).stream()
                                         .map(WebElement::getText)
                                         .anyMatch(pipelineName -> pipelineName.equals(pipelineName)))
                         .collect(toList());
@@ -199,9 +199,9 @@ public class Utils {
         return findRunId(new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
+                return context.findElements(className("un-table__run")).stream()
                         .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-docker-image")).stream()
+                                element.findElements(byClassName("un-table-columns__run-row-docker-image")).stream()
                                         .map(WebElement::getText)
                                         .anyMatch(pipelineName -> pipelineName.equals(toolSelfName)
                                                 || pipelineName.equals(toolSelfName + ":latest")
@@ -223,9 +223,9 @@ public class Utils {
         return findRunId(new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
+                return context.findElements(className("un-table__run")).stream()
                         .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-docker-image")).stream()
+                                element.findElements(byClassName("un-table-columns__run-row-docker-image")).stream()
                                         .map(WebElement::getText)
                                         .anyMatch(pipelineName -> pipelineName.equals(toolSelfName)
                                                 || pipelineName.equals(nameWithTag)
@@ -242,7 +242,7 @@ public class Utils {
     }
 
     private static String findRunId(final By runRowQualifier) {
-        final SelenideElement element = $(runRowQualifier).should(exist).find(byClassName("run-table__run-row-name"));
+        final SelenideElement element = $(runRowQualifier).should(exist).find(byClassName("un-table-columns__run-row-name"));
         final String runName = element.text();
         return runNameToRunId(runName);
     }
