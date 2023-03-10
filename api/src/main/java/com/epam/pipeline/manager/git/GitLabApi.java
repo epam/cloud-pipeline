@@ -53,7 +53,6 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 import retrofit2.http.Streaming;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface GitLabApi {
