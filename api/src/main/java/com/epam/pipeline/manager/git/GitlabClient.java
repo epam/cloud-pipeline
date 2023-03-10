@@ -467,7 +467,8 @@ public class GitlabClient {
         return issue;
     }
 
-    public List<GitlabIssueComment> getIssueComments(final String project, final Long issueId) throws GitClientException {
+    public List<GitlabIssueComment> getIssueComments(final String project,
+                                                     final Long issueId) throws GitClientException {
         return execute(gitLabApi.getIssueComments(apiVersion, project, issueId));
     }
 
