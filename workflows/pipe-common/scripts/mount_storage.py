@@ -191,8 +191,12 @@ class MountStorageTask:
 
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
             available_storages_with_mounts = self.api.load_available_storages_with_share_mount(self.region_id or None)
-            # filtering out shared storages, as they cause "overlapped" mounts and break the "original" storage mountpoint
-            available_storages_with_mounts = [x for x in available_storages_with_mounts if not x.storage.shared]
+            # filtering out shared storage folders, as they cause "overlapped" mounts
+            # and break the "original" storage mountpoint,
+            # storage is shared folder of another storage if it has source_storage_id
+            available_storages_with_mounts = [
+                x for x in available_storages_with_mounts if not x.storage.source_storage_id
+            ]
 
             # filtering out all nfs storages if region id is missing
             if not self.region_id:
