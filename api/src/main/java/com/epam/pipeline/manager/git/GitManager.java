@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -105,6 +106,7 @@ public class GitManager {
     private static final String ROOT_PATH = "/";
     public static final String REVERT_MESSAGE = "Revert %s to commit %s";
     private static final String GIT_REPO_EXTENSION = ".git";
+    private static final String ON_BEHALF_OF = "On behalf of %s";
 
     private CmdExecutor cmdExecutor = new CmdExecutor();
 
@@ -609,24 +611,37 @@ public class GitManager {
     }
 
     public GitlabIssue createIssue(final Long id, final GitlabIssue issue) throws GitClientException {
-        final Pipeline loadedPipeline = pipelineManager.load(id);
-        final String project = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
         final PipelineUser authorizedUser = authManager.getCurrentUser();
         final List<String> labels = Optional.ofNullable(issue.getLabels()).orElse(new ArrayList<>());
-        labels.add(String.format("On behalf of: %s", authorizedUser.getUserName()));
+        labels.add(String.format(ON_BEHALF_OF, authorizedUser.getUserName()));
         issue.setLabels(labels);
-        return getDefaultGitlabClient().createIssue(project, issue);
+        return getDefaultGitlabClient().createIssue(getProject(id), issue);
     }
 
     public List<GitlabIssue> getIssues(final Long id, final Boolean onBehalfOfCurrentUser) throws GitClientException {
-        final Pipeline loadedPipeline = pipelineManager.load(id);
-        final String project = GitUtils.convertPipeNameToProject(loadedPipeline.getName());
         final List<String> labels = new ArrayList<>();
         if (BooleanUtils.isTrue(onBehalfOfCurrentUser)) {
             final PipelineUser authorizedUser = authManager.getCurrentUser();
-            labels.add(String.format("On behalf of: %s", authorizedUser.getUserName()));
+            labels.add(String.format(ON_BEHALF_OF, authorizedUser.getUserName()));
         }
-        return getDefaultGitlabClient().getIssues(project, labels);
+        return getDefaultGitlabClient().getIssues(getProject(id), labels);
+    }
+
+    public GitlabIssue getIssue(final Long id, final Long issueId) throws GitClientException {
+        return getDefaultGitlabClient().getIssue(getProject(id), issueId);
+    }
+
+    public GitlabIssueComment addIssueComment(final Long id,
+                                              final Long issueId,
+                                              final GitlabIssueComment comment) throws GitClientException {
+        final PipelineUser authorizedUser = authManager.getCurrentUser();
+        comment.setBody(String.format("On behalf of %s: %s", authorizedUser.getUserName(), comment.getBody()));
+        return getDefaultGitlabClient().addIssueComment(getProject(id), issueId, comment);
+    }
+
+    private String getProject(final Long id) {
+        final Pipeline loadedPipeline = pipelineManager.load(id);
+        return GitUtils.convertPipeNameToProject(loadedPipeline.getName());
     }
 
     private List<String> getContextPathList(String path) {

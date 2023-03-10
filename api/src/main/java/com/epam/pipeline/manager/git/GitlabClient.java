@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.GitlabUpload;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
@@ -457,6 +458,23 @@ public class GitlabClient {
 
     public List<GitlabIssue> getIssues(final String project, final List<String> labels) throws GitClientException {
         return execute(gitLabApi.getIssues(apiVersion, project, labels));
+    }
+
+    public GitlabIssue getIssue(final String project, final Long issueId) throws GitClientException {
+        final GitlabIssue issue = execute(gitLabApi.getIssue(apiVersion, project, issueId));
+        final List<GitlabIssueComment> comments = getIssueComments(project, issueId);
+        issue.setComments(comments);
+        return issue;
+    }
+
+    public List<GitlabIssueComment> getIssueComments(final String project, final Long issueId) throws GitClientException {
+        return execute(gitLabApi.getIssueComments(apiVersion, project, issueId));
+    }
+
+    public GitlabIssueComment addIssueComment(final String project,
+                                                    final Long issueId,
+                                                    final GitlabIssueComment comment) throws GitClientException {
+        return execute(gitLabApi.addIssueComment(apiVersion, project, issueId, comment));
     }
 
     public Optional<GitlabUser> findUser(final String userName) throws GitClientException {

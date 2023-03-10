@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -390,12 +391,24 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public GitlabIssue createIssue(final Long id, final GitlabIssue issue) {
+    public GitlabIssue createIssue(final Long id, final GitlabIssue issue) throws GitClientException {
         return gitManager.createIssue(id, issue);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public List<GitlabIssue> getIssues(final Long id, Boolean onBehalfOfCurrentUser) {
+    public List<GitlabIssue> getIssues(final Long id, final Boolean onBehalfOfCurrentUser) throws GitClientException {
         return gitManager.getIssues(id, onBehalfOfCurrentUser);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitlabIssue getIssue(final Long id, final Long  issueId) throws GitClientException {
+        return gitManager.getIssue(id, issueId);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public GitlabIssueComment addIssueComment(final Long id,
+                                              final Long  issueId,
+                                              final GitlabIssueComment  comment) throws GitClientException {
+        return gitManager.addIssueComment(id, issueId, comment);
     }
 }

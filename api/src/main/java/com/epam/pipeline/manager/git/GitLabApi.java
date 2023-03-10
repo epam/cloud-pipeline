@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.GitlabUpload;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
@@ -52,6 +53,7 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 import retrofit2.http.Streaming;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface GitLabApi {
@@ -65,6 +67,7 @@ public interface GitLabApi {
     String USER_ID = "user_id";
     String PRIVATE_TOKEN = "PRIVATE-TOKEN";
     String API_VERSION = "api_version";
+    String ISSUE_ID = "issue_id";
 
     /**
      * @param userName The name of the GitLab user
@@ -372,6 +375,44 @@ public interface GitLabApi {
     Call<List<GitlabIssue>> getIssues(@Path(API_VERSION) String apiVersion,
                                       @Path(PROJECT) String idOrName,
                                       @Query("labels") List<String> labels);
+
+    /**
+     * Gets project issue
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param id issue id
+     */
+    @GET("api/{api_version}/projects/{project}/issues/{issue_id}")
+    Call<GitlabIssue> getIssue(@Path(API_VERSION) String apiVersion,
+                               @Path(PROJECT) String idOrName,
+                               @Path(ISSUE_ID) Long id);
+
+    /**
+     * List project issue comments
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param id issue id
+     */
+    @GET("api/{api_version}/projects/{project}/issues/{issue_id}/notes")
+    Call<List<GitlabIssueComment>> getIssueComments(@Path(API_VERSION) String apiVersion,
+                                                    @Path(PROJECT) String idOrName,
+                                                    @Path(ISSUE_ID) Long id);
+
+    /**
+     * Adds comment to project issue
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param id issue id
+     * @param comment issue comment
+     */
+    @POST("api/{api_version}/projects/{project}/issues/{issue_id}/notes")
+    Call<GitlabIssueComment> addIssueComment(@Path(API_VERSION) String apiVersion,
+                                             @Path(PROJECT) String idOrName,
+                                             @Path(ISSUE_ID) Long id,
+                                             @Body GitlabIssueComment comment);
 
     /**
      * Uploads file to specified project

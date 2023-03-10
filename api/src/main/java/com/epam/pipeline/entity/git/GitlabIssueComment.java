@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.git;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,37 +23,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.ZonedDateTime;
-import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GitlabIssue {
+public class GitlabIssueComment {
 
     private Long id;
-    @JsonProperty("project_id")
-    private Long projectId;
-    private String title;
-    private String description;
-    private String state;
-    private String type;
-    private String severity;
+    private String body;
     @JsonProperty("created_at")
     private ZonedDateTime createdAt;
     @JsonProperty("updated_at")
     private ZonedDateTime updatedAt;
-    @JsonProperty("closed_at")
-    private ZonedDateTime closedAt;
-    private String confidential;
-    @JsonProperty("milestone_id")
-    private String milestoneId;
-    private List<String> labels;
     private GitlabUser author;
-    @JsonProperty("closed_by")
-    private GitlabUser closedBy;
-    private List<String> attachments;
-    private List<GitlabUser> assignees;
-    @JsonIgnoreProperties
-    private List<GitlabIssueComment> comments;
 }
