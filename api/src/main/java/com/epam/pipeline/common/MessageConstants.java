@@ -812,6 +812,10 @@ public final class MessageConstants {
 
     // Launch limits
     public static final String ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED = "error.run.launch.user.limit.exceeded";
+    public static final String ERROR_RUN_ASSIGN_POLICY_FORBIDDEN = "error.run.assign.policy.forbidden";
+    public static final String ERROR_RUN_SYSTEM_JOB_FORBIDDEN = "error.run.system.job.forbidden";
+
+
 
     // Ngs preprocessing
     public static final String ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED =

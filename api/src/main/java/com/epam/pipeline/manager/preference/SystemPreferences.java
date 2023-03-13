@@ -812,6 +812,12 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_RUN_TAG_STOP_REASON = new StringPreference(
             "system.run.tag.stop.reason", "STOP_REASON", SYSTEM_GROUP, pass, true);
 
+    public static final StringPreference SYSTEM_JOB_FLAG_PARAMETER = new StringPreference(
+            "system.job.flag.parameter",
+            "CP_CAP_SYSTEM_JOB",
+            SYSTEM_GROUP, pass
+    );
+
     /**
      * Level of CPU load, below which a Run is considered `idle`
      */
