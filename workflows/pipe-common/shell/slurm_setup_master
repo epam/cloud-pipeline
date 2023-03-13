@@ -124,13 +124,23 @@ check_last_exit_code() {
     fi
 }
 
+slurm_config_location() {
+   _SLURM_CONFIG_DIR=$(ls /etc/ | grep slurm | head -n 1)
+   if [ "$_SLURM_CONFIG_DIR" != "" ]; then
+      echo "/etc/$_SLURM_CONFIG_DIR"
+   else
+      pipe_log_fail "Failed to find SLURM config dir" "${SLURM_MASTER_SETUP_TASK}"
+      kill -s "$CURRENT_PID"
+      exit 1
+   fi
+}
+
 pipe_log_info "Installing SLURM master" "$SLURM_MASTER_SETUP_TASK"
 
 LINUX_DISTRIBUTION=$( get_linux_dist )
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     apt-get update && apt-get install -y munge slurm-wlm
-    _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
     mkdir -p /var/run/munge
     chown munge: /var/run/munge
     mkdir -p /run/munge
@@ -143,7 +153,6 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
         CP_SLURM_SOURCE_URL="https://download.schedmd.com/slurm/slurm-19.05.5.tar.bz2"
     fi
 
-    _SLURM_CONFIG_LOCATION=/etc/slurm/
     export SLURMUSER=992
     groupadd -g $SLURMUSER slurm
     useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
@@ -170,6 +179,7 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     check_last_exit_code $? "Successfully install SLURM packages" "Can't install SLURM packages from /common/slurm-pkgs/"
 fi
 
+_SLURM_CONFIG_LOCATION=$( slurm_config_location )
 configure_slurm
 
 dd if=/dev/urandom bs=1 count=1024 > /common/munge.key
