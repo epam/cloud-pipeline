@@ -55,6 +55,8 @@ public class S3FileSyncConfiguration {
     private String tagDelimiter;
     @Value("${sync.s3-file.storage.ids:}")
     private String storageIds;
+    @Value("${sync.s3-file.storage.skip.ids:}")
+    private String skipStorageIds;
 
     @Bean
     public ObjectStorageFileManager s3FileManager() {
@@ -77,6 +79,9 @@ public class S3FileSyncConfiguration {
                 includeVersions);
         if (StringUtils.isNotBlank(storageIds)) {
             service.setStorageIds(parseIds(storageIds));
+        }
+        if (StringUtils.isNotBlank(skipStorageIds)) {
+            service.setSkipStorageIds(parseIds(skipStorageIds));
         }
         return service;
     }

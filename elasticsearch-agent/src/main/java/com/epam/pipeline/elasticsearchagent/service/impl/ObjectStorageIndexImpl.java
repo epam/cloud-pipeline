@@ -97,6 +97,7 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final boolean includeVersions;
 
     private Set<Long> storageIds;
+    private Set<Long> skipStorageIds;
 
     private final StorageFileMapper fileMapper = new StorageFileMapper();
 
@@ -107,6 +108,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
         final List<AbstractDataStorage> allStorages = cloudPipelineAPIClient.loadAllDataStorages();
         allStorages
                 .stream()
+                .filter(dataStorage -> CollectionUtils.isEmpty(skipStorageIds)
+                        || !skipStorageIds.contains(dataStorage.getId()))
                 .filter(dataStorage -> CollectionUtils.isEmpty(storageIds) || storageIds.contains(dataStorage.getId()))
                 .filter(dataStorage -> dataStorage.getType() == getStorageType())
                 .filter(dataStorage -> isNotSharedOrChild(dataStorage, allStorages))
