@@ -770,7 +770,10 @@ public class SystemPreferences {
 
     public static final BooleanPreference SYSTEM_DISABLE_NAT_SYNC = new BooleanPreference(
             "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
-
+    public static final IntPreference SYSTEM_NAT_HOST_CHECK_ATTEMPTS = new IntPreference(
+            "system.nat.host.check.attempts", 10, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_NAT_HOST_CHECK_RETRY_MS = new IntPreference(
+            "system.nat.host.check.retry", 100, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_MAINTENANCE_MODE = new BooleanPreference(
             "system.maintenance.mode", false, SYSTEM_GROUP, pass);
     public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
