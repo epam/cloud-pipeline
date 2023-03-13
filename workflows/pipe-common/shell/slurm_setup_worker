@@ -71,6 +71,17 @@ check_last_exit_code() {
     fi
 }
 
+slurm_config_location() {
+   _SLURM_CONFIG_DIR=$(ls /etc/ | grep slurm | head -n 1)
+   if [ "$_SLURM_CONFIG_DIR" != "" ]; then
+      echo "/etc/$_SLURM_CONFIG_DIR"
+   else
+      pipe_log_fail "Failed to find SLURM config dir" "${SLURM_MASTER_SETUP_TASK}"
+      kill -s "$CURRENT_PID"
+      exit 1
+   fi
+}
+
 LINUX_DISTRIBUTION=$( get_linux_dist )
 
 pipe_log_info "Installing SLURM worker" "$SLURM_WORKER_SETUP_TASK"
@@ -89,9 +100,7 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     mkdir -p /run/munge
     chown munge: /run/munge
     chmod +t /run/munge
-    export _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
-    export _SLURM_CONFIG_LOCATION=/etc/slurm/
     export SLURMUSER=992
     groupadd -g $SLURMUSER slurm
     useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
@@ -106,6 +115,7 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
 fi
 
 pipe_log_info "Adding worker node to SLURM cluster" "$SLURM_WORKER_SETUP_TASK"
+_SLURM_CONFIG_LOCATION=$( slurm_config_location )
 add_worker
 check_last_exit_code $? "Host was added as a worker to the SLURM cluster" "Fail to add SLURM worker host"
 
