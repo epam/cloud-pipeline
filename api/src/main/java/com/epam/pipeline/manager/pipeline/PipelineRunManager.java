@@ -1468,9 +1468,12 @@ public class PipelineRunManager {
         restartedRun.setSshPassword(PasswordGenerator.generatePassword());
         restartedRun.setOwner(run.getOwner());
         restartedRun.setEntitiesIds(run.getEntitiesIds());
+        restartedRun.setSensitive(run.getSensitive());
         restartedRun.setConfigurationId(run.getConfigurationId());
         restartedRun.setExecutionPreferences(run.getExecutionPreferences());
         restartedRun.setRunSids(run.getRunSids());
+        restartedRun.setPrettyUrl(run.getPrettyUrl());
+        restartedRun.setNonPause(run.isNonPause());
         return restartedRun;
     }
 

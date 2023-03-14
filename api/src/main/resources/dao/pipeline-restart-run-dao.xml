@@ -85,6 +85,19 @@
                 ]]>
             </value>
         </property>
+        <property name="loadRestartRunByIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.parent_run_id,
+                        r.restarted_run_id,
+                        r.date
+                    FROM
+                        pipeline.restart_run r
+                    WHERE r.restarted_run_id = ?
+                ]]>
+            </value>
+        </property>
         <property name="loadAllRestartedRunsForInitialRunQuery">
             <value>
                 <![CDATA[

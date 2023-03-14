@@ -69,6 +69,10 @@ public enum DataStorageType {
         return NAMES_MAP.get(name);
     }
 
+    public static Set<String> getIds() {
+        return ID_MAP.keySet();
+    }
+
     private static DataStorageType getObjectStorageType(final CloudProvider provider) {
         switch (provider) {
             case AWS: return S3;
