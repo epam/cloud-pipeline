@@ -186,7 +186,7 @@ public class AclTestBeans {
     @MockBean(name = "aclCache")
     protected AclCache mockAclCache;
 
-    @MockBean
+    @MockBean(name = "aclCacheManager")
     protected CacheManager mockCacheManager;
 
     @MockBean
