@@ -116,7 +116,6 @@ public class GitlabClient {
     public static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
     public static final String GITKEEP_FILE = ".gitkeep";
     public static final String EMAIL_SEPARATOR = "@";
-    public static final String TEXT_WITH_ATTACHMENTS = "%s\n\n%s";
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
