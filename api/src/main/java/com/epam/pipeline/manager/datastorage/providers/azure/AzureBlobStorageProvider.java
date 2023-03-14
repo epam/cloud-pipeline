@@ -34,11 +34,9 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
-import com.epam.pipeline.manager.audit.AuditContainer;
-import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
-import com.epam.pipeline.manager.audit.ContainerAuditClient;
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.audit.AuditClient;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -66,7 +64,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     private final CloudRegionManager cloudRegionManager;
     private final MessageHelper messageHelper;
     private final AuthManager authManager;
-    private final AuditContainer audit;
+    private final AuditClient azAuditClient;
 
     @Override
     public DataStorageType getStorageType() {
@@ -324,9 +322,6 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-        final String user = authManager.getAuthorizedUser();
-        final AuditClient audit = new ContainerAuditClient(getStorageType(), this.audit, user);
-        return new AzureStorageHelper(region, credentials, audit, messageHelper);
+        return new AzureStorageHelper(region, credentials, azAuditClient, messageHelper);
     }
 }
-

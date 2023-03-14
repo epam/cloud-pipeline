@@ -18,7 +18,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
-import com.epam.pipeline.manager.audit.AuditContainer;
+import com.epam.pipeline.manager.audit.AuditClient;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
@@ -182,7 +182,7 @@ public class TestApplication {
     protected UserNotificationRepository userNotificationRepository;
 
     @MockBean
-    public AuditContainer auditContainer;
+    public AuditClient auditClient;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

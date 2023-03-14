@@ -19,14 +19,13 @@ package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.epam.pipeline.manager.audit.entity.DataAccessEntryType;
-import com.epam.pipeline.manager.audit.entity.StorageDataAccessEntry;
+import com.epam.pipeline.manager.audit.entity.DataAccessEntry;
 import com.epam.pipeline.manager.audit.AuditClient;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Util class to delete batch of S3 objects with respect to AWS limit for number of
@@ -74,17 +73,17 @@ public class S3ObjectDeleter implements AutoCloseable {
     }
 
     private void executeDeletion() {
-        audit.putAll(toAuditEntries());
+        audit.put(toAuditEntries());
         client.deleteObjects(toDeleteRequest());
         keys.clear();
     }
 
-    private List<StorageDataAccessEntry> toAuditEntries() {
-        return keys.stream().map(this::toAuditEntry).collect(Collectors.toList());
+    private DataAccessEntry[] toAuditEntries() {
+        return keys.stream().map(this::toAuditEntry).toArray(DataAccessEntry[]::new);
     }
 
-    private StorageDataAccessEntry toAuditEntry(final DeleteObjectsRequest.KeyVersion key) {
-        return new StorageDataAccessEntry(bucket, key.getKey(), DataAccessEntryType.DELETE);
+    private DataAccessEntry toAuditEntry(final DeleteObjectsRequest.KeyVersion key) {
+        return new DataAccessEntry(bucket, key.getKey(), DataAccessEntryType.DELETE);
     }
 
     private DeleteObjectsRequest toDeleteRequest() {

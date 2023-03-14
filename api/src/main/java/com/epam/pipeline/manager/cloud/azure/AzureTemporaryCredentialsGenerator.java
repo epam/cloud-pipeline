@@ -23,15 +23,12 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
-import com.epam.pipeline.manager.audit.AuditContainer;
-import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
-import com.epam.pipeline.manager.audit.ContainerAuditClient;
 import com.epam.pipeline.manager.audit.AuditClient;
+import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureStorageHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import com.epam.pipeline.manager.security.AuthManager;
 import com.microsoft.azure.storage.blob.ContainerSASPermission;
 import com.microsoft.azure.storage.blob.SASProtocol;
 import com.microsoft.azure.storage.blob.SASQueryParameters;
@@ -52,8 +49,7 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
-    private final AuthManager authManager;
-    private final AuditContainer auditContainer;
+    private final AuditClient azAuditClient;
 
     @Override
     public DataStorageType getStorageType() {
@@ -73,9 +69,7 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
         final Integer duration =
                 preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
 
-        final String user = authManager.getAuthorizedUser();
-        final AuditClient audit = new ContainerAuditClient(getStorageType(), auditContainer, user);
-        final AzureStorageHelper helper = new AzureStorageHelper(region, credentials, audit, messageHelper);
+        final AzureStorageHelper helper = new AzureStorageHelper(region, credentials, azAuditClient, messageHelper);
 
         Assert.isTrue(actions.size() == 1, "Multiple actions is not supported for AZURE provider");
 

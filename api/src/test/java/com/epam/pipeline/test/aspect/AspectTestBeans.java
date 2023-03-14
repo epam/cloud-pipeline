@@ -67,7 +67,7 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
-import com.epam.pipeline.manager.audit.AuditContainer;
+import com.epam.pipeline.manager.audit.AuditClient;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
@@ -477,5 +477,5 @@ public class AspectTestBeans {
     protected UserNotificationRepository userNotificationRepository;
 
     @MockBean
-    protected AuditContainer auditContainer;
+    protected AuditClient auditClient;
 }

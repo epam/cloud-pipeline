@@ -85,7 +85,7 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.audit.entity.DataAccessEntryType;
-import com.epam.pipeline.manager.audit.entity.StorageDataAccessEntry;
+import com.epam.pipeline.manager.audit.entity.DataAccessEntry;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.audit.AuditClient;
@@ -333,8 +333,8 @@ public class S3Helper {
     private void moveS3Objects(final AmazonS3 client, final String bucket, final List<MoveObjectRequest> moveRequests) {
         try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, audit, bucket)) {
             moveRequests.forEach(moveRequest -> {
-                audit.put(new StorageDataAccessEntry(bucket, moveRequest.getSourcePath(), DataAccessEntryType.READ),
-                        new StorageDataAccessEntry(bucket, moveRequest.getDestinationPath(), DataAccessEntryType.WRITE));
+                audit.put(new DataAccessEntry(bucket, moveRequest.getSourcePath(), DataAccessEntryType.READ),
+                        new DataAccessEntry(bucket, moveRequest.getDestinationPath(), DataAccessEntryType.WRITE));
                 client.copyObject(moveRequest.toCopyRequest(bucket));
                 deleter.deleteKey(moveRequest.getSourcePath(), moveRequest.getVersion());
             });
@@ -463,7 +463,7 @@ public class S3Helper {
 
     private DataStorageFile putFileToBucket(String bucket, String path, AmazonS3 client,
                                             InputStream dataStream, String owner) {
-        audit.put(new StorageDataAccessEntry(bucket, path, DataAccessEntryType.WRITE));
+        audit.put(new DataAccessEntry(bucket, path, DataAccessEntryType.WRITE));
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setLastModified(new Date());
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, path, dataStream, objectMetadata);
@@ -1050,7 +1050,7 @@ public class S3Helper {
             AmazonS3 client = getDefaultS3Client();
             GetObjectRequest rangeObjectRequest =
                     new GetObjectRequest(dataStorage.getRoot(), path, version).withRange(0, maxDownloadSize - 1);
-            audit.put(new StorageDataAccessEntry(dataStorage.getRoot(), path, DataAccessEntryType.READ));
+            audit.put(new DataAccessEntry(dataStorage.getRoot(), path, DataAccessEntryType.READ));
             S3Object objectPortion = client.getObject(rangeObjectRequest);
             return downloadContent(maxDownloadSize, objectPortion);
         } catch (AmazonS3Exception e) {
@@ -1074,7 +1074,7 @@ public class S3Helper {
             AmazonS3 client = getDefaultS3Client();
             GetObjectRequest rangeObjectRequest =
                 new GetObjectRequest(dataStorage.getRoot(), path, version);
-            audit.put(new StorageDataAccessEntry(dataStorage.getRoot(), path, DataAccessEntryType.READ));
+            audit.put(new DataAccessEntry(dataStorage.getRoot(), path, DataAccessEntryType.READ));
             S3Object object = client.getObject(rangeObjectRequest);
             return new DataStorageStreamingContent(object.getObjectContent(), object.getKey());
         } catch (AmazonS3Exception e) {
