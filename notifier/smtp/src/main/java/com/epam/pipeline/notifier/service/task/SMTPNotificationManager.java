@@ -148,7 +148,7 @@ public class SMTPNotificationManager implements NotificationManager {
         }
 
         String userEmail = getTargetUserEmail(message);
-        if (userEmail != null) {
+        if (isValidEmail(userEmail)) {
             email.addTo(userEmail);
         }
 
@@ -156,7 +156,7 @@ public class SMTPNotificationManager implements NotificationManager {
 
         for (PipelineUser user : keepInformedUsers) {
             String address = user.getEmail();
-            if (address != null) {
+            if (isValidEmail(address)) {
                 email.addBcc(address);
             }
         }
@@ -195,6 +195,10 @@ public class SMTPNotificationManager implements NotificationManager {
             Thread.currentThread().interrupt();
             LOGGER.error(e.getMessage(), e);
         }
+    }
+
+    private boolean isValidEmail(final String email) {
+        return EmailValidator.getInstance().isValid(email);
     }
 
 }
