@@ -47,10 +47,13 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
+import com.epam.pipeline.manager.audit.AuditContainer;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
+import com.epam.pipeline.manager.audit.ContainerAuditClient;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.audit.AuditClient;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -96,6 +99,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
     private final S3TemporaryCredentialsGenerator stsCredentialsGenerator;
+    private final AuditContainer auditContainer;
 
     @Override
     public DataStorageType getStorageType() {
@@ -436,20 +440,27 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
-        AwsRegion region = getAwsRegion(dataStorage);
+        final AwsRegion region = getAwsRegion(dataStorage);
+        final AuditClient audit = getAuditClient();
         if (dataStorage.isUseAssumedCredentials()) {
             final String roleArn = Optional.ofNullable(dataStorage.getTempCredentialsRole())
                     .orElse(region.getTempCredentialsRole());
-            return new AssumedCredentialsS3Helper(roleArn, region, messageHelper);
+            return new AssumedCredentialsS3Helper(audit, messageHelper, region, roleArn);
         }
         if (StringUtils.isNotBlank(region.getIamRole())) {
-            return new AssumedCredentialsS3Helper(region.getIamRole(), region, messageHelper);
+            return new AssumedCredentialsS3Helper(audit, messageHelper, region, region.getIamRole());
         }
-        return new RegionAwareS3Helper(region, messageHelper);
+        return new RegionAwareS3Helper(audit, messageHelper, region);
     }
 
     public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
-        return new TemporaryCredentialsS3Helper(credentials, messageHelper, region);
+        final AuditClient audit = getAuditClient();
+        return new TemporaryCredentialsS3Helper(audit, messageHelper, region, credentials);
+    }
+
+    private AuditClient getAuditClient() {
+        final String user = authManager.getAuthorizedUser();
+        return new ContainerAuditClient(getStorageType(), auditContainer, user);
     }
 
     @Override

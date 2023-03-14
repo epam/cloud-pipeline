@@ -35,6 +35,9 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.audit.AuditContainer;
+import com.epam.pipeline.manager.audit.ContainerAuditClient;
+import com.epam.pipeline.manager.audit.AuditClient;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
@@ -62,6 +65,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     private final MessageHelper messageHelper;
     private final GCPClient gcpClient;
     private final AuthManager authManager;
+    private final AuditContainer auditContainer;
 
     @Override
     public DataStorageType getStorageType() {
@@ -274,7 +278,9 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {
-        final GCPRegion gcpRegion = cloudRegionManager.getGCPRegion(storage);
-        return new GSBucketStorageHelper(messageHelper, gcpRegion, gcpClient);
+        final GCPRegion region = cloudRegionManager.getGCPRegion(storage);
+        final String user = authManager.getAuthorizedUser();
+        final AuditClient audit = new ContainerAuditClient(getStorageType(), auditContainer, user);
+        return new GSBucketStorageHelper(audit, messageHelper, region, gcpClient);
     }
 }

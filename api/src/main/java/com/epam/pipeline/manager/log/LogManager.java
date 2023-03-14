@@ -205,6 +205,7 @@ public class LogManager {
     }
 
     public void save(final List<LogEntry> logEntries) {
+        log.debug("Saving log entries ({})...", logEntries.size());
         final String index = getWriteIndex();
         final BulkRequest bulkRequest = new BulkRequest();
         final List<IndexRequest> indexRequests = logEntries.stream()

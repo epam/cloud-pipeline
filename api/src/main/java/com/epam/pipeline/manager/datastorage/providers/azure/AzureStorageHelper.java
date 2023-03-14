@@ -32,7 +32,10 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.manager.audit.entity.DataAccessEntryType;
+import com.epam.pipeline.manager.audit.entity.StorageDataAccessEntry;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.audit.AuditClient;
 import com.epam.pipeline.manager.datastorage.providers.azure.AbstractListingIterator.FlatIterator;
 import com.epam.pipeline.manager.datastorage.providers.azure.AbstractListingIterator.HierarchyIterator;
 import com.epam.pipeline.utils.FileContentUtils;
@@ -111,12 +114,15 @@ public class AzureStorageHelper {
     private final MessageHelper messageHelper;
     private final DateFormat dateFormat;
     private final HttpPipelineLogger httpLogger;
+    private final AuditClient audit;
 
     public AzureStorageHelper(final AzureRegion azureRegion,
                               final AzureRegionCredentials azureRegionCredentials,
+                              final AuditClient audit,
                               final MessageHelper messageHelper) {
         this.azureRegion = azureRegion;
         this.azureRegionCredentials = azureRegionCredentials;
+        this.audit = audit;
         this.messageHelper = messageHelper;
         final TimeZone tz = TimeZone.getTimeZone("UTC");
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -183,6 +189,7 @@ public class AzureStorageHelper {
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
                                       final String owner) {
         validatePath(path);
+        audit.put(new StorageDataAccessEntry(dataStorage.getPath(), path, DataAccessEntryType.WRITE));
         unwrap(getBlobUrl(dataStorage, path)
                 .upload(Flowable.just(ByteBuffer.wrap(contents)), contents.length, null,
                         StringUtils.isBlank(owner) ? null
@@ -290,6 +297,7 @@ public class AzureStorageHelper {
         validateBlob(dataStorage, path, true);
         final Long fileSize = getDataStorageFile(dataStorage, path).getSize();
         final BlobRange blobRange = new BlobRange().withCount(maxDownloadSize);
+        audit.put(new StorageDataAccessEntry(dataStorage.getPath(), path, DataAccessEntryType.READ));
         return unwrap(getBlobUrl(dataStorage, path).download(blobRange, null, false, null)
                         .flatMap(response -> FlowableUtil.collectBytesInArray(response.body(null))
                                 .map(bytes -> {
@@ -306,6 +314,7 @@ public class AzureStorageHelper {
     public DataStorageStreamingContent getStream(final AzureBlobStorage dataStorage, final String path) {
         //TODO: can be reason of error
         validateBlob(dataStorage, path, true);
+        audit.put(new StorageDataAccessEntry(dataStorage.getPath(), path, DataAccessEntryType.READ));
         return unwrap(getBlobUrl(dataStorage, path).download()
                         .map(r -> r.body(null))
                         .flatMap(FlowableUtil::collectBytesInArray)
@@ -444,6 +453,7 @@ public class AzureStorageHelper {
     }
 
     private void deleteBlob(final AzureBlobStorage dataStorage, final String path) {
+        audit.put(new StorageDataAccessEntry(dataStorage.getPath(), path, DataAccessEntryType.DELETE));
         unwrap(getBlobUrl(dataStorage, path).delete());
     }
 
@@ -624,6 +634,8 @@ public class AzureStorageHelper {
     }
 
     private void copyBlob(final AzureBlobStorage storage, final String sourcePath, final String destinationPath) {
+        audit.put(new StorageDataAccessEntry(storage.getPath(), sourcePath, DataAccessEntryType.READ),
+                new StorageDataAccessEntry(storage.getPath(), destinationPath, DataAccessEntryType.WRITE));
         final String sourceBlobUrl = String.format(BLOB_URL_FORMAT + "/%s/%s", azureRegion.getStorageAccount(),
                 storage.getPath(), sourcePath);
         unwrap(getBlobUrl(storage, destinationPath).toPageBlobURL().startCopyFromURL(url(sourceBlobUrl)));

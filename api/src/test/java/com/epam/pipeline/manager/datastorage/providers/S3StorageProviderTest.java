@@ -22,8 +22,10 @@ import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.waiters.AmazonS3Waiters;
 import com.amazonaws.waiters.Waiter;
 import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.manager.audit.AuditClient;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -31,72 +33,79 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class S3StorageProviderTest extends AbstractSpringTest {
 
-    public static final long REGION_ID = 1L;
-    private final String bucketName = "bucketname";
-
-    @SpyBean
-    private S3StorageProvider s3StorageProvider;
-
-    @SpyBean
-    private S3Helper s3Helper;
-
-    @Mock
-    private AmazonS3 amazonClient;
-
-    @Mock
-    private Bucket bucket;
+    private static final long REGION_ID = 1L;
+    private static final String REGION_CODE = "us-east-1";
+    private static final String REGION_CORS = "[" +
+            "  {" +
+            "    \"AllowedOrigins\": [\"string\"]," +
+            "    \"AllowedMethods\": [\"PUT\", \"GET\"]," +
+            "    \"AllowedHeaders\": [\"string\"]," +
+            "    \"MaxAgeSeconds\": 3000," +
+            "    \"ExposeHeaders\": [\"string\"]" +
+            "  }" +
+            "]";
+    private static final String BUCKET = "bucketname";
 
     @MockBean
     private CloudRegionManager cloudRegionManager;
 
+    @SpyBean
+    private S3StorageProvider s3StorageProvider;
+
+    @Autowired
+    private MessageHelper messageHelper;
+
+    @Mock
+    private AmazonS3 amazonClient;
+
     @Before
     public void setUp() {
-        when(bucket.getName()).thenReturn(bucketName);
-        when(amazonClient.createBucket(any(CreateBucketRequest.class)))
-                .thenReturn(bucket);
+        final AuditClient audit = mock(AuditClient.class);
+
+        final S3Helper s3Helper = spy(new S3Helper(audit, messageHelper));
+        doReturn(s3Helper).when(s3StorageProvider).getS3Helper(any());
         doReturn(amazonClient).when(s3Helper).getDefaultS3Client();
+
         final AmazonS3Waiters waiters = mock(AmazonS3Waiters.class);
-        when(amazonClient.waiters()).thenReturn(waiters);
-        final Waiter waiter = mock(Waiter.class);
-        when(waiters.bucketExists()).thenReturn(waiter);
-        doNothing().when(waiter).run(any());
-        final AwsRegion region = new AwsRegion();
-        region.setId(REGION_ID);
-        region.setRegionCode("us-east-1");
-        region.setCorsRules("[" +
-                "  {" +
-                "    \"AllowedOrigins\": [\"string\"]," +
-                "    \"AllowedMethods\": [\"PUT\", \"GET\"]," +
-                "    \"AllowedHeaders\": [\"string\"]," +
-                "    \"MaxAgeSeconds\": 3000," +
-                "    \"ExposeHeaders\": [\"string\"]" +
-                "  }" +
-                "]");
-        when(cloudRegionManager.getAwsRegion(any())).thenReturn(region);
-        doReturn(s3Helper).when(s3StorageProvider).getS3Helper(any(S3bucketDataStorage.class));
+        doReturn(waiters).when(amazonClient).waiters();
+        doReturn(mock(Waiter.class)).when(waiters).bucketExists();
+
+        final Bucket bucket = mock(Bucket.class);
+        doReturn(bucket).when(amazonClient).createBucket(any(CreateBucketRequest.class));
+        doReturn(BUCKET).when(bucket).getName();
+
+        doReturn(region()).when(cloudRegionManager).getAwsRegion(any());
     }
 
     @Test
     public void createBucketWithSpecifiedCorsPolicy() {
-        final S3bucketDataStorage storage = new S3bucketDataStorage(1L, bucketName, bucketName);
+        final S3bucketDataStorage storage = new S3bucketDataStorage(1L, BUCKET, BUCKET);
         storage.setRegionId(REGION_ID);
         final String createdBucketName = s3StorageProvider.createStorage(storage);
-        Assert.assertEquals(bucketName, createdBucketName);
+        Assert.assertEquals(BUCKET, createdBucketName);
 
         s3StorageProvider.postCreationProcessing(storage);
 
         verify(amazonClient).setBucketCrossOriginConfiguration(any(), any());
+    }
+
+    private AwsRegion region() {
+        final AwsRegion region = new AwsRegion();
+        region.setId(REGION_ID);
+        region.setRegionCode(REGION_CODE);
+        region.setCorsRules(REGION_CORS);
+        return region;
     }
 }

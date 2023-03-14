@@ -16,30 +16,31 @@
 
 package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.epam.pipeline.manager.audit.entity.DataAccessEntryType;
+import com.epam.pipeline.manager.audit.entity.StorageDataAccessEntry;
+import com.epam.pipeline.manager.audit.AuditClient;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Util class to delete batch of S3 objects with respect to AWS limit for number of
  * deleted objects in one request. Note that to actually delete all keys, calling of method
  * close() is required.
  */
+@RequiredArgsConstructor
 public class S3ObjectDeleter implements AutoCloseable {
 
     private static final int MAX_DELETE_REQUEST_SIZE = 1000;
-    private AmazonS3 client;
-    private List<DeleteObjectsRequest.KeyVersion> keysToDelete;
-    private DeleteObjectsRequest deleteRequest;
-
-    public S3ObjectDeleter(AmazonS3 client, String bucket) {
-        this.client = client;
-        this.keysToDelete = new ArrayList<>();
-        this.deleteRequest = new DeleteObjectsRequest(bucket);
-    }
+    private final AmazonS3 client;
+    private final AuditClient audit;
+    private final String bucket;
+    private final List<DeleteObjectsRequest.KeyVersion> keys = new ArrayList<>();
 
     /**
      * Adds an object to a deletion queue, actual deletion is performed only if current queue
@@ -49,8 +50,8 @@ public class S3ObjectDeleter implements AutoCloseable {
      * @return true - if some object were deleted, false - if object was just added to deletion queue
      */
     public boolean deleteKey(String key, String version) {
-        keysToDelete.add(new DeleteObjectsRequest.KeyVersion(key, version));
-        if (keysToDelete.size() == MAX_DELETE_REQUEST_SIZE) {
+        keys.add(new DeleteObjectsRequest.KeyVersion(key, version));
+        if (keys.size() >= MAX_DELETE_REQUEST_SIZE) {
             executeDeletion();
             return true;
         }
@@ -66,18 +67,27 @@ public class S3ObjectDeleter implements AutoCloseable {
      */
     @Override
     public void close() {
-        if (CollectionUtils.isEmpty(keysToDelete)) {
+        if (CollectionUtils.isEmpty(keys)) {
             return;
         }
         executeDeletion();
     }
 
     private void executeDeletion() {
-        deleteRequest.setKeys(keysToDelete);
-        client.deleteObjects(deleteRequest);
-        keysToDelete = new ArrayList<>();
+        audit.putAll(toAuditEntries());
+        client.deleteObjects(toDeleteRequest());
+        keys.clear();
     }
 
+    private List<StorageDataAccessEntry> toAuditEntries() {
+        return keys.stream().map(this::toAuditEntry).collect(Collectors.toList());
+    }
 
+    private StorageDataAccessEntry toAuditEntry(final DeleteObjectsRequest.KeyVersion key) {
+        return new StorageDataAccessEntry(bucket, key.getKey(), DataAccessEntryType.DELETE);
+    }
+
+    private DeleteObjectsRequest toDeleteRequest() {
+        return new DeleteObjectsRequest(bucket).withKeys(keys);
+    }
 }
-

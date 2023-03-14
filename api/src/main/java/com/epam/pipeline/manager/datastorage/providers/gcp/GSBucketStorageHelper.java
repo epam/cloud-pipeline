@@ -32,6 +32,9 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.audit.AuditClient;
+import com.epam.pipeline.manager.audit.entity.DataAccessEntryType;
+import com.epam.pipeline.manager.audit.entity.StorageDataAccessEntry;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
@@ -99,6 +102,7 @@ public class GSBucketStorageHelper {
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
 
+    private final AuditClient audit;
     private final MessageHelper messageHelper;
     private final GCPRegion region;
     private final GCPClient gcpClient;
@@ -176,6 +180,7 @@ public class GSBucketStorageHelper {
                 .setMetadata(StringUtils.isBlank(owner) ? null
                         : Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, owner))
                 .build();
+        audit.put(new StorageDataAccessEntry(bucketName, path, DataAccessEntryType.WRITE));
         final Blob blob = client.create(blobInfo, contents);
         return createDataStorageFile(blob);
     }
@@ -246,9 +251,7 @@ public class GSBucketStorageHelper {
         final Blob oldBlob = checkBlobExistsAndGet(bucketName, oldPath, client, null);
         checkBlobDoesNotExist(bucketName, newPath, client);
 
-        final CopyWriter copyWriter = client.get(bucketName).get(oldPath).copyTo(bucketName, newPath);
-        final Blob newBlob = copyWriter.getResult();
-        deleteBlob(oldBlob, client, false);
+        final Blob newBlob = moveBlob(client, oldBlob, BlobId.of(bucketName, newPath));
 
         return createDataStorageFile(newBlob);
     }
@@ -271,13 +274,20 @@ public class GSBucketStorageHelper {
         blobs.iterateAll().forEach(oldBlob -> {
             final String oldBlobName = oldBlob.getName();
             final String newBlobName = newFolderPath + oldBlobName.substring(oldFolderPath.length());
-            final CopyWriter copyWriter = oldBlob.copyTo(BlobId.of(bucketName, newBlobName));
-            final Blob newBlob = copyWriter.getResult();
-            Assert.notNull(newBlob, "Created blob should not be empty");
-            deleteBlob(oldBlob, client, false);
+            moveBlob(client, oldBlob, BlobId.of(bucketName, newBlobName));
         });
 
         return createDataStorageFolder(newFolderPath);
+    }
+
+    private Blob moveBlob(final Storage client, final Blob oldBlob, final BlobId newBlobId) {
+        audit.put(new StorageDataAccessEntry(oldBlob.getBucket(), oldBlob.getName(), DataAccessEntryType.READ),
+                new StorageDataAccessEntry(newBlobId.getBucket(), newBlobId.getName(), DataAccessEntryType.WRITE));
+        final CopyWriter copyWriter = oldBlob.copyTo(newBlobId);
+        final Blob newBlob = copyWriter.getResult();
+        Assert.notNull(newBlob, "Created blob should not be empty");
+        deleteBlob(oldBlob, client, false);
+        return newBlob;
     }
 
     public boolean checkStorageExists(final String bucketName) {
@@ -305,6 +315,7 @@ public class GSBucketStorageHelper {
         content.setContentType(blob.getContentType());
         content.setTruncated(blob.getSize() > bufferSize);
 
+        audit.put(new StorageDataAccessEntry(bucketName, path, DataAccessEntryType.READ));
         try (ReadChannel reader = blob.reader()) {
             final ByteBuffer bytes = ByteBuffer.allocate(bufferSize);
             reader.read(bytes);
@@ -327,6 +338,7 @@ public class GSBucketStorageHelper {
         final String bucketName = storage.getPath();
 
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
+        audit.put(new StorageDataAccessEntry(bucketName, path, DataAccessEntryType.READ));
         try (ReadChannel reader = blob.reader()) {
             return new DataStorageStreamingContent(Channels.newInputStream(reader), path);
         }
@@ -400,6 +412,7 @@ public class GSBucketStorageHelper {
                 .setSourceOptions(Storage.BlobSourceOption.generationMatch())
                 .setTarget(BlobId.of(bucketName, path))
                 .build();
+        audit.put(new StorageDataAccessEntry(bucketName, path, DataAccessEntryType.WRITE));
         client.copy(request).getResult();
         deleteBlob(blob, client, true);
     }
@@ -625,6 +638,7 @@ public class GSBucketStorageHelper {
         final String bucketName = blob.getBucket();
         final String path = blob.getName();
         final BlobId blobId = BlobId.of(bucketName, path, withVersion ? blob.getGeneration() : null);
+        audit.put(new StorageDataAccessEntry(bucketName, path, DataAccessEntryType.DELETE));
         final boolean deleted = client.delete(blobId);
         if (!deleted) {
             throw new DataStorageException(
