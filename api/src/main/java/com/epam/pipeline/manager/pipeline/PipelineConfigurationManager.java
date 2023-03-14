@@ -208,6 +208,10 @@ public class PipelineConfigurationManager {
             configuration.setKubeLabels(defaultConfig.getKubeLabels());
         }
 
+        if (!StringUtils.isEmpty(runVO.getKubeServiceAccount())) {
+            configuration.setKubeServiceAccount(runVO.getKubeServiceAccount());
+        }
+
         //client always sends actual node-count
         configuration.setNodeCount(runVO.getNodeCount());
 

@@ -18,11 +18,8 @@ package com.epam.pipeline.aspect.run;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +35,6 @@ import java.util.Optional;
 @Slf4j
 @RequiredArgsConstructor
 public class PipelineLaunchAspect {
-    private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
 
@@ -49,26 +45,14 @@ public class PipelineLaunchAspect {
             return;
         }
         final Boolean advancedRunAssignPolicy = Optional.ofNullable(runVO.getRunAssignPolicy())
-                .map(RunAssignPolicy::getRules)
-                .map(rules ->
-                        rules.stream().anyMatch(rule -> !rule.getLabel().equals(KubernetesConstants.RUN_ID_LABEL)))
+                .map(policy -> !policy.getLabel().equalsIgnoreCase(KubernetesConstants.RUN_ID_LABEL))
                 .orElse(false);
         if (advancedRunAssignPolicy) {
             log.error(messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
         }
-        final Boolean isSystemJobRun = Optional.ofNullable(runVO.getParams())
-                .map(params ->
-                    params.entrySet().stream()
-                        .anyMatch(p -> {
-                            final String systemJobFlag = preferenceManager.getPreference(
-                                    SystemPreferences.SYSTEM_JOB_FLAG_PARAMETER
-                            );
-                            return p.getKey().equals(systemJobFlag) &&
-                                    p.getValue().getValue().equalsIgnoreCase(Boolean.TRUE.toString());
-                        })
-                ).orElse(false);
-        if (isSystemJobRun) {
-            log.error(messageHelper.getMessage(MessageConstants.ERROR_RUN_SYSTEM_JOB_FORBIDDEN, user.getUserName()));
+        if (runVO.getKubeServiceAccount() != null) {
+            log.error(messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName()));
         }
     }
 }

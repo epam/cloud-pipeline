@@ -57,6 +57,7 @@ import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -258,7 +259,8 @@ public class PipelineRunManager {
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
-                runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
+                runVO.getInstanceType(), runVO.getRunAssignPolicy(), runVO.getParentNodeId(),
+                runVO.getConfigurationName(), null,
                 runVO.getParentRunId(), null, null, runVO.getRunSids(),
                 configuration.getNotifications());
         run.setParent(tool);
@@ -304,8 +306,12 @@ public class PipelineRunManager {
         run.setLastChangeCommitTime(DateUtils.now());
         run.setRunSids(runVO.getRunSids());
         run.setOwner(parentRun.getOwner());
-        String launchedCommand = pipelineLauncher.launch(run, configuration,
-                endpoints, runVO.getUseRunId().toString(), false, parentRun.getPodId(), null);
+        String launchedCommand = pipelineLauncher.launch(
+                run, configuration, endpoints,
+                RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL)
+                        .value(runVO.getUseRunId().toString()).build(),
+                false, parentRun.getPodId(), null
+        );
         run.setActualCmd(launchedCommand);
         return run;
     }
@@ -335,7 +341,8 @@ public class PipelineRunManager {
 
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
-                runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
+                runVO.getInstanceType(), runVO.getRunAssignPolicy(), runVO.getParentNodeId(),
+                runVO.getConfigurationName(), null,
                 runVO.getParentRunId(), null, null, runVO.getRunSids(),
                 configuration.getNotifications());
         run.setParent(pipeline);
@@ -363,15 +370,17 @@ public class PipelineRunManager {
      * @param pipeline - null in case of CMD launch
      * @param version - null in case of CMD launch
      * @param instanceType
+     * @param runAssignPolicy
      * @param configurationName
      * @param runSids - a list of identities (user names or groups) that have access to run
      * @return
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun launchPipeline(PipelineConfiguration configuration, Pipeline pipeline, String version,
-            String instanceType, Long parentNodeId, String configurationName, String clusterId,
-            Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids,
-            List<PipelineStartNotificationRequest> notificationRequests) {
+                                      String instanceType, RunAssignPolicy runAssignPolicy, Long parentNodeId,
+                                      String configurationName, String clusterId, Long parentRunId,
+                                      List<Long> entityIds, Long configurationId, List<RunSid> runSids,
+                                      List<PipelineStartNotificationRequest> notificationRequests) {
         Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
         Tool tool = getToolForRun(configuration);
         Optional<ToolVersion> toolVersion = toolManager.findToolVersion(tool);
@@ -400,10 +409,12 @@ public class PipelineRunManager {
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
         }
-        String useNodeLabel = parentNodeId != null ? parentNodeId.toString() : run.getId().toString();
+        final RunAssignPolicy effRunAssignPolicy = constructEffectiveAssignPolicy(
+                runAssignPolicy, parentNodeId, run.getId()
+        );
         run.setConfigName(configurationName);
         run.setRunSids(runSids);
-        String launchedCommand = pipelineLauncher.launch(run, configuration, endpoints, useNodeLabel, clusterId);
+        String launchedCommand = pipelineLauncher.launch(run, configuration, endpoints, effRunAssignPolicy, clusterId);
         //update instance info according to evaluated command
         run.setActualCmd(launchedCommand);
         save(run);
@@ -1029,8 +1040,9 @@ public class PipelineRunManager {
         final List<String> endpoints = configuration.isEraseRunEndpoints() ?
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
+        final String runIdLabel = restartedRun.getId().toString();
         final String launchedCommand = pipelineLauncher.launch(restartedRun, configuration, endpoints,
-                restartedRun.getId().toString(), null);
+                RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL).value(runIdLabel).build(), null);
         restartedRun.setActualCmd(launchedCommand);
         save(restartedRun);
 
@@ -1236,6 +1248,23 @@ public class PipelineRunManager {
         return new PagedResult<>(runs, totalCount);
     }
 
+    private RunAssignPolicy constructEffectiveAssignPolicy(final RunAssignPolicy assignPolicy,
+                                                           final Long parentNodeId,
+                                                           final Long runId) {
+        if (assignPolicy != null && assignPolicy.isValid()) {
+            log.debug("RunAssignPolicy is provided and valid, will proceed with it.");
+            return assignPolicy;
+        } else {
+            final String value = parentNodeId != null ? parentNodeId.toString() : runId.toString();
+            log.debug(String.format(
+                    "Configuring RunAssignPolicy as: label %s, value: %s.", KubernetesConstants.RUN_ID_LABEL, value));
+            return RunAssignPolicy.builder()
+                    .label(KubernetesConstants.RUN_ID_LABEL)
+                    .value(value)
+                    .build();
+        }
+    }
+
     private void setParentInstance(PipelineRun run, Long parentNodeId) {
         PipelineRun parentRun = runCRUDService.loadRunById(parentNodeId);
         run.setInstance(parentRun.getInstance());
@@ -1248,7 +1277,7 @@ public class PipelineRunManager {
         configurationManager.updateWorkerConfiguration(parentId, runVO, configuration, false, true);
         for (int i = 0; i < nodeCount; i++) {
             launchPipeline(configuration, pipeline, version,
-                    runVO.getInstanceType(), runVO.getParentNodeId(),
+                    runVO.getInstanceType(), runVO.getRunAssignPolicy(), runVO.getParentNodeId(),
                     runVO.getConfigurationName(), parentId, run.getId(), null, null,
                     runVO.getRunSids(), configuration.getNotifications());
         }

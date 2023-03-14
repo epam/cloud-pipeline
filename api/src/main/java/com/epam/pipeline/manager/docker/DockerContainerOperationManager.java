@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
@@ -331,7 +332,9 @@ public class DockerContainerOperationManager {
         try {
             if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
-                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
+                final String runIdLabel = run.getId().toString();
+                launcher.launch(run, configuration, endpoints,
+                        RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL).value(runIdLabel).build(),
                         true, run.getPodId(), null, ImagePullPolicy.NEVER);
             }
         } finally {

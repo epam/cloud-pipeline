@@ -164,7 +164,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
                 .thenReturn(price);
-        when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString(), anyString()))
+        when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), any(), anyString()))
                 .thenReturn("sleep");
         when(toolScanInfoManager.loadToolVersionScanInfo(notScannedTool.getId(), null))
                 .thenReturn(Optional.empty());

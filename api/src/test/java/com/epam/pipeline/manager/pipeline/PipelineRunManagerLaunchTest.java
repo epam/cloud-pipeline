@@ -456,7 +456,7 @@ public class PipelineRunManagerLaunchTest {
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
                                        final String instanceType, final Long parentRunId,
                                        final List<PipelineStartNotificationRequest> notificationRequests) {
-        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null,
+        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null,
                 null, null, parentRunId, null, null, null,
                 notificationRequests);
     }

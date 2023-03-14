@@ -16,21 +16,23 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 
-import java.util.List;
 
 @Value
 @Builder
 public class RunAssignPolicy {
-    List<RunAssignRule> rules;
 
-    @Value
-    @AllArgsConstructor
-    public static class RunAssignRule {
-        String label;
-        String value;
+
+    String label;
+    String value;
+
+    public boolean isMatch(final String label, final String value) {
+        return this.label.equals(label) && this.value.equals(value);
+    }
+
+    public boolean isValid() {
+        return !label.isEmpty() && !value.isEmpty();
     }
 }

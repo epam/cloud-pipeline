@@ -159,6 +159,8 @@ public class PipelineConfiguration {
 
     private Map<String, String> kubeLabels;
 
+    private String kubeServiceAccount;
+
     @JsonProperty(value = RAW_EDIT)
     private Boolean rawEdit;
 

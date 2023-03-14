@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
@@ -87,6 +88,7 @@ public class PipelineExecutor {
             .hostPath("/sys/fs/cgroup")
             .mountPath("/sys/fs/cgroup").build();
     private static final String DOMAIN_DELIMITER = "@";
+    private static final String DEFAULT_KUBE_SERVICE_ACCOUNT = "default";
 
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
@@ -108,14 +110,17 @@ public class PipelineExecutor {
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-                              String pipelineId, String nodeIdLabel, String secretName, String clusterId) {
-        launchRootPod(command, run, envVars, endpoints, pipelineId, nodeIdLabel, secretName, clusterId,
-                ImagePullPolicy.ALWAYS, Collections.emptyMap());
+                              String pipelineId, RunAssignPolicy effectiveRunAssignPolicy,
+                              String secretName, String clusterId) {
+        launchRootPod(command, run, envVars, endpoints, pipelineId, effectiveRunAssignPolicy,
+                secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null);
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-            String pipelineId, String nodeIdLabel, String secretName, String clusterId,
-                              ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels) {
+                              String pipelineId, RunAssignPolicy effectiveRunAssignPolicy,
+                              String secretName, String clusterId,
+                              ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels,
+                              String kubeServiceAccount) {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
@@ -133,9 +138,10 @@ public class PipelineExecutor {
             String runIdLabel = String.valueOf(run.getId());
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-                nodeSelector.put(KubernetesConstants.RUN_ID_LABEL, nodeIdLabel);
+                nodeSelector.put(effectiveRunAssignPolicy.getLabel(), effectiveRunAssignPolicy.getValue());
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
-                if (run.getPodId().equals(pipelineId) && nodeIdLabel.equals(runIdLabel)) {
+                if (run.getPodId().equals(pipelineId) &&
+                        effectiveRunAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
                     labels.put(KubernetesConstants.TYPE_LABEL, KubernetesConstants.PIPELINE_TYPE);
                 }
                 labels.put(KubernetesConstants.RUN_ID_LABEL, runIdLabel);
@@ -147,8 +153,10 @@ public class PipelineExecutor {
 
             OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
             ObjectMeta metadata = getObjectMeta(run, labels);
+            final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
             PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getActualDockerImage(), command,
-                    imagePullPolicy, nodeIdLabel.equals(runIdLabel));
+                    imagePullPolicy, effectiveRunAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
+                    verifiedKubeServiceAccount);
             Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
             LOGGER.debug("Created POD: {}", created.toString());
@@ -157,6 +165,19 @@ public class PipelineExecutor {
 
     private String normalizeOwner(final String owner) {
         return splitName(owner).replaceAll(KubernetesConstants.KUBE_NAME_FULL_REGEXP, "-");
+    }
+
+    private String fetchVerifiedKubeServiceAccount(final KubernetesClient client, final String kubeServiceAccount) {
+        if (StringUtils.isNotBlank(kubeServiceAccount)) {
+            return client.serviceAccounts()
+                .inNamespace(kubeNamespace).list().getItems().stream()
+                .filter(serviceAccount -> serviceAccount.getMetadata().getName().equals(kubeServiceAccount))
+                .map(serviceAccount -> serviceAccount.getMetadata().getName())
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Can't find kube service account that was requested!"));
+        } else {
+            return DEFAULT_KUBE_SERVICE_ACCOUNT;
+        }
     }
 
     private String splitName(final String owner) {
@@ -177,7 +198,8 @@ public class PipelineExecutor {
 
     private PodSpec getPodSpec(PipelineRun run, List<EnvVar> envVars, String secretName,
                                Map<String, String> nodeSelector, String dockerImage,
-                               String command, ImagePullPolicy imagePullPolicy, boolean isParentPod) {
+                               String command, ImagePullPolicy imagePullPolicy, boolean isParentPod,
+                               String kubeServiceAccount) {
         PodSpec spec = new PodSpec();
         spec.setRestartPolicy("Never");
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
@@ -197,6 +219,8 @@ public class PipelineExecutor {
         boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars,
                 KubernetesConstants.CP_CAP_DIND_NATIVE);
         boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
+
+        spec.setServiceAccountName(kubeServiceAccount);
 
         if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
             spec.setVolumes(getWindowsVolumes());

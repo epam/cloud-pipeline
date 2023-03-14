@@ -140,7 +140,7 @@ public class FirecloudRunner implements ExecutionRunner<FirecloudRunConfiguratio
                 .build());
         addCredentials(runConfiguration, settings);
         return pipelineRunManager.launchPipeline(runConfiguration, null, null,
-                startVO.getInstanceType(), startVO.getParentNodeId(),
+                startVO.getInstanceType(), startVO.getRunAssignPolicy(), startVO.getParentNodeId(),
                 startVO.getConfigurationName(), null, null, entities, configurationId,
                 startVO.getRunSids(), startVO.getNotifications());
     }
