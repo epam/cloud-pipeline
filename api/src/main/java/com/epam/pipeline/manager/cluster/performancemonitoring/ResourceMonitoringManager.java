@@ -476,6 +476,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
             final List<PipelineRun> pausedRuns = pipelineRunManager
                     .loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSED));
+            if (CollectionUtils.isEmpty(pausedRuns)) {
+                return;
+            }
             final Map<Long, List<RunStatus>> statuses = runStatusManager.loadRunStatus(
                     pausedRuns.stream()
                     .map(PipelineRun::getId)
