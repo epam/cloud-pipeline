@@ -101,6 +101,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   @computed
   get displayGraph () {
     const {language} = this.props;
+    if (this.props.pipeline && this.props.pipeline.value.id === 15594) {
+      return true;
+    }
     if (language && language.loaded) {
       return graphIsSupportedForLanguage(language.value);
     }
