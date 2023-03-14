@@ -23,6 +23,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.ZonedDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -37,4 +38,5 @@ public class GitlabIssueComment {
     @JsonProperty("updated_at")
     private ZonedDateTime updatedAt;
     private GitlabUser author;
+    private List<String> attachments;
 }

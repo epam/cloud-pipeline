@@ -41,18 +41,19 @@ import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.utils.GitUtils;
+import javafx.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.UriUtils;
 import retrofit2.HttpException;
 import retrofit2.Response;
@@ -70,6 +71,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -114,6 +116,7 @@ public class GitlabClient {
     public static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
     public static final String GITKEEP_FILE = ".gitkeep";
     public static final String EMAIL_SEPARATOR = "@";
+    public static final String TEXT_WITH_ATTACHMENTS = "%s\n\n%s";
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -433,17 +436,16 @@ public class GitlabClient {
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
     }
 
-    public GitlabIssue createIssue(final String project, final GitlabIssue issue) throws GitClientException {
-        if (!CollectionUtils.isEmpty(issue.getAttachments())) {
-            final List<GitlabUpload> uploads = issue.getAttachments().stream()
-                    .map(a -> upload(project, a))
-                    .collect(Collectors.toList());
-            final String attachments = uploads.stream()
-                    .map(u -> String.format("!%s", u.getMarkdown()))
-                    .collect(Collectors.joining("\n\n"));
-            issue.setDescription(String.format("%s\n\n%s", issue.getDescription(), attachments));
-        }
-        return execute(gitLabApi.createIssue(apiVersion, project, issue));
+    public GitlabIssue createOrUpdateIssue(final String project, final GitlabIssue issue) throws GitClientException {
+        issue.setDescription(formatTextWithAttachments(project,
+                issue.getAttachments(),
+                issue.getDescription()));
+        return issue.getId() == null ? execute(gitLabApi.createIssue(apiVersion, project, issue)) :
+                execute(gitLabApi.updateIssue(apiVersion, project, issue.getId(), issue));
+    }
+
+    public Boolean deleteIssue(final String project, final Long issueId) throws GitClientException {
+        return execute(gitLabApi.deleteIssue(apiVersion, project, issueId));
     }
 
     public GitlabUpload upload(final String project, final String path) throws GitClientException {
@@ -456,12 +458,16 @@ public class GitlabClient {
         return execute(gitLabApi.upload(apiVersion, project, filePart));
     }
 
-    public List<GitlabIssue> getIssues(final String project, final List<String> labels) throws GitClientException {
-        return execute(gitLabApi.getIssues(apiVersion, project, labels));
+    public List<GitlabIssue> getIssues(final String project, final String authorId, final List<String> labels)
+            throws GitClientException {
+        return execute(gitLabApi.getIssues(apiVersion, project, authorId, labels));
     }
 
     public GitlabIssue getIssue(final String project, final Long issueId) throws GitClientException {
         final GitlabIssue issue = execute(gitLabApi.getIssue(apiVersion, project, issueId));
+        final Pair<String, List<String>> a = extractAttachments(issue.getDescription());
+        issue.setDescription(a.getKey());
+        issue.setAttachments(a.getValue());
         final List<GitlabIssueComment> comments = getIssueComments(project, issueId);
         issue.setComments(comments);
         return issue;
@@ -469,12 +475,21 @@ public class GitlabClient {
 
     public List<GitlabIssueComment> getIssueComments(final String project,
                                                      final Long issueId) throws GitClientException {
-        return execute(gitLabApi.getIssueComments(apiVersion, project, issueId));
+        final List<GitlabIssueComment> comments = execute(gitLabApi.getIssueComments(apiVersion, project, issueId));
+        comments.forEach(c -> {
+            Pair<String, List<String>> a = extractAttachments(c.getBody());
+            c.setBody(a.getKey());
+            c.setAttachments(a.getValue());
+        });
+        return comments;
     }
 
     public GitlabIssueComment addIssueComment(final String project,
-                                                    final Long issueId,
-                                                    final GitlabIssueComment comment) throws GitClientException {
+                                              final Long issueId,
+                                              final GitlabIssueComment comment) throws GitClientException {
+        comment.setBody(formatTextWithAttachments(project,
+                comment.getAttachments(),
+                comment.getBody()));
         return execute(gitLabApi.addIssueComment(apiVersion, project, issueId, comment));
     }
 
@@ -654,5 +669,26 @@ public class GitlabClient {
     private String encodePath(final String path) throws UnsupportedEncodingException {
         return UriUtils.encodePathSegment(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
                                                                                   DOT_CHAR_URL_ENCODING_REPLACEMENT);
+    }
+    private List<String> uploadAttachments(final String project, final List<String> attachments) {
+        return attachments.stream()
+                .map(a -> upload(project, a).getMarkdown().replace("!", ""))
+                .collect(Collectors.toList());
+    }
+
+    private static Pair<String, List<String>> extractAttachments(String text) {
+        final String[] description = text.split("!");
+        final List<String> descriptionList = Arrays.stream(description).map(String::trim).collect(Collectors.toList());
+        return new Pair<>(descriptionList.get(0), description.length > 1 ?
+                descriptionList.subList(1, descriptionList.size()) : Collections.emptyList());
+    }
+    private String formatTextWithAttachments(final String project,
+                                             final List<String> attachments,
+                                             final String text) {
+        final List<String> uploads = uploadAttachments(project, ListUtils.emptyIfNull(attachments));
+        final List<String> body = new ArrayList<>();
+        body.add(text);
+        body.addAll(uploads);
+        return String.join("\n\n!", body);
     }
 }

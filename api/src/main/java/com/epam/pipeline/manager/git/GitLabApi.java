@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -363,37 +363,28 @@ public interface GitLabApi {
                                   @Path(PROJECT) String idOrName,
                                   @Body GitlabIssue issue);
 
-    /**
-     * Lists project issues
-     *
-     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
-     * @param idOrName The ID or URL-encoded path of the project
-     * @param labels Labels
-     */
+    @PUT("api/{api_version}/projects/{project}/issues/{issue_id}")
+    Call<GitlabIssue> updateIssue(@Path(API_VERSION) String apiVersion,
+                                  @Path(PROJECT) String idOrName,
+                                  @Path(ISSUE_ID) Long issueId,
+                                  @Body GitlabIssue issue);
+
+    @DELETE("api/{api_version}/projects/{project}/issues/{issue_id}")
+    Call<Boolean> deleteIssue(@Path(API_VERSION) String apiVersion,
+                              @Path(PROJECT) String idOrName,
+                              @Path(ISSUE_ID) Long issueId);
+
     @GET("api/{api_version}/projects/{project}/issues")
     Call<List<GitlabIssue>> getIssues(@Path(API_VERSION) String apiVersion,
                                       @Path(PROJECT) String idOrName,
+                                      @Query("author_id") String authorId,
                                       @Query("labels") List<String> labels);
 
-    /**
-     * Gets project issue
-     *
-     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
-     * @param idOrName The ID or URL-encoded path of the project
-     * @param id issue id
-     */
     @GET("api/{api_version}/projects/{project}/issues/{issue_id}")
     Call<GitlabIssue> getIssue(@Path(API_VERSION) String apiVersion,
                                @Path(PROJECT) String idOrName,
                                @Path(ISSUE_ID) Long id);
 
-    /**
-     * List project issue comments
-     *
-     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
-     * @param idOrName The ID or URL-encoded path of the project
-     * @param id issue id
-     */
     @GET("api/{api_version}/projects/{project}/issues/{issue_id}/notes")
     Call<List<GitlabIssueComment>> getIssueComments(@Path(API_VERSION) String apiVersion,
                                                     @Path(PROJECT) String idOrName,

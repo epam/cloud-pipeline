@@ -66,14 +66,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -89,7 +82,7 @@ public class PipelineController extends AbstractRestController {
     private static final int BYTES_IN_KB = 1024;
     private static final String INCLUDE_DIFF = "include_diff";
     private static final String COMMIT = "commit";
-    private static final String ON_BEHALF = "on_behalf_of_current_user";
+    private static final String FIND_MY = "find_my";
 
     @Autowired
     private PipelineApiService pipelineApiService;
@@ -868,7 +861,37 @@ public class PipelineController extends AbstractRestController {
     public Result<GitlabIssue> createIssue(
             @PathVariable(value = ID) final Long id,
             @RequestBody final GitlabIssue issue) throws GitClientException  {
-        return Result.success(pipelineApiService.createIssue(id, issue));
+        return Result.success(pipelineApiService.createOrUpdateIssue(id, issue));
+    }
+
+    @PutMapping(value = "/pipeline/{id}/issue")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates Issue in pipeline corresponding Gitlab project.",
+            notes = "Updates Issue in pipeline corresponding Gitlab project.",
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitlabIssue> updateIssue(
+            @PathVariable(value = ID) final Long id,
+            @RequestBody final GitlabIssue issue) throws GitClientException  {
+        return Result.success(pipelineApiService.createOrUpdateIssue(id, issue));
+    }
+
+    @DeleteMapping(value = "/pipeline/{id}/issue/{issue_id}")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes Issue in pipeline corresponding Gitlab project.",
+            notes = "Deletes Issue in pipeline corresponding Gitlab project.",
+            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<Boolean> deleteIssue(
+            @PathVariable(value = ID) final Long id,
+            @PathVariable(value = ISSUE_ID) final Long issueId) throws GitClientException  {
+        return Result.success(pipelineApiService.deleteIssue(id, issueId));
     }
 
     @GetMapping(value = "/pipeline/{id}/issues")
@@ -882,9 +905,9 @@ public class PipelineController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<GitlabIssue>> getIssues(@PathVariable(value = ID) final Long id,
-                                               @RequestParam(value = ON_BEHALF, required = false)
-                                               final Boolean onBehalfOfCurrentUser) throws GitClientException {
-        return Result.success(pipelineApiService.getIssues(id, onBehalfOfCurrentUser));
+                                               @RequestParam(value = FIND_MY, required = false) final Boolean findMy)
+            throws GitClientException {
+        return Result.success(pipelineApiService.getIssues(id, findMy));
     }
 
     @GetMapping(value = "/pipeline/{id}/issue/{issue_id}")

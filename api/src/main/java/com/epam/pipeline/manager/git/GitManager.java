@@ -46,7 +46,6 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.template.Template;
-import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.CmdExecutor;
@@ -422,12 +421,16 @@ public class GitManager {
     }
 
     private GitlabClient getDefaultGitlabClient() {
-        String gitHost = preferenceManager.getPreference(SystemPreferences.GIT_HOST);
-        String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
-        Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
-        String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
+        final String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
+        return getGitlabClient(gitToken);
+    }
+
+    private GitlabClient getGitlabClient(final String token) {
+        final String gitHost = preferenceManager.getPreference(SystemPreferences.GIT_HOST);
+        final Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
+        final String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
-        return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, gitToken,
+        return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, token,
                 authManager.getAuthorizedUser(), gitAdminId, gitAdminName, apiVersion);
     }
 
@@ -610,21 +613,40 @@ public class GitManager {
         ));
     }
 
-    public GitlabIssue createIssue(final Long id, final GitlabIssue issue) throws GitClientException {
-        final PipelineUser authorizedUser = authManager.getCurrentUser();
-        final List<String> labels = Optional.ofNullable(issue.getLabels()).orElse(new ArrayList<>());
-        labels.add(String.format(ON_BEHALF_OF, authorizedUser.getUserName()));
-        issue.setLabels(labels);
-        return getDefaultGitlabClient().createIssue(getProject(id), issue);
+    public GitlabIssue createOrUpdateIssue(final Long id, final GitlabIssue issue)
+            throws GitClientException {
+        GitlabClient client = getDefaultGitlabClient();
+        final String authorizedUser = authManager.getCurrentUser().getUserName();
+        final Optional<GitlabUser> user = client.findUser(authorizedUser);
+        if (user.isPresent()) {
+            final GitCredentials credentials = getGitlabCredentials(null);
+            client = getGitlabClient(credentials.getToken());
+        } else {
+            final List<String> labels = Optional.ofNullable(issue.getLabels()).orElse(new ArrayList<>());
+            labels.add(String.format(ON_BEHALF_OF, authorizedUser));
+            issue.setLabels(labels);
+        }
+        return client.createOrUpdateIssue(getProject(id), issue);
     }
 
-    public List<GitlabIssue> getIssues(final Long id, final Boolean onBehalfOfCurrentUser) throws GitClientException {
+    public Boolean deleteIssue(final Long id, final Long issueId) throws GitClientException {
+        return getDefaultGitlabClient().deleteIssue(getProject(id), issueId);
+    }
+
+    public List<GitlabIssue> getIssues(final Long id, final Boolean findMy) throws GitClientException {
+        final GitlabClient client = getDefaultGitlabClient();
         final List<String> labels = new ArrayList<>();
-        if (BooleanUtils.isTrue(onBehalfOfCurrentUser)) {
-            final PipelineUser authorizedUser = authManager.getCurrentUser();
-            labels.add(String.format(ON_BEHALF_OF, authorizedUser.getUserName()));
+        String authorId = null;
+        if (BooleanUtils.isTrue(findMy)) {
+            final String authorizedUser = authManager.getCurrentUser().getUserName();
+            final Optional<GitlabUser> user = client.findUser(authorizedUser);
+            if (user.isPresent()) {
+                authorId = user.get().getId().toString();
+            } else {
+                labels.add(String.format(ON_BEHALF_OF, authorizedUser));
+            }
         }
-        return getDefaultGitlabClient().getIssues(getProject(id), labels);
+        return client.getIssues(getProject(id), authorId, labels);
     }
 
     public GitlabIssue getIssue(final Long id, final Long issueId) throws GitClientException {
@@ -634,9 +656,16 @@ public class GitManager {
     public GitlabIssueComment addIssueComment(final Long id,
                                               final Long issueId,
                                               final GitlabIssueComment comment) throws GitClientException {
-        final PipelineUser authorizedUser = authManager.getCurrentUser();
-        comment.setBody(String.format("On behalf of %s: %s", authorizedUser.getUserName(), comment.getBody()));
-        return getDefaultGitlabClient().addIssueComment(getProject(id), issueId, comment);
+        GitlabClient client = getDefaultGitlabClient();
+        final String authorizedUser = authManager.getCurrentUser().getUserName();
+        final Optional<GitlabUser> user = client.findUser(authorizedUser);
+        if (user.isPresent()) {
+            final GitCredentials credentials = getGitlabCredentials(null);
+            client = getGitlabClient(credentials.getToken());
+        } else {
+            comment.setBody(String.format("On behalf of %s: %s", authorizedUser, comment.getBody()));
+        }
+        return client.addIssueComment(getProject(id), issueId, comment);
     }
 
     private String getProject(final Long id) {

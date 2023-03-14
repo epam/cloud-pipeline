@@ -391,13 +391,19 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public GitlabIssue createIssue(final Long id, final GitlabIssue issue) throws GitClientException {
-        return gitManager.createIssue(id, issue);
+    public GitlabIssue createOrUpdateIssue(final Long id, final GitlabIssue issue)
+            throws GitClientException {
+        return gitManager.createOrUpdateIssue(id, issue);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
-    public List<GitlabIssue> getIssues(final Long id, final Boolean onBehalfOfCurrentUser) throws GitClientException {
-        return gitManager.getIssues(id, onBehalfOfCurrentUser);
+    public Boolean deleteIssue(final Long id, final Long issueId) throws GitClientException {
+        return gitManager.deleteIssue(id, issueId);
+    }
+
+    @PreAuthorize(PIPELINE_ID_READ)
+    public List<GitlabIssue> getIssues(final Long id, final Boolean findMy) throws GitClientException {
+        return gitManager.getIssues(id, findMy);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
