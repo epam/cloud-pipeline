@@ -58,6 +58,10 @@ import {CP_CAP_RUN_CAPABILITIES} from '../../../pipelines/launch/form/utilities/
 import MuteEmailNotifications from '../../../special/metadata/special/mute-email-notifications';
 import styles from './EditUserRolesDialog.css';
 
+const RESTRICTED_METADATA_KEYS = [
+  MuteEmailNotifications.metadataKey
+].filter(Boolean);
+
 @roleModel.authenticationInfo
 @inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles', 'impersonation')
 @inject((common, params) => ({
@@ -645,7 +649,7 @@ export default class EditUserRolesDialog extends React.Component {
           });
         Object.keys(data || {})
           .forEach(key => {
-            if (!metadata.hasOwnProperty(key)) {
+            if (!RESTRICTED_METADATA_KEYS.includes(key) && !metadata.hasOwnProperty(key)) {
               removed[key] = {
                 value: data[key].value,
                 type: data[key].type
@@ -977,9 +981,7 @@ export default class EditUserRolesDialog extends React.Component {
             onChange={this.onChangeMetadata}
             value={metadata}
             extraKeys={[CP_CAP_RUN_CAPABILITIES]}
-            restrictedKeys={[
-              MuteEmailNotifications.metadataKey
-            ].filter(Boolean)}
+            restrictedKeys={RESTRICTED_METADATA_KEYS}
           />
           <div
             key="INSTANCE_MANAGEMENT"
