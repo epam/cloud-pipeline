@@ -60,10 +60,15 @@ class AllowedFailuresValues(object):
     SKIP = 'skip'
 
 
+class EmptyFilesValues(object):
+    ALLOW = 'allow'
+    SKIP = 'skip'
+
+
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+           io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
            clean=False, skip_existing=False, verify_destination=False):
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
@@ -121,7 +126,7 @@ class DataStorageOperations(object):
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                   include, exclude, force, quiet, skip_existing, verify_destination,
-                                  on_unsafe_chars, on_unsafe_chars_replacement)
+                                  on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
                                              clean, quiet, tags, io_threads, on_failures)
@@ -132,7 +137,7 @@ class DataStorageOperations(object):
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
                       include, exclude, force, quiet, skip_existing, verify_destination,
-                      unsafe_chars, unsafe_chars_replacement):
+                      unsafe_chars, unsafe_chars_replacement, empty_files):
         logging.debug(u'Preprocessing paths...')
         filtered_items = []
         for item in items:
@@ -143,12 +148,16 @@ class DataStorageOperations(object):
             logging.debug(u'Preprocessing path {}...'.format(full_path))
 
             item = cls._process_unsafe_chars(item, quiet, unsafe_chars, unsafe_chars_replacement)
+            item = cls._process_empty_files(item, quiet, empty_files)
 
             if not item:
                 continue
 
             if relative_path.endswith(FOLDER_MARKER):
                 filtered_items.append(item)
+                continue
+
+            if relative_path.endswith('/'):
                 continue
 
             # check that we have corresponding permission for the file before take action
@@ -711,6 +720,8 @@ class DataStorageOperations(object):
 
     @classmethod
     def _process_unsafe_chars(cls, item, quiet, unsafe_chars, unsafe_chars_replacement):
+        if not item:
+            return None
         full_path = item[1]
         relative_path = item[2]
         if is_safe_chars(relative_path):
@@ -734,3 +745,18 @@ class DataStorageOperations(object):
         else:
             logging.warn(u'Ignoring unsafe characters in path {}...'.format(full_path))
         return item[0], full_path, relative_path, item[3]
+
+    @classmethod
+    def _process_empty_files(cls, item, quiet, empty_files):
+        if not item:
+            return None
+        full_path = item[1]
+        source_size = item[3]
+        if empty_files == EmptyFilesValues.SKIP:
+            if not source_size:
+                msg = u'Skipping empty file {}...'.format(full_path)
+                logging.debug(msg)
+                if not quiet:
+                    click.echo(msg)
+                return None
+        return item
