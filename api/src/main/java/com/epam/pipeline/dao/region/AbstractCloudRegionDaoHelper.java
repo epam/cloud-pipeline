@@ -20,6 +20,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.MountStorageRule;
+import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
 import com.epam.pipeline.entity.region.StorageLifecycleServiceProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.SneakyThrows;
@@ -51,6 +52,10 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         params.addValue(CloudRegionParameters.GLOBAL_DISTRIBUTION_URL.name(), region.getGlobalDistributionUrl());
         params.addValue(CloudRegionParameters.DNS_HOSTED_ZONE_ID.name(), region.getDnsHostedZoneId());
         params.addValue(CloudRegionParameters.DNS_HOSTED_ZONE_BASE.name(), region.getDnsHostedZoneBase());
+        params.addValue(CloudRegionParameters.RUN_SHIFT_ENABLED.name(),
+                Optional.ofNullable(region.getRunShiftPolicy())
+                        .map(RunRegionShiftPolicy::isShiftEnabled)
+                        .orElse(Boolean.FALSE));
 
         final String slsPropertiesJson = Optional.ofNullable(region.getStorageLifecycleServiceProperties())
                 .map(props -> {
@@ -95,6 +100,9 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
         region.setGlobalDistributionUrl(rs.getString(CloudRegionParameters.GLOBAL_DISTRIBUTION_URL.name()));
         region.setDnsHostedZoneId(rs.getString(CloudRegionParameters.DNS_HOSTED_ZONE_ID.name()));
         region.setDnsHostedZoneBase(rs.getString(CloudRegionParameters.DNS_HOSTED_ZONE_BASE.name()));
+        region.setRunShiftPolicy(RunRegionShiftPolicy.builder()
+                .shiftEnabled(rs.getBoolean(CloudRegionParameters.RUN_SHIFT_ENABLED.name()))
+                .build());
 
         final String slsJsonString = rs.getString(CloudRegionParameters.STORAGE_LIFECYCLE_SERVICE_PROPERTIES.name());
         if (!rs.wasNull()) {

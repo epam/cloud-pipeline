@@ -59,7 +59,8 @@
                         storage_lifecycle_service_properties,
                         global_distribution_url,
                         dns_hosted_zone_id,
-                        dns_hosted_zone_base)
+                        dns_hosted_zone_base,
+                        run_shift_enabled)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -97,7 +98,8 @@
                         :STORAGE_LIFECYCLE_SERVICE_PROPERTIES,
                         :GLOBAL_DISTRIBUTION_URL,
                         :DNS_HOSTED_ZONE_ID,
-                        :DNS_HOSTED_ZONE_BASE)
+                        :DNS_HOSTED_ZONE_BASE,
+                        :RUN_SHIFT_ENABLED)
                 ]]>
             </value>
         </constructor-arg>
@@ -143,6 +145,7 @@
                         r.global_distribution_url,
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
+                        r.run_shift_enabled,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -196,6 +199,7 @@
                         r.global_distribution_url,
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
+                        r.run_shift_enabled,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -249,6 +253,7 @@
                         r.global_distribution_url,
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
+                        r.run_shift_enabled,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -302,6 +307,7 @@
                         r.global_distribution_url,
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
+                        r.run_shift_enabled,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -355,6 +361,7 @@
                         r.global_distribution_url,
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
+                        r.run_shift_enabled,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -407,7 +414,8 @@
                         storage_lifecycle_service_properties = :STORAGE_LIFECYCLE_SERVICE_PROPERTIES,
                         global_distribution_url = :GLOBAL_DISTRIBUTION_URL,
                         dns_hosted_zone_id = :DNS_HOSTED_ZONE_ID,
-                        dns_hosted_zone_base = :DNS_HOSTED_ZONE_BASE
+                        dns_hosted_zone_base = :DNS_HOSTED_ZONE_BASE,
+                        run_shift_enabled = :RUN_SHIFT_ENABLED
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -465,6 +473,7 @@
                         r.global_distribution_url,
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
+                        r.run_shift_enabled,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
