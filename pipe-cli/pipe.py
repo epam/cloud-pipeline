@@ -1167,18 +1167,24 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
                    '[fail] fails immediately (default); \n'
                    '[fail-after] fails only after all files are processed; \n'
                    '[skip] skips all failures.')
+@click.option('--on-empty-files', required=False, default='allow',
+              envvar='CP_CLI_TRANSFER_EMPTY_FILES',
+              help='Configure how empty files should be handled. '
+                   'Allowed values: \n'
+                   '[allow] allows empty files transferring (default); \n'
+                   '[skip] skips empty files transferring.')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
-                      verify_destination):
+                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
+                      on_failures, verify_destination):
     """
     Moves files/directories between data storages or between a local filesystem and a data storage.
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                              symlinks, threads, io_threads,
-                             on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+                             on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=True, skip_existing=skip_existing, verify_destination=verify_destination)
 
 
@@ -1226,6 +1232,12 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               envvar='CP_CLI_TRANSFER_UNSAFE_CHARS_REPLACEMENT',
               help='Specify a string to replace unsafe characters with. '
                    'The option has effect only if --unsafe-chars option is set to replace value.')
+@click.option('--on-empty-files', required=False, default='allow',
+              envvar='CP_CLI_TRANSFER_EMPTY_FILES',
+              help='Configure how empty files should be handled. '
+                   'Allowed values: \n'
+                   '[allow] allows empty files transferring (default); \n'
+                   '[skip] skips empty files transferring.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
               type=click.Choice(['fail', 'fail-after', 'skip']),
@@ -1240,14 +1252,14 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
-                      skip_existing, verify_destination):
+                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
+                      on_failures, skip_existing, verify_destination):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
     """
     DataStorageOperations.cp(source, destination, recursive, force,
                              exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
-                             on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+                             on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=False, skip_existing=skip_existing, verify_destination=verify_destination)
 
 
