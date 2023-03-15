@@ -20,30 +20,33 @@ import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.manager.log.LogManager;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
+
 @Service
+@RequiredArgsConstructor
 public class LogApiService {
 
-    @Autowired
-    private LogManager logManager;
+    private final LogManager manager;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(ADMIN_ONLY)
     public LogPagination filter(final LogFilter logFilter) {
-        return logManager.filter(logFilter);
+        return manager.filter(logFilter);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(ADMIN_ONLY)
     public LogFilter getFilters() {
-        return logManager.getFilters();
+        return manager.getFilters();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public void save(final List<LogEntry> logEntries) {
-        logManager.save(logEntries);
+        manager.save(logEntries);
     }
 }
