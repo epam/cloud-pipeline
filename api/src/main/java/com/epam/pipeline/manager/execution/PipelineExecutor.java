@@ -110,15 +110,13 @@ public class PipelineExecutor {
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-                              String pipelineId, RunAssignPolicy effectiveRunAssignPolicy,
-                              String secretName, String clusterId) {
-        launchRootPod(command, run, envVars, endpoints, pipelineId, effectiveRunAssignPolicy,
+                              String pipelineId, RunAssignPolicy podAssignPolicy, String secretName, String clusterId) {
+        launchRootPod(command, run, envVars, endpoints, pipelineId, podAssignPolicy,
                 secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null);
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-                              String pipelineId, RunAssignPolicy effectiveRunAssignPolicy,
-                              String secretName, String clusterId,
+                              String pipelineId, RunAssignPolicy podAssignPolicy, String secretName, String clusterId,
                               ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels,
                               String kubeServiceAccount) {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
@@ -138,10 +136,10 @@ public class PipelineExecutor {
             String runIdLabel = String.valueOf(run.getId());
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-                nodeSelector.put(effectiveRunAssignPolicy.getLabel(), effectiveRunAssignPolicy.getValue());
+                nodeSelector.put(podAssignPolicy.getLabel(), podAssignPolicy.getValue());
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
                 if (run.getPodId().equals(pipelineId) &&
-                        effectiveRunAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
+                        podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
                     labels.put(KubernetesConstants.TYPE_LABEL, KubernetesConstants.PIPELINE_TYPE);
                 }
                 labels.put(KubernetesConstants.RUN_ID_LABEL, runIdLabel);
@@ -155,7 +153,7 @@ public class PipelineExecutor {
             ObjectMeta metadata = getObjectMeta(run, labels);
             final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
             PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getActualDockerImage(), command,
-                    imagePullPolicy, effectiveRunAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
+                    imagePullPolicy, podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
                     verifiedKubeServiceAccount);
             Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);

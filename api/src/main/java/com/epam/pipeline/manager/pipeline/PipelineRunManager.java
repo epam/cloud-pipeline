@@ -402,9 +402,21 @@ public class PipelineRunManager {
         PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region,
                 parentRun.orElse(null), entityIds, configurationId, sensitive);
 
-        Optional.ofNullable(configuration.getPodAssignPolicy())
-                .flatMap(policy -> policy.ifMatchThenMap(KubernetesConstants.RUN_ID_LABEL, Long::parseLong))
-                .ifPresent(parentNodeId -> setParentInstance(run, parentNodeId));
+        // If there is no podAssignPolicy we need to schedule run to be launched on dedicated node
+        if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
+            configuration.setPodAssignPolicy(
+                    RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL)
+                            .value(run.getId().toString()).build()
+            );
+        }
+
+        configuration.getPodAssignPolicy()
+                .ifMatchThenMapValue(KubernetesConstants.RUN_ID_LABEL, Long::parseLong)
+                .ifPresent(parentNodeId -> {
+                    if (!parentNodeId.equals(run.getId())) {
+                        setParentInstance(run, parentNodeId);
+                    }
+                });
 
         run.setConfigName(configurationName);
         run.setRunSids(runSids);

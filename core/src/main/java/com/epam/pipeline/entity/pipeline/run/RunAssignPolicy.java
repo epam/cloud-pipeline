@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.pipeline.run;
 
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -26,7 +27,6 @@ import java.util.function.Function;
 @Value
 @Builder
 public class RunAssignPolicy {
-
 
     String label;
     String value;
@@ -39,7 +39,7 @@ public class RunAssignPolicy {
         return this.label.equals(label);
     }
 
-    public <T> Optional<T> ifMatchThenMap(final String label, Function<String, T> caster) {
+    public <T> Optional<T> ifMatchThenMapValue(final String label, Function<String, T> caster) {
         if (isMatch(label)) {
             return Optional.of(caster.apply(value));
         }
@@ -47,6 +47,6 @@ public class RunAssignPolicy {
     }
 
     public boolean isValid() {
-        return !label.isEmpty() && !value.isEmpty();
+        return StringUtils.isNotBlank(label) && StringUtils.isNotBlank(value);
     }
 }
