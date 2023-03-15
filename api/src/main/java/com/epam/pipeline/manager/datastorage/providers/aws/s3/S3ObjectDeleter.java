@@ -18,9 +18,9 @@ package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.epam.pipeline.manager.audit.entity.DataAccessEntryType;
-import com.epam.pipeline.manager.audit.entity.DataAccessEntry;
-import com.epam.pipeline.manager.audit.AuditClient;
+import com.epam.pipeline.entity.datastorage.access.DataAccessEventType;
+import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
@@ -37,7 +37,7 @@ public class S3ObjectDeleter implements AutoCloseable {
 
     private static final int MAX_DELETE_REQUEST_SIZE = 1000;
     private final AmazonS3 client;
-    private final AuditClient audit;
+    private final StorageEventCollector events;
     private final String bucket;
     private final List<DeleteObjectsRequest.KeyVersion> keys = new ArrayList<>();
 
@@ -73,20 +73,20 @@ public class S3ObjectDeleter implements AutoCloseable {
     }
 
     private void executeDeletion() {
-        audit.put(toAuditEntries());
-        client.deleteObjects(toDeleteRequest());
+        events.put(toEvents());
+        client.deleteObjects(toRequest());
         keys.clear();
     }
 
-    private DataAccessEntry[] toAuditEntries() {
-        return keys.stream().map(this::toAuditEntry).toArray(DataAccessEntry[]::new);
+    private DataAccessEvent[] toEvents() {
+        return keys.stream().map(this::toEvent).toArray(DataAccessEvent[]::new);
     }
 
-    private DataAccessEntry toAuditEntry(final DeleteObjectsRequest.KeyVersion key) {
-        return new DataAccessEntry(bucket, key.getKey(), DataAccessEntryType.DELETE);
+    private DataAccessEvent toEvent(final DeleteObjectsRequest.KeyVersion key) {
+        return new DataAccessEvent(bucket, key.getKey(), DataAccessEventType.DELETE);
     }
 
-    private DeleteObjectsRequest toDeleteRequest() {
+    private DeleteObjectsRequest toRequest() {
         return new DeleteObjectsRequest(bucket).withKeys(keys);
     }
 }

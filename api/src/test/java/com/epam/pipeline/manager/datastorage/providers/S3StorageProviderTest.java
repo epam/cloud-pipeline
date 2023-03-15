@@ -25,7 +25,6 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.manager.audit.AuditClient;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -72,9 +71,9 @@ public class S3StorageProviderTest extends AbstractSpringTest {
 
     @Before
     public void setUp() {
-        final AuditClient audit = mock(AuditClient.class);
+        final StorageEventCollector events = mock(StorageEventCollector.class);
 
-        final S3Helper s3Helper = spy(new S3Helper(audit, messageHelper));
+        final S3Helper s3Helper = spy(new S3Helper(events, messageHelper));
         doReturn(s3Helper).when(s3StorageProvider).getS3Helper(any());
         doReturn(amazonClient).when(s3Helper).getDefaultS3Client();
 

@@ -20,8 +20,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.manager.audit.AuditClient;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 
 /**
  * Provides methods for AWS S3 operations in specified region.
@@ -30,10 +30,10 @@ public class RegionAwareS3Helper extends S3Helper {
 
     private final AwsRegion region;
 
-    public RegionAwareS3Helper(final AuditClient audit,
+    public RegionAwareS3Helper(final StorageEventCollector events,
                                final MessageHelper messageHelper,
                                final AwsRegion region) {
-        super(audit, messageHelper);
+        super(events, messageHelper);
         this.region = region;
     }
 
