@@ -16,14 +16,19 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,10 +47,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class RunRegionShiftHandler {
+    private static final String RESTART_TASK = "RestartPipelineRun";
 
     private final PipelineRunManager pipelineRunManager;
     private final CloudRegionManager cloudRegionManager;
     private final RestartRunManager restartRunManager;
+    private final RunLogManager runLogManager;
+    private final MessageHelper messageHelper;
 
     public PipelineRun restartRunInAnotherRegion(final long currentRunId) {
         final PipelineRun parentRun = findParentRun(currentRunId);
@@ -55,6 +63,8 @@ public class RunRegionShiftHandler {
                 .orElse(null);
         if (Objects.isNull(cloudProvider)) {
             log.debug("Failed to determine cloud provider for run '{}'", parentRun.getId());
+            addRunLog(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RESTART_RUN_FAILURE, parentRun.getId()), TaskStatus.FAILURE);
             return null;
         }
 
@@ -70,14 +80,18 @@ public class RunRegionShiftHandler {
 
         final Long nextRegionId = findNextRegion(parentRun, availableRegions);
         if (Objects.isNull(nextRegionId)) {
-            log.debug("Failed to find next region to processed run '{}'", parentRun.getId());
+            logRestartFailure(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND, parentRun.getId()));
             return null;
         }
 
         pipelineRunManager.stop(currentRunId);
 
         Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setCloudRegionId(nextRegionId));
-        return pipelineRunManager.restartRun(parentRun);
+        final PipelineRun newRun = pipelineRunManager.restartRun(parentRun);
+        addRunLog(parentRun, messageHelper.getMessage(
+                MessageConstants.INFO_RESTART_RUN_SUCCESS, parentRun.getId(), nextRegionId), TaskStatus.STOPPED);
+        return newRun;
     }
 
     private boolean validate(final PipelineRun parentRun,
@@ -85,26 +99,38 @@ public class RunRegionShiftHandler {
         final Long currentRegionId = parentRun.getInstance().getCloudRegionId();
         if (Objects.isNull(currentRegionId)) {
             log.debug("Failed to find region for run '{}'", parentRun.getId());
+            addRunLog(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RESTART_RUN_FAILURE, parentRun.getId()), TaskStatus.FAILURE);
             return true;
         }
 
         if (!availableRegions.containsKey(currentRegionId)) {
-            log.debug("Region shift is not available for runs for region '{}'", currentRegionId);
+            logRestartFailure(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_REGION_SHIFT_FORBIDDEN, currentRegionId));
             return true;
         }
 
         if (availableRegions.size() == 1) {
-            log.debug("Cannot restart run '{}' since no next region available", parentRun.getId());
+            logRestartFailure(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND, parentRun.getId()));
             return true;
         }
 
         if (!validateRunParameters(parentRun)) {
-            log.debug("Cannot restart run '{}' since run parameters connected with storage", parentRun.getId());
+            logRestartFailure(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT, parentRun.getId()));
             return true;
         }
 
-        if (Objects.nonNull(parentRun.getNodeCount()) && parentRun.getNodeCount() > 0 || parentRun.isWorkerRun()) {
-            log.debug("Cannot restart run '{}' since restart cluster or worker is not allowed", parentRun.getId());
+        if (Objects.nonNull(parentRun.getNodeCount()) && parentRun.getNodeCount() > 0) {
+            logRestartFailure(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RESTART_CLUSTER_FORBIDDEN, parentRun.getId()));
+            return true;
+        }
+
+        if (parentRun.isWorkerRun()) {
+            logRestartFailure(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RESTART_WORKER_FORBIDDEN, parentRun.getId()));
             return true;
         }
         return false;
@@ -170,5 +196,22 @@ public class RunRegionShiftHandler {
         return Optional.ofNullable(region.getRunShiftPolicy())
                 .map(RunRegionShiftPolicy::isShiftEnabled)
                 .orElse(Boolean.FALSE);
+    }
+
+    private void logRestartFailure(final PipelineRun run, final String logMessage) {
+        log.debug(logMessage);
+        addRunLog(run, logMessage, TaskStatus.FAILURE);
+    }
+
+    private void addRunLog(final PipelineRun run, final String logMessage, final TaskStatus status) {
+        final RunLog runLog = RunLog.builder()
+                .date(DateUtils.now())
+                .runId(run.getId())
+                .instance(run.getPodId())
+                .status(status)
+                .taskName(RESTART_TASK)
+                .logText(logMessage)
+                .build();
+        runLogManager.saveLog(runLog);
     }
 }

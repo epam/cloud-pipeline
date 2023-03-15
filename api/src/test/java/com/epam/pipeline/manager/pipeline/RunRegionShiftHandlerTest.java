@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
@@ -50,8 +51,10 @@ public class RunRegionShiftHandlerTest {
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
     private final RestartRunManager restartRunManager = mock(RestartRunManager.class);
     private final CloudRegionManager cloudRegionManager = mock(CloudRegionManager.class);
+    private final RunLogManager runLogManager = mock(RunLogManager.class);
+    private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final RunRegionShiftHandler runRegionShiftHandler = new RunRegionShiftHandler(
-            pipelineRunManager, cloudRegionManager, restartRunManager);
+            pipelineRunManager, cloudRegionManager, restartRunManager, runLogManager, messageHelper);
 
     private static final Long PARENT_RUN_ID = 1L;
     private static final Long CURRENT_RUN_ID = 2L;
