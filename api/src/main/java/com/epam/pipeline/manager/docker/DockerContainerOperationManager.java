@@ -332,10 +332,7 @@ public class DockerContainerOperationManager {
         try {
             if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
-                final String runIdLabel = run.getId().toString();
-                launcher.launch(run, configuration, endpoints,
-                        RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL).value(runIdLabel).build(),
-                        true, run.getPodId(), null, ImagePullPolicy.NEVER);
+                launcher.launch(run, configuration, endpoints, true, run.getPodId(), null, ImagePullPolicy.NEVER);
             }
         } finally {
             resumeLock.unlock();
@@ -346,6 +343,10 @@ public class DockerContainerOperationManager {
         final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
         final Map<String, String> envs = getResumeRunEnvVars(configuration);
         configuration.setEnvironmentParams(envs);
+        configuration.setPodAssignPolicy(
+                RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL)
+                        .value(run.getId().toString()).build()
+        );
         return configuration;
     }
 

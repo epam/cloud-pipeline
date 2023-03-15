@@ -19,6 +19,10 @@ package com.epam.pipeline.entity.pipeline.run;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
 
 @Value
 @Builder
@@ -30,6 +34,17 @@ public class RunAssignPolicy {
 
     public boolean isMatch(final String label, final String value) {
         return this.label.equals(label) && this.value.equals(value);
+    }
+
+    public boolean isMatch(final String label) {
+        return this.label.equals(label);
+    }
+
+    public <T> Optional<T> ifMatchThenMap(final String label, Function<String, T> caster) {
+        if (isMatch(label)) {
+            return Optional.of(caster.apply(value));
+        }
+        return Optional.empty();
     }
 
     public boolean isValid() {

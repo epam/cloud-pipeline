@@ -104,22 +104,19 @@ public class PipelineLauncher {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
-    public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
-                         RunAssignPolicy runAssignPolicy, String clusterId) {
-        return launch(run, configuration, endpoints, runAssignPolicy, true, run.getPodId(), clusterId);
-    }
-
-    public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
-                         RunAssignPolicy runAssignPolicy, boolean useLaunch,
-                         String pipelineId, String clusterId) {
-        return launch(run, configuration, endpoints, runAssignPolicy,
-                useLaunch, pipelineId, clusterId, getImagePullPolicy(configuration));
-    }
-
     public String launch(PipelineRun run, PipelineConfiguration configuration,
-                         List<String> endpoints, RunAssignPolicy runAssignPolicy,
-                         boolean useLaunch, String pipelineId, String clusterId,
-                         ImagePullPolicy imagePullPolicy) {
+                         List<String> endpoints, String clusterId) {
+        return launch(run, configuration, endpoints, true, run.getPodId(), clusterId);
+    }
+
+    public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
+                         boolean useLaunch, String pipelineId, String clusterId) {
+        return launch(run, configuration, endpoints, useLaunch, pipelineId,
+                clusterId, getImagePullPolicy(configuration));
+    }
+
+    public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
+                         boolean useLaunch, String pipelineId, String clusterId, ImagePullPolicy imagePullPolicy) {
         GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
         Map<SystemParams, String> systemParams = matchSystemParams(
@@ -128,7 +125,7 @@ public class PipelineLauncher {
                 kubeNamespace,
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING),
                 configuration, gitCredentials);
-        checkRunOnParentNode(run, runAssignPolicy, systemParams);
+        checkRunOnParentNode(run, configuration.getPodAssignPolicy(), systemParams);
         List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
                 buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive(),
                         configuration.getKubeLabels()));
@@ -155,7 +152,7 @@ public class PipelineLauncher {
         }
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars, endpoints, pipelineId,
-                runAssignPolicy, configuration.getSecretName(),
+                configuration.getPodAssignPolicy(), configuration.getSecretName(),
                 clusterId, imagePullPolicy, configuration.getKubeLabels(),
                 configuration.getKubeServiceAccount());
         return pipelineCommand;

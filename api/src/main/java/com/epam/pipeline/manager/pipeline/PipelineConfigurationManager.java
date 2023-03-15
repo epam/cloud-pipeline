@@ -30,9 +30,11 @@ import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -208,6 +210,10 @@ public class PipelineConfigurationManager {
             configuration.setKubeLabels(defaultConfig.getKubeLabels());
         }
 
+        // TODO: merging parentNodeId together with runAssignPolicy,
+        //  in a future we can delete it if we get rid of parentNodeId in favor of runAssignPolicy
+        configuration.setPodAssignPolicy(mergeAssignPolicy(runVO));
+
         if (!StringUtils.isEmpty(runVO.getKubeServiceAccount())) {
             configuration.setKubeServiceAccount(runVO.getKubeServiceAccount());
         }
@@ -234,6 +240,29 @@ public class PipelineConfigurationManager {
         configuration.setSharedWithRoles(defaultConfig.getSharedWithRoles());
         configuration.setTags(runVO.getTags());
         return configuration;
+    }
+
+    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO) {
+        final RunAssignPolicy assignPolicy = runVO.getRunAssignPolicy();
+        if (assignPolicy != null && assignPolicy.isValid()) {
+            log.debug("RunAssignPolicy is provided and valid, will proceed with it.");
+            return assignPolicy;
+        } else {
+            final Long useRunId = runVO.getParentRunId() != null ? runVO.getParentRunId() : runVO.getUseRunId();
+            if (useRunId != null) {
+                final String value = useRunId.toString();
+                log.debug(
+                    String.format("Configuring RunAssignPolicy as: label %s, value: %s.",
+                            KubernetesConstants.RUN_ID_LABEL, value)
+                );
+                return RunAssignPolicy.builder()
+                        .label(KubernetesConstants.RUN_ID_LABEL)
+                        .value(value)
+                        .build();
+            } else {
+                return RunAssignPolicy.builder().build();
+            }
+        }
     }
 
     /**
