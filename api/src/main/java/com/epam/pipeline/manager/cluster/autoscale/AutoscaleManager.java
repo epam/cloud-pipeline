@@ -514,10 +514,15 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 if (e.getCause() instanceof CmdExecutionException && Objects.equals(
                         AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE,
                         ((CmdExecutionException) e.getCause()).getExitCode())) {
-                    final String reasonMessage = preferenceManager
-                            .getPreference(SystemPreferences.LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE);
-                    pipelineRunManager.updateStateReasonMessageById(longId, reasonMessage);
-                    runRegionShiftHandler.restartRunInAnotherRegion(longId);
+                    final int retryCount = nodeUpAttempts.getOrDefault(longId, 0);
+                    final int nodeUpRetryCount = preferenceManager.getPreference(
+                            SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT);
+
+                    if (retryCount >= nodeUpRetryCount) {
+                        pipelineRunManager.updateStateReasonMessageById(longId, preferenceManager
+                                .getPreference(SystemPreferences.LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE));
+                        runRegionShiftHandler.restartRunInAnotherRegion(longId);
+                    }
                 }
 
                 removeNodeUpTask(longId, false);
