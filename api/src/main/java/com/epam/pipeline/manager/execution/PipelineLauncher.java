@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.execution;
 
+import com.epam.pipeline.aspect.run.PipelineLaunchCheck;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
@@ -104,17 +105,20 @@ public class PipelineLauncher {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
+    @PipelineLaunchCheck
     public String launch(PipelineRun run, PipelineConfiguration configuration,
                          List<String> endpoints, String clusterId) {
         return launch(run, configuration, endpoints, true, run.getPodId(), clusterId);
     }
 
+    @PipelineLaunchCheck
     public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
                          boolean useLaunch, String pipelineId, String clusterId) {
         return launch(run, configuration, endpoints, useLaunch, pipelineId,
                 clusterId, getImagePullPolicy(configuration));
     }
 
+    @PipelineLaunchCheck
     public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
                          boolean useLaunch, String pipelineId, String clusterId, ImagePullPolicy imagePullPolicy) {
         GitCredentials gitCredentials = configuration.getGitCredentials();
@@ -206,7 +210,7 @@ public class PipelineLauncher {
 
     private void checkRunOnParentNode(PipelineRun run, RunAssignPolicy assignPolicy,
                                       Map<SystemParams, String> systemParams) {
-        if (KubernetesConstants.RUN_ID_LABEL.equals(assignPolicy.getLabel()) &&
+        if (assignPolicy != null && KubernetesConstants.RUN_ID_LABEL.equals(assignPolicy.getLabel()) &&
                 !run.getId().toString().equals(assignPolicy.getValue())) {
             systemParams.put(SystemParams.RUN_ON_PARENT_NODE, EMPTY_PARAMETER);
         }

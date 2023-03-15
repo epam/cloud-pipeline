@@ -17,7 +17,7 @@ package com.epam.pipeline.aspect.run;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -38,19 +38,19 @@ public class PipelineLaunchAspect {
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
 
-    @Before("@annotation(com.epam.pipeline.aspect.run.PipelineLaunchCheck) && args(runVO)")
-    public void checkRunLaunchIsNotForbidden(JoinPoint joinPoint, PipelineStart runVO) {
+    @Before("@annotation(com.epam.pipeline.aspect.run.PipelineLaunchCheck) && args(configuration)")
+    public void checkRunLaunchIsNotForbidden(JoinPoint joinPoint, PipelineConfiguration configuration) {
         final PipelineUser user = authManager.getCurrentUser();
         if (user.isAdmin()) {
             return;
         }
-        final Boolean advancedRunAssignPolicy = Optional.ofNullable(runVO.getRunAssignPolicy())
+        final Boolean advancedRunAssignPolicy = Optional.ofNullable(configuration.getPodAssignPolicy())
                 .map(policy -> !policy.getLabel().equalsIgnoreCase(KubernetesConstants.RUN_ID_LABEL))
                 .orElse(false);
         if (advancedRunAssignPolicy) {
             log.error(messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
         }
-        if (runVO.getKubeServiceAccount() != null) {
+        if (configuration.getKubeServiceAccount() != null) {
             log.error(messageHelper.getMessage(
                     MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName()));
         }

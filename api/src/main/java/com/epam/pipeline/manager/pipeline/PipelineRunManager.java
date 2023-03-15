@@ -239,6 +239,7 @@ public class PipelineRunManager {
      * @return
      */
     @ToolSecurityPolicyCheck
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun runCmd(final PipelineStart runVO) {
         LOGGER.debug("Tool '{}' will be launched on behalf of '{}'", runVO.getDockerImage(),
                 authManager.getAuthorizedUser());
@@ -319,6 +320,7 @@ public class PipelineRunManager {
      * @return
      */
     @ToolSecurityPolicyCheck
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun runPipeline(final PipelineStart runVO) {
         final Long pipelineId = runVO.getPipelineId();
         LOGGER.debug("Pipeline '{}' will be launched on behalf of '{}'", pipelineId, authManager.getAuthorizedUser());
