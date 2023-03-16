@@ -1017,6 +1017,19 @@ public class PipelineRunManager {
     }
 
     /**
+     * Updates run state reason message which was retrieved from instance
+     * @param runId - the ID of pipeline run which state reason message should be updated
+     * @param stateReasonMessage message that should be updated
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateStateReasonMessageById(final Long runId, final String stateReasonMessage) {
+        final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
+        run.setStateReasonMessage(stateReasonMessage);
+        pipelineRunDao.updateRun(run);
+        return run;
+    }
+
+    /**
      * Restarts spot run
      * @param run {@link PipelineRun} which will be restart
      * @return Restarted pipeline run
@@ -1505,9 +1518,12 @@ public class PipelineRunManager {
         restartedRun.setSshPassword(PasswordGenerator.generatePassword());
         restartedRun.setOwner(run.getOwner());
         restartedRun.setEntitiesIds(run.getEntitiesIds());
+        restartedRun.setSensitive(run.getSensitive());
         restartedRun.setConfigurationId(run.getConfigurationId());
         restartedRun.setExecutionPreferences(run.getExecutionPreferences());
         restartedRun.setRunSids(run.getRunSids());
+        restartedRun.setPrettyUrl(run.getPrettyUrl());
+        restartedRun.setNonPause(run.isNonPause());
         return restartedRun;
     }
 
