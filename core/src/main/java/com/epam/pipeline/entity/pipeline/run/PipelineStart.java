@@ -45,7 +45,7 @@ public class PipelineStart {
     private String workerCmd;
     // TODO: Should be relatively easy to switch to runAssignPolicy in the feature
     private Long parentRunId;
-    private RunAssignPolicy runAssignPolicy;
+    private RunAssignPolicy podAssignPolicy;
     private Boolean isSpot;
     private List<RunSid> runSids;
     private Long cloudRegionId;

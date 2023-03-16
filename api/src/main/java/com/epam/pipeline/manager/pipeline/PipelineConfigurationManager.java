@@ -246,7 +246,7 @@ public class PipelineConfigurationManager {
 
     private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO, PipelineConfiguration defaultConfig) {
         final Long useRunId = runVO.getParentNodeId() != null ? runVO.getParentNodeId() : runVO.getUseRunId();
-        final RunAssignPolicy assignPolicy = runVO.getRunAssignPolicy();
+        final RunAssignPolicy assignPolicy = runVO.getPodAssignPolicy();
 
         if (useRunId != null && assignPolicy != null) {
             throw new IllegalArgumentException(

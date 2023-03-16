@@ -122,7 +122,7 @@ public class PipelineConfigurationManagerTest {
     @Test
     public void shouldPropagateRunAssignPolicyFromStartObjectToConfiguration() {
         final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
-        runVO.setRunAssignPolicy(
+        runVO.setPodAssignPolicy(
             RunAssignPolicy.builder().selector(
                 RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
             ).build()
@@ -157,7 +157,7 @@ public class PipelineConfigurationManagerTest {
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailIfBothRunAssignPolicyOrParentNodeIdIsProvided() {
         final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
-        runVO.setRunAssignPolicy(
+        runVO.setPodAssignPolicy(
                 RunAssignPolicy.builder().selector(
                         RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
                 ).build()
@@ -183,7 +183,7 @@ public class PipelineConfigurationManagerTest {
         Assert.assertEquals("2", config.getPodAssignPolicy().getSelector().getValue());
 
         runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
-        runVO.setRunAssignPolicy(
+        runVO.setPodAssignPolicy(
                 RunAssignPolicy.builder().selector(
                         RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
                 ).build()
