@@ -344,8 +344,12 @@ public class DockerContainerOperationManager {
         final Map<String, String> envs = getResumeRunEnvVars(configuration);
         configuration.setEnvironmentParams(envs);
         configuration.setPodAssignPolicy(
-                RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL)
-                        .value(run.getId().toString()).build()
+                RunAssignPolicy.builder()
+                        .selector(
+                                RunAssignPolicy.PodAssignSelector.builder()
+                                        .label(KubernetesConstants.RUN_ID_LABEL)
+                                        .value(run.getId().toString()).build())
+                        .build()
         );
         return configuration;
     }

@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -128,6 +129,7 @@ public class SystemPreferences {
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
     private static final String CLOUD_REGION_GROUP = "Cloud region";
+    private static final String SYSTEM_JOBS_GROUP = "System Jobs";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -1181,6 +1183,21 @@ public class SystemPreferences {
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+
+    // System Jobs
+    public static final StringPreference SYSTEM_JOBS_KUBE_SERVICE_ACCOUNT = new StringPreference(
+            "system.jobs.kube.service.account", null, SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final ObjectPreference<RunAssignPolicy> SYSTEM_JOBS_RUN_ASSIGN_POLICY = new ObjectPreference<>(
+            "system.jobs.run.assign.policy", null, new TypeReference<RunAssignPolicy>() {},
+            SYSTEM_JOBS_GROUP, isNullOrValidJson(new TypeReference<RunAssignPolicy>() {}), false
+    );
+
+    public static final StringPreference SYSTEM_JOBS_PARAMETER_FLAG = new StringPreference(
+            "system.jobs.parameter.flag", "CP_CAP_SYSTEM_JOB", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final LongPreference SYSTEM_JOBS_PIPELINE = new LongPreference(
+            "system.jobs.pipeline.id", null, SYSTEM_JOBS_GROUP, isNullOrGreaterThan(0), false);
 
     private static final Map<String, AbstractSystemPreference<?>> PREFERENCE_MAP;
 
