@@ -17,6 +17,7 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -29,6 +30,7 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class RestartRunDao extends NamedParameterJdbcDaoSupport {
 
@@ -37,6 +39,7 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     private String loadPipelineRestartedRunForParentRunQuery;
     private String loadAllRestartedRunsQuery;
     private String loadAllRestartedRunsForInitialRunQuery;
+    private String loadRestartRunByIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createPipelineRestartRun(RestartRun restartRun) {
@@ -62,6 +65,12 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     public List<RestartRun> loadAllRestartedRunsForInitialRun(Long runId) {
         return getJdbcTemplate().query(loadAllRestartedRunsForInitialRunQuery,
                 PipelineRestartRunParameters.getRowMapper(), runId, runId);
+    }
+
+    public Optional<RestartRun> loadRestartedRunById(final Long id) {
+        return ListUtils.emptyIfNull(getJdbcTemplate()
+                .query(loadRestartRunByIdQuery, PipelineRestartRunParameters.getRowMapper(), id)).stream()
+                .findFirst();
     }
 
     enum PipelineRestartRunParameters {
@@ -114,5 +123,10 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadAllRestartedRunsForInitialRunQuery(String loadAllRestartedRunsForInitialRunQuery) {
         this.loadAllRestartedRunsForInitialRunQuery = loadAllRestartedRunsForInitialRunQuery;
+    }
+
+    @Required
+    public void setLoadRestartRunByIdQuery(final String loadRestartRunByIdQuery) {
+        this.loadRestartRunByIdQuery = loadRestartRunByIdQuery;
     }
 }
