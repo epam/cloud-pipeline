@@ -17,36 +17,69 @@
 package com.epam.pipeline.entity.pipeline.run;
 
 import lombok.Builder;
+import lombok.ToString;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
 
 @Value
 @Builder
+@ToString
 public class RunAssignPolicy {
 
-    String label;
-    String value;
+    PodAssignSelector selector;
+    PodAssignTolerance tolerance;
 
     public boolean isMatch(final String label, final String value) {
-        return this.label.equals(label) && this.value.equals(value);
+        if (!isValid()) {
+            return false;
+        }
+        return this.selector.label.equals(label) && this.selector.value.equals(value);
     }
 
     public boolean isMatch(final String label) {
-        return this.label.equals(label);
+        return isMatch(label, null);
     }
 
     public <T> Optional<T> ifMatchThenMapValue(final String label, Function<String, T> caster) {
         if (isMatch(label)) {
-            return Optional.of(caster.apply(value));
+            return Optional.of(caster.apply(selector.value));
         }
         return Optional.empty();
     }
 
     public boolean isValid() {
-        return StringUtils.isNotBlank(label) && StringUtils.isNotBlank(value);
+        if (selector == null) {
+            return false;
+        }
+        return StringUtils.isNotBlank(selector.label) && StringUtils.isNotBlank(selector.value);
+    }
+
+    public Map<String, String> getTolerances() {
+        if (tolerance == null || StringUtils.isEmpty(tolerance.label) || StringUtils.isEmpty(tolerance.value)) {
+            return Collections.emptyMap();
+        }
+        return Collections.singletonMap(tolerance.label, tolerance.value);
+    }
+
+    @Value
+    @Builder
+    @ToString
+    public static class PodAssignSelector {
+        String label;
+        String value;
+    }
+
+    @Value
+    @Builder
+    @ToString
+    public static class PodAssignTolerance {
+        String label;
+        String value;
     }
 }

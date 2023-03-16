@@ -256,8 +256,10 @@ public class PipelineConfigurationManager {
                             KubernetesConstants.RUN_ID_LABEL, value)
                 );
                 return RunAssignPolicy.builder()
-                        .label(KubernetesConstants.RUN_ID_LABEL)
-                        .value(value)
+                        .selector(
+                            RunAssignPolicy.PodAssignSelector.builder()
+                                .label(KubernetesConstants.RUN_ID_LABEL)
+                                .value(value).build())
                         .build();
             } else {
                 return RunAssignPolicy.builder().build();

@@ -29,24 +29,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
-import io.fabric8.kubernetes.api.model.Affinity;
-import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
-import io.fabric8.kubernetes.api.model.EnvVar;
-import io.fabric8.kubernetes.api.model.HostPathVolumeSource;
-import io.fabric8.kubernetes.api.model.LocalObjectReference;
-import io.fabric8.kubernetes.api.model.NodeAffinity;
-import io.fabric8.kubernetes.api.model.NodeSelector;
-import io.fabric8.kubernetes.api.model.NodeSelectorRequirement;
-import io.fabric8.kubernetes.api.model.NodeSelectorTerm;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodDNSConfig;
-import io.fabric8.kubernetes.api.model.PodSpec;
-import io.fabric8.kubernetes.api.model.Quantity;
-import io.fabric8.kubernetes.api.model.SecurityContext;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
@@ -68,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PipelineExecutor {
@@ -136,7 +120,7 @@ public class PipelineExecutor {
             String runIdLabel = String.valueOf(run.getId());
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-                nodeSelector.put(podAssignPolicy.getLabel(), podAssignPolicy.getValue());
+                nodeSelector.put(podAssignPolicy.getSelector().getLabel(), podAssignPolicy.getSelector().getValue());
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
                 if (run.getPodId().equals(pipelineId) &&
                         podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
@@ -152,8 +136,9 @@ public class PipelineExecutor {
             OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
             ObjectMeta metadata = getObjectMeta(run, labels);
             final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
-            PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getActualDockerImage(), command,
-                    imagePullPolicy, podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
+            PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.getTolerances(),
+                    run.getActualDockerImage(), command, imagePullPolicy,
+                    podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
                     verifiedKubeServiceAccount);
             Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
@@ -195,8 +180,8 @@ public class PipelineExecutor {
     }
 
     private PodSpec getPodSpec(PipelineRun run, List<EnvVar> envVars, String secretName,
-                               Map<String, String> nodeSelector, String dockerImage,
-                               String command, ImagePullPolicy imagePullPolicy, boolean isParentPod,
+                               Map<String, String> nodeSelector, Map<String, String> nodeTolerances,
+                               String dockerImage, String command, ImagePullPolicy imagePullPolicy, boolean isParentPod,
                                String kubeServiceAccount) {
         PodSpec spec = new PodSpec();
         spec.setRestartPolicy("Never");
@@ -224,6 +209,17 @@ public class PipelineExecutor {
             spec.setVolumes(getWindowsVolumes());
         } else {
             spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
+        }
+
+        if (!MapUtils.isEmpty(nodeTolerances)) {
+            final List<Toleration> tolerations = nodeTolerances.entrySet().stream().map(t -> {
+                final Toleration toleration = new Toleration();
+                toleration.setKey(t.getKey());
+                toleration.setValue(t.getValue());
+                toleration.setOperator("Equal");
+                return toleration;
+            }).collect(Collectors.toList());
+            spec.setTolerations(tolerations);
         }
 
         if (envVars.stream().anyMatch(envVar -> envVar.getName().equals(USE_HOST_NETWORK))){

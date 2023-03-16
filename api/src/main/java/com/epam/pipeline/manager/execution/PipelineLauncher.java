@@ -210,9 +210,13 @@ public class PipelineLauncher {
 
     private void checkRunOnParentNode(PipelineRun run, RunAssignPolicy assignPolicy,
                                       Map<SystemParams, String> systemParams) {
-        if (assignPolicy != null && KubernetesConstants.RUN_ID_LABEL.equals(assignPolicy.getLabel()) &&
-                !run.getId().toString().equals(assignPolicy.getValue())) {
-            systemParams.put(SystemParams.RUN_ON_PARENT_NODE, EMPTY_PARAMETER);
+        if (assignPolicy != null && assignPolicy.isValid()) {
+            assignPolicy.ifMatchThenMapValue(KubernetesConstants.RUN_ID_LABEL, Long::valueOf)
+                    .ifPresent(parentNodeId -> {
+                        if (!run.getId().equals(parentNodeId)) {
+                            systemParams.put(SystemParams.RUN_ON_PARENT_NODE, EMPTY_PARAMETER);
+                        }
+                    });
         }
     }
 

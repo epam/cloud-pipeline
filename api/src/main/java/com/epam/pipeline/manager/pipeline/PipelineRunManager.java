@@ -405,8 +405,12 @@ public class PipelineRunManager {
         // If there is no podAssignPolicy we need to schedule run to be launched on dedicated node
         if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
             configuration.setPodAssignPolicy(
-                    RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL)
-                            .value(run.getId().toString()).build()
+                RunAssignPolicy.builder()
+                    .selector(
+                        RunAssignPolicy.PodAssignSelector.builder()
+                                .label(KubernetesConstants.RUN_ID_LABEL)
+                                .value(run.getId().toString()).build())
+                    .build()
             );
         }
 
@@ -1047,8 +1051,12 @@ public class PipelineRunManager {
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
         configuration.setPodAssignPolicy(
-                RunAssignPolicy.builder().label(KubernetesConstants.RUN_ID_LABEL)
-                        .value(restartedRun.getId().toString()).build()
+            RunAssignPolicy.builder()
+                .selector(
+                    RunAssignPolicy.PodAssignSelector.builder()
+                            .label(KubernetesConstants.RUN_ID_LABEL)
+                            .value(restartedRun.getId().toString()).build())
+                .build()
         );
         final String launchedCommand = pipelineLauncher.launch(restartedRun, configuration, endpoints, null);
         restartedRun.setActualCmd(launchedCommand);

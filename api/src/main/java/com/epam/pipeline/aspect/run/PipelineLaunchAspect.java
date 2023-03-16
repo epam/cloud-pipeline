@@ -40,19 +40,31 @@ public class PipelineLaunchAspect {
 
     @Before("@annotation(com.epam.pipeline.aspect.run.PipelineLaunchCheck) && args(configuration)")
     public void checkRunLaunchIsNotForbidden(JoinPoint joinPoint, PipelineConfiguration configuration) {
+
+        Optional.ofNullable(configuration.getPodAssignPolicy()).ifPresent(assignPolicy -> {
+            if (!assignPolicy.isValid()) {
+                throw new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_MALFORMED,
+                                assignPolicy.toString()));
+            }
+        });
+
         final PipelineUser user = authManager.getCurrentUser();
         if (user.isAdmin()) {
             return;
         }
         final Boolean advancedRunAssignPolicy = Optional.ofNullable(configuration.getPodAssignPolicy())
-                .map(policy -> !policy.getLabel().equalsIgnoreCase(KubernetesConstants.RUN_ID_LABEL))
+                .map(policy -> !policy.getSelector().getLabel().equalsIgnoreCase(KubernetesConstants.RUN_ID_LABEL))
                 .orElse(false);
         if (advancedRunAssignPolicy) {
-            log.error(messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
+            throw new IllegalArgumentException(
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
         }
         if (configuration.getKubeServiceAccount() != null) {
-            log.error(messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName()));
+            throw new IllegalArgumentException(
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName())
+            );
         }
     }
 }
