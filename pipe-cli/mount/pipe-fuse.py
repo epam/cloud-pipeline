@@ -110,7 +110,7 @@ def start(mountpoint, webdav, bucket,
     audit_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_TTL', audit_buffer_ttl))
     audit_buffer_size = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_SIZE', audit_buffer_size))
     bucket_type = None
-    root_path = None
+    bucket_path = None
     daemons = []
     if not bearer:
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
@@ -123,11 +123,10 @@ def start(mountpoint, webdav, bucket,
         if not api:
             raise RuntimeError('Cloud Pipeline API should be specified.')
         pipe = CloudPipelineClient(api=api, token=bearer)
-        path_chunks = bucket.rstrip('/').split('/')
-        bucket_name = path_chunks[0]
-        root_path = '/'.join(path_chunks[1:])
         bucket_object = pipe.init_bucket_object(bucket)
         bucket_type = bucket_object.type
+        bucket_name = bucket_object.root
+        bucket_path = '/'.join(bucket_object.path.split('/')[1:])
         if bucket_type == CloudType.S3:
             client = S3StorageLowLevelClient(bucket_name, bucket_object, pipe=pipe, chunk_size=chunk_size)
             if not show_archived:
@@ -149,7 +148,7 @@ def start(mountpoint, webdav, bucket,
     if recording:
         client = RecordingFileSystemClient(client)
     if bucket_type in [CloudType.S3, CloudType.GS]:
-        client = PathExpandingStorageFileSystemClient(client, root_path=root_path)
+        client = PathExpandingStorageFileSystemClient(client, root_path=bucket_path)
     if listing_cache_ttl > 0 and listing_cache_size > 0:
         listing_cache_implementation = TTLCache(maxsize=listing_cache_size, ttl=listing_cache_ttl)
         listing_cache = ListingCache(listing_cache_implementation)

@@ -76,6 +76,7 @@ class DataStorage:
     def __init__(self):
         self.id = None
         self.path = None
+        self.root = None
         self.mask = None
         self.sensitive = False
         self.ro = False
@@ -87,6 +88,7 @@ class DataStorage:
         instance = DataStorage()
         instance.id = json['id']
         instance.path = json['path']
+        instance.root = json['root']
         instance.mask = json['mask']
         instance.sensitive = json['sensitive']
         instance.type = json['type']

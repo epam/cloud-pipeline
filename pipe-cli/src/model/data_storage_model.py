@@ -30,12 +30,14 @@ class DataStorageModel(DataStorageItemModel):
         self.mount_status = None
         self.tools_to_mount = set()
         self.owner = None
+        self.root = None
 
     @classmethod
     def load(cls, json):
         instance = DataStorageModel()
         instance.initialize(json)
         instance.identifier = json['id']
+        instance.root = json.get('root')
         if 'description' in json:
             instance.description = json['description']
         if 'type' in json:
@@ -63,6 +65,7 @@ class DataStorageModel(DataStorageItemModel):
         instance = DataStorageModel()
         instance.initialize(json)
         instance.identifier = json['id']
+        instance.root = json.get('root')
         if 'description' in json:
             instance.description = json['description']
         if 'type' in json:
