@@ -1,0 +1,68 @@
+[
+  {
+    "name" : "default",
+    "description" : "Help command configuration",
+    "configuration" : {
+      "main_file" : "launch_system_job.sh",
+      "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+      "instance_disk" : "50",
+      "docker_image" : "system/system-job-launcher:latest",
+      "timeout" : 0,
+      "cmd_template" : "bash ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file] $CP_SYSTEM_JOB $CP_SYSTEM_JOB_PARAMS",
+      "language" : "bash",
+      "kubeServiceAccount": "${CP_PREF_SYSTEM_JOB_KUBE_SERVICE_ACCOUNT}",
+      "podAssignPolicy": {
+        "selector": {
+          "label": "cloud-pipeline/cp-api-srv",
+          "value": "true"
+        },
+        "tolerances": [
+          {
+            "label": "node-role.kubernetes.io/master",
+            "value": ""
+          }
+        ]
+      },
+      "parameters" : {
+        "CP_SYSTEM_JOBS_RESULTS" : {
+          "value" : "${CP_PREF_SYSTEM_JOB_STORAGE_RESULT_FOLDER}",
+          "type" : "output",
+          "required" : false,
+          "no_override" : false
+        },
+        "CP_SYSTEM_JOB_SYSTEM_FS" : {
+          "value" : "",
+          "type" : "string",
+          "required" : false
+        },
+        "CP_SYSTEM_SCRIPTS_LOCATION" : {
+          "type" : "string",
+          "required" : true,
+          "no_override" : false
+        },
+        "CP_SYSTEM_JOB" : {
+          "type" : "string",
+          "required" : true,
+          "no_override" : false
+        },
+        "CP_SYSTEM_JOB_PARAMS" : {
+          "type" : "string",
+          "required" : false,
+          "no_override" : false
+        },
+        "CP_SYSTEM_JOBS_OUTPUT_TASK" : {
+          "type" : "string",
+          "required" : false,
+          "no_override" : false
+        },
+        "CP_CAP_LIMIT_MOUNTS" : {
+          "value" : "None",
+          "type" : "string",
+          "required" : false
+        }
+      },
+      "is_spot" : true
+    },
+    "default" : true
+  }
+]

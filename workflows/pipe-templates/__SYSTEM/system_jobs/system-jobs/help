@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo " Available commands: "
+echo
+for f in `ls ${CP_DOLLAR}SCRIPTS_DIR/src/system-jobs/`; do
+    echo "    $f"
+done
