@@ -35,8 +35,6 @@ import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
-import com.epam.pipeline.entity.git.GitlabIssue;
-import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -66,11 +64,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -91,14 +87,7 @@ public class PipelineController extends AbstractRestController {
     private static final int BYTES_IN_KB = 1024;
     private static final String INCLUDE_DIFF = "include_diff";
     private static final String COMMIT = "commit";
-    private static final String FIND_MY = "find_my";
-
-    @Autowired
-    private PipelineApiService pipelineApiService;
-
-
     private static final String ID = "id";
-    private static final String ISSUE_ID = "issue_id";
     private static final String NAME = "name";
     private static final String VERSION = "version";
     private static final String PATH = "path";
@@ -106,8 +95,9 @@ public class PipelineController extends AbstractRestController {
     private static final String PAGE_SIZE = "page_size";
     private static final String KEEP_REPOSITORY = "keep_repository";
     private static final String RECURSIVE = "recursive";
-
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineController.class);
+    @Autowired
+    private PipelineApiService pipelineApiService;
 
     @RequestMapping(value = "/pipeline/register", method = RequestMethod.POST)
     @ResponseBody
@@ -856,96 +846,5 @@ public class PipelineController extends AbstractRestController {
             final HttpServletResponse response) throws IOException {
         final VersionStorageReportFile report = pipelineApiService.generateReportForVersionedStorage(id, filter);
         writeFileToResponse(response, report.getContent(), report.getName());
-    }
-
-    @PostMapping(value = "/pipeline/{id}/issue")
-    @ResponseBody
-    @ApiOperation(
-            value = "Creates Issue in pipeline corresponding Gitlab project.",
-            notes = "Creates Issue in pipeline corresponding Gitlab project.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<GitlabIssue> createIssue(
-            @PathVariable(value = ID) final Long id,
-            @RequestBody final GitlabIssue issue) throws GitClientException  {
-        return Result.success(pipelineApiService.createOrUpdateIssue(id, issue));
-    }
-
-    @PutMapping(value = "/pipeline/{id}/issue")
-    @ResponseBody
-    @ApiOperation(
-            value = "Updates Issue in pipeline corresponding Gitlab project.",
-            notes = "Updates Issue in pipeline corresponding Gitlab project.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<GitlabIssue> updateIssue(
-            @PathVariable(value = ID) final Long id,
-            @RequestBody final GitlabIssue issue) throws GitClientException  {
-        return Result.success(pipelineApiService.createOrUpdateIssue(id, issue));
-    }
-
-    @DeleteMapping(value = "/pipeline/{id}/issue/{issue_id}")
-    @ResponseBody
-    @ApiOperation(
-            value = "Deletes Issue in pipeline corresponding Gitlab project.",
-            notes = "Deletes Issue in pipeline corresponding Gitlab project.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<Boolean> deleteIssue(
-            @PathVariable(value = ID) final Long id,
-            @PathVariable(value = ISSUE_ID) final Long issueId) throws GitClientException  {
-        return Result.success(pipelineApiService.deleteIssue(id, issueId));
-    }
-
-    @GetMapping(value = "/pipeline/{id}/issues")
-    @ResponseBody
-    @ApiOperation(
-            value = "Gets pipeline corresponding Gitlab project issues. ",
-            notes = "Gets pipeline corresponding Gitlab project issues. " +
-                    "Attachments should be specified as list of files paths.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<List<GitlabIssue>> getIssues(@PathVariable(value = ID) final Long id,
-                                               @RequestParam(value = FIND_MY, required = false) final Boolean findMy)
-            throws GitClientException {
-        return Result.success(pipelineApiService.getIssues(id, findMy));
-    }
-
-    @GetMapping(value = "/pipeline/{id}/issue/{issue_id}")
-    @ResponseBody
-    @ApiOperation(
-            value = "Gets Gitlab project issue.",
-            notes = "Gets Gitlab project issue.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<GitlabIssue> getIssue(@PathVariable(value = ID) final Long id,
-                                        @PathVariable(value = ISSUE_ID) final Long issueId) throws GitClientException {
-        return Result.success(pipelineApiService.getIssue(id, issueId));
-    }
-
-    @PostMapping(value = "/pipeline/{id}/issue/{issue_id}/comment")
-    @ResponseBody
-    @ApiOperation(
-            value = "Adds comment to Gitlab project issue.",
-            notes = "Adds comment to Gitlab project issue.",
-            produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
-    public Result<GitlabIssueComment> addIssueComment(@PathVariable(value = ID) final Long id,
-                                                      @PathVariable(value = ISSUE_ID) final Long issueId,
-                                                      @RequestBody final GitlabIssueComment comment)
-            throws GitClientException {
-        return Result.success(pipelineApiService.addIssueComment(id, issueId, comment));
     }
 }

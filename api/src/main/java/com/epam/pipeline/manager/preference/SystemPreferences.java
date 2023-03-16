@@ -319,6 +319,8 @@ public class SystemPreferences {
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
+    public static final StringPreference GITLAB_ISSUE_PROJECT = new StringPreference(
+            "git.gitlab.issue.project", null, GIT_GROUP, pass, true);
 
     // DOCKER_SECURITY_GROUP
     /**

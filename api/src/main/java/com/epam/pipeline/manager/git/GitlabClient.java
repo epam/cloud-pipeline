@@ -41,7 +41,6 @@ import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.utils.GitUtils;
-import javafx.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
@@ -51,6 +50,8 @@ import okhttp3.RequestBody;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -678,7 +679,7 @@ public class GitlabClient {
     private static Pair<String, List<String>> extractAttachments(String text) {
         final String[] description = text.split("!");
         final List<String> descriptionList = Arrays.stream(description).map(String::trim).collect(Collectors.toList());
-        return new Pair<>(descriptionList.get(0), description.length > 1 ?
+        return new ImmutablePair<>(descriptionList.get(0), description.length > 1 ?
                 descriptionList.subList(1, descriptionList.size()) : Collections.emptyList());
     }
     private String formatTextWithAttachments(final String project,

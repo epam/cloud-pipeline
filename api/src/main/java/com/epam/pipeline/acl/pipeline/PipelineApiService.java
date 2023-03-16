@@ -32,8 +32,6 @@ import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
-import com.epam.pipeline.entity.git.GitlabIssue;
-import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -388,33 +386,5 @@ public class PipelineApiService {
     public VersionStorageReportFile generateReportForVersionedStorage(final Long id,
                                                                       final GitDiffReportFilter reportFilters) {
         return fileGenerationManager.generateVersionStorageReport(id, reportFilters);
-    }
-
-    @PreAuthorize(PIPELINE_ID_READ)
-    public GitlabIssue createOrUpdateIssue(final Long id, final GitlabIssue issue)
-            throws GitClientException {
-        return gitManager.createOrUpdateIssue(id, issue);
-    }
-
-    @PreAuthorize(PIPELINE_ID_READ)
-    public Boolean deleteIssue(final Long id, final Long issueId) throws GitClientException {
-        return gitManager.deleteIssue(id, issueId);
-    }
-
-    @PreAuthorize(PIPELINE_ID_READ)
-    public List<GitlabIssue> getIssues(final Long id, final Boolean findMy) throws GitClientException {
-        return gitManager.getIssues(id, findMy);
-    }
-
-    @PreAuthorize(PIPELINE_ID_READ)
-    public GitlabIssue getIssue(final Long id, final Long  issueId) throws GitClientException {
-        return gitManager.getIssue(id, issueId);
-    }
-
-    @PreAuthorize(PIPELINE_ID_READ)
-    public GitlabIssueComment addIssueComment(final Long id,
-                                              final Long  issueId,
-                                              final GitlabIssueComment  comment) throws GitClientException {
-        return gitManager.addIssueComment(id, issueId, comment);
     }
 }
