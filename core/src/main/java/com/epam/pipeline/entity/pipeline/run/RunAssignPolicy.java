@@ -19,12 +19,14 @@ package com.epam.pipeline.entity.pipeline.run;
 import lombok.Builder;
 import lombok.ToString;
 import lombok.Value;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Value
@@ -33,7 +35,7 @@ import java.util.function.Function;
 public class RunAssignPolicy {
 
     PodAssignSelector selector;
-    PodAssignTolerance tolerance;
+    List<PodAssignTolerance> tolerances;
 
     public boolean isMatch(final String label, final String value) {
         if (!isValid()) {
@@ -61,10 +63,9 @@ public class RunAssignPolicy {
     }
 
     public Map<String, String> getTolerances() {
-        if (tolerance == null || StringUtils.isEmpty(tolerance.label)) {
-            return Collections.emptyMap();
-        }
-        return Collections.singletonMap(tolerance.label, tolerance.value);
+        return ListUtils.emptyIfNull(tolerances).stream()
+                .filter(t -> StringUtils.isNotBlank(t.label))
+                .collect(Collectors.toMap(PodAssignTolerance::getLabel, PodAssignTolerance::getValue));
     }
 
     @Value

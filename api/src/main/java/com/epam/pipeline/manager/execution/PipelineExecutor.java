@@ -29,7 +29,24 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.Affinity;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.HostPathVolumeSource;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.NodeAffinity;
+import io.fabric8.kubernetes.api.model.NodeSelector;
+import io.fabric8.kubernetes.api.model.NodeSelectorRequirement;
+import io.fabric8.kubernetes.api.model.NodeSelectorTerm;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodDNSConfig;
+import io.fabric8.kubernetes.api.model.PodSpec;
+import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.SecurityContext;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
@@ -51,7 +68,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class PipelineExecutor {
@@ -157,7 +173,12 @@ public class PipelineExecutor {
                 .filter(serviceAccount -> serviceAccount.getMetadata().getName().equals(kubeServiceAccount))
                 .map(serviceAccount -> serviceAccount.getMetadata().getName())
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Can't find kube service account that was requested!"));
+                .orElseGet(() -> {
+                    LOGGER.warn(String.format(
+                            "Can't find kube service account that was requested: %s! Default will be used",
+                            kubeServiceAccount));
+                    return DEFAULT_KUBE_SERVICE_ACCOUNT;
+                });
         } else {
             return DEFAULT_KUBE_SERVICE_ACCOUNT;
         }
@@ -211,20 +232,9 @@ public class PipelineExecutor {
             spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
         }
 
-        if (MapUtils.isNotEmpty(nodeTolerances)) {
-            final List<Toleration> tolerations = nodeTolerances.entrySet().stream().map(t -> {
-                final Toleration toleration = new Toleration();
-                toleration.setKey(t.getKey());
-                if (StringUtils.isNotBlank(t.getValue())) {
-                    toleration.setValue(t.getValue());
-                    toleration.setOperator("Equal");
-                } else {
-                    toleration.setOperator("Exists");
-                }
-                return toleration;
-            }).collect(Collectors.toList());
-            spec.setTolerations(tolerations);
-        }
+        Optional.of(PodSpecMapperHelper.buildTolerations(nodeTolerances))
+                .filter(List::isEmpty)
+                .ifPresent(spec::setTolerations);
 
         if (envVars.stream().anyMatch(envVar -> envVar.getName().equals(USE_HOST_NETWORK))){
             spec.setHostNetwork(true);
