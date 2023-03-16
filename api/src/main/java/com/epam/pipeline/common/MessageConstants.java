@@ -38,6 +38,7 @@ public final class MessageConstants {
     public static final String ERROR_REPOSITORY_PATH_DOESNT_EXIST = "error.repository.path.doesnt.exist";
     public static final String ERROR_REPOSITORY_SRC_NOT_FOUND = "error.repository.src.not.found";
     public static final String ERROR_REPOSITORY_DOCS_NOT_FOUND = "error.repository.docs.not.found";
+    public static final String ERROR_ISSUE_PROJECT_NOT_SET = "error.issue.project.not.set";
 
     //Pipeline config
     public static final String ERROR_CONFIG_INVALID = "error.pipeline.config.invalid";

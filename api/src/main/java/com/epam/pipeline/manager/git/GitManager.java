@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
@@ -32,6 +33,8 @@ import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -69,6 +72,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -101,6 +105,7 @@ public class GitManager {
     private static final String ROOT_PATH = "/";
     public static final String REVERT_MESSAGE = "Revert %s to commit %s";
     private static final String GIT_REPO_EXTENSION = ".git";
+    private static final String ON_BEHALF_OF = "On behalf of %s";
 
     private CmdExecutor cmdExecutor = new CmdExecutor();
 
@@ -416,12 +421,16 @@ public class GitManager {
     }
 
     private GitlabClient getDefaultGitlabClient() {
-        String gitHost = preferenceManager.getPreference(SystemPreferences.GIT_HOST);
-        String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
-        Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
-        String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
+        final String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
+        return getGitlabClient(gitToken);
+    }
+
+    private GitlabClient getGitlabClient(final String token) {
+        final String gitHost = preferenceManager.getPreference(SystemPreferences.GIT_HOST);
+        final Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
+        final String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         final String apiVersion = preferenceManager.getPreference(SystemPreferences.GITLAB_API_VERSION);
-        return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, gitToken,
+        return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, token,
                 authManager.getAuthorizedUser(), gitAdminId, gitAdminName, apiVersion);
     }
 
@@ -602,6 +611,68 @@ public class GitManager {
                         ListUtils.union(getContextPathList(path), getFilesToIgnore())
                 )
         ));
+    }
+
+    public GitlabIssue createOrUpdateIssue(final GitlabIssueRequest request)
+            throws GitClientException {
+        GitlabClient client = getDefaultGitlabClient();
+        final String authorizedUser = authManager.getCurrentUser().getUserName();
+        final Optional<GitlabUser> user = client.findUser(authorizedUser);
+        final GitlabIssue issue = request.toIssue();
+        if (user.isPresent()) {
+            final GitCredentials credentials = getGitlabCredentials(null);
+            client = getGitlabClient(credentials.getToken());
+        } else {
+            final List<String> labels = Optional.ofNullable(issue.getLabels()).orElse(new ArrayList<>());
+            labels.add(String.format(ON_BEHALF_OF, authorizedUser));
+            issue.setLabels(labels);
+        }
+        return client.createOrUpdateIssue(getProjectForIssues(), issue);
+    }
+
+    public Boolean deleteIssue(final Long issueId) throws GitClientException {
+        return getDefaultGitlabClient().deleteIssue(getProjectForIssues(), issueId);
+    }
+
+    public List<GitlabIssue> getIssues() throws GitClientException {
+        final GitlabClient client = getDefaultGitlabClient();
+        final List<String> labels = new ArrayList<>();
+        String authorId = null;
+        if (!authManager.isAdmin()) {
+            final String authorizedUser = authManager.getCurrentUser().getUserName();
+            final Optional<GitlabUser> user = client.findUser(authorizedUser);
+            if (user.isPresent()) {
+                authorId = user.get().getId().toString();
+            } else {
+                labels.add(String.format(ON_BEHALF_OF, authorizedUser));
+            }
+        }
+        return client.getIssues(getProjectForIssues(), authorId, labels);
+    }
+
+    public GitlabIssue getIssue(final Long issueId) throws GitClientException {
+        return getDefaultGitlabClient().getIssue(getProjectForIssues(), issueId);
+    }
+
+    public GitlabIssueComment addIssueComment(final Long issueId,
+                                              final GitlabIssueComment comment) throws GitClientException {
+        GitlabClient client = getDefaultGitlabClient();
+        final String authorizedUser = authManager.getCurrentUser().getUserName();
+        final Optional<GitlabUser> user = client.findUser(authorizedUser);
+        if (user.isPresent()) {
+            final GitCredentials credentials = getGitlabCredentials(null);
+            client = getGitlabClient(credentials.getToken());
+        } else {
+            comment.setBody(String.format("On behalf of %s: %s", authorizedUser, comment.getBody()));
+        }
+        return client.addIssueComment(getProjectForIssues(), issueId, comment);
+    }
+
+    private String getProjectForIssues() {
+        final String project = preferenceManager.getPreference(SystemPreferences.GITLAB_ISSUE_PROJECT);
+        Assert.isTrue(!StringUtils.isNullOrEmpty(project),
+                messageHelper.getMessage(MessageConstants.ERROR_ISSUE_PROJECT_NOT_SET));
+        return project;
     }
 
     private List<String> getContextPathList(String path) {
