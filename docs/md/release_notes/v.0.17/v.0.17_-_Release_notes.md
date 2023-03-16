@@ -343,6 +343,29 @@ If the node type is specified in this preference, listed above notifications wil
 This preference allows a comma-separated list of the node types and wildcards, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_07.png)
 
+### Push notifications
+
+Previously, Cloud Pipeline platform sent notifications to users via email only. For many cases it would be useful to show such notifications in the GUI as well. In the current version, such ability was implemented.
+
+Now, all email notifications, that are sending by the platform, are also duplicated as push notifications. This allows to view notifications right in the Cloud Pipeline GUI.  
+Push notifications do not require additional configuring - they are fully the same as corresponding email notifications, i.e. have the same header, content, recepients list, frequency and trigger of sending, etc.
+
+Once any system event is occurred and its trigger for sending email notification has fired, email will be sent to the configured recipients. Simultaneously, the push notification (with the same subject and body as in the email) will be "sent" to the same recipients, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_01.png)
+
+Click it to view the whole notification - it will be opened in a pop-up:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_02.png)
+
+Additionally, a new section appeared in the main menu - **Notifications**.  
+It allows to view all push notifications/emails sent to the current user, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_03.png)
+
+User can switch notifications lists - to display only new "unread" notifications or only "read" ones.  
+To view the notification full details, user can click it - notification will be opened in a pop-up:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_04.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md#push-notifications).
+
 ## Allowed price types for a cluster master node
 
 Previously, **Cloud Pipeline** allowed the user to choose whether the cluster master node be a `spot` or `on-demand` instance.  

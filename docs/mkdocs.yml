@@ -90,7 +90,7 @@ nav:
     - 12.6. Edit a group/role: 'manual/12_Manage_Settings/12.6._Edit_a_group_role.md'
     - 12.7. Delete a group: 'manual/12_Manage_Settings/12.7._Delete_a_group.md'
     - 12.8. Change a set of roles/groups for a user: 'manual/12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user.md'
-    - 12.9. Change email notification: 'manual/12_Manage_Settings/12.9._Change_email_notification.md'
+    - 12.9. Email notifications: 'manual/12_Manage_Settings/12.9._Change_email_notification.md'
     - 12.10. Manage system-level settings: 'manual/12_Manage_Settings/12.10._Manage_system-level_settings.md'
     - 12.11. Advanced features: 'manual/12_Manage_Settings/12.11._Advanced_features.md'
     - 12.12. System logs: 'manual/12_Manage_Settings/12.12._System_logs.md'
