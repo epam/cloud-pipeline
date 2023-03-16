@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -192,6 +192,12 @@ if [ "$OWNER" ] && [ "$API" ] && [ "$API_TOKEN" ]; then
     fi
 else
     pipe_log_warn "One of the environment variables OWNER, API, API_TOKEN is not set, can't configure the certificates for the internal registry" "$SNGLRT_SETUP_TASK"
+fi
+
+# Configure Singularity to probe the host for all mounted filesystems and bind those into containers at runtime
+if [ "$CP_CAP_SINGULARITY_MOUNT_FS" == "true" ]; then
+    $CP_USR_BIN/singularity config global --set "mount hostfs" yes
+    echo "Singularity 'MOUNT HOSTFS' option was be enabled"
 fi
 
 motd_setup add "This job was launched with 'Singularity' enabled
