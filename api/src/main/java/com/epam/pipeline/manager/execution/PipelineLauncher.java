@@ -129,7 +129,7 @@ public class PipelineLauncher {
                 kubeNamespace,
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING),
                 configuration, gitCredentials);
-        checkRunOnParentNode(run, configuration.getPodAssignPolicy(), systemParams);
+        markRunOnParentNode(run, configuration.getPodAssignPolicy(), systemParams);
         List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
                 buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive(),
                         configuration.getKubeLabels()));
@@ -208,8 +208,8 @@ public class PipelineLauncher {
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
 
-    private void checkRunOnParentNode(PipelineRun run, RunAssignPolicy assignPolicy,
-                                      Map<SystemParams, String> systemParams) {
+    private void markRunOnParentNode(PipelineRun run, RunAssignPolicy assignPolicy,
+                                     Map<SystemParams, String> systemParams) {
         if (assignPolicy != null && assignPolicy.isValid()) {
             assignPolicy.ifMatchThenMapValue(KubernetesConstants.RUN_ID_LABEL, Long::valueOf)
                     .ifPresent(parentNodeId -> {

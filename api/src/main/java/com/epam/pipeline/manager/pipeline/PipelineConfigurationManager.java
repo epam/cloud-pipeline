@@ -212,10 +212,12 @@ public class PipelineConfigurationManager {
 
         // TODO: merging parentNodeId together with runAssignPolicy,
         //  in a future we can delete it if we get rid of parentNodeId in favor of runAssignPolicy
-        configuration.setPodAssignPolicy(mergeAssignPolicy(runVO));
+        configuration.setPodAssignPolicy(mergeAssignPolicy(runVO, defaultConfig));
 
         if (!StringUtils.isEmpty(runVO.getKubeServiceAccount())) {
             configuration.setKubeServiceAccount(runVO.getKubeServiceAccount());
+        } else {
+            configuration.setKubeServiceAccount(defaultConfig.getKubeServiceAccount());
         }
 
         //client always sends actual node-count
@@ -242,13 +244,21 @@ public class PipelineConfigurationManager {
         return configuration;
     }
 
-    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO) {
+    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO, PipelineConfiguration defaultConfig) {
+        final Long useRunId = runVO.getParentNodeId() != null ? runVO.getParentNodeId() : runVO.getUseRunId();
         final RunAssignPolicy assignPolicy = runVO.getRunAssignPolicy();
+
+        if (useRunId != null && assignPolicy != null) {
+            throw new IllegalArgumentException(
+                    "Both RunAssignPolicy and (parentRunId or useRunId) cannot be specified, " +
+                    "please provide only one of them"
+            );
+        }
+
         if (assignPolicy != null && assignPolicy.isValid()) {
             log.debug("RunAssignPolicy is provided and valid, will proceed with it.");
             return assignPolicy;
         } else {
-            final Long useRunId = runVO.getParentRunId() != null ? runVO.getParentRunId() : runVO.getUseRunId();
             if (useRunId != null) {
                 final String value = useRunId.toString();
                 log.debug(
@@ -262,6 +272,9 @@ public class PipelineConfigurationManager {
                                 .value(value).build())
                         .build();
             } else {
+                if (defaultConfig.getPodAssignPolicy() != null && defaultConfig.getPodAssignPolicy().isValid()) {
+                    return defaultConfig.getPodAssignPolicy();
+                }
                 return RunAssignPolicy.builder().build();
             }
         }
