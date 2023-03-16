@@ -93,7 +93,7 @@ class HcsFileTagProcessor:
                     continue
                 tag_key = tag_key.encode('utf-8').strip()
                 for well in layer.findall(ome_schema + 'Well'):
-                    well_key = (well.find(ome_schema + 'Row').text, well.find(ome_schema + 'Col').text)
+                    well_key = (well.find(ome_schema + 'Col').text, well.find(ome_schema + 'Row').text)
                     tag_value = well.find(ome_schema + 'Value').text
                     if not tag_value or tag_value == '0':
                         continue

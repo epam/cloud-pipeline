@@ -397,6 +397,10 @@ class HcsFileParser:
         if not EVAL_PROCESSING_ONLY:
             tags_processing_result = self.try_process_tags(xml_info_tree, wells_tags)
             if TAGS_PROCESSING_ONLY:
+                if wells_tags:
+                    for sequence_id, timepoints in time_series_details.items():
+                        path = os.path.join(self.hcs_img_service_dir, sequence_id, 'wells_map.json')
+                        self.write_dict_to_file(path, self.update_wells_json(path, wells_tags))
                 return tags_processing_result
         if not TAGS_PROCESSING_ONLY:
             eval_processing_result = self.try_process_eval()
@@ -404,6 +408,16 @@ class HcsFileParser:
                 return eval_processing_result
         self.create_stat_file()
         return 0
+
+    def update_wells_json(self, path, wells_tags):
+        self._processing_logger.log_info('Updating well tags for %s' % path)
+        with open(path, 'r') as well_json:
+            current_data = json.load(well_json)
+            for well_key, data in current_data.items():
+                chunks = well_key.split(PLANE_COORDINATES_DELIMITER)
+                well_tuple = (chunks[0], chunks[1])
+                data['tags'] = wells_tags.get(well_tuple, {})
+            return current_data
 
     def extract_sequence_data(self, target_sequence_id, hcs_local_index_file_path):
         hcs_xml_info_tree = ET.parse(hcs_local_index_file_path)
