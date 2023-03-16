@@ -59,6 +59,9 @@ public class SecurityLogAspect {
             "|| execution(* com.epam.pipeline.manager.user.ImpersonateFailureHandler.onAuthenticationFailure(..))" +
             "|| execution(* com.epam.pipeline.manager.user.ImpersonationManager.check(..))";
 
+    public static final String AUDIT_RELATED_METHODS_POINTCUT =
+            "execution(* com.epam.pipeline.manager.audit.AuditClient.put(..))";
+
     public static final String STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT =
             "execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.create*(..))" +
             "|| execution(* com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycle*Manager.init*(..))" +
@@ -73,18 +76,17 @@ public class SecurityLogAspect {
                     "|| execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..))" +
                     "|| execution(* com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter.doFilterInternal(..))";
 
-    public static final String DATA_STORAGE_LIFECYCLE_MANAGER_CLASS_NAME = "DataStorageLifecycleManager";
-    public static final String DATA_STORAGE_LIFECYCLE_RESTORE_MANAGER_CLASS_NAME = "DataStorageLifecycleRestoreManager";
-
     public static final String ANONYMOUS = "Anonymous";
     public static final String KEY_USER = "user";
     public static final String KEY_TOPIC = "log_topic";
     public static final String STORAGE_LIFECYCLE_TOPIC = "storage lifecycle";
     public static final String SECURITY_TOPIC = "security";
+    public static final String AUDIT_TOPIC = "audit";
 
 
     @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + OR + USER_RELATED_METHODS_POINTCUT +
-            OR + IMPERSONATE_RELATED_METHODS_POINTCUT + OR + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
+            OR + IMPERSONATE_RELATED_METHODS_POINTCUT + OR + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT +
+            OR + AUDIT_RELATED_METHODS_POINTCUT)
     public void addUserInfoFromSecurityContext() {
         final SecurityContext context = SecurityContextHolder.getContext();
         if (context != null) {
@@ -95,18 +97,19 @@ public class SecurityLogAspect {
     }
 
     @Before(PERMISSION_RELATED_METHODS_POINTCUT + OR + USER_RELATED_METHODS_POINTCUT +
-            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + OR + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
-    public void addContextTopic(final JoinPoint joinPoint) {
-        final String joinPointClass = joinPoint.getSourceLocation().getWithinType().getSimpleName();
-        switch (joinPointClass) {
-            case DATA_STORAGE_LIFECYCLE_MANAGER_CLASS_NAME:
-            case DATA_STORAGE_LIFECYCLE_RESTORE_MANAGER_CLASS_NAME:
-                ThreadContext.put(KEY_TOPIC, STORAGE_LIFECYCLE_TOPIC);
-                break;
-            default:
-                ThreadContext.put(KEY_TOPIC, SECURITY_TOPIC);
-                break;
-        }
+            OR + IMPERSONATE_RELATED_METHODS_POINTCUT)
+    public void addContextTopicSecurity() {
+        ThreadContext.put(KEY_TOPIC, SECURITY_TOPIC);
+    }
+
+    @Before(STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
+    public void addContextTopicStorageLifecycle() {
+        ThreadContext.put(KEY_TOPIC, STORAGE_LIFECYCLE_TOPIC);
+    }
+
+    @Before(AUDIT_RELATED_METHODS_POINTCUT)
+    public void addContextTopicAudit() {
+        ThreadContext.put(KEY_TOPIC, AUDIT_TOPIC);
     }
 
     @Before(value = "execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..)) " +
@@ -133,10 +136,9 @@ public class SecurityLogAspect {
     }
 
     @After(value = PERMISSION_RELATED_METHODS_POINTCUT + OR + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT +
-            OR + AUTHORIZATION_RELATED_METHODS_POINTCUT)
+            OR + AUTHORIZATION_RELATED_METHODS_POINTCUT + OR + AUDIT_RELATED_METHODS_POINTCUT)
     public void clearUserInfo() {
         ThreadContext.clearAll();
     }
 
 }
-

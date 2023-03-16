@@ -72,6 +72,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
@@ -450,4 +451,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected UserNotificationRepository userNotificationRepository;
+
+    @MockBean
+    protected StorageEventCollector events;
 }

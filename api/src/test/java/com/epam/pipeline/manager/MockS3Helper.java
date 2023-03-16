@@ -28,7 +28,7 @@ import java.util.Map;
 public class MockS3Helper extends S3Helper {
 
     public MockS3Helper() {
-        super(null);
+        super(null, null);
     }
 
     @Override public String createS3Bucket(final String name) {

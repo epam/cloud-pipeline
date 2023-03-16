@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -57,6 +58,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     private final MessageHelper messageHelper;
     private final GCPClient gcpClient;
     private final AuthManager authManager;
+    private final StorageEventCollector gsEvents;
 
     @Override
     public DataStorageType getStorageType() {
@@ -243,7 +245,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {
-        final GCPRegion gcpRegion = cloudRegionManager.getGCPRegion(storage);
-        return new GSBucketStorageHelper(messageHelper, gcpRegion, gcpClient);
+        final GCPRegion region = cloudRegionManager.getGCPRegion(storage);
+        return new GSBucketStorageHelper(gsEvents, messageHelper, region, gcpClient);
     }
 }

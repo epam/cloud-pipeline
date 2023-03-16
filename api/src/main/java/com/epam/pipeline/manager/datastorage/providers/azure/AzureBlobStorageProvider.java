@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -56,6 +57,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     private final CloudRegionManager cloudRegionManager;
     private final MessageHelper messageHelper;
     private final AuthManager authManager;
+    private final StorageEventCollector azEvents;
 
     @Override
     public DataStorageType getStorageType() {
@@ -250,7 +252,6 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-        return new AzureStorageHelper(region, credentials, messageHelper);
+        return new AzureStorageHelper(region, credentials, azEvents, messageHelper);
     }
 }
-

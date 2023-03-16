@@ -22,18 +22,20 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 
 public class TemporaryCredentialsS3Helper extends S3Helper {
 
     private final TemporaryCredentials credentials;
     private final AwsRegion region;
 
-    public TemporaryCredentialsS3Helper(final TemporaryCredentials credentials,
+    public TemporaryCredentialsS3Helper(final StorageEventCollector events,
                                         final MessageHelper messageHelper,
-                                        final AwsRegion region) {
-        super(messageHelper);
-        this.credentials = credentials;
+                                        final AwsRegion region,
+                                        final TemporaryCredentials credentials) {
+        super(events, messageHelper);
         this.region = region;
+        this.credentials = credentials;
     }
 
     @Override
