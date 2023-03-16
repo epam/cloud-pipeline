@@ -211,12 +211,16 @@ public class PipelineExecutor {
             spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
         }
 
-        if (!MapUtils.isEmpty(nodeTolerances)) {
+        if (MapUtils.isNotEmpty(nodeTolerances)) {
             final List<Toleration> tolerations = nodeTolerances.entrySet().stream().map(t -> {
                 final Toleration toleration = new Toleration();
                 toleration.setKey(t.getKey());
-                toleration.setValue(t.getValue());
-                toleration.setOperator("Equal");
+                if (StringUtils.isNotBlank(t.getValue())) {
+                    toleration.setValue(t.getValue());
+                    toleration.setOperator("Equal");
+                } else {
+                    toleration.setOperator("Exists");
+                }
                 return toleration;
             }).collect(Collectors.toList());
             spec.setTolerations(tolerations);

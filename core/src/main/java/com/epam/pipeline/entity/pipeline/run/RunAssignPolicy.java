@@ -61,7 +61,7 @@ public class RunAssignPolicy {
     }
 
     public Map<String, String> getTolerances() {
-        if (tolerance == null || StringUtils.isEmpty(tolerance.label) || StringUtils.isEmpty(tolerance.value)) {
+        if (tolerance == null || StringUtils.isEmpty(tolerance.label)) {
             return Collections.emptyMap();
         }
         return Collections.singletonMap(tolerance.label, tolerance.value);
