@@ -222,14 +222,14 @@ class StoragePathAuditConsumer(AuditConsumer):
 
     def _convert(self, entry):
         if self._storage:
-            return DataAccessEntry(self._build_path(self._storage.type, self._storage.path, entry.path), entry.type)
+            return DataAccessEntry(self._build_path(self._storage.type, self._storage.root, entry.path), entry.type)
         elif isinstance(entry, StorageDataAccessEntry):
-            return DataAccessEntry(self._build_path(entry.storage.type, entry.storage.path, entry.path), entry.type)
+            return DataAccessEntry(self._build_path(entry.storage.type, entry.storage.root, entry.path), entry.type)
         else:
             return entry
 
     def _build_path(self, storage_type, storage_path, item_path):
-        return storage_type.lower() + '://' + storage_path + '/' + item_path
+        return '{}://{}/{}'.format(storage_type.lower(), storage_path, item_path)
 
     def flush(self):
         self._inner.flush()
@@ -320,7 +320,13 @@ class AuditDaemon:
                 raise
             except Exception:
                 logging.error('Audit entries processing step has failed.', exc_info=True)
-        self._consumer.flush()
+        try:
+            self._consumer.flush()
+        except KeyboardInterrupt:
+            logging.warning('Interrupted.')
+            raise
+        except Exception:
+            logging.error('Audit entries final flushing step has failed.', exc_info=True)
         logging.info('Finished audit daemon.')
 
 
