@@ -38,6 +38,23 @@ const getCostDetailsSumm = (costDetails, storageClass, ...keys) => {
   return undefined;
 };
 
+export function getSummaryDataExtractorsByStorageClass (storageClass) {
+  return {
+    currentValueFn: (item) => getCostDetailsSumm(
+      item.costDetails,
+      storageClass,
+      LAYERS_KEYS.accumulativeCost,
+      LAYERS_KEYS.accumulativeOldVersionCost
+    ),
+    previousValueFn: (item) => getCostDetailsSumm(
+      item.previousCostDetails,
+      storageClass,
+      LAYERS_KEYS.accumulativeCost,
+      LAYERS_KEYS.accumulativeOldVersionCost
+    )
+  };
+}
+
 export function getSummaryDatasetsByStorageClass (storageClass) {
   const currentDataset = {
     accumulative: {

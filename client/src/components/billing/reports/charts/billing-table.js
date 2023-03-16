@@ -41,7 +41,9 @@ function BillingTable (
     computeDiscounts,
     storagesDiscounts,
     showQuota = true,
-    reportThemes
+    reportThemes,
+    currentValueFn = (item) => item.value,
+    previousValueFn = (item) => item.previous
   }
 ) {
   const summary = discounts.joinSummaryDiscounts(
@@ -67,7 +69,7 @@ function BillingTable (
     .pop();
   currentInfo = {
     quota,
-    value: lastValue ? lastValue.value : false,
+    value: lastValue ? currentValueFn(lastValue) : false,
     dates: {
       from: start,
       to: end
@@ -75,7 +77,7 @@ function BillingTable (
   };
   previousInfo = {
     quota: previousQuota,
-    value: lastPreviousValue ? lastPreviousValue.previous : false,
+    value: lastPreviousValue ? previousValueFn(lastPreviousValue) : false,
     dates: {
       from: previousStart,
       to: previousEnd

@@ -63,7 +63,9 @@ import {
   getStorageClassByAggregate
 } from '../navigation/aggregate';
 import {
-  getDetailsDatasetsByStorageClassAndMetrics, getItemDetailsByMetrics,
+  getDetailsDatasetsByStorageClassAndMetrics,
+  getItemDetailsByMetrics,
+  getSummaryDataExtractorsByStorageClass,
   getSummaryDatasetsByStorageClass
 } from './charts/object-storage/get-datasets-by-storage-class';
 import StorageTable from './storage-table';
@@ -334,6 +336,25 @@ class StorageReports extends React.Component {
   }
 
   @computed
+  get summaryTableDataExtractors () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return {};
+    }
+    const total = !storageAggregate || storageAggregate === StorageAggregate.default;
+    const storageClass = total
+      ? 'TOTAL'
+      : getStorageClassByAggregate(storageAggregate);
+    return getSummaryDataExtractorsByStorageClass(storageClass);
+  }
+
+  @computed
   get detailsDatasets () {
     const {
       type,
@@ -458,6 +479,7 @@ class StorageReports extends React.Component {
                       storages={summary}
                       storagesDiscounts={storageDiscounts}
                       showQuota={false}
+                      {...this.summaryTableDataExtractors}
                     />
                     <ResizableContainer style={{flex: 1}}>
                       {
