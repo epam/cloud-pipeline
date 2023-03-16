@@ -125,6 +125,41 @@ In **`v0.17`**, it was implemented - the user can view **Billing reports** with 
 - Reports (charts and tables) will be rebuilt for the configured custom date range:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_08.png)
 
+### Spendings for old versions of object storages
+
+As object storages supports versioning, it is convenient to view spendings for the old (previous) versions of the storage data. Old versions include all non-last (previous) versions of the versioning object storage.  
+From the current version, the **Object storages** report supports the displaying of the corresponding related information.
+
+At the summary chart, new dashed lines of the same colors (as for current and previous periods) appeared - these lines show summary spendings on the data usage for all _old versions_ of object storages:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_14.png)
+
+On all other object storage charts, bars are presented as stacks of _current version_ spendings / _old versions_ spendings. _Current version_ spendings are shown with solid filling, _old versions_ spendings are shown without filling, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_15.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_16.png)
+
+Also now, the detailed spendings table for object storages shows the info for spendings/usage in the format `total spendings/usage for all versions` / `spendings/usage for old versions only`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_21.png)
+
+### Spendings for object storages layers
+
+As object storages supports archiving data into different archive tiers (layers), it is convenient to view spendings separately for each layer.  
+From the current version, the **Object storages** report supports the displaying of the corresponding related information.  
+This information is shown on the separate chart - bar chart with division to different tiers (archive types). This chart does not contain any information for _previous_ period. Only layers used for data storing in the _current_ period according to selected filters are shown. Up to 4 layers can be here: `Standard`, `Glacier`, `Glacier IR`, `Deep Archive`.  
+Example:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_17.png)
+
+Object storage layers chart can show the information as storages usage costs - in `$` or as average storages volumes - in `Gb`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_18.png)
+
+If data in the storage is storing in different tiers (archive types), this can be viewed in a tooltip of other object storages charts - there will be a division of spendings by the used tiers, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_19.png)
+
+User can select one of the object storage layers - by click it on this new chart.  
+In this case, all charts and tables will be updated - only storages, that contain files in the selected layer type, will be shown in forms.  
+Also, shown spendings/data volume will be related only to files in the selected layer, not for the whole storage(s) or other layers.  
+For example, `Glasier IR` was selected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_20.png)
+
 ### Displaying different user's attributes in the Billing reports
 
 Previously, in all the **Billing reports**, info about users was displayed as user ID only. In some cases, it would be more convenient to display user names or emails - to take a more readable form.
