@@ -51,6 +51,7 @@ import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -92,6 +93,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public static final String STANDARD_RESTORE_MODE = "STANDARD";
     private static final List<String> SUPPORTED_RESTORE_MODES = Arrays.asList(STANDARD_RESTORE_MODE, "BULK");
     private final AuthManager authManager;
+    private final StorageEventCollector s3Events;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
@@ -436,20 +438,20 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
-        AwsRegion region = getAwsRegion(dataStorage);
+        final AwsRegion region = getAwsRegion(dataStorage);
         if (dataStorage.isUseAssumedCredentials()) {
             final String roleArn = Optional.ofNullable(dataStorage.getTempCredentialsRole())
                     .orElse(region.getTempCredentialsRole());
-            return new AssumedCredentialsS3Helper(roleArn, region, messageHelper);
+            return new AssumedCredentialsS3Helper(s3Events, messageHelper, region, roleArn);
         }
         if (StringUtils.isNotBlank(region.getIamRole())) {
-            return new AssumedCredentialsS3Helper(region.getIamRole(), region, messageHelper);
+            return new AssumedCredentialsS3Helper(s3Events, messageHelper, region, region.getIamRole());
         }
-        return new RegionAwareS3Helper(region, messageHelper);
+        return new RegionAwareS3Helper(s3Events, messageHelper, region);
     }
 
     public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
-        return new TemporaryCredentialsS3Helper(credentials, messageHelper, region);
+        return new TemporaryCredentialsS3Helper(s3Events, messageHelper, region, credentials);
     }
 
     @Override

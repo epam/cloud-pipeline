@@ -25,6 +25,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.BaseMatcher;
@@ -59,7 +60,8 @@ public class S3HelperTest {
 
     private final AmazonS3 amazonS3 = mock(AmazonS3.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final S3Helper helper = spy(new S3Helper(messageHelper));
+    private final StorageEventCollector events = mock(StorageEventCollector.class);
+    private final S3Helper helper = spy(new S3Helper(events, messageHelper));
 
     @Before
     public void setUp() {
@@ -103,7 +105,7 @@ public class S3HelperTest {
                                                       "8.10.249.0/24", "77.75.64.0/23", "77.75.66.0/23",
                                                       "193.202.91.0/24");
 
-        S3Helper helper = new S3Helper(messageHelper);
+        S3Helper helper = new S3Helper(events, messageHelper);
         ObjectMapper objectMapper = new ObjectMapper();
 
         String populatedPolicyString = helper.populateBucketPolicy("testBucket", policyStr, testAllowedCidrs, true);
