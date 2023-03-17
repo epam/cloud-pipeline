@@ -741,7 +741,8 @@ public class SystemPreferences {
 
     public static final StringPreference FACETED_FILTER_DISPLAY_NAME_TAG = new StringPreference(
             "faceted.filter.display.name.tag", null, FACETED_FILTER_GROUP, pass, true);
-
+    public static final StringPreference FACETED_FILTER_STORAGE_DISPLAY_NAME_TAG = new StringPreference(
+            "faceted.filter.storage.display.file.name.tag", null, FACETED_FILTER_GROUP, pass, true);
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DOWNLOAD = new ObjectPreference<>(
             "faceted.filter.download", null, new TypeReference<Map<String, Object>>() {},
             FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
