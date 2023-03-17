@@ -28,7 +28,7 @@ public final class PodSpecMapperHelper {
 
     private PodSpecMapperHelper() {}
 
-    public static final String TOLERATION_OP_EQUALS = "Equals";
+    public static final String TOLERATION_OP_EQUAL = "Equal";
     public static final String TOLERATION_OP_EXISTS = "Exists";
 
     public static List<Toleration> buildTolerations(Map<String, String> nodeTolerances) {
@@ -39,7 +39,7 @@ public final class PodSpecMapperHelper {
                     toleration.setKey(t.getKey());
                     if (StringUtils.isNotBlank(t.getValue())) {
                         toleration.setValue(t.getValue());
-                        toleration.setOperator(TOLERATION_OP_EQUALS);
+                        toleration.setOperator(TOLERATION_OP_EQUAL);
                     } else {
                         toleration.setOperator(TOLERATION_OP_EXISTS);
                     }

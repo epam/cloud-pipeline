@@ -49,7 +49,7 @@ public class PodSpecMapperHelperTest {
         final Toleration toleration = tolerations.get(0);
         Assert.assertEquals(LABEL_KEY, toleration.getKey());
         Assert.assertEquals(LABEL_VALUE, toleration.getValue());
-        Assert.assertEquals(PodSpecMapperHelper.TOLERATION_OP_EQUALS, toleration.getOperator());
+        Assert.assertEquals(PodSpecMapperHelper.TOLERATION_OP_EQUAL, toleration.getOperator());
     }
 
     @Test
@@ -65,7 +65,7 @@ public class PodSpecMapperHelperTest {
         Toleration toleration = tolerations.get(0);
         Assert.assertEquals(LABEL_KEY, toleration.getKey());
         Assert.assertEquals(LABEL_VALUE, toleration.getValue());
-        Assert.assertEquals(PodSpecMapperHelper.TOLERATION_OP_EQUALS, toleration.getOperator());
+        Assert.assertEquals(PodSpecMapperHelper.TOLERATION_OP_EQUAL, toleration.getOperator());
 
         toleration = tolerations.get(1);
         Assert.assertEquals(ANOTHER_LABEL_KEY, toleration.getKey());

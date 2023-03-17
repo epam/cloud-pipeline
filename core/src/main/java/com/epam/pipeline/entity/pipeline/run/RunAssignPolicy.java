@@ -29,6 +29,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
+/**
+ * Object to describe assign strategy of a run pod to a node.
+ * @see RunAssignPolicy.PodAssignSelector and
+ * @see RunAssignPolicy.PodAssignTolerance for mode informations
+ * */
 @Value
 @Builder
 @ToString
@@ -68,6 +73,12 @@ public class RunAssignPolicy {
                 .collect(Collectors.toMap(PodAssignTolerance::getLabel, PodAssignTolerance::getValue));
     }
 
+    /**
+     * Object to implement selection capability while scheduling run pod.
+
+     * User can specify selector as (with regard to real kube labels): label="node-role/cp-api-srv" value="true"
+     * to assign a run to a node with label node-role/cp-api-srv=true
+     * */
     @Value
     @Builder
     @ToString
@@ -76,6 +87,25 @@ public class RunAssignPolicy {
         String value;
     }
 
+    /**
+     * Object to implement tolerance capability while scheduling run pod.
+
+     *    label="label-key", value="value" - equals to tolerance:
+     *    tolerations:
+     *      - key: "key1"
+     *        operator: "Equal"
+     *        value: "value"
+     *        effect: "*"
+
+     *    label="label-key", value="" or value=null - equals to tolerance:
+     *    tolerations:
+     *      - key: "key1"
+     *        operator: "Exists"
+     *        effect: "*"
+
+     * For more information see
+     * <a href="https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/">Taints, Tolerations</a>
+     * */
     @Value
     @Builder
     @ToString
