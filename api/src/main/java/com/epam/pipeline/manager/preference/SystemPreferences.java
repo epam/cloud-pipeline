@@ -675,9 +675,7 @@ public class SystemPreferences {
     public static final LongPreference LAUNCH_JWT_TOKEN_EXPIRATION_REFRESH_THRESHOLD = new LongPreference(
             "launch.jwt.token.expiration.refresh.threshold", 172800L, LAUNCH_GROUP, isGreaterThan(0L));
     public static final StringPreference LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE = new StringPreference(
-            "launch.insufficient.capacity.message",
-            "Insufficient instance capacity. " +
-                    "A new one will be launched in another region if appropriate region will be found.",
+            "launch.insufficient.capacity.message", "Insufficient instance capacity.",
             LAUNCH_GROUP, pass);
 
     // UI_GROUP

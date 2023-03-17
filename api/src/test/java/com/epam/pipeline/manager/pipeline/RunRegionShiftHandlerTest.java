@@ -71,6 +71,7 @@ public class RunRegionShiftHandlerTest {
 
         firstRestartCaseMock(currentRun);
         doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRun());
 
         runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
         verify(pipelineRunManager).restartRun(expectedSuccessfulRun());
@@ -90,6 +91,7 @@ public class RunRegionShiftHandlerTest {
         doReturn(Collections.singletonList(currentRun)).when(pipelineRunManager)
                 .loadPipelineRuns(Collections.singletonList(CURRENT_RUN_ID));
         doReturn(currentRun).when(pipelineRunManager).loadPipelineRun(CURRENT_RUN_ID);
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulParentRun());
 
         runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
         verify(pipelineRunManager).restartRun(expectedSuccessfulParentRun());
@@ -112,6 +114,7 @@ public class RunRegionShiftHandlerTest {
 
         firstRestartCaseMock(currentRun);
         doReturn(Collections.emptyList()).when(cloudRegionManager).loadAll();
+        doReturn(getAvailableRegion()).when(cloudRegionManager).load(ID);
 
         assertRunNotRestarted();
     }
@@ -134,6 +137,7 @@ public class RunRegionShiftHandlerTest {
 
         firstRestartCaseMock(currentRun);
         doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(getNotAvailableRegion()).when(cloudRegionManager).load(NOT_AVAILABLE_REGION_ID);
 
         assertRunNotRestarted();
     }
@@ -316,5 +320,9 @@ public class RunRegionShiftHandlerTest {
         parentRun.setRestartedRuns(Collections.singletonList(getRestartRun()));
         parentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
         return parentRun;
+    }
+
+    private static PipelineRun restartedRun() {
+        return new PipelineRun();
     }
 }
