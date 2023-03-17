@@ -60,6 +60,10 @@ import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 import downloadStorageItems from '../special/download-storage-items';
 import getNotDownloadableStorages from './utilities/get-downloadable-storages';
+import {
+  getDocumentDisplayName,
+  getStorageFileDisplayNameTemplates
+} from './utilities/get-storage-file-display-name-templates';
 import roleModel from '../../utils/roleModel';
 
 function getDomainKey (domain) {
@@ -113,7 +117,8 @@ class FacetedSearch extends React.Component {
     facetsToken: undefined,
     selectedItems: [],
     showSelectionPreview: false,
-    notDownloadableStorages: []
+    notDownloadableStorages: [],
+    storageFileDisplayNameTemplates: []
   }
 
   abortController;
@@ -481,7 +486,8 @@ class FacetedSearch extends React.Component {
             query: currentQuery,
             pageSize,
             searchToken: currentSearchToken,
-            facetsToken: currentFacetsToken
+            facetsToken: currentFacetsToken,
+            storageFileDisplayNameTemplates = []
           } = this.state;
           if (facets.length === 0) {
             // eslint-disable-next-line
@@ -511,6 +517,11 @@ class FacetedSearch extends React.Component {
           if (currentSearchToken === searchToken) {
             return;
           }
+          const additionalTags = [...new Set(
+            storageFileDisplayNameTemplates.reduce((result, current) => ([
+              ...result,
+              ...current.tags
+            ]), []))];
           this.setState({searchToken}, () => {
             this.updateCurrentRouting();
             if (this.abortController && abortPendingRequests) {
@@ -530,7 +541,7 @@ class FacetedSearch extends React.Component {
                 metadataFields: facets
                   .map(f => f.name)
                   .filter(facet => facet !== DocumentTypeFilterName)
-                  .concat([this.nameTag, this.downloadFileTag].filter(Boolean))
+                  .concat([this.nameTag, this.downloadFileTag, ...additionalTags].filter(Boolean))
               },
               scrollingParameters: continuousOptions,
               abortSignal: this.abortSignal
@@ -587,7 +598,11 @@ class FacetedSearch extends React.Component {
                 }
                 documents = documents.map(document => ({
                   ...document,
-                  nameOverride: document[this.nameTag],
+                  nameOverride: getDocumentDisplayName(
+                    document,
+                    storageFileDisplayNameTemplates,
+                    this.nameTag
+                  ),
                   downloadOverride: this.downloadFileTag
                     ? document[this.downloadFileTag]
                     : undefined
@@ -619,7 +634,7 @@ class FacetedSearch extends React.Component {
     }
     const {systemDictionaries, preferences, uiNavigation} = this.props;
     return new Promise((resolve) => {
-      const onDone = () => {
+      const onDone = (storageFileDisplayNameTemplates = []) => {
         const extraColumnsConfiguration = parseExtraColumns(preferences);
         const configuration = preferences.facetedFiltersDictionaries;
         const searchDocumentTypes = uiNavigation.searchDocumentTypes || [];
@@ -683,7 +698,8 @@ class FacetedSearch extends React.Component {
                 facetsToken,
                 facetsLoaded: true,
                 facets,
-                userDocumentTypes: documentTypes
+                userDocumentTypes: documentTypes,
+                storageFileDisplayNameTemplates
               }, () => {
                 this.setDefaultDomain();
                 this.correctSorting()
@@ -697,10 +713,11 @@ class FacetedSearch extends React.Component {
       Promise.all([
         systemDictionaries.fetchIfNeededOrWait(),
         preferences.fetchIfNeededOrWait(),
-        uiNavigation.fetchSearchDocumentTypes()
+        uiNavigation.fetchSearchDocumentTypes(),
+        getStorageFileDisplayNameTemplates(preferences)
       ])
-        .then(() => {})
-        .catch(() => {})
+        .then(([, , , templates]) => Promise.resolve(templates))
+        .catch(() => Promise.resolve([]))
         .then(onDone);
     });
   };

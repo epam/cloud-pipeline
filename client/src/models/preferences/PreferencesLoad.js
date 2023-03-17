@@ -157,6 +157,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get storageFileDisplayNameTag () {
+    return this.getPreferenceValue('faceted.filter.storage.display.file.name.tag');
+  }
+
+  @computed
   get facetedFilterDownloadFileTag () {
     return this.getPreferenceValue('faceted.filter.download.file.tag');
   }
