@@ -244,7 +244,7 @@ public class PipelineConfigurationManager {
         return configuration;
     }
 
-    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO, PipelineConfiguration defaultConfig) {
+    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO, final PipelineConfiguration defaultConfig) {
         final Long useRunId = runVO.getParentNodeId() != null ? runVO.getParentNodeId() : runVO.getUseRunId();
         final RunAssignPolicy assignPolicy = runVO.getPodAssignPolicy();
 

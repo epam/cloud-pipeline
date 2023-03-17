@@ -109,18 +109,20 @@ public class PipelineExecutor {
         this.kubernetesManager = kubernetesManager;
     }
 
-    public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-                              String pipelineId, RunAssignPolicy podAssignPolicy, String secretName, String clusterId) {
+    public void launchRootPod(final String command, final PipelineRun run, final List<EnvVar> envVars,
+                              final List<String> endpoints, final String pipelineId,
+                              final RunAssignPolicy podAssignPolicy, final String secretName, final String clusterId) {
         launchRootPod(command, run, envVars, endpoints, pipelineId, podAssignPolicy,
                 secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null);
     }
 
-    public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-                              String pipelineId, RunAssignPolicy podAssignPolicy, String secretName, String clusterId,
-                              ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels,
-                              String kubeServiceAccount) {
+    public void launchRootPod(final String command, final PipelineRun run, final List<EnvVar> envVars,
+                              final List<String> endpoints, final String pipelineId,
+                              final RunAssignPolicy podAssignPolicy, final String secretName, final String clusterId,
+                              final ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels,
+                              final String kubeServiceAccount) {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
-            Map<String, String> labels = new HashMap<>();
+            final Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
             labels.put("owner", normalizeOwner(run.getOwner()));
@@ -132,8 +134,8 @@ public class PipelineExecutor {
             }
             addWorkerLabel(clusterId, labels, run);
             LOGGER.debug("Root pipeline task ID: {}", run.getPodId());
-            Map<String, String> nodeSelector = new HashMap<>();
-            String runIdLabel = String.valueOf(run.getId());
+            final Map<String, String> nodeSelector = new HashMap<>();
+            final String runIdLabel = String.valueOf(run.getId());
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
                 nodeSelector.put(podAssignPolicy.getSelector().getLabel(), podAssignPolicy.getSelector().getValue());
@@ -149,15 +151,15 @@ public class PipelineExecutor {
 
             labels.putAll(getServiceLabels(endpoints));
 
-            OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
-            ObjectMeta metadata = getObjectMeta(run, labels);
+            final OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
+            final ObjectMeta metadata = getObjectMeta(run, labels);
             final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
-            PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.getTolerances(),
+            final PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.getTolerances(),
                     run.getActualDockerImage(), command, imagePullPolicy,
                     podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
                     verifiedKubeServiceAccount);
-            Pod pod = new Pod("v1", "Pod", metadata, spec, null);
-            Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
+            final Pod pod = new Pod("v1", "Pod", metadata, spec, null);
+            final Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
             LOGGER.debug("Created POD: {}", created.toString());
         }
     }
@@ -200,11 +202,11 @@ public class PipelineExecutor {
                 Optional.ofNullable(run.getParentRunId()).map(String::valueOf).orElse(StringUtils.EMPTY));
     }
 
-    private PodSpec getPodSpec(PipelineRun run, List<EnvVar> envVars, String secretName,
-                               Map<String, String> nodeSelector, Map<String, String> nodeTolerances,
-                               String dockerImage, String command, ImagePullPolicy imagePullPolicy, boolean isParentPod,
-                               String kubeServiceAccount) {
-        PodSpec spec = new PodSpec();
+    private PodSpec getPodSpec(final PipelineRun run, final List<EnvVar> envVars, final String secretName,
+                               final Map<String, String> nodeSelector, final Map<String, String> nodeTolerances,
+                               final String dockerImage, final String command, final ImagePullPolicy imagePullPolicy,
+                               final boolean isParentPod, final String kubeServiceAccount) {
+        final PodSpec spec = new PodSpec();
         spec.setRestartPolicy("Never");
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
         spec.setDnsPolicy("ClusterFirst");
@@ -220,9 +222,9 @@ public class PipelineExecutor {
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }
-        boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars,
+        final boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars,
                 KubernetesConstants.CP_CAP_DIND_NATIVE);
-        boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
+        final boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
         spec.setServiceAccountName(kubeServiceAccount);
 

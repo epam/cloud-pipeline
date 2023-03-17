@@ -106,40 +106,41 @@ public class PipelineLauncher {
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
     @PipelineLaunchCheck
-    public String launch(PipelineRun run, PipelineConfiguration configuration,
-                         List<String> endpoints, String clusterId) {
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration,
+                         final List<String> endpoints, final String clusterId) {
         return launch(run, configuration, endpoints, true, run.getPodId(), clusterId);
     }
 
     @PipelineLaunchCheck
-    public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
-                         boolean useLaunch, String pipelineId, String clusterId) {
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration, final List<String> endpoints,
+                         final boolean useLaunch, final String pipelineId, final String clusterId) {
         return launch(run, configuration, endpoints, useLaunch, pipelineId,
                 clusterId, getImagePullPolicy(configuration));
     }
 
     @PipelineLaunchCheck
-    public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
-                         boolean useLaunch, String pipelineId, String clusterId, ImagePullPolicy imagePullPolicy) {
-        GitCredentials gitCredentials = configuration.getGitCredentials();
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration,
+                         final List<String> endpoints, final boolean useLaunch, final String pipelineId,
+                         final String clusterId, final ImagePullPolicy imagePullPolicy) {
+        final GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
-        Map<SystemParams, String> systemParams = matchSystemParams(
+        final Map<SystemParams, String> systemParams = matchSystemParams(
                 run,
                 preferenceManager.getPreference(SystemPreferences.BASE_API_HOST),
                 kubeNamespace,
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING),
                 configuration, gitCredentials);
         markRunOnParentNode(run, configuration.getPodAssignPolicy(), systemParams);
-        List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
+        final List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
                 buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive(),
                         configuration.getKubeLabels()));
 
         Assert.isTrue(!StringUtils.isEmpty(configuration.getCmdTemplate()), messageHelper.getMessage(
                 MessageConstants.ERROR_CMD_TEMPLATE_NOT_RESOLVED));
-        String pipelineCommand = commandBuilder.build(configuration, systemParams);
-        String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
+        final String pipelineCommand = commandBuilder.build(configuration, systemParams);
+        final String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
                 .orElse(run.getRepository());
-        String rootPodCommand;
+        final String rootPodCommand;
         if (!useLaunch) {
             rootPodCommand = pipelineCommand;
         } else {
@@ -208,8 +209,8 @@ public class PipelineLauncher {
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
 
-    private void markRunOnParentNode(PipelineRun run, RunAssignPolicy assignPolicy,
-                                     Map<SystemParams, String> systemParams) {
+    private void markRunOnParentNode(final PipelineRun run, final RunAssignPolicy assignPolicy,
+                                     final Map<SystemParams, String> systemParams) {
         if (assignPolicy != null && assignPolicy.isValid()) {
             assignPolicy.ifMatchThenMapValue(KubernetesConstants.RUN_ID_LABEL, Long::valueOf)
                     .ifPresent(parentNodeId -> {

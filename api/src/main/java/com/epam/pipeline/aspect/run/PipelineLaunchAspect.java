@@ -57,11 +57,11 @@ public class PipelineLaunchAspect {
                 .map(policy -> !policy.getSelector().getLabel().equals(KubernetesConstants.RUN_ID_LABEL))
                 .orElse(false);
         if (advancedRunAssignPolicy) {
-            throw new IllegalArgumentException(
+            throw new IllegalStateException(
                     messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
         }
         if (configuration.getKubeServiceAccount() != null) {
-            throw new IllegalArgumentException(
+            throw new IllegalStateException(
                     messageHelper.getMessage(
                             MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName())
             );

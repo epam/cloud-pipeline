@@ -31,7 +31,7 @@ public final class PodSpecMapperHelper {
     public static final String TOLERATION_OP_EQUAL = "Equal";
     public static final String TOLERATION_OP_EXISTS = "Exists";
 
-    public static List<Toleration> buildTolerations(Map<String, String> nodeTolerances) {
+    public static List<Toleration> buildTolerations(final Map<String, String> nodeTolerances) {
         return MapUtils.emptyIfNull(nodeTolerances)
                 .entrySet()
                 .stream().map(t -> {

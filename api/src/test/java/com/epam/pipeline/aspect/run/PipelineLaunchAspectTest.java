@@ -6,7 +6,6 @@ import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.security.AuthManager;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -20,11 +19,6 @@ public class PipelineLaunchAspectTest {
     private final AuthManager authManager = Mockito.mock(AuthManager.class);
     private final MessageHelper messageHelper = Mockito.mock(MessageHelper.class);
     private final PipelineLaunchAspect aspect = new PipelineLaunchAspect(authManager, messageHelper);
-
-    @Before
-    public void setUp() {
-        Mockito.doReturn("").when(messageHelper).getMessage(Mockito.anyString(), Mockito.any());
-    }
 
     @Test
     public void checkRunLaunchIsNotForbiddenForAdmin() {
@@ -42,7 +36,7 @@ public class PipelineLaunchAspectTest {
         aspect.checkRunLaunchIsNotForbidden(null, configuration);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void checkRunLaunchWithKubeServiceAccIsForbiddenForSimpleUser() {
         Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();
@@ -50,7 +44,7 @@ public class PipelineLaunchAspectTest {
         aspect.checkRunLaunchIsNotForbidden(null, configuration);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void checkRunLaunchWithAdvancedRunAssignPolicyIsForbiddenForSimpleUser() {
         Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();

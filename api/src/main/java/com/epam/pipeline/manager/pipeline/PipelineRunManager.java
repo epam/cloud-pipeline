@@ -280,18 +280,18 @@ public class PipelineRunManager {
     //TODO: refactoring
     @ToolSecurityPolicyCheck
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun runPod(PipelineStart runVO) {
+    public PipelineRun runPod(final PipelineStart runVO) {
         Assert.notNull(runVO.getCmdTemplate(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "cmd_template"));
-        PipelineRun parentRun = loadPipelineRun(runVO.getUseRunId(), false);
+        final PipelineRun parentRun = loadPipelineRun(runVO.getUseRunId(), false);
         Assert.state(parentRun.getStatus() == TaskStatus.RUNNING,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_RUNNING, runVO.getUseRunId()));
         checkRunLaunchLimits(runVO);
-        PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
-        Tool tool = getToolForRun(configuration);
+        final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
+        final Tool tool = getToolForRun(configuration);
         configuration.setSecretName(tool.getSecretName());
-        List<String> endpoints = tool.getEndpoints();
-        PipelineRun run = new PipelineRun();
+        final List<String> endpoints = tool.getEndpoints();
+        final PipelineRun run = new PipelineRun();
         run.setInstance(parentRun.getInstance());
         run.setId(runVO.getUseRunId());
         run.setStartDate(DateUtils.now());
@@ -306,7 +306,7 @@ public class PipelineRunManager {
         run.setLastChangeCommitTime(DateUtils.now());
         run.setRunSids(runVO.getRunSids());
         run.setOwner(parentRun.getOwner());
-        String launchedCommand = pipelineLauncher.launch(
+        final String launchedCommand = pipelineLauncher.launch(
                 run, configuration, endpoints, false, parentRun.getPodId(), null
         );
         run.setActualCmd(launchedCommand);
@@ -372,18 +372,21 @@ public class PipelineRunManager {
      * @return
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun launchPipeline(PipelineConfiguration configuration, Pipeline pipeline, String version,
-                                      String instanceType, String configurationName, String clusterId, Long parentRunId,
-                                      List<Long> entityIds, Long configurationId, List<RunSid> runSids,
-                                      List<PipelineStartNotificationRequest> notificationRequests) {
-        Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
-        Tool tool = getToolForRun(configuration);
-        Optional<ToolVersion> toolVersion = toolManager.findToolVersion(tool);
-        PipelineConfiguration toolConfiguration = configurationManager.getConfigurationForTool(tool, configuration);
-        AbstractCloudRegion region = resolveCloudRegion(parentRun.orElse(null), configuration, toolConfiguration);
+    public PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
+                                      final String version, final String instanceType, final String configurationName,
+                                      final String clusterId, final Long parentRunId, final List<Long> entityIds,
+                                      final Long configurationId, final List<RunSid> runSids,
+                                      final List<PipelineStartNotificationRequest> notificationRequests) {
+        final Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
+        final Tool tool = getToolForRun(configuration);
+        final Optional<ToolVersion> toolVersion = toolManager.findToolVersion(tool);
+        final PipelineConfiguration toolConfiguration = configurationManager
+                .getConfigurationForTool(tool, configuration);
+        final AbstractCloudRegion region = resolveCloudRegion(
+                parentRun.orElse(null), configuration, toolConfiguration);
         validateCloudRegion(toolConfiguration, region);
         validateInstanceAndPriceTypes(configuration, pipeline, region, instanceType);
-        String instanceDisk = configuration.getInstanceDisk();
+        final String instanceDisk = configuration.getInstanceDisk();
         if (StringUtils.hasText(instanceDisk)) {
             Assert.isTrue(NumberUtils.isNumber(instanceDisk) &&
                 Integer.parseInt(instanceDisk) > 0,
@@ -392,15 +395,16 @@ public class PipelineRunManager {
 
         adjustInstanceDisk(configuration);
 
-        List<String> endpoints = configuration.isEraseRunEndpoints() ? Collections.emptyList() : tool.getEndpoints();
+        final List<String> endpoints = configuration.isEraseRunEndpoints()
+                ? Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
         final boolean sensitive = checkRunForSensitivity(configuration.getParameters());
         Assert.isTrue(!sensitive || tool.isAllowSensitive(),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null), region,
-                parentRun.orElse(null), entityIds, configurationId, sensitive);
+        final PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null),
+                region, parentRun.orElse(null), entityIds, configurationId, sensitive);
 
         // If there is no podAssignPolicy we need to schedule run to be launched on dedicated node
         if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
@@ -425,7 +429,7 @@ public class PipelineRunManager {
 
         run.setConfigName(configurationName);
         run.setRunSids(runSids);
-        String launchedCommand = pipelineLauncher.launch(run, configuration, endpoints, clusterId);
+        final String launchedCommand = pipelineLauncher.launch(run, configuration, endpoints, clusterId);
         //update instance info according to evaluated command
         run.setActualCmd(launchedCommand);
         save(run);
