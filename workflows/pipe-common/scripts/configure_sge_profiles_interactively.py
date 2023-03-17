@@ -75,10 +75,10 @@ def configure_sge_profiles_interactively():
 
     try:
         if parent_run_id:
-            logger.error('Grid Engine autoscaling profiles shall be configured from cluster parent run.\n'
-                         'Please use the following commands to configure grid engine autoscaling profiles:\n\n'
-                         'ssh root@pipeline-{}\n'
-                         'sge_configure'.format(parent_run_id))
+            logger.warning('Grid Engine autoscaling profiles shall be configured from cluster parent run.\n'
+                           'Please use the following commands to configure grid engine autoscaling profiles:\n\n'
+                           'ssh pipeline-{}\n'
+                           'sge_configure'.format(parent_run_id))
             raise SGEProfileConfigurationError()
         logger.debug('Initiating grid engine autoscaling profiles configuration...')
         editor = _find_editor(logger)
@@ -108,10 +108,10 @@ def _find_editor(logger):
                          .format(potential_editor, e.output or 'the tool is not installed'))
 
     if not editor:
-        logger.error('Grid Engine autoscaling profiles configuration requires a text editor to be installed locally.\n'
-                     'Please set VISUAL/EDITOR environment variable or install vi/vim/nano using one of the commands below.\n\n'
-                     'yum install -y nano\n'
-                     'apt-get install -y nano')
+        logger.warning('Grid Engine autoscaling profiles configuration requires a text editor to be installed locally.\n'
+                       'Please set VISUAL/EDITOR environment variable or install vi/vim/nano using one of the commands below.\n\n'
+                       'yum install -y nano\n'
+                       'apt-get install -y nano')
         raise SGEProfileConfigurationError()
     return editor
 

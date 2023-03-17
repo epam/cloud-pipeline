@@ -43,6 +43,10 @@ def sync_users():
     logging_level = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL', 'ERROR')
     logging_level_local = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_LOCAL', 'DEBUG')
     logging_format = os.getenv('CP_CAP_SYNC_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    owner_user_name = os.getenv('OWNER', 'root')
+    sudo_enabled = os.getenv('CP_CAP_SUDO_ENABLE', 'true').lower().strip() in ['true', 'yes']
+    sudo_user_names = os.getenv('CP_CAP_SUDO_USERS', 'PIPE_ADMIN').split(',')
+    sudo_group_names = os.getenv('CP_CAP_SUDO_GROUPS', 'ROLE_ADMIN').split(',')
 
     logging.basicConfig(level=logging_level_local, format=logging_format,
                         filename=os.path.join(logging_directory, 'sync_users.log'))
@@ -80,8 +84,16 @@ def sync_users():
             shared_user_names = set()
             shared_user_names.update(run_user_names)
             shared_user_names.update(_get_group_user_names(api, run_group_names))
+            if owner_user_name in shared_user_names:
+                shared_user_names.remove(owner_user_name)
             logger.info('Loaded {} shared users.'.format(len(shared_user_names)))
             logger.debug('Loaded shared users: {}'.format(shared_user_names))
+
+            logger.debug('Loading owner users and groups...')
+            owner_user_names = set()
+            owner_user_names.update(sudo_user_names)
+            owner_user_names.update(_get_group_user_names(api, sudo_group_names))
+            logger.info('Loaded {} owner users.'.format(len(owner_user_names)))
 
             logger.debug('Loading user details...')
             all_users = api.load_users()
@@ -128,6 +140,8 @@ def sync_users():
                     user_uid, user_gid, user_home_dir = _create_account(user_name, user_id, uid_seed, root_home_dir,
                                                                         executor, logger)
                     _configure_ssh_keys(user_name, user_uid, user_gid, user_home_dir, executor, logger)
+                    if sudo_enabled and user_login_name in owner_user_names:
+                        _configure_sudoers(user_name, executor, logger)
                 except KeyboardInterrupt:
                     logger.warning('Interrupted.')
                     raise
@@ -208,14 +222,14 @@ def _set_permissions(target_path, user_uid, user_gid):
         os.chmod(target_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
-def _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logger):
-    logger.debug('Configuring {} user SSH keys...'.format(user))
+def _configure_ssh_keys(user_name, user_uid, user_gid, user_home_dir, executor, logger):
+    logger.debug('Configuring {} user SSH keys...'.format(user_name))
     user_ssh_dir = os.path.join(user_home_dir, '.ssh')
     user_ssh_private_key_path = os.path.join(user_ssh_dir, 'id_rsa')
     user_ssh_public_key_path = os.path.join(user_ssh_dir, 'id_rsa.pub')
     user_ssh_authorized_keys_path = os.path.join(user_ssh_dir, 'authorized_keys')
     if os.path.exists(user_ssh_private_key_path):
-        logger.debug('User {} SSH keys are already configured.'.format(user))
+        logger.debug('User {} SSH keys are already configured.'.format(user_name))
         return
     mkdir(user_ssh_dir)
     executor.execute('ssh-keygen -t rsa -f {ssh_private_key_path} -N "" -q'
@@ -227,7 +241,13 @@ def _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logge
         ssh_file_target_path = os.path.join(user_ssh_dir, ssh_file_path)
         if os.path.exists(ssh_file_target_path):
             _set_permissions(ssh_file_target_path, user_uid, user_gid)
-    logger.info('User {} SSH keys have been configured.'.format(user))
+    logger.info('User {} SSH keys have been configured.'.format(user_name))
+
+
+def _configure_sudoers(user_name, executor, logger):
+    logger.debug('Configuring {} user sudo access...'.format(user_name))
+    executor.execute('echo "{user_name} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers'.format(user_name=user_name))
+    logger.info('User {} sudo access has been configured.'.format(user_name))
 
 
 if __name__ == '__main__':
