@@ -41,7 +41,7 @@ public class RunAssignPolicy {
         if (!isValid()) {
             return false;
         }
-        return this.selector.label.equals(label) && this.selector.value.equals(value);
+        return this.selector.label.equals(label) && (value == null || this.selector.value.equals(value));
     }
 
     public boolean isMatch(final String label) {

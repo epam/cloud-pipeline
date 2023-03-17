@@ -404,6 +404,7 @@ public class PipelineRunManager {
 
         // If there is no podAssignPolicy we need to schedule run to be launched on dedicated node
         if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
+            log.debug(String.format("Setup run assign policy as run id for run: %d", run.getId()));
             configuration.setPodAssignPolicy(
                 RunAssignPolicy.builder()
                     .selector(

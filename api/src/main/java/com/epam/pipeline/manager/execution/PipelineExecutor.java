@@ -233,7 +233,7 @@ public class PipelineExecutor {
         }
 
         Optional.of(PodSpecMapperHelper.buildTolerations(nodeTolerances))
-                .filter(List::isEmpty)
+                .filter(CollectionUtils::isNotEmpty)
                 .ifPresent(spec::setTolerations);
 
         if (envVars.stream().anyMatch(envVar -> envVar.getName().equals(USE_HOST_NETWORK))){

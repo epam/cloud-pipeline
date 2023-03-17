@@ -338,6 +338,12 @@ public class PipelineConfigurationManager {
         configuration.setPrettyUrl(null);
         //remove node count parameter for workers
         configuration.setNodeCount(null);
+        // if podAssignPolicy is a simple policy to assign run pod to dedicated instance, then we need to cleared it
+        // and workers then will be assigned to its own nodes, otherwise keep existing policy to assign workers
+        // as was configured in policy object
+        if (configuration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL, parentId)) {
+            configuration.setPodAssignPolicy(null);
+        }
         configuration.buildEnvVariables();
     }
 

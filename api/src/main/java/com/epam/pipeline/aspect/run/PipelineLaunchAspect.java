@@ -38,8 +38,8 @@ public class PipelineLaunchAspect {
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
 
-    @Before("@annotation(com.epam.pipeline.aspect.run.PipelineLaunchCheck) && args(configuration)")
-    public void checkRunLaunchIsNotForbidden(JoinPoint joinPoint, PipelineConfiguration configuration) {
+    @Before("@annotation(com.epam.pipeline.aspect.run.PipelineLaunchCheck) && args(*, configuration, ..)")
+    public void checkRunLaunchIsNotForbidden(final JoinPoint joinPoint, final PipelineConfiguration configuration) {
 
         Optional.ofNullable(configuration.getPodAssignPolicy()).ifPresent(assignPolicy -> {
             if (!assignPolicy.isValid()) {
