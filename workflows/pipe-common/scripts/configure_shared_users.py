@@ -25,7 +25,7 @@ from pipeline.utils.path import mkdir
 _MANAGER_CLUSTER_ROLE = 'master'
 _ETC_DIRECTORY = '/etc'
 _ETC_DIRECTORY_SHARED = '/etc-shared'
-_ETC_FILE_PATHS = ['passwd', 'shadow', 'group', 'gshadow']
+_ETC_FILE_PATHS = ['passwd', 'shadow', 'group', 'gshadow', 'sudoers']
 
 
 class SharedUsersConfigurationError(RuntimeError):
@@ -82,6 +82,9 @@ def configure_shared_users():
         for etc_file_path in _ETC_FILE_PATHS:
             file_path = os.path.join(_ETC_DIRECTORY, etc_file_path)
             file_path_shared = os.path.join(_ETC_DIRECTORY_SHARED, etc_file_path)
+            if not os.path.exists(file_path_shared):
+                logger.warning('Skipping etc file path because it does not exist...')
+                continue
             execute('mount -o ro,bind,allow_other {file_path_shared} {file_path}'
                     .format(file_path=file_path, file_path_shared=file_path_shared),
                     logger=logger)
