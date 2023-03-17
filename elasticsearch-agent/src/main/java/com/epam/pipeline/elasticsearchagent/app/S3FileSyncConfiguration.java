@@ -46,6 +46,9 @@ public class S3FileSyncConfiguration {
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
 
+    @Value("${sync.s3-file.enable.logging:false}")
+    private Boolean enableLogging;
+
     @Bean
     public ObjectStorageFileManager s3FileManager() {
         return new S3FileManager();
@@ -57,10 +60,14 @@ public class S3FileSyncConfiguration {
             final ElasticsearchServiceClient esClient,
             final ElasticIndexService indexService,
             final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
-        return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
+        final ObjectStorageIndexImpl index = new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 s3FileManager, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, DataStorageType.S3, includeVersions,
                 SearchDocumentType.S3_FILE);
+        if (enableLogging) {
+            index.setEnableLogging(true);
+        }
+        return index;
     }
 
 }

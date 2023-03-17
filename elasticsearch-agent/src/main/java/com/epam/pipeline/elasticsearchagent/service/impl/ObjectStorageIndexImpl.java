@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -85,6 +86,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final StorageFileMapper fileMapper = new StorageFileMapper();
     @Getter
     private final SearchDocumentType documentType;
+    @Setter
+    private boolean enableLogging = false;
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
@@ -142,6 +145,9 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     }
 
     private List<DataStorageFile> countRestored(final List<StorageRestoreAction> actions, final DataStorageFile file) {
+        if (enableLogging) {
+            log.debug("Checking restore status for {}", file.getPath());
+        }
         final List<DataStorageFile> filesWithRespectToRestoreStatus = new ArrayList<>();
         filesWithRespectToRestoreStatus.add(file);
         actions.stream().filter(action -> {
@@ -215,6 +221,9 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                             .stream()
                             .filter(version -> !StringUtils.equals(file.getVersion(), version.getVersion()))
                             .collect(Collectors.toMap(DataStorageFile::getVersion, v -> v)));
+                    if (enableLogging) {
+                        log.debug("Processing file {}", file.getPath());
+                    }
                     return file;
                 });
     }
