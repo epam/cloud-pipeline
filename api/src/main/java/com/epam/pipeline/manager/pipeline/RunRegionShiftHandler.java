@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
@@ -173,7 +174,10 @@ public class RunRegionShiftHandler {
                 .map(storageType -> storageType.toLowerCase(Locale.ROOT))
                 .map(storageType -> storageType + "://")
                 .collect(Collectors.toList());
-        return ListUtils.emptyIfNull(parentRun.getPipelineRunParameters()).stream()
+        if (CollectionUtils.isEmpty(parentRun.getPipelineRunParameters())) {
+            return Boolean.TRUE;
+        }
+        return parentRun.getPipelineRunParameters().stream()
                 .anyMatch(parameter -> validateRunParameter(parameter, storagePrefixes));
     }
 

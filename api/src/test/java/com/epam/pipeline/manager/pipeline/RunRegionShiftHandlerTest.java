@@ -99,6 +99,21 @@ public class RunRegionShiftHandlerTest {
     }
 
     @Test
+    public void shouldRestartRunWithoutParameters() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.emptyList());
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        verify(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+        verify(pipelineRunManager).stop(CURRENT_RUN_ID);
+    }
+
+    @Test
     public void shouldNotRestartRunWhenCloudProviderIsNotDetermined() {
         final PipelineRun currentRun = getCurrentRun(new RunInstance());
 
@@ -310,6 +325,13 @@ public class RunRegionShiftHandlerTest {
         final RunInstance runInstance = getInstance(NEXT_AVAILABLE_REGION_ID);
         final PipelineRun currentRun = getCurrentRun(runInstance);
         currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+        return currentRun;
+    }
+
+    private static PipelineRun expectedSuccessfulRunWithoutParameters() {
+        final RunInstance runInstance = getInstance(NEXT_AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.emptyList());
         return currentRun;
     }
 
