@@ -21,6 +21,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
+        'zope.interface==5.5.2',
         'attrs==21.2.0',
         'dataclasses==0.6',
         'schedule==1.1.0',
