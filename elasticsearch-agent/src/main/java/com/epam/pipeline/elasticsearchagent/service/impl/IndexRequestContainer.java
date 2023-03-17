@@ -19,6 +19,7 @@ import com.epam.pipeline.elasticsearchagent.service.BulkRequestCreator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkResponse;
 
 import java.util.ArrayList;
@@ -60,6 +61,9 @@ public class IndexRequestContainer implements AutoCloseable {
                     .stream(documents.getItems())
                     .filter(response -> !response.isFailed())
                     .count();
+            Arrays.stream(documents.getItems())
+                    .filter(BulkItemResponse::isFailed)
+                    .forEach(response -> log.error("Elastic request failed: {}", response.getFailureMessage()));
         }
         log.info("{} files has been uploaded", successfulRequestsCount);
         requests.clear();
