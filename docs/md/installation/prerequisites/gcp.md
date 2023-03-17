@@ -21,38 +21,37 @@ Note: for small deployments or POCs - a single small routable subnet is enough
 ## Firewall rules
 
 * CP-Cluster-Internal:
-  * Targets: ALL
-  * Ports:
-    * TCP: 0-65535
-    * UDP: 0-65535
-    * ICMP
-  * IP Ranges: `VPC Subnets CIDR`
-  * Type: Ingress
-
+    * Targets: ALL
+    * Ports:
+        * TCP: 0-65535
+        * UDP: 0-65535
+        * ICMP
+    * IP Ranges: `VPC Subnets CIDR`
+    * Type: Ingress
 * CP-HTTPS-Access:
-  * Targets: ALL
-  * Ports:
-    * TCP: 443
-  * IP Ranges: `Internal (on-prem) networks or 0.0.0.0 (for the Public IPs usage)`
-  * Type: Ingress
-
+    * Targets: ALL
+    * Ports:
+        * TCP: 443
+    * IP Ranges: `Internal (on-prem) networks or 0.0.0.0 (for the Public IPs usage)`
+    * Type: Ingress
 * CP-Internet-Access:
-  * Targets: ALL
-  * Ports:
-    * TCP: 3128
-  * IP Ranges: `Egress HTTP proxy, if applicable`
-  * Type: Egress
+    * Targets: ALL
+    * Ports:
+        * TCP: 3128
+    * IP Ranges: `Egress HTTP proxy, if applicable`
+    * Type: Egress
 
 ## IAM
 
 The following service accounts shall be created:
+
 * `cp-service`
-  * Description: This account is used by the Cloud Pipeline to communicate to the GCP API (create VMs, manage data, etc.)
-  * Roles:
-    * `Compute Admin`
-    * `Service Account Token Creator`
-    * `Storage Admin`
+    * Description: This account is used by the Cloud Pipeline to communicate to the GCP API (create VMs, manage data, etc.)
+    * Roles:
+        * `Compute Admin`
+        * `Service Account Token Creator`
+        * `Storage Admin`
 * `cp-storage`
-  * Description: This account is used by the end-users to communicate to the GCS. Users are not granted access to the account directly, instead - temporary tokens are generated to perform CLI/GUI operations
-  * Roles:
-    * `Storage Object Admin`
+    * Description: This account is used by the end-users to communicate to the GCS. Users are not granted access to the account directly, instead - temporary tokens are generated to perform CLI/GUI operations
+    * Roles:
+        * `Storage Object Admin`

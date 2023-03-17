@@ -25,10 +25,11 @@ systemctl start kubelet
 
 There is a script to backup old one and generate new one certificates for kube cluster
 In order to change certificates:
+
  - Copy this script to some file on kube master node
- - Replace placeholders for <KUBE_IP_HOST> <KUBE_API_HOSTNAME>
+ - Replace placeholders for `<KUBE_IP_HOST>`, `<KUBE_API_HOSTNAME>`
  - Increase DAYS_CERT if needed (365 by default)
- - chmod +x this file
+ - `chmod +x` this file
  - Run this script, it will save old certificates in `./kubernetes-bk` and generates and print to the console new one
  - You will need manually replace `client-certificate-data` in several files in according to script's output
  - Reboot kube master node

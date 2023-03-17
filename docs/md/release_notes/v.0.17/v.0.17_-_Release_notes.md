@@ -30,6 +30,7 @@
 - [Custom Run capabilities](#custom-run-capabilities)
 - [Storage lifecycle management](#storage-lifecycle-management)
 - [Image history](#image-history)
+- [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -124,6 +125,41 @@ In **`v0.17`**, it was implemented - the user can view **Billing reports** with 
 - Reports (charts and tables) will be rebuilt for the configured custom date range:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_08.png)
 
+### Spendings for old versions of object storages
+
+As object storages supports versioning, it is convenient to view spendings for the old (previous) versions of the storage data. Old versions include all non-last (previous) versions of the versioning object storage.  
+From the current version, the **Object storages** report supports the displaying of the corresponding related information.
+
+At the summary chart, new dashed lines of the same colors (as for current and previous periods) appeared - these lines show summary spendings on the data usage for all _old versions_ of object storages:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_14.png)
+
+On all other object storage charts, bars are presented as stacks of _current version_ spendings / _old versions_ spendings. _Current version_ spendings are shown with solid filling, _old versions_ spendings are shown without filling, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_15.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_16.png)
+
+Also now, the detailed spendings table for object storages shows the info for spendings/usage in the format `total spendings/usage for all versions` / `spendings/usage for old versions only`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_21.png)
+
+### Spendings for object storages layers
+
+As object storages supports archiving data into different archive tiers (layers), it is convenient to view spendings separately for each layer.  
+From the current version, the **Object storages** report supports the displaying of the corresponding related information.  
+This information is shown on the separate chart - bar chart with division to different tiers (archive types). This chart does not contain any information for _previous_ period. Only layers used for data storing in the _current_ period according to selected filters are shown. Up to 4 layers can be here: `Standard`, `Glacier`, `Glacier IR`, `Deep Archive`.  
+Example:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_17.png)
+
+Object storage layers chart can show the information as storages usage costs - in `$` or as average storages volumes - in `Gb`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_18.png)
+
+If data in the storage is storing in different tiers (archive types), this can be viewed in a tooltip of other object storages charts - there will be a division of spendings by the used tiers, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_19.png)
+
+User can select one of the object storage layers - by click it on this new chart.  
+In this case, all charts and tables will be updated - only storages, that contain files in the selected layer type, will be shown in forms.  
+Also, shown spendings/data volume will be related only to files in the selected layer, not for the whole storage(s) or other layers.  
+For example, `Glasier IR` was selected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_20.png)
+
 ### Displaying different user's attributes in the Billing reports
 
 Previously, in all the **Billing reports**, info about users was displayed as user ID only. In some cases, it would be more convenient to display user names or emails - to take a more readable form.
@@ -134,15 +170,15 @@ It defines which user's attribute shall be used to display the users in the **Bi
 
 Possible values for described preference: _`userName`_, _`FirstName`_, _`LastName`_, etc.
 
-### Export reports in `csv` from any Billing page
+### Export reports in `CSV` from any Billing page
 
-Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `*.csv` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `*.png` image format only.
+Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `CSV` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `PNG` image format only.
 
-Currently, `*.csv` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
+Currently, `CSV` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
 
 - reports display the same structure as in the GUI - the top 10 records of the corresponding entities (e.g. storages or instances)
 - for the reports, which contain more than one table - all the tables are exported one after another
-- export in `*.csv` from the "General" page remains the same
+- export in `CSV` from the "General" page remains the same
 
 Example of an export from the "CPU" page:
 
@@ -151,10 +187,10 @@ Example of an export from the "CPU" page:
 
 ### Breakdown the billing reports by month
 
-**Cloud Pipeline** allows exporting billing reports in the `*.csv`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
+**Cloud Pipeline** allows exporting billing reports in the `CSV`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
 
 In the current version, this ability is implemented.  
-Now, if any period - longer than a month is selected (including a `custom` period), the `*.csv`-report contains an aggregate for each month of that period.  
+Now, if any period - longer than a month is selected (including a `custom` period), the `CSV`-report contains an aggregate for each month of that period.  
 The whole period summary is being included as well (as previously).
 
 Example of the report for a custom period:  
@@ -306,6 +342,29 @@ So, a new System preference **`system.notifications.exclude.instance.types`** wa
 If the node type is specified in this preference, listed above notifications will not be submitted to the jobs, that use this node type.  
 This preference allows a comma-separated list of the node types and wildcards, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_07.png)
+
+### Push notifications
+
+Previously, Cloud Pipeline platform sent notifications to users via email only. For many cases it would be useful to show such notifications in the GUI as well. In the current version, such ability was implemented.
+
+Now, all email notifications, that are sending by the platform, are also duplicated as push notifications. This allows to view notifications right in the Cloud Pipeline GUI.  
+Push notifications do not require additional configuring - they are fully the same as corresponding email notifications, i.e. have the same header, content, recepients list, frequency and trigger of sending, etc.
+
+Once any system event is occurred and its trigger for sending email notification has fired, email will be sent to the configured recipients. Simultaneously, the push notification (with the same subject and body as in the email) will be "sent" to the same recipients, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_01.png)
+
+Click it to view the whole notification - it will be opened in a pop-up:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_02.png)
+
+Additionally, a new section appeared in the main menu - **Notifications**.  
+It allows to view all push notifications/emails sent to the current user, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_03.png)
+
+User can switch notifications lists - to display only new "unread" notifications or only "read" ones.  
+To view the notification full details, user can click it - notification will be opened in a pop-up:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_04.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md#push-notifications).
 
 ## Allowed price types for a cluster master node
 
@@ -497,9 +556,9 @@ For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.
 
 ## Export cluster utilization in Excel format
 
-Previously, users could export **Cluster Node Monitor** reports only in **`csv`** format.
+Previously, users could export **Cluster Node Monitor** reports only in **`CSV`** format.
 
-From now, the ability to export these reports in **`xls`** format is implemented.  
+From now, the ability to export these reports in **`XLSX`** format is implemented.  
 Users can choose the format of the report before the download:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
 
@@ -749,6 +808,23 @@ In some cases, it could be convenient not to specify entity ID during import. Th
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
 
 > **_Note_**: IDs still should be unique
+
+### Ability to add SampleSet item via GUI
+
+Now, users may create SampleSets or other "Container-like" entities from the GUI (previously it was possible via the `CSV` import only).  
+This feature could be useful, if the Samples were imported using the IDs autogeneration, as it could be complicated to grab those IDs and copy to the `CSV`.
+
+To create a new SampleSet:
+
+- Click the **+ Add instance** button in the Metadata section and choose the _SampleSet_ instance type:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_16.png)
+- Provide the information for the new SampleSet and click the **Browse** button to select a list of Samples, which will be associated with the creating SampleSet:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_17.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_18.png)
+- After creation, the new SampleSet will appear in the corresponding metadata class:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_19.png)
+
+See details [here](../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items.md#add-sampleset-item).
 
 ### Preselect instances for a rerun
 
@@ -1072,6 +1148,22 @@ It can be viewed via the specific tab in the tool version menu - **Image history
 This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.
 
 For more details see [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#image-history).
+
+## Environments synchronization via `pipectl`
+
+In some cases, admins need to synchronize two different environments of the Cloud Pipeline.  
+New special routine in the [`pipectl`](https://github.com/epam/cloud-pipeline/tree/develop/deploy/README.md) utility is implemented for that - `pipectl sync`.
+
+It allows to synchronize from the source environment to the destination one the following objects:
+
+- users / user groups / user roles
+- docker registry / tool groups / tools
+
+Synchronization can be performed with or without synchronization of attributes (metadata) for the specified Platform objects.
+
+During the synchronization, changes are being performed only in the **_destination_** environment, the **_source_** environment remains the same.
+
+For details and examples see [here](../../installation/management/environments_sync.md).
 
 ## AWS: seamless authentication
 
