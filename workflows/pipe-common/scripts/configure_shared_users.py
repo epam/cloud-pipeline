@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
 
 import logging
 import os
-import traceback
 
 from pipeline.api import PipelineAPI
-from pipeline.common.common import execute
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
 from pipeline.utils.package import install_package
 from pipeline.utils.path import mkdir
+from pipeline.utils.ssh import LocalExecutor, LoggingExecutor
 
 _MANAGER_CLUSTER_ROLE = 'master'
 _ETC_DIRECTORY = '/etc'
@@ -51,6 +50,9 @@ def configure_shared_users():
     logger = LevelLogger(level=logging_level, inner=logger)
     logger = LocalLogger(inner=logger)
 
+    executor = LocalExecutor()
+    executor = LoggingExecutor(logger=logger, inner=executor)
+
     try:
         logger.info('Configuring shared users and groups management...')
 
@@ -73,10 +75,9 @@ def configure_shared_users():
 
         logger.info('Mounting etc directory from manager node...')
         mkdir(_ETC_DIRECTORY_SHARED)
-        execute('sshfs -o ro,allow_other root@{parent_run_host}:{etc_directory} {etc_directory_shared}'
-                .format(parent_run_host=parent_run_host,
-                        etc_directory=_ETC_DIRECTORY, etc_directory_shared=_ETC_DIRECTORY_SHARED),
-                logger=logger)
+        executor.execute('sshfs -o ro,allow_other root@{parent_run_host}:{etc_directory} {etc_directory_shared}'
+                         .format(parent_run_host=parent_run_host,
+                                 etc_directory=_ETC_DIRECTORY, etc_directory_shared=_ETC_DIRECTORY_SHARED))
 
         logger.info('Mounting users and groups from manager node etc directory...')
         for etc_file_path in _ETC_FILE_PATHS:
@@ -85,15 +86,12 @@ def configure_shared_users():
             if not os.path.exists(file_path_shared):
                 logger.warning('Skipping etc file path because it does not exist...')
                 continue
-            execute('mount -o ro,bind,allow_other {file_path_shared} {file_path}'
-                    .format(file_path=file_path, file_path_shared=file_path_shared),
-                    logger=logger)
+            executor.execute('mount -o ro,bind,allow_other {file_path_shared} {file_path}'
+                             .format(file_path=file_path, file_path_shared=file_path_shared))
 
         logger.success('Shared users and groups management was successfully configured.')
-    except BaseException as e:
-        traceback.print_exc()
-        stacktrace = traceback.format_exc()
-        logger.error('Shared users and groups management configuration has failed: {} {}'.format(e, stacktrace))
+    except BaseException:
+        logger.error('Shared users and groups management configuration has failed.', trace=True)
         raise
 
 
