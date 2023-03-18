@@ -2,11 +2,15 @@
   "mappings": {
     "_doc": {
       "properties": {
-        "doc_type": { "type": "keyword", "store": true },
+        "doc_type": {
+          "type": "keyword",
+          "store": true,
+          "fields": { "keyword": { "type": "keyword" } }
+        },
         "id": {"type": "keyword", "store": true},
         "parentId": {"type": "keyword", "store": true, "index": false },
         "name": {"type": "text", "store": true, "index": false},
-        "lastModified": { "type": "date", "format": "yyyy-MM-dd'T'HH:mm:ss'Z'" },
+        "lastModified": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "size": { "type": "long" },
         "storage_class": {"type": "keyword", "store": true},
         "path": { "type": "text", "analyzer": "file_path_analyzer", "fields": { "keyword": { "type": "keyword" } } },
@@ -20,7 +24,8 @@
         "denied_users": { "type": "keyword" },
         "allowed_groups": { "type": "keyword" },
         "denied_groups": { "type": "keyword" },
-        "is_hidden": { "type":  "boolean" }
+        "is_hidden": { "type":  "boolean" },
+        "is_deleted": { "type":  "boolean" }
       }
     }
   },
