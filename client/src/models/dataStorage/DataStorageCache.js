@@ -19,20 +19,20 @@ import DataStorageItemContent from './DataStorageItemContent';
 import GenerateDownloadUrlRequest from './GenerateDownloadUrl';
 
 class DataStorageCache {
-
-  static getKey (id, path, version) {
-    if (version) {
-      return `${id}-${path}-${version}`;
-    } else {
-      return `${id}-${path}`;
-    }
+  static getKey (id, path, version, ...rest) {
+    return [
+      id,
+      path,
+      version,
+      ...rest.map((o) => `${o}`)
+    ].filter(Boolean).join('-');
   }
 
   /* eslint-disable */
-  static getCache (cache, id, path, version, model) {
-    const key = DataStorageCache.getKey(id, path, version);
+  static getCache (cache, id, path, version, model, ...rest) {
+    const key = DataStorageCache.getKey(id, path, version, ...rest);
     if (!cache.has(key)) {
-      cache.set(key, new model(id, path, version));
+      cache.set(key, new model(id, path, version, ...rest));
     }
     return cache.get(key);
   }
@@ -68,8 +68,15 @@ class DataStorageCache {
   }
 
   _downloadUrlCache = new Map();
-  getDownloadUrl (id, path, version) {
-    return DataStorageCache.getCache(this._downloadUrlCache, id, path, version, GenerateDownloadUrlRequest);
+  getDownloadUrl (id, path, version = undefined, reportAccess = false) {
+    return DataStorageCache.getCache(
+      this._downloadUrlCache,
+      id,
+      path,
+      version,
+      GenerateDownloadUrlRequest,
+      reportAccess
+    );
   }
 
   invalidateDownloadUrl (id, path, version) {

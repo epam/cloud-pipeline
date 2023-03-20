@@ -18,6 +18,7 @@ import AWS from 'aws-sdk/index';
 import Credentials from './credentials';
 import fetchTempCredentials from './fetch-temp-credentials';
 import displaySize from '../../utils/displaySize';
+import auditStorageAccessManager from '../../utils/audit-storage-access';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -193,6 +194,10 @@ class S3Storage {
   };
 
   doUpload = (file, options, callbacks) => {
+    if (this.storage) {
+      const path = [this.prefix, file.name].filter((o) => o.length).join('/');
+      auditStorageAccessManager.reportWriteAccess({fullPath: `s3://${this.storage.path}/${path}`});
+    }
     const {
       uploadID: currentUploadID,
       partNumber: currentPartNumber,

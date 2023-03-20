@@ -30,6 +30,7 @@ import styles from './preview.css';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
 import Papa from 'papaparse';
 import Markdown from '../../special/markdown';
+import auditStorageAccessManager from '../../../utils/audit-storage-access';
 
 const previewLoad = (params, dataStorageCache) => {
   if (params.item && params.item.parentId && params.item.id) {
@@ -46,7 +47,9 @@ const downloadUrlLoad = (params, dataStorageCache) => {
   if (params.item && params.item.parentId && params.item.id) {
     return dataStorageCache.getDownloadUrl(
       params.item.parentId,
-      params.item.id
+      params.item.id,
+      undefined,
+      true
     );
   } else {
     return null;
@@ -72,7 +75,7 @@ export default class S3FilePreview extends React.Component {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
-      description: PropTypes.string,
+      description: PropTypes.string
     })
   };
 
@@ -173,6 +176,16 @@ export default class S3FilePreview extends React.Component {
     );
   };
 
+  handleDownload = () => {
+    if (this.props.item) {
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.props.item.parentId,
+        path: this.props.item.id,
+        reportStorageType: 'S3'
+      });
+    }
+  }
+
   renderTextFilePreview = () => {
     if (!this.props.preview) {
       return <div className={styles.contentPreview}>Preview not available.</div>;
@@ -196,26 +209,62 @@ export default class S3FilePreview extends React.Component {
     }
     if (this.filePreview.mayBeBinary) {
       if (this.props.downloadUrl.loaded) {
-        return <div className={styles.contentPreview}>Preview not available. <a href={this.props.downloadUrl.value.url} target="_blank" download={this.props.item.name}>Download file</a> to view full contents</div>;
+        return (
+          <div
+            className={styles.contentPreview}
+          >
+            Preview not available.
+            <a
+              href={this.props.downloadUrl.value.url}
+              target="_blank"
+              download={this.props.item.name}
+              style={{margin: '0 5px'}}
+              onClick={this.handleDownload}
+            >
+              Download file
+            </a>
+            to view full contents
+          </div>
+        );
       }
-      return <div className={styles.contentPreview}>Preview not available.</div>;
+      return (
+        <div
+          className={styles.contentPreview}
+        >
+          Preview not available.
+        </div>
+      );
     }
     if (!this.filePreview.preview) {
-      return <div className={styles.contentPreview}>Preview not available.</div>;
+      return (
+        <div
+          className={styles.contentPreview}
+        >
+          Preview not available.
+        </div>
+      );
     }
     return (
       <div className={styles.contentPreview}>
         {
-          this.state.pdbError &&
-          <div style={{marginBottom: 5}}>
-            <span className={'cp-search-preview-error'}>Error loading .pdb visualization: {this.state.pdbError}</span>
-          </div>
+          this.state.pdbError && (
+            <div style={{marginBottom: 5}}>
+              <span className={'cp-search-preview-error'}>
+                Error loading .pdb visualization: {this.state.pdbError}
+              </span>
+            </div>
+          )
         }
         {
-          this.structuredTableData && this.structuredTableData.error &&
-          <div style={{marginBottom: 5}}>
-            <span className={'cp-search-preview-error'}>Error loading .csv visualization: {this.structuredTableData.message}</span>
-          </div>
+          this.structuredTableData && this.structuredTableData.error && (
+            <div style={{marginBottom: 5}}>
+              <span
+                className={'cp-search-preview-error'}
+              >
+                Error loading .csv visualization: {this.structuredTableData.message}
+              </span>
+            </div>
+          )
         }
         <pre dangerouslySetInnerHTML={{__html: this.filePreview.preview}} />
       </div>
@@ -287,7 +336,8 @@ export default class S3FilePreview extends React.Component {
             <img
               style={{width: '100%'}}
               onError={onError}
-              src={this.props.downloadUrl.value.url} alt={this.props.item.id} />
+              src={this.props.downloadUrl.value.url}
+              alt={this.props.item.id} />
           </div>
         );
       }

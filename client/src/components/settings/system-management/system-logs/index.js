@@ -22,83 +22,25 @@ import Filters, {DATE_FORMAT} from './filters';
 import Logs from './logs';
 import moment from 'moment-timezone';
 
-const SIZE_UPDATER_DELAY = 500;
-
 class SystemLogs extends React.Component {
   state = {
-    filters: undefined,
-    logContainerSize: {
-      width: undefined,
-      height: undefined
-    },
-    logContainerInitialized: false,
-    filtersInitialized: false
+    filters: undefined
   };
 
-  filters;
-  logsScrollContainer;
-  sizeUpdater;
+  componentDidMount () {
+    this.setDefaultFilter();
+  }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    this.updateSize();
     if (!this.state.filters) {
       this.setDefaultFilter();
     }
-  }
-
-  componentDidMount () {
-    this.updateSize();
-    this.sizeUpdater = setInterval(this.updateSize, SIZE_UPDATER_DELAY);
-    window.addEventListener('resize', this.updateSize);
-  }
-
-  componentWillUnmount () {
-    clearInterval(this.sizeUpdater);
-    window.removeEventListener('resize', this.updateSize);
   }
 
   setDefaultFilter = () => {
     this.onFiltersChange({
       messageTimestampFrom: moment.utc().add(-1, 'd').format(DATE_FORMAT)
     });
-  };
-
-  onFiltersInitialized = (filters) => {
-    this.filters = filters;
-    setTimeout(() => {
-      this.setState({filtersInitialized: true});
-    }, SIZE_UPDATER_DELAY);
-  };
-
-  onLogsScrollContainerInitialized = (container) => {
-    this.logsScrollContainer = container;
-    setTimeout(() => {
-      this.setState({logContainerInitialized: true});
-    }, SIZE_UPDATER_DELAY);
-  };
-
-  updateSize = () => {
-    const {logContainerInitialized, filtersInitialized} = this.state;
-    if (
-      logContainerInitialized &&
-      filtersInitialized &&
-      this.logsScrollContainer
-    ) {
-      requestAnimationFrame(() => {
-        const width = this.logsScrollContainer.clientWidth;
-        const height = this.logsScrollContainer.clientHeight;
-        const {logContainerSize} = this.state;
-        const {width: currentWidth, height: currentHeight} = logContainerSize;
-        if (currentHeight !== height || currentWidth !== width) {
-          this.setState({
-            logContainerSize: {
-              width,
-              height
-            }
-          });
-        }
-      });
-    }
   };
 
   onFiltersChange = (newFilters) => {
@@ -116,29 +58,17 @@ class SystemLogs extends React.Component {
         <Alert type="error" message="Access is denied" />
       );
     }
-    const {
-      filters,
-      logContainerSize
-    } = this.state;
+    const {filters} = this.state;
     return (
       <div className={styles.container}>
         <Filters
           filters={filters}
           onChange={this.onFiltersChange}
-          onInitialized={this.onFiltersInitialized}
-          onExpand={this.updateSize}
         />
-        <div className={styles.logsContainer}>
-          <div
-            className={styles.logsScrollContainer}
-            ref={this.onLogsScrollContainerInitialized}
-          >
-            <Logs
-              filters={filters}
-              width={logContainerSize.width}
-            />
-          </div>
-        </div>
+        <Logs
+          className={styles.logsContainer}
+          filters={filters}
+        />
       </div>
     );
   }

@@ -644,7 +644,12 @@ export default class DataStorage extends React.Component {
     event.stopPropagation();
     event.preventDefault();
     const hide = message.loading(`Fetching ${item.name} url...`, 0);
-    const request = new GenerateDownloadUrlRequest(this.props.storageId, item.path, item.version);
+    const request = new GenerateDownloadUrlRequest(
+      this.props.storageId,
+      item.path,
+      item.version,
+      true
+    );
     await request.fetch();
     if (request.error) {
       hide();
