@@ -1193,6 +1193,9 @@ public class SystemPreferences {
             SYSTEM_JOBS_GROUP, isNullOrValidJson(new TypeReference<RunAssignPolicy>() {}), false
     );
 
+    public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(
+            "system.jobs.scripts.location", "src/system-jobs", SYSTEM_JOBS_GROUP, pass, false);
+
     public static final StringPreference SYSTEM_JOBS_OUTPUT_TASK = new StringPreference(
             "system.jobs.output.pipeline.task", "SystemJob", SYSTEM_JOBS_GROUP, pass, false);
 
