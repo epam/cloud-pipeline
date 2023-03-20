@@ -323,6 +323,7 @@
   display: flex;
   flex-direction: column;
   padding: 5px;
+  min-height: 25vh;
 }
 
 .cell-profiler-job-info-row {

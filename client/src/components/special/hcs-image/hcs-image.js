@@ -1031,6 +1031,7 @@ class HcsImage extends React.PureComponent {
             selection={selectedSequenceTimePoints}
             onChange={this.onChangeSequenceTimePoints}
             multiple
+            style={{padding: 5}}
           />
           <HcsZPositionSelector
             image={selectedImage}

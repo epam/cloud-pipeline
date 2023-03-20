@@ -45,6 +45,7 @@ const RECTANGLE_BORDER = {
 
 const circleSectors = 180;
 const circleBorderPoints = [];
+const circleThickBorderPoints = [];
 const circlePoints = [];
 for (let i = 1; i <= circleSectors; i++) {
   const prev = (i - 1) * 2.0 * Math.PI / circleSectors;
@@ -58,6 +59,14 @@ for (let i = 1; i <= circleSectors; i++) {
     Math.cos(prev), Math.sin(prev),
     Math.cos(curr), Math.sin(curr)
   );
+  circleThickBorderPoints.push(
+    Math.cos(prev) * 0.8, Math.sin(prev) * 0.8,
+    Math.cos(prev), Math.sin(prev),
+    Math.cos(curr), Math.sin(curr),
+    Math.cos(curr), Math.sin(curr),
+    Math.cos(curr) * 0.8, Math.sin(curr) * 0.8,
+    Math.cos(prev) * 0.8, Math.sin(prev) * 0.8
+  );
 }
 
 const CIRCLE = {
@@ -68,6 +77,11 @@ const CIRCLE = {
 const CIRCLE_BORDER = {
   data: new Float32Array(circleBorderPoints),
   vertexCount: circleBorderPoints.length / 2
+};
+
+const CIRCLE_THICK_BORDER = {
+  data: new Float32Array(circleThickBorderPoints),
+  vertexCount: circleThickBorderPoints.length / 2
 };
 
 /**
@@ -96,7 +110,7 @@ function createBuffer (gl, buffer) {
 
 /**
  * @param gl
- * @returns {{line: BufferWrapper, cross: BufferWrapper, rectangle: BufferWrapper, circle: BufferWrapper, circleBorder: BufferWrapper, rectangleBorder: BufferWrapper}}
+ * @returns {{line: BufferWrapper, cross: BufferWrapper, rectangle: BufferWrapper, circle: BufferWrapper, circleBorder: BufferWrapper, circleThickBorder: BufferWrapper, rectangleBorder: BufferWrapper}}
  */
 export default function createBuffers (gl) {
   if (!gl) {
@@ -108,6 +122,7 @@ export default function createBuffers (gl) {
     rectangle: createBuffer(gl, RECTANGLE),
     rectangleBorder: createBuffer(gl, RECTANGLE_BORDER),
     circle: createBuffer(gl, CIRCLE),
-    circleBorder: createBuffer(gl, CIRCLE_BORDER)
+    circleBorder: createBuffer(gl, CIRCLE_BORDER),
+    circleThickBorder: createBuffer(gl, CIRCLE_THICK_BORDER)
   };
 }

@@ -14,16 +14,13 @@
  *  limitations under the License.
  */
 
-const INDEX_TO_LETTER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+.gradient-container .gradient {
+  height: 10px;
+  margin: 5px 0;
+}
 
-export function getWellRowName (rowIndex) {
-  if (typeof rowIndex !== 'number') {
-    return rowIndex;
-  }
-  if (rowIndex < INDEX_TO_LETTER.length) {
-    return INDEX_TO_LETTER[rowIndex];
-  }
-  const next = Math.floor(rowIndex / INDEX_TO_LETTER.length);
-  const current = rowIndex - next * INDEX_TO_LETTER.length;
-  return `${getWellRowName(next - 1)}${getWellRowName(current)}`;
+.gradient-container .gradient-picker-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }

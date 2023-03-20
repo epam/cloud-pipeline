@@ -33,6 +33,7 @@ import Duration from './components/duration';
 import UserName from '../../UserName';
 import {AnalysisOutputWithDownload} from './analysis-output';
 import Collapse from './collapse';
+import CellProfilerJobZScore from './components/cell-profiler-job-z-score';
 import styles from './cell-profiler.css';
 
 const REFETCH_JOB_TIMEOUT_MS = 1000 * 5;
@@ -69,6 +70,35 @@ async function getJobSpecification (job) {
     return Promise.resolve(job.specification || {});
   }
   return getSpecification(job);
+}
+
+function getResultsPath (job) {
+  const {
+    status,
+    outputFolder: output,
+    result
+  } = job || {};
+  if (!/^(success)$/i.test(status) || (!output && !result)) {
+    return null;
+  }
+  let path, downloadPath, storageId;
+  if (result) {
+    path = result.path;
+    downloadPath = result.path;
+    if (/\.csv$/.test(downloadPath)) {
+      downloadPath = downloadPath.split('.').slice(0, -1).join('.').concat('.xlsx');
+    }
+    storageId = result.storageId;
+  } else if (output) {
+    path = (output.path || '').concat('/Results.csv');
+    downloadPath = (output.path || '').concat('/Results.xlsx');
+    storageId = output.storageId;
+  }
+  return {
+    path,
+    storageId,
+    downloadPath
+  };
 }
 
 class CellProfilerJobResults extends React.PureComponent {
@@ -353,6 +383,49 @@ class CellProfilerJobResults extends React.PureComponent {
       </Collapse>
     );
   };
+  renderZScore = () => {
+    const {
+      job
+    } = this.state;
+    if (!job) {
+      return null;
+    }
+    const {
+      status,
+      outputFolder: output,
+      result,
+      input
+    } = job;
+    if (!/^(success)$/i.test(status) || (!output && !result)) {
+      return null;
+    }
+    const {
+      path: inputPath,
+      storageId: inputStorageId
+    } = input || {};
+    const {
+      path,
+      storageId
+    } = getResultsPath(job);
+    if (!path || !storageId) {
+      return null;
+    }
+    return (
+      <Collapse
+        header="Z-score"
+        unmountOnClose={false}
+      >
+        <CellProfilerJobZScore
+          dataPath={path}
+          dataStorageId={storageId}
+          hcsFilePath={inputPath}
+          hcsFileStorageId={inputStorageId}
+          analysisDate={job.startDate}
+          analysisName={job.alias || job.pipelineName}
+        />
+      </Collapse>
+    );
+  }
   renderJobOutput = () => {
     const {
       job
@@ -373,19 +446,11 @@ class CellProfilerJobResults extends React.PureComponent {
     const fileName = input && input.path
       ? input.path.split('/').pop()
       : undefined;
-    let path, downloadPath, storageId;
-    if (result) {
-      path = result.path;
-      downloadPath = result.path;
-      if (/\.csv$/.test(downloadPath)) {
-        downloadPath = downloadPath.split('.').slice(0, -1).join('.').concat('.xlsx');
-      }
-      storageId = result.storageId;
-    } else if (output) {
-      path = (output.path || '').concat('/Results.csv');
-      downloadPath = (output.path || '').concat('/Results.xlsx');
-      storageId = output.storageId;
-    }
+    const {
+      path,
+      downloadPath,
+      storageId
+    } = getResultsPath(job);
     return (
       <AnalysisOutputWithDownload
         className={styles.cellProfilerJobResultsOutput}
@@ -441,6 +506,7 @@ class CellProfilerJobResults extends React.PureComponent {
         }
         {this.renderJobTitle()}
         {this.renderJobInfo()}
+        {this.renderZScore()}
         {this.renderJobOutput()}
       </div>
     );

@@ -114,6 +114,26 @@ class HCSImageSequence {
     this.objectStorage = undefined;
   }
 
+  fetchWellsStructure = () => new Promise((resolve, reject) => {
+    this.generateWellsMapURL()
+      .then(() => this.objectStorage.getFileContent(this.wellsMapFileName, {json: true}))
+      .then(json => HCSImageWell.parseWellsInfo(
+        json,
+        {width: this.plateWidth, height: this.plateHeight}
+      ))
+      .then((wells = []) => {
+        this.wells = wells.slice();
+        return Promise.resolve(this.wells);
+      })
+      .then(resolve)
+      .catch(e => {
+        this.error = e.message;
+        reject(
+          new Error(`Error fetching sequence ${this.id} info: ${e.message}`)
+        );
+      });
+  });
+
   fetch () {
     if (!this._fetch) {
       this._fetch = new Promise((resolve, reject) => {

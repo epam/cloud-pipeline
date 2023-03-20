@@ -25,7 +25,10 @@ export function cellsAreEqual (a, b) {
   if (!a || !b) {
     return false;
   }
-  return a.id === b.id;
+  return a.id === b.id &&
+    a.selectable === b.selectable &&
+    a.info === b.info &&
+    a.tags === b.tags;
 }
 
 export function cellsArraysAreEqual (a, b) {

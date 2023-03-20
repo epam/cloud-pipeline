@@ -123,8 +123,71 @@ class HcsSequenceSelector extends React.Component {
     );
   };
 
+  renderSequence = (sequence) => (
+    (
+      <div
+        className={styles.timepointsContainer}
+      >
+        {(sequence.timeSeries || []).map(timePoint => {
+          const selected = this.sequenceTimePointIsSelected(sequence.id, timePoint.id);
+          return (
+            <div
+              className={
+                classNames(
+                  styles.timepoint,
+                  {
+                    [styles.active]: selected,
+                    'cp-timepoint-button-active': selected,
+                    'cp-timepoint-button': !selected
+                  }
+                )
+              }
+              key={timePoint.id}
+              onClick={
+                (event) => this.onChangeTimePoint(sequence.sequence, timePoint, event)
+              }
+            >
+              {timePoint.name}
+            </div>
+          );
+        })}
+      </div>
+    )
+  );
+
+  renderContent = () => {
+    const {
+      showCollapseForSingleSequence,
+      sequences = []
+    } = this.props;
+    if (sequences.length === 1 && !showCollapseForSingleSequence) {
+      return this.renderSequence(sequences[0]);
+    }
+    const {expandedKeys = []} = this.state;
+    return (
+      <Collapse
+        className="cp-collapse-small"
+        onChange={this.onTogglePanel}
+        activeKey={expandedKeys}
+      >
+        {sequences.map(sequence => (
+          <Collapse.Panel
+            header={this.renderCollapseHeader(sequence)}
+            key={sequence.sequence}
+          >
+            {this.renderSequence(sequence)}
+          </Collapse.Panel>
+        ))}
+      </Collapse>
+    );
+  };
+
   render () {
     const {
+      className,
+      style,
+      title,
+      showTitle,
       sequences
     } = this.props;
     if (
@@ -134,57 +197,24 @@ class HcsSequenceSelector extends React.Component {
     ) {
       return null;
     }
-    const {expandedKeys = []} = this.state;
     return (
-      <div className={styles.container}>
-        <span
-          className={classNames(
-            styles.header,
-            'cp-title'
-          )}
-        >
-          Time series
-        </span>
-        <Collapse
-          className="cp-collapse-small"
-          onChange={this.onTogglePanel}
-          activeKey={expandedKeys}
-        >
-          {sequences.map(sequence => (
-            <Collapse.Panel
-              header={this.renderCollapseHeader(sequence)}
-              key={sequence.sequence}
+      <div
+        className={classNames(styles.container, className)}
+        style={style}
+      >
+        {
+          showTitle && (
+            <span
+              className={classNames(
+                styles.header,
+                'cp-title'
+              )}
             >
-              <div
-                className={styles.timepointsContainer}
-              >
-                {(sequence.timeSeries || []).map(timePoint => {
-                  const selected = this.sequenceTimePointIsSelected(sequence.id, timePoint.id);
-                  return (
-                    <div
-                      className={
-                        classNames(
-                          styles.timepoint,
-                          {
-                            [styles.active]: selected,
-                            'cp-timepoint-button-active': selected,
-                            'cp-timepoint-button': !selected
-                          }
-                        )
-                      }
-                      key={timePoint.id}
-                      onClick={
-                        (event) => this.onChangeTimePoint(sequence.sequence, timePoint, event)
-                      }
-                    >
-                      {timePoint.name}
-                    </div>
-                  );
-                })}
-              </div>
-            </Collapse.Panel>
-          ))}
-        </Collapse>
+              {title || 'Time series'}
+            </span>
+          )
+        }
+        {this.renderContent()}
       </div>
     );
   }
@@ -194,7 +224,17 @@ HcsSequenceSelector.propTypes = {
   sequences: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   selection: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onChange: PropTypes.func,
-  multiple: PropTypes.bool
+  multiple: PropTypes.bool,
+  showTitle: PropTypes.bool,
+  showCollapseForSingleSequence: PropTypes.bool,
+  title: PropTypes.string,
+  className: PropTypes.string,
+  style: PropTypes.object
+};
+
+HcsSequenceSelector.defaultProps = {
+  showTitle: true,
+  showCollapseForSingleSequence: true
 };
 
 export default HcsSequenceSelector;
