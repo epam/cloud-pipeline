@@ -17,6 +17,7 @@
 import {fetchSourceInfo} from '../hcs-image-viewer';
 import * as HCSConstants from './constants';
 import HCSImageWell, {getImageInfoFromName} from './hcs-image-well';
+import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 
 const second = 1000;
 const minute = 60 * second;
@@ -96,6 +97,27 @@ class HCSImageSequence {
     this.timeouts = [];
     this.listeners = [];
   }
+
+  reportReadAccess = (entireWell) => {
+    if (this._reportedMode !== entireWell) {
+      this._reportedMode = entireWell;
+      let auditTiffFileName = this.omeTiffFileName;
+      let auditOffsetsJsonFileName = this.offsetsJsonFileName;
+      if (entireWell) {
+        auditTiffFileName = this.overviewOmeTiffFileName;
+        auditOffsetsJsonFileName = this.overviewOffsetsJsonFileName;
+      }
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.objectStorage ? this.objectStorage.id : undefined,
+        path: auditTiffFileName,
+        reportStorageType: 'S3'
+      }, {
+        storageId: this.objectStorage ? this.objectStorage.id : undefined,
+        path: auditOffsetsJsonFileName,
+        reportStorageType: 'S3'
+      });
+    }
+  };
 
   addURLsGeneratedListener = (listener) => {
     this.removeURLsGeneratedListener(listener);
@@ -201,6 +223,15 @@ class HCSImageSequence {
         Promise.resolve()
           .then(() => {
             if (this.omeTiff && this.offsetsJson) {
+              auditStorageAccessManager.reportReadAccess({
+                storageId: this.objectStorage ? this.objectStorage.id : undefined,
+                path: this.offsetsJsonFileName,
+                reportStorageType: 'S3'
+              }, {
+                storageId: this.objectStorage ? this.objectStorage.id : undefined,
+                path: this.omeTiffFileName,
+                reportStorageType: 'S3'
+              });
               return fetchSourceInfo({url: this.omeTiff, offsetsUrl: this.offsetsJson});
             }
             return Promise.resolve([]);
@@ -270,6 +301,7 @@ class HCSImageSequence {
 
   async regenerateDataURLs () {
     this.clearTimeouts();
+    this._reportedMode = undefined;
     await Promise.all([
       this.generateOMETiffURL(),
       this.generateOffsetsJsonURL(),

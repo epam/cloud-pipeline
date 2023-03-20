@@ -30,6 +30,7 @@ import HCSInfo from '../../../hcs-image/utilities/hcs-image-info';
 import HcsCellSelector, {colorToVec4} from '../../../hcs-image/hcs-cell-selector';
 import CellProfilerJobZScoreGradient from './cell-profiler-job-z-score-gradient';
 import displayDate from '../../../../../utils/displayDate';
+import auditStorageAccessManager from '../../../../../utils/audit-storage-access';
 import styles from './cell-profiler-job-z-score.css';
 
 const NonReadOutParameters = [
@@ -171,6 +172,11 @@ class CellProfilerJobZScore extends React.Component {
         };
         try {
           const url = await generateResourceUrl({path: dataPath, storageId: dataStorageId});
+          auditStorageAccessManager.reportReadAccess({
+            storageId: dataStorageId,
+            path: dataPath,
+            reportStorageType: 'S3'
+          });
           const {
             columns = [],
             rows = []

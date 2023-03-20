@@ -36,6 +36,7 @@ import styles from './DataStorageCodeForm.css';
 import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateDownloadUrl';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import SampleSheet, {utilities} from '../../../special/sample-sheet';
+import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 
 function validateJSON (content) {
   if (!content) {
@@ -464,6 +465,20 @@ export default class DataStorageCodeForm extends React.Component {
     );
   }
 
+  handleDownload = () => {
+    const {
+      storageId,
+      file
+    } = this.props;
+    if (storageId && file) {
+      auditStorageAccessManager.reportReadAccess({
+        storageId,
+        path: file.path,
+        reportStorageType: 'S3'
+      });
+    }
+  };
+
   render () {
     const tableClassName = this.state.editMode ? styles.tableEditor : styles.tableEditorReadonly;
     const title = this.props.file
@@ -481,6 +496,7 @@ export default class DataStorageCodeForm extends React.Component {
                       href={this.downloadUrl}
                       target="_blank"
                       download={this.props.file.name}
+                      onClick={this.handleDownload}
                     >
                       {' Download file'}
                     </a>

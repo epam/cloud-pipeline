@@ -483,6 +483,10 @@ async function fetchStatusUntilDone (api, pipelineId) {
  * @property {string} id
  * @property {string} [url]
  * @property {function: Promise<string>} [fetchUrl]
+ * @property {function: Promise<string>} [fetchUrlAndReportAccess]
+ * @property {function: void} [reportObjectAccess]
+ * @property {number} [storageId]
+ * @property {string} [storagePath]
  * @property {boolean} analysisOutput
  * @property {boolean} table
  * @property {boolean} xlsx
