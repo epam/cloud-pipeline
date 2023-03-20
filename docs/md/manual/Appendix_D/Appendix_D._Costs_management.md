@@ -446,6 +446,15 @@ From the Storages section and its sub-sections, the following exports are availa
     ![CP_AppendixD](attachments/Costs_management_48.png)
 - Image - in this case, export will be performed as image that contains pictures of charts as they were on the screen (without detailed spendings table)
 
+Export of the _Object storages_ reports is different from other storages' reports.  
+This export additionally supports breaking of data by versions and archive tiers:
+
+- if there are any spendings in the archive layer - for that layer, separate columns of _Cost_, _Average Volume (GB)_ and _Current Volume (GB)_ will be in the exported report
+- for versioning storages, there are separate columns for the _current version_ and _old versions_
+
+Example of the _Object storages_ report export (please note, there is only a part of the report is shown):  
+    ![CP_AppendixD](attachments/Costs_management_52.png)
+
 **Compute instances**
 
 From the Compute instances section and its sub-sections, the following exports are available:  

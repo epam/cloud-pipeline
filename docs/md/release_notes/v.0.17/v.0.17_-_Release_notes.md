@@ -138,9 +138,10 @@ On all other object storage charts, bars are presented as stacks of _current ver
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_16.png)
 
 Also now, the detailed spendings table for object storages shows the info for spendings/usage in the format `total spendings/usage for all versions` / `spendings/usage for old versions only`:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_21.png)
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_21.png)  
+    Breakdown by versions is shown in the CSV report export as well.
 
-### Spendings for object storages layers
+### Spendings for object storages' archive layers
 
 As object storages supports archiving data into different archive tiers (layers), it is convenient to view spendings separately for each layer.  
 From the current version, the **Object storages** report supports the displaying of the corresponding related information.  
@@ -152,7 +153,8 @@ Object storage layers chart can show the information as storages usage costs - i
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_18.png)
 
 If data in the storage is storing in different tiers (archive types), this can be viewed in a tooltip of other object storages charts - there will be a division of spendings by the used tiers, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_19.png)
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_19.png)  
+Breakdown by archive layers is shown in the CSV report export as well.
 
 User can select one of the object storage layers - by click it on this new chart.  
 In this case, all charts and tables will be updated - only storages, that contain files in the selected layer type, will be shown in forms.  
