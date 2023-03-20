@@ -1193,8 +1193,8 @@ public class SystemPreferences {
             SYSTEM_JOBS_GROUP, isNullOrValidJson(new TypeReference<RunAssignPolicy>() {}), false
     );
 
-    public static final StringPreference SYSTEM_JOBS_PARAMETER_FLAG = new StringPreference(
-            "system.jobs.parameter.flag", "CP_CAP_SYSTEM_JOB", SYSTEM_JOBS_GROUP, pass, false);
+    public static final StringPreference SYSTEM_JOBS_OUTPUT_TASK = new StringPreference(
+            "system.jobs.output.pipeline.task", "SystemJob", SYSTEM_JOBS_GROUP, pass, false);
 
     public static final LongPreference SYSTEM_JOBS_PIPELINE = new LongPreference(
             "system.jobs.pipeline.id", null, SYSTEM_JOBS_GROUP, isNullOrGreaterThan(0), false);
