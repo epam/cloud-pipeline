@@ -70,6 +70,15 @@ export function getStorageClassName (storageClass) {
   }
 }
 
+export function getAllStorageClasses () {
+  return [
+    'DEEP_ARCHIVE',
+    'GLACIER',
+    'GLACIER_IR',
+    'STANDARD'
+  ];
+}
+
 export function getStorageClassByAggregate (aggregate) {
   return getBillingGroupingOrderAggregate(aggregate);
 }
