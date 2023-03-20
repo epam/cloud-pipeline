@@ -54,7 +54,8 @@ class ExportConsumer extends React.Component {
       user,
       group,
       types: typesPayload = [],
-      filters: extraFilters = {}
+      filters: extraFilters = {},
+      properties: extraProperties
     } = exportConfiguration;
     const {
       start,
@@ -88,7 +89,8 @@ class ExportConsumer extends React.Component {
       types,
       from: start.format('YYYY-MM-DD'),
       to: end.format('YYYY-MM-DD'),
-      filters
+      filters,
+      properties: extraProperties
     };
     return new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();

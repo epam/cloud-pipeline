@@ -60,7 +60,8 @@ import {
   parseStorageAggregate,
   StorageAggregate,
   DEFAULT_STORAGE_CLASS_ORDER,
-  getStorageClassByAggregate
+  getStorageClassByAggregate,
+  getAllStorageClasses
 } from '../navigation/aggregate';
 import {
   getDetailsDatasetsByStorageClassAndMetrics,
@@ -389,6 +390,28 @@ class StorageReports extends React.Component {
     return (dataItem) => getItemDetailsByMetrics(dataItem, metrics);
   }
 
+  @computed
+  get getExportProperties () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return () => undefined;
+    }
+    const total = !storageAggregate || storageAggregate === StorageAggregate.default;
+    const storageClass = total
+      ? getAllStorageClasses()
+      : [getStorageClassByAggregate(storageAggregate)];
+    return {
+      includeStorageOldVersions: true,
+      includeStorageClasses: storageClass
+    };
+  }
+
   renderSelectedLayerButton = () => {
     const {filters} = this.props;
     const {storageAggregate} = filters;
@@ -460,7 +483,8 @@ class StorageReports extends React.Component {
                   cloudRegionId.length > 0
                     ? cloudRegionId
                     : undefined
-                }
+                },
+                properties: this.getExportProperties
               }}
             >
               <Layout
