@@ -31,6 +31,7 @@
 - [Storage lifecycle management](#storage-lifecycle-management)
 - [Image history](#image-history)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
+- [Data access audit](#data-access-audit)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -1166,6 +1167,27 @@ Synchronization can be performed with or without synchronization of attributes (
 During the synchronization, changes are being performed only in the **_destination_** environment, the **_source_** environment remains the same.
 
 For details and examples see [here](../../installation/management/environments_sync.md).
+
+## Data access audit
+
+In the current version, [System logs](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-logs) were expanded - now, all actions related to any access to the data stored in the object storages are being logged.  
+This includes logging of operations _READ_/_WRITE_/_DELETE_, listing operation is not logged.
+
+For logs of data access events, a new item was added to the "**Type**" filter of the System logs - `audit` type:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_1.png)
+
+By this type, the following data access operations are being logged:
+
+- access to the Object storages data from the Platform GUI
+- access to the Object storages data from the `pipe` CLI
+- access to the mounted Object storages' data - both from GUI and CLI
+
+Examples of logs:  
+![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_2.png)
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_3.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.12._System_logs.md#type-filter).
 
 ## AWS: seamless authentication
 
