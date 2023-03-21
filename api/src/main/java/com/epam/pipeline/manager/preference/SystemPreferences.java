@@ -36,7 +36,6 @@ import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -1185,14 +1184,6 @@ public class SystemPreferences {
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
     // System Jobs
-    public static final StringPreference SYSTEM_JOBS_KUBE_SERVICE_ACCOUNT = new StringPreference(
-            "system.jobs.kube.service.account", null, SYSTEM_JOBS_GROUP, pass, false);
-
-    public static final ObjectPreference<RunAssignPolicy> SYSTEM_JOBS_RUN_ASSIGN_POLICY = new ObjectPreference<>(
-            "system.jobs.run.assign.policy", null, new TypeReference<RunAssignPolicy>() {},
-            SYSTEM_JOBS_GROUP, isNullOrValidJson(new TypeReference<RunAssignPolicy>() {}), false
-    );
-
     public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(
             "system.jobs.scripts.location", "src/system-jobs", SYSTEM_JOBS_GROUP, pass, false);
 
