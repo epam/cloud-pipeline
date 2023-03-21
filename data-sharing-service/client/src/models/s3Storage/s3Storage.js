@@ -17,12 +17,7 @@
 import AWS from 'aws-sdk/index';
 import DataStorageTempCredentials from '../dataStorage/DataStorageTempCredentials';
 import Credentials from './Credentials';
-
-const asyncForEach = async (array, callback) => {
-  for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
-  }
-};
+import auditStorageAccessManager from '../../utils/audit-storage-access';
 
 class S3Storage {
 
@@ -49,7 +44,7 @@ class S3Storage {
   }
 
   get prefix () {
-    return this._prefix;
+    return this._prefix || '';
   }
 
   set prefix (value) {
@@ -107,27 +102,6 @@ class S3Storage {
     return success;
   };
 
-  listObjects = () => {
-    let params = {
-      Bucket: this._storage.path,
-      Prefix: this._prefix
-    };
-    if (this._storage.delimiter) {
-      params.Delimiter = this._storage.delimiter;
-    }
-
-    return this._s3.listObjects(params).promise();
-  };
-
-  getStorageObject = async (key, startBytes, endBytes) => {
-    const params = {
-      Bucket: this._storage.path,
-      Key: key,
-      Range: `bytes=${startBytes}-${endBytes}`
-    };
-    return this._s3.getObject(params).promise();
-  };
-
   completeMultipartUploadStorageObject = async (name, parts, uploadId) => {
     const params = {
       Bucket: this._storage.path,
@@ -168,115 +142,14 @@ class S3Storage {
       PartNumber: partNumber,
       UploadId: uploadId
     };
+    auditStorageAccessManager.reportWriteAccess({
+      fullPath: `s3://${this._storage.path}/${this.prefix + name}`,
+      storageId: this._storage.id
+    });
     const upload = this._s3.uploadPart(params);
     upload.on('httpUploadProgress', uploadProgress);
     return upload;
   };
-
-  uploadStorageObject = async (name, body, uploadProgress) => {
-    const params = {
-      Body: body,
-      Bucket: this._storage.path,
-      Key: this.prefix + name
-    };
-    const upload = this._s3.upload(params);
-    upload.on('httpUploadProgress', uploadProgress);
-    return upload.promise();
-  };
-
-  putStorageObject = async (name, buffer) => {
-    const params = {
-      Body: buffer,
-      Bucket: this._storage.path,
-      Key: this._prefix + name
-    };
-
-    return this._s3.putObject(params).promise();
-  };
-
-  renameStorageObject = async (key, newName) => {
-    let success = true;
-
-    let params = {
-      Bucket: this._storage.path,
-      Prefix: key
-    };
-
-    if (key.endsWith(this._storage.delimiter)) {
-      try {
-        const data = await this._s3.listObjects(params).promise();
-        await asyncForEach(data.Contents, async file => {
-          params = {
-            Bucket: this._storage.path,
-            CopySource: this._storage.path + this._storage.delimiter + file.Key,
-            Key: file.Key.replace(key, this._prefix + newName + this._storage.delimiter)
-          };
-
-          await this._s3.copyObject(params).promise();
-          await this.deleteStorageObjects([file.Key]);
-        });
-        success = true;
-      } catch (err) {
-        success = false;
-        return Promise.reject(new Error(err.message));
-      }
-    } else {
-      params = {
-        Bucket: this._storage.path,
-        CopySource: this._storage.path + this._storage.delimiter + key,
-        Key: this._prefix + newName
-      };
-      try {
-        await this._s3.copyObject(params).promise();
-        await this.deleteStorageObjects([key]);
-      } catch (err) {
-        success = false;
-        return Promise.reject(new Error(err.message));
-      }
-    }
-    return success;
-  };
-
-  deleteStorageObjects = async (keys) => {
-    let deleteObjects = [];
-    let success = true;
-
-    try {
-      await asyncForEach(keys, async key => {
-        if (key.endsWith(this._storage.delimiter)) {
-          let params = {
-            Bucket: this._storage.path,
-            Prefix: key
-          };
-
-          const data = await this._s3.listObjects(params).promise();
-          data.Contents.forEach(content => {
-            deleteObjects.push({
-              Key: content.Key
-            });
-          });
-        } else {
-          deleteObjects.push({
-            Key: key
-          });
-        }
-      });
-
-      const params = {
-        Bucket: this._storage.path,
-        Delete: {
-          Objects: deleteObjects
-        }
-      };
-
-      await this._s3.deleteObjects(params).promise();
-    } catch (err) {
-      success = false;
-      return Promise.reject(new Error(err.message));
-    }
-    return success;
-  };
-
 }
 
 export default new S3Storage();

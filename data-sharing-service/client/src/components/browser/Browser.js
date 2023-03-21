@@ -41,6 +41,7 @@ import displayDate from '../../utils/displayDate';
 import roleModel from '../../utils/roleModel';
 import styles from './Browser.css';
 import {NoStorage} from '../main/App';
+import auditStorageAccessManager from '../../utils/audit-storage-access';
 
 const PAGE_SIZE = 40;
 
@@ -184,6 +185,11 @@ export default class Browser extends React.Component {
       message.error(request.error);
     } else {
       hide();
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.props.storageId,
+        path: item.path,
+        reportStorageType: 'S3'
+      });
       const a = document.createElement('a');
       a.href = request.value.url;
       a.download = item.name;
