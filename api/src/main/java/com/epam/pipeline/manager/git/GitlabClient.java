@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitFile;
@@ -47,7 +48,6 @@ import lombok.experimental.Wither;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -55,6 +55,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.UriUtils;
 import retrofit2.HttpException;
 import retrofit2.Response;
@@ -78,6 +79,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
@@ -436,9 +438,11 @@ public class GitlabClient {
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
     }
 
-    public GitlabIssue createOrUpdateIssue(final String project, final GitlabIssue issue) throws GitClientException {
+    public GitlabIssue createOrUpdateIssue(final String project,
+                                           final GitlabIssue issue,
+                                           final Map<String, String> attachments) throws GitClientException {
         issue.setDescription(formatTextWithAttachments(project,
-                issue.getAttachments(),
+                attachments,
                 issue.getDescription()));
         return issue.getId() == null ? execute(gitLabApi.createIssue(apiVersion, project, issue)) :
                 execute(gitLabApi.updateIssue(apiVersion, project, issue.getId(), issue));
@@ -448,13 +452,11 @@ public class GitlabClient {
         return execute(gitLabApi.deleteIssue(apiVersion, project, issueId));
     }
 
-    public GitlabUpload upload(final String project, final String path) throws GitClientException {
-        final File file = new File(path);
+    public GitlabUpload upload(final String project, final String name, final String content)
+            throws GitClientException {
         final MultipartBody.Part filePart = MultipartBody.Part.createFormData(
-                "file",
-                file.getName(),
-                RequestBody.create(MediaType.parse("*/*"), file)
-        );
+                "file", name,
+                RequestBody.create(MediaType.parse("multipart/form-data"), content));
         return execute(gitLabApi.upload(apiVersion, project, filePart));
     }
 
@@ -486,11 +488,11 @@ public class GitlabClient {
 
     public GitlabIssueComment addIssueComment(final String project,
                                               final Long issueId,
-                                              final GitlabIssueComment comment) throws GitClientException {
+                                              final GitlabIssueCommentRequest comment) throws GitClientException {
         comment.setBody(formatTextWithAttachments(project,
                 comment.getAttachments(),
                 comment.getBody()));
-        return execute(gitLabApi.addIssueComment(apiVersion, project, issueId, comment));
+        return execute(gitLabApi.addIssueComment(apiVersion, project, issueId, comment.toComment()));
     }
 
     public Optional<GitlabUser> findUser(final String userName) throws GitClientException {
@@ -670,9 +672,11 @@ public class GitlabClient {
         return UriUtils.encodePathSegment(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
                                                                                   DOT_CHAR_URL_ENCODING_REPLACEMENT);
     }
-    private List<String> uploadAttachments(final String project, final List<String> attachments) {
-        return attachments.stream()
-                .map(a -> upload(project, a).getMarkdown().replace("!", ""))
+    private List<String> uploadAttachments(final String project, final Map<String, String> attachments) {
+        return attachments.entrySet()
+                .stream()
+                .map(a -> upload(project, a.getKey(), a.getValue())
+                        .getMarkdown().replace("!", ""))
                 .collect(Collectors.toList());
     }
 
@@ -683,9 +687,12 @@ public class GitlabClient {
                 descriptionList.subList(1, descriptionList.size()) : Collections.emptyList());
     }
     private String formatTextWithAttachments(final String project,
-                                             final List<String> attachments,
+                                             final Map<String, String> attachments,
                                              final String text) {
-        final List<String> uploads = uploadAttachments(project, ListUtils.emptyIfNull(attachments));
+        if (CollectionUtils.isEmpty(attachments)) {
+            return text;
+        }
+        final List<String> uploads = uploadAttachments(project, attachments);
         final List<String> body = new ArrayList<>();
         body.add(text);
         body.addAll(uploads);

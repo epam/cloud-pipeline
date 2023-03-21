@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.pipeline.issue;
 import com.epam.pipeline.acl.pipeline.issue.GitlabIssueApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitlabIssue;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
@@ -116,7 +117,7 @@ public class GitlabIssueController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<GitlabIssueComment> addIssueComment(@PathVariable(value = ISSUE_ID) final Long issueId,
-                                                      @RequestBody final GitlabIssueComment comment) {
+                                                      @RequestBody final GitlabIssueCommentRequest comment) {
         return Result.success(gitlabIssueApiService.addIssueComment(issueId, comment));
     }
 }

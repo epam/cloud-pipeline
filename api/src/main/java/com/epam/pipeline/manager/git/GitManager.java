@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
@@ -627,7 +628,7 @@ public class GitManager {
             labels.add(String.format(ON_BEHALF_OF, authorizedUser));
             issue.setLabels(labels);
         }
-        return client.createOrUpdateIssue(getProjectForIssues(), issue);
+        return client.createOrUpdateIssue(getProjectForIssues(), issue, request.getAttachments());
     }
 
     public Boolean deleteIssue(final Long issueId) throws GitClientException {
@@ -655,7 +656,7 @@ public class GitManager {
     }
 
     public GitlabIssueComment addIssueComment(final Long issueId,
-                                              final GitlabIssueComment comment) throws GitClientException {
+                                              final GitlabIssueCommentRequest comment) throws GitClientException {
         GitlabClient client = getDefaultGitlabClient();
         final String authorizedUser = authManager.getCurrentUser().getUserName();
         final Optional<GitlabUser> user = client.findUser(authorizedUser);
@@ -663,7 +664,7 @@ public class GitManager {
             final GitCredentials credentials = getGitlabCredentials(null);
             client = getGitlabClient(credentials.getToken());
         } else {
-            comment.setBody(String.format("On behalf of %s: %s", authorizedUser, comment.getBody()));
+            comment.setBody(String.format("On behalf of %s \n%s", authorizedUser, comment.getBody()));
         }
         return client.addIssueComment(getProjectForIssues(), issueId, comment);
     }

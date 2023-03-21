@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.pipeline.issue;
 
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitlabIssue;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
@@ -47,8 +48,8 @@ public class GitlabIssueApiService {
         return gitManager.getIssue(issueId);
     }
 
-    public GitlabIssueComment addIssueComment(final Long  issueId,
-                                              final GitlabIssueComment  comment) {
+    public GitlabIssueComment addIssueComment(final Long issueId,
+                                              final GitlabIssueCommentRequest comment) {
         return gitManager.addIssueComment(issueId, comment);
     }
 }

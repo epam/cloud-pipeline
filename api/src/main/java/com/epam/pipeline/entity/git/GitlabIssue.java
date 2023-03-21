@@ -32,6 +32,7 @@ import java.util.List;
 @AllArgsConstructor
 public class GitlabIssue {
 
+    @JsonProperty("iid")
     private Long id;
     @JsonProperty("project_id")
     private Long projectId;
