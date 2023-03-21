@@ -639,28 +639,27 @@ public class S3Helper {
         final AmazonS3 client = getDefaultS3Client();
         checkItemExists(client, bucket, oldPath, true);
         checkItemDoesNotExist(client, bucket, newPath, true);
-        final ListObjectsRequest req = new ListObjectsRequest();
-        req.setBucketName(bucket);
+        final ListObjectsRequest req = new ListObjectsRequest()
+                .withBucketName(bucket)
+                .withPrefix(oldPath);
         ObjectListing listing = client.listObjects(req);
         boolean listingFinished = false;
         final List<String> oldKeys = new ArrayList<>();
         while (!listingFinished) {
             for (final S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
+                final String objectPath = s3ObjectSummary.getKey();
                 if (s3ObjectSummary.getSize() > COPYING_FILE_SIZE_LIMIT) {
                     throw new DataStorageException(String.format("Moving folder '%s' was aborted because " +
                                     "some of its files '%s' size exceeds the limit of %s bytes",
-                            oldPath, s3ObjectSummary.getKey(), COPYING_FILE_SIZE_LIMIT));
+                            oldPath, objectPath, COPYING_FILE_SIZE_LIMIT));
                 }
                 final String itemStorageClass = s3ObjectSummary.getStorageClass();
                 if(!STANDARD_STORAGE_CLASS.equals(itemStorageClass)) {
                     throw new DataStorageException(String.format("Moving folder '%s' was aborted because " +
                                     "some of its files '%s' located in %s storage class",
-                            oldPath, s3ObjectSummary.getKey(), itemStorageClass));
+                            oldPath, objectPath, itemStorageClass));
                 }
-                final String relativePath = s3ObjectSummary.getKey();
-                if (relativePath.startsWith(oldPath)) {
-                    oldKeys.add(relativePath);
-                }
+                oldKeys.add(objectPath);
             }
             if (listing.isTruncated()) {
                 listing = client.listNextBatchOfObjects(listing);
