@@ -34,7 +34,7 @@ RUN yum install -y curl \
 RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 && \
     python2 -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
 
-# Install "pipeline/CommonRepo" python package
+# Install "pipe" python package
 RUN if [ "$CP_API_URL" ]; then \
         mkdir -p /tmp/cp && \
         curl -s -k "$CP_API_URL"/pipe.tar.gz > /tmp/cp/pipe.tar.gz && \
@@ -48,7 +48,7 @@ RUN if [ "$CP_API_URL" ]; then \
         rm -rf /tmp/cp; \
     fi
 
-# Install NFS/SMB/Lustre clients
+# Install Lustre client
 RUN cd /tmp && \
     wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
     mkdir -p lustre-client && \
@@ -63,11 +63,13 @@ RUN curl -LO "https://dl.k8s.io/release/v1.15.4/bin/linux/amd64/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/bin
 
+# AWS CLI
 RUN cd /opt/ && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && ./aws/install \
     && rm -rf awscliv2.zip && rm -rf ./aws/
 
+# Azure CLI
 RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     sh -c 'echo -e "[azure-cli]"' >> /etc/yum.repos.d/azure-cli.repo && \
     sh -c 'echo -e "name=Azure CLI"' >> /etc/yum.repos.d/azure-cli.repo && \

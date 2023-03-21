@@ -1,16 +1,16 @@
 [
   {
     "name" : "default",
-    "description" : "Help command configuration",
+    "description" : "System Jobs launch command configuration",
     "configuration" : {
       "main_file" : "launch_system_job.sh",
       "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
       "instance_disk" : "50",
       "docker_image" : "system/system-job-launcher:latest",
       "timeout" : 0,
-      "cmd_template" : "bash ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file] $CP_SYSTEM_JOB $CP_SYSTEM_JOB_PARAMS",
+      "cmd_template" : "bash ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
       "language" : "bash",
-      "kubeServiceAccount": "${CP_PREF_SYSTEM_JOB_KUBE_SERVICE_ACCOUNT}",
+      "kubeServiceAccount": "default",
       "podAssignPolicy": {
         "selector": {
           "label": "cloud-pipeline/cp-api-srv",

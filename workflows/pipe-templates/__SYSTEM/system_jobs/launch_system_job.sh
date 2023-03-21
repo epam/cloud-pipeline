@@ -22,8 +22,7 @@ configure_cloud_credentials() {
     pipe_log_warn "Cloud provider wasn't provided or unsupported: $CLOUD_PROVIDER. Skipping credentials configuration." $INIT_TASK_NAME
     return
   fi
-
-    pipe_log_info "$CLOUD_PROVIDER credentials successfully configured." $INIT_TASK_NAME
+  pipe_log_info "$CLOUD_PROVIDER credentials successfully configured." $INIT_TASK_NAME
 }
 
 mount_system_fs() {
