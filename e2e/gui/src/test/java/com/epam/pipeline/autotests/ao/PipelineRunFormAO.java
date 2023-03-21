@@ -565,6 +565,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
         public SystemParameterPopupAO<PARENT_AO> searchSystemParameter(String parameter) {
             clear(PARAMETER_NAME);
+            sleep(2, SECONDS);
             setValue(PARAMETER_NAME, parameter);
             return this;
         }
