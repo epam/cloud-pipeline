@@ -27,7 +27,7 @@ class AbstractCluster(object):
                    max_retry_count=MAX_RETRY_COUNT):
         pass
 
-    def build_job_command(self, command, job_name, threads, logfile, work_directory):
+    def build_job_command(self, command, job_name, threads, logfile, work_directory, job_identifier):
         pass
 
 
@@ -36,6 +36,8 @@ class SGECluster(AbstractCluster):
     QACCT_CMD_TEMPLATE = "qacct -j %s"
     QACCT_RETRY_COUNT = 60
     QACCT_DELAY = 1
+    QSTAT_HEADER_LINES = 2
+    IDENTIFIER_ENV_VAR = 'CP_JOB_ID'
 
     def __init__(self):
         self._lock = RLock()
@@ -44,13 +46,13 @@ class SGECluster(AbstractCluster):
                    max_retry_count=MAX_RETRY_COUNT):
         if not command:
             raise ValueError("The job command is not set.")
-        random_number = getrandbits(64)
-        job_name = "{}-{}".format(job_name, random_number) if job_name else str(random_number)
-        print("The job with name {} will be submitted.".format(job_name))
+        if not job_name:
+            print("The job name is not set. The default one will be used.")
+        job_identifier = str(getrandbits(64))
 
-        job_logfile = utils.get_log_filename(work_directory, job_name, lock=self._lock)
-        job_command = self.build_job_command(command, job_name, threads, job_logfile, work_directory)
-        job_exit_code = self._execute_job(job_command, job_name, max_retry_count)
+        job_logfile = utils.get_log_filename(work_directory, job_name, lock=self._lock, job_identifier=job_identifier)
+        job_command = self.build_job_command(command, job_name, threads, job_logfile, work_directory, job_identifier)
+        job_exit_code = self._execute_job(job_command, job_identifier, max_retry_count)
         if common_logfile and get_output:
             utils.merge_log(common_logfile, job_logfile, lock=self._lock)
         try:
@@ -60,14 +62,14 @@ class SGECluster(AbstractCluster):
             pass
         return job_exit_code
 
-    def build_job_command(self, command, job_name, threads, logfile, work_directory):
-        job_options = "{job_name} -V -j y -R y -o {standard_output_logfile} -pe local {threads} " \
+    def build_job_command(self, command, job_name, threads, logfile, work_directory, job_identifier):
+        job_options = "{job_name} -V -v {job_identifier} -j y -R y -o {standard_output_logfile} -pe local {threads} " \
             .format(standard_output_logfile=logfile, job_name="-N " + job_name if job_name else "",
-                    threads=threads)
+                    threads=threads, job_identifier=self.IDENTIFIER_ENV_VAR + '=' + job_identifier)
         tmp_directory = utils.create_directory(work_directory, "tmp", lock=self._lock)
         bash_script = "{tmp_directory}/{job_name}.sh".format(tmp_directory=tmp_directory,
-                                                             job_name=job_name + str(getrandbits(64)) if job_name
-                                                             else str(getrandbits(64)))
+                                                             job_name=job_name + job_identifier if job_name
+                                                             else 'JOB-' + job_identifier)
         with open(bash_script, "w") as file:
             file.write("#!/usr/bin/env bash\n")
             file.write(command + "\n")
@@ -79,18 +81,81 @@ class SGECluster(AbstractCluster):
         while retry_count < max_retry_count:
             retry_count += 1
             run_job_result, run_job_error, run_job_exit_code = utils.run(job_command)
-            if run_job_exit_code != 0 and not self._is_job_in_queue(job_identifier):
+            job_id = self._find_job_id(job_identifier)
+            if run_job_exit_code != 0 and not job_id:
                 sleep(WAITING_DELAY)
                 continue
-            return self._find_job(job_identifier)
+            return self._find_job(job_id)
         raise RuntimeError('Exceeded retry count ({}) to launch job.\n'
                            'Command "{}" failed to start with exit code: {}\nstdout: {}\nstderr: {}'
                            .format(MAX_RETRY_COUNT, job_command, run_job_exit_code, run_job_result, run_job_error))
 
-    def _is_job_in_queue(self, job_identifier):
-        qacct_command = self.QSTAT_CMD_TEMPLATE % job_identifier
+    def _is_job_in_queue(self, job_id):
+        qacct_command = self.QSTAT_CMD_TEMPLATE % job_id
         _, _, exit_code = utils.run(qacct_command)
         return exit_code == 0
+
+    def _find_job_id(self, job_identifier):
+        job_ids = self._find_queued_job_ids()
+        if not job_ids:
+            return None
+        for job_id in job_ids:
+            qstat_command = self.QSTAT_CMD_TEMPLATE % job_id
+            qstat_output, _, exit_code = utils.run(qstat_command)
+            if exit_code == 0:
+                return self._find_job_number_by_identifier(qstat_output, job_identifier)
+        return None
+
+    def _find_queued_job_ids(self):
+        output, _, exit_code = utils.run('qstat')
+        if exit_code != 0:
+            return None
+        if not output:
+            return None
+        output_lines = output.splitlines()
+        if len(output_lines) < self.QSTAT_HEADER_LINES:
+            return None
+        ids = []
+        for line in output_lines[self.QSTAT_HEADER_LINES:]:
+            line = line.strip()
+            parts = line.split()
+            if len(parts) > 1:
+                ids.append(parts[0])
+        return ids if len(ids) > 0 else None
+
+    def _find_job_number_by_identifier(self, qstat_output, job_identifier):
+        env_list = self._parse_env_vars(qstat_output)
+        if not env_list:
+            return None
+        for env_var in env_list.split(','):
+            env_var = env_var.strip()
+            if env_var == '{}={}'.format(self.IDENTIFIER_ENV_VAR, job_identifier):
+                return self._parse_job_number(qstat_output)
+        return None
+
+    @staticmethod
+    def _parse_env_vars(qstat_output):
+        if not qstat_output:
+            return None
+        for line in qstat_output.splitlines():
+            line = line.strip()
+            if line.startswith('env_list:'):
+                line = line[len('env_list:'):]
+                return line.strip()
+        return None
+
+    @staticmethod
+    def _parse_job_number(qstat_output):
+        if not qstat_output:
+            return None
+        for line in qstat_output.splitlines():
+            line = line.strip()
+            if line.startswith('job_number:'):
+                parts = line.split()
+                if len(parts) != 2:
+                    return None
+                return parts[1]
+        return None
 
     def _find_job(self, job_identifier):
         while True:
