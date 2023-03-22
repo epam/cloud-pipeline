@@ -221,7 +221,7 @@
   vertical-align: top;
 }
 
-.nested-run {
+.run-link {
   margin-right: 5px;
   display: inline-block;
   text-decoration: none;
@@ -234,26 +234,26 @@
   padding: 0 2px;
 }
 
-.nested-run > div,
-.nested-run > i,
-.nested-run > span,
-.nested-run > b {
+.run-link > div,
+.run-link > i,
+.run-link > span,
+.run-link > b {
   margin-right: 2px;
 }
 
-.nested-run > span.details {
+.run-link > span.details {
   margin-right: 0;
 }
 
-.nested-run > span.details::after {
+.run-link > span.details::after {
   content: ', ';
 }
 
-.nested-run > span.details:last-child::after {
+.run-link > span.details:last-child::after {
   content: none;
 }
 
-.nested-run:hover .run-id {
+.run-link:hover .run-id {
   text-decoration: underline;
 }
 

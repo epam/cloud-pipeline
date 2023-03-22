@@ -1253,6 +1253,44 @@ class Logs extends localization.LocalizedReactComponent {
     }
   };
 
+  renderRestartedRuns = () => {
+    if (!this.props.run.value.restartedRuns) {
+      return null;
+    }
+    const {id, restartedRuns} = this.props.run.value;
+    const parentRunId = restartedRuns[0].parentRunId;
+    const isParent = id === parentRunId;
+    const title = isParent
+      ? `Restarted run${restartedRuns.length > 1 ? 's' : ''}`
+      : 'Initial run';
+    const runLink = (id) => (
+      <Link
+        key={id}
+        to={`/run/${id}`}
+        className={
+          classNames(
+            styles.runLink,
+            'cp-run-link'
+          )
+        }
+      >
+        <b className={styles.runId}>{id}</b>
+      </Link>
+    );
+    return (
+      <tr>
+        <th>
+          {title}:
+        </th>
+        <td>
+          {isParent
+            ? (restartedRuns.map((run) => runLink(run.restartedRunId)))
+            : runLink(parentRunId)}
+        </td>
+      </tr>
+    );
+  }
+
   renderNestedRuns = () => {
     if (!this.props.nestedRuns.loaded ||
       !this.props.nestedRuns.value ||
@@ -1293,8 +1331,8 @@ class Logs extends localization.LocalizedReactComponent {
           key={index}
           className={
             classNames(
-              styles.nestedRun,
-              'cp-run-nested-run-link'
+              styles.runLink,
+              'cp-run-link'
             )
           }
           to={`/run/${run.id}`}
@@ -1713,6 +1751,7 @@ class Logs extends localization.LocalizedReactComponent {
               {scheduledTime}
               {startedTime}
               {finishTime}
+              {this.renderRestartedRuns()}
               {price}
               {this.renderNestedRuns()}
               {this.renderRunSchedule(instance, this.props.run.value)}

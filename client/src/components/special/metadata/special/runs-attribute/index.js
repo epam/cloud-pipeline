@@ -79,7 +79,7 @@ function RunsAttribute (
           classNames(
             className,
             styles.nestedRun,
-            'cp-run-nested-run-link'
+            'cp-run-link'
           )
         }
         to={`/run/${runId}`}

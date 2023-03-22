@@ -1997,16 +1997,16 @@ export default `
   background-color: @card-header-background;
   border: 1px solid @card-border-color;
 }
-@THEME .cp-run-nested-run-link,
-@THEME .cp-run-nested-run-link:active,
-@THEME .cp-run-nested-run-link:focus,
-@THEME .cp-run-nested-run-link:visited {
+@THEME .cp-run-link,
+@THEME .cp-run-link:active,
+@THEME .cp-run-link:focus,
+@THEME .cp-run-link:visited {
   color: @application-color-accent;
 }
-@THEME .ant-tooltip-inner .cp-run-nested-run-link,
-@THEME .ant-tooltip-inner .cp-run-nested-run-link:active,
-@THEME .ant-tooltip-inner .cp-run-nested-run-link:focus,
-@THEME .ant-tooltip-inner .cp-run-nested-run-link:visited {
+@THEME .ant-tooltip-inner .cp-run-link,
+@THEME .ant-tooltip-inner .cp-run-link:active,
+@THEME .ant-tooltip-inner .cp-run-link:focus,
+@THEME .ant-tooltip-inner .cp-run-link:visited {
   color: @application-color-tooltip;
 }
 @THEME .cp-wdl-task[data-type=VisualStep] rect,
