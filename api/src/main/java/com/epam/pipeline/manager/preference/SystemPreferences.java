@@ -620,6 +620,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_TOOL_ENABLED = new ObjectPreference<>(
             "ui.run.maintenance.tool.enabled", null, new TypeReference<Map<String, Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final ObjectPreference<Map<String, Object>> UI_RUNS_COUNT_FILTER = new ObjectPreference<>(
+            "ui.runs.counter.filter", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
