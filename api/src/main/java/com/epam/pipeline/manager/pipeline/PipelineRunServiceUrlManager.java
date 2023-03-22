@@ -17,12 +17,13 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -31,7 +32,6 @@ import org.springframework.util.Assert;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Service
 @Slf4j
@@ -39,35 +39,36 @@ import java.util.stream.StreamSupport;
 public class PipelineRunServiceUrlManager {
 
     private final PreferenceManager preferenceManager;
-    private final PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+    private final RunServiceUrlDao runServiceUrlDao;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRunServiceUrl update(final Long runId, final String region,
                                         final PipelineRunServiceUrlVO serviceUrl) {
         final String edgeRegion = getRegion(region);
-        final PipelineRunServiceUrl pipelineRunServiceUrl = pipelineRunServiceUrlRepository
+        final PipelineRunServiceUrl pipelineRunServiceUrl = runServiceUrlDao
                 .findByPipelineRunIdAndRegion(runId, edgeRegion)
                 .map(existingServiceUrl -> {
                     existingServiceUrl.setServiceUrl(serviceUrl.getServiceUrl());
                     return existingServiceUrl;
                 })
                 .orElse(convertPipelineRunServiceUrl(runId, edgeRegion, serviceUrl));
-        pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl);
+        runServiceUrlDao.save(pipelineRunServiceUrl);
         return pipelineRunServiceUrl;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void clear(final Long runId) {
-        pipelineRunServiceUrlRepository.deleteByPipelineRunId(runId);
+        runServiceUrlDao.deleteByPipelineRunId(runId);
     }
 
     public Map<String, String> loadByRunId(final Long runId) {
-        return StreamSupport.stream(pipelineRunServiceUrlRepository.findByPipelineRunId(runId).spliterator(), false)
+        return ListUtils.emptyIfNull(runServiceUrlDao.findByRunId(runId))
+                .stream()
                 .collect(Collectors.toMap(PipelineRunServiceUrl::getRegion, PipelineRunServiceUrl::getServiceUrl));
     }
 
     public String loadByRunIdAndRegion(final Long runId, final String region) {
-        return pipelineRunServiceUrlRepository.findByPipelineRunIdAndRegion(runId, region)
+        return runServiceUrlDao.findByPipelineRunIdAndRegion(runId, region)
                 .map(PipelineRunServiceUrl::getServiceUrl)
                 .orElse(null);
     }
