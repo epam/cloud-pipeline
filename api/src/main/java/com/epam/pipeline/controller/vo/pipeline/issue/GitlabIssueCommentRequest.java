@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,20 @@
 
 package com.epam.pipeline.controller.vo.pipeline.issue;
 
-import com.epam.pipeline.entity.git.GitlabIssue;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
 import lombok.Data;
 
-import java.util.List;
 import java.util.Map;
 
 @Data
-public class GitlabIssueRequest {
+public class GitlabIssueCommentRequest {
 
-    @JsonProperty("iid")
-    private Long id;
-    private String title;
-    private String description;
+    private String body;
     private Map<String, String> attachments;
-    private List<String> labels;
 
-    public GitlabIssue toIssue() {
-        final GitlabIssue gitlabIssue = new GitlabIssue();
-        gitlabIssue.setId(id);
-        gitlabIssue.setTitle(title);
-        gitlabIssue.setDescription(description);
-        gitlabIssue.setLabels(labels);
-        return gitlabIssue;
+    public GitlabIssueComment toComment() {
+        final GitlabIssueComment comment = new GitlabIssueComment();
+        comment.setBody(body);
+        return comment;
     }
 }
