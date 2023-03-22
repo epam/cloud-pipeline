@@ -18,6 +18,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
@@ -139,7 +140,7 @@ public class TestApplication {
     public CloudProfileCredentialsManager cloudProfileCredentialsManager;
 
     @MockBean
-    public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+    public RunServiceUrlDao runServiceUrlDao;
 
     @MockBean
     public LdapManager ldapManager;
