@@ -69,7 +69,7 @@ import ApplicationInfo from '../../models/utils/application-info';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
-const counter = new RunCount();
+const counter = new RunCount(preferences);
 const localization = AppLocalization.localization;
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
 const myIssues = new MyIssues();

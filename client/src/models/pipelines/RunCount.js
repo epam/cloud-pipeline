@@ -65,21 +65,26 @@ export default class RunCount extends Remote {
     credentials: 'include',
     method: 'POST',
     body: JSON.stringify({
-      statuses: [
-        'RUNNING',
-        'PAUSED',
-        'PAUSING',
-        'RESUMING'
-      ],
-      userModified: false,
+      statuses: this.statuses || ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'],
+      userModified: !this.onlyMasterJobs,
       eagerGrouping: false
     })
   };
 
   url = '/run/count';
 
-  constructor () {
+  constructor (preferences) {
     super();
+    this.preferences = preferences;
+    this.getRunPreferences();
     continuousFetch({request: this});
+  }
+
+  getRunPreferences = () => {
+    const runPreferences = this.preferences.getPreferenceValue('') || {};
+    this.statuses = (runPreferences.statuses && runPreferences.statuses.length)
+      ? runPreferences.statuses : null;
+    this.onlyMasterJobs = runPreferences.hasOwnProperty('onlyMasterJobs')
+      ? runPreferences.onlyMasterJobs : true;
   }
 }
