@@ -103,6 +103,12 @@ export function ownerArraysAreEqual (array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
+export function tagsAreEqual (tagsA, tagsB) {
+  const a = Object.entries(tagsA || {}).map(([key, value]) => `${key}=${value}`);
+  const b = Object.entries(tagsB || {}).map(([key, value]) => `${key}=${value}`);
+  return simpleArraysAreEqual(a, b);
+}
+
 export function filtersAreEqual (filter1, filter2) {
   const {
     statuses: statusesA,
@@ -114,7 +120,8 @@ export function filtersAreEqual (filter1, filter2) {
     endDateTo: endDateToA,
     owners: ownersA,
     projectIds: projectIdsA,
-    onlyMasterJobs: onlyMasterJobsA = true
+    onlyMasterJobs: onlyMasterJobsA = true,
+    tags: tagsA = {}
   } = filter1 || {};
   const {
     statuses: statusesB,
@@ -126,7 +133,8 @@ export function filtersAreEqual (filter1, filter2) {
     endDateTo: endDateToB,
     owners: ownersB,
     projectIds: projectIdsB,
-    onlyMasterJobs: onlyMasterJobsB = true
+    onlyMasterJobs: onlyMasterJobsB = true,
+    tags: tagsB = {}
   } = filter2 || {};
   return statusesArraysAreEqual(statusesA, statusesB) &&
     parentIdsAreEqual(parentIdA, parentIdB) &&
@@ -137,7 +145,8 @@ export function filtersAreEqual (filter1, filter2) {
     startDatesAreEqual(startDateFromA, startDateFromB) &&
     endDatesAreEqual(endDateToA, endDateToB) &&
     ownerArraysAreEqual(ownersA, ownersB) &&
-    onlyMasterJobsA === onlyMasterJobsB;
+    onlyMasterJobsA === onlyMasterJobsB &&
+    tagsAreEqual(tagsA, tagsB);
 }
 
 export function getFiltersPayload (filters) {

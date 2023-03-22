@@ -697,6 +697,25 @@ class PreferencesLoad extends Remote {
     return (value || '').toLowerCase() !== 'false';
   }
 
+  @computed
+  get systemJobsPipelineId () {
+    const value = this.getPreferenceValue('system.jobs.pipeline.id');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get systemJobsOutputPipelineTask () {
+    return this.getPreferenceValue('system.jobs.output.pipeline.task') || 'SystemJob';
+  }
+
+  @computed
+  get systemJobsScriptsLocation () {
+    return this.getPreferenceValue('system.jobs.scripts.location') || 'src/system-jobs';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
