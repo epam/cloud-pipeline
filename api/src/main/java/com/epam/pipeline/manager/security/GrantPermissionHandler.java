@@ -19,9 +19,10 @@ package com.epam.pipeline.manager.security;
 import com.epam.pipeline.app.CacheConfiguration;
 import com.epam.pipeline.entity.security.acl.AclEntitySummary;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.stereotype.Service;
@@ -38,11 +39,13 @@ import java.util.Optional;
  */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class GrantPermissionHandler {
 
-    private final JdbcMutableAclServiceImpl aclService;
-    private final CacheManager cacheManager;
+    @Autowired
+    private JdbcMutableAclServiceImpl aclService;
+    @Autowired
+    @Qualifier("aclCacheManager")
+    private CacheManager cacheManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteGrantedAuthority(final String name, final boolean isPrincipal) {
