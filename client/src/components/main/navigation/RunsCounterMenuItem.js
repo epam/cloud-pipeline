@@ -40,7 +40,7 @@ export default class RunsCounterMenuItem extends React.Component {
               this.props.className,
               'cp-runs-menu-item',
               {
-                active: this.props.counter && this.props.counter.value > 0
+                active: this.props.counter && this.props.counter.runsCount > 0
               }
             )
           }
@@ -51,9 +51,9 @@ export default class RunsCounterMenuItem extends React.Component {
           />
           {
             this.props.counter &&
-            this.props.counter.value > 0 &&
+            this.props.counter.runsCount > 0 &&
             <span>
-              {this.props.counter.value}
+              {this.props.counter.runsCount}
             </span>
           }
         </Button>
