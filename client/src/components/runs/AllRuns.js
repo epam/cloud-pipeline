@@ -57,6 +57,9 @@ class AllRuns extends React.Component {
   }
 
   componentWillUnmount () {
+    if (this.allRunsCounter && typeof this.allRunsCounter.destroy === 'function') {
+      this.allRunsCounter.destroy();
+    }
     this.stopCounter();
   }
 
