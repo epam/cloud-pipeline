@@ -67,6 +67,9 @@ public class CacheConfiguration {
     @Value("${redis.use.optimized.parsing:false}")
     private boolean useOptimizedParsing;
 
+    @Value("${redis.expose.connection:false}")
+    private boolean exposeConnection;
+
     @Bean
     @Primary
     public CacheManager cacheManager(final Optional<RedisCacheManager> redisCacheManagerPref) {
@@ -141,6 +144,7 @@ public class CacheConfiguration {
             jsonMapper.registerModule(module);
             redisTemplate.setDefaultSerializer(new JsonRedisSerializer(jsonMapper));
         }
+        redisTemplate.setExposeConnection(exposeConnection);
         return redisTemplate;
     }
 }
