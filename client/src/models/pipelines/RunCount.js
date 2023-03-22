@@ -80,11 +80,17 @@ export default class RunCount extends Remote {
     continuousFetch({request: this});
   }
 
-  getRunPreferences = () => {
-    const runPreferences = this.preferences.getPreferenceValue('') || {};
+  getRunPreferences = async () => {
+    await this.fetchIfNeededOrWait();
+    const runPreferencesValue = this.preferences.getPreferenceValue('');
+    const runPreferences = JSON.parse(runPreferencesValue) || {};
     this.statuses = (runPreferences.statuses && runPreferences.statuses.length)
       ? runPreferences.statuses : null;
     this.onlyMasterJobs = runPreferences.hasOwnProperty('onlyMasterJobs')
       ? runPreferences.onlyMasterJobs : true;
+  }
+
+  fetchIfNeededOrWait () {
+    return Promise.resolve(this.preferences.fetchIfNeededOrWait());
   }
 }
