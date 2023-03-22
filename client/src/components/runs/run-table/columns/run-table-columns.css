@@ -100,7 +100,7 @@ td.run-row {
 
   .run-row,
   .run-row-name {
-    width: 100px;
+    min-width: 100px;
     white-space: nowrap;
   }
 }

@@ -44,6 +44,14 @@ const PAGE_SIZE = 50;
 const INSTANT_SEARCH_DELAY = 1000;
 const PREVIEW_AVAILABLE_DELAY = 500;
 
+class SearchDialogBlocker {
+  @observable blocked = false;
+}
+
+const searchDialogBlocker = new SearchDialogBlocker();
+
+export {searchDialogBlocker};
+
 @localization.localizedComponent
 @inject('searchEngine', 'preferences', 'pipelines')
 @observer
@@ -875,7 +883,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   };
 
   handleKeyPress = (e) => {
-    if (this.props.blockInput) {
+    if (this.props.blockInput || searchDialogBlocker.blocked) {
       return;
     }
     const modals = Array.from(document.getElementsByClassName('ant-modal-mask'));

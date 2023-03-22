@@ -64,6 +64,7 @@ import CurrentUserAttributes, {
 import CloudPipelineThemes from '../../themes';
 import multiZoneManager from '../../utils/multizone';
 import ApplicationInfo from '../../models/utils/application-info';
+import SystemJobs from '../../utils/system-jobs';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -107,6 +108,8 @@ const applicationInfo = new ApplicationInfo();
 (() => { return applicationInfo.fetchIfNeededOrWait(); })();
 
 const themes = new CloudPipelineThemes();
+
+const systemJobs = new SystemJobs();
 
 const Root = () =>
   <Provider
@@ -156,9 +159,10 @@ const Root = () =>
       userMetadataKeys,
       cloudCredentialProfiles,
       [HiddenObjects.injectionName]: hiddenObjects,
-      themes,
       multiZoneManager,
-      applicationInfo
+      themes,
+      applicationInfo,
+      systemJobs
     }}>
     <AppRouter />
   </Provider>;

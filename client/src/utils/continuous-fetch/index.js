@@ -107,7 +107,7 @@ function wrapRequestFetch (request) {
 
 /**
  * @param {ContinuousFetchOptions} options
- * @returns {{resume: function, stop: function, reset: function, pause: function, fetch: function}}
+ * @returns {{resume: function, stop: function, reset: function, pause: function, fetch: function, setContinuous: function}}
  */
 export default function continuousFetch (options = {}) {
   const {
@@ -123,8 +123,9 @@ export default function continuousFetch (options = {}) {
     afterInvoke = NOOP,
     verbose = false,
     identifier,
-    continuous = true
+    continuous: continuousOptions = true
   } = options;
+  let continuous = continuousOptions;
   if (!call) {
     return {
       stop: NOOP,
@@ -181,9 +182,9 @@ export default function continuousFetch (options = {}) {
     }
     cancelToken = setTimeout(() => fn(), interval);
   };
-  const doSingleFetch = () => {
+  const doSingleFetch = (proceedIfStopped = false) => {
     clearCurrentToken();
-    if (stopRequested) {
+    if (stopRequested && !proceedIfStopped) {
       return;
     }
     if (verbose) {
@@ -249,11 +250,22 @@ export default function continuousFetch (options = {}) {
   };
   stop.verbose = verbose;
   register(identifier, stop);
+  const setContinuous = (isContinuous) => {
+    if (isContinuous !== continuous) {
+      continuous = isContinuous;
+      if (isContinuous) {
+        doSingleFetch();
+      } else {
+        clearCurrentToken();
+      }
+    }
+  };
   return {
     stop,
     reset,
     pause,
     resume,
-    fetch: doSingleFetch
+    fetch: () => doSingleFetch(true),
+    setContinuous
   };
 }

@@ -14,46 +14,14 @@
  *  limitations under the License.
  */
 
-.table > div > div {
-  filter: none !important;
-}
+const ESCAPE_CHARACTERS = ['.', '-', '*', '?', '^', '$', '(', ')', '[', ']', '{', '}'];
 
-.table th {
-  white-space: nowrap;
-}
-
-.run {
-  cursor: pointer;
-}
-
-.pagination {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.custom-table {
-  position: relative;
-}
-
-.loading-indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  display: none;
-}
-
-.custom-table.pending .custom-table-row {
-  opacity: 0.5;
-}
-
-.custom-table.pending .loading-indicator {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
+export {ESCAPE_CHARACTERS};
+export default function escapeRegExp (string, characters = ESCAPE_CHARACTERS) {
+  let result = string;
+  characters.forEach(character => {
+    result = result
+      .replace(new RegExp('\\' + character, 'g'), `\\${character}`);
+  });
+  return result;
 }

@@ -141,9 +141,13 @@ export default {
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@card-background-color-not-faded': 'fade(@card-background-color, 100%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': 'yellow',
+    '@search-highlight-text-background-color': '#ffff00',
+    '@search-highlight-text-inactive-background-color': 'fadeout(#ffff00, 50%)',
     '@background-image': 'none',
     '@navigation-background-image': 'none',
-    '@logo-image': "@static_resource('logo.png')"
+    '@logo-image': "@static_resource('logo.png')",
+    '@application-console-background-color': '#222222',
+    '@application-console-color': '#ececec',
+    '@application-console-color-details': '#aaaaaa'
   }
 };

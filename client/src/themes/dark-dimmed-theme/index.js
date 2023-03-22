@@ -122,6 +122,10 @@ export default {
     '@btn-disabled-background-color': 'lighten(@panel-background-color, 4%)',
     '@code-background-color': 'lighten(@card-background-color, 10%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated'
+    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
+    '@search-highlight-text-inactive-background-color': 'fadeout(@navigation-panel-color-impersonated, 50%)',
+    '@application-console-background-color': '@card-background-color',
+    '@application-console-color': '@application-color',
+    '@application-console-color-details': '@application-color-faded'
   }
 };

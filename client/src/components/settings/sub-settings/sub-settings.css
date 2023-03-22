@@ -21,10 +21,23 @@
   overflow: auto;
 }
 
-.list {
+.list-container {
   height: 100%;
   overflow: auto;
   min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding-right: 5px;
+}
+
+.list-search {
+  margin-bottom: 5px;
+  padding: 0 2px;
+}
+
+.list {
+  flex: 1;
+  overflow: auto;
 }
 
 .content {
