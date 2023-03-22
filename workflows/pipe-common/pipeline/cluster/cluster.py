@@ -23,6 +23,7 @@ WAITING_DELAY = 3
 
 
 class AbstractCluster(object):
+
     def submit_job(self, command, job_name, threads, common_logfile, work_directory, get_output=True,
                    max_retry_count=MAX_RETRY_COUNT):
         pass
@@ -34,8 +35,6 @@ class AbstractCluster(object):
 class SGECluster(AbstractCluster):
     QSTAT_CMD_TEMPLATE = "qstat -j %s"
     QACCT_CMD_TEMPLATE = "qacct -j %s"
-    QACCT_RETRY_COUNT = 60
-    QACCT_DELAY = 1
     QSTAT_HEADER_LINES = 2
     IDENTIFIER_ENV_VAR = 'CP_JOB_ID'
 
@@ -81,21 +80,16 @@ class SGECluster(AbstractCluster):
         while retry_count < max_retry_count:
             retry_count += 1
             run_job_result, run_job_error, run_job_exit_code = utils.run(job_command)
-            job_id = self._find_job_id(job_identifier)
-            if run_job_exit_code != 0 and not job_id:
-                sleep(WAITING_DELAY)
+            sleep(WAITING_DELAY)
+            job_id = self._find_job_in_queue(job_identifier)
+            if not job_id:
                 continue
             return self._find_job(job_id)
         raise RuntimeError('Exceeded retry count ({}) to launch job.\n'
                            'Command "{}" failed to start with exit code: {}\nstdout: {}\nstderr: {}'
                            .format(MAX_RETRY_COUNT, job_command, run_job_exit_code, run_job_result, run_job_error))
 
-    def _is_job_in_queue(self, job_id):
-        qacct_command = self.QSTAT_CMD_TEMPLATE % job_id
-        _, _, exit_code = utils.run(qacct_command)
-        return exit_code == 0
-
-    def _find_job_id(self, job_identifier):
+    def _find_job_in_queue(self, job_identifier):
         job_ids = self._find_queued_job_ids()
         if not job_ids:
             return None
@@ -103,8 +97,23 @@ class SGECluster(AbstractCluster):
             qstat_command = self.QSTAT_CMD_TEMPLATE % job_id
             qstat_output, _, exit_code = utils.run(qstat_command)
             if exit_code == 0:
-                return self._find_job_number_by_identifier(qstat_output, job_identifier)
+                job_id = self._find_job_number_by_identifier(qstat_output, job_identifier)
+                if job_id:
+                    return job_id
         return None
+
+    def _find_job(self, job_identifier):
+        while True:
+            sleep(WAITING_DELAY)
+            qacct_command = self.QACCT_CMD_TEMPLATE % job_identifier
+            qacct_output, _, exit_code = utils.run(qacct_command)
+            if exit_code == 0:
+                break
+        job_exit_status = self._parse_job_exit_status(qacct_output)
+        if job_exit_status is None:
+            raise RuntimeError("Failed to determine job exit code for job '{}'".format(job_identifier))
+        print("Job {} finished with exit code {}".format(job_identifier, job_exit_status))
+        return job_exit_status
 
     def _find_queued_job_ids(self):
         output, _, exit_code = utils.run('qstat')
@@ -156,29 +165,6 @@ class SGECluster(AbstractCluster):
                     return None
                 return parts[1]
         return None
-
-    def _find_job(self, job_identifier):
-        while True:
-            sleep(WAITING_DELAY)
-            if not self._is_job_in_queue(job_identifier):
-                break
-        job_exit_status = self._find_job_info(job_identifier)
-        if job_exit_status is None:
-            raise RuntimeError("Failed to determine job exit code for job '{}'".format(job_identifier))
-        print("Job {} finished with exit code {}".format(job_identifier, job_exit_status))
-        return job_exit_status
-
-    def _find_job_info(self, job_identifier):
-        retry_count = 0
-        while retry_count < self.QACCT_RETRY_COUNT:
-            retry_count += 1
-            qacct_command = self.QACCT_CMD_TEMPLATE % job_identifier
-            output, _, exit_code = utils.run(qacct_command)
-            if exit_code != 0:
-                sleep(self.QACCT_DELAY)
-                continue
-            return self._parse_job_exit_status(output)
-        raise RuntimeError('Exceeded retry count ({}) to get job info.'.format(self.QACCT_RETRY_COUNT))
 
     @staticmethod
     def _parse_job_exit_status(output):
