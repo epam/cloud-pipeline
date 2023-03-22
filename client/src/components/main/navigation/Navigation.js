@@ -76,7 +76,7 @@ export default class Navigation extends React.Component {
   get runsCount () {
     const {counter} = this.props;
     if (counter && counter.loaded) {
-      return counter.value || 0;
+      return counter.runsCount || 0;
     }
     return 0;
   }

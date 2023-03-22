@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {observable} from 'mobx';
 import {Card, Col, Menu, Row} from 'antd';
 import classNames from 'classnames';
 import RunTable, {Columns} from './run-table';
@@ -24,6 +25,8 @@ import AdaptedLink from '../special/AdaptedLink';
 import roleModel from '../../utils/roleModel';
 import parseQueryParameters from '../../utils/queryParameters';
 import LoadingView from '../special/LoadingView';
+import {RunCountDefault} from '../../models/pipelines/RunCount';
+import continuousFetch from '../../utils/continuous-fetch';
 import styles from './AllRuns.css';
 
 const getStatusForServer = active => active
@@ -46,6 +49,43 @@ const getStatusForServer = active => active
 })
 @observer
 class AllRuns extends React.Component {
+  @observable allRunsCounter;
+
+  componentDidMount () {
+    this.allRunsCounter = new RunCountDefault(this.props.counter);
+    this.startCounter();
+  }
+
+  componentWillUnmount () {
+    this.stopCounter();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.active !== this.props.active) {
+      this.startCounter();
+    }
+  }
+
+  startCounter = () => {
+    this.stopCounter();
+    const {
+      active
+    } = this.props;
+    if (active) {
+      const {
+        stop
+      } = continuousFetch({request: this.allRunsCounter});
+      this.stop = stop;
+    }
+  };
+
+  stopCounter = () => {
+    if (typeof this.stop === 'function') {
+      this.stop();
+    }
+    this.stop = undefined;
+  };
+
   navigateToActiveRuns = (my = false) => {
     SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
     SessionStorageWrapper.navigateToActiveRuns(this.props.router);
@@ -54,8 +94,7 @@ class AllRuns extends React.Component {
   renderOwnersSwitch = (total) => {
     const {
       active,
-      all,
-      counter
+      all
     } = this.props;
     if (
       !active
@@ -74,8 +113,11 @@ class AllRuns extends React.Component {
       );
     }
     let totalInfo = '';
-    if (total > 0 && total < counter.value) {
-      totalInfo = ` (${total} out of ${counter.value})`;
+    const allRunsCount = this.allRunsCounter
+      ? this.allRunsCounter.runsCount
+      : 0;
+    if (total > 0 && total < allRunsCount) {
+      totalInfo = ` (${total} out of ${allRunsCount})`;
     }
     return (
       <Row style={{marginBottom: 5, padding: 2}}>
@@ -125,32 +167,11 @@ class AllRuns extends React.Component {
         beforeTable={({total}) => this.renderOwnersSwitch(total)}
       />
     );
-    // return (
-    //   <RunTable
-    //     onInitialized={this.initializeRunTable}
-    //     useFilter
-    //     loading={pending}
-    //     dataSource={runs}
-    //     handleTableChange={this.handleTableChange}
-    //     statuses={getStatusForServer(active)}
-    //     pipelines={this.pipelines}
-    //     pagination={{
-    //       total: total,
-    //       pageSize,
-    //       current: page
-    //     }}
-    //     ownersDisabled={active && !all}
-    //     reloadTable={this.fetchPage}
-    //     launchPipeline={this.launchPipeline}
-    //     onSelect={this.onSelectRun}
-    //   />
-    // );
   };
 
   render () {
     const {
-      active,
-      counter
+      active
     } = this.props;
     return (
       <Card
@@ -177,7 +198,12 @@ class AllRuns extends React.Component {
                     id="active-runs-button"
                     to={SessionStorageWrapper.getActiveRunsLink()}
                     location={location}>Active Runs
-                    {counter.value ? ` (${counter.value})` : ''}</AdaptedLink>
+                    {
+                      this.allRunsCounter
+                        ? ` (${this.allRunsCounter.runsCount})`
+                        : ''
+                    }
+                  </AdaptedLink>
                 </Menu.Item>
                 <Menu.Item key="completed">
                   <AdaptedLink
