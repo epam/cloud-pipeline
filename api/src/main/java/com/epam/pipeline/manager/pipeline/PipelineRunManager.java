@@ -750,8 +750,10 @@ public class PipelineRunManager {
     private boolean showOnlyActiveChildRuns(final PipelineRun run) {
         return ListUtils.emptyIfNull(run.getPipelineRunParameters())
                 .stream()
-                .anyMatch(parameter -> SHOW_ACTIVE_WORKERS_ONLY_PARAMETER.equals(parameter.getName())
-                        && Boolean.parseBoolean(parameter.getValue()));
+                .filter(parameter -> SHOW_ACTIVE_WORKERS_ONLY_PARAMETER.equals(parameter.getName()))
+                .findAny()
+                .map(parameter -> Boolean.parseBoolean(parameter.getValue()))
+                .orElse(true);
     }
 
     private List<PipelineRun> getActiveChildRuns(final PipelineRun run) {
