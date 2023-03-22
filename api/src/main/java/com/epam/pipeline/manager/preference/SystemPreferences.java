@@ -733,6 +733,9 @@ public class SystemPreferences {
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
     public static final StringPreference UI_STORAGE_DOWNLOAD_ATTRIBUTE = new StringPreference(
             "ui.storage.download.attribute", "download_allowed_roles", UI_GROUP, pass, true);
+    public static final ObjectPreference<Map<String, Object>> UI_RUNS_COUNT_FILTER = new ObjectPreference<>(
+            "ui.runs.counter.filter", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
