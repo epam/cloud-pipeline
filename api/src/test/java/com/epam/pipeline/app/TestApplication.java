@@ -18,6 +18,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
@@ -38,7 +39,6 @@ import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRu
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -144,7 +144,7 @@ public class TestApplication {
     public CloudProfileCredentialsManager cloudProfileCredentialsManager;
 
     @MockBean
-    public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+    public RunServiceUrlDao runServiceUrlDao;
 
     @MockBean
     public LdapManager ldapManager;
