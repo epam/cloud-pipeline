@@ -16,10 +16,9 @@ import os
 import subprocess
 
 
-def get_log_filename(work_directory, job_name, lock, job_identifier):
+def get_log_filename(work_directory, job_name, lock):
     logs_directory = create_directory(work_directory, "logs", lock=lock)
-    return os.path.join(logs_directory, "{job_name}_{number}_out.log"
-                        .format(number=job_identifier, job_name=job_name if job_name else job_identifier))
+    return os.path.join(logs_directory, "{job_name}_out.log".format(job_name=job_name))
 
 
 def merge_log(common_logfile, job_logfile, lock):
