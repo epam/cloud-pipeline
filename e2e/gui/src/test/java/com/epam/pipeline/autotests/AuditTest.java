@@ -127,7 +127,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                     shell.waitUntilTextAppears(getLastRunId());
                     for (String comm : commands) {
                          shell.execute(comm)
-                                .sleep(2, SECONDS)
+                                .sleep(5, SECONDS)
                                 .assertPageAfterCommandContainsStrings(comm, rootHost);
                     }
                     shell.close();
@@ -178,7 +178,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                     shell.waitUntilTextAppears(getLastRunId());
                     for (String comm : commands) {
                         shell.execute(comm)
-                                .sleep(2, SECONDS)
+                                .sleep(5, SECONDS)
                                 .assertPageAfterCommandContainsStrings(comm, rootHost);
                     }
                     shell.close();
