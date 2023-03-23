@@ -46,8 +46,9 @@ class SGECluster(AbstractCluster):
         if not job_name:
             print("The job name is not set. The default one will be used.")
         random_number = str(getrandbits(64))
-        job_name = "{}-{}".format(job_name, random_number) if job_name else random_number
-        print("The job with name {} will be submitted.".format(job_name))
+        job_prefix = job_name or "job"
+        job_name = "{}-{}".format(job_prefix, random_number)
+        print("Submitted the job with name {}.".format(job_name))
 
         job_logfile = utils.get_log_filename(work_directory, job_name, lock=self._lock)
         job_command = self.build_job_command(command, job_name, threads, job_logfile, work_directory)
@@ -102,7 +103,7 @@ class SGECluster(AbstractCluster):
         job_exit_status = self._parse_job_exit_status(qacct_output)
         if job_exit_status is None:
             raise RuntimeError("Failed to determine job exit code for job '{}'".format(job_identifier))
-        print("Job {} finished with exit code {}".format(job_identifier, job_exit_status))
+        print("Job {} finished with exit code {}.".format(job_identifier, job_exit_status))
         return job_exit_status
 
     @staticmethod
