@@ -17,13 +17,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Button, Icon, Popover, Tooltip} from 'antd';
+import {Button, Icon, message, Popover, Tooltip} from 'antd';
 import Markdown from '../../../special/markdown';
 import {HcsImageAnalysisJobsModal} from '../../../special/hcs-image/hcs-image-analysis-jobs';
+import GitlabIssueCreate from '../../../../models/gitlab-issues/GitlabIssueCreate';
+import {NewTicketForm} from '../../../special/tickets/special';
 import styles from './SupportMenu.css';
 
 const actions = {
-  hcs: 'hcs'
+  hcs: 'hcs',
+  createTicket: 'create-ticket',
+  openTickets: 'open-tickets'
 };
 
 const allActions = new Set(Object.values(actions));
@@ -76,11 +80,14 @@ class SupportMenuItem extends React.Component {
     action: PropTypes.string,
     target: PropTypes.string,
     hint: PropTypes.string,
-    entryName: PropTypes.string
+    entryName: PropTypes.string,
+    router: PropTypes.object
   };
 
   state = {
-    hcsJobsModalVisible: false
+    hcsJobsModalVisible: false,
+    createTicketModalVisible: false,
+    ticketPending: false
   };
 
   openHCSJobs = () => {
@@ -93,6 +100,51 @@ class SupportMenuItem extends React.Component {
     this.setState({
       hcsJobsModalVisible: false
     });
+  };
+
+  openCreateTicketModal = () => {
+    this.setState({
+      createTicketModalVisible: true
+    });
+  };
+
+  closeCreateTicketModal = () => {
+    this.setState({
+      createTicketModalVisible: false
+    });
+  };
+
+  createTicket = (payload) => {
+    this.setState({ticketPending: true}, async () => {
+      const hide = message.loading(`Creating ticket...`, 0);
+      try {
+        const request = new GitlabIssueCreate();
+        await request.send(payload);
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        this.setState({
+          ticketPending: false,
+          createTicketModalVisible: false
+        }, () => this.navigateToTickets());
+      } catch (error) {
+        message.error(error.message, 5);
+        this.setState({
+          ticketPending: false
+        });
+      } finally {
+        hide();
+      }
+    });
+  };
+
+  navigateToTickets = () => {
+    const {
+      router
+    } = this.props;
+    if (router && typeof router.push === 'function') {
+      router.push('/tickets');
+    }
   };
 
   renderIcon = () => {
@@ -128,6 +180,12 @@ class SupportMenuItem extends React.Component {
       case actions.hcs:
         this.openHCSJobs();
         break;
+      case actions.createTicket:
+        this.openCreateTicketModal();
+        break;
+      case actions.openTickets:
+        this.navigateToTickets();
+        break;
     }
   };
 
@@ -143,6 +201,7 @@ class SupportMenuItem extends React.Component {
       hint,
       entryName
     } = this.props;
+    console.log(this.props);
     const id = `navigation-button-support-${(entryName || 'default').replace(/[\s.,;]/g, '-')}`;
     if (url) {
       return (
@@ -178,6 +237,14 @@ class SupportMenuItem extends React.Component {
             <HcsImageAnalysisJobsModal
               visible={this.state.hcsJobsModalVisible}
               onClose={this.closeHCSJobs}
+            />
+            <NewTicketForm
+              renderAsModal
+              modalVisible={this.state.createTicketModalVisible}
+              title="Create new ticket"
+              pending={this.state.ticketPending}
+              onCancel={this.closeCreateTicketModal}
+              onSave={this.createTicket}
             />
           </Button>
         </Hint>
