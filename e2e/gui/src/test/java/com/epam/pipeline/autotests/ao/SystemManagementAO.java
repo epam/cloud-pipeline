@@ -110,6 +110,12 @@ public class SystemManagementAO extends SettingsPageAO {
             return this;
         }
 
+        public SystemLogsAO filterByType(final String type) {
+            selectValue(combobox("Type"), type);
+            click(byText("Type"));
+            return this;
+        }
+
         public SystemLogsAO clearUserFilters() {
             clearFiltersBy("User");
             return this;
