@@ -1,0 +1,65 @@
+/*
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.ticket-container {
+  display: grid;
+  grid: "status title controls" 34px / 70px 1fr auto;
+  padding: 3px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.ticket-container.header {
+  display: grid;
+  grid: "status title controls" auto / 70px 1fr auto;
+  padding: 3px 0;
+  transition: all 0.3s ease;
+}
+
+.ticket-container .status {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  font-size: larger;
+  padding: 0 5px;
+  justify-content: center;
+}
+
+.ticket-container:not(.header) .status {
+  height: 24px;
+  margin: auto;
+  font-size: small;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: inline-block;
+}
+
+.ticket-container .title {
+  grid-area: title;
+  display: flex;
+  flex-direction: column;
+  padding: 0 10px;
+}
+
+.ticket-container .controls {
+  grid-area: controls;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
