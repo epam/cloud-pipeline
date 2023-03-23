@@ -526,6 +526,12 @@
         </classes>
     </test>
 
+    <test name="AuditTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.AuditTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
