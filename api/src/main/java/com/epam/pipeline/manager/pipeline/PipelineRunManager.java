@@ -675,6 +675,9 @@ public class PipelineRunManager {
     public PipelineRun loadPipelineRunWithRestartedRuns(Long id) {
         PipelineRun run = loadPipelineRun(id);
         List<RestartRun> restartedRuns = restartRunManager.loadRestartedRunsForInitialRun(id);
+        if (CollectionUtils.isNotEmpty(restartedRuns)) {
+            addRegionsToRestartedRuns(restartedRuns);
+        }
         run.setRestartedRuns(restartedRuns);
         run.setRunStatuses(runStatusManager.loadRunStatus(id));
         return run;
@@ -1665,5 +1668,29 @@ public class PipelineRunManager {
                 .collect(Collectors.toMap(RunStatusMetadata::getRunId, Function.identity()));
         statusesByRunId.put(runStatusMetadata.getRunId(), runStatusMetadata);
         return new ArrayList<>(statusesByRunId.values());
+    }
+
+    private void addRegionsToRestartedRuns(final List<RestartRun> restartedRuns) {
+        final Map<Long, PipelineRun> runsById = ListUtils.emptyIfNull(
+                pipelineRunDao.loadRunByIdIn(restartedRuns.stream()
+                        .flatMap(restartRun -> Stream.of(restartRun.getRestartedRunId(), restartRun.getParentRunId()))
+                        .distinct()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()))).stream()
+                .collect(Collectors.toMap(PipelineRun::getId, Function.identity()));
+        restartedRuns.forEach(restartRun -> {
+            restartRun.setParentRunRegionId(
+                    findRegionIdFromPipelineRun(runsById.get(restartRun.getParentRunId())));
+            restartRun.setRestartedRunRegionId(
+                    findRegionIdFromPipelineRun(runsById.get(restartRun.getRestartedRunId())));
+        });
+    }
+
+    private Long findRegionIdFromPipelineRun(final PipelineRun run) {
+        return Optional.ofNullable(run)
+                .flatMap(pipelineRun -> Optional.ofNullable(pipelineRun.getInstance()))
+                .map(RunInstance::getCloudRegionId)
+                .orElse(null);
+
     }
 }
