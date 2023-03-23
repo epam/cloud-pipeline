@@ -137,7 +137,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public LogAO showLogForChildRun(String runId, int index) {
         sleep(1, SECONDS);
-        $$(byCssSelector("td.run-table__run-row-parent-run"))
+        $$(byCssSelector("td.un-table-columns__run-row-parent-run"))
                 .filter(text(runId))
                 .get(index)
                 .click();
@@ -240,7 +240,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO assertLatestPipelineHasName(String pipelineName) {
         $("tbody")
                 .find("tr")
-                .find(byClassName("run-table__run-row-docker-image"))
+                .find(byClassName("un-table-columns__run-row-docker-image"))
                 .shouldHave(text(pipelineName));
         return this;
     }
@@ -256,7 +256,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO validateOnlyMyPipelines() {
         $(byClassName("ant-table-tbody"))
                 .should(exist)
-                .findAll(byClassName("run-table__run-row-owner"))
+                .findAll(byClassName("un-table-columns__run-row-owner"))
                 .excludeWith(text(C.ANOTHER_LOGIN))
                 .shouldBe(empty);
         return this;
@@ -270,7 +270,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO validateOnlyUsersPipelines(String username) {
         $(byClassName("ant-table-tbody"))
                 .should(exist)
-                .findAll(byClassName("run-table__run-row-owner"))
+                .findAll(byClassName("un-table-columns__run-row-owner"))
                 .excludeWith(text(username))
                 .shouldHave(size(1));
         return this;
@@ -324,7 +324,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO shouldContainRunsWithParentRun(int pipelinesNumber, String runId) {
-        $$(byCssSelector("td.run-table__run-row-parent-run"))
+        $$(byCssSelector("td.un-table-columns__run-row-parent-run"))
                 .filter(text(runId))
                 .shouldHave(sizeGreaterThanOrEqual(pipelinesNumber));
         return this;
@@ -360,11 +360,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO terminateRun(final String runId, final String pipelineName) {
         $("#run-" + runId + "-terminate-button").shouldBe(visible).click();
-        $(className("ant-modal-body")).waitUntil(visible, DEFAULT_TIMEOUT);
-        ensure(byXpath("//div[@class='ant-modal-body']//b"), text(format("Terminate %s?", pipelineName)))
+        context().$(byText("Terminate")).waitUntil(visible, DEFAULT_TIMEOUT);
+        ensure(byText("Terminate"), text(format("Terminate %s?", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button("TERMINATE"));
-        $(className("ant-modal-body")).waitWhile(visible, DEFAULT_TIMEOUT);
+        $(byText("Terminate")).waitWhile(visible, DEFAULT_TIMEOUT);
         return this;
     }
 
@@ -458,7 +458,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     private void inputFilterValue(String value) {
-        $(byClassName("run-table__filter-popover-container"))
+        $(byClassName("un-table-columns__filter-popover-container"))
                 .$$("input").findBy(attribute("placeholder", "Filter"))
                 .setValue(value);
     }
@@ -469,14 +469,14 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public enum HeaderColumn {
-        RUN("run-table__run-row-name"),
-        PARENT_RUN("run-table__run-row-parent-run"),
-        PIPELINE("run-table__run-row-pipeline"),
-        DOCKER_IMAGE("run-table__run-row-docker-image"),
-        STARTED("run-table__run-row-started"),
-        COMPLETED("run-table__run-row-completed"),
-        ELAPSED("run-table__run-row-elapsed-time"),
-        OWNER("run-table__run-row-owner");
+        RUN("un-table-columns__run-row-name"),
+        PARENT_RUN("un-table-columns__run-row-parent-run"),
+        PIPELINE("un-table-columns__run-row-pipeline"),
+        DOCKER_IMAGE("un-table-columns__run-row-docker-image"),
+        STARTED("un-table-columns__run-row-started"),
+        COMPLETED("un-table-columns__run-row-completed"),
+        ELAPSED("un-table-columns__run-row-elapsed-time"),
+        OWNER("un-table-columns__run-row-owner");
 
         private String cssClass;
 

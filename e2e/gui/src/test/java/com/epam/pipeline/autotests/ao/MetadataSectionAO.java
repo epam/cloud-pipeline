@@ -245,7 +245,13 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO reindexStorage() {
-        return click(REINDEX).sleep(1, MINUTES);
+        if ($(byText("Re-index")).exists()) {
+            $(byText("Re-index")).click();
+        } else {
+            $(byText("Request storage re-index")).click();
+        }
+        sleep(1, MINUTES);
+        return this;
     }
 
     @Override

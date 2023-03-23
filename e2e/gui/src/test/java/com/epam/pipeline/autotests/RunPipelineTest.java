@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Selectors.byClassName;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
 import com.epam.pipeline.autotests.ao.Template;
@@ -209,7 +210,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase("EPMCMBIBPC-310")
     public void timingsShouldBeValid() {
         onRunPage()
-            .click(byText("SHOW TIMINGS"))
+            .click(byClassName("log__timing-btn"))
             .ensureAll(task(), contains(timeInfo("Scheduled"), timeInfo("Started"), timeInfo("Finished")));
     }
 

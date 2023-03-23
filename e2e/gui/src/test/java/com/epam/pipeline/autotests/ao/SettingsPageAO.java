@@ -750,6 +750,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
                             entry(ADD_KEY, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form"))),
+                            entry(CANCEL, context().$(button("CANCEL"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
                             entry(DELETE, context().$(byId("delete-user-button"))),
@@ -771,7 +772,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     @Override
                     public UsersTabAO ok() {
-                        click(OK);
+                        if (get(OK).isEnabled()) {
+                            click(OK);
+                        } else {
+                            click(CANCEL);
+                        }
                         return parentAO;
                     }
 
