@@ -93,6 +93,7 @@ import evaluateRunPrice from '../../../utils/evaluate-run-price';
 import DataStorageLink from '../../special/data-storage-link';
 import fetchRunInfo from './misc/fetch-run-info';
 import NestedRunsModal from './forms/NestedRunsModal';
+import RestartedRunsInfo from './misc/restarted-runs-info';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1671,9 +1672,15 @@ class Logs extends localization.LocalizedReactComponent {
       const {runId} = this.props.params;
 
       const resumeFailureReason = getResumeFailureReason(run);
-      ResumeFailureReason = resumeFailureReason
-        ? (<Alert type="warning" message={resumeFailureReason} />)
-        : null;
+      if (resumeFailureReason) {
+        ResumeFailureReason = (
+          <Alert
+            type="warning"
+            style={{margin: '5px 0'}}
+            message={resumeFailureReason}
+          />
+        );
+      }
       let pipelineLink;
       if (pipeline) {
         if (pipeline.id) {
@@ -2185,15 +2192,17 @@ class Logs extends localization.LocalizedReactComponent {
             </Row>
             {
               stateReasonMessage && (
-                <Row type="flex">
-                  <Alert
-                    message={`Server failure reason: ${stateReasonMessage}`}
-                    type="error"
-                  />
-                </Row>
+                <Alert
+                  message={`Server failure reason: ${stateReasonMessage}`}
+                  type="error"
+                />
               )
             }
             {ResumeFailureReason}
+            <RestartedRunsInfo
+              style={{margin: '5px 0'}}
+              run={run}
+            />
             <Row>
               {Details}
             </Row>
