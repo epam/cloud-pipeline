@@ -28,6 +28,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -126,7 +127,8 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                     shell.waitUntilTextAppears(getLastRunId());
                     for (String comm : commands) {
                          shell.execute(comm)
-                              .assertPageAfterCommandContainsStrings(comm, rootHost);
+                                .sleep(2, SECONDS)
+                                .assertPageAfterCommandContainsStrings(comm, rootHost);
                     }
                     shell.close();
                 });
@@ -176,6 +178,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                     shell.waitUntilTextAppears(getLastRunId());
                     for (String comm : commands) {
                         shell.execute(comm)
+                                .sleep(2, SECONDS)
                                 .assertPageAfterCommandContainsStrings(comm, rootHost);
                     }
                     shell.close();
