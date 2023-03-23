@@ -149,8 +149,8 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     public void dataAccessAuditOperationsWithFoldeRs() {
         String [] commands = {
                 format("pipe storage cp -r %s/%s %s/%s", pathStorage1, folder1, pathStorage2, folder1),
-                format("pipe storage mv %s/%s %s/%s", pathStorage1, folder2, pathStorage2, folder2),
-                format("pipe storage rm %s/%s -y", pathStorage1, folder1)
+                format("pipe storage mv -r %s/%s %s/%s", pathStorage1, folder2, pathStorage2, folder2),
+                format("pipe storage rm -r %s/%s -y", pathStorage1, folder1)
         };
         String [] expected_logs = {
                 format("READ %s/%s/%s", pathStorage1, folder1, inner_file1),
