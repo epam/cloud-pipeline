@@ -96,14 +96,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         pathStorage2 = library()
                 .selectStorage(storage2)
                 .getStoragePath();
-        pathStorage3 = library()
-                .selectStorage(storage3)
-                .createFolder(folder1)
-                .cd(folder1)
-                .createFile(inner_file1)
-                .createFile(inner_file2)
-                .cd("..")
-                .getStoragePath();
     }
 
     @AfterClass(alwaysRun = true)
@@ -228,9 +220,18 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         };
         logoutIfNeeded();
         loginAs(user);
-        library()
+        pathStorage3 = library()
                 .cd(testFolder)
                 .createStorage(storage3)
+                .selectStorage(storage3)
+                .createFolder(folder1)
+                .cd(folder1)
+                .createFile(inner_file1)
+                .createFile(inner_file2)
+                .cd("..")
+                .getStoragePath();
+        library()
+                .cd(testFolder)
                 .selectStorage(storage3)
                 .createFileWithContent(file1, "file1 content")
                 .uploadFile(newFile)
