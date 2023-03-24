@@ -71,6 +71,7 @@ public class RunRegionShiftHandlerTest {
 
         firstRestartCaseMock(currentRun);
         doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRun());
 
         runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
         verify(pipelineRunManager).restartRun(expectedSuccessfulRun());
@@ -90,9 +91,25 @@ public class RunRegionShiftHandlerTest {
         doReturn(Collections.singletonList(currentRun)).when(pipelineRunManager)
                 .loadPipelineRuns(Collections.singletonList(CURRENT_RUN_ID));
         doReturn(currentRun).when(pipelineRunManager).loadPipelineRun(CURRENT_RUN_ID);
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulParentRun());
 
         runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
         verify(pipelineRunManager).restartRun(expectedSuccessfulParentRun());
+        verify(pipelineRunManager).stop(CURRENT_RUN_ID);
+    }
+
+    @Test
+    public void shouldRestartRunWithoutParameters() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.emptyList());
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        verify(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
         verify(pipelineRunManager).stop(CURRENT_RUN_ID);
     }
 
@@ -112,6 +129,7 @@ public class RunRegionShiftHandlerTest {
 
         firstRestartCaseMock(currentRun);
         doReturn(Collections.emptyList()).when(cloudRegionManager).loadAll();
+        doReturn(getAvailableRegion()).when(cloudRegionManager).load(ID);
 
         assertRunNotRestarted();
     }
@@ -134,6 +152,7 @@ public class RunRegionShiftHandlerTest {
 
         firstRestartCaseMock(currentRun);
         doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(getNotAvailableRegion()).when(cloudRegionManager).load(NOT_AVAILABLE_REGION_ID);
 
         assertRunNotRestarted();
     }
@@ -153,7 +172,9 @@ public class RunRegionShiftHandlerTest {
     public void shouldNotRestartRunWhenRunWithCloudDependentParameters() {
         final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
         final PipelineRun currentRun = getCurrentRun(runInstance);
-        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudDependentRunParameter()));
+        final List<PipelineRunParameter> cloudDependentParameters = Arrays.asList(getCloudDependentRunParameter(),
+                getCloudIndependentRunParameter());
+        currentRun.setPipelineRunParameters(cloudDependentParameters);
 
         firstRestartCaseMock(currentRun);
         doReturn(getRegions()).when(cloudRegionManager).loadAll();
@@ -309,6 +330,13 @@ public class RunRegionShiftHandlerTest {
         return currentRun;
     }
 
+    private static PipelineRun expectedSuccessfulRunWithoutParameters() {
+        final RunInstance runInstance = getInstance(NEXT_AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.emptyList());
+        return currentRun;
+    }
+
     private static PipelineRun expectedSuccessfulParentRun() {
         final RunInstance parentInstance = getInstance(NEXT_AVAILABLE_REGION_ID);
         final PipelineRun parentRun = PipelineCreatorUtils.getPipelineRun(PARENT_RUN_ID);
@@ -316,5 +344,9 @@ public class RunRegionShiftHandlerTest {
         parentRun.setRestartedRuns(Collections.singletonList(getRestartRun()));
         parentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
         return parentRun;
+    }
+
+    private static PipelineRun restartedRun() {
+        return new PipelineRun();
     }
 }

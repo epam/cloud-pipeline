@@ -36,10 +36,15 @@ import com.epam.pipeline.entity.pipeline.PipelineRunWithTool;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -82,6 +87,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -124,6 +130,21 @@ public class PipelineRunManagerUnitTest {
 
     @Mock
     private MetadataEntityManager metadataEntityManager;
+
+    @Mock
+    private RestartRunManager restartRunManager;
+
+    @Mock
+    private PreferenceManager preferenceManager;
+
+    @Mock
+    private RunPermissionManager runPermissionManager;
+
+    @Mock
+    private DataStorageManager dataStorageManager;
+
+    @Mock
+    private RunStatusManager runStatusManager;
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
@@ -370,6 +391,58 @@ public class PipelineRunManagerUnitTest {
                 .containsKey(parameterValue);
         assertThat(updatedMetadataEntity.getData().get(TEST_STRING).getValue()).isEqualTo(TEST_STRING);
         assertThat(updatedMetadataEntity.getData().get(parameterValue).getValue()).isEqualTo(expectedDataValue);
+    }
+
+    @Test
+    public void shouldLoadRestartedRunsWithRegions() {
+        final RunInstance runInstance = new RunInstance();
+        runInstance.setCloudRegionId(ID_4);
+
+        final PipelineRun restartedRun1 = new PipelineRun();
+        restartedRun1.setId(ID_2);
+        restartedRun1.setInstance(new RunInstance());
+        final RestartRun restartRun1 = new RestartRun();
+        restartRun1.setParentRunId(ID);
+        restartRun1.setRestartedRunId(ID_2);
+
+        final PipelineRun restartedRun2 = new PipelineRun();
+        restartedRun2.setId(ID_3);
+        restartedRun2.setInstance(runInstance);
+        final RestartRun restartRun2 = new RestartRun();
+        restartRun2.setParentRunId(ID_2);
+        restartRun2.setRestartedRunId(ID_3);
+
+        final PipelineRun parentRun = new PipelineRun();
+        parentRun.setId(ID);
+        parentRun.setInstance(runInstance);
+        parentRun.setLastChangeCommitTime(DateUtils.now());
+
+        doReturn(parentRun).when(pipelineRunDao).loadPipelineRun(ID);
+        doReturn(0).when(preferenceManager).getPreference(any());
+        doReturn(false).when(runPermissionManager).isRunSshAllowed((PipelineRun) any());
+        doNothing().when(dataStorageManager).analyzePipelineRunsParameters(any());
+        final List<RestartRun> restartRuns = Arrays.asList(restartRun1, restartRun2);
+        doReturn(restartRuns).when(restartRunManager).loadRestartedRunsForInitialRun(ID);
+        final List<PipelineRun> loadedRuns = Arrays.asList(parentRun, restartedRun1, restartedRun2);
+        doReturn(loadedRuns).when(pipelineRunDao).loadRunByIdIn(any());
+        doReturn(null).when(runStatusManager).loadRunStatus(ID);
+
+        final RestartRun expectedRestartRun1 = new RestartRun();
+        expectedRestartRun1.setParentRunId(ID);
+        expectedRestartRun1.setParentRunRegionId(ID_4);
+        expectedRestartRun1.setRestartedRunId(ID_2);
+
+        final RestartRun expectedRestartRun2 = new RestartRun();
+        expectedRestartRun2.setParentRunId(ID_2);
+        expectedRestartRun2.setRestartedRunId(ID_3);
+        expectedRestartRun2.setRestartedRunRegionId(ID_4);
+
+        final PipelineRun resultRun = pipelineRunManager.loadPipelineRunWithRestartedRuns(ID);
+
+        final List<RestartRun> actualRestartRuns = resultRun.getRestartedRuns();
+        assertThat(actualRestartRuns).hasSize(2)
+                .contains(expectedRestartRun1)
+                .contains(expectedRestartRun2);
     }
 
     private void assertEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {

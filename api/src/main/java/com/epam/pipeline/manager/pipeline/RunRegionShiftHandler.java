@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
@@ -56,7 +57,16 @@ public class RunRegionShiftHandler {
     private final MessageHelper messageHelper;
 
     public PipelineRun restartRunInAnotherRegion(final long currentRunId) {
-        final PipelineRun parentRun = findParentRun(currentRunId);
+        final Long parentRunId = restartRunManager.findRestartRunById(currentRunId)
+                .map(RestartRun::getParentRunId)
+                .orElse(currentRunId);
+        final PipelineRun parentRun = pipelineRunManager.loadPipelineRunWithRestartedRuns(parentRunId);
+        final PipelineRun currentRun = Objects.equals(currentRunId, parentRunId)
+                ? parentRun
+                : pipelineRunManager.loadPipelineRun(currentRunId);
+
+        addRunLog(parentRun, messageHelper.getMessage(
+                MessageConstants.ERROR_RUN_START_FAILURE, currentRunId), TaskStatus.FAILURE, currentRun);
 
         final CloudProvider cloudProvider = Optional.ofNullable(parentRun.getInstance())
                 .map(RunInstance::getCloudProvider)
@@ -74,27 +84,29 @@ public class RunRegionShiftHandler {
                 .filter(this::isShiftRunEnabled)
                 .collect(Collectors.toMap(AbstractCloudRegion::getId, Function.identity()));
 
-        if (validate(parentRun, availableRegions)) {
+        if (validate(parentRun, currentRun, availableRegions)) {
             return null;
         }
 
         final Long nextRegionId = findNextRegion(parentRun, availableRegions);
         if (Objects.isNull(nextRegionId)) {
             logRestartFailure(parentRun, messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND, parentRun.getId()));
+                    MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND, currentRunId), currentRun);
             return null;
         }
 
         pipelineRunManager.stop(currentRunId);
 
         Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setCloudRegionId(nextRegionId));
+        Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setSpot(false));
         final PipelineRun newRun = pipelineRunManager.restartRun(parentRun);
-        addRunLog(parentRun, messageHelper.getMessage(
-                MessageConstants.INFO_RESTART_RUN_SUCCESS, parentRun.getId(), nextRegionId), TaskStatus.STOPPED);
+        final String nextRegionName = availableRegions.get(nextRegionId).getName();
+        addRunLog(parentRun, messageHelper.getMessage(MessageConstants.INFO_RESTART_RUN_SUCCESS, newRun.getId(),
+                nextRegionName), TaskStatus.STOPPED, currentRun);
         return newRun;
     }
 
-    private boolean validate(final PipelineRun parentRun,
+    private boolean validate(final PipelineRun parentRun, final PipelineRun currentRun,
                              final Map<Long, ? extends AbstractCloudRegion> availableRegions) {
         final Long currentRegionId = parentRun.getInstance().getCloudRegionId();
         if (Objects.isNull(currentRegionId)) {
@@ -105,32 +117,33 @@ public class RunRegionShiftHandler {
         }
 
         if (!availableRegions.containsKey(currentRegionId)) {
+            final String regionName = cloudRegionManager.load(currentRegionId).getName();
             logRestartFailure(parentRun, messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_REGION_SHIFT_FORBIDDEN, currentRegionId));
+                    MessageConstants.ERROR_RUN_REGION_RELAUNCH_FORBIDDEN, regionName), currentRun);
             return true;
         }
 
         if (availableRegions.size() == 1) {
             logRestartFailure(parentRun, messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND, parentRun.getId()));
+                    MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND, currentRun.getId()), currentRun);
             return true;
         }
 
-        if (!validateRunParameters(parentRun)) {
+        if (!isRunParametersValid(parentRun)) {
             logRestartFailure(parentRun, messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT, parentRun.getId()));
+                    MessageConstants.ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT, currentRun.getId()), currentRun);
             return true;
         }
 
         if (Objects.nonNull(parentRun.getNodeCount()) && parentRun.getNodeCount() > 0) {
             logRestartFailure(parentRun, messageHelper.getMessage(
-                    MessageConstants.ERROR_RESTART_CLUSTER_FORBIDDEN, parentRun.getId()));
+                    MessageConstants.ERROR_RESTART_CLUSTER_FORBIDDEN, currentRun.getId()), currentRun);
             return true;
         }
 
         if (parentRun.isWorkerRun()) {
             logRestartFailure(parentRun, messageHelper.getMessage(
-                    MessageConstants.ERROR_RESTART_WORKER_FORBIDDEN, parentRun.getId()));
+                    MessageConstants.ERROR_RESTART_WORKER_FORBIDDEN, currentRun.getId()), currentRun);
             return true;
         }
         return false;
@@ -156,40 +169,23 @@ public class RunRegionShiftHandler {
                 .orElse(null);
     }
 
-    private boolean validateRunParameters(final PipelineRun parentRun) {
+    private boolean isRunParametersValid(final PipelineRun parentRun) {
+        if (CollectionUtils.isEmpty(parentRun.getPipelineRunParameters())) {
+            return Boolean.TRUE;
+        }
         final List<String> storagePrefixes = DataStorageType.getIds().stream()
                 .map(storageType -> storageType.toLowerCase(Locale.ROOT))
                 .map(storageType -> storageType + "://")
                 .collect(Collectors.toList());
-        return ListUtils.emptyIfNull(parentRun.getPipelineRunParameters()).stream()
-                .anyMatch(parameter -> validateRunParameter(parameter, storagePrefixes));
+        return parentRun.getPipelineRunParameters().stream()
+                .noneMatch(parameter -> isRunParameterInvalid(parameter, storagePrefixes));
     }
 
-    private boolean validateRunParameter(final PipelineRunParameter parameter, final List<String> storagePrefixes) {
+    private boolean isRunParameterInvalid(final PipelineRunParameter parameter, final List<String> storagePrefixes) {
         return Optional.ofNullable(parameter.getValue())
                 .map(value -> value.toLowerCase(Locale.ROOT))
-                .map(value -> storagePrefixes.stream().noneMatch(value::startsWith))
-                .orElse(Boolean.TRUE);
-    }
-
-    private PipelineRun findParentRun(final Long runId) {
-        final Long parentRunId = restartRunManager.findRestartRunById(runId)
-                .map(RestartRun::getParentRunId)
-                .orElse(runId);
-        final PipelineRun run = pipelineRunManager.loadPipelineRunWithRestartedRuns(parentRunId);
-        if (!Objects.equals(parentRunId, runId)) {
-            setSpotToParent(runId, run);
-        }
-        return run;
-    }
-
-    private void setSpotToParent(final Long runId, final PipelineRun parentRun) {
-        Optional.ofNullable(parentRun.getInstance())
-                .ifPresent(parentInstance -> parentInstance.setSpot(
-                        Optional.ofNullable(pipelineRunManager.loadPipelineRun(runId).getInstance())
-                                .map(RunInstance::getSpot)
-                                .orElse(parentInstance.getSpot())
-                ));
+                .map(value -> storagePrefixes.stream().anyMatch(value::startsWith))
+                .orElse(Boolean.FALSE);
     }
 
     private boolean isShiftRunEnabled(final AbstractCloudRegion region) {
@@ -198,9 +194,17 @@ public class RunRegionShiftHandler {
                 .orElse(Boolean.FALSE);
     }
 
-    private void logRestartFailure(final PipelineRun run, final String logMessage) {
+    private void logRestartFailure(final PipelineRun parentRun, final String logMessage, final PipelineRun currentRun) {
         log.debug(logMessage);
-        addRunLog(run, logMessage, TaskStatus.FAILURE);
+        addRunLog(parentRun, logMessage, TaskStatus.FAILURE, currentRun);
+    }
+
+    private void addRunLog(final PipelineRun parentRun, final String logMessage, final TaskStatus status,
+                           final PipelineRun currentRun) {
+        addRunLog(parentRun, logMessage, status);
+        if (!Objects.equals(parentRun.getId(), currentRun.getId())) {
+            addRunLog(parentRun, logMessage, status);
+        }
     }
 
     private void addRunLog(final PipelineRun run, final String logMessage, final TaskStatus status) {
