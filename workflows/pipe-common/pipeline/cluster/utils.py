@@ -14,14 +14,11 @@
 
 import os
 import subprocess
-from random import getrandbits
 
 
 def get_log_filename(work_directory, job_name, lock):
     logs_directory = create_directory(work_directory, "logs", lock=lock)
-    random_number = getrandbits(64)
-    return os.path.join(logs_directory, "{job_name}_{number}_out.log"
-                        .format(number=random_number, job_name=job_name if job_name else random_number))
+    return os.path.join(logs_directory, "{job_name}_out.log".format(job_name=job_name))
 
 
 def merge_log(common_logfile, job_logfile, lock):
@@ -34,7 +31,6 @@ def merge_log(common_logfile, job_logfile, lock):
                     common_logfile.write("\n".encode())
                     break
                 common_logfile.write(piece)
-
 
 
 def create_directory(path, name, lock):
@@ -52,7 +48,4 @@ def run(job_command, get_output=True, env=None):
         process = subprocess.Popen(job_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env=env)
     stdout, stderr = process.communicate()
     exit_code = process.wait()
-    if exit_code != 0:
-        raise RuntimeError('Command "{}" exited with return code: {}, stdout: {}, stderr: {}'
-                           .format(job_command, exit_code, stdout, stderr))
-    return stdout
+    return stdout, stderr, exit_code
