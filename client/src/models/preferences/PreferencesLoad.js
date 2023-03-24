@@ -678,6 +678,12 @@ class PreferencesLoad extends Remote {
     return undefined;
   }
 
+  @computed
+  get uiRunsClusterDetailsShowActiveOnly () {
+    const value = this.getPreferenceValue('ui.runs.cluster.details.show.active.only');
+    return (value || '').toLowerCase() !== 'false';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
