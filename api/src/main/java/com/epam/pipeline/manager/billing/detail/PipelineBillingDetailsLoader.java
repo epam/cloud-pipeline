@@ -49,6 +49,7 @@ public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader 
                                                final Map<String, String> defaults) {
         final Lazy<Optional<Pipeline>> pipeline = Lazy.of(() -> load(id));
         final Map<String, String> details = new HashMap<>(defaults);
+        details.put(ID, id);
         details.computeIfAbsent(NAME, key -> pipeline.get().map(Pipeline::getName).orElse(id));
         if (loadDetails) {
             details.computeIfAbsent(OWNER, key -> pipeline.get().map(Pipeline::getOwner).orElse(emptyValue));
