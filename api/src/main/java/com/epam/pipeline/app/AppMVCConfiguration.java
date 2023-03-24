@@ -113,11 +113,14 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
         @Value("${kube.current.pod.name}")
         private String kubePodName;
 
+        @Value("${server.pod.header.name:Pod Name}")
+        private String headerName;
+
         @Override
         protected void doFilterInternal(final HttpServletRequest request,
                                         final HttpServletResponse response,
                                         final FilterChain filterChain) {
-            response.setHeader("Host", kubePodName);
+            response.setHeader(headerName, kubePodName);
         }
     }
 }
