@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.FolderPermission;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
@@ -34,6 +35,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.util.stream.Stream;
 
 public class AuditTest extends AbstractSeveralPipelineRunningTest
@@ -42,24 +44,39 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
-    private String storage1 = "storage1-3059-" + Utils.randomSuffix();
-    private String storage2 = "storage2-3059-" + Utils.randomSuffix();
+    private String testFolder = format("auditTestsFolder-%s", Utils.randomSuffix());
+    private String storage1 = format("storage1-3059-%s", Utils.randomSuffix());
+    private String storage2 = format("storage2-3059-%s", Utils.randomSuffix());
+    private String storage3 = format("storage3-3059-%s", Utils.randomSuffix());
     private String folder1 = "folder1";
+    private String folder1_new = "folder1_new";
     private String folder2 = "folder2";
     private String file1 = "file1";
+    private String file1_new = "file1_new";
     private String file2 = "file2";
+    private String file3 = "file3";
     private String inner_file1 = "inner_file1";
     private String inner_file2 = "inner_file2";
     private String inner_file3 = "inner_file3";
     private String inner_file4 = "inner_file4";
     String pathStorage1 = "";
     String pathStorage2 = "";
-    private final String rootHost = "root@pipeline";
+    String pathStorage3 = "";
 
     @BeforeClass(alwaysRun = true)
     public void createPreferences() {
+        navigationMenu()
+                .library()
+                .createFolder(testFolder);
+        addAccountToFolderPermissions(user, testFolder);
+        givePermissions(user,
+                FolderPermission.allow(READ, testFolder),
+                FolderPermission.allow(WRITE, testFolder),
+                FolderPermission.allow(EXECUTE, testFolder)
+        );
         Stream.of(storage1, storage2)
                 .forEach(stor -> library()
+                        .cd(testFolder)
                         .createStorage(stor));
         pathStorage1 = library()
                 .selectStorage(storage1)
@@ -72,28 +89,27 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .createFile(inner_file2)
                 .cd("..")
                 .cd(folder2)
-                .createFile(inner_file1)
-                .createFile(inner_file2)
+                .createFile(inner_file3)
+                .createFile(inner_file4)
                 .cd("..")
                 .getStoragePath();
         pathStorage2 = library()
                 .selectStorage(storage2)
                 .getStoragePath();
-        Stream.of(storage1, storage2).forEach(storage -> {
-            addAccountToStoragePermissions(user, storage);
-            givePermissions(user,
-                    BucketPermission.allow(READ, storage),
-                    BucketPermission.allow(WRITE, storage),
-                    BucketPermission.allow(EXECUTE, storage)
-            );
-        });
+        pathStorage3 = library()
+                .selectStorage(storage3)
+                .createFolder(folder1)
+                .cd(folder1)
+                .createFile(inner_file1)
+                .createFile(inner_file2)
+                .cd("..")
+                .getStoragePath();
     }
 
     @AfterClass(alwaysRun = true)
     public void resetPreferences() {
-        Stream.of(storage1, storage2)
-                .forEach(stor -> library()
-                        .removeStorage(stor));
+        library()
+                .removeNotEmptyFolder(testFolder);
     }
 
     @BeforeMethod
@@ -120,34 +136,16 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         logoutIfNeeded();
         loginAs(user);
         tools()
-                .perform(registry, group, tool, tool -> tool.run(this))
-                .showLog(getLastRunId())
-                .waitForSshLink()
-                .ssh(shell -> {
-                    shell.waitUntilTextLoads(getLastRunId());
-                    for (String comm : commands) {
-                         shell.execute(comm)
-                                .waitUntilTextAfterCommandAppears(comm, getLastRunId());
-                    }
-                    shell.close();
-                });
+                .perform(registry, group, tool, tool -> tool.run(this));
+        executeCommands(commands);
         logoutIfNeeded();
         loginAs(admin);
-        SystemLogsAO systemLogsAO = navigationMenu()
-                .settings()
-                .switchToSystemManagement()
-                .switchToSystemLogs()
-                .setIncludeServiceAccountEventsOption()
-                .filterByUser(user.login)
-                .filterByType("audit");
-        for (String mess : expected_logs) {
-            systemLogsAO.validateRow(mess, user.login, "audit");
-        }
+        checkAuditLog(expected_logs);
     }
 
-    @Test
+    @Test(dependsOnMethods = {"dataAccessAuditOperationsWithFiles"})
     @TestCase(value = {"3059_2"})
-    public void dataAccessAuditOperationsWithFoldeRs() {
+    public void dataAccessAuditOperationsWithFolders() {
         String [] commands = {
                 format("pipe storage cp -r %s/%s %s/%s", pathStorage1, folder1, pathStorage2, folder1),
                 format("pipe storage mv -r %s/%s %s/%s", pathStorage1, folder2, pathStorage2, folder2),
@@ -169,8 +167,95 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         };
         logoutIfNeeded();
         loginAs(user);
-        tools()
-                .perform(registry, group, tool, tool -> tool.run(this))
+        executeCommands(commands);
+        logoutIfNeeded();
+        loginAs(admin);
+        checkAuditLog(expected_logs);
+    }
+
+    @Test(dependsOnMethods = {"dataAccessAuditOperationsWithFolders"})
+    @TestCase(value = {"3075"})
+    public void auditPipeMountOperations() {
+        String [] commands = {
+                format("echo \"test info\" >> cloud-data/%s/%s", storage2, file3),
+                format("cp -rf cloud-data/%s/%s cloud-data/%s/%s", storage2, folder1, storage1, folder1),
+                format("mv -rf cloud-data/%s/%s cloud-data/%s/%s", storage2, folder2, storage1, folder2),
+                format("rm -f cloud-data/%s/%s", storage2, file2)
+        };
+        String [] expected_logs = {
+                format("READ %s/%s/%s", pathStorage2, folder1, inner_file1),
+                format("WRITE %s/%s/%s", pathStorage1, folder1, inner_file1),
+                format("READ %s/%s/%s", pathStorage2, folder1, inner_file2),
+                format("WRITE %s/%s/%s", pathStorage1, folder1, inner_file2),
+                format("READ %s/%s/%s", pathStorage2, folder2, inner_file3),
+                format("WRITE %s/%s/%s", pathStorage1, folder2, inner_file3),
+                format("DELETE %s/%s/%s", pathStorage2, folder2, inner_file3),
+                format("READ %s/%s/%s", pathStorage2, folder2, inner_file4),
+                format("WRITE %s/%s/%s", pathStorage1, folder2, inner_file4),
+                format("DELETE %s/%s/%s", pathStorage2, folder2, inner_file4),
+                format("DELETE %s/%s", pathStorage2, file2)
+        };
+        logoutIfNeeded();
+        loginAs(user);
+        executeCommands(commands);
+        logoutIfNeeded();
+        loginAs(admin);
+        checkAuditLog(expected_logs);
+    }
+
+    @Test
+    @TestCase(value = {"3059_3"})
+    public void uiDataAccessAudit() {
+        final File newFile = Utils.createTempFile("file2");
+        String file2_new = newFile.getName();
+        String [] expected_logs = {
+                format("WRITE %s/%s", pathStorage3, file1),
+                format("WRITE %s/%s", pathStorage3, file2_new),
+                format("READ %s/%s", pathStorage3, file1),
+                format("WRITE %s/%s", pathStorage3, file1_new),
+                format("DELETE %s/%s", pathStorage3, file1),
+                format("READ %s/%s", pathStorage3, file2_new),
+                format("WRITE %s/%s", pathStorage3, file2_new),
+                format("READ %s/%s/%s", pathStorage3, folder1, inner_file1),
+                format("WRITE %s/%s/%s", pathStorage3, folder1_new, inner_file1),
+                format("DELETE %s/%s/%s", pathStorage3, folder1, inner_file1),
+                format("READ %s/%s/%s", pathStorage3, folder1, inner_file2),
+                format("WRITE %s/%s/%s", pathStorage3, folder1_new, inner_file2),
+                format("DELETE %s/%s/%s", pathStorage3, folder1, inner_file2),
+                format("DELETE %s/%s", pathStorage3, file2_new),
+                format("DELETE %s/%s/%s", pathStorage3, folder1_new, inner_file1),
+                format("DELETE %s/%s/%s", pathStorage3, folder1_new, inner_file2)
+        };
+        logoutIfNeeded();
+        loginAs(user);
+        library()
+                .cd(testFolder)
+                .createStorage(storage3)
+                .selectStorage(storage3)
+                .createFileWithContent(file1, "file1 content")
+                .uploadFile(newFile)
+                .refresh()
+                .selectFile(file1)
+                .renameTo(file1_new)
+                .editFile(file2_new, "new file2 content")
+                .refresh()
+                .selectFolder(folder1)
+                .renameTo(folder1_new)
+                .selectFile(file2_new)
+                .delete()
+                .refresh()
+                .selectFolder(folder1_new)
+                .delete()
+                .selectFile(file1_new)
+                .download();
+;
+        logoutIfNeeded();
+        loginAs(admin);
+        checkAuditLog(expected_logs);
+    }
+
+    private void executeCommands(String [] commands) {
+        runsMenu()
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> {
@@ -181,8 +266,9 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                     }
                     shell.close();
                 });
-        logoutIfNeeded();
-        loginAs(admin);
+    }
+
+    private void checkAuditLog(String [] logs) {
         SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemManagement()
@@ -190,7 +276,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .setIncludeServiceAccountEventsOption()
                 .filterByUser(user.login)
                 .filterByType("audit");
-        for (String mess : expected_logs) {
+        for (String mess : logs) {
             systemLogsAO.validateRow(mess, user.login, "audit");
         }
     }
