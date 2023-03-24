@@ -124,11 +124,10 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> {
-                    shell.waitUntilTextAppears(getLastRunId());
+                    shell.waitUntilTextLoads(getLastRunId());
                     for (String comm : commands) {
                          shell.execute(comm)
-                                .sleep(5, SECONDS)
-                                .assertPageAfterCommandContainsStrings(comm, rootHost);
+                                .waitUntilTextAfterCommandAppears(comm, getLastRunId());
                     }
                     shell.close();
                 });
@@ -178,8 +177,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                     shell.waitUntilTextAppears(getLastRunId());
                     for (String comm : commands) {
                         shell.execute(comm)
-                                .sleep(5, SECONDS)
-                                .assertPageAfterCommandContainsStrings(comm, rootHost);
+                                .waitUntilTextAfterCommandAppears(comm, getLastRunId());
                     }
                     shell.close();
                 });
