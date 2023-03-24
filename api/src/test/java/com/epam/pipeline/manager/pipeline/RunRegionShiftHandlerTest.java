@@ -172,7 +172,9 @@ public class RunRegionShiftHandlerTest {
     public void shouldNotRestartRunWhenRunWithCloudDependentParameters() {
         final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
         final PipelineRun currentRun = getCurrentRun(runInstance);
-        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudDependentRunParameter()));
+        final List<PipelineRunParameter> cloudDependentParameters = Arrays.asList(getCloudDependentRunParameter(),
+                getCloudIndependentRunParameter());
+        currentRun.setPipelineRunParameters(cloudDependentParameters);
 
         firstRestartCaseMock(currentRun);
         doReturn(getRegions()).when(cloudRegionManager).loadAll();

@@ -129,7 +129,7 @@ public class RunRegionShiftHandler {
             return true;
         }
 
-        if (!validateRunParameters(parentRun)) {
+        if (!isRunParametersValid(parentRun)) {
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT, currentRun.getId()), currentRun);
             return true;
@@ -169,23 +169,23 @@ public class RunRegionShiftHandler {
                 .orElse(null);
     }
 
-    private boolean validateRunParameters(final PipelineRun parentRun) {
+    private boolean isRunParametersValid(final PipelineRun parentRun) {
+        if (CollectionUtils.isEmpty(parentRun.getPipelineRunParameters())) {
+            return Boolean.TRUE;
+        }
         final List<String> storagePrefixes = DataStorageType.getIds().stream()
                 .map(storageType -> storageType.toLowerCase(Locale.ROOT))
                 .map(storageType -> storageType + "://")
                 .collect(Collectors.toList());
-        if (CollectionUtils.isEmpty(parentRun.getPipelineRunParameters())) {
-            return Boolean.TRUE;
-        }
         return parentRun.getPipelineRunParameters().stream()
-                .anyMatch(parameter -> validateRunParameter(parameter, storagePrefixes));
+                .noneMatch(parameter -> isRunParameterInvalid(parameter, storagePrefixes));
     }
 
-    private boolean validateRunParameter(final PipelineRunParameter parameter, final List<String> storagePrefixes) {
+    private boolean isRunParameterInvalid(final PipelineRunParameter parameter, final List<String> storagePrefixes) {
         return Optional.ofNullable(parameter.getValue())
                 .map(value -> value.toLowerCase(Locale.ROOT))
-                .map(value -> storagePrefixes.stream().noneMatch(value::startsWith))
-                .orElse(Boolean.TRUE);
+                .map(value -> storagePrefixes.stream().anyMatch(value::startsWith))
+                .orElse(Boolean.FALSE);
     }
 
     private boolean isShiftRunEnabled(final AbstractCloudRegion region) {
