@@ -131,7 +131,6 @@ public class PipelineRunManager {
     private static final Long EMPTY_PIPELINE_ID = null;
     private static final int MILLS_IN_SEC = 1000;
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
-    private static final String SHOW_ACTIVE_WORKERS_ONLY_PARAMETER = "CP_SHOW_ACTIVE_WORKERS_ONLY";
     private static final int USER_PRICE_SCALE = 2;
     private static final int BILLING_PRICE_SCALE = 5;
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
@@ -712,30 +711,9 @@ public class PipelineRunManager {
                     .map(PipelineRun::getId).collect(Collectors.toList()));
             for (final PipelineRun run : result.getElements()) {
                 run.setRunStatuses(runStatuses.get(run.getId()));
-                run.setChildRuns(getFilteredChildRuns(run));
             }
         }
         return result;
-    }
-
-    private List<PipelineRun> getFilteredChildRuns(final PipelineRun run) {
-        return showOnlyActiveChildRuns(run) ? getActiveChildRuns(run) : run.getChildRuns();
-    }
-
-    private boolean showOnlyActiveChildRuns(final PipelineRun run) {
-        return ListUtils.emptyIfNull(run.getPipelineRunParameters())
-                .stream()
-                .filter(parameter -> SHOW_ACTIVE_WORKERS_ONLY_PARAMETER.equals(parameter.getName()))
-                .findAny()
-                .map(parameter -> Boolean.parseBoolean(parameter.getValue()))
-                .orElse(true);
-    }
-
-    private List<PipelineRun> getActiveChildRuns(final PipelineRun run) {
-        return ListUtils.emptyIfNull(run.getChildRuns())
-                .stream()
-                .filter(childRun -> childRun.getStatus() == TaskStatus.RUNNING)
-                .collect(Collectors.toList());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
