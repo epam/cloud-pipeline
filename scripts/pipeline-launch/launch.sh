@@ -1793,6 +1793,7 @@ do
             [[ "$var" == "KUBERNETES_"* ]] || \
             [[ "$var" == "EDGE_SERVICE_"* ]] || \
             [[ "$var" == "HOME" ]] || \
+            [[ "$var" == "PWD" ]] || \
             [[ "$var" == "AWSACCESSKEYID" ]] || \
             [[ "$var" == "AWSSECRETACCESSKEY" ]] || \
             [[ "$var" == "CP_ACCOUNT_ID_"* ]] || \
