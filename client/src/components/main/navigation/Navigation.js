@@ -29,6 +29,7 @@ import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
 import invalidateEdgeTokens from '../../../utils/invalidate-edge-tokens';
 import ApplicationVersion from './application-version';
+import RunsFilterDescription from '../../runs/run-table/runs-filter-description';
 
 @inject(
   'impersonation',
@@ -285,7 +286,7 @@ export default class Navigation extends React.Component {
         activeTabPath = activeTab.key;
       }
     }
-    const {impersonation} = this.props;
+    const {impersonation, counter} = this.props;
     const menuItems = this.navigationItems
       .filter(item => this.getNavigationItemVisible(item))
       .map((navigationItem, index) => {
@@ -336,7 +337,7 @@ export default class Navigation extends React.Component {
             <CounterMenuItem
               key={navigationItem.key}
               id={`navigation-button-${navigationItem.key}`}
-              tooltip={this.getNavigationItemTitle(navigationItem.title)}
+              tooltip={<RunsFilterDescription filters={counter} />}
               className={
                 classNames(
                   this.menuItemClassSelector(navigationItem, activeTabPath),
