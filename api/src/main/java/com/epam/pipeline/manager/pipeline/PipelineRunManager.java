@@ -1035,7 +1035,7 @@ public class PipelineRunManager {
         restartRun.setRestartedRunId(restartedRun.getId());
         restartRun.setDate(DateUtils.now());
         restartRunManager.createRestartRun(restartRun);
-        return run;
+        return restartedRun;
     }
 
     /**
