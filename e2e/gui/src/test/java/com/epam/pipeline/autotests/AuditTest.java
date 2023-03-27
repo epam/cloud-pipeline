@@ -182,7 +182,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         String [] commands = {
                 format("echo \"test info\" >> cloud-data/%s/%s", storage2, file3),
                 format("cp -rf cloud-data/%s/%s cloud-data/%s/%s", storage2, folder1, storage1, folder1),
-                format("mv -rf cloud-data/%s/%s cloud-data/%s/%s", storage2, folder2, storage1, folder2),
+                format("mv -f cloud-data/%s/%s cloud-data/%s/%s", storage2, folder2, storage1, folder2),
                 format("rm -f cloud-data/%s/%s", storage2, file2)
         };
         String [] expected_logs = {
