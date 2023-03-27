@@ -19,6 +19,7 @@ import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {Icon, Button, Tooltip} from 'antd';
 import PropTypes from 'prop-types';
+import RunsFilterDescription from '../../runs/run-table/runs-filter-description';
 
 @inject('counter')
 @observer
@@ -28,11 +29,16 @@ export default class RunsCounterMenuItem extends React.Component {
     icon: PropTypes.string,
     className: PropTypes.string,
     highlightedClassName: PropTypes.string,
-    tooltip: PropTypes.string
+    tooltip: PropTypes.oneOfType([PropTypes.string, PropTypes.node])
   };
   render () {
+    const {counter} = this.props;
     return (
-      <Tooltip overlay={this.props.tooltip} placement="right" mouseEnterDelay={0.5}>
+      <Tooltip
+        overlay={(<RunsFilterDescription filters={counter} />)}
+        placement="right"
+        mouseEnterDelay={0.5}
+      >
         <Button
           id="navigation-button-runs"
           className={

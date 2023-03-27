@@ -436,6 +436,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get uiRunsFilters () {
+    const value = this.getPreferenceValue('ui.runs.filters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.runs.filters" preference:', e.message);
+      }
+    }
+    return [];
+  }
+
+  @computed
   get uiRunsClusterDetailsShowActiveOnly () {
     const value = this.getPreferenceValue('ui.runs.cluster.details.show.active.only');
     return (value || '').toLowerCase() !== 'false';

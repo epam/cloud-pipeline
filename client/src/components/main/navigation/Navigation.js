@@ -295,7 +295,6 @@ export default class Navigation extends React.Component {
           return (
             <RunsCounterMenuItem
               key={navigationItem.key}
-              tooltip={navigationItem.title}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
               onClick={() => this.navigate({key: navigationItem.key})}
               icon={navigationItem.icon}

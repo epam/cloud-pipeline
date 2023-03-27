@@ -226,7 +226,9 @@ class RunTable extends localization.LocalizedReactComponent {
       error: undefined,
       expandedRows: [],
       filters: {},
-      filtersState: {}
+      filtersState: {},
+      runs: [],
+      total: 0
     }, this.fetchCurrentPage.bind(this));
   };
 
@@ -302,10 +304,10 @@ class RunTable extends localization.LocalizedReactComponent {
           const payload = getFiltersPayload({
             ...filters,
             ...userFilters,
-            userModified: modified,
             page: page + 1,
             pageSize
           });
+          payload.userModified = payload.userModified || modified;
           if (
             !payload.statuses ||
             payload.statuses.length === 0
@@ -313,7 +315,7 @@ class RunTable extends localization.LocalizedReactComponent {
             payload.statuses = AllStatuses;
           }
           const request = new PipelineRunSingleFilter(
-            getFiltersPayload(payload),
+            payload,
             false
           );
           request
@@ -581,7 +583,8 @@ RunTable.propTypes = {
     dockerImages: PropTypes.arrayOf(PropTypes.string),
     startDateFrom: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     endDateTo: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-    owners: PropTypes.arrayOf(PropTypes.string)
+    owners: PropTypes.arrayOf(PropTypes.string),
+    onlyMasterJobs: PropTypes.bool
   }),
   search: PropTypes.bool,
   searchFilters: PropTypes.object,
