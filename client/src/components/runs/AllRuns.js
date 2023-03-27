@@ -307,7 +307,10 @@ class AllRuns extends React.Component {
                         )}
                         trigger={['hover']}
                       >
-                        <Link to={SessionStorageWrapper.getRunsLink(filter.key)}>
+                        <Link
+                          id={`${filter.key}-runs-button`}
+                          to={SessionStorageWrapper.getRunsLink(filter.key)}
+                        >
                           {filter.title || `${filter.key} runs`}
                           {
                             filter.showCount && counters[filter.key] > 0
