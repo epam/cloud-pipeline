@@ -134,7 +134,7 @@ export default class Ticket extends React.Component {
       >
         {[this.ticket, ...this.comments]
           .filter(Boolean)
-          .map((comment) => {
+          .map((comment, index) => {
             const commentId = comment.iid || comment.id;
             if (editComment !== undefined && editComment === commentId) {
               return (
@@ -143,7 +143,10 @@ export default class Ticket extends React.Component {
                   comment={comment}
                   onCancel={this.onCancelEditing}
                   onSave={this.onSaveCommentEditing}
-                  className={styles.card}
+                  className={classNames(
+                    styles.card,
+                    'cp-card-background-color'
+                  )}
                   disabled={this.pending}
                 />
               );
@@ -152,7 +155,12 @@ export default class Ticket extends React.Component {
               <CommentCard
                 key={commentId}
                 comment={comment}
-                className={styles.card}
+                className={classNames(
+                  'cp-card-background-color',
+                  styles.card,
+                  {[styles.primary]: index === 0},
+                  {'cp-primary border': index === 0}
+                )}
               />
             );
           })}

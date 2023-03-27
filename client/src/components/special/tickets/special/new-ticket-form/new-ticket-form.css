@@ -22,7 +22,7 @@
 .content {
   display: flex;
   flex-wrap: nowrap;
-  max-width: 1200px;
+  max-width: 900px;
   width: 100%;
 }
 
@@ -52,4 +52,11 @@
 
 .upload-button {
   border-radius: 0 0 4px 4px;
+}
+
+.modal-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
 }

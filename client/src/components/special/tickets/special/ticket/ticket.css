@@ -54,6 +54,10 @@
   margin-left: -25px;
 }
 
+.comments-container .card.primary {
+  filter: brightness(0.9);
+}
+
 .comments-container .card:not(:last-child) {
   margin-bottom: 25px;
 }

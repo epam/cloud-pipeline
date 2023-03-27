@@ -18,16 +18,19 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer, PropTypes as mobxPropTypes} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, toJS} from 'mobx';
 import {
   Select,
   Dropdown,
   Icon,
   Pagination,
-  Menu
+  Menu,
+  Input
 } from 'antd';
 import displayDate from '../../../../../utils/displayDate';
+import highlightText from '../../../../special/highlightText';
 import Label from '../label';
+import {ticketsFilter} from '../filter';
 import styles from './ticket-list.css';
 
 @inject('preferences')
@@ -42,15 +45,21 @@ export default class TicketsList extends React.Component {
     hideControls: PropTypes.bool
   };
 
-  state = {
-    statusFilter: []
+  componentWillUnmount () {
+    ticketsFilter.clear();
   }
 
   @computed
-  get statuses () {
+  get filters () {
+    return toJS(ticketsFilter.filters);
+  }
+
+  @computed
+  get availableStatuses () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
-      return preferences.gitlabIssueStatuses;
+      return (preferences.gitlabIssueStatuses || [])
+        .map(status => status.toLowerCase());
     }
     return [];
   }
@@ -63,64 +72,79 @@ export default class TicketsList extends React.Component {
 
   @computed
   get filteredTickets () {
-    const {statusFilter} = this.state;
-    if (statusFilter.length > 0) {
-      return this.tickets.filter(({labels}) => labels.some(label => statusFilter.includes(label)));
+    let filtered = this.tickets;
+    if (this.filters.statuses.length > 0) {
+      filtered = filtered.filter(({labels}) => (labels || [])
+        .some(label => this.filters.statuses.includes(label)));
     }
-    return this.tickets;
+    if (this.filters.title) {
+      filtered = filtered.filter(({title}) => (title || '')
+        .toLowerCase()
+        .includes(this.filters.title.toLowerCase()));
+    }
+    return filtered;
   }
 
   onStatusChange = (statuses) => {
-    this.setState({statusFilter: statuses});
+    ticketsFilter.setStatuses(statuses);
+  };
+
+  onSearch = (event) => {
+    ticketsFilter.setTitle(event.target.value);
   };
 
   renderHeader = () => {
-    const {statusFilter} = this.state;
     return (
-      <div style={{display: 'flex', flexDirection: 'column'}}>
-        <div
-          className={classNames(
-            styles.ticketContainer,
-            styles.header,
-            'cp-divider',
-            'bottom'
-          )}
+      <div
+        className={classNames(
+          styles.ticketContainer,
+          styles.header,
+          'cp-divider',
+          'bottom'
+        )}
+      >
+        <b
+          className={styles.status}
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            fontSize: 'revert'
+          }}
         >
-          <b
-            className={styles.status}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              fontSize: 'revert'
-            }}
+          Status
+        </b>
+        <b
+          className={styles.title}
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            flexDirection: 'row'
+          }}
+        >
+          Title
+        </b>
+        <div className={styles.controls}>
+          <Input.Search
+            placeholder="Search by tickets title"
+            value={this.filters.title}
+            onChange={this.onSearch}
+            id="tickets-title-filter"
+            style={{marginRight: '5px'}}
+          />
+          <Select
+            onChange={this.onStatusChange}
+            value={this.filters.statuses}
+            style={{width: '250px'}}
+            placeholder="Select ticket status"
+            mode="multiple"
+            id="tickets-statuses-filter"
           >
-            Status
-          </b>
-          <b
-            className={styles.title}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-end',
-              flexDirection: 'row'
-            }}
-          >
-            Title
-          </b>
-          <div className={styles.controls}>
-            <Select
-              onChange={this.onStatusChange}
-              value={statusFilter}
-              style={{width: '200px'}}
-              placeholder="Select ticket status to filter"
-              mode="multiple"
-            >
-              {this.statuses.map(status => (
-                <Select.Option key={status}>
-                  {`${status.charAt(0).toUpperCase()}${status.slice(1)}`}
-                </Select.Option>
-              ))}
-            </Select>
-          </div>
+            {this.availableStatuses.map(status => (
+              <Select.Option key={status}>
+                {`${status.charAt(0).toUpperCase()}${status.slice(1)}`}
+              </Select.Option>
+            ))}
+          </Select>
         </div>
       </div>
     );
@@ -158,7 +182,8 @@ export default class TicketsList extends React.Component {
       </Menu>
     );
     const getStatus = (labels) => {
-      const [status] = (labels || []).filter(label => this.statuses.includes(label));
+      const [status] = (labels || [])
+        .filter(label => this.availableStatuses.includes(label.toLowerCase()));
       return status;
     };
     return (
@@ -175,7 +200,7 @@ export default class TicketsList extends React.Component {
       >
         <Label className={styles.status} label={getStatus(ticket.labels)} />
         <div className={styles.title}>
-          <b>{ticket.title}</b>
+          <b>{highlightText(ticket.title, this.filters.title)}</b>
           <span
             className="cp-text-not-important"
             style={{fontSize: 'smaller'}}
@@ -209,15 +234,21 @@ export default class TicketsList extends React.Component {
 
   render () {
     return (
-      <div style={{display: 'flex', flexDirection: 'column'}}>
-        {this.renderHeader()}
-        {this.filteredTickets.map(this.renderTicket)}
-        <Pagination
-          defaultCurrent={1}
-          total={1}
-          size="small"
-          style={{marginLeft: 'auto', marginTop: '15px'}}
-        />
+      <div className={classNames(
+        styles.container,
+        'cp-card-background-color'
+      )}>
+        <div className={styles.ticketsTable}>
+          {this.renderHeader()}
+          {this.filteredTickets.map(this.renderTicket)}
+        </div>
+        <div className={styles.paginationRow}>
+          <Pagination
+            defaultCurrent={1}
+            total={1}
+            size="small"
+          />
+        </div>
       </div>
     );
   }

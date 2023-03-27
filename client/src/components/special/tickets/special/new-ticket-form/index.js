@@ -17,15 +17,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
 import {
   Input,
   Radio,
   Upload,
   Button,
   Icon,
-  Select
+  Modal
 } from 'antd';
 import Markdown from '../../../markdown';
 import blobFilesToBase64 from '../blobFilesToBase64';
@@ -36,54 +34,28 @@ const PREVIEW_MODES = {
   preview: 'preview'
 };
 
-@inject('preferences')
-@observer
 export default class NewTicketForm extends React.Component {
   static propTypes = {
-    onSave: PropTypes.func
+    onSave: PropTypes.func,
+    onCancel: PropTypes.func,
+    title: PropTypes.string,
+    pending: PropTypes.bool,
+    renderAsModal: PropTypes.bool,
+    modalVisible: PropTypes.bool
   };
 
   state = {
     description: '',
     title: '',
     mode: PREVIEW_MODES.edit,
-    fileList: [],
-    status: undefined
-  }
-
-  componentDidMount () {
-    this.setInitialState();
-  }
-
-  componentDidUpdate (prevProps) {
-    if (prevProps.preferences?.loaded !== this.props.preferences?.loaded) {
-      this.setInitialState();
-    }
-  }
-
-  @computed
-  get statuses () {
-    const {preferences} = this.props;
-    if (preferences && preferences.loaded) {
-      return preferences.gitlabIssueStatuses;
-    }
-    return [];
+    fileList: []
   }
 
   get submitDisabled () {
-    const {description, title, status} = this.state;
+    const {description, title} = this.state;
     const {pending} = this.props;
-    return pending || !title || !description || !status;
+    return pending || !title || !description;
   }
-
-  setInitialState = () => {
-    const {preferences} = this.props;
-    const {status} = this.state;
-    if (!status && preferences.loaded) {
-      const [status] = this.statuses || [];
-      this.setState({status});
-    }
-  };
 
   onChangeMode = (event) => {
     this.setState({mode: event.target.value});
@@ -125,11 +97,15 @@ export default class NewTicketForm extends React.Component {
     return false;
   };
 
+  onCancelClick = () => {
+    const {onCancel} = this.props;
+    onCancel && onCancel();
+  };
+
   onSubmitClick = async () => {
     const {
       title,
       description,
-      status,
       fileList
     } = this.state;
     const {onSave} = this.props;
@@ -139,7 +115,6 @@ export default class NewTicketForm extends React.Component {
     const payload = {
       title,
       description,
-      labels: [status],
       ...(Object.keys(base64Files).length > 0 && {attachments: base64Files})
     };
     onSave && onSave(payload, true);
@@ -173,7 +148,7 @@ export default class NewTicketForm extends React.Component {
       title,
       fileList
     } = this.state;
-    const {uploadEnabled} = this.props;
+    const {uploadEnabled, renderAsModal} = this.props;
     return (
       <div
         className={classNames(
@@ -221,13 +196,15 @@ export default class NewTicketForm extends React.Component {
                     borderRadius: '0 4px 0 0'
                   }}
                 />
-                <Button
-                  className={styles.submitButton}
-                  disabled={this.submitDisabled}
-                  onClick={this.onSubmitClick}
-                >
-                  Submit new ticket
-                </Button>
+                {!renderAsModal ? (
+                  <Button
+                    className={styles.submitButton}
+                    disabled={this.submitDisabled}
+                    onClick={this.onSubmitClick}
+                  >
+                    Submit new ticket
+                  </Button>
+                ) : null}
               </div>
               {uploadEnabled ? (
                 <Upload
@@ -251,32 +228,42 @@ export default class NewTicketForm extends React.Component {
   };
 
   render () {
-    const {status} = this.state;
+    const {renderAsModal, modalVisible, title} = this.props;
+    if (renderAsModal) {
+      return (
+        <Modal
+          title={title}
+          visible={modalVisible}
+          onCancel={this.onCancelClick}
+          footer={(
+            <div className={styles.modalFooter}>
+              <Button
+                onClick={this.onCancelClick}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="primary"
+                disabled={this.submitDisabled}
+                onClick={this.onSubmitClick}
+              >
+                Submit new ticket
+              </Button>
+            </div>
+          )}
+        >
+          <div className={styles.container}>
+            <div className={styles.content}>
+              {this.renderTicketEditor()}
+            </div>
+          </div>
+        </Modal>
+      );
+    }
     return (
       <div className={styles.container}>
         <div className={styles.content}>
           {this.renderTicketEditor()}
-          <div style={{
-            display: 'flex',
-            minWidth: '300px',
-            flexDirection: 'column',
-            padding: '0 15px'
-          }}>
-            <div style={{display: 'flex', flexDirection: 'column', marginBottom: '5px'}}>
-              <span>Status:</span>
-              <Select
-                onChange={this.onChangeValue('status', 'select')}
-                value={status}
-                style={{width: '100%'}}
-              >
-                {this.statuses.map(status => (
-                  <Select.Option key={status}>
-                    {`${status.charAt(0).toUpperCase()}${status.slice(1)}`}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
-          </div>
         </div>
       </div>
     );

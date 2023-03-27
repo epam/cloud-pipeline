@@ -222,6 +222,9 @@ export default `
 @THEME .cp-warning {
   color: @color-yellow;
 }
+@THEME .cp-warning.border {
+  border-color: @color-yellow;
+}
 @THEME .cp-success {
   color: @color-green;
 }

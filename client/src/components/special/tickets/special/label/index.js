@@ -19,10 +19,13 @@ import classNames from 'classnames';
 import styles from './label.css';
 
 export const STATUS_COLORS = {
-  opened: 'cp-success border',
-  open: 'cp-success border',
-  closed: 'cp-primary border',
-  close: 'cp-primary border'
+  opened: 'cp-primary border',
+  open: 'cp-primary border',
+  closed: 'cp-success border',
+  close: 'cp-success border',
+  inprogress: 'cp-warning border',
+  'in-progress': 'cp-warning border',
+  'in progress': 'cp-warning border'
 };
 
 export default function Label ({label = '', style = {}, className}) {

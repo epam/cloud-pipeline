@@ -29,7 +29,9 @@ export default class CommentCard extends React.Component {
   static propTypes = {
     comment: PropTypes.object,
     className: PropTypes.string,
-    onSelectMenu: PropTypes.func
+    onSelectMenu: PropTypes.func,
+    headerClassName: PropTypes.string,
+    style: PropTypes.object
   };
 
   onSelectMenu = (key, comment) => {
@@ -38,7 +40,13 @@ export default class CommentCard extends React.Component {
   };
 
   render () {
-    const {comment, className, onSelectMenu} = this.props;
+    const {
+      comment,
+      className,
+      headerClassName,
+      onSelectMenu,
+      style
+    } = this.props;
     if (!comment) {
       return null;
     }
@@ -62,7 +70,7 @@ export default class CommentCard extends React.Component {
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '4px',
-          className
+          style
         }}
         className={classNames(
           'cp-panel',
@@ -73,7 +81,8 @@ export default class CommentCard extends React.Component {
         <div
           className={classNames(
             'cp-divider',
-            'bottom'
+            'bottom',
+            headerClassName
           )}
           style={{
             padding: '5px 10px',

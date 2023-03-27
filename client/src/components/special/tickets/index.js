@@ -20,7 +20,8 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Button,
-  message
+  message,
+  Icon
 } from 'antd';
 import GitlabIssuesLoad from '../../../models/gitlab-issues/GitlabIssuesLoad';
 import GitlabIssueDelete from '../../../models/gitlab-issues/GitlabIssueDelete';
@@ -45,7 +46,8 @@ const ticketsRequest = new GitlabIssuesLoad();
 @observer
 export default class TicketsBrowser extends React.Component {
   state = {
-    pending: false
+    pending: false,
+    showNewTicketModal: false
   }
 
   get mode () {
@@ -81,6 +83,7 @@ export default class TicketsBrowser extends React.Component {
       const hide = message.loading(`Creating ticket...`, 0);
       await request.send(payload);
       await tickets.fetch();
+      this.closeNewTicketModal();
       hide();
       this.setState({pending: false}, () => {
         if (request.error) {
@@ -113,9 +116,12 @@ export default class TicketsBrowser extends React.Component {
     });
   };
 
-  onCreateNewTicketClick = () => {
-    const {router} = this.props;
-    router && router.push(`/tickets/new`);
+  showNewTicketModal = () => {
+    this.setState({showNewTicketModal: true});
+  };
+
+  closeNewTicketModal = () => {
+    this.setState({showNewTicketModal: false});
   };
 
   onSelectTicket = (iid) => {
@@ -134,22 +140,25 @@ export default class TicketsBrowser extends React.Component {
         type="secondary"
         onClick={this.navigateBack}
         key="goBackButton"
+        id="go-back-button"
+        size="small"
+        className={styles.goBackButton}
       >
-        Go back to tickets list
+        <Icon type="left" />
       </Button>
     );
     const content = {
       [MODES.createNewTicket]: [
+        goBackButton,
         <b className={styles.heading} key="new">
           Create new ticket
-        </b>,
-        goBackButton
+        </b>
       ],
       [MODES.editTicket]: [
+        goBackButton,
         <b className={styles.heading} key="edit">
           Edit ticket
-        </b>,
-        goBackButton
+        </b>
       ],
       [MODES.list]: [
         <b className={styles.heading} key="list">
@@ -157,7 +166,7 @@ export default class TicketsBrowser extends React.Component {
         </b>,
         <Button
           type="primary"
-          onClick={this.onCreateNewTicketClick}
+          onClick={this.showNewTicketModal}
           key="createNewButton"
         >
           Create new ticket
@@ -210,6 +219,7 @@ export default class TicketsBrowser extends React.Component {
   };
 
   render () {
+    const {showNewTicketModal, pending} = this.state;
     return (
       <div
         className={
@@ -223,6 +233,16 @@ export default class TicketsBrowser extends React.Component {
       >
         {this.renderHeader()}
         {this.renderContent()}
+        {showNewTicketModal ? (
+          <NewTicketForm
+            title="Create new ticket"
+            onSave={this.createTicket}
+            onCancel={this.closeNewTicketModal}
+            pending={pending}
+            renderAsModal
+            modalVisible={showNewTicketModal}
+          />
+        ) : null}
       </div>
     );
   }

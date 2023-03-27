@@ -14,31 +14,40 @@
  * limitations under the License.
  */
 
-.container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 30px;
-  overflow-y: auto;
+import {computed, observable, action} from 'mobx';
+
+class TicketsFilter {
+  constructior () {
+  };
+
+  @observable
+  _filters = {
+    title: '',
+    statuses: []
+  };
+
+  @computed
+  get filters () {
+    return this._filters;
+  }
+
+  @action
+  setTitle = (value) => {
+    this._filters.title = value;
+  };
+
+  @action
+  setStatuses = (value) => {
+    this._filters.statuses = value;
+  };
+
+  @action
+  clear = () => {
+    this._filters.title = '';
+    this._filters.statuses = [];
+  };
 }
 
-.header-container {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: flex-end;
-  margin-bottom: 20px;
-  padding-bottom: 5px;
-}
+const ticketsFilter = new TicketsFilter();
 
-.header-container .heading {
-  margin-right: auto;
-  font-size: larger;
-}
-
-.go-back-button {
-  margin-right: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+export {ticketsFilter};
