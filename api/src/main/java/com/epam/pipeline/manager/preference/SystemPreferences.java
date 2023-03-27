@@ -738,6 +738,10 @@ public class SystemPreferences {
             "ui.runs.counter.filter", null, new TypeReference<Map<String, Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
 
+    public static final ObjectPreference<List<Object>> UI_RUNS_FILTERS = new ObjectPreference<>(
+            "ui.runs.filters", Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
             "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
