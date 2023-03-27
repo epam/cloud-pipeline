@@ -113,7 +113,8 @@ export function filtersAreEqual (filter1, filter2) {
     startDateFrom: startDateFromA,
     endDateTo: endDateToA,
     owners: ownersA,
-    projectIds: projectIdsA
+    projectIds: projectIdsA,
+    onlyMasterJobs: onlyMasterJobsA = true
   } = filter1 || {};
   const {
     statuses: statusesB,
@@ -124,7 +125,8 @@ export function filtersAreEqual (filter1, filter2) {
     startDateFrom: startDateFromB,
     endDateTo: endDateToB,
     owners: ownersB,
-    projectIds: projectIdsB
+    projectIds: projectIdsB,
+    onlyMasterJobs: onlyMasterJobsB = true
   } = filter2 || {};
   return statusesArraysAreEqual(statusesA, statusesB) &&
     parentIdsAreEqual(parentIdA, parentIdB) &&
@@ -134,13 +136,15 @@ export function filtersAreEqual (filter1, filter2) {
     dockerImagesArraysAreEqual(dockerImagesA, dockerImagesB) &&
     startDatesAreEqual(startDateFromA, startDateFromB) &&
     endDatesAreEqual(endDateToA, endDateToB) &&
-    ownerArraysAreEqual(ownersA, ownersB);
+    ownerArraysAreEqual(ownersA, ownersB) &&
+    onlyMasterJobsA === onlyMasterJobsB;
 }
 
 export function getFiltersPayload (filters) {
   const {
     startDateFrom,
     endDateTo,
+    onlyMasterJobs = true,
     ...rest
   } = filters || {};
   const formatDate = (date) => date
@@ -149,6 +153,7 @@ export function getFiltersPayload (filters) {
   return {
     ...rest,
     startDateFrom: formatDate(startDateFrom),
-    endDateTo: formatDate(endDateTo)
+    endDateTo: formatDate(endDateTo),
+    userModified: !onlyMasterJobs
   };
 }

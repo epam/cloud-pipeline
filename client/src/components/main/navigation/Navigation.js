@@ -30,6 +30,7 @@ import searchStyles from '../../search/search.css';
 import {Pages} from '../../../utils/ui-navigation';
 import invalidateEdgeTokens from '../../../utils/invalidate-edge-tokens';
 import ApplicationVersion from './application-version';
+import RunsFilterDescription from '../../runs/run-table/runs-filter-description';
 
 @inject(
   'uiNavigation',
@@ -166,7 +167,7 @@ export default class Navigation extends React.Component {
   };
 
   render () {
-    const {activeTabPath, impersonation} = this.props;
+    const {activeTabPath, impersonation, counter} = this.props;
     const menuItems = this.navigationItems
       .filter(item => this.getNavigationItemVisible(item))
       .map((navigationItem, index) => {
@@ -215,7 +216,7 @@ export default class Navigation extends React.Component {
             <CounterMenuItem
               key={navigationItem.key}
               id={`navigation-button-${navigationItem.key}`}
-              tooltip={this.getNavigationItemTitle(navigationItem.title)}
+              tooltip={<RunsFilterDescription filters={counter} />}
               className={
                 classNames(
                   this.menuItemClassSelector(navigationItem, activeTabPath),

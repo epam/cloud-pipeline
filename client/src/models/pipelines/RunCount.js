@@ -108,12 +108,37 @@ class RunCount extends RemotePost {
       if (currentStatuses.size !== DEFAULT_STATUSES.length) {
         return false;
       }
-      for (const status of this.statuses) {
+      for (const status of DEFAULT_STATUSES) {
         if (!currentStatuses.has(status)) {
           return false;
         }
       }
       return this.onlyMasterJobs;
+    } catch (_) {
+      // empty
+    }
+    return true;
+  }
+
+  /**
+   * @param {RunCount} otherRequest
+   * @returns {boolean}
+   */
+  filtersEquals (otherRequest) {
+    if (!otherRequest) {
+      return false;
+    }
+    try {
+      const currentStatuses = new Set(this.statuses);
+      if (currentStatuses.size !== otherRequest.statuses.length) {
+        return false;
+      }
+      for (const status of otherRequest.statuses) {
+        if (!currentStatuses.has(status)) {
+          return false;
+        }
+      }
+      return this.onlyMasterJobs === otherRequest.onlyMasterJobs;
     } catch (_) {
       // empty
     }
@@ -150,22 +175,28 @@ class RunCount extends RemotePost {
 class RunCountDefault extends RunCount {
   /**
    * @param {RunCount} globalCounter
+   * @param {{statuses: string[], onlyMasterJobs: boolean}} [filters]
    */
-  constructor (globalCounter) {
+  constructor (globalCounter, filters = {}) {
+    const {
+      statuses = DEFAULT_STATUSES,
+      onlyMasterJobs = true
+    } = filters;
     super({
       autoUpdate: false,
-      statuses: DEFAULT_STATUSES,
-      onlyMasterJobs: true
+      statuses,
+      onlyMasterJobs,
+      usePreferenceValue: false
     });
     this.globalCounter = globalCounter;
     this.updateFromGlobalCounter();
-    if (globalCounter && globalCounter.isDefault) {
+    if (globalCounter && globalCounter.filtersEquals(this)) {
       globalCounter.addListener(this.updateFromGlobalCounter);
     }
   }
 
   updateFromGlobalCounter = () => {
-    if (this.globalCounter && this.globalCounter.isDefault) {
+    if (this.globalCounter && this.globalCounter.filtersEquals(this)) {
       this._runsCount = this.globalCounter.runsCount;
     }
   };
@@ -178,7 +209,7 @@ class RunCountDefault extends RunCount {
 
   @action
   async fetch () {
-    if (this.globalCounter && this.globalCounter.isDefault) {
+    if (this.globalCounter && this.globalCounter.filtersEquals(this)) {
       this._runsCount = this.globalCounter.runsCount;
       return;
     }
