@@ -81,12 +81,12 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         pathStorage1 = library()
                 .selectStorage(storage1)
                 .createFileWithContent(file1, "file1 content")
-                .createFile(file2)
+                .createFileWithContent(file2, "file2 content")
                 .createFolder(folder1)
                 .createFolder(folder2)
                 .cd(folder1)
-                .createFile(inner_file1)
-                .createFile(inner_file2)
+                .createFileWithContent(inner_file1, "inner_file1 content")
+                .createFileWithContent(inner_file2, "inner_file2 content")
                 .cd("..")
                 .cd(folder2)
                 .createFile(inner_file3)
@@ -175,6 +175,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("rm -f cloud-data/%s/%s", storage2, file2)
         };
         String [] expected_logs = {
+                format("WRITE %s/%s", pathStorage2, file3),
                 format("READ %s/%s/%s", pathStorage2, folder1, inner_file1),
                 format("WRITE %s/%s/%s", pathStorage1, folder1, inner_file1),
                 format("READ %s/%s/%s", pathStorage2, folder1, inner_file2),
