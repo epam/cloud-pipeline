@@ -91,8 +91,8 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .createFileWithContent(inner_file2, "inner_file2 content")
                 .cd("..")
                 .cd(folder2)
-                .createFile(inner_file3)
-                .createFile(inner_file4)
+                .createFileWithContent(inner_file3, "inner_file3 content")
+                .createFileWithContent(inner_file4, "inner_file4 content")
                 .cd("..")
                 .getStoragePath();
         pathStorage2 = library()
@@ -127,7 +127,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("DELETE %s/%s", pathStorage1, file2),
                 format("DELETE %s/%s", pathStorage1, file1)
         };
-        sleep(20, SECONDS);
         logoutIfNeeded();
         loginAs(user);
         tools()
@@ -169,7 +168,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("DELETE %s/%s/%s", pathStorage1, folder1, inner_file1),
                 format("DELETE %s/%s/%s", pathStorage1, folder1, inner_file2)
         };
-        sleep(20, SECONDS);
         logoutIfNeeded();
         loginAs(user);
         executeCommands(commands);
@@ -201,7 +199,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("DELETE %s/%s/%s", pathStorage2, folder2, inner_file4),
                 format("DELETE %s/%s", pathStorage2, file2)
         };
-        sleep(20, SECONDS);
         logoutIfNeeded();
         loginAs(user);
         executeCommands(commands);
@@ -264,7 +261,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .delete()
                 .selectFile(file1_new)
                 .download();
-        sleep(20, SECONDS);
         logoutIfNeeded();
         loginAs(admin);
         checkAuditLog(expected_logs);

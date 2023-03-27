@@ -62,7 +62,7 @@ public abstract class AbstractSeveralPipelineRunningTest
         System.out.printf("Stop runs with ids %s%n", Arrays.toString(runIds.toArray()));
         runIds.forEach(id -> {
             System.out.printf("Run with id %s is going to be stopped.%n", id);
-            navigationMenu().runs().stopRunIfPresent(id);
+            navigationMenu().runs().viewAvailableActiveRuns().stopRunIfPresent(id);
         });
     }
 }
