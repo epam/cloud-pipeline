@@ -200,6 +200,18 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     public void uiDataAccessAudit() {
         final File newFile = Utils.createTempFile("file2");
         String file2_new = newFile.getName();
+        logoutIfNeeded();
+        loginAs(user);
+        pathStorage3 = library()
+                .cd(testFolder)
+                .createStorage(storage3)
+                .selectStorage(storage3)
+                .createFolder(folder1)
+                .cd(folder1)
+                .createFile(inner_file1)
+                .createFile(inner_file2)
+                .cd("..")
+                .getStoragePath();
         String [] expected_logs = {
                 format("WRITE %s/%s", pathStorage3, file1),
                 format("WRITE %s/%s", pathStorage3, file2_new),
@@ -218,18 +230,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("DELETE %s/%s/%s", pathStorage3, folder1_new, inner_file1),
                 format("DELETE %s/%s/%s", pathStorage3, folder1_new, inner_file2)
         };
-        logoutIfNeeded();
-        loginAs(user);
-        pathStorage3 = library()
-                .cd(testFolder)
-                .createStorage(storage3)
-                .selectStorage(storage3)
-                .createFolder(folder1)
-                .cd(folder1)
-                .createFile(inner_file1)
-                .createFile(inner_file2)
-                .cd("..")
-                .getStoragePath();
         library()
                 .cd(testFolder)
                 .selectStorage(storage3)
@@ -249,7 +249,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .delete()
                 .selectFile(file1_new)
                 .download();
-;
         logoutIfNeeded();
         loginAs(admin);
         checkAuditLog(expected_logs);
