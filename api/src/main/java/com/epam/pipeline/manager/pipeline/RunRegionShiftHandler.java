@@ -203,7 +203,7 @@ public class RunRegionShiftHandler {
                            final PipelineRun currentRun) {
         addRunLog(parentRun, logMessage, status);
         if (!Objects.equals(parentRun.getId(), currentRun.getId())) {
-            addRunLog(parentRun, logMessage, status);
+            addRunLog(currentRun, logMessage, status);
         }
     }
 
