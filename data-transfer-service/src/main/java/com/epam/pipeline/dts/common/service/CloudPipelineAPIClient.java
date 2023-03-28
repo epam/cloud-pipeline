@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.dts.common.service;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
+import com.epam.pipeline.dts.sync.service.impl.ApiTokenService;
 import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -34,6 +35,7 @@ import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,8 +44,15 @@ import java.util.Optional;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class CloudPipelineAPIClient {
     
-    private final CloudPipelineAPI cloudPipelineAPI;
+    private CloudPipelineAPI cloudPipelineAPI;
     private final RetryingCloudPipelineApiExecutor pipelineApiExecutor = RetryingCloudPipelineApiExecutor.basic();
+
+    @Autowired
+    private ApiTokenService apiTokenService;
+
+    CloudPipelineAPIClient(final CloudPipelineAPI api) {
+        this.cloudPipelineAPI = api;
+    }
 
     public static CloudPipelineAPIClient from(final CloudPipelineAPI api) {
         return new CloudPipelineAPIClient(api);
@@ -59,8 +68,19 @@ public class CloudPipelineAPIClient {
         return CloudPipelineAPIClient.from(credentials.getApi(), credentials.getApiToken());
     }
 
+    public CloudPipelineAPI getClient() {
+        String token = apiTokenService.getToken();
+        if (apiTokenService.isExpired(token)) {
+            token = getToken();
+            apiTokenService.updateToken(token);
+            cloudPipelineAPI = new CloudPipelineApiBuilder(0, 0, apiTokenService.api, token)
+                    .buildClient();
+        }
+        return cloudPipelineAPI;
+    }
+
     public List<MetadataEntry> loadMetadataEntry(final List<EntityVO> entities) {
-        return ListUtils.emptyIfNull(pipelineApiExecutor.execute(cloudPipelineAPI.loadFolderMetadata(entities)));
+        return ListUtils.emptyIfNull(pipelineApiExecutor.execute(getClient().loadFolderMetadata(entities)));
     }
 
     public Optional<MetadataEntry> findMetadataEntry(final EntityVO entity) {
@@ -77,7 +97,11 @@ public class CloudPipelineAPIClient {
     }
 
     public Optional<PipelineUser> whoami() {
-        return Optional.ofNullable(pipelineApiExecutor.execute(cloudPipelineAPI.whoami()));
+        return Optional.ofNullable(pipelineApiExecutor.execute(getClient().whoami()));
+    }
+
+    public String getToken() {
+        return Optional.ofNullable(pipelineApiExecutor.execute(cloudPipelineAPI.getToken())).orElse(null);
     }
 
     public Optional<String> getUserMetadataValueByKey(final String key) {
@@ -91,7 +115,7 @@ public class CloudPipelineAPIClient {
 
     public Optional<DtsRegistry> findDtsRegistryByNameOrId(final String dtsId) {
         try {
-            return Optional.of(pipelineApiExecutor.execute(cloudPipelineAPI.loadDts(dtsId)));
+            return Optional.of(pipelineApiExecutor.execute(getClient().loadDts(dtsId)));
         } catch (PipelineResponseApiException e) {
             return Optional.empty();
         }
@@ -99,22 +123,22 @@ public class CloudPipelineAPIClient {
 
     public DtsRegistry deleteDtsRegistryPreferences(final String dtsId, final List<String> preferencesToRemove) {
         return pipelineApiExecutor.execute(
-            cloudPipelineAPI.deleteDtsPreferences(dtsId, new DtsRegistryPreferencesRemovalVO(preferencesToRemove)));
+                getClient().deleteDtsPreferences(dtsId, new DtsRegistryPreferencesRemovalVO(preferencesToRemove)));
     }
 
     public DtsRegistry updateDtsRegistryHeartbeat(final String dtsId) {
-        return pipelineApiExecutor.execute(cloudPipelineAPI.updateDtsHeartbeat(dtsId));
+        return pipelineApiExecutor.execute(getClient().updateDtsHeartbeat(dtsId));
     }
 
     public AbstractDataStorage findStorageByPath(final String path) {
-        return pipelineApiExecutor.execute(cloudPipelineAPI.findStorageByPath(path));
+        return pipelineApiExecutor.execute(getClient().findStorageByPath(path));
     }
 
     public DataStorageItemContent getStorageItemContent(final Long storageId, final String path) {
-        return pipelineApiExecutor.execute(cloudPipelineAPI.getStorageItemContent(storageId, path));
+        return pipelineApiExecutor.execute(getClient().getStorageItemContent(storageId, path));
     }
 
     public DataStorageFile createStorageItem(final Long storageId, final String path, final String content) {
-        return pipelineApiExecutor.execute(cloudPipelineAPI.createStorageItem(storageId, path, content));
+        return pipelineApiExecutor.execute(getClient().createStorageItem(storageId, path, content));
     }
 }

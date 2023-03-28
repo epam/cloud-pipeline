@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,6 @@ public class DtsSynchronizationService {
 
     @Autowired
     public DtsSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
-                                     final @Value("${dts.api.token}") String pipeApiToken,
                                      final @Value("${dts.autonomous.sync.cron}") String defaultCronExpression,
                                      final @Value("${dts.sync.token.name:dts-sync-complete}") String syncToken,
                                      final TransferService autonomousTransferService,
@@ -92,9 +91,10 @@ public class DtsSynchronizationService {
                                      final PreferenceService preferenceService,
                                      final ShutdownService shutdownService,
                                      final DtsRuleExpanderService dtsRuleExpander,
-                                     final CloudPipelineAPIClient apiClient) {
+                                     final CloudPipelineAPIClient apiClient,
+                                     final ApiTokenService apiTokenService) {
         this.apiClient = apiClient;
-        this.pipeCredentials = new PipelineCredentials(pipeApiUrl, pipeApiToken);
+        this.pipeCredentials = new PipelineCredentials(pipeApiUrl, apiTokenService.getToken());
         this.taskRepository = taskRepository;
         this.transferService = autonomousTransferService;
         this.shutdownService = shutdownService;

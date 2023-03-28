@@ -22,6 +22,7 @@ import com.epam.pipeline.dts.common.service.IdentificationService;
 import com.epam.pipeline.dts.common.service.FileService;
 import com.epam.pipeline.dts.common.service.impl.FileServiceImpl;
 import com.epam.pipeline.dts.common.service.impl.SimpleIdentificationService;
+import com.epam.pipeline.dts.sync.service.impl.ApiTokenService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -69,10 +70,10 @@ public class CommonConfiguration {
 
     @Bean
     public CloudPipelineAPIClient apiClient(final @Value("${dts.api.url}") String apiUrl,
-                                            final @Value("${dts.api.token}") String apiToken,
-                                            final @Value("${dts.api.timeout.seconds}") int apiTimeoutInSeconds) {
+                                            final @Value("${dts.api.timeout.seconds}") int apiTimeoutInSeconds,
+                                            final ApiTokenService apiTokenService) {
         return CloudPipelineAPIClient.from(new CloudPipelineApiBuilder(apiTimeoutInSeconds, apiTimeoutInSeconds,
-                apiUrl, apiToken).buildClient());
+                apiUrl, apiTokenService.getToken()).buildClient());
     }
 
     @Bean
