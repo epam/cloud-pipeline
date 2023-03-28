@@ -326,6 +326,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> GITLAB_ISSUE_STATUSES = new ObjectPreference<>(
             "git.gitlab.issue.statuses", null, new TypeReference<List<String>>() {}, GIT_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final ObjectPreference<List<String>> GITLAB_DEFAULT_LABELS = new ObjectPreference<>(
+            "git.gitlab.default.labels", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
 
     // DOCKER_SECURITY_GROUP
     /**
