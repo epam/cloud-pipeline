@@ -360,8 +360,8 @@ public class RunApiService {
         return runManager.loadRunsByPoolId(poolId);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
-    public List<RunInfo> loadRunsByParentId(final Long parentId) {
-        return runManager.loadRunsByParentId(parentId);
+    @PreAuthorize(RUN_ID_READ)
+    public List<RunInfo> loadRunsByParentId(final Long runId) {
+        return runManager.loadRunsByParentId(runId);
     }
 }
