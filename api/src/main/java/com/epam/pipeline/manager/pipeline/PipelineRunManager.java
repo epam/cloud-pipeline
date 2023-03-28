@@ -50,6 +50,7 @@ import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -1152,6 +1153,17 @@ public class PipelineRunManager {
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
         nodePoolManager.load(poolId);
         return runCRUDService.loadRunsByPoolId(poolId);
+    }
+
+    public List<RunInfo> loadRunsByParentId(final Long parentId) {
+        return ListUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(Collections.singletonList(parentId))).stream()
+                .map(run -> RunInfo.builder()
+                        .runId(run.getId())
+                        .status(run.getStatus())
+                        .startDate(run.getStartDate())
+                        .endDate(run.getEndDate())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
