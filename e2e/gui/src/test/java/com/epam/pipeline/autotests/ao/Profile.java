@@ -188,7 +188,7 @@ public class Profile implements AccessObject<Profile> {
 //        ensureDisable(SAVE);
         attempt = 0;
         maxAttempts = 10;
-        while (get(SAVE).is(disabled)
+        while (get(SAVE).isEnabled()
                 && attempt < maxAttempts) {
             sleep(3, SECONDS);
             attempt++;
