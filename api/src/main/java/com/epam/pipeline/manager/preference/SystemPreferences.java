@@ -623,10 +623,11 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_RUNS_COUNT_FILTER = new ObjectPreference<>(
             "ui.runs.counter.filter", null, new TypeReference<Map<String, Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
-
     public static final ObjectPreference<List<Object>> UI_RUNS_FILTERS = new ObjectPreference<>(
             "ui.runs.filters", Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final BooleanPreference UI_RUNS_CLUSTER_DETAILS_SHOW_ACTIVE_ONLY = new BooleanPreference(
+            "ui.runs.cluster.details.show.active.only", true, UI_GROUP, pass);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
