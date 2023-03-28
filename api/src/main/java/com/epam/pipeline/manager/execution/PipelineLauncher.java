@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.execution;
 
-import com.epam.pipeline.aspect.run.PipelineLaunchCheck;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
@@ -28,6 +27,7 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -105,23 +105,21 @@ public class PipelineLauncher {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
-    @PipelineLaunchCheck
     public String launch(final PipelineRun run, final PipelineConfiguration configuration,
                          final List<String> endpoints, final String clusterId) {
         return launch(run, configuration, endpoints, true, run.getPodId(), clusterId);
     }
 
-    @PipelineLaunchCheck
     public String launch(final PipelineRun run, final PipelineConfiguration configuration, final List<String> endpoints,
                          final boolean useLaunch, final String pipelineId, final String clusterId) {
         return launch(run, configuration, endpoints, useLaunch, pipelineId,
                 clusterId, getImagePullPolicy(configuration));
     }
 
-    @PipelineLaunchCheck
     public String launch(final PipelineRun run, final PipelineConfiguration configuration,
                          final List<String> endpoints, final boolean useLaunch, final String pipelineId,
                          final String clusterId, final ImagePullPolicy imagePullPolicy) {
+        validateLaunchConfiguration(configuration);
         final GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
         final Map<SystemParams, String> systemParams = matchSystemParams(
@@ -161,6 +159,47 @@ public class PipelineLauncher {
                 clusterId, imagePullPolicy, configuration.getKubeLabels(),
                 configuration.getKubeServiceAccount());
         return pipelineCommand;
+    }
+
+    void validateLaunchConfiguration(final PipelineConfiguration configuration) {
+        final PipelineUser user = authManager.getCurrentUser();
+        validateRunAssignPolicy(configuration);
+        validateConfigurationOnAdvancedAssignPolicy(configuration, user);
+        validateConfigurationOnKubernetesServiceAccount(configuration, user);
+    }
+
+    private void validateRunAssignPolicy(final PipelineConfiguration configuration) {
+        Optional.ofNullable(configuration.getPodAssignPolicy()).ifPresent(assignPolicy -> {
+            if (!assignPolicy.isValid()) {
+                throw new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_MALFORMED,
+                                assignPolicy.toString()));
+            }
+        });
+    }
+
+    private void validateConfigurationOnKubernetesServiceAccount(final PipelineConfiguration configuration,
+                                                                 final PipelineUser user) {
+        if (!user.isAdmin() && configuration.getKubeServiceAccount() != null) {
+            throw new IllegalStateException(
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName())
+            );
+        }
+    }
+
+    private void validateConfigurationOnAdvancedAssignPolicy(final PipelineConfiguration configuration,
+                                                             final PipelineUser user) {
+        if (user.isAdmin()) {
+            return;
+        }
+        final boolean isAdvancedRunAssignPolicy = Optional.ofNullable(configuration.getPodAssignPolicy())
+                .map(policy -> !policy.getSelector().getLabel().equals(KubernetesConstants.RUN_ID_LABEL))
+                .orElse(false);
+        if (isAdvancedRunAssignPolicy) {
+            throw new IllegalStateException(
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
+        }
     }
 
     private Map<String, String> buildRegionSpecificEnvVars(final Long cloudRegionId,

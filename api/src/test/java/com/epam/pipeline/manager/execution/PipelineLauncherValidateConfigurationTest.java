@@ -1,4 +1,4 @@
-package com.epam.pipeline.aspect.run;
+package com.epam.pipeline.manager.execution;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
@@ -7,18 +7,28 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.security.AuthManager;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.runners.MockitoJUnitRunner;
 
-public class PipelineLaunchAspectTest {
+@RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings("PMD.UnusedPrivateField")
+public class PipelineLauncherValidateConfigurationTest {
 
     public static final String SOME_LABEL = "some-label";
     public static final String VALUE = "true";
     public static final String KUBE_SERVICE_ACCOUNT = "some-account";
     public static final String RUN_ID_VALUE = "1";
 
-    private final AuthManager authManager = Mockito.mock(AuthManager.class);
-    private final MessageHelper messageHelper = Mockito.mock(MessageHelper.class);
-    private final PipelineLaunchAspect aspect = new PipelineLaunchAspect(authManager, messageHelper);
+    @Mock
+    private AuthManager authManager;
+    @Mock
+    private MessageHelper messageHelper;
+
+    @InjectMocks
+    private PipelineLauncher pipelineLauncher;
 
     @Test
     public void checkRunLaunchIsNotForbiddenForAdmin() {
@@ -33,7 +43,7 @@ public class PipelineLaunchAspectTest {
                         .build()
         );
         configuration.setKubeServiceAccount(KUBE_SERVICE_ACCOUNT);
-        aspect.checkRunLaunchIsNotForbidden(null, configuration);
+        pipelineLauncher.validateLaunchConfiguration(configuration);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -41,7 +51,7 @@ public class PipelineLaunchAspectTest {
         Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setKubeServiceAccount(KUBE_SERVICE_ACCOUNT);
-        aspect.checkRunLaunchIsNotForbidden(null, configuration);
+        pipelineLauncher.validateLaunchConfiguration(configuration);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -56,7 +66,7 @@ public class PipelineLaunchAspectTest {
                                         .value(VALUE).build())
                         .build()
         );
-        aspect.checkRunLaunchIsNotForbidden(null, configuration);
+        pipelineLauncher.validateLaunchConfiguration(configuration);
     }
 
     @Test
@@ -71,6 +81,6 @@ public class PipelineLaunchAspectTest {
                                         .value(RUN_ID_VALUE).build())
                         .build()
         );
-        aspect.checkRunLaunchIsNotForbidden(null, configuration);
+        pipelineLauncher.validateLaunchConfiguration(configuration);
     }
 }
