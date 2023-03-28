@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
@@ -80,12 +81,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.manager.git.RestApiUtils.execute;
+import static com.epam.pipeline.manager.git.RestApiUtils.*;
 
 @Wither
 @AllArgsConstructor
@@ -438,9 +440,18 @@ public class GitlabClient {
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
     }
 
-    public GitlabIssue createOrUpdateIssue(final String project,
-                                           final GitlabIssue issue,
-                                           final Map<String, String> attachments) throws GitClientException {
+    public GitlabIssue createIssue(final String project,
+                                   final GitlabIssue issue,
+                                   final Map<String, String> attachments) throws GitClientException {
+        issue.setDescription(formatTextWithAttachments(project,
+                attachments,
+                issue.getDescription()));
+        return execute(gitLabApi.createIssue(apiVersion, project, issue));
+    }
+
+    public GitlabIssue updateIssue(final String project,
+                                   final GitlabIssue issue,
+                                   final Map<String, String> attachments) throws GitClientException {
         issue.setDescription(formatTextWithAttachments(project,
                 attachments,
                 issue.getDescription()));
@@ -460,9 +471,13 @@ public class GitlabClient {
         return execute(gitLabApi.upload(apiVersion, project, filePart));
     }
 
-    public List<GitlabIssue> getIssues(final String project, final String authorId, final List<String> labels)
+    public PagedResult<List<GitlabIssue>> getIssues(final String project, final List<String> labels,
+                                              final Integer page, final Integer pageSize, final String search)
             throws GitClientException {
-        return execute(gitLabApi.getIssues(apiVersion, project, authorId, labels));
+        Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labels, page,
+                pageSize, search));
+        int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
+        return new PagedResult<>(response.body(), totalPages);
     }
 
     public GitlabIssue getIssue(final String project, final Long issueId) throws GitClientException {
