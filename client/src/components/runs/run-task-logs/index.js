@@ -129,7 +129,12 @@ async function downloadTaskLogs (
     .filter((log) => log.logText && log.logText.length)
     .map((log) => log.logText)
     .join('\n');
-  FileSaver.saveAs(new Blob([logs]), `${runId}-${task}-logs.txt`);
+  const fileName = [
+    runId,
+    task,
+    'logs.txt'
+  ].filter(Boolean).join('-');
+  FileSaver.saveAs(new Blob([logs]), fileName);
 }
 
 function isError (text) {
@@ -249,7 +254,7 @@ class RunTaskLogs extends React.Component {
       taskInstance,
       autoUpdate
     } = this.props;
-    if (runId && taskName) {
+    if (runId) {
       this.setState({
         logs: [],
         maxLinesToDisplay: undefined,
@@ -437,6 +442,21 @@ class RunTaskLogs extends React.Component {
     });
   };
 
+  onDownloadClicked = () => {
+    const {
+      runId,
+      taskName,
+      taskParameters,
+      taskInstance
+    } = this.props;
+    (downloadTaskLogs)(
+      runId,
+      taskName,
+      taskParameters,
+      taskInstance
+    );
+  };
+
   onChangeFollowLog = (event) => {
     const {autoUpdate} = this.props;
     this.setState({
@@ -514,7 +534,10 @@ class RunTaskLogs extends React.Component {
     } = this.state;
     const searchResult = searchResults[searchResultIndex];
     if (searchResult) {
-      this.scrollToLine(searchResult.lineIndex);
+      this.scrollToLine(
+        searchResult.lineIndex,
+        this.consoleElement ? -this.consoleElement.clientHeight / 2.0 : 0
+      );
     }
   };
 
@@ -632,12 +655,25 @@ class RunTaskLogs extends React.Component {
               <div
                 className={styles.expandMore}
               >
-                Last {logs.length} lines are displayed.
+                The last {logs.length} lines of the log are shown.
                 <a
                   style={{marginLeft: 5}}
                   onClick={this.onExpandClicked}
                 >
                   Expand more
+                </a>
+                <span
+                  style={{
+                    marginLeft: 5,
+                    marginRight: 5
+                  }}
+                >
+                  or
+                </span>
+                <a
+                  onClick={this.onDownloadClicked}
+                >
+                  download complete log
                 </a>
               </div>
             )
@@ -678,7 +714,12 @@ class RunTaskLogs extends React.Component {
                 {
                   showLineNumber && (
                     <span
-                      className={styles.consoleLineInfoData}
+                      className={
+                        classNames(
+                          styles.consoleLineInfoData,
+                          styles.noAccent
+                        )
+                      }
                     >
                       {formatLineNumber(log.index + 1, lineNumberLength)}:
                     </span>

@@ -64,7 +64,7 @@ import styles from './Log.css';
 import AdaptedLink from '../../special/AdaptedLink';
 import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import {TaskLink} from './tasks/TaskLink';
-import LogList from './LogList';
+import RunTaskLogs from '../run-task-logs';
 import StatusIcon, {Statuses} from '../../special/run-status-icon';
 import UserName from '../../special/UserName';
 import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
@@ -1011,8 +1011,9 @@ class Logs extends localization.LocalizedReactComponent {
             </div>
             <div
               className={styles.logContent}>
-              <LogList
-                runId={this.props.runId}
+              <RunTaskLogs
+                className={styles.logs}
+                runId={Number(this.props.runId)}
                 taskName={this.props.task ? this.props.task.name : undefined}
                 taskParameters={this.props.task ? this.props.task.parameters : undefined}
                 taskInstance={this.props.task ? this.props.task.instance : undefined}
@@ -1112,8 +1113,9 @@ class Logs extends localization.LocalizedReactComponent {
           </div>
           <div
             className={styles.logContent}>
-            <LogList
-              runId={this.props.runId}
+            <RunTaskLogs
+              className={styles.logs}
+              runId={Number(this.props.runId)}
               taskName={this.props.task ? this.props.task.name : undefined}
               taskParameters={this.props.task ? this.props.task.parameters : undefined}
               taskInstance={this.props.task ? this.props.task.instance : undefined}

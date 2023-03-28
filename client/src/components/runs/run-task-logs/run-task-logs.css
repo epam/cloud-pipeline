@@ -104,7 +104,7 @@
   word-break: break-all;
   line-height: 20px;
   padding: 2px 0;
-  font-family: monospace;
+  font-family: Proggy, Courier, monospace;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -113,9 +113,12 @@
 .console-line-info-data {
   user-select: none;
   margin-right: 5px;
-  opacity: 0.25;
-  font-family: monospace;
+  font-family: Proggy, Courier, monospace;
   white-space: nowrap;
+}
+
+.console-line-info-data.no-accent {
+  opacity: 0.25;
 }
 
 .search-container .search-input {
