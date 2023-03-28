@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Check profiles file is not empty
+if [ -s saml-idp-profiles.json ]; then
+    echo "The profiles file is not-empty. Leaving the config as is"
+else
+    echo "The profiles file is empty. Creating an empty config file"
+    echo "{}" > saml-idp-profiles.json
+fi
+
 # Validate SSO certificates
 if [ -z "$CP_IDP_CERT_DIR" ]; then
     export CP_IDP_CERT_DIR="/opt/idp/pki"
@@ -53,4 +61,4 @@ saml-idp    --cert  "$CP_IDP_CERT_DIR/idp-public-cert.pem" \
             --httpsPrivateKey "$CP_IDP_CERT_DIR/ssl-private-key.pem" \
             --httpsCert "$CP_IDP_CERT_DIR/ssl-public-cert.pem" \
             --admins "$default_admin_group"
-            
+
