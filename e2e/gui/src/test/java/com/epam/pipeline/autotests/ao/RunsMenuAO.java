@@ -337,6 +337,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO viewAvailableActiveRuns() {
         $(withText("Currently viewing")).waitUntil(visible, C.DEFAULT_TIMEOUT);
         if ($(elementWithText(tagName("b"), "other available ")).isDisplayed()) {
+            $(withText("Currently viewing")).click();
             $(elementWithText(tagName("b"), "other available ")).shouldBe(visible).click();
             sleep(2, SECONDS);
         }
