@@ -128,8 +128,8 @@ export default class BaseBillingRequest extends RemotePost {
     if (this.filters && this.filters.order) {
       this.body.order = {...this.filters.order};
     }
-    if (this.filters && this.filters.storageNames) {
-      this.body.filters.storage_name = asArray(this.filters.storageNames);
+    if (this.filters && this.filters.storageIds) {
+      this.body.filters.storage_id = asArray(this.filters.storageIds);
     }
     if (this.filters && this.filters.storageTypes) {
       this.body.filters.storage_type = asArray(this.filters.storageTypes);
