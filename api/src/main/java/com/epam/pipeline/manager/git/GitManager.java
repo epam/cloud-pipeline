@@ -651,7 +651,7 @@ public class GitManager {
     public GitlabIssueComment addIssueComment(final Long issueId,
                                               final GitlabIssueCommentRequest comment) throws GitClientException {
         final String authorizedUser = authManager.getCurrentUser().getUserName();
-        comment.setBody(String.format("On behalf of %s \n%s", authorizedUser, comment.getBody()));
+        comment.setBody(String.format("%s\n%s", String.format(ON_BEHALF_OF, authorizedUser), comment.getBody()));
         return getDefaultGitlabClient().addIssueComment(getProjectForIssues(), issueId, comment);
     }
 
