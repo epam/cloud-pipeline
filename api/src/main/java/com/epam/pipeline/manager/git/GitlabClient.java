@@ -87,7 +87,8 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.manager.git.RestApiUtils.*;
+import static com.epam.pipeline.manager.git.RestApiUtils.execute;
+import static com.epam.pipeline.manager.git.RestApiUtils.getResponse;
 
 @Wither
 @AllArgsConstructor
