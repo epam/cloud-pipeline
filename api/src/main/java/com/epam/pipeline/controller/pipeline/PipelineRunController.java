@@ -42,6 +42,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
@@ -564,5 +565,15 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRun>> loadRunsByPoolId(@PathVariable("id") final Long poolId) {
         return Result.success(runApiService.loadRunsByPoolId(poolId));
+    }
+
+    @GetMapping("/run/parents/{runId}")
+    @ApiOperation(
+            value = "Loads a compact representation of child runs of a cluster by parent run ID",
+            notes = "Loads a compact representation of child runs of a cluster by parent run ID",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<RunInfo>> loadRunsByParentId(@PathVariable(RUN_ID) final Long parentId) {
+        return Result.success(runApiService.loadRunsByParentId(parentId));
     }
 }
