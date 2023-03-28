@@ -15,13 +15,27 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
-import lombok.Value;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+
+import java.util.Date;
 
 /**
  * Provides minimal run description
  */
-@Value
+@Data
+@AllArgsConstructor
+@Builder
 public class RunInfo {
 
-    Long runId;
+    private Long runId;
+    private TaskStatus status;
+    private Date startDate;
+    private Date endDate;
+
+    public RunInfo(final Long runId) {
+        this.runId = runId;
+    }
 }
