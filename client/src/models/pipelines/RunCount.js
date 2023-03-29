@@ -18,6 +18,7 @@ import {action, computed, observable} from 'mobx';
 import RemotePost from '../basic/RemotePost';
 import preferencesLoad from '../preferences/PreferencesLoad';
 import continuousFetch from '../../utils/continuous-fetch';
+import {filtersAreEqual} from './pipeline-runs-filter';
 
 const DEFAULT_STATUSES = [
   'RUNNING',
@@ -25,6 +26,18 @@ const DEFAULT_STATUSES = [
   'PAUSING',
   'RESUMING'
 ];
+
+const ALL_STATUSES = [
+  'RUNNING',
+  'PAUSED',
+  'PAUSING',
+  'RESUMING',
+  'STOPPED',
+  'FAILURE',
+  'SUCCESS'
+];
+
+export {ALL_STATUSES};
 
 class UserRunCount extends RemotePost {
   static fetchOptions = {
@@ -59,6 +72,8 @@ class RunCount extends RemotePost {
   @observable usePreferenceValue = false;
   @observable onlyMasterJobs = true;
   @observable statuses = DEFAULT_STATUSES;
+  @observable pipelineIds = [];
+  @observable parentId;
 
   @observable _runsCount = 0;
 
@@ -70,6 +85,8 @@ class RunCount extends RemotePost {
    * @property {string[]} [statuses]
    * @property {boolean} [onlyMasterJobs=true]
    * @property {boolean} [autoUpdate=false]
+   * @property {number[]} [pipelineIds=[]]
+   * @property {number|string} [parentId]
    */
 
   /**
@@ -82,11 +99,15 @@ class RunCount extends RemotePost {
       usePreferenceValue,
       statuses = DEFAULT_STATUSES,
       onlyMasterJobs = true,
-      autoUpdate
+      autoUpdate,
+      pipelineIds = [],
+      parentId
     } = options || {};
     this.statuses = statuses;
     this.onlyMasterJobs = onlyMasterJobs;
     this.usePreferenceValue = usePreferenceValue;
+    this.pipelineIds = pipelineIds;
+    this.parentId = parentId;
     if (autoUpdate) {
       continuousFetch({request: this});
     }
@@ -103,21 +124,13 @@ class RunCount extends RemotePost {
 
   @computed
   get isDefault () {
-    try {
-      const currentStatuses = new Set(this.statuses);
-      if (currentStatuses.size !== DEFAULT_STATUSES.length) {
-        return false;
+    return filtersAreEqual(
+      this,
+      {
+        statuses: DEFAULT_STATUSES,
+        onlyMasterJobs: true
       }
-      for (const status of DEFAULT_STATUSES) {
-        if (!currentStatuses.has(status)) {
-          return false;
-        }
-      }
-      return this.onlyMasterJobs;
-    } catch (_) {
-      // empty
-    }
-    return true;
+    );
   }
 
   /**
@@ -128,21 +141,7 @@ class RunCount extends RemotePost {
     if (!otherRequest) {
       return false;
     }
-    try {
-      const currentStatuses = new Set(this.statuses);
-      if (currentStatuses.size !== otherRequest.statuses.length) {
-        return false;
-      }
-      for (const status of otherRequest.statuses) {
-        if (!currentStatuses.has(status)) {
-          return false;
-        }
-      }
-      return this.onlyMasterJobs === otherRequest.onlyMasterJobs;
-    } catch (_) {
-      // empty
-    }
-    return true;
+    return filtersAreEqual(this, otherRequest);
   }
 
   @computed
@@ -163,6 +162,8 @@ class RunCount extends RemotePost {
     await super.send({
       statuses: this.statuses || ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'],
       userModified: !this.onlyMasterJobs,
+      parentId: this.parentId,
+      pipelineIds: this.pipelineIds,
       eagerGrouping: false
     });
     this._runsCount = this.value;

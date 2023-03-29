@@ -24,7 +24,7 @@ import {
   filtersAreEqual,
   getFiltersPayload,
   simpleArraysAreEqual
-} from './filter';
+} from '../../../models/pipelines/pipeline-runs-filter';
 import {
   AllColumns,
   Columns,
