@@ -84,6 +84,7 @@ class Collapse extends React.Component {
       children,
       empty,
       className,
+      unmountOnClose = true,
       style
     } = this.props;
     return (
@@ -107,9 +108,10 @@ class Collapse extends React.Component {
           this.renderHeader()
         }
         {
-          expanded && !empty && (
+          (expanded || !unmountOnClose) && !empty && (
             <div
               className={styles.cellProfilerCollapseContent}
+              style={!expanded ? {display: 'none'} : {}}
             >
               {children}
             </div>
@@ -126,7 +128,8 @@ Collapse.propTypes = {
   header: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   expanded: PropTypes.bool,
   onExpandedChange: PropTypes.func,
-  empty: PropTypes.bool
+  empty: PropTypes.bool,
+  unmountOnClose: PropTypes.bool
 };
 
 export default Collapse;

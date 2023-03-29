@@ -17,6 +17,9 @@
 const INDEX_TO_LETTER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export function getWellRowName (rowIndex) {
+  if (typeof rowIndex !== 'number') {
+    return rowIndex;
+  }
   if (rowIndex < INDEX_TO_LETTER.length) {
     return INDEX_TO_LETTER[rowIndex];
   }

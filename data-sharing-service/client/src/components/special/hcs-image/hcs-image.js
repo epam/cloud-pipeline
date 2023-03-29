@@ -375,6 +375,7 @@ class HcsImage extends React.PureComponent {
         id = well.wellImageId;
       }
       if (this.hcsImageViewer) {
+        sequence.reportReadAccess(this.showEntireWell);
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
             if (this.hcsImageViewer) {

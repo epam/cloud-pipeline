@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,17 +32,23 @@ import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
+import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
+import com.epam.pipeline.entity.git.GitlabUpload;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.git.UpdateGitFileRequest;
+import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
+import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 import retrofit2.http.Streaming;
@@ -60,6 +66,7 @@ public interface GitLabApi {
     String USER_ID = "user_id";
     String PRIVATE_TOKEN = "PRIVATE-TOKEN";
     String API_VERSION = "api_version";
+    String ISSUE_ID = "issue_id";
 
     /**
      * @param userName The name of the GitLab user
@@ -342,4 +349,73 @@ public interface GitLabApi {
      */
     @GET("api/v4/projects/{project}/storage")
     Call<GitProjectStorage> getProjectStorage(@Path(PROJECT) String project);
+
+    /**
+     * Add issue to specified project.
+     * This endpoint can be accessed without authentication if the project is publicly accessible.
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param issue The Issue to be created. Attachments should be specified as list of files paths.
+     */
+    @POST("api/{api_version}/projects/{project}/issues")
+    Call<GitlabIssue> createIssue(@Path(API_VERSION) String apiVersion,
+                                  @Path(PROJECT) String idOrName,
+                                  @Body GitlabIssue issue);
+
+    @PUT("api/{api_version}/projects/{project}/issues/{issue_id}")
+    Call<GitlabIssue> updateIssue(@Path(API_VERSION) String apiVersion,
+                                  @Path(PROJECT) String idOrName,
+                                  @Path(ISSUE_ID) Long issueId,
+                                  @Body GitlabIssue issue);
+
+    @DELETE("api/{api_version}/projects/{project}/issues/{issue_id}")
+    Call<Boolean> deleteIssue(@Path(API_VERSION) String apiVersion,
+                              @Path(PROJECT) String idOrName,
+                              @Path(ISSUE_ID) Long issueId);
+
+    @GET("api/{api_version}/projects/{project}/issues")
+    Call<List<GitlabIssue>> getIssues(@Path(API_VERSION) String apiVersion,
+                       @Path(PROJECT) String idOrName,
+                       @Query("labels") List<String> labels,
+                       @Query("page") Integer page,
+                       @Query("per_page") Integer pageSize,
+                       @Query("search") String search);
+
+    @GET("api/{api_version}/projects/{project}/issues/{issue_id}")
+    Call<GitlabIssue> getIssue(@Path(API_VERSION) String apiVersion,
+                               @Path(PROJECT) String idOrName,
+                               @Path(ISSUE_ID) Long id);
+
+    @GET("api/{api_version}/projects/{project}/issues/{issue_id}/notes")
+    Call<List<GitlabIssueComment>> getIssueComments(@Path(API_VERSION) String apiVersion,
+                                                    @Path(PROJECT) String idOrName,
+                                                    @Path(ISSUE_ID) Long id);
+
+    /**
+     * Adds comment to project issue
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param id issue id
+     * @param comment issue comment
+     */
+    @POST("api/{api_version}/projects/{project}/issues/{issue_id}/notes")
+    Call<GitlabIssueComment> addIssueComment(@Path(API_VERSION) String apiVersion,
+                                             @Path(PROJECT) String idOrName,
+                                             @Path(ISSUE_ID) Long id,
+                                             @Body GitlabIssueComment comment);
+
+    /**
+     * Uploads file to specified project
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param file File to be uploaded
+     */
+    @Multipart
+    @POST("api/{api_version}/projects/{project}/uploads")
+    Call<GitlabUpload> upload(@Path(API_VERSION) String apiVersion,
+                              @Path(PROJECT) String idOrName,
+                              @Part MultipartBody.Part file);
 }

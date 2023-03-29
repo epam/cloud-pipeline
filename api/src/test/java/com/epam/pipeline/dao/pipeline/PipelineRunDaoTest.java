@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.dao.filter.FilterDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -44,7 +45,6 @@ import com.epam.pipeline.manager.filter.FilterExpression;
 import com.epam.pipeline.manager.filter.FilterExpressionType;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.Before;
@@ -159,7 +159,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private CloudRegionDao regionDao;
 
     @Autowired
-    private PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+    private RunServiceUrlDao runServiceUrlDao;
 
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
@@ -1274,7 +1274,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         pipelineRunServiceUrl.setServiceUrl(TEST_SERVICE_URL);
         pipelineRunServiceUrl.setRegion(TEST_REGION);
         pipelineRunServiceUrl.setPipelineRunId(runId);
-        pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl);
+        runServiceUrlDao.save(pipelineRunServiceUrl);
         return pipelineRunServiceUrl;
     }
 

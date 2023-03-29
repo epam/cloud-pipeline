@@ -1297,17 +1297,15 @@ echo Configure sudo
 echo "-"
 ######################################################
 
-if check_cp_cap CP_CAP_SUDO_ENABLE
-then
-  SUDO_INSTALL_COMMAND=
-  get_install_command_by_current_distr SUDO_INSTALL_COMMAND "sudo"
-  if [ -z "$SUDO_INSTALL_COMMAND" ] ;
-    then
+if check_cp_cap CP_CAP_SUDO_ENABLE; then
+    SUDO_INSTALL_COMMAND=
+    get_install_command_by_current_distr SUDO_INSTALL_COMMAND "sudo"
+    if [ -z "$SUDO_INSTALL_COMMAND" ]; then
         echo "Unable to setup sudo, package manager not found (apt-get/yum/apk)"
     else
         # Install sudo
         eval "$SUDO_INSTALL_COMMAND"
-  fi
+    fi
 fi
 
 ######################################################
@@ -1417,8 +1415,14 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
 fi
 # Init path for shell scripts from common repository
 if [ -d $COMMON_REPO_DIR/shell ]; then
-      chmod +x $COMMON_REPO_DIR/shell/*
-      export PATH=$PATH:$COMMON_REPO_DIR/shell
+    chmod +x $COMMON_REPO_DIR/shell/*
+    export PATH=$PATH:$COMMON_REPO_DIR/shell
+    if check_cp_cap CP_CAP_SUDO_ENABLE; then
+        # Add common repo scripts to sudo PATH
+        _SUDO_PATH="$(sudo printenv | grep -e "^PATH=")"
+        _SUDO_PATH="${_SUDO_PATH#PATH=}"
+        echo "Defaults        secure_path=\"$_SUDO_PATH:$COMMON_REPO_DIR/shell\"" >> /etc/sudoers.d/cpsudoers
+    fi
 fi
 
 # Fix /etc/hosts if requested
@@ -1789,6 +1793,7 @@ do
             [[ "$var" == "KUBERNETES_"* ]] || \
             [[ "$var" == "EDGE_SERVICE_"* ]] || \
             [[ "$var" == "HOME" ]] || \
+            [[ "$var" == "PWD" ]] || \
             [[ "$var" == "AWSACCESSKEYID" ]] || \
             [[ "$var" == "AWSSECRETACCESSKEY" ]] || \
             [[ "$var" == "CP_ACCOUNT_ID_"* ]] || \

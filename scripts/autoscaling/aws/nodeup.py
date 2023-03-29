@@ -39,6 +39,7 @@ import jwt
 
 SPOT_UNAVAILABLE_EXIT_CODE = 5
 LIMIT_EXCEEDED_EXIT_CODE = 6
+INSUFFICIENT_CAPACITY_EXIT_CODE = 7
 
 RUNNING = 16
 PENDING = 0
@@ -48,6 +49,7 @@ NETWORKS_PARAM = "cluster.networks.config"
 NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
+INSUFFICIENT_CAPACITY_ERROR_MASSAGE = 'Insufficient instance capacity.'
 BOTO3_RETRY_COUNT = 6
 MIN_SWAP_DEVICE_SIZE = 5
 LOCAL_NVME_INSTANCE_TYPES = [ 'c5d.' , 'm5d.', 'r5d.' ]
@@ -519,6 +521,9 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
         if 'InstanceLimitExceeded' in client_error.message:
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+        elif 'InsufficientInstanceCapacity' in client_error.message:
+            pipe_log_warn(INSUFFICIENT_CAPACITY_ERROR_MASSAGE)
+            sys.exit(INSUFFICIENT_CAPACITY_EXIT_CODE)
         else:
             raise client_error
 

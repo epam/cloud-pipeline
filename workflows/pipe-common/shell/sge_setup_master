@@ -58,6 +58,7 @@ configure_global() {
     sed -i "/execd_params/c\execd_params S_DESCRIPTORS=${_MAX_PROCS_LIMIT},H_DESCRIPTORS=${_MAX_PROCS_LIMIT},S_MAXPROC=${_MAX_NOPEN_LIMIT},H_MAXPROC=${_MAX_NOPEN_LIMIT}" ./global
     sed -i "/shell_start_mode/c\shell_start_mode $_SHELL_START_MODE" ./global
     sed -i "/reporting_params/c\reporting_params $_SGE_REPORTING_PARAMS" ./global
+    sed -i '/gid_range/c\gid_range 20000-30000' ./global
 
     qconf -Mconf ./global
     rm -f ./global

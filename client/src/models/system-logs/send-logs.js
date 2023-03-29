@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,13 @@
  * limitations under the License.
  */
 
-import React, {Component} from 'react';
-import styles from './HeaderInfo.css';
-import {inject, observer} from 'mobx-react';
+import RemotePost from '../basic/RemotePost';
 
-@inject('counter')
-@observer
-export default class HeaderInfo extends Component {
-  render () {
-    return (
-      <div className={styles.container}>
-        <span className={styles.title}>Running:</span>{this.props.counter.value}
-      </div>
-    );
+class SendSystemLogs extends RemotePost {
+  constructor () {
+    super();
+    this.url = '/log';
   }
 }
 
+export default SendSystemLogs;

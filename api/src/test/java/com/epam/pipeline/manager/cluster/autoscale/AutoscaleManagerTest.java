@@ -26,6 +26,7 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunRegionShiftHandler;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.util.CurrentThreadExecutorService;
@@ -102,6 +103,8 @@ public class AutoscaleManagerTest {
 
     @Mock
     private PoolAutoscaler poolAutoscaler;
+    @Mock
+    private RunRegionShiftHandler runRegionShiftHandler;
 
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
@@ -113,7 +116,8 @@ public class AutoscaleManagerTest {
                 pipelineRunManager, executorService,
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
-                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler);
+                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
+                runRegionShiftHandler);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());

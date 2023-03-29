@@ -14,4 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_sge_profiles_interactively.py"
+function is_root() {
+    [ "$(id -u)" == "0" ]
+}
+
+if is_root; then
+    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_sge_profiles_interactively.py"
+else
+    echo "Grid Engine autoscaling profiles can be configured only by root."
+    echo "Please use the following commands to configure grid engine autoscaling profiles:"
+    echo ""
+    if check_cp_cap CP_CAP_SUDO_ENABLE; then
+        echo "sudo sge_configure"
+    else
+        echo "su root"
+        echo "sge_configure"
+    fi
+fi

@@ -144,7 +144,7 @@ export default function getRunStatusesTimeline (
     endDate &&
     !['STOPPED', 'SUCCESS', 'FAILURE'].includes(last.status)
   ) {
-    dates.push({
+    reduced.push({
       status: 'STOPPED',
       timestamp: endDate
     });

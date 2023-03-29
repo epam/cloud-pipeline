@@ -103,6 +103,12 @@ export function ownerArraysAreEqual (array1, array2) {
   return simpleArraysAreEqual(array1, array2);
 }
 
+export function tagsAreEqual (tagsA, tagsB) {
+  const a = Object.entries(tagsA || {}).map(([key, value]) => `${key}=${value}`);
+  const b = Object.entries(tagsB || {}).map(([key, value]) => `${key}=${value}`);
+  return simpleArraysAreEqual(a, b);
+}
+
 export function filtersAreEqual (filter1, filter2) {
   const {
     statuses: statusesA,
@@ -113,7 +119,9 @@ export function filtersAreEqual (filter1, filter2) {
     startDateFrom: startDateFromA,
     endDateTo: endDateToA,
     owners: ownersA,
-    projectIds: projectIdsA
+    projectIds: projectIdsA,
+    onlyMasterJobs: onlyMasterJobsA = true,
+    tags: tagsA = {}
   } = filter1 || {};
   const {
     statuses: statusesB,
@@ -124,7 +132,9 @@ export function filtersAreEqual (filter1, filter2) {
     startDateFrom: startDateFromB,
     endDateTo: endDateToB,
     owners: ownersB,
-    projectIds: projectIdsB
+    projectIds: projectIdsB,
+    onlyMasterJobs: onlyMasterJobsB = true,
+    tags: tagsB = {}
   } = filter2 || {};
   return statusesArraysAreEqual(statusesA, statusesB) &&
     parentIdsAreEqual(parentIdA, parentIdB) &&
@@ -134,13 +144,16 @@ export function filtersAreEqual (filter1, filter2) {
     dockerImagesArraysAreEqual(dockerImagesA, dockerImagesB) &&
     startDatesAreEqual(startDateFromA, startDateFromB) &&
     endDatesAreEqual(endDateToA, endDateToB) &&
-    ownerArraysAreEqual(ownersA, ownersB);
+    ownerArraysAreEqual(ownersA, ownersB) &&
+    onlyMasterJobsA === onlyMasterJobsB &&
+    tagsAreEqual(tagsA, tagsB);
 }
 
 export function getFiltersPayload (filters) {
   const {
     startDateFrom,
     endDateTo,
+    onlyMasterJobs = true,
     ...rest
   } = filters || {};
   const formatDate = (date) => date
@@ -149,6 +162,7 @@ export function getFiltersPayload (filters) {
   return {
     ...rest,
     startDateFrom: formatDate(startDateFrom),
-    endDateTo: formatDate(endDateTo)
+    endDateTo: formatDate(endDateTo),
+    userModified: !onlyMasterJobs
   };
 }

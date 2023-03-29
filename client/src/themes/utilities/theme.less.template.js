@@ -2091,6 +2091,21 @@ export default `
   color: @application-color;
   border: 1px solid @panel-border-color;
 }
+@THEME .cp-console-output {
+  background-color: @application-console-background-color;
+  color: @application-console-color;
+}
+@THEME .cp-console-output-details {
+  color: @application-console-color-details
+}
+@THEME .cp-console-follow-log {
+  color: @application-console-color;
+}
+@THEME .cp-console-scroll-down-indicator {
+  background-color: @panel-background-color;
+  border: 1px solid @panel-border-color;
+  color: @application-color;
+}
 
 @THEME .cp-billing-menu {
   width: fit-content;
@@ -2418,6 +2433,10 @@ export default `
 }
 @THEME .cp-search-highlight-text {
   background-color: @search-highlight-text-background-color;
+  color: @search-highlight-text-color;
+}
+@THEME .cp-search-highlight-text.inactive {
+  background-color: @search-highlight-text-inactive-background-color;
   color: @search-highlight-text-color;
 }
 @THEME .cp-search-csv-table {

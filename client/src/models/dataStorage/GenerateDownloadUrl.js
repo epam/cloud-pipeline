@@ -15,6 +15,7 @@
  */
 
 import Remote from '../basic/Remote';
+import auditStorageAccessManager from '../../utils/audit-storage-access';
 
 class GenerateDownloadUrl extends Remote {
   url;
@@ -36,17 +37,40 @@ class GenerateDownloadUrl extends Remote {
     return `${prefix}/datastorage/${id}/downloadRedirect${query}`;
   };
 
-  constructor (id, path, version) {
+  constructor (id, path, version, reportAfterLoad = false) {
     super();
     this.id = id;
     this.path = path;
     this.version = version;
+    this.reportAfterLoad = reportAfterLoad;
     this.buildUrl();
   };
 
   buildUrl () {
     const query = this.constructor.buildQuery(this.path, this.version, 'ATTACHMENT');
     this.url = `/datastorage/${this.id}/generateUrl${query}`;
+  }
+
+  async fetch () {
+    await super.fetch();
+    if (this.loaded && this.reportAfterLoad) {
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.id,
+        path: this.path,
+        reportStorageType: 'S3'
+      });
+    }
+  }
+
+  async silentFetch () {
+    await super.silentFetch();
+    if (this.loaded && this.reportAfterLoad) {
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.id,
+        path: this.path,
+        reportStorageType: 'S3'
+      });
+    }
   }
 }
 

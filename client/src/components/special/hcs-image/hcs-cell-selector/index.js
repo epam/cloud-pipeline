@@ -39,7 +39,7 @@ const FONT_SIZE_PX = 12;
 const SCROLL_BAR_SIZE = 6;
 const UNIT_MAX_SCALE = 26;
 
-function colorToVec4 (aColor) {
+export function colorToVec4 (aColor) {
   const {
     r = 255,
     g = 255,
@@ -67,13 +67,16 @@ function ElementHint ({element}) {
   }
   const {
     tags = {},
+    info = {},
     x,
     y
   } = element;
   const infos = [
     `${getWellRowName(y)}${x + 1}`,
     ...Object.entries(tags)
-      .map(([key, values]) => `${key}: ${values.join(', ')}`)
+      .map(([key, values]) => `${key}: ${values.join(', ')}`),
+    ...Object.entries(info)
+      .map(([key, value]) => `${key}: ${value}`)
   ];
   return (
     <div>
@@ -86,6 +89,10 @@ function ElementHint ({element}) {
       }
     </div>
   );
+}
+
+function elementIsSelectable (element) {
+  return typeof element.selectable === 'undefined' || element.selectable;
 }
 
 @inject('themes')
@@ -859,7 +866,10 @@ class HcsCellSelector extends React.Component {
       this.setNeedRedraw();
       return;
     }
-    if (this.mouseEvent) {
+    const {
+      selectionEnabled
+    } = this.props;
+    if (this.mouseEvent && selectionEnabled) {
       this.hoveredElement = undefined;
       const {
         clientX,
@@ -882,7 +892,11 @@ class HcsCellSelector extends React.Component {
       this.mouseEvent.moved = true;
       this.mouseEvent.endPx = endPx;
       this.mouseEvent.endUnits = this.pxPointToUnitPoint(endPx);
-      this.mouseEvent.elements = this.getElementsWithinArea(this.mouseEvent.startUnits, this.mouseEvent.endUnits);
+      this.mouseEvent.elements = this.getElementsWithinArea(
+        this.mouseEvent.startUnits,
+        this.mouseEvent.endUnits
+      )
+        .filter(elementIsSelectable);
       this.setNeedRedraw();
       return;
     }
@@ -932,11 +946,13 @@ class HcsCellSelector extends React.Component {
         onChange && onChange(
           selected.filter(o => o.id !== click.id)
         );
-      } else if (this.mouseEvent.shift) {
+      } else if (this.mouseEvent.shift && click) {
         onChange && onChange([
           ...selected,
           click.cell
         ]);
+      } else {
+        onChange && onChange([]);
       }
     } else if (
       this.mouseEvent &&
@@ -1163,6 +1179,9 @@ class HcsCellSelector extends React.Component {
     if (!this.ctx || !this.elements || !this.defaultGlProgram || !this.buffers) {
       return;
     }
+    const {
+      getColorConfigurationForCell
+    } = this.props;
     const gl = this.ctx;
     const mode = this.elementsMode;
     let currentColor;
@@ -1223,7 +1242,8 @@ class HcsCellSelector extends React.Component {
     const renderElement = (element, options = {}) => {
       const {
         fill,
-        stroke
+        stroke,
+        thickStroke
       } = options;
       const {
         x = 0,
@@ -1273,6 +1293,19 @@ class HcsCellSelector extends React.Component {
           gl.drawArrays(gl.LINES, 0, this.buffers.rectangleBorder.vertexCount);
         }
       }
+      if (thickStroke) {
+        prepareBuffers({
+          color: thickStroke,
+          buffer: mode === MESH_MODES.CIRCLES
+            ? this.buffers.circleThickBorder.buffer
+            : this.buffers.rectangleBorder.buffer
+        });
+        if (mode === MESH_MODES.CIRCLES) {
+          gl.drawArrays(gl.TRIANGLES, 0, this.buffers.circleThickBorder.vertexCount);
+        } else {
+          gl.drawArrays(gl.LINES, 0, this.buffers.rectangleBorder.vertexCount);
+        }
+      }
     };
     const elementIsSelected = element => {
       if (this.mouseEvent && this.mouseEvent.moved) {
@@ -1288,31 +1321,53 @@ class HcsCellSelector extends React.Component {
     };
     const filtered = this.elements.filter(this.cellIsFiltered);
     const unFiltered = this.elements.filter(aCell => !this.cellIsFiltered(aCell));
-    unFiltered
-      .filter(element => element !== this.hoveredElement && !elementIsSelected(element))
-      .forEach(element => renderElement(element, {stroke: this.primaryColor}));
-    unFiltered
-      .filter(element => elementIsSelected(element))
-      .forEach(element => renderElement(element, {stroke: this.selectedColor}));
-    filtered
-      .filter(element => element !== this.hoveredElement && !elementIsSelected(element))
-      .forEach(element => renderElement(element, {fill: this.primaryColor}));
-    filtered
-      .filter(element => elementIsSelected(element))
-      .forEach(element => renderElement(element, {fill: this.selectedColor}));
-    filtered
-      .filter(element => element !== this.hoveredElement)
-      .forEach(element => renderElement(element, {stroke: this.defaultColor}));
-    if (this.hoveredElement) {
-      renderElement(
-        this.hoveredElement,
-        {
-          stroke: this.defaultColor,
-          fill: elementIsSelected(this.hoveredElement)
-            ? this.selectedHoverColor
-            : this.primaryHoverColor
-        }
-      );
+    if (getColorConfigurationForCell) {
+      this.elements
+        .forEach(element => {
+          const hovered = element === this.hoveredElement;
+          const selected = elementIsSelected(element);
+          const elementIsFiltered = filtered.includes(element);
+          renderElement(
+            element,
+            getColorConfigurationForCell(
+              element,
+              {
+                hovered,
+                selected,
+                filtered: elementIsFiltered
+              }
+            )
+          );
+        });
+    } else {
+      unFiltered
+        .filter(element => element !== this.hoveredElement && !elementIsSelected(element))
+        .forEach(element => renderElement(element, {stroke: this.primaryColor}));
+      unFiltered
+        .filter(element => elementIsSelected(element))
+        .forEach(element => renderElement(element, {stroke: this.selectedColor}));
+      filtered
+        .filter(element => element !== this.hoveredElement && !elementIsSelected(element))
+        .forEach(element => renderElement(element, {fill: this.primaryColor}));
+      filtered
+        .filter(element => elementIsSelected(element))
+        .forEach(element => renderElement(element, {fill: this.selectedColor}));
+      filtered
+        .filter(element => element !== this.hoveredElement)
+        .forEach(element => renderElement(element, {stroke: this.defaultColor}));
+      if (this.hoveredElement) {
+        renderElement(
+          this.hoveredElement,
+          {
+            stroke: this.defaultColor,
+            fill: elementIsSelected(this.hoveredElement)
+              ? this.selectedHoverColor
+              : this.primaryHoverColor
+          }
+        );
+      }
+    }
+    if (this.hoveredElement && elementIsSelectable(this.hoveredElement)) {
       this.canvas.style.cursor = 'pointer';
     } else {
       this.canvas.style.cursor = 'default';
@@ -1582,6 +1637,7 @@ class HcsCellSelector extends React.Component {
     if (resizeCanvas(this.canvas, size)) {
       this.buildDefaultScale();
     }
+    this.setNeedRedraw();
   };
 
   draw = () => {
@@ -1773,6 +1829,7 @@ HcsCellSelector.propTypes = {
   title: PropTypes.string,
   cells: arrayOf(CellPropType),
   selected: arrayOf(CellPropType),
+  selectionEnabled: PropTypes.bool,
   onChange: PropTypes.func,
   width: PropTypes.number,
   height: PropTypes.number,
@@ -1781,11 +1838,13 @@ HcsCellSelector.propTypes = {
   scaleToROI: PropTypes.bool,
   radius: PropTypes.number,
   searchPlaceholder: PropTypes.string,
-  showElementHint: PropTypes.bool
+  showElementHint: PropTypes.bool,
+  getColorConfigurationForCell: PropTypes.func
 };
 
 HcsCellSelector.defaultProps = {
-  gridMode: MESH_MODES.CIRCLES
+  gridMode: MESH_MODES.CIRCLES,
+  selectionEnabled: true
 };
 
 function sizeCorrection (size, cells = [], selector = () => 0) {

@@ -23,6 +23,7 @@ import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem} from 'rc-menu';
 import GenerateDownloadUrlRequest from '../../../../../models/dataStorage/GenerateDownloadUrl';
 import DataStorageTags from '../../../../../models/dataStorage/tags/DataStorageTags';
+import auditStorageAccessManager from '../../../../../utils/audit-storage-access';
 
 class DownloadFileButton extends React.Component {
   state = {
@@ -131,6 +132,11 @@ class DownloadFileButton extends React.Component {
       hide();
       message.error(request.error);
     } else {
+      auditStorageAccessManager.reportReadAccess({
+        storageId,
+        path,
+        reportStorageType: 'S3'
+      });
       hide();
       const a = document.createElement('a');
       a.href = request.value.url;

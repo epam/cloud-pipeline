@@ -17,19 +17,34 @@
 import {Statuses} from '../../special/run-status-icon';
 import moment from 'moment-timezone';
 
+export function getResumeFailureReason (run) {
+  if (!run) {
+    return undefined;
+  }
+  const {
+    runStatuses = [],
+    status
+  } = run;
+  if (
+    runStatuses &&
+    runStatuses.length > 0 &&
+    status === Statuses.paused
+  ) {
+    const sortedStatuses = runStatuses
+      .slice()
+      .sort((a, b) => moment.utc(a.timestamp).diff(moment.utc(b.timestamp)));
+    const lastStatus = sortedStatuses[sortedStatuses.length - 1];
+    if (lastStatus && lastStatus.status === Statuses.paused && lastStatus.reason) {
+      return lastStatus.reason;
+    }
+  }
+  return undefined;
+}
+
 export default function (run) {
   if (!run) {
     return null;
   }
-  const {runStatuses, status} = run;
-  run.resumeFailureReason = undefined;
-  if (runStatuses && runStatuses.length > 0 && status === Statuses.paused) {
-    const sortedStatuses = runStatuses
-      .sort((a, b) => moment.utc(a.timestamp).diff(moment.utc(b.timestamp)));
-    const lastStatus = sortedStatuses[sortedStatuses.length - 1];
-    if (lastStatus && lastStatus.status === Statuses.paused && lastStatus.reason) {
-      run.resumeFailureReason = lastStatus.reason;
-    }
-  }
+  run.resumeFailureReason = getResumeFailureReason(run);
   return run;
 }

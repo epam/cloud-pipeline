@@ -20,6 +20,7 @@ import AnalysisApi from '../../cellprofiler/model/analysis/analysis-api';
 import dataStorageAvailable from '../../../../models/dataStorage/DataStorageAvailable';
 import {createObjectStorageWrapper} from '../../../../utils/object-storage';
 import getBrowserDependentConfiguration from '../../../../utils/browserDependentStyle';
+import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 
 const DEFAULT_DELAY_MS = 500;
 
@@ -82,6 +83,7 @@ class HcsVideoSource {
   @observable videoEndpointAPIError;
   @observable generatedFilePath;
   @observable videoUrl;
+  @observable videoAccessCallback = () => {};
   @observable videoError;
   @observable videoPending;
   @observable videoMode = false;
@@ -477,6 +479,11 @@ class HcsVideoSource {
       return;
     }
     this.videoUrl = await this.objectStorage.generateFileUrl(this.generatedFilePath);
+    this.videoAccessCallback = () => auditStorageAccessManager.reportReadAccess({
+      storageId: this.objectStorage.id,
+      path: this.generatedFilePath,
+      reportStorageType: 'S3'
+    });
   };
 }
 

@@ -60,10 +60,13 @@ import {
   parseStorageAggregate,
   StorageAggregate,
   DEFAULT_STORAGE_CLASS_ORDER,
-  getStorageClassByAggregate
+  getStorageClassByAggregate,
+  getAllStorageClasses
 } from '../navigation/aggregate';
 import {
-  getDetailsDatasetsByStorageClassAndMetrics, getItemDetailsByMetrics,
+  getDetailsDatasetsByStorageClassAndMetrics,
+  getItemDetailsByMetrics,
+  getSummaryDataExtractorsByStorageClass,
   getSummaryDatasetsByStorageClass
 } from './charts/object-storage/get-datasets-by-storage-class';
 import StorageTable from './storage-table';
@@ -334,6 +337,25 @@ class StorageReports extends React.Component {
   }
 
   @computed
+  get summaryTableDataExtractors () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return {};
+    }
+    const total = !storageAggregate || storageAggregate === StorageAggregate.default;
+    const storageClass = total
+      ? 'TOTAL'
+      : getStorageClassByAggregate(storageAggregate);
+    return getSummaryDataExtractorsByStorageClass(storageClass);
+  }
+
+  @computed
   get detailsDatasets () {
     const {
       type,
@@ -366,6 +388,28 @@ class StorageReports extends React.Component {
       return () => undefined;
     }
     return (dataItem) => getItemDetailsByMetrics(dataItem, metrics);
+  }
+
+  @computed
+  get getExportProperties () {
+    const {
+      type,
+      filters = {}
+    } = this.props;
+    const {
+      storageAggregate
+    } = filters;
+    if (!/^object$/i.test(type)) {
+      return () => undefined;
+    }
+    const total = !storageAggregate || storageAggregate === StorageAggregate.default;
+    const storageClass = total
+      ? getAllStorageClasses()
+      : [getStorageClassByAggregate(storageAggregate)];
+    return {
+      includeStorageOldVersions: true,
+      includeStorageClasses: storageClass
+    };
   }
 
   renderSelectedLayerButton = () => {
@@ -439,7 +483,8 @@ class StorageReports extends React.Component {
                   cloudRegionId.length > 0
                     ? cloudRegionId
                     : undefined
-                }
+                },
+                properties: this.getExportProperties
               }}
             >
               <Layout
@@ -458,6 +503,7 @@ class StorageReports extends React.Component {
                       storages={summary}
                       storagesDiscounts={storageDiscounts}
                       showQuota={false}
+                      {...this.summaryTableDataExtractors}
                     />
                     <ResizableContainer style={{flex: 1}}>
                       {

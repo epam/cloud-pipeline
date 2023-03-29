@@ -57,6 +57,9 @@ public class S3HelperTest {
     private static final String NO_VERSION = null;
     private static final long EXCEEDED_OBJECT_SIZE = Long.MAX_VALUE;
     private static final String SIZE_EXCEEDS_EXCEPTION_MESSAGE = "size exceeds the limit";
+    private static final String ARCHIVE_STORAGE_EXCEPTION_MESSAGE = "storage class";
+    public static final String DEEP_ARCHIVE = "DEEP_ARCHIVE";
+
 
     private final AmazonS3 amazonS3 = mock(AmazonS3.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
@@ -191,6 +194,26 @@ public class S3HelperTest {
 
         assertThrows(e -> e instanceof DataStorageException && e.getMessage().contains(SIZE_EXCEEDS_EXCEPTION_MESSAGE),
             () -> helper.moveFolder(BUCKET, OLD_PATH, NEW_PATH));
+    }
+
+    @Test
+    public void testMoveFolderShouldThrowIfAtLeastOneOfItsFilesLocatedInArchiveTier() {
+        final ObjectListing sourceListing = new ObjectListing();
+        sourceListing.setCommonPrefixes(Collections.singletonList(OLD_PATH));
+        final ObjectListing destinationListing = new ObjectListing();
+        destinationListing.setCommonPrefixes(Collections.emptyList());
+        final ObjectListing bucketListing = spy(new ObjectListing());
+        final S3ObjectSummary fileSummary = new S3ObjectSummary();
+        fileSummary.setKey(OLD_PATH + "/fileFromDeepArchive");
+        fileSummary.setStorageClass(DEEP_ARCHIVE);
+        when(bucketListing.getObjectSummaries()).thenReturn(Collections.singletonList(fileSummary));
+        when(amazonS3.listObjects(any(ListObjectsRequest.class)))
+                .thenReturn(sourceListing, destinationListing, bucketListing);
+
+        assertThrows(
+            e -> e instanceof DataStorageException && e.getMessage().contains(ARCHIVE_STORAGE_EXCEPTION_MESSAGE),
+            () -> helper.moveFolder(BUCKET, OLD_PATH, NEW_PATH)
+        );
     }
 
     @Test

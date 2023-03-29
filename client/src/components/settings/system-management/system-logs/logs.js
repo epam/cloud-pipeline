@@ -17,12 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Icon, message, Table} from 'antd';
+import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SystemLogsFilter from '../../../../models/system-logs/filter';
 import styles from './logs.css';
 
 const PAGE_SIZE = 20;
-const PAGINATION_CONTROL_HEIGHT = 36;
 
 const columns = [
   {
@@ -30,12 +30,12 @@ const columns = [
     dataIndex: 'messageTimestamp',
     title: 'Date',
     render: d => displayDate(d),
-    width: 150
+    className: classNames(styles.nowrapCell, styles.dateCell)
   },
   {
     key: 'severity',
     dataIndex: 'severity',
-    width: 50
+    className: classNames(styles.nowrapCell, styles.severityCell)
   },
   {
     key: 'message',
@@ -46,19 +46,19 @@ const columns = [
     key: 'user',
     dataIndex: 'user',
     title: 'User',
-    width: 100
+    className: classNames(styles.nowrapCell, styles.userCell)
   },
   {
     key: 'service',
     dataIndex: 'serviceName',
     title: 'Service',
-    width: 200
+    className: classNames(styles.nowrapCell, styles.serviceCell)
   },
   {
     key: 'type',
     dataIndex: 'type',
     title: 'Type',
-    width: 100
+    className: classNames(styles.nowrapCell, styles.typeCell)
   }
 ];
 
@@ -151,7 +151,10 @@ class Logs extends React.Component {
             pages.push(token);
           }
           this.setState({
-            logs: (logEntries || []).map(o => o),
+            logs: (logEntries || []).map((o, index) => ({
+              id: `${index}-${o.eventId || ''}`,
+              ...o
+            })),
             pages,
             pending: false,
             totalHits
@@ -162,28 +165,31 @@ class Logs extends React.Component {
   };
 
   render () {
-    const {width} = this.props;
-    if (!width) {
-      return null;
-    }
+    const {
+      className,
+      style
+    } = this.props;
     const {pending, logs} = this.state;
     return (
-      <div>
+      <div
+        className={
+          classNames(
+            className,
+            styles.logsContainer
+          )
+        }
+        style={style}
+      >
         <Table
           className={styles.table}
           columns={columns}
           dataSource={logs}
           loading={pending}
-          rowKey="eventId"
+          rowKey="id"
           size="small"
           pagination={false}
         />
         <div
-          style={{
-            height: PAGINATION_CONTROL_HEIGHT,
-            lineHeight: `${PAGINATION_CONTROL_HEIGHT}px`,
-            width: width - 10
-          }}
           className={styles.pagination}
         >
           <Button
@@ -209,8 +215,9 @@ class Logs extends React.Component {
 }
 
 Logs.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
   filters: PropTypes.object,
-  width: PropTypes.number,
   onInitialized: PropTypes.func
 };
 

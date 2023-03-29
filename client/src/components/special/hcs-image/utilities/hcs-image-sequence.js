@@ -17,6 +17,7 @@
 import {fetchSourceInfo} from '../hcs-image-viewer';
 import * as HCSConstants from './constants';
 import HCSImageWell, {getImageInfoFromName} from './hcs-image-well';
+import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 
 const second = 1000;
 const minute = 60 * second;
@@ -97,6 +98,27 @@ class HCSImageSequence {
     this.listeners = [];
   }
 
+  reportReadAccess = (entireWell) => {
+    if (this._reportedMode !== entireWell) {
+      this._reportedMode = entireWell;
+      let auditTiffFileName = this.omeTiffFileName;
+      let auditOffsetsJsonFileName = this.offsetsJsonFileName;
+      if (entireWell) {
+        auditTiffFileName = this.overviewOmeTiffFileName;
+        auditOffsetsJsonFileName = this.overviewOffsetsJsonFileName;
+      }
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.objectStorage ? this.objectStorage.id : undefined,
+        path: auditTiffFileName,
+        reportStorageType: 'S3'
+      }, {
+        storageId: this.objectStorage ? this.objectStorage.id : undefined,
+        path: auditOffsetsJsonFileName,
+        reportStorageType: 'S3'
+      });
+    }
+  };
+
   addURLsGeneratedListener = (listener) => {
     this.removeURLsGeneratedListener(listener);
     this.listeners.push(listener);
@@ -113,6 +135,26 @@ class HCSImageSequence {
     this.wells = undefined;
     this.objectStorage = undefined;
   }
+
+  fetchWellsStructure = () => new Promise((resolve, reject) => {
+    this.generateWellsMapURL()
+      .then(() => this.objectStorage.getFileContent(this.wellsMapFileName, {json: true}))
+      .then(json => HCSImageWell.parseWellsInfo(
+        json,
+        {width: this.plateWidth, height: this.plateHeight}
+      ))
+      .then((wells = []) => {
+        this.wells = wells.slice();
+        return Promise.resolve(this.wells);
+      })
+      .then(resolve)
+      .catch(e => {
+        this.error = e.message;
+        reject(
+          new Error(`Error fetching sequence ${this.id} info: ${e.message}`)
+        );
+      });
+  });
 
   fetch () {
     if (!this._fetch) {
@@ -181,6 +223,15 @@ class HCSImageSequence {
         Promise.resolve()
           .then(() => {
             if (this.omeTiff && this.offsetsJson) {
+              auditStorageAccessManager.reportReadAccess({
+                storageId: this.objectStorage ? this.objectStorage.id : undefined,
+                path: this.offsetsJsonFileName,
+                reportStorageType: 'S3'
+              }, {
+                storageId: this.objectStorage ? this.objectStorage.id : undefined,
+                path: this.omeTiffFileName,
+                reportStorageType: 'S3'
+              });
               return fetchSourceInfo({url: this.omeTiff, offsetsUrl: this.offsetsJson});
             }
             return Promise.resolve([]);
@@ -250,6 +301,7 @@ class HCSImageSequence {
 
   async regenerateDataURLs () {
     this.clearTimeouts();
+    this._reportedMode = undefined;
     await Promise.all([
       this.generateOMETiffURL(),
       this.generateOffsetsJsonURL(),

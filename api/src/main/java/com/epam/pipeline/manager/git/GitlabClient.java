@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitFile;
@@ -31,6 +33,9 @@ import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
+import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
+import com.epam.pipeline.entity.git.GitlabUpload;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.git.UpdateGitFileRequest;
@@ -41,11 +46,17 @@ import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.UriUtils;
 import retrofit2.HttpException;
 import retrofit2.Response;
@@ -63,16 +74,21 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.git.RestApiUtils.execute;
+import static com.epam.pipeline.manager.git.RestApiUtils.getResponse;
 
 @Wither
 @AllArgsConstructor
@@ -425,6 +441,76 @@ public class GitlabClient {
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
     }
 
+    public GitlabIssue createIssue(final String project,
+                                   final GitlabIssue issue,
+                                   final Map<String, String> attachments) throws GitClientException {
+        issue.setDescription(formatTextWithAttachments(project,
+                attachments,
+                issue.getDescription()));
+        return execute(gitLabApi.createIssue(apiVersion, project, issue));
+    }
+
+    public GitlabIssue updateIssue(final String project,
+                                   final GitlabIssue issue,
+                                   final Map<String, String> attachments) throws GitClientException {
+        issue.setDescription(formatTextWithAttachments(project,
+                attachments,
+                issue.getDescription()));
+        return issue.getId() == null ? execute(gitLabApi.createIssue(apiVersion, project, issue)) :
+                execute(gitLabApi.updateIssue(apiVersion, project, issue.getId(), issue));
+    }
+
+    public Boolean deleteIssue(final String project, final Long issueId) throws GitClientException {
+        return execute(gitLabApi.deleteIssue(apiVersion, project, issueId));
+    }
+
+    public GitlabUpload upload(final String project, final String name, final String content)
+            throws GitClientException {
+        final MultipartBody.Part filePart = MultipartBody.Part.createFormData(
+                "file", name,
+                RequestBody.create(MediaType.parse("multipart/form-data"), content));
+        return execute(gitLabApi.upload(apiVersion, project, filePart));
+    }
+
+    public PagedResult<List<GitlabIssue>> getIssues(final String project, final List<String> labels,
+                                              final Integer page, final Integer pageSize, final String search)
+            throws GitClientException {
+        Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labels, page,
+                pageSize, search));
+        int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
+        return new PagedResult<>(response.body(), totalPages);
+    }
+
+    public GitlabIssue getIssue(final String project, final Long issueId) throws GitClientException {
+        final GitlabIssue issue = execute(gitLabApi.getIssue(apiVersion, project, issueId));
+        final Pair<String, List<String>> a = extractAttachments(issue.getDescription());
+        issue.setDescription(a.getKey());
+        issue.setAttachments(a.getValue());
+        final List<GitlabIssueComment> comments = getIssueComments(project, issueId);
+        issue.setComments(comments);
+        return issue;
+    }
+
+    public List<GitlabIssueComment> getIssueComments(final String project,
+                                                     final Long issueId) throws GitClientException {
+        final List<GitlabIssueComment> comments = execute(gitLabApi.getIssueComments(apiVersion, project, issueId));
+        comments.forEach(c -> {
+            Pair<String, List<String>> a = extractAttachments(c.getBody());
+            c.setBody(a.getKey());
+            c.setAttachments(a.getValue());
+        });
+        return comments;
+    }
+
+    public GitlabIssueComment addIssueComment(final String project,
+                                              final Long issueId,
+                                              final GitlabIssueCommentRequest comment) throws GitClientException {
+        comment.setBody(formatTextWithAttachments(project,
+                comment.getAttachments(),
+                comment.getBody()));
+        return execute(gitLabApi.addIssueComment(apiVersion, project, issueId, comment.toComment()));
+    }
+
     public Optional<GitlabUser> findUser(final String userName) throws GitClientException {
         Optional<GitlabUser> gitlabUser = Optional.empty();
         for (String name : generateGitLabUsernames(userName)) {
@@ -601,5 +687,31 @@ public class GitlabClient {
     private String encodePath(final String path) throws UnsupportedEncodingException {
         return UriUtils.encodePathSegment(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
                                                                                   DOT_CHAR_URL_ENCODING_REPLACEMENT);
+    }
+    private List<String> uploadAttachments(final String project, final Map<String, String> attachments) {
+        return attachments.entrySet()
+                .stream()
+                .map(a -> upload(project, a.getKey(), a.getValue())
+                        .getMarkdown().replace("!", ""))
+                .collect(Collectors.toList());
+    }
+
+    private static Pair<String, List<String>> extractAttachments(String text) {
+        final String[] description = text.split("!");
+        final List<String> descriptionList = Arrays.stream(description).map(String::trim).collect(Collectors.toList());
+        return new ImmutablePair<>(descriptionList.get(0), description.length > 1 ?
+                descriptionList.subList(1, descriptionList.size()) : Collections.emptyList());
+    }
+    private String formatTextWithAttachments(final String project,
+                                             final Map<String, String> attachments,
+                                             final String text) {
+        if (CollectionUtils.isEmpty(attachments)) {
+            return text;
+        }
+        final List<String> uploads = uploadAttachments(project, attachments);
+        final List<String> body = new ArrayList<>();
+        body.add(text);
+        body.addAll(uploads);
+        return String.join("\n\n!", body);
     }
 }

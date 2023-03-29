@@ -16,80 +16,220 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Card, Col, Menu, Row} from 'antd';
+import {computed} from 'mobx';
+import {Card, Col, Menu, Popover, Row} from 'antd';
 import classNames from 'classnames';
+import {Link} from 'react-router';
 import RunTable, {Columns} from './run-table';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
-import AdaptedLink from '../special/AdaptedLink';
 import roleModel from '../../utils/roleModel';
 import parseQueryParameters from '../../utils/queryParameters';
 import LoadingView from '../special/LoadingView';
+import {RunCountDefault} from '../../models/pipelines/RunCount';
+import continuousFetch from '../../utils/continuous-fetch';
 import styles from './AllRuns.css';
+import RunsFilterDescription from './run-table/runs-filter-description';
 
 const getStatusForServer = active => active
   ? ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
   : ['SUCCESS', 'FAILURE', 'STOPPED'];
 
+const DEFAULT_ACTIVE_FILTERS = {
+  key: 'active',
+  title: 'Active Runs',
+  filters: {
+    statuses: getStatusForServer(true),
+    onlyMasterJobs: true
+  },
+  autoUpdate: true,
+  showCount: true,
+  showPersonalRuns: true
+};
+
+const DEFAULT_COMPLETED_FILTERS = {
+  key: 'completed',
+  title: 'Completed Runs',
+  filters: {
+    statuses: getStatusForServer(false),
+    onlyMasterJobs: true
+  },
+  autoUpdate: false,
+  showPersonalRuns: false
+};
+
 @roleModel.authenticationInfo
-@inject('counter')
+@inject('counter', 'preferences')
 @inject(({routing}, {params}) => {
   const {
     status = 'active'
   } = params;
   const query = parseQueryParameters(routing);
   const all = query.hasOwnProperty('all') && /^(true|undefined)$/i.test(`${query.all}`);
-  const active = /^active$/i.test(status);
   return {
-    active,
+    status,
     all
   };
 })
 @observer
 class AllRuns extends React.Component {
-  navigateToActiveRuns = (my = false) => {
+  state = {
+    counters: {}
+  };
+
+  countersManagementToken = 0;
+  counters = {};
+
+  componentDidMount () {
+    (this.manageCounters)();
+  }
+
+  componentWillUnmount () {
+    this.countersManagementToken += 1;
+    this.stopCounters();
+  }
+
+  manageCounters = async () => {
+    this.countersManagementToken += 1;
+    this.counters = {};
+    const token = this.countersManagementToken;
+    const {
+      counter: globalCounter,
+      preferences
+    } = this.props;
+    try {
+      await preferences.fetchIfNeededOrWait();
+      if (token !== this.countersManagementToken) {
+        return;
+      }
+      const filters = this.uiRunsFilters
+        .filter((aFilter) => aFilter.showCount || aFilter.showPersonalRuns);
+      for (const filter of filters) {
+        const request = new RunCountDefault(
+          globalCounter,
+          filter.filters
+        );
+        const call = async () => {
+          await request.fetch();
+          if (request.networkError) {
+            throw new Error(request.networkError);
+          }
+        };
+        const after = () => {
+          const {counters = {}} = this.state;
+          this.setState({
+            counters: {
+              ...counters,
+              [filter.key]: request.runsCount
+            }
+          });
+        };
+        const counter = continuousFetch({
+          fetchImmediate: true,
+          call,
+          afterInvoke: after
+        });
+        this.counters[filter.key] = {
+          counter,
+          request
+        };
+      }
+    } catch (error) {
+      console.warn(error.message);
+    }
+  };
+
+  stopCounters = () => {
+    Object.values(this.counters || {}).forEach(({counter, request}) => {
+      if (typeof request.destroy === 'function') {
+        request.destroy();
+      }
+      const {stop} = counter;
+      if (typeof stop === 'function') {
+        stop();
+      }
+    });
+  };
+
+  @computed
+  get uiRunsFilters () {
+    const {preferences} = this.props;
+    let runsFilters = [];
+    if (preferences.loaded) {
+      runsFilters = (preferences.uiRunsFilters || []).slice();
+    }
+    if (!runsFilters.find((filter) => filter.key === 'active')) {
+      runsFilters = [
+        DEFAULT_ACTIVE_FILTERS,
+        ...runsFilters
+      ];
+    }
+    if (!runsFilters.find((filter) => filter.key === 'completed')) {
+      runsFilters = [
+        ...runsFilters,
+        DEFAULT_COMPLETED_FILTERS
+      ];
+    }
+    return runsFilters;
+  }
+
+  get currentFilters () {
+    const {
+      status
+    } = this.props;
+    const filters = this.uiRunsFilters;
+    return filters
+      .find((aFilter) => aFilter.key.toLowerCase() === (status || '').toLowerCase());
+  }
+
+  navigateToRuns = (status, my = false) => {
     SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
-    SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+    SessionStorageWrapper.navigateToRuns(this.props.router, status);
   };
 
   renderOwnersSwitch = (total) => {
     const {
-      active,
-      all,
-      counter
+      all
     } = this.props;
+    const current = this.currentFilters;
     if (
-      !active
+      !current ||
+      !current.showPersonalRuns
     ) {
       return null;
     }
+    const description = current.title ? current.title.toLowerCase() : `${current.key} runs`;
     if (all) {
       return (
         <Row style={{marginBottom: 5, padding: 2}}>
-          Currently viewing <b>all available active runs</b>.
+          Currently viewing <b>all available {description}</b>.
           {' '}
-          <a onClick={() => this.navigateToActiveRuns(true)}>
-            View only <b>your active runs</b>
+          <a onClick={() => this.navigateToRuns(current.key, true)}>
+            View only <b>your {description}</b>
           </a>
         </Row>
       );
     }
+    const {
+      counters = {}
+    } = this.state;
+    const allRunsCount = counters[current.key] || 0;
     let totalInfo = '';
-    if (total > 0 && total < counter.value) {
-      totalInfo = ` (${total} out of ${counter.value})`;
+    if (total > 0 && total < allRunsCount) {
+      totalInfo = ` (${total} out of ${allRunsCount})`;
     }
     return (
       <Row style={{marginBottom: 5, padding: 2}}>
         Currently viewing only
         {' '}
         <b>
-          your active runs
+          your {description}
           {totalInfo}
         </b>.
         {' '}
         <a
-          onClick={() => this.navigateToActiveRuns(false)}
+          onClick={() => this.navigateToRuns(current.key, false)}
         >
-          View <b>other available active runs</b>
+          View <b>other available {description}</b>
         </a>
       </Row>
     );
@@ -97,15 +237,18 @@ class AllRuns extends React.Component {
 
   renderTable = () => {
     const {
-      active,
       all,
       authenticatedUserInfo
     } = this.props;
-    const filters = {
-      statuses: getStatusForServer(active)
-    };
+    const current = this.currentFilters;
+    if (!current) {
+      return (
+        <LoadingView />
+      );
+    }
+    const filters = {...(current.filters || {})};
     if (
-      active &&
+      current.showPersonalRuns &&
       !all &&
       !authenticatedUserInfo.loaded &&
       authenticatedUserInfo.pending
@@ -114,44 +257,24 @@ class AllRuns extends React.Component {
         <LoadingView />
       );
     }
-    if (active && !all && authenticatedUserInfo.loaded) {
+    if (current.showPersonalRuns && !all && authenticatedUserInfo.loaded) {
       filters.owners = [authenticatedUserInfo.value.userName].filter(Boolean);
     }
     return (
       <RunTable
         filters={filters}
-        autoUpdate={active}
-        disableFilters={active && !all ? [Columns.owner] : []}
+        autoUpdate={current.autoUpdate}
+        disableFilters={current.showPersonalRuns && !all ? [Columns.owner] : []}
         beforeTable={({total}) => this.renderOwnersSwitch(total)}
       />
     );
-    // return (
-    //   <RunTable
-    //     onInitialized={this.initializeRunTable}
-    //     useFilter
-    //     loading={pending}
-    //     dataSource={runs}
-    //     handleTableChange={this.handleTableChange}
-    //     statuses={getStatusForServer(active)}
-    //     pipelines={this.pipelines}
-    //     pagination={{
-    //       total: total,
-    //       pageSize,
-    //       current: page
-    //     }}
-    //     ownersDisabled={active && !all}
-    //     reloadTable={this.fetchPage}
-    //     launchPipeline={this.launchPipeline}
-    //     onSelect={this.onSelectRun}
-    //   />
-    // );
   };
 
   render () {
+    const current = this.currentFilters;
     const {
-      active,
-      counter
-    } = this.props;
+      counters = {}
+    } = this.state;
     return (
       <Card
         className={
@@ -169,22 +292,36 @@ class AllRuns extends React.Component {
             <Row type="flex" justify="center">
               <Menu
                 mode="horizontal"
-                selectedKeys={active ? ['active'] : ['completed']}
+                selectedKeys={current ? [current.key] : []}
                 className={styles.tabsMenu}
               >
-                <Menu.Item key="active">
-                  <AdaptedLink
-                    id="active-runs-button"
-                    to={SessionStorageWrapper.getActiveRunsLink()}
-                    location={location}>Active Runs
-                    {counter.value ? ` (${counter.value})` : ''}</AdaptedLink>
-                </Menu.Item>
-                <Menu.Item key="completed">
-                  <AdaptedLink
-                    id="completed-runs-button"
-                    to={'/runs/completed'}
-                    location={location}>Completed Runs</AdaptedLink>
-                </Menu.Item>
+                {
+                  this.uiRunsFilters.map((filter) => (
+                    <Menu.Item key={filter.key}>
+                      <Popover
+                        content={(
+                          <RunsFilterDescription
+                            filters={filter.filters}
+                            style={{maxWidth: 200}}
+                          />
+                        )}
+                        trigger={['hover']}
+                      >
+                        <Link
+                          id={`${filter.key}-runs-button`}
+                          to={SessionStorageWrapper.getRunsLink(filter.key)}
+                        >
+                          {filter.title || `${filter.key} runs`}
+                          {
+                            filter.showCount && counters[filter.key] > 0
+                              ? ` (${counters[filter.key]})`
+                              : ''
+                          }
+                        </Link>
+                      </Popover>
+                    </Menu.Item>
+                  ))
+                }
               </Menu>
             </Row>
           </Col>
@@ -192,12 +329,12 @@ class AllRuns extends React.Component {
             span={2}
             type="flex"
             style={{textAlign: 'right', padding: 5, textTransform: 'uppercase'}}>
-            <AdaptedLink
+            <Link
               id="advanced-runs-filter-button"
               to={'/runs/filter'}
-              location={location}>
+            >
               Advanced filter
-            </AdaptedLink>
+            </Link>
           </Col>
         </Row>
         {

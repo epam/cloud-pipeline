@@ -322,6 +322,14 @@ public class SystemPreferences {
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
+    public static final StringPreference GITLAB_ISSUE_PROJECT = new StringPreference(
+            "git.gitlab.issue.project", null, GIT_GROUP, pass, true);
+    public static final ObjectPreference<List<String>> GITLAB_ISSUE_STATUSES = new ObjectPreference<>(
+            "git.gitlab.issue.statuses", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final ObjectPreference<List<String>> GITLAB_DEFAULT_LABELS = new ObjectPreference<>(
+            "git.gitlab.default.labels", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -673,6 +681,9 @@ public class SystemPreferences {
         "launch.pods.release.rate", 3000, LAUNCH_GROUP, isLessThan(LAUNCH_TASK_STATUS_UPDATE_RATE.getDefaultValue()));
     public static final LongPreference LAUNCH_JWT_TOKEN_EXPIRATION_REFRESH_THRESHOLD = new LongPreference(
             "launch.jwt.token.expiration.refresh.threshold", 172800L, LAUNCH_GROUP, isGreaterThan(0L));
+    public static final StringPreference LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE = new StringPreference(
+            "launch.insufficient.capacity.message", "Insufficient instance capacity.",
+            LAUNCH_GROUP, pass);
 
     // UI_GROUP
     public static final StringPreference UI_PROJECT_INDICATOR = new StringPreference("ui.project.indicator",
@@ -727,6 +738,14 @@ public class SystemPreferences {
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
     public static final StringPreference UI_STORAGE_DOWNLOAD_ATTRIBUTE = new StringPreference(
             "ui.storage.download.attribute", "download_allowed_roles", UI_GROUP, pass, true);
+    public static final ObjectPreference<Map<String, Object>> UI_RUNS_COUNT_FILTER = new ObjectPreference<>(
+            "ui.runs.counter.filter", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final ObjectPreference<List<Object>> UI_RUNS_FILTERS = new ObjectPreference<>(
+            "ui.runs.filters", Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final BooleanPreference UI_RUNS_CLUSTER_DETAILS_SHOW_ACTIVE_ONLY = new BooleanPreference(
+            "ui.runs.cluster.details.show.active.only", true, UI_GROUP, pass);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
@@ -735,7 +754,8 @@ public class SystemPreferences {
 
     public static final StringPreference FACETED_FILTER_DISPLAY_NAME_TAG = new StringPreference(
             "faceted.filter.display.name.tag", null, FACETED_FILTER_GROUP, pass, true);
-
+    public static final StringPreference FACETED_FILTER_STORAGE_DISPLAY_NAME_TAG = new StringPreference(
+            "faceted.filter.storage.display.file.name.tag", null, FACETED_FILTER_GROUP, pass, true);
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DOWNLOAD = new ObjectPreference<>(
             "faceted.filter.download", null, new TypeReference<Map<String, Object>>() {},
             FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);

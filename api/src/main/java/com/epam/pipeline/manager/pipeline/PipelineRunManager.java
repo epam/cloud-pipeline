@@ -58,6 +58,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -141,7 +142,6 @@ public class PipelineRunManager {
     private static final Long EMPTY_PIPELINE_ID = null;
     private static final int MILLS_IN_SEC = 1000;
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
-    private static final String SHOW_ACTIVE_WORKERS_ONLY_PARAMETER = "CP_SHOW_ACTIVE_WORKERS_ONLY";
     private static final int USER_PRICE_SCALE = 2;
     private static final int BILLING_PRICE_SCALE = 5;
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
@@ -699,6 +699,9 @@ public class PipelineRunManager {
     public PipelineRun loadPipelineRunWithRestartedRuns(Long id) {
         PipelineRun run = loadPipelineRun(id);
         List<RestartRun> restartedRuns = restartRunManager.loadRestartedRunsForInitialRun(id);
+        if (CollectionUtils.isNotEmpty(restartedRuns)) {
+            addRegionsToRestartedRuns(restartedRuns);
+        }
         run.setRestartedRuns(restartedRuns);
         run.setRunStatuses(runStatusManager.loadRunStatus(id));
         return run;
@@ -761,28 +764,9 @@ public class PipelineRunManager {
                     .map(PipelineRun::getId).collect(Collectors.toList()));
             for (final PipelineRun run : result.getElements()) {
                 run.setRunStatuses(runStatuses.get(run.getId()));
-                run.setChildRuns(getFilteredChildRuns(run));
             }
         }
         return result;
-    }
-
-    private List<PipelineRun> getFilteredChildRuns(final PipelineRun run) {
-        return showOnlyActiveChildRuns(run) ? getActiveChildRuns(run) : run.getChildRuns();
-    }
-
-    private boolean showOnlyActiveChildRuns(final PipelineRun run) {
-        return ListUtils.emptyIfNull(run.getPipelineRunParameters())
-                .stream()
-                .anyMatch(parameter -> SHOW_ACTIVE_WORKERS_ONLY_PARAMETER.equals(parameter.getName())
-                        && Boolean.parseBoolean(parameter.getValue()));
-    }
-
-    private List<PipelineRun> getActiveChildRuns(final PipelineRun run) {
-        return ListUtils.emptyIfNull(run.getChildRuns())
-                .stream()
-                .filter(childRun -> childRun.getStatus() == TaskStatus.RUNNING)
-                .collect(Collectors.toList());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -1041,6 +1025,19 @@ public class PipelineRunManager {
     }
 
     /**
+     * Updates run state reason message which was retrieved from instance
+     * @param runId - the ID of pipeline run which state reason message should be updated
+     * @param stateReasonMessage message that should be updated
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateStateReasonMessageById(final Long runId, final String stateReasonMessage) {
+        final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
+        run.setStateReasonMessage(stateReasonMessage);
+        pipelineRunDao.updateRun(run);
+        return run;
+    }
+
+    /**
      * Restarts spot run
      * @param run {@link PipelineRun} which will be restart
      * @return Restarted pipeline run
@@ -1070,7 +1067,7 @@ public class PipelineRunManager {
         restartRun.setRestartedRunId(restartedRun.getId());
         restartRun.setDate(DateUtils.now());
         restartRunManager.createRestartRun(restartRun);
-        return run;
+        return restartedRun;
     }
 
     /**
@@ -1221,6 +1218,17 @@ public class PipelineRunManager {
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
         nodePoolManager.load(poolId);
         return runCRUDService.loadRunsByPoolId(poolId);
+    }
+
+    public List<RunInfo> loadRunsByParentId(final Long parentId) {
+        return ListUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(Collections.singletonList(parentId))).stream()
+                .map(run -> RunInfo.builder()
+                        .runId(run.getId())
+                        .status(run.getStatus())
+                        .startDate(run.getStartDate())
+                        .endDate(run.getEndDate())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
@@ -1537,9 +1545,12 @@ public class PipelineRunManager {
         restartedRun.setSshPassword(PasswordGenerator.generatePassword());
         restartedRun.setOwner(run.getOwner());
         restartedRun.setEntitiesIds(run.getEntitiesIds());
+        restartedRun.setSensitive(run.getSensitive());
         restartedRun.setConfigurationId(run.getConfigurationId());
         restartedRun.setExecutionPreferences(run.getExecutionPreferences());
         restartedRun.setRunSids(run.getRunSids());
+        restartedRun.setPrettyUrl(run.getPrettyUrl());
+        restartedRun.setNonPause(run.isNonPause());
         return restartedRun;
     }
 
@@ -1681,5 +1692,29 @@ public class PipelineRunManager {
                 .collect(Collectors.toMap(RunStatusMetadata::getRunId, Function.identity()));
         statusesByRunId.put(runStatusMetadata.getRunId(), runStatusMetadata);
         return new ArrayList<>(statusesByRunId.values());
+    }
+
+    private void addRegionsToRestartedRuns(final List<RestartRun> restartedRuns) {
+        final Map<Long, PipelineRun> runsById = ListUtils.emptyIfNull(
+                pipelineRunDao.loadRunByIdIn(restartedRuns.stream()
+                        .flatMap(restartRun -> Stream.of(restartRun.getRestartedRunId(), restartRun.getParentRunId()))
+                        .distinct()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()))).stream()
+                .collect(Collectors.toMap(PipelineRun::getId, Function.identity()));
+        restartedRuns.forEach(restartRun -> {
+            restartRun.setParentRunRegionId(
+                    findRegionIdFromPipelineRun(runsById.get(restartRun.getParentRunId())));
+            restartRun.setRestartedRunRegionId(
+                    findRegionIdFromPipelineRun(runsById.get(restartRun.getRestartedRunId())));
+        });
+    }
+
+    private Long findRegionIdFromPipelineRun(final PipelineRun run) {
+        return Optional.ofNullable(run)
+                .flatMap(pipelineRun -> Optional.ofNullable(pipelineRun.getInstance()))
+                .map(RunInstance::getCloudRegionId)
+                .orElse(null);
+
     }
 }

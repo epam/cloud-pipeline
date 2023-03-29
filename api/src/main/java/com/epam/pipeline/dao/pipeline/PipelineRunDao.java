@@ -20,6 +20,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -32,7 +33,6 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -68,7 +68,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
@@ -82,7 +81,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private DaoHelper daoHelper;
 
     @Autowired
-    private PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+    private RunServiceUrlDao serviceUrlDao;
 
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
@@ -1127,7 +1126,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     private Map<String, String> loadServiceUrlByRunId(final Long runId) {
-        return StreamSupport.stream(pipelineRunServiceUrlRepository.findByPipelineRunId(runId).spliterator(), false)
+        return ListUtils.emptyIfNull(serviceUrlDao.findByRunId(runId))
+                .stream()
                 .collect(Collectors.toMap(PipelineRunServiceUrl::getRegion, PipelineRunServiceUrl::getServiceUrl));
     }
 
@@ -1138,8 +1138,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         final List<Long> runIds = ListUtils.emptyIfNull(loadedRuns).stream()
                 .map(PipelineRun::getId)
                 .collect(Collectors.toList());
-        final Map<Long, List<PipelineRunServiceUrl>> serviceUrlByRunId = StreamSupport.stream(
-                pipelineRunServiceUrlRepository.findByPipelineRunIdIn(runIds).spliterator(), false)
+        final Map<Long, List<PipelineRunServiceUrl>> serviceUrlByRunId =
+                ListUtils.emptyIfNull(serviceUrlDao.findByRunIds(runIds))
+                .stream()
                 .collect(Collectors.groupingBy(PipelineRunServiceUrl::getPipelineRunId));
         ListUtils.emptyIfNull(loadedRuns).forEach(run -> serviceUrlByRunId
                 .computeIfPresent(run.getId(), (runId, serviceUrls) -> addServiceUrlsToRun(run, serviceUrls)));

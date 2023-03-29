@@ -18,6 +18,7 @@ import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import storages from '../../../../../models/dataStorage/DataStorageAvailable';
 import GenerateDownloadUrl from '../../../../../models/dataStorage/GenerateDownloadUrl';
 import DataStorageTags from '../../../../../models/dataStorage/tags/DataStorageTags';
+import auditStorageAccessManager from '../../../../../utils/audit-storage-access';
 
 const expirationTimeoutMS = 1000 * 60; // 1 minute
 
@@ -44,6 +45,11 @@ export async function getOutputFileAccessInfo (output) {
         url = undefined;
       }, expirationTimeoutMS);
     };
+    const reportObjectAccess = () => auditStorageAccessManager.reportReadAccess({
+      storageId: objectStorage.id,
+      reportStorageType: 'S3',
+      path: objectStorage.getRelativePath(path)
+    });
     const fetchUrl = async () => {
       if (url) {
         return url;
@@ -52,9 +58,18 @@ export async function getOutputFileAccessInfo (output) {
       setExpirationTimeout();
       return url;
     };
+    const fetchUrlAndReportAccess = async () => {
+      const url = await fetchUrl();
+      reportObjectAccess();
+      return url;
+    };
     return {
       ...output,
-      fetchUrl
+      storageId: objectStorage.id,
+      storagePath: objectStorage.getRelativePath(path),
+      fetchUrl,
+      fetchUrlAndReportAccess,
+      reportObjectAccess
     };
   }
   return undefined;
@@ -62,9 +77,9 @@ export async function getOutputFileAccessInfo (output) {
 
 /**
  * @param {{url: string?, storageId: string?, path: string?, checkExists: boolean?}} options
- * @returns {Promise<string>}
+ * @returns {Promise<{url: string, callback: function: void}>}
  */
-export async function generateResourceUrl (options = {}) {
+export async function generateResourceUrlWithAccessCallback (options = {}) {
   const {
     url,
     storageId,
@@ -72,21 +87,25 @@ export async function generateResourceUrl (options = {}) {
     checkExists = false
   } = options;
   if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
-    return url;
+    return {url, callback: () => {}};
   }
   if (typeof url === 'string') {
     const accessInfo = await getOutputFileAccessInfo({file: url});
     if (accessInfo) {
-      return accessInfo.fetchUrl();
+      const generatedUrl = await accessInfo.fetchUrl();
+      return {
+        url: generatedUrl,
+        callback: () => accessInfo.reportObjectAccess()
+      };
     }
-    return url;
+    return {url, callback: () => {}};
   }
   if (storageId && path) {
     if (checkExists) {
       const tags = new DataStorageTags(storageId, path);
       await tags.fetch();
       if (tags.error) {
-        return undefined;
+        return {url: undefined, callback: () => {}};
       }
     }
     const request = new GenerateDownloadUrl(storageId, path);
@@ -94,7 +113,26 @@ export async function generateResourceUrl (options = {}) {
     if (request.error) {
       throw new Error(request.error);
     }
-    return request.value.url;
+    return {
+      url: request.value.url,
+      callback: () => auditStorageAccessManager.reportReadAccess({
+        storageId,
+        path,
+        reportStorageType: 'S3'
+      })
+    };
   }
-  return undefined;
+  return {
+    url: undefined,
+    callback: () => {}
+  };
+}
+
+/**
+ * @param {{url: string?, storageId: string?, path: string?, checkExists: boolean?}} options
+ * @returns {Promise<string>}
+ */
+export async function generateResourceUrl (options = {}) {
+  const {url} = await generateResourceUrlWithAccessCallback(options);
+  return url;
 }

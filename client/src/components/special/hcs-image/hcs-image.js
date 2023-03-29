@@ -438,6 +438,7 @@ class HcsImage extends React.PureComponent {
         );
       }
       if (this.hcsImageViewer) {
+        sequence.reportReadAccess(this.showEntireWell);
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
             if (this.hcsImageViewer) {
@@ -666,6 +667,7 @@ class HcsImage extends React.PureComponent {
     const {
       videoMode,
       videoUrl,
+      videoAccessCallback = () => {},
       videoPending
     } = this.hcsVideoSource;
     const downloadAvailable = videoMode
@@ -673,6 +675,7 @@ class HcsImage extends React.PureComponent {
       : downloadCurrentTiffAvailable(this.hcsImageViewer);
     const handleClickDownload = () => {
       if (videoMode) {
+        videoAccessCallback();
         fetch(videoUrl)
           .then(res => res.blob())
           .then(blob => FileSaver.saveAs(blob, this.hcsVideoSource.getVideoFileName(videoUrl)));
@@ -1031,6 +1034,7 @@ class HcsImage extends React.PureComponent {
             selection={selectedSequenceTimePoints}
             onChange={this.onChangeSequenceTimePoints}
             multiple
+            style={{padding: 5}}
           />
           <HcsZPositionSelector
             image={selectedImage}
