@@ -93,14 +93,14 @@ function injection (stores, props) {
   const summaryCompute = new GetBillingData({
     filters: {
       ...filters,
-      filterBy: GetBillingData.FILTER_BY.compute
+      filterBy: {resourceType: GetBillingData.FILTER_BY.compute}
     }
   });
   summaryCompute.fetch();
   const summaryStorages = new GetBillingData({
     filters: {
       ...filters,
-      filterBy: GetBillingData.FILTER_BY.storages
+      filterBy: {resourceType: GetBillingData.FILTER_BY.storages}
     }
   });
   summaryStorages.fetch();

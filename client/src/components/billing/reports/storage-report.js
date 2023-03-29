@@ -22,7 +22,7 @@ import {
   BarChart,
   BillingTable,
   Summary,
-  StorageLayers
+  DetailsChart
 } from './charts';
 import {
   costTickFormatter,
@@ -114,7 +114,9 @@ function injection (stores, props) {
       aggregate: getBillingGroupingOrderAggregate(aggregate)
     }
   };
-  let filterBy = GetBillingData.FILTER_BY.storages;
+  const filterBy = {
+    resourceType: GetBillingData.FILTER_BY.storages
+  };
   let storageType;
   const loadCostDetails = /^object$/i.test(type);
   let StorageRequest = GetGroupedStoragesWithPrevious;
@@ -122,18 +124,21 @@ function injection (stores, props) {
   let tiersRequest;
   if (/^file$/i.test(type)) {
     storageType = 'FILE_STORAGE';
-    filterBy = GetBillingData.FILTER_BY.fileStorages;
+    filterBy.storageType = GetBillingData.FILTER_BY.fileStorages;
     StorageRequest = GetGroupedFileStoragesWithPrevious;
     StorageTableRequest = GetGroupedFileStorages;
   } else if (/^object$/i.test(type)) {
     storageType = 'OBJECT_STORAGE';
-    filterBy = GetBillingData.FILTER_BY.objectStorages;
+    filterBy.storageType = GetBillingData.FILTER_BY.objectStorages;
     StorageRequest = GetGroupedObjectStoragesWithPrevious;
     StorageTableRequest = GetGroupedObjectStorages;
     tiersRequest = new GetObjectStorageLayersInfo({
       filters: {
         ...filtersWithoutOrder,
-        filterBy: GetBillingData.FILTER_BY.objectStorages
+        filterBy: {
+          resourceType: GetBillingData.FILTER_BY.storages,
+          storageType: GetBillingData.FILTER_BY.objectStorages
+        }
       },
       loadCostDetails: true
     });
@@ -466,6 +471,7 @@ class StorageReports extends React.Component {
       : undefined;
     const showTableDetails = /^object$/i.test(type);
     const selectedIndex = tiersData.aggregates.indexOf(storageAggregate);
+    console.log(tiersData);
     return (
       <Discounts.Consumer>
         {
@@ -541,7 +547,7 @@ class StorageReports extends React.Component {
                                 <StorageFilter />
                                 {this.renderSelectedLayerButton()}
                               </div>
-                              <StorageLayers
+                              <DetailsChart
                                 highlightedLabel={selectedIndex}
                                 loading={tiersPending}
                                 onSelect={this.onSelectLayer}
