@@ -22,7 +22,8 @@ export function buildGridStyle (
     panelMargin = 5,
     top = 40,
     maxLayoutColumns = 4,
-    scrollBarSize = 15
+    scrollBarSize = 15,
+    minimumHeight = 1
   }
 ) {
   return {
@@ -33,8 +34,12 @@ export function buildGridStyle (
     top,
     maxLayoutColumns,
     rowHeight: function (containerHeight) {
-      return (containerHeight - 2 * this.padding - this.gridRows * this.panelMargin - this.top) /
-        this.gridRows;
+      return (
+        Math.max(containerHeight, minimumHeight) -
+          2 * this.padding -
+          this.gridRows * this.panelMargin -
+          this.top
+      ) / this.gridRows;
     },
     scrollBarSize
   };
