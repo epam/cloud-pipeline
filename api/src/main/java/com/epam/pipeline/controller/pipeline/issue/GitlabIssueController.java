@@ -90,7 +90,7 @@ public class GitlabIssueController extends AbstractRestController {
         return Result.success(gitlabIssueApiService.deleteIssue(issueId));
     }
 
-    @GetMapping
+    @PostMapping(value = "/filter")
     @ApiOperation(
             value = "Gets all users issues.",
             notes = "Gets all users issues.",
