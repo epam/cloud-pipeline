@@ -56,7 +56,7 @@ public class UserDaoTest extends AbstractSpringTest {
     private static final String ATTRIBUTES_KEY = "email";
     private static final String ATTRIBUTES_VALUE = "test_email";
     private static final String ATTRIBUTES_VALUE2 = "Mail@epam.com";
-    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 16;
+    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 17;
     private static final String TEST_ROLE = "ROLE_TEST";
 
     @Autowired

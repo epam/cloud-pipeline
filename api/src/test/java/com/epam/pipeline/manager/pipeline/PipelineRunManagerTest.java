@@ -221,8 +221,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
                 .thenReturn(price);
-        when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString(), anyString()))
-            .thenReturn("sleep");
+        when(pipelineLauncher.launch(any(PipelineRun.class), any(), any(), anyString())).thenReturn("sleep");
         when(toolScanInfoManager.loadToolVersionScanInfo(notScannedTool.getId(), null))
                 .thenReturn(Optional.empty());
         when(toolVersionManager.loadToolVersion(anyLong(), anyString()))
@@ -672,7 +671,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
                                        final String instanceType, final Long parentRunId) {
-        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null, null,
+        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null,
                 parentRunId, null, null, null, null);
     }
 

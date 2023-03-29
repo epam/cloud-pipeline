@@ -42,6 +42,7 @@ import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
+import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
@@ -67,6 +68,7 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
+import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.AclPermissionFactory;
@@ -261,6 +263,12 @@ public class AclTestConfiguration {
 
     @MockBean
     protected DataStorageLifecycleRestoreManager dataStorageLifecycleRestoreManager;
+
+    @MockBean
+    protected UserNotificationRepository userNotificationRepository;
+
+    @MockBean
+    protected UserNotificationManager userNotificationManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

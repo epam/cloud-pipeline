@@ -63,6 +63,18 @@ public final class RegionCreatorUtils {
         return region;
     }
 
+    public static AwsRegion getDefaultAwsRegion(final Long id) {
+        final AwsRegion region = getDefaultAwsRegion();
+        region.setId(id);
+        return region;
+    }
+
+    public static AwsRegion getNonDefaultAwsRegion(final Long id) {
+        final AwsRegion region = getDefaultAwsRegion(id);
+        region.setDefault(false);
+        return region;
+    }
+
     public static AzureRegion getDefaultAzureRegion() {
         final AzureRegion region = new AzureRegion();
         region.setDefault(TRUE);

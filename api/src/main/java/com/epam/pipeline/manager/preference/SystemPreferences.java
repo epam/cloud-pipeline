@@ -120,6 +120,7 @@ public class SystemPreferences {
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
     private static final String LDAP_GROUP = "LDAP";
+    private static final String SYSTEM_JOBS_GROUP = "System Jobs";
 
     public static final BooleanPreference SYSTEM_USER_MONITOR_ENABLED = new BooleanPreference(
             "system.user.monitor.enable", false, SYSTEM_GROUP, pass);
@@ -1021,6 +1022,16 @@ public class SystemPreferences {
 
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+
+    // System Jobs
+    public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(
+            "system.jobs.scripts.location", "src/system-jobs", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final StringPreference SYSTEM_JOBS_OUTPUT_TASK = new StringPreference(
+            "system.jobs.output.pipeline.task", "SystemJob", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final LongPreference SYSTEM_JOBS_PIPELINE = new LongPreference(
+            "system.jobs.pipeline.id", null, SYSTEM_JOBS_GROUP, isNullOrGreaterThan(0), false);
 
     private static final Map<String, AbstractSystemPreference<?>> PREFERENCE_MAP;
 

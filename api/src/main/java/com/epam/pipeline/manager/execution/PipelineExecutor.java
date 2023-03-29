@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
@@ -81,6 +82,7 @@ public class PipelineExecutor {
             .hostPath("/sys/fs/cgroup")
             .mountPath("/sys/fs/cgroup").build();
     private static final String DOMAIN_DELIMITER = "@";
+    private static final String DEFAULT_KUBE_SERVICE_ACCOUNT = "default";
 
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
@@ -101,17 +103,20 @@ public class PipelineExecutor {
         this.kubernetesManager = kubernetesManager;
     }
 
-    public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-                              String pipelineId, String nodeIdLabel, String secretName, String clusterId) {
-        launchRootPod(command, run, envVars, endpoints, pipelineId, nodeIdLabel, secretName, clusterId,
-                ImagePullPolicy.ALWAYS, Collections.emptyMap());
+    public void launchRootPod(final String command, final PipelineRun run, final List<EnvVar> envVars,
+                              final List<String> endpoints, final String pipelineId,
+                              final RunAssignPolicy podAssignPolicy, final String secretName, final String clusterId) {
+        launchRootPod(command, run, envVars, endpoints, pipelineId, podAssignPolicy,
+                secretName, clusterId, ImagePullPolicy.ALWAYS, Collections.emptyMap(), null);
     }
 
-    public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
-            String pipelineId, String nodeIdLabel, String secretName, String clusterId,
-                              ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels) {
+    public void launchRootPod(final String command, final PipelineRun run, final List<EnvVar> envVars,
+                              final List<String> endpoints, final String pipelineId,
+                              final RunAssignPolicy podAssignPolicy, final String secretName, final String clusterId,
+                              final ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels,
+                              final String kubeServiceAccount) {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
-            Map<String, String> labels = new HashMap<>();
+            final Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
             labels.put("owner", normalizeOwner(run.getOwner()));
@@ -123,13 +128,14 @@ public class PipelineExecutor {
             }
             addWorkerLabel(clusterId, labels, run);
             LOGGER.debug("Root pipeline task ID: {}", run.getPodId());
-            Map<String, String> nodeSelector = new HashMap<>();
-            String runIdLabel = String.valueOf(run.getId());
+            final Map<String, String> nodeSelector = new HashMap<>();
+            final String runIdLabel = String.valueOf(run.getId());
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-                nodeSelector.put(KubernetesConstants.RUN_ID_LABEL, nodeIdLabel);
+                nodeSelector.put(podAssignPolicy.getSelector().getLabel(), podAssignPolicy.getSelector().getValue());
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
-                if (run.getPodId().equals(pipelineId) && nodeIdLabel.equals(runIdLabel)) {
+                if (run.getPodId().equals(pipelineId) &&
+                        podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
                     labels.put(KubernetesConstants.TYPE_LABEL, KubernetesConstants.PIPELINE_TYPE);
                 }
                 labels.put(KubernetesConstants.RUN_ID_LABEL, runIdLabel);
@@ -139,18 +145,39 @@ public class PipelineExecutor {
 
             labels.putAll(getServiceLabels(endpoints));
 
-            OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
-            ObjectMeta metadata = getObjectMeta(run, labels);
-            PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getActualDockerImage(), command,
-                    imagePullPolicy, nodeIdLabel.equals(runIdLabel));
-            Pod pod = new Pod("v1", "Pod", metadata, spec, null);
-            Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
+            final OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
+            final ObjectMeta metadata = getObjectMeta(run, labels);
+            final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
+            final PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.getTolerances(),
+                    run.getActualDockerImage(), command, imagePullPolicy,
+                    podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
+                    verifiedKubeServiceAccount);
+            final Pod pod = new Pod("v1", "Pod", metadata, spec, null);
+            final Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
             LOGGER.debug("Created POD: {}", created.toString());
         }
     }
 
     private String normalizeOwner(final String owner) {
         return splitName(owner).replaceAll(KubernetesConstants.KUBE_NAME_FULL_REGEXP, "-");
+    }
+
+    private String fetchVerifiedKubeServiceAccount(final KubernetesClient client, final String kubeServiceAccount) {
+        if (StringUtils.isNotBlank(kubeServiceAccount)) {
+            return client.serviceAccounts()
+                .inNamespace(kubeNamespace).list().getItems().stream()
+                .filter(serviceAccount -> serviceAccount.getMetadata().getName().equals(kubeServiceAccount))
+                .map(serviceAccount -> serviceAccount.getMetadata().getName())
+                .findFirst()
+                .orElseGet(() -> {
+                    LOGGER.warn(String.format(
+                            "Can't find kube service account that was requested: %s! Default will be used",
+                            kubeServiceAccount));
+                    return DEFAULT_KUBE_SERVICE_ACCOUNT;
+                });
+        } else {
+            return DEFAULT_KUBE_SERVICE_ACCOUNT;
+        }
     }
 
     private String splitName(final String owner) {
@@ -169,10 +196,11 @@ public class PipelineExecutor {
                 Optional.ofNullable(run.getParentRunId()).map(String::valueOf).orElse(StringUtils.EMPTY));
     }
 
-    private PodSpec getPodSpec(PipelineRun run, List<EnvVar> envVars, String secretName,
-                               Map<String, String> nodeSelector, String dockerImage,
-                               String command, ImagePullPolicy imagePullPolicy, boolean isParentPod) {
-        PodSpec spec = new PodSpec();
+    private PodSpec getPodSpec(final PipelineRun run, final List<EnvVar> envVars, final String secretName,
+                               final Map<String, String> nodeSelector, final Map<String, String> nodeTolerances,
+                               final String dockerImage, final String command, final ImagePullPolicy imagePullPolicy,
+                               final boolean isParentPod, final String kubeServiceAccount) {
+        final PodSpec spec = new PodSpec();
         spec.setRestartPolicy("Never");
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
         spec.setDnsPolicy("ClusterFirst");
@@ -183,11 +211,17 @@ public class PipelineExecutor {
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }
-        boolean isDockerInDockerEnabled = authManager.isAdmin() &&
-                isParameterEnabled(envVars, KubernetesConstants.CP_CAP_DIND_NATIVE);
-        boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
+        final boolean isDockerInDockerEnabled = authManager.isAdmin() && isParameterEnabled(envVars,
+                KubernetesConstants.CP_CAP_DIND_NATIVE);
+        final boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
+
+        spec.setServiceAccountName(kubeServiceAccount);
 
         spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
+
+        Optional.of(PodSpecMapperHelper.buildTolerations(nodeTolerances))
+                .filter(CollectionUtils::isNotEmpty)
+                .ifPresent(spec::setTolerations);
 
         if (envVars.stream().anyMatch(envVar -> envVar.getName().equals(USE_HOST_NETWORK))){
             spec.setHostNetwork(true);

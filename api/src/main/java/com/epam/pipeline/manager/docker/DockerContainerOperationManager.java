@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
@@ -331,8 +332,7 @@ public class DockerContainerOperationManager {
         try {
             if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
-                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
-                        true, run.getPodId(), null, ImagePullPolicy.NEVER);
+                launcher.launch(run, configuration, endpoints, true, run.getPodId(), null, ImagePullPolicy.NEVER);
             }
         } finally {
             resumeLock.unlock();
@@ -343,6 +343,14 @@ public class DockerContainerOperationManager {
         final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
         final Map<String, String> envs = getResumeRunEnvVars(configuration);
         configuration.setEnvironmentParams(envs);
+        configuration.setPodAssignPolicy(
+                RunAssignPolicy.builder()
+                        .selector(
+                                RunAssignPolicy.PodAssignSelector.builder()
+                                        .label(KubernetesConstants.RUN_ID_LABEL)
+                                        .value(run.getId().toString()).build())
+                        .build()
+        );
         return configuration;
     }
 

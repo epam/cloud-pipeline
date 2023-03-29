@@ -421,6 +421,13 @@ MD_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/md
 
 # FIXME: Add gromacs and namd
 
+########################
+# System dockers
+########################
+
+SYSTEM_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/system
+
+build_and_push_tool $SYSTEM_TOOLS_DOCKERS_SOURCES_PATH/system-job "$CP_DIST_REPO_NAME:tools-system-system-job-${DOCKERS_VERSION}" "system/system-job-launcher:latest"
 
 ########################
 # E2E tests dockers

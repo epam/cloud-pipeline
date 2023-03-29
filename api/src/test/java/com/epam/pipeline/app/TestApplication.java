@@ -40,6 +40,7 @@ import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRu
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -178,7 +179,10 @@ public class TestApplication {
     protected UserNotificationRepository userNotificationRepository;
 
     @MockBean
-    public StorageEventCollector events;
+    protected StorageEventCollector events;
+
+    @MockBean
+    protected PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

@@ -890,6 +890,9 @@ if is_service_requested cp-git; then
                 print_info "-> Registering DataTransfer pipeline"
                 api_register_data_transfer_pipeline
 
+                print_info "-> Registering System Jobs pipeline"
+                api_register_system_jobs_pipeline
+
                 if [ "$CP_DEPLOY_DEMO" ]; then
                     print_info "-> Registering Demo pipelines"
                     api_register_demo_pipelines
