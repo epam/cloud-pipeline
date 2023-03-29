@@ -106,7 +106,8 @@ export default class NewTicketForm extends React.Component {
     const {
       title,
       description,
-      fileList
+      fileList,
+      renderAsModal
     } = this.state;
     const {onSave} = this.props;
     const base64Files = fileList && fileList.length > 0
@@ -117,7 +118,7 @@ export default class NewTicketForm extends React.Component {
       description,
       ...(Object.keys(base64Files).length > 0 && {attachments: base64Files})
     };
-    onSave && onSave(payload, true);
+    onSave && onSave(payload, !renderAsModal);
   };
 
   renderPreview = () => {

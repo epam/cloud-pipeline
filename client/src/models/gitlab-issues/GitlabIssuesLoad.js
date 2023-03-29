@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+import RemotePost from '../basic/RemotePost';
 
-export default class GitlabIssuesLoad extends Remote {
-  constructor () {
+export default class GitlabIssuesLoad extends RemotePost {
+  constructor (page = 1, pageSize = 10) {
     super();
-    this.url = '/issue/gitlab';
+    this.url = `/issue/gitlab/filter?page=${page}&pageSize=${pageSize}`;
   }
 }

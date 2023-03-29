@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {computed, observable} from 'mobx';
-import {observer} from 'mobx-react';
+import {observer, inject} from 'mobx-react';
 import {Alert, message, Spin} from 'antd';
 import moment from 'moment-timezone';
 import {CommentCard, CommentEditor, Label} from '../index.js';
@@ -26,6 +26,7 @@ import GitlabIssueLoad from '../../../../../models/gitlab-issues/GitlabIssueLoad
 import GitlabIssueComment from '../../../../../models/gitlab-issues/GitlabIssueComment';
 import styles from './ticket.css';
 
+@inject('preferences')
 @observer
 export default class Ticket extends React.Component {
   static propTypes = {
@@ -43,6 +44,8 @@ export default class Ticket extends React.Component {
   @observable
   ticketRequest;
 
+  editorRef;
+
   componentDidMount () {
     const {ticketId} = this.props;
     this.fetchTicket(ticketId);
@@ -52,6 +55,16 @@ export default class Ticket extends React.Component {
     if (this.props.ticketId !== prevProps.ticketId) {
       this.fetchTicket(this.props.ticketId);
     }
+  }
+
+  @computed
+  get predefinedLabels () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return (preferences.gitlabIssueStatuses || [])
+        .map(status => status.toLowerCase());
+    }
+    return [];
   }
 
   @computed
@@ -101,6 +114,8 @@ export default class Ticket extends React.Component {
         if (request.error) {
           message.error(request.error, 5);
           this.ticketRequest = undefined;
+        } else {
+          this.scrollToEditor();
         }
       });
     });
@@ -120,6 +135,12 @@ export default class Ticket extends React.Component {
       hide();
       this.setState({pending: false});
     });
+  };
+
+  scrollToEditor = () => {
+    this.editorRef &&
+    this.editorRef.scrollIntoView &&
+    this.editorRef.scrollIntoView({behavior: 'smooth', block: 'end'});
   };
 
   renderComments = () => {
@@ -169,6 +190,11 @@ export default class Ticket extends React.Component {
   };
 
   renderInfoSection = () => {
+    const getLabel = (labels) => {
+      const [label] = (labels || [])
+        .filter(label => this.predefinedLabels.includes(label.toLowerCase()));
+      return label;
+    };
     return (
       <div className={styles.infoSection}>
         <div className={classNames(
@@ -190,9 +216,7 @@ export default class Ticket extends React.Component {
         )}>
           <span>Status:</span>
           <div className={styles.labelsRow}>
-            {(this.ticket.labels || []).map(label => (
-              <Label label={label} key={label} />
-            ))}
+            <Label label={getLabel(this.ticket.labels)} />
           </div>
         </div>
       </div>
@@ -223,12 +247,18 @@ export default class Ticket extends React.Component {
           <div style={{display: 'flex', flexDirection: 'row'}}>
             <div className={styles.commentsSection}>
               {this.renderComments()}
-              <CommentEditor
-                onSave={this.onSaveNewComment}
-                onCancel={this.onCancelEditing}
-                disabled={this.pending}
-                isNewComment
-              />
+              <div
+                ref={(el) => {
+                  this.editorRef = el;
+                }}
+              >
+                <CommentEditor
+                  onSave={this.onSaveNewComment}
+                  onCancel={this.onCancelEditing}
+                  disabled={this.pending}
+                  isNewComment
+                />
+              </div>
             </div>
             {this.renderInfoSection()}
           </div>

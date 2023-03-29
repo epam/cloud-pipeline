@@ -58,6 +58,12 @@ export default class CommentEditor extends React.Component {
     }
   }
 
+  get submitDisabled () {
+    const {disabled} = this.props;
+    const {description} = this.state;
+    return disabled || !description;
+  }
+
   setInitialState = () => {
     const {comment} = this.props;
     if (comment) {
@@ -184,7 +190,7 @@ export default class CommentEditor extends React.Component {
                     onClick={this.onSave}
                     type="primary"
                     style={{borderRadius: '0 0 4px 4px'}}
-                    disabled={disabled}
+                    disabled={this.submitDisabled}
                   >
                     {isNewComment ? 'Comment' : 'Update comment'}
                   </Button>
@@ -206,7 +212,7 @@ export default class CommentEditor extends React.Component {
             </div>
           ) : (
             <Markdown
-              md={description || ' '}
+              md={description || 'Nothing to preview.'}
               style={{
                 margin: '10px 0',
                 minHeight: '32px',

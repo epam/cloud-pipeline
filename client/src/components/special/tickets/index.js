@@ -23,7 +23,6 @@ import {
   message,
   Icon
 } from 'antd';
-import GitlabIssuesLoad from '../../../models/gitlab-issues/GitlabIssuesLoad';
 import GitlabIssueDelete from '../../../models/gitlab-issues/GitlabIssueDelete';
 import GitlabIssueCreate from '../../../models/gitlab-issues/GitlabIssueCreate';
 import {TicketsList, Ticket, NewTicketForm} from './special';
@@ -35,11 +34,8 @@ const MODES = {
   createNewTicket: 'createNewTicket'
 };
 
-const ticketsRequest = new GitlabIssuesLoad();
-
 @inject((stores, {params}) => {
   return {
-    tickets: ticketsRequest,
     ticketId: params.id
   };
 })
@@ -47,7 +43,8 @@ const ticketsRequest = new GitlabIssuesLoad();
 export default class TicketsBrowser extends React.Component {
   state = {
     pending: false,
-    showNewTicketModal: false
+    showNewTicketModal: false,
+    refreshTokenId: 0
   }
 
   get mode () {
@@ -62,30 +59,22 @@ export default class TicketsBrowser extends React.Component {
   }
 
   @computed
-  get tickets () {
-    const {tickets} = this.props;
-    if (tickets.loaded) {
-      return tickets.value || [];
-    }
-    return [];
-  }
-
-  @computed
   get ticketId () {
     const {ticketId} = this.props;
     return ticketId;
   }
 
   createTicket = (payload, shouldNavigateBack = false) => {
-    const {tickets} = this.props;
     this.setState({pending: true}, async () => {
       const request = new GitlabIssueCreate();
       const hide = message.loading(`Creating ticket...`, 0);
       await request.send(payload);
-      await tickets.fetch();
       this.closeNewTicketModal();
       hide();
-      this.setState({pending: false}, () => {
+      this.setState({
+        pending: false,
+        refreshTokenId: this.state.refreshTokenId + 1
+      }, () => {
         if (request.error) {
           message.error(request.error, 5);
         } else {
@@ -96,7 +85,6 @@ export default class TicketsBrowser extends React.Component {
   };
 
   deleteTicket = (id, shouldNavigateBack = false) => {
-    const {tickets} = this.props;
     if (!id) {
       return null;
     }
@@ -104,9 +92,11 @@ export default class TicketsBrowser extends React.Component {
       const request = new GitlabIssueDelete(id);
       const hide = message.loading(`Deleting ticket ${id}...`, 0);
       await request.fetch();
-      await tickets.fetch();
       hide();
-      this.setState({pending: false}, () => {
+      this.setState({
+        pending: false,
+        refreshTokenId: this.state.refreshTokenId + 1
+      }, () => {
         if (request.error) {
           message.error(request.error, 5);
         } else {
@@ -186,7 +176,7 @@ export default class TicketsBrowser extends React.Component {
   };
 
   renderContent = () => {
-    const {pending} = this.state;
+    const {pending, refreshTokenId} = this.state;
     const content = {
       [MODES.createNewTicket]: (
         <NewTicketForm
@@ -205,13 +195,13 @@ export default class TicketsBrowser extends React.Component {
       ),
       [MODES.list]: (
         <TicketsList
-          tickets={this.tickets}
           key="ticketsList"
           onSelectTicket={this.onSelectTicket}
           onDeleteTicket={this.deleteTicket}
           onNavigateBack={this.navigateBack}
           pending={pending}
           hideControls
+          refreshTokenId={refreshTokenId}
         />
       )
     };

@@ -17,27 +17,33 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer, PropTypes as mobxPropTypes} from 'mobx-react';
-import {computed, toJS} from 'mobx';
+import {inject, observer} from 'mobx-react';
+import {computed, observable} from 'mobx';
 import {
+  Button,
   Select,
   Dropdown,
   Icon,
   Pagination,
   Menu,
-  Input
+  Input,
+  Spin,
+  message,
+  Alert
 } from 'antd';
 import displayDate from '../../../../../utils/displayDate';
 import highlightText from '../../../../special/highlightText';
 import Label from '../label';
-import {ticketsFilter} from '../filter';
+import GitlabIssuesLoad from '../../../../../models/gitlab-issues/GitlabIssuesLoad';
 import styles from './ticket-list.css';
+
+const PAGE_SIZE = 20;
 
 @inject('preferences')
 @observer
 export default class TicketsList extends React.Component {
   static propTypes = {
-    tickets: mobxPropTypes.arrayOrObservableArray,
+    refreshTokenId: PropTypes.number,
     onSelectTicket: PropTypes.func,
     onDeleteTicket: PropTypes.func,
     onNavigateBack: PropTypes.func,
@@ -45,17 +51,66 @@ export default class TicketsList extends React.Component {
     hideControls: PropTypes.bool
   };
 
+  state = {
+    filters: {
+      search: '',
+      labels: []
+    },
+    page: 1,
+    pending: false
+  }
+
+  _filtersRefreshTimeout;
+
+  @observable
+  ticketsRequest;
+
+  componentDidMount () {
+    this.fetchTickets();
+  }
+
+  componentDidUpdate (prevProps) {
+    if (this.props.refreshTokenId !== prevProps.refreshTokenId) {
+      this.fetchTickets();
+    }
+  }
+
   componentWillUnmount () {
-    ticketsFilter.clear();
+    if (this._filtersRefreshTimeout) {
+      clearTimeout(this._filtersRefreshTimeout);
+    }
+  }
+
+  get pending () {
+    return this.props.pending || this.state.pending;
   }
 
   @computed
-  get filters () {
-    return toJS(ticketsFilter.filters);
+  get tickets () {
+    if (
+      this.ticketsRequest &&
+      this.ticketsRequest.loaded &&
+      this.ticketsRequest.value
+    ) {
+      return this.ticketsRequest.value.elements || [];
+    }
+    return [];
   }
 
   @computed
-  get availableStatuses () {
+  get totalTickets () {
+    if (
+      this.ticketsRequest &&
+      this.ticketsRequest.loaded &&
+      this.ticketsRequest.value
+    ) {
+      return this.ticketsRequest.value.totalCount || 0;
+    }
+    return 0;
+  }
+
+  @computed
+  get predefinedLabels () {
     const {preferences} = this.props;
     if (preferences && preferences.loaded) {
       return (preferences.gitlabIssueStatuses || [])
@@ -64,43 +119,103 @@ export default class TicketsList extends React.Component {
     return [];
   }
 
-  @computed
-  get tickets () {
-    const {tickets} = this.props;
-    return tickets || [];
+  get filtersTouched () {
+    const {filters} = this.state;
+    return filters.search || filters.labels.length > 0;
   }
 
-  @computed
-  get filteredTickets () {
-    let filtered = this.tickets;
-    if (this.filters.statuses.length > 0) {
-      filtered = filtered.filter(({labels}) => (labels || [])
-        .some(label => this.filters.statuses.includes(label)));
+  onFiltersChange = (field, eventType) => event => {
+    let value;
+    switch (eventType) {
+      case 'checkbox':
+        value = event.target.checked;
+        break;
+      case 'input':
+        value = event.target.value;
+        break;
+      case 'select':
+        value = event;
+        break;
+      default:
+        value = undefined;
     }
-    if (this.filters.title) {
-      filtered = filtered.filter(({title}) => (title || '')
-        .toLowerCase()
-        .includes(this.filters.title.toLowerCase()));
-    }
-    return filtered;
-  }
-
-  onStatusChange = (statuses) => {
-    ticketsFilter.setStatuses(statuses);
+    this.setState({
+      page: 1,
+      filters: {
+        ...this.state.filters,
+        [field]: value
+      }
+    }, () => {
+      if (this._filtersRefreshTimeout) {
+        clearTimeout(this._filtersRefreshTimeout);
+      }
+      if (value !== undefined) {
+        this._filtersRefreshTimeout = setTimeout(() => {
+          this.fetchTickets();
+        }, 600);
+      }
+    });
   };
 
-  onSearch = (event) => {
-    ticketsFilter.setTitle(event.target.value);
+  clearFilters = () => {
+    this.setState({
+      page: 1,
+      filters: {
+        search: '',
+        labels: []
+      }
+    }, () => {
+      this.fetchTickets();
+    });
+  };
+
+  fetchTickets = (page = 1) => {
+    this.setState({
+      page,
+      pending: true
+    }, async () => {
+      const {filters} = this.state;
+      this.ticketsRequest = new GitlabIssuesLoad(page, PAGE_SIZE);
+      await this.ticketsRequest.send(filters);
+      if (this.ticketsRequest.error) {
+        message.error(this.ticketsRequest.error, 5);
+      }
+      this.setState({pending: false});
+    });
+  };
+
+  onPageChange = page => {
+    this.setState({page}, () => {
+      const {page} = this.state;
+      this.fetchTickets(page);
+    });
+  };
+
+  onSelectMenu = (key, ticket) => {
+    const {onDeleteTicket} = this.props;
+    if (key === 'delete') {
+      onDeleteTicket && onDeleteTicket(ticket.iid);
+    }
+  };
+
+  onSelectTicket = (id) => {
+    const {onSelectTicket} = this.props;
+    if (this.pending || id === undefined) {
+      return null;
+    }
+    onSelectTicket && onSelectTicket(id);
   };
 
   renderHeader = () => {
+    const {filters} = this.state;
     return (
       <div
         className={classNames(
           styles.ticketContainer,
           styles.header,
           'cp-divider',
-          'bottom'
+          'bottom',
+          'cp-card-background-color'
         )}
       >
         <b
@@ -126,47 +241,46 @@ export default class TicketsList extends React.Component {
         <div className={styles.controls}>
           <Input.Search
             placeholder="Search by tickets title"
-            value={this.filters.title}
-            onChange={this.onSearch}
-            id="tickets-title-filter"
-            style={{marginRight: '5px'}}
+            value={filters.search}
+            onChange={this.onFiltersChange('search', 'input')}
+            id="tickets-search-filter"
+            className={styles.tableControl}
+            style={{minWidth: '200px'}}
           />
           <Select
-            onChange={this.onStatusChange}
-            value={this.filters.statuses}
-            style={{width: '250px'}}
+            onChange={this.onFiltersChange('labels', 'select')}
+            value={filters.labels}
+            style={{minWidth: '200px'}}
+            className={styles.tableControl}
             placeholder="Select ticket status"
             mode="multiple"
-            id="tickets-statuses-filter"
+            id="tickets-labels-filter"
           >
-            {this.availableStatuses.map(status => (
-              <Select.Option key={status}>
-                {`${status.charAt(0).toUpperCase()}${status.slice(1)}`}
+            {this.predefinedLabels.map(label => (
+              <Select.Option key={label}>
+                {`${label.charAt(0).toUpperCase()}${label.slice(1)}`}
               </Select.Option>
             ))}
           </Select>
+          <Button
+            className={classNames(
+              styles.tableControl,
+              styles.clearButton,
+              {[styles.hidden]: !this.filtersTouched}
+            )}
+            onClick={this.clearFilters}
+            disabled={!this.filtersTouched}
+          >
+            <Icon type="close" />
+          </Button>
         </div>
       </div>
     );
   };
 
-  onSelectMenu = (key, ticket) => {
-    const {onDeleteTicket} = this.props;
-    if (key === 'delete') {
-      onDeleteTicket && onDeleteTicket(ticket.iid);
-    }
-  };
-
-  onSelectTicket = (id) => {
-    const {pending, onSelectTicket} = this.props;
-    if (pending || id === undefined) {
-      return null;
-    }
-    onSelectTicket && onSelectTicket(id);
-  };
-
   renderTicket = (ticket) => {
-    const {pending, hideControls} = this.props;
+    const {hideControls} = this.props;
+    const {filters} = this.state;
     const menu = (
       <Menu
         onClick={({key}) => this.onSelectMenu(key, ticket)}
@@ -181,10 +295,10 @@ export default class TicketsList extends React.Component {
         </Menu.Item>
       </Menu>
     );
-    const getStatus = (labels) => {
-      const [status] = (labels || [])
-        .filter(label => this.availableStatuses.includes(label.toLowerCase()));
-      return status;
+    const getLabel = (labels) => {
+      const [label] = (labels || [])
+        .filter(label => this.predefinedLabels.includes(label.toLowerCase()));
+      return label;
     };
     return (
       <div
@@ -194,13 +308,13 @@ export default class TicketsList extends React.Component {
           'cp-divider',
           'bottom',
           'cp-table-element',
-          {'cp-table-element-disabled': pending}
+          {'cp-table-element-disabled': this.pending}
         )}
         onClick={() => this.onSelectTicket(ticket.iid)}
       >
-        <Label className={styles.status} label={getStatus(ticket.labels)} />
+        <Label className={styles.status} label={getLabel(ticket.labels)} />
         <div className={styles.title}>
-          <b>{highlightText(ticket.title, this.filters.title)}</b>
+          <b>{highlightText(ticket.title, filters.search)}</b>
           <span
             className="cp-text-not-important"
             style={{fontSize: 'smaller'}}
@@ -214,7 +328,7 @@ export default class TicketsList extends React.Component {
               overlay={menu}
               trigger={['click']}
               onClick={e => e.stopPropagation()}
-              disabled={pending}
+              disabled={this.pending}
             >
               <Icon
                 type="ellipsis"
@@ -233,20 +347,39 @@ export default class TicketsList extends React.Component {
   }
 
   render () {
+    const {page} = this.state;
+    if (this.ticketsRequest && this.ticketsRequest.error) {
+      return (
+        <Alert
+          message="Error retrieving tickets"
+          type="error"
+        />
+      );
+    }
     return (
       <div className={classNames(
         styles.container,
         'cp-card-background-color'
       )}>
-        <div className={styles.ticketsTable}>
+        <div
+          className={styles.ticketsTable}
+        >
           {this.renderHeader()}
-          {this.filteredTickets.map(this.renderTicket)}
+          <Spin
+            spinning={this.pending}
+            wrapperClassName={styles.tableSpin}
+          >
+            {this.tickets.map(this.renderTicket)}
+          </Spin>
         </div>
         <div className={styles.paginationRow}>
           <Pagination
-            defaultCurrent={1}
-            total={1}
+            total={this.totalTickets}
             size="small"
+            disabled={this.pending}
+            current={page}
+            onChange={this.onPageChange}
+            pageSize={PAGE_SIZE}
           />
         </div>
       </div>
