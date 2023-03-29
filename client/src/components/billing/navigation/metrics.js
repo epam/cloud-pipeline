@@ -19,6 +19,14 @@ const StorageMetrics = {
   volume: 'volume'
 };
 
+const InstanceMetrics = {
+  costs: 'costs',
+  computeCosts: 'compute-costs',
+  diskCosts: 'disk-cost',
+  usage: 'usage',
+  runs: 'runs'
+};
+
 export function getBillingGroupingSortField (metrics) {
   switch (metrics) {
     case StorageMetrics.volume:
@@ -35,4 +43,53 @@ export function parseStorageMetrics (metrics) {
   return StorageMetrics.costs;
 }
 
-export {StorageMetrics};
+export function parseInstanceMetrics (metrics) {
+  const found = Object
+    .values(InstanceMetrics || {})
+    .find((o) => o === (metrics || '').toLowerCase());
+  return found || InstanceMetrics.costs;
+}
+
+export function getInstanceBillingOrderMetricsField (metrics) {
+  switch (metrics) {
+    case InstanceMetrics.usage:
+      return 'USAGE_RUNS';
+    case InstanceMetrics.runs:
+      return 'COUNT_RUNS';
+    case InstanceMetrics.computeCosts:
+    case InstanceMetrics.diskCosts:
+    case InstanceMetrics.costs:
+    default:
+      return 'COST';
+  }
+}
+
+export function getInstanceBillingOrderAggregateField (metrics) {
+  switch (metrics) {
+    case InstanceMetrics.computeCosts:
+      return 'RUN_COMPUTE';
+    case InstanceMetrics.diskCosts:
+      return 'RUN_DISK';
+    case InstanceMetrics.costs:
+    default:
+      return 'RUN';
+  }
+}
+
+export function getInstanceMetricsName (metrics) {
+  switch (metrics) {
+    case InstanceMetrics.usage:
+      return 'Usage (hours)';
+    case InstanceMetrics.runs:
+      return 'Runs (count)';
+    case InstanceMetrics.computeCosts:
+      return 'Compute costs';
+    case InstanceMetrics.diskCosts:
+      return 'Disk costs';
+    case InstanceMetrics.costs:
+    default:
+      return 'Costs';
+  }
+}
+
+export {StorageMetrics, InstanceMetrics};

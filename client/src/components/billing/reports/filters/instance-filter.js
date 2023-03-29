@@ -16,41 +16,135 @@
 
 import React from 'react';
 import {Radio} from 'antd';
+import {getInstanceMetricsName, InstanceMetrics} from '../../navigation/metrics';
 
 const filters = {
-  value: {
+  [InstanceMetrics.costs]: {
     dataSample: 'value',
     previousDataSample: 'previous'
   },
-  usage: {
+  [InstanceMetrics.computeCosts]: {
+    dataSample: 'costDetails.computeCost',
+    previousDataSample: 'previousCostDetails.computeCost',
+    title: getInstanceMetricsName(InstanceMetrics.computeCosts)
+  },
+  [InstanceMetrics.diskCosts]: {
+    dataSample: 'costDetails.diskCost',
+    previousDataSample: 'previousCostDetails.diskCost',
+    title: getInstanceMetricsName(InstanceMetrics.diskCosts)
+  },
+  [InstanceMetrics.usage]: {
     dataSample: 'usage',
     previousDataSample: 'previousUsage',
-    title: 'Usage (hours)'
+    title: getInstanceMetricsName(InstanceMetrics.usage)
   },
-  runsCount: {
+  [InstanceMetrics.runs]: {
     dataSample: 'runsCount',
     previousDataSample: 'previousRunsCount',
-    title: 'Runs count'
+    title: getInstanceMetricsName(InstanceMetrics.runs)
   }
 };
 
-function handle (value, handler) {
-  const {dataSample, previousDataSample} = filters[value];
-  handler(dataSample, previousDataSample);
+function getSummaryDatasets (metrics) {
+  const getValue = (property, costDetails) => {
+    if (!costDetails) {
+      return undefined;
+    }
+    return costDetails[property];
+  };
+  const currentValue = (item, property) => getValue(property, item.costDetails);
+  const previousValue = (item, property) => getValue(property, item.previousCostDetails);
+  let current = (item) => item.value;
+  let currentFact = (item) => item.cost;
+  let previous = (item) => item.previous;
+  let previousFact = (item) => item.previousCost;
+  switch (metrics) {
+    case InstanceMetrics.computeCosts:
+      current = (item) => currentValue(item, 'accumulatedComputeCost');
+      currentFact = (item) => currentValue(item, 'computeCost');
+      previous = (item) => previousValue(item, 'accumulatedComputeCost');
+      previousFact = (item) => previousValue(item, 'computeCost');
+      break;
+    case InstanceMetrics.diskCosts:
+      current = (item) => currentValue(item, 'accumulatedDiskCost');
+      currentFact = (item) => currentValue(item, 'diskCost');
+      previous = (item) => previousValue(item, 'accumulatedDiskCost');
+      previousFact = (item) => previousValue(item, 'diskCost');
+      break;
+    default:
+      break;
+  }
+  const currentDataset = {
+    accumulative: {
+      value: current,
+      options: {
+        borderWidth: 3
+      }
+    },
+    fact: {
+      value: currentFact
+    }
+  };
+  const previousDataset = {
+    accumulative: {
+      value: previous,
+      options: {
+        isPrevious: true
+      }
+    },
+    fact: {
+      value: previousFact,
+      options: {
+        isPrevious: true
+      }
+    }
+  };
+  return [
+    currentDataset,
+    previousDataset
+  ];
 }
 
 export default function ({onChange, value}) {
+  let correctedValue = value;
+  if (InstanceMetrics.computeCosts === value || InstanceMetrics.diskCosts === value) {
+    correctedValue = InstanceMetrics.costs;
+  }
+  const onRadioGroupValueChange = (event) => {
+    const newValue = event.target.value;
+    if (newValue !== correctedValue) {
+      onChange(newValue);
+    }
+  };
   return (
     <Radio.Group
-      value={value}
-      onChange={e => handle(e.target.value, onChange)}
+      value={correctedValue}
+      onChange={onRadioGroupValueChange}
       size="small"
     >
-      <Radio.Button key="value" value="value">Cost</Radio.Button>
-      <Radio.Button key="usage" value="usage">Usage (hours)</Radio.Button>
-      <Radio.Button key="runsCount" value="runsCount">Runs</Radio.Button>
+      <Radio.Button
+        key={InstanceMetrics.costs}
+        value={InstanceMetrics.costs}
+      >
+        Cost
+      </Radio.Button>
+      <Radio.Button
+        key={InstanceMetrics.usage}
+        value={InstanceMetrics.usage}
+      >
+        Usage (hours)
+      </Radio.Button>
+      <Radio.Button
+        key={InstanceMetrics.runs}
+        value={InstanceMetrics.runs}
+      >
+        Runs
+      </Radio.Button>
     </Radio.Group>
   );
 }
 
-export {filters as InstanceFilters};
+export {
+  filters as InstanceFilters,
+  getSummaryDatasets
+};

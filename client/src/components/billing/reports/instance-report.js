@@ -16,15 +16,16 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Pagination, Table, Tooltip} from 'antd';
+import {Button, Icon, Pagination, Table, Tooltip} from 'antd';
 import {
   BarChart,
   BillingTable,
+  DetailsChart,
   Summary
 } from './charts';
 import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
 import {Period, getPeriod} from '../../special/periods';
-import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
+import InstanceFilter, {InstanceFilters, getSummaryDatasets} from './filters/instance-filter';
 import Discounts, {discounts} from './discounts';
 import Export from './export';
 import {
@@ -34,7 +35,9 @@ import {
   GetGroupedTools,
   GetGroupedToolsWithPrevious,
   GetGroupedPipelines,
-  GetGroupedPipelinesWithPrevious
+  GetGroupedPipelinesWithPrevious,
+  GetInstanceCostsDetailsInfo,
+  preFetchBillingRequest
 } from '../../../models/billing';
 import {
   numberFormatter,
@@ -42,6 +45,13 @@ import {
   DisplayUser,
   ResizableContainer
 } from './utilities';
+import {
+  getInstanceBillingOrderAggregateField,
+  getInstanceBillingOrderMetricsField,
+  getInstanceMetricsName,
+  InstanceMetrics,
+  parseInstanceMetrics
+} from '../navigation/metrics';
 import {InstanceReportLayout, Layout} from './layout';
 import styles from './reports.css';
 
@@ -55,18 +65,28 @@ function injection (stores, props) {
     group: groupQ,
     period = Period.month,
     range,
-    region: regionQ
+    region: regionQ,
+    metrics: metricsQ
   } = location.query;
+  const metrics = parseInstanceMetrics(metricsQ);
   const periodInfo = getPeriod(period, range);
   const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
-  const filters = {
+  const filtersWithoutOrder = {
     group,
     user,
     type,
     cloudRegionId,
     ...periodInfo
+  };
+  const orderMetrics = getInstanceBillingOrderMetricsField(metrics);
+  const orderAggregate = getInstanceBillingOrderAggregateField(metrics);
+  const filters = {
+    ...filtersWithoutOrder,
+    order: orderAggregate || orderMetrics
+      ? {metric: orderMetrics, aggregate: orderAggregate}
+      : undefined
   };
   const pagination = {
     pageSize: tablePageSize,
@@ -84,16 +104,26 @@ function injection (stores, props) {
   pipelines.fetch();
   const pipelinesTable = new GetGroupedPipelines({filters, pagination});
   pipelinesTable.fetch();
-  let filterBy = GetBillingData.FILTER_BY.compute;
+  const filterBy = {
+    resourceType: GetBillingData.FILTER_BY.compute
+  };
   if (/^cpu$/i.test(type)) {
-    filterBy = GetBillingData.FILTER_BY.cpu;
+    filterBy.computeType = GetBillingData.FILTER_BY.cpu;
   }
   if (/^gpu$/i.test(type)) {
-    filterBy = GetBillingData.FILTER_BY.gpu;
+    filterBy.computeType = GetBillingData.FILTER_BY.gpu;
   }
 
-  const summary = new GetBillingData({filters: {...filters, filterBy}});
+  const summary = new GetBillingData({filters: {...filtersWithoutOrder, filterBy}});
+  const costDetails = new GetInstanceCostsDetailsInfo({
+    filters: {
+      ...filtersWithoutOrder,
+      filterBy
+    }
+  });
+  costDetails.fetch();
   summary.fetch();
+  (preFetchBillingRequest)(costDetails);
   return {
     user,
     group,
@@ -104,7 +134,9 @@ function injection (stores, props) {
     tools,
     toolsTable,
     pipelines,
-    pipelinesTable
+    pipelinesTable,
+    costDetails,
+    metrics
   };
 }
 
@@ -113,8 +145,7 @@ function renderResourcesSubData (
     request,
     discounts: discountsFn,
     tableDataRequest,
-    dataSample = InstanceFilters.value.dataSample,
-    previousDataSample = InstanceFilters.value.previousDataSample,
+    metrics,
     owner = true,
     title,
     singleTitle,
@@ -124,6 +155,16 @@ function renderResourcesSubData (
     height
   }
 ) {
+  const {
+    dataSample = 'value',
+    previousDataSample = 'previous'
+  } = InstanceFilters[metrics] || InstanceFilters[InstanceMetrics.costs] || {};
+  const isCosts = [
+    InstanceMetrics.costs,
+    InstanceMetrics.computeCosts,
+    InstanceMetrics.diskCosts,
+    undefined
+  ].includes(metrics);
   const columns = [
     {
       key: 'name',
@@ -170,7 +211,23 @@ function renderResourcesSubData (
       dataIndex: 'value',
       title: 'Cost',
       className: styles.tableCell,
-      render: value => value ? `$${Math.round(value * 100.0) / 100.0}` : null
+      render: value => costTickFormatter(value)
+    },
+    {
+      key: 'compute-cost',
+      title: 'Compute cost',
+      className: styles.tableCell,
+      render: (item) => item && item.costDetails && item.costDetails.computeCost
+        ? costTickFormatter(item.costDetails.computeCost)
+        : null
+    },
+    {
+      key: 'disk-cost',
+      title: 'Disk cost',
+      className: styles.tableCell,
+      render: (item) => item && item.costDetails && item.costDetails.diskCost
+        ? costTickFormatter(item.costDetails.diskCost)
+        : null
     }
   ].filter(Boolean);
   const tableData = tableDataRequest && tableDataRequest.loaded
@@ -191,11 +248,7 @@ function renderResourcesSubData (
         title={title}
         style={{height: heightCorrected}}
         top={tablePageSize}
-        valueFormatter={
-          dataSample === InstanceFilters.value.dataSample
-            ? costTickFormatter
-            : numberFormatter
-        }
+        valueFormatter={isCosts ? costTickFormatter : numberFormatter}
       />
       <div
         style={{
@@ -247,10 +300,43 @@ function renderResourcesSubData (
 const ResourcesSubData = observer(renderResourcesSubData);
 
 class InstanceReport extends React.Component {
-  state = {
-    dataSample: 'value',
-    previousDataSample: 'previous'
-  };
+  get costDetailsData () {
+    const {costDetails} = this.props;
+    if (costDetails.loaded) {
+      const {
+        computeCost,
+        diskCost
+      } = costDetails.value;
+      return {
+        aggregates: [InstanceMetrics.computeCosts, InstanceMetrics.diskCosts],
+        datasets: [
+          {
+            data: [computeCost, diskCost],
+            label: 'Cost'
+          }
+        ],
+        labels: ['Compute', 'Disk']
+      };
+    }
+    return {
+      aggregates: [InstanceMetrics.computeCosts, InstanceMetrics.diskCosts],
+      datasets: [
+        {
+          data: [undefined, undefined],
+          label: 'Cost'
+        }
+      ],
+      labels: ['Compute', 'Disk']
+    };
+  }
+
+  get summaryDatasets () {
+    const {
+      metrics
+    } = this.props;
+    return getSummaryDatasets(metrics);
+  }
+
   getInstanceTitle = () => {
     const {type} = this.props;
     if (/^cpu$/i.test(type)) {
@@ -272,16 +358,37 @@ class InstanceReport extends React.Component {
     return 'Compute instances runs';
   };
   getClarificationTitle = () => {
-    const {dataSample} = this.state;
-    if (InstanceFilters && InstanceFilters[dataSample]) {
-      const {title} = InstanceFilters[dataSample];
+    const {
+      metrics
+    } = this.props;
+    if (InstanceFilters && InstanceFilters[metrics]) {
+      const {title} = InstanceFilters[metrics];
       return title ? `- ${title}` : '';
     }
     return '';
   }
-  handleDataSampleChange = (dataSample, previousDataSample) => {
-    this.setState({dataSample, previousDataSample});
+  handleMetricsChange = (newMetrics) => {
+    const {
+      filters = {}
+    } = this.props;
+    const {
+      metricsNavigation
+    } = filters;
+    if (typeof metricsNavigation === 'function') {
+      metricsNavigation(newMetrics || InstanceMetrics.costs);
+    }
   };
+
+  handleCostDetailsChange = ({key}) => {
+    const {
+      metrics
+    } = this.props;
+    if (key === metrics) {
+      this.handleMetricsChange(InstanceMetrics.costs);
+    } else {
+      this.handleMetricsChange(key);
+    }
+  }
 
   render () {
     const {
@@ -295,10 +402,16 @@ class InstanceReport extends React.Component {
       user,
       group,
       filters = {},
-      type: computeType
+      type: computeType,
+      metrics,
+      costDetails
     } = this.props;
+    const costDetailsPending = costDetails.pending && !costDetails.loaded;
+    const selectedCostDetailsMetricsIndex = [
+      InstanceMetrics.computeCosts,
+      InstanceMetrics.diskCosts
+    ].indexOf(metrics);
     const {period, range, region: cloudRegionId} = filters;
-    const {dataSample, previousDataSample} = this.state;
     return (
       <Discounts.Consumer>
         {
@@ -347,9 +460,55 @@ class InstanceReport extends React.Component {
                             compute={summary}
                             computeDiscounts={computeDiscounts}
                             quota
+                            datasets={this.summaryDatasets}
                             title={this.getSummaryTitle()}
                             style={{width, height}}
                           />
+                        )
+                      }
+                    </ResizableContainer>
+                  </Layout.Panel>
+                </div>
+                <div key={InstanceReportLayout.Panels.details}>
+                  <Layout.Panel>
+                    <ResizableContainer style={{width: '100%', height: '100%'}}>
+                      {
+                        ({height}) => (
+                          <div
+                            style={{
+                              height,
+                              position: 'relative'
+                            }}
+                          >
+                            <DetailsChart
+                              highlightedLabel={selectedCostDetailsMetricsIndex}
+                              loading={costDetailsPending}
+                              onSelect={this.handleCostDetailsChange}
+                              data={this.costDetailsData}
+                              title="Cost details"
+                              valueFormatter={costTickFormatter}
+                              highlightTickFn={
+                                (_, tick) => tick._index === selectedCostDetailsMetricsIndex
+                              }
+                              discounts={computeDiscounts}
+                              showTotal={false}
+                            />
+                            {
+                              selectedCostDetailsMetricsIndex >= 0 && (
+                                <Button
+                                  size="small"
+                                  onClick={() => this.handleMetricsChange(InstanceMetrics.costs)}
+                                  style={{
+                                    position: 'absolute',
+                                    top: 5,
+                                    right: 5
+                                  }}
+                                >
+                                  <Icon type="close" /> {getInstanceMetricsName(metrics)}
+                                </Button>
+                              )
+                            }
+                          </div>
                         )
                       }
                     </ResizableContainer>
@@ -372,9 +531,8 @@ class InstanceReport extends React.Component {
                                 }}
                               >
                                 <InstanceFilter
-                                  onChange={this.handleDataSampleChange}
-                                  value={dataSample}
-                                  previous={previousDataSample}
+                                  onChange={this.handleMetricsChange}
+                                  value={metrics}
                                 />
                               </div>
                             )}
@@ -382,8 +540,7 @@ class InstanceReport extends React.Component {
                             request={instances}
                             discounts={computeDiscounts}
                             tableDataRequest={instancesTable}
-                            dataSample={dataSample}
-                            previousDataSample={previousDataSample}
+                            metrics={metrics}
                             owner={false}
                             title={`${this.getInstanceTitle()} ${this.getClarificationTitle()}`}
                             singleTitle="Instance"
@@ -404,8 +561,7 @@ class InstanceReport extends React.Component {
                             request={pipelines}
                             discounts={computeDiscounts}
                             tableDataRequest={pipelinesTable}
-                            dataSample={dataSample}
-                            previousDataSample={previousDataSample}
+                            metrics={metrics}
                             owner
                             title={`Pipelines ${this.getClarificationTitle()}`}
                             singleTitle="Pipeline"
@@ -426,8 +582,7 @@ class InstanceReport extends React.Component {
                             request={tools}
                             discounts={computeDiscounts}
                             tableDataRequest={toolsTable}
-                            dataSample={dataSample}
-                            previousDataSample={previousDataSample}
+                            metrics={metrics}
                             owner
                             title={`Tools ${this.getClarificationTitle()}`}
                             singleTitle="Tool"
