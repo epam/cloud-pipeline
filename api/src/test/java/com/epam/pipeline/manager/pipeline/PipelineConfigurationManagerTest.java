@@ -20,8 +20,11 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -45,6 +48,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
 public class PipelineConfigurationManagerTest {
+    public static final String NODE_LABEL_VALUE = "true";
     private static final String TEST_IMAGE = "image";
     private static final String TEST_REPO = "repository";
     private static final String OWNER1 = "testUser1";
@@ -63,6 +67,8 @@ public class PipelineConfigurationManagerTest {
     private static final String TEST_PATH_2 = "test/path2";
     private static final String TEST_PATH_3 = "test/path3";
     private static final String TEST_PATH_4 = "test/path4";
+    public static final String NODE_LABEL = "node-label";
+    public static final String OTHER_NODE_LABEL_VALUE = "false";
 
     @Mock
     private PipelineVersionManager pipelineVersionManager;
@@ -111,5 +117,88 @@ public class PipelineConfigurationManagerTest {
         assertThat(config.getNotifications()).isNotNull();
 
         verify(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
+    }
+
+    @Test
+    public void shouldPropagateRunAssignPolicyFromStartObjectToConfiguration() {
+        final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
+        runVO.setPodAssignPolicy(
+            RunAssignPolicy.builder().selector(
+                RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
+            ).build()
+        );
+        final PipelineConfiguration config = pipelineConfigurationManager
+                .mergeParameters(runVO, new PipelineConfiguration());
+
+        Assert.assertNotNull(config.getPodAssignPolicy());
+        Assert.assertEquals(NODE_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        Assert.assertEquals(NODE_LABEL_VALUE, config.getPodAssignPolicy().getSelector().getValue());
+    }
+
+    @Test
+    public void shouldPropagateParentNodeIdOrUseRunIdFromStartObjectToRunAssignPolicyInConfiguration() {
+        PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
+        runVO.setParentNodeId(2L);
+        PipelineConfiguration config = pipelineConfigurationManager.mergeParameters(runVO, new PipelineConfiguration());
+
+        Assert.assertNotNull(config.getPodAssignPolicy());
+        Assert.assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        Assert.assertEquals("2", config.getPodAssignPolicy().getSelector().getValue());
+
+        runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
+        runVO.setUseRunId(3L);
+        config = pipelineConfigurationManager.mergeParameters(runVO, new PipelineConfiguration());
+
+        Assert.assertNotNull(config.getPodAssignPolicy());
+        Assert.assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        Assert.assertEquals("3", config.getPodAssignPolicy().getSelector().getValue());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailIfBothRunAssignPolicyOrParentNodeIdIsProvided() {
+        final PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
+        runVO.setPodAssignPolicy(
+                RunAssignPolicy.builder().selector(
+                        RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
+                ).build()
+        );
+        runVO.setParentNodeId(1L);
+        pipelineConfigurationManager.mergeParameters(runVO, new PipelineConfiguration());
+    }
+
+    @Test
+    public void shouldPreferToUseValuesFromStartObjectInMergedConfiguration() {
+        PipelineStart runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
+        runVO.setParentNodeId(2L);
+        PipelineConfiguration defaultConfig = new PipelineConfiguration();
+        defaultConfig.setPodAssignPolicy(
+                RunAssignPolicy.builder().selector(
+                        RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
+                ).build()
+        );
+        PipelineConfiguration config = pipelineConfigurationManager.mergeParameters(runVO, defaultConfig);
+
+        Assert.assertNotNull(config.getPodAssignPolicy());
+        Assert.assertEquals(KubernetesConstants.RUN_ID_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        Assert.assertEquals("2", config.getPodAssignPolicy().getSelector().getValue());
+
+        runVO = getPipelineStart(TEST_PARAMS, TEST_IMAGE);
+        runVO.setPodAssignPolicy(
+                RunAssignPolicy.builder().selector(
+                        RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL).value(NODE_LABEL_VALUE).build()
+                ).build()
+        );
+        defaultConfig = new PipelineConfiguration();
+        defaultConfig.setPodAssignPolicy(
+                RunAssignPolicy.builder().selector(
+                        RunAssignPolicy.PodAssignSelector.builder().label(NODE_LABEL)
+                                .value(OTHER_NODE_LABEL_VALUE).build()
+                ).build()
+        );
+        config = pipelineConfigurationManager.mergeParameters(runVO, defaultConfig);
+
+        Assert.assertNotNull(config.getPodAssignPolicy());
+        Assert.assertEquals(NODE_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
+        Assert.assertEquals(NODE_LABEL_VALUE, config.getPodAssignPolicy().getSelector().getValue());
     }
 }

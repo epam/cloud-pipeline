@@ -25,7 +25,9 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -103,40 +105,40 @@ public class PipelineLauncher {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
-    public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
-                         String nodeIdLabel, String clusterId) {
-        return launch(run, configuration, endpoints, nodeIdLabel, true, run.getPodId(), clusterId);
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration,
+                         final List<String> endpoints, final String clusterId) {
+        return launch(run, configuration, endpoints, true, run.getPodId(), clusterId);
     }
 
-    public String launch(PipelineRun run, PipelineConfiguration configuration,
-                         List<String> endpoints, String nodeIdLabel, boolean useLaunch,
-                         String pipelineId, String clusterId) {
-        return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId,
-                getImagePullPolicy(configuration));
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration, final List<String> endpoints,
+                         final boolean useLaunch, final String pipelineId, final String clusterId) {
+        return launch(run, configuration, endpoints, useLaunch, pipelineId,
+                clusterId, getImagePullPolicy(configuration));
     }
 
-    public String launch(PipelineRun run, PipelineConfiguration configuration,
-                         List<String> endpoints, String nodeIdLabel, boolean useLaunch,
-                         String pipelineId, String clusterId, ImagePullPolicy imagePullPolicy) {
-        GitCredentials gitCredentials = configuration.getGitCredentials();
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration,
+                         final List<String> endpoints, final boolean useLaunch, final String pipelineId,
+                         final String clusterId, final ImagePullPolicy imagePullPolicy) {
+        validateLaunchConfiguration(configuration);
+        final GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
-        Map<SystemParams, String> systemParams = matchSystemParams(
+        final Map<SystemParams, String> systemParams = matchSystemParams(
                 run,
                 preferenceManager.getPreference(SystemPreferences.BASE_API_HOST),
                 kubeNamespace,
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING),
                 configuration, gitCredentials);
-        checkRunOnParentNode(run, nodeIdLabel, systemParams);
-        List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
+        markRunOnParentNode(run, configuration.getPodAssignPolicy(), systemParams);
+        final List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
                 buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive(),
                         configuration.getKubeLabels()));
 
         Assert.isTrue(!StringUtils.isEmpty(configuration.getCmdTemplate()), messageHelper.getMessage(
                 MessageConstants.ERROR_CMD_TEMPLATE_NOT_RESOLVED));
-        String pipelineCommand = commandBuilder.build(configuration, systemParams);
-        String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
+        final String pipelineCommand = commandBuilder.build(configuration, systemParams);
+        final String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
                 .orElse(run.getRepository());
-        String rootPodCommand;
+        final String rootPodCommand;
         if (!useLaunch) {
             rootPodCommand = pipelineCommand;
         } else {
@@ -152,10 +154,52 @@ public class PipelineLauncher {
             }
         }
         LOGGER.debug("Start script command: {}", rootPodCommand);
-        executor.launchRootPod(rootPodCommand, run, envVars,
-                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(),
-                clusterId, imagePullPolicy, configuration.getKubeLabels());
+        executor.launchRootPod(rootPodCommand, run, envVars, endpoints, pipelineId,
+                configuration.getPodAssignPolicy(), configuration.getSecretName(),
+                clusterId, imagePullPolicy, configuration.getKubeLabels(),
+                configuration.getKubeServiceAccount());
         return pipelineCommand;
+    }
+
+    void validateLaunchConfiguration(final PipelineConfiguration configuration) {
+        final PipelineUser user = authManager.getCurrentUser();
+        validateRunAssignPolicy(configuration);
+        validateConfigurationOnAdvancedAssignPolicy(configuration, user);
+        validateConfigurationOnKubernetesServiceAccount(configuration, user);
+    }
+
+    private void validateRunAssignPolicy(final PipelineConfiguration configuration) {
+        Optional.ofNullable(configuration.getPodAssignPolicy()).ifPresent(assignPolicy -> {
+            if (!assignPolicy.isValid()) {
+                throw new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_MALFORMED,
+                                assignPolicy.toString()));
+            }
+        });
+    }
+
+    private void validateConfigurationOnKubernetesServiceAccount(final PipelineConfiguration configuration,
+                                                                 final PipelineUser user) {
+        if (!user.isAdmin() && configuration.getKubeServiceAccount() != null) {
+            throw new IllegalStateException(
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName())
+            );
+        }
+    }
+
+    private void validateConfigurationOnAdvancedAssignPolicy(final PipelineConfiguration configuration,
+                                                             final PipelineUser user) {
+        if (user.isAdmin()) {
+            return;
+        }
+        final boolean isAdvancedRunAssignPolicy = Optional.ofNullable(configuration.getPodAssignPolicy())
+                .map(policy -> !policy.getSelector().getLabel().equals(KubernetesConstants.RUN_ID_LABEL))
+                .orElse(false);
+        if (isAdvancedRunAssignPolicy) {
+            throw new IllegalStateException(
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
+        }
     }
 
     private Map<String, String> buildRegionSpecificEnvVars(final Long cloudRegionId,
@@ -204,10 +248,15 @@ public class PipelineLauncher {
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
 
-    private void checkRunOnParentNode(PipelineRun run, String nodeIdLabel,
-                                      Map<SystemParams, String> systemParams) {
-        if (!run.getId().toString().equals(nodeIdLabel)) {
-            systemParams.put(SystemParams.RUN_ON_PARENT_NODE, EMPTY_PARAMETER);
+    private void markRunOnParentNode(final PipelineRun run, final RunAssignPolicy assignPolicy,
+                                     final Map<SystemParams, String> systemParams) {
+        if (assignPolicy != null && assignPolicy.isValid()) {
+            assignPolicy.ifMatchThenMapValue(KubernetesConstants.RUN_ID_LABEL, Long::valueOf)
+                    .ifPresent(parentNodeId -> {
+                        if (!run.getId().equals(parentNodeId)) {
+                            systemParams.put(SystemParams.RUN_ON_PARENT_NODE, EMPTY_PARAMETER);
+                        }
+                    });
         }
     }
 
