@@ -128,6 +128,7 @@ public class SystemPreferences {
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
     private static final String CLOUD_REGION_GROUP = "Cloud region";
+    private static final String SYSTEM_JOBS_GROUP = "System Jobs";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -1201,6 +1202,16 @@ public class SystemPreferences {
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+
+    // System Jobs
+    public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(
+            "system.jobs.scripts.location", "src/system-jobs", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final StringPreference SYSTEM_JOBS_OUTPUT_TASK = new StringPreference(
+            "system.jobs.output.pipeline.task", "SystemJob", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final LongPreference SYSTEM_JOBS_PIPELINE = new LongPreference(
+            "system.jobs.pipeline.id", null, SYSTEM_JOBS_GROUP, isNullOrGreaterThan(0), false);
 
     private static final Map<String, AbstractSystemPreference<?>> PREFERENCE_MAP;
 

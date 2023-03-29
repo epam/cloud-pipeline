@@ -1,0 +1,6 @@
+{
+    "short_description": "Image to use to run System Jobs on Cloud-Pipeline",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "disk_size": "50",
+    "default_command": "sleep infinity"
+}
