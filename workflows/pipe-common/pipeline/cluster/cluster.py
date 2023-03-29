@@ -112,7 +112,7 @@ class SGECluster(AbstractCluster):
             return None
         for line in output.splitlines():
             line = line.strip()
-            if line.strip().startswith('exit_status'):
+            if line.startswith('exit_status'):
                 parts = line.split()
                 if len(parts) != 2:
                     return None

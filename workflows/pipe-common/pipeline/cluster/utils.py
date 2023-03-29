@@ -43,9 +43,11 @@ def create_directory(path, name, lock):
 
 def run(job_command, get_output=True, env=None):
     if get_output:
-        process = subprocess.Popen(job_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        process = subprocess.Popen(job_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env,
+                                   universal_newlines=True)
     else:
-        process = subprocess.Popen(job_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env=env)
+        process = subprocess.Popen(job_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env=env,
+                                   universal_newlines=True)
     stdout, stderr = process.communicate()
     exit_code = process.wait()
     return stdout, stderr, exit_code
