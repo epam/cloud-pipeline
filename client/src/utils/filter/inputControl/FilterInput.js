@@ -55,7 +55,6 @@ import 'codemirror/addon/edit/trailingspace';
 
 @observer
 export default class FilterInput extends React.Component {
-
   static propTypes = {
     className: PropTypes.string,
     defaultValue: PropTypes.string,
@@ -78,13 +77,16 @@ export default class FilterInput extends React.Component {
   }
 
   _onCodeChange = (editor, change) => {
-    if (this.props.onEdit && change.from) {
-      this.props.onEdit(editor.getValue(), change.from.ch + (change.from.sticky === 'after' ? -1 : 0));
+    if (this.props.onEdit && change.from && editor) {
+      this.props.onEdit(
+        editor.getValue(),
+        change.from.ch + (change.from.sticky === 'after' ? -1 : 0)
+      );
     }
   };
 
   _onEnter = () => {
-    if (this.props.onEnter) {
+    if (this.props.onEnter && this.codeMirrorInstance) {
       this.props.onEnter(this.codeMirrorInstance.getValue());
     }
   };
@@ -218,6 +220,7 @@ export default class FilterInput extends React.Component {
           token: ['variable-2']
         },
         {
+          // eslint-disable-next-line max-len
           regex: /(\s)*(<|<=|=|!=|>=|>)(\s)*('(?:[^\\]|\\.)*?(?:'|$)|"(?:[^\\]|\\.)*?(?:"|$)|[^\s'"()[\]{}/\\]+)/,
           token: [null, null, null, 'comment']
         }
