@@ -18,6 +18,7 @@ import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import PipelineRunSingleFilter from '../../../../models/pipelines/PipelineRunSingleFilter';
 import RunTasks from '../../../../models/pipelines/RunTasks';
 import PipelineLanguage from '../../../../models/pipelines/PipelineLanguage';
+import RunCount, {ALL_STATUSES} from '../../../../models/pipelines/RunCount';
 import continuousFetch from '../../../../utils/continuous-fetch';
 import {checkCommitAllowedForTool} from '../../actions';
 
@@ -56,11 +57,18 @@ export default async function fetchRunInfo (
   let stopped = false;
   const runInfo = new PipelineRunInfo(runIdentifier);
   const runTasks = new RunTasks(runIdentifier);
+  const totalNestedRuns = new RunCount({
+    parentId: Number(runIdentifier),
+    statuses: ALL_STATUSES,
+    onlyMasterJobs: false
+  });
   await Promise.all([
     runInfo.fetch(),
     runTasks.fetch(),
+    totalNestedRuns.fetch(),
     dockerRegistries ? dockerRegistries.fetchIfNeededOrWait() : false
   ].filter(Boolean));
+  let hasNestedRuns = totalNestedRuns.runsCount > 0;
   if (runInfo.error || !runInfo.loaded) {
     throw new Error(runInfo.error || 'Error fetching run info');
   }
@@ -78,7 +86,9 @@ export default async function fetchRunInfo (
       runTasks: runTasks.value || [],
       showActiveWorkersOnly,
       language: undefined,
-      commitAllowed
+      commitAllowed,
+      hasNestedRuns,
+      nestedRunsPending: true
     });
   }
   const nestedRuns = new PipelineRunSingleFilter(
@@ -120,11 +130,13 @@ export default async function fetchRunInfo (
     } = run;
     currentStatus = nextStatus;
     const error = runInfo.error;
+    hasNestedRuns = hasNestedRuns || (nestedRuns.total || 0) > 0;
     if (typeof dataCallback === 'function' && !stopped) {
       dataCallback({
         run,
         nestedRuns: nestedRuns.value || [],
-        totalNestedRuns: nestedRuns.total || 0,
+        hasNestedRuns,
+        nestedRunsPending: false,
         error,
         showActiveWorkersOnly,
         runTasks: runTasks.value || [],

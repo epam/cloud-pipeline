@@ -137,7 +137,8 @@ class Logs extends localization.LocalizedReactComponent {
     error: undefined,
     showActiveWorkersOnly: false,
     nestedRuns: [],
-    totalNestedRuns: 0,
+    hasNestedRuns: false,
+    nestedRunsPending: false,
     runTasks: [],
     language: undefined,
     timings: false,
@@ -186,7 +187,8 @@ class Logs extends localization.LocalizedReactComponent {
         pending: true,
         error: undefined,
         nestedRuns: [],
-        totalNestedRuns: 0,
+        hasNestedRuns: false,
+        nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
         language: undefined
@@ -220,7 +222,8 @@ class Logs extends localization.LocalizedReactComponent {
         pending: false,
         error: undefined,
         nestedRuns: [],
-        totalNestedRuns: 0,
+        hasNestedRuns: false,
+        nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
         language: undefined
@@ -1338,10 +1341,10 @@ class Logs extends localization.LocalizedReactComponent {
   renderNestedRuns = () => {
     const {
       nestedRuns: originalNestedRuns = [],
-      totalNestedRuns: total = 0,
-      showActiveWorkersOnly
+      hasNestedRuns,
+      nestedRunsPending
     } = this.state;
-    if (originalNestedRuns.length === 0) {
+    if (!hasNestedRuns) {
       return null;
     }
     const nestedRuns = originalNestedRuns.slice().sort((rA, rB) => {
@@ -1389,9 +1392,6 @@ class Logs extends localization.LocalizedReactComponent {
       );
     };
     const searchParts = [`parent.id=${this.props.runId}`];
-    if (showActiveWorkersOnly) {
-      searchParts.push('status=RUNNING');
-    }
     const search = searchParts.join(' and ');
     return (
       <tr>
@@ -1403,16 +1403,18 @@ class Logs extends localization.LocalizedReactComponent {
         <td
           className={styles.nestedRuns}
         >
-          {nestedRuns.map(renderSingleRun)}
           {
-            total > MAX_NESTED_RUNS_TO_DISPLAY &&
-            <Link
-              className={styles.allNestedRuns}
-              to={`/runs/filter?search=${encodeURIComponent(search)}`}
-            >
-              show all {total} runs
-            </Link>
+            nestedRuns.length === 0 && nestedRunsPending && (
+              <Icon type="loading" />
+            )
           }
+          {nestedRuns.map(renderSingleRun)}
+          <Link
+            className={styles.allNestedRuns}
+            to={`/runs/filter?search=${encodeURIComponent(search)}`}
+          >
+            show all nested runs
+          </Link>
         </td>
       </tr>
     );
