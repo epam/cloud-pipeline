@@ -201,7 +201,6 @@ class SupportMenuItem extends React.Component {
       hint,
       entryName
     } = this.props;
-    console.log(this.props);
     const id = `navigation-button-support-${(entryName || 'default').replace(/[\s.,;]/g, '-')}`;
     if (url) {
       return (
