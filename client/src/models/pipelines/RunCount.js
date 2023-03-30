@@ -109,7 +109,10 @@ class RunCount extends RemotePost {
     this.pipelineIds = pipelineIds;
     this.parentId = parentId;
     if (autoUpdate) {
-      continuousFetch({request: this});
+      continuousFetch({
+        request: this,
+        intervalMS: 10000
+      });
     }
   }
 
