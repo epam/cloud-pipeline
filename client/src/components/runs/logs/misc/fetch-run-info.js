@@ -88,6 +88,7 @@ export default async function fetchRunInfo (
       language: undefined,
       commitAllowed,
       hasNestedRuns,
+      totalNestedRuns: 0,
       nestedRunsPending: true
     });
   }
@@ -136,6 +137,7 @@ export default async function fetchRunInfo (
         run,
         nestedRuns: nestedRuns.value || [],
         hasNestedRuns,
+        totalNestedRuns: nestedRuns.total || 0,
         nestedRunsPending: false,
         error,
         showActiveWorkersOnly,
