@@ -31,7 +31,8 @@ import {
   Modal,
   Popover,
   Row,
-  Spin
+  Spin,
+  Button
 } from 'antd';
 import SplitPane from 'react-split-pane';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
@@ -98,6 +99,7 @@ import getRunDurationInfo from '../../../utils/run-duration';
 import RunTimelineInfo from './misc/run-timeline-info';
 import evaluateRunPrice from '../../../utils/evaluate-run-price';
 import DataStorageLink from "../../special/data-storage-link";
+import NestedRunsModal from './forms/NestedRunsModal';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -155,7 +157,8 @@ class Logs extends localization.LocalizedReactComponent {
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
-    commitAllowedCheckedForDockerImage: undefined
+    commitAllowedCheckedForDockerImage: undefined,
+    nestedRunsModalVisible: false
   };
 
   componentDidMount () {
@@ -1331,10 +1334,34 @@ class Logs extends localization.LocalizedReactComponent {
               show all {total} runs
             </Link>
           }
+          <Button
+            size="small"
+            type="primary"
+            onClick={this.openNestedRunsModal}
+            ghost
+            style={{
+              border: 'none',
+              padding: 0
+            }}
+          >
+            show graph
+          </Button>
         </td>
       </tr>
     );
   };
+
+  openNestedRunsModal = () => {
+    this.setState({
+      nestedRunsModalVisible: true
+    });
+  }
+
+  closeNestedRunsModal = () => {
+    this.setState({
+      nestedRunsModalVisible: false
+    });
+  }
 
   refreshRun = () => {
     if (this.props.run) {
@@ -2090,6 +2117,10 @@ class Logs extends localization.LocalizedReactComponent {
           payload={this.runPayload}
           visible={this.state.showLaunchCommands}
           onClose={this.hideLaunchCommands}
+        />
+        <NestedRunsModal
+          visible={this.state.nestedRunsModalVisible}
+          onClose={this.closeNestedRunsModal}
         />
       </Card>
     );
