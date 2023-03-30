@@ -23,6 +23,7 @@ import java.util.Map;
 
 public interface EntityBillingDetailsLoader {
 
+    String ID = "id";
     String OWNER = "owner";
     String NAME = "name";
     String BILLING_CENTER = "billing_center";

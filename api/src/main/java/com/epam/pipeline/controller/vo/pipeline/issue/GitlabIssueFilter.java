@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import HeaderInfo from './HeaderInfo';
-import renderer from 'react-test-renderer';
+package com.epam.pipeline.controller.vo.pipeline.issue;
 
-/* eslint-disable */
-it('HeaderInfo renders correctly', () => {
-  const tree = renderer.create(
-    <HeaderInfo counter={{value: 1}} />
-  ).toJSON();
-  expect(tree).toMatchSnapshot();
-});
-/* eslint-enable */
+import lombok.Data;
+import java.util.List;
+
+@Data
+public class GitlabIssueFilter {
+    private String search;
+    private List<String> labels;
+}

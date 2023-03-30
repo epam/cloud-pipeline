@@ -49,7 +49,7 @@ import {CP_CAP_LIMIT_MOUNTS} from '../../../../pipelines/launch/form/utilities/p
 import PipelineRunSingleFilter from '../../../../../models/pipelines/PipelineRunSingleFilter';
 import generateUUID from '../common/generate-uuid';
 import PipelineRunInfo from '../../../../../models/pipelines/PipelineRunInfo';
-import {generateResourceUrl} from './output-utilities';
+import {generateResourceUrlWithAccessCallback} from './output-utilities';
 import {getWellRowName} from '../../../hcs-image/hcs-cell-selector/utilities';
 
 const CELLPROFILER_API_BATCH = 'CELLPROFILER_API_BATCH';
@@ -472,10 +472,14 @@ export async function getSpecification (job) {
       options.path = job.path;
     }
   }
-  const specsUrl = await generateResourceUrl(options);
+  const {
+    url: specsUrl,
+    callback = () => {}
+  } = await generateResourceUrlWithAccessCallback(options);
   if (!specsUrl) {
     return undefined;
   }
+  callback();
   const response = await fetch(specsUrl);
   return response.json();
 }

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.app;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +39,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -105,7 +107,7 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
         return new JsonMapper();
     }
 
-    @WebFilter(urlPatterns = {"/*"})
+    @WebFilter(urlPatterns = {"/restapi/*"})
     @Component
     @ConditionalOnProperty(name = "server.override.host.header")
     public static class HeaderFilter extends OncePerRequestFilter {
@@ -113,11 +115,15 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
         @Value("${kube.current.pod.name}")
         private String kubePodName;
 
+        @Value("${server.pod.header.name:Pod-Name}")
+        private String headerName;
+
         @Override
         protected void doFilterInternal(final HttpServletRequest request,
                                         final HttpServletResponse response,
-                                        final FilterChain filterChain) {
-            response.setHeader("Host", kubePodName);
+                                        final FilterChain filterChain) throws ServletException, IOException {
+            response.setHeader(headerName, kubePodName);
+            filterChain.doFilter(request, response);
         }
     }
 }

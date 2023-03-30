@@ -26,14 +26,14 @@ class GetGroupedStoragesDataWithPrevious extends GetDataWithPrevious {
     options
   ) {
     super(Model, options, (currentPeriodData) => {
-      const storageNames = Object.entries(currentPeriodData || {})
+      const storageIds = Object.entries(currentPeriodData || {})
         .map(([key, storage]) => {
-          if (storage && storage.groupingInfo && storage.groupingInfo.storage_name) {
-            return storage.groupingInfo.storage_name;
+          if (storage && storage.groupingInfo && storage.groupingInfo.id) {
+            return storage.groupingInfo.id;
           }
           return key;
         });
-      return {storageNames};
+      return {storageIds};
     });
   }
 }

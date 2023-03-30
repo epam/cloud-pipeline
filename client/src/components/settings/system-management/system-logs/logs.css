@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
+.logs-container {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
 .pagination {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  line-height: 34px;
+  height: 34px;
+  margin: 5px;
 }
 
 .pagination .button {
@@ -26,8 +35,32 @@
 
 .table {
   width: 100%;
+  flex: 1;
+  overflow: auto;
 }
 
 .table > div > div {
   filter: none !important;
+}
+
+.nowrap-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-cell {
+  min-width: 150px;
+  width: 150px;
+}
+
+.severity-cell {
+  min-width: 50px;
+  width: 50px;
+}
+
+.service-cell,
+.user-cell,
+.type-cell {
+  min-width: 100px;
 }

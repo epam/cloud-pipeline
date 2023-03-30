@@ -49,8 +49,7 @@ NETWORKS_PARAM = "cluster.networks.config"
 NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
-INSUFFICIENT_CAPACITY_ERROR_MASSAGE = 'Insufficient instance capacity. ' \
-                                      'A new one will be launched in another region if appropriate region will be found.'
+INSUFFICIENT_CAPACITY_ERROR_MASSAGE = 'Insufficient instance capacity.'
 BOTO3_RETRY_COUNT = 6
 MIN_SWAP_DEVICE_SIZE = 5
 LOCAL_NVME_INSTANCE_TYPES = [ 'c5d.' , 'm5d.', 'r5d.' ]

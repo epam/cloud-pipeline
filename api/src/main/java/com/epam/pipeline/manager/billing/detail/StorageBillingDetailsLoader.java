@@ -71,6 +71,7 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
                 .flatMap(this::resolveRegionId)
                 .flatMap(this::loadRegion));
         final Map<String, String> details = new HashMap<>(defaults);
+        details.put(ID, id);
         details.computeIfAbsent(NAME, key -> Optional.ofNullable(details.get(FILE_STORAGE_TYPE))
                 .filter(StringUtils::isNotBlank)
                 .map(type -> details.get(STORAGE_NAME))

@@ -55,6 +55,7 @@ import AWSRegionTag from '../special/AWSRegionTag';
 import ProviderForm from './cloud-provider';
 import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
+import RunShiftPolicy, {runShiftPoliciesEqual} from './cloud-regions/run-shift-policy';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
 
@@ -761,7 +762,8 @@ class AWSRegionForm extends React.Component {
       'mountCredentialsRule',
       'dnsHostedZoneBase',
       'dnsHostedZoneId',
-      'globalDistributionUrl'
+      'globalDistributionUrl',
+      'runShiftPolicy'
     ],
     AZURE: [
       'regionId',
@@ -785,7 +787,8 @@ class AWSRegionForm extends React.Component {
       'mountCredentialsRule',
       'dnsHostedZoneBase',
       'dnsHostedZoneId',
-      'globalDistributionUrl'
+      'globalDistributionUrl',
+      'runShiftPolicy'
     ],
     GCP: [
       'regionId',
@@ -811,7 +814,8 @@ class AWSRegionForm extends React.Component {
         required: form => form.getFieldValue('versioningEnabled')
       },
       'versioningEnabled',
-      'globalDistributionUrl'
+      'globalDistributionUrl',
+      'runShiftPolicy'
     ]
   };
 
@@ -957,6 +961,10 @@ class AWSRegionForm extends React.Component {
         this.props.region.fileShareMounts, this.props.form.getFieldValue('fileShareMounts')
       );
     };
+    const checkRunShiftPolicy = () => !runShiftPoliciesEqual(
+      this.props.region.runShiftPolicy,
+      this.props.form.getFieldValue('runShiftPolicy')
+    );
     this._modified = check('regionId', checkStringValue) ||
       check('name', checkStringValue) ||
       check('globalDistributionUrl', checkStringValue) ||
@@ -991,7 +999,8 @@ class AWSRegionForm extends React.Component {
       check('project', checkStringValue) ||
       check('applicationName', checkStringValue) ||
       check('customInstanceTypes', checkJSONValue) ||
-      check('fileShareMounts', checkMounts);
+      check('fileShareMounts', checkMounts) ||
+      checkRunShiftPolicy();
   };
 
   @computed
@@ -1527,7 +1536,7 @@ class AWSRegionForm extends React.Component {
                   style={{marginTop: 4}}
                   filterOption={
                     (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                      option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                   disabled={!this.props.isNew || this.props.pending}>
                   {
                     (this.props.regionIds || []).map(r => {
@@ -2047,6 +2056,25 @@ class AWSRegionForm extends React.Component {
               )}
             </Form.Item>
             <Form.Item
+              label="Run shift policy"
+              hasFeedback
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'runShiftPolicy',
+                  'edit-region-run-shift-policy-container'
+                )
+              }
+            >
+              {getFieldDecorator('runShiftPolicy', {
+                initialValue: this.props.region.runShiftPolicy
+              })(
+                <RunShiftPolicy
+                  disabled={this.props.pending}
+                />
+              )}
+            </Form.Item>
+            <Form.Item
               label="SLS properties"
               hasFeedback
               {...this.formItemLayout}
@@ -2358,7 +2386,6 @@ const MountRootFormat = {
 
 @observer
 class CloudRegionFileShareMountFormItem extends React.Component {
-
   static propTypes = {
     index: PropTypes.number,
     value: PropTypes.object,
@@ -2579,12 +2606,10 @@ class CloudRegionFileShareMountFormItem extends React.Component {
       </Row>
     );
   }
-
 }
 
 @observer
 class CloudRegionFileShareMountsFormItem extends React.Component {
-
   static propTypes = {
     value: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
     onChange: PropTypes.func,

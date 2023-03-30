@@ -665,6 +665,57 @@ class PreferencesLoad extends Remote {
     return processPreference();
   }
 
+  @computed
+  get uiRunsCounterFilter () {
+    const value = this.getPreferenceValue('ui.runs.counter.filter');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.runs.counter.filter" preference:', e.message);
+      }
+    }
+    return undefined;
+  }
+
+  @computed
+  get uiRunsFilters () {
+    const value = this.getPreferenceValue('ui.runs.filters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.runs.filters" preference:', e.message);
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get uiRunsClusterDetailsShowActiveOnly () {
+    const value = this.getPreferenceValue('ui.runs.cluster.details.show.active.only');
+    return (value || '').toLowerCase() !== 'false';
+  }
+
+  @computed
+  get systemJobsPipelineId () {
+    const value = this.getPreferenceValue('system.jobs.pipeline.id');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get systemJobsOutputPipelineTask () {
+    return this.getPreferenceValue('system.jobs.output.pipeline.task') || 'SystemJob';
+  }
+
+  @computed
+  get systemJobsScriptsLocation () {
+    return this.getPreferenceValue('system.jobs.scripts.location') || 'src/system-jobs';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

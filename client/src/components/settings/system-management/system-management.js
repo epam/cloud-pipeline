@@ -19,28 +19,13 @@ import {Modal} from 'antd';
 
 import SystemLogs from './system-logs';
 import NATGetaway from './nat-getaway-configuration/nat-getaway-configuration';
+import SystemJobs from './system-jobs';
 import SubSettings from '../sub-settings';
 
 export default class SystemManagement extends React.Component {
   state={
     modified: false,
     changesCanBeSkipped: false
-  }
-
-  getSections () {
-    return [
-      {
-        key: 'logs',
-        title: 'LOGS',
-        default: true,
-        render: () => (<SystemLogs />)
-      },
-      {
-        key: 'nat',
-        title: 'NAT GATEWAY',
-        render: () => (<NATGetaway handleModified={this.handleModified} />)
-      }
-    ];
   }
 
   componentDidMount () {
@@ -110,7 +95,24 @@ export default class SystemManagement extends React.Component {
   render () {
     return (
       <SubSettings
-        sections={this.getSections()}
+        sections={[
+          {
+            key: 'logs',
+            title: 'LOGS',
+            default: true,
+            render: () => (<SystemLogs />)
+          },
+          {
+            key: 'nat',
+            title: 'NAT GATEWAY',
+            render: () => (<NATGetaway handleModified={this.handleModified} />)
+          },
+          {
+            key: 'jobs',
+            title: 'SYSTEM JOBS',
+            render: () => (<SystemJobs router={this.props.router} />)
+          }
+        ]}
         router={this.props.router}
         canNavigate={this.confirmChangeURL}
         root="system"

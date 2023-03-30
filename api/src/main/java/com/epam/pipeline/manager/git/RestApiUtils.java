@@ -32,10 +32,14 @@ public final class RestApiUtils {
     }
 
     public static <R> R execute(Call<R> call) throws GitClientException {
+        return getResponse(call).body();
+    }
+
+    public static <R> Response<R> getResponse(Call<R> call) throws GitClientException {
         try {
             Response<R> response = call.execute();
             if (response.isSuccessful()) {
-                return response.body();
+                return response;
             } else {
                 throw new UnexpectedResponseStatusException(HttpStatus.valueOf(response.code()),
                         response.errorBody() != null ? response.errorBody().string() : "");

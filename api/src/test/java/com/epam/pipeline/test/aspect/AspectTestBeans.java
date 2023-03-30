@@ -60,6 +60,7 @@ import com.epam.pipeline.dao.pipeline.RunStatusDao;
 import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolGroupDao;
 import com.epam.pipeline.dao.tool.ToolVersionDao;
@@ -113,7 +114,6 @@ import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.OnlineUsersRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
@@ -399,7 +399,7 @@ public class AspectTestBeans {
     protected UserRunnersManager mockUserRunnersManager;
 
     @MockBean
-    protected PipelineRunServiceUrlRepository mockPipelineRunServiceUrlRepository;
+    protected RunServiceUrlDao mockRunServiceUrlDao;
 
     @MockBean
     protected ContextualNotificationManager contextualNotificationManager;

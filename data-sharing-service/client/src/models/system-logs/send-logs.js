@@ -1,11 +1,11 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+import RemotePost from '../basic/RemotePost';
 
-export default class DataStorageGenerateUploadUrl extends Remote {
-  constructor (id, path) {
+class SendSystemLogs extends RemotePost {
+  constructor () {
     super();
-    this.url = `/datastorage/${id}/generateUploadUrl?path=${path}`;
+    this.url = '/log';
   }
 }
+
+export default SendSystemLogs;

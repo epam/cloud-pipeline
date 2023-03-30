@@ -17,6 +17,7 @@
 import {S3Storage} from '../models/s3Storage/s3Storage';
 import DataStorageItemContent from '../models/dataStorage/DataStorageItemContent';
 import GenerateDownloadUrl from '../models/dataStorage/GenerateDownloadUrl';
+import auditStorageAccessManager from './audit-storage-access';
 
 const parser = new DOMParser();
 
@@ -116,6 +117,11 @@ class ObjectStorage {
     if (this.s3Storage) {
       await this.s3Storage.refreshCredentialsIfNeeded();
       const url = this.s3Storage.getSignedUrl(file);
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.id,
+        path: file,
+        reportStorageType: 'S3'
+      });
       const response = await fetch(url);
       return readS3Response(response, json, file);
     }

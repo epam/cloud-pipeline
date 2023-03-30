@@ -39,6 +39,7 @@ import '../../../../staticStyles/sa-styles.css';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import Panel from '../../../special/panel';
+import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 
 const {SA, SAM, $} = window;
 
@@ -201,10 +202,14 @@ class VSIPreview extends React.Component {
 
   componentWillUnmount () {
     this.resetSAViewerCameraUpdate();
+    if (this._cache) {
+      this._cache = undefined;
+    }
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.storageId !== this.props.storageId || prevProps.file !== this.props.file) {
+      this._cache = undefined;
       this.createS3Storage();
       this.fetchPreviewItems();
     }
@@ -223,7 +228,18 @@ class VSIPreview extends React.Component {
     if (this.storage && this.storage.type === 'S3' && this.s3Storage) {
       this.s3Storage.prefix = tilesFolder;
       const url = this.s3Storage.getSignedUrl(`${z}/${y}/${x}.jpg`);
+      if (!this._cache) {
+        this._cache = new Set();
+      }
       if (url) {
+        if (!this._cache.has(url)) {
+          this._cache.add(url);
+          auditStorageAccessManager.reportReadAccessDebounced({
+            storageId,
+            path: `${tilesFolder}/${z}/${y}/${x}.jpg`,
+            reportStorageType: 'S3'
+          });
+        }
         return url;
       }
     }
@@ -861,8 +877,7 @@ class VSIPreview extends React.Component {
             width: '100%',
             height: '100%'
           }}
-        >
-        </div>
+         />
         {
           fullScreenAvailable && (
             <Icon

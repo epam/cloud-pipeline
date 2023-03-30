@@ -14,36 +14,26 @@
  * limitations under the License.
  */
 
-import React, {Component} from 'react';
-import {inject, observer} from 'mobx-react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import {Row, Col, Spin, Input, Button, Checkbox} from 'antd';
 import {AutoSizer, List} from 'react-virtualized';
 import AU from 'ansi_up';
-import pipelineRun from '../../../models/pipelines/PipelineRun';
-import connect from '../../../utils/connect';
+import displayDate from '../../../utils/displayDate';
+import PipelineRunLog from '../../../models/pipelines/PipelineRunLog';
+import continuousFetch from '../../../utils/continuous-fetch';
 import styles from './Log.css';
 
 // formatNumber converts a 'number' to string with leading zeros.
 // 'mask' is a string with N zeros, where N is a fixed number of digits in a resulted string
 const formatNumber = (number, mask) => (mask + '' + number).substring((number + '').length);
 
-@connect({
-  pipelineRun
-})
-@inject(({pipelineRun, routing}, params) => {
-  const parameters = routing.location.search &&
-    routing.location.search.substring(1, routing.location.search.length);
-
-  return {
-    Run: pipelineRun.run(params.runId),
-    logs: pipelineRun.logs(params.runId, params.taskName, parameters)
-  };
-})
-@observer
-class LogList extends Component {
+class LogList extends React.Component {
   ansiUp = new AU();
 
   state = {
+    pending: false,
+    logs: [],
     search: false,
     searchText: null,
     searchResults: [],
@@ -57,10 +47,11 @@ class LogList extends Component {
   _spanHeightCalculator;
 
   getRowHeight = ({index}) => {
-    if (!this._spanHeightCalculator || !this.props.logs.value) {
+    const {logs} = this.state;
+    if (!this._spanHeightCalculator || !logs || logs.length <= index) {
       return 30;
     }
-    this._spanHeightCalculator.innerHTML = this.ansiUp.ansi_to_text(this.props.logs.value[index]);
+    this._spanHeightCalculator.innerHTML = this.ansiUp.ansi_to_text(logs[index]);
     const spanHeight = (this._spanHeightCalculator.offsetHeight || 30) + 16;
 
     return Math.max(spanHeight, 30);
@@ -120,7 +111,10 @@ class LogList extends Component {
   };
 
   renderLogRow = ({index, style}) => {
-    const log = this.props.logs.value[index];
+    const {
+      logs = []
+    } = this.state;
+    const log = logs[index];
     const textStyle = {};
     const lowerCasedText = this.ansiUp.ansi_to_text(log).toLowerCase();
     if (this.isError(lowerCasedText)) {
@@ -140,10 +134,6 @@ class LogList extends Component {
     }
     const renderText = () => {
       if (searchText.length > 0 && lowerCasedText.indexOf(searchText) >= 0) {
-        let color = '#877616';
-        if (index === currentSearchResultLineIndex) {
-          color = '#dbbf24';
-        }
         this.ansiUp.bg = null;
         this.ansiUp.fg = null;
         const result = this.processSearch(
@@ -180,31 +170,22 @@ class LogList extends Component {
     );
   };
 
-  componentWillReceiveProps (nextProps) {
-    if (this.props.logs &&
-      (
-        nextProps.taskName !== this.props.taskName ||
-        nextProps.runId !== this.props.runId
-      )) {
-      this.props.logs.clearInterval();
-    }
-  }
-
   onDataReceived = () => {
-    if (this.listElement && this.props.logs.value && this.state.autoScroll) {
-      this.listElement.scrollToRow((this.props.logs.value || []).length - 1);
+    const {logs = []} = this.state;
+    if (this.listElement && logs && logs.length > 0 && this.state.autoScroll) {
+      this.listElement.scrollToRow(logs.length - 1);
     }
   };
 
-  componentDidUpdate () {
-    this.props.logs.onDataReceived = () => this.onDataReceived();
-    if (this.props.Run.loaded) {
-      const {status} = this.props.Run.value;
-      if (status === 'RUNNING') {
-        this.props.logs.startInterval();
-      } else {
-        this.props.logs.clearInterval();
-      }
+  componentDidUpdate (prevProps) {
+    if (
+      prevProps.autoUpdate !== this.props.autoUpdate ||
+      prevProps.runId !== this.props.runId ||
+      prevProps.taskName !== this.props.taskName ||
+      prevProps.taskParameters !== this.props.taskParameters ||
+      prevProps.taskInstance !== this.props.taskInstance
+    ) {
+      this.updateFromProps();
     }
   }
 
@@ -232,15 +213,89 @@ class LogList extends Component {
       }
       return true;
     };
+    this.updateFromProps();
   }
 
+  fetchToken = 0;
+
+  updateFromProps = () => {
+    this.stopAutoUpdate();
+    const {
+      autoUpdate,
+      runId,
+      taskName,
+      taskParameters,
+      taskInstance
+    } = this.props;
+    this.fetchToken += 1;
+    const token = this.fetchToken;
+    if (runId) {
+      this.setState({
+        pending: true
+      }, () => {
+        const request = new PipelineRunLog(
+          runId,
+          taskName,
+          {
+            parameters: taskParameters,
+            instance: taskInstance
+          }
+        );
+        const call = async () => {
+          await request.fetch();
+          if (request.networkError) {
+            throw new Error(request.networkError);
+          }
+        };
+        const commit = () => {
+          if (token === this.fetchToken) {
+            const parseEntry = (entry) => (entry.logText || '')
+              .split('\n')
+              .map(line => entry.date ? `[${displayDate(entry.date)}] ${line}` : line);
+            this.setState({
+              logs: (request.value || [])
+                .map(parseEntry)
+                .reduce((r, c) => ([...r, ...c]), []),
+              pending: false
+            }, this.onDataReceived);
+          }
+        };
+        const {
+          stop
+        } = continuousFetch({
+          continuous: autoUpdate,
+          call,
+          afterInvoke: commit,
+          fetchImmediate: true
+        });
+        this.stop = stop;
+      });
+    } else {
+      this.setState({
+        pending: false,
+        logs: [],
+        search: undefined
+      });
+    }
+  };
+
+  stopAutoUpdate = () => {
+    if (typeof this.stop === 'function') {
+      this.stop();
+    }
+    this.stop = undefined;
+  };
+
   performSearch = (event) => {
+    const {logs = []} = this.state;
     const searchText = event.target.value.toLowerCase();
     if (searchText && searchText.length > 0) {
       if (searchText !== this.state.searchText) {
-        if (this.props.logs && !this.props.logs.error) {
-          const logs = this.props.logs.value.map(l => l);
-          const searchRegExp = new RegExp(searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'g');
+        if (logs.length > 0) {
+          const searchRegExp = new RegExp(
+            searchText.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'),
+            'g'
+          );
           const result = logs
             .map((log, index) => {
               return {
@@ -345,8 +400,7 @@ class LogList extends Component {
 
   componentWillUnmount () {
     window.onkeydown = null;
-    this.props.logs.clearInterval();
-    this.props.logs.clearInterval();
+    this.stopAutoUpdate();
   }
 
   initializeHeightCalculator = (span) => {
@@ -372,18 +426,25 @@ class LogList extends Component {
 
   render () {
     let Logs;
-    if (this.props.logs.pending) {
+    const {
+      autoUpdate
+    } = this.props;
+    const {
+      logs = [],
+      pending
+    } = this.state;
+    if (pending) {
       this.listElement = null;
       Logs = <Spin />;
-    } else if (this.props.logs.value.length === 0) {
+    } else if (logs.length === 0) {
       this.listElement = null;
       Logs = <Row key={-1} gutter={16}>
         <Col span={22} offset={2} className={styles.number}>
           No data
         </Col>
       </Row>;
-    } else if (this.props.logs.value) {
-      const linesCount = this.props.logs.value.length;
+    } else {
+      const linesCount = logs.length;
       const lineNumberMaxDigitsCount = Math.max((linesCount + '').length, 3);
       // i.e. '1000' => '000', '10000' => '0000' etc
       this._lineNumberMask = (Math.pow(10, lineNumberMaxDigitsCount) + '').substring(1);
@@ -458,24 +519,25 @@ class LogList extends Component {
         }
         <div className={styles.logsTableContainer} style={logsTableContainerStyle}>
           {
-            this.props.Run.loaded && this.props.Run.value.status === 'RUNNING' &&
-            <Row
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: 0,
-                textAlign: 'right',
-                zIndex: 2,
-                paddingTop: 10,
-                paddingRight: 15
-              }}>
-              <Checkbox
-                className={styles.scrollToLastCheckBox}
-                onChange={e => this.setState({autoScroll: e.target.checked})}
-                checked={this.state.autoScroll}>
-                Follow log
-              </Checkbox>
-            </Row>
+            autoUpdate && (
+              <Row
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 0,
+                  textAlign: 'right',
+                  zIndex: 2,
+                  paddingTop: 10,
+                  paddingRight: 15
+                }}>
+                <Checkbox
+                  className={styles.scrollToLastCheckBox}
+                  onChange={e => this.setState({autoScroll: e.target.checked})}
+                  checked={this.state.autoScroll}>
+                  Follow log
+                </Checkbox>
+              </Row>
+            )
           }
           <Row gutter={16} className={styles.logRowHeightCalculator}>
             <span className={styles.number}>{formatNumber(0, this._lineNumberMask)}:</span>
@@ -487,5 +549,13 @@ class LogList extends Component {
     );
   }
 }
+
+LogList.propTypes = {
+  autoUpdate: PropTypes.bool,
+  runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  taskName: PropTypes.string,
+  taskParameters: PropTypes.string,
+  taskInstance: PropTypes.string
+};
 
 export default LogList;

@@ -18,18 +18,19 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Alert, Table} from 'antd';
+import {Alert, Pagination, Table} from 'antd';
 import {isObservableArray, observable} from 'mobx';
 import {
   filtersAreEqual,
   getFiltersPayload,
   simpleArraysAreEqual
-} from './filter';
+} from '../../../models/pipelines/pipeline-runs-filter';
 import {
   AllColumns,
   Columns,
   ExpandColumn,
-  getColumns, RUN_LOADING_ERROR_PROPERTY,
+  getColumns,
+  RUN_LOADING_ERROR_PROPERTY,
   RUN_LOADING_PLACEHOLDER_PROPERTY
 } from './columns';
 import {AllStatuses} from './statuses';
@@ -39,18 +40,27 @@ import PipelineRunSearch from '../../../models/pipelines/PipelineRunSearch';
 import {runPipelineActions} from '../actions';
 import localization from '../../../utils/localization';
 import ChildRuns from './child-runs';
+import LoadingView from '../../special/LoadingView';
 import styles from './run-table.css';
 
 const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_INTERVAL_SECONDS = 10;
 
 /**
- * @param {undefined|boolean|{enabled: boolean, intervalSeconds: number}} autoUpdate
- * @returns {{enabled: boolean, intervalSeconds: number}}
+ * @typedef {Object} AutoUpdateProps
+ * @property {boolean|function} enabled
+ * @property {number} intervalSeconds
+ * @property {*} updateToken
+ */
+
+/**
+ * @param {undefined|boolean|function|AutoUpdateProps} autoUpdate
+ * @returns {AutoUpdateProps}
  */
 function parseAutoUpdateProps (autoUpdate = false) {
-  if (typeof autoUpdate === 'boolean') {
+  if (typeof autoUpdate === 'boolean' || typeof autoUpdate === 'function') {
     return {
+      updateToken: undefined,
       enabled: autoUpdate,
       intervalSeconds: DEFAULT_INTERVAL_SECONDS
     };
@@ -59,18 +69,47 @@ function parseAutoUpdateProps (autoUpdate = false) {
     const {
       enabled = true,
       intervalSeconds = DEFAULT_INTERVAL_SECONDS,
+      updateToken,
       ...rest
     } = autoUpdate;
     return {
       enabled,
       intervalSeconds,
+      updateToken,
       ...rest
     };
   }
   return {
     enabled: false,
-    intervalSeconds: DEFAULT_INTERVAL_SECONDS
+    intervalSeconds: DEFAULT_INTERVAL_SECONDS,
+    updateToken: undefined
   };
+}
+
+/**
+ * @param {undefined|boolean|AutoUpdateProps} configurationA
+ * @param {undefined|boolean|AutoUpdateProps} configurationB
+ * @param {boolean} [compareTokens=true]
+ * @returns {boolean}
+ */
+function autoUpdateConfigurationsEqual (
+  configurationA,
+  configurationB,
+  compareTokens = true
+) {
+  const {
+    enabled: enabledA,
+    intervalSeconds: intervalSecondsA,
+    updateToken: updateTokenA
+  } = parseAutoUpdateProps(configurationA);
+  const {
+    enabled: enabledB,
+    intervalSeconds: intervalSecondsB,
+    updateToken: updateTokenB
+  } = parseAutoUpdateProps(configurationB);
+  return enabledA === enabledB &&
+    intervalSecondsA === intervalSecondsB &&
+    (!compareTokens || updateTokenA === updateTokenB);
 }
 
 /**
@@ -176,6 +215,7 @@ class RunTable extends localization.LocalizedReactComponent {
   stopFetch;
 
   reFetch;
+  setContinuous;
 
   /**
    * @type {ChildRuns[]}
@@ -199,19 +239,26 @@ class RunTable extends localization.LocalizedReactComponent {
     const {
       filters: prevPropsFilters,
       searchFilters: prevPropsSearchFilters,
-      search: prevPropsSearch
+      search: prevPropsSearch,
+      autoUpdate: prevPropsAutoUpdate
     } = prevProps;
     const {
       filters,
       searchFilters,
-      search
+      search,
+      autoUpdate
     } = this.props;
     if (
       search !== prevPropsSearch ||
       searchFilters !== prevPropsSearchFilters ||
-      !filtersAreEqual(prevPropsFilters, filters)
+      !filtersAreEqual(prevPropsFilters, filters) ||
+      !autoUpdateConfigurationsEqual(prevPropsAutoUpdate, autoUpdate, false)
     ) {
       this.updateFromProps();
+    } else if (
+      !autoUpdateConfigurationsEqual(prevPropsAutoUpdate, autoUpdate, true)
+    ) {
+      this.reload();
     }
   }
 
@@ -226,7 +273,9 @@ class RunTable extends localization.LocalizedReactComponent {
       error: undefined,
       expandedRows: [],
       filters: {},
-      filtersState: {}
+      filtersState: {},
+      runs: [],
+      total: 0
     }, this.fetchCurrentPage.bind(this));
   };
 
@@ -236,6 +285,7 @@ class RunTable extends localization.LocalizedReactComponent {
     }
     this.stopFetch = undefined;
     this.reFetch = undefined;
+    this.setContinuous = undefined;
   }
 
   fetchCurrentPage = () => {
@@ -302,10 +352,10 @@ class RunTable extends localization.LocalizedReactComponent {
           const payload = getFiltersPayload({
             ...filters,
             ...userFilters,
-            userModified: modified,
             page: page + 1,
             pageSize
           });
+          payload.userModified = payload.userModified || modified;
           if (
             !payload.statuses ||
             payload.statuses.length === 0
@@ -313,7 +363,7 @@ class RunTable extends localization.LocalizedReactComponent {
             payload.statuses = AllStatuses;
           }
           const request = new PipelineRunSingleFilter(
-            getFiltersPayload(payload),
+            payload,
             false
           );
           request
@@ -348,13 +398,20 @@ class RunTable extends localization.LocalizedReactComponent {
       const after = () => {
         if (this.fetchToken === token) {
           this.setState(state);
+          if (typeof autoUpdate === 'function') {
+            const autoUpdateValue = autoUpdate(state);
+            if (typeof this.setContinuous === 'function') {
+              this.setContinuous(autoUpdateValue);
+            }
+          }
         }
       };
       const {
         stop,
-        fetch: reFetch
+        fetch: reFetch,
+        setContinuous
       } = continuousFetch({
-        continuous: autoUpdate,
+        continuous: !!autoUpdate,
         intervalMS: interval * 1000,
         afterInvoke: after,
         beforeInvoke: before,
@@ -362,6 +419,7 @@ class RunTable extends localization.LocalizedReactComponent {
       });
       this.stopFetch = stop;
       this.reFetch = reFetch;
+      this.setContinuous = setContinuous;
     });
   };
 
@@ -471,13 +529,78 @@ class RunTable extends localization.LocalizedReactComponent {
     }
   }
 
-  render () {
+  renderCustomTable = (runs) => {
     const {
-      className,
-      pageSize = DEFAULT_PAGE_SIZE,
+      tableClassName,
+      customRunRenderer,
+      onRunClick,
+      runRowClassName = (aRun) => undefined,
+      emptyDataMessage = 'No data'
+    } = this.props;
+    if (typeof customRunRenderer !== 'function') {
+      return null;
+    }
+    const {
+      pending
+    } = this.state;
+    return (
+      <div
+        className={
+          classNames(
+            'runs-table',
+            tableClassName,
+            styles.customTable,
+            {
+              [styles.pending]: pending
+            }
+          )
+        }
+      >
+        {
+          runs.length === 0 && !pending && (
+            <Alert message={emptyDataMessage} type="info" />
+          )
+        }
+        {
+          runs.map((run) => (
+            <div
+              key={run.id}
+              className={
+                classNames(
+                  `run-${run.id}`,
+                  styles.run,
+                  styles.customTableRow,
+                  runRowClassName(run)
+                )
+              }
+              onClick={() => (onRunClick || this.onRunClick)(run)}
+            >
+              {
+                customRunRenderer(run)
+              }
+            </div>
+          ))
+        }
+        {
+          pending && (
+            <div
+              className={styles.loadingIndicator}
+            >
+              <LoadingView />
+            </div>
+          )
+        }
+      </div>
+    );
+  };
+
+  renderTable = (runs) => {
+    const {
       disableFilters,
       tableClassName,
-      beforeTable
+      onRunClick,
+      runRowClassName = (aRun) => undefined,
+      emptyDataMessage = 'No data'
     } = this.props;
     const columns = getColumns(
       this.columns,
@@ -490,12 +613,55 @@ class RunTable extends localization.LocalizedReactComponent {
       }
     );
     const {
+      pending,
+      expandedRows
+    } = this.state;
+    return (
+      <Table
+        className={
+          classNames(
+            styles.table,
+            'runs-table',
+            tableClassName
+          )
+        }
+        columns={[ExpandColumn, ...columns]}
+        rowKey={record => record.id}
+        rowClassName={(record) => classNames(
+          `run-${record.id}`,
+          runRowClassName(record),
+          styles.run,
+          {
+            'cp-runs-table-service-url-run': runIsService(record)
+          }
+        )}
+        dataSource={runs}
+        onRowClick={onRunClick || this.onRunClick}
+        pagination={false}
+        loading={pending}
+        size="small"
+        indentSize={10}
+        locale={{emptyText: emptyDataMessage, filterConfirm: 'OK', filterReset: 'Clear'}}
+        expandedRowKeys={expandedRows}
+        onExpandedRowsChange={this.onExpandedRowsChanged}
+      />
+    );
+  };
+
+  render () {
+    const {
+      className,
+      pageSize = DEFAULT_PAGE_SIZE,
+      paginationClassName,
+      beforeTable,
+      customRunRenderer
+    } = this.props;
+    const {
       runs: rawRuns = [],
       page,
       total,
       pending,
-      error,
-      expandedRows
+      error
     } = this.state;
     const runs = rawRuns.map((run) => prepareRun(run, this.childrenRunsCollection, false));
     let before = beforeTable;
@@ -521,38 +687,31 @@ class RunTable extends localization.LocalizedReactComponent {
             />
           )
         }
-        <Table
-          className={
-            classNames(
-              styles.table,
-              'runs-table',
-              tableClassName
-            )
-          }
-          columns={[ExpandColumn, ...columns]}
-          rowKey={record => record.id}
-          rowClassName={(record) => classNames(
-            `run-${record.id}`,
-            styles.run,
-            {
-              'cp-runs-table-service-url-run': runIsService(record)
-            }
-          )}
-          dataSource={runs}
-          onRowClick={this.onRunClick}
-          pagination={{
-            current: page + 1,
-            pageSize,
-            total,
-            onChange: (newPage) => this.onPageChanged(newPage)
-          }}
-          loading={pending}
-          size="small"
-          indentSize={10}
-          locale={{emptyText: 'No Data', filterConfirm: 'OK', filterReset: 'Clear'}}
-          expandedRowKeys={expandedRows}
-          onExpandedRowsChange={this.onExpandedRowsChanged}
-        />
+        {
+          typeof customRunRenderer === 'function'
+            ? this.renderCustomTable(runs)
+            : this.renderTable(runs)
+        }
+        {
+          total > 0 && total > pageSize && (
+            <div
+              className={
+                classNames(
+                  paginationClassName,
+                  styles.pagination
+                )
+              }
+            >
+              <Pagination
+                total={total}
+                pageSize={pageSize}
+                current={page + 1}
+                onChange={(newPage) => this.onPageChanged(newPage)}
+                size="small"
+              />
+            </div>
+          )
+        }
       </div>
     );
   }
@@ -565,6 +724,9 @@ const StatusPropType = PropTypes.oneOf(AllStatuses);
 RunTable.propTypes = {
   className: PropTypes.string,
   tableClassName: PropTypes.string,
+  paginationClassName: PropTypes.string,
+  customRunRenderer: PropTypes.func,
+  emptyDataMessage: PropTypes.string,
   style: PropTypes.object,
   disableFilters: PropTypes.oneOfType([
     PropTypes.bool,
@@ -581,19 +743,25 @@ RunTable.propTypes = {
     dockerImages: PropTypes.arrayOf(PropTypes.string),
     startDateFrom: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     endDateTo: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-    owners: PropTypes.arrayOf(PropTypes.string)
+    owners: PropTypes.arrayOf(PropTypes.string),
+    onlyMasterJobs: PropTypes.bool,
+    tags: PropTypes.object
   }),
   search: PropTypes.bool,
   searchFilters: PropTypes.object,
   pageSize: PropTypes.number,
   autoUpdate: PropTypes.oneOfType([
     PropTypes.bool,
+    PropTypes.func,
     PropTypes.shape({
-      enabled: PropTypes.bool,
-      intervalSeconds: PropTypes.number
+      enabled: PropTypes.oneOfType([PropTypes.bool, PropTypes.func]),
+      intervalSeconds: PropTypes.number,
+      updateToken: PropTypes.any
     })
   ]),
-  beforeTable: PropTypes.oneOfType([PropTypes.node, PropTypes.func])
+  beforeTable: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
+  onRunClick: PropTypes.func,
+  runRowClassName: PropTypes.func
 };
 
 RunTable.defaultProps = {

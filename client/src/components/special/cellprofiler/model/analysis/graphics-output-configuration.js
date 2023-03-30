@@ -135,9 +135,9 @@ export default class GraphicsOutputConfiguration {
         return new OutlineObjectConfiguration({
           object: name,
           url: outline ? outline.url : undefined,
-          fetchUrl: outline ? outline.fetchUrl : undefined,
+          fetchUrl: outline ? outline.fetchUrlAndReportAccess : undefined,
           backgroundUrl: background ? background.url : undefined,
-          fetchBackgroundUrl: background ? background.fetchUrl : undefined,
+          fetchBackgroundUrl: background ? background.fetchUrlAndReportAccess : undefined,
           visible: true
         });
       }

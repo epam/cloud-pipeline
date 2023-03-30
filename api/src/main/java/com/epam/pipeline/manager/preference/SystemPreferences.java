@@ -128,6 +128,7 @@ public class SystemPreferences {
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
     private static final String CLOUD_REGION_GROUP = "Cloud region";
+    private static final String SYSTEM_JOBS_GROUP = "System Jobs";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -323,6 +324,12 @@ public class SystemPreferences {
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_ISSUE_PROJECT = new StringPreference(
             "git.gitlab.issue.project", null, GIT_GROUP, pass, true);
+    public static final ObjectPreference<List<String>> GITLAB_ISSUE_STATUSES = new ObjectPreference<>(
+            "git.gitlab.issue.statuses", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final ObjectPreference<List<String>> GITLAB_DEFAULT_LABELS = new ObjectPreference<>(
+            "git.gitlab.default.labels", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -675,9 +682,7 @@ public class SystemPreferences {
     public static final LongPreference LAUNCH_JWT_TOKEN_EXPIRATION_REFRESH_THRESHOLD = new LongPreference(
             "launch.jwt.token.expiration.refresh.threshold", 172800L, LAUNCH_GROUP, isGreaterThan(0L));
     public static final StringPreference LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE = new StringPreference(
-            "launch.insufficient.capacity.message",
-            "Insufficient instance capacity. " +
-                    "A new one will be launched in another region if appropriate region will be found.",
+            "launch.insufficient.capacity.message", "Insufficient instance capacity.",
             LAUNCH_GROUP, pass);
 
     // UI_GROUP
@@ -733,6 +738,14 @@ public class SystemPreferences {
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
     public static final StringPreference UI_STORAGE_DOWNLOAD_ATTRIBUTE = new StringPreference(
             "ui.storage.download.attribute", "download_allowed_roles", UI_GROUP, pass, true);
+    public static final ObjectPreference<Map<String, Object>> UI_RUNS_COUNT_FILTER = new ObjectPreference<>(
+            "ui.runs.counter.filter", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final ObjectPreference<List<Object>> UI_RUNS_FILTERS = new ObjectPreference<>(
+            "ui.runs.filters", Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final BooleanPreference UI_RUNS_CLUSTER_DETAILS_SHOW_ACTIVE_ONLY = new BooleanPreference(
+            "ui.runs.cluster.details.show.active.only", true, UI_GROUP, pass);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
@@ -1189,6 +1202,16 @@ public class SystemPreferences {
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+
+    // System Jobs
+    public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(
+            "system.jobs.scripts.location", "src/system-jobs", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final StringPreference SYSTEM_JOBS_OUTPUT_TASK = new StringPreference(
+            "system.jobs.output.pipeline.task", "SystemJob", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final LongPreference SYSTEM_JOBS_PIPELINE = new LongPreference(
+            "system.jobs.pipeline.id", null, SYSTEM_JOBS_GROUP, isNullOrGreaterThan(0), false);
 
     private static final Map<String, AbstractSystemPreference<?>> PREFERENCE_MAP;
 

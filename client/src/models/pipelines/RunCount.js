@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+import {action, computed, observable} from 'mobx';
 import RemotePost from '../basic/RemotePost';
+import preferencesLoad from '../preferences/PreferencesLoad';
 import continuousFetch from '../../utils/continuous-fetch';
+import {filtersAreEqual} from './pipeline-runs-filter';
 
 const DEFAULT_STATUSES = [
   'RUNNING',
@@ -25,7 +27,19 @@ const DEFAULT_STATUSES = [
   'RESUMING'
 ];
 
-export class UserRunCount extends RemotePost {
+const ALL_STATUSES = [
+  'RUNNING',
+  'PAUSED',
+  'PAUSING',
+  'RESUMING',
+  'STOPPED',
+  'FAILURE',
+  'SUCCESS'
+];
+
+export {ALL_STATUSES};
+
+class UserRunCount extends RemotePost {
   static fetchOptions = {
     headers: {
       'Content-type': 'application/json; charset=UTF-8'
@@ -54,32 +68,158 @@ export class UserRunCount extends RemotePost {
   }
 }
 
-export default class RunCount extends Remote {
-  static defaultValue = 0;
-  static auto = false;
-  static fetchOptions = {
-    headers: {
-      'Content-type': 'application/json; charset=UTF-8'
-    },
-    mode: 'cors',
-    credentials: 'include',
-    method: 'POST',
-    body: JSON.stringify({
-      statuses: [
-        'RUNNING',
-        'PAUSED',
-        'PAUSING',
-        'RESUMING'
-      ],
-      userModified: false,
-      eagerGrouping: false
-    })
+class RunCount extends RemotePost {
+  @observable usePreferenceValue = false;
+  @observable onlyMasterJobs = true;
+  @observable statuses = DEFAULT_STATUSES;
+  @observable pipelineIds = [];
+  @observable parentId;
+
+  @observable _runsCount = 0;
+
+  listeners = [];
+
+  /**
+   * @typedef {Object} RunCounterOptions
+   * @property {boolean} [usePreferenceValue=false]
+   * @property {string[]} [statuses]
+   * @property {boolean} [onlyMasterJobs=true]
+   * @property {boolean} [autoUpdate=false]
+   * @property {number[]} [pipelineIds=[]]
+   * @property {number|string} [parentId]
+   */
+
+  /**
+   * @param {RunCounterOptions} [options]
+   */
+  constructor (options) {
+    super();
+    this.url = '/run/count';
+    const {
+      usePreferenceValue,
+      statuses = DEFAULT_STATUSES,
+      onlyMasterJobs = true,
+      autoUpdate,
+      pipelineIds = [],
+      parentId
+    } = options || {};
+    this.statuses = statuses;
+    this.onlyMasterJobs = onlyMasterJobs;
+    this.usePreferenceValue = usePreferenceValue;
+    this.pipelineIds = pipelineIds;
+    this.parentId = parentId;
+    if (autoUpdate) {
+      continuousFetch({
+        request: this,
+        intervalMS: 10000
+      });
+    }
+  }
+
+  addListener = (listener) => {
+    this.removeListener(listener);
+    this.listeners.push(listener);
   };
 
-  url = '/run/count';
+  removeListener = (listener) => {
+    this.listeners = this.listeners.filter((aListener) => aListener !== listener);
+  };
 
-  constructor () {
-    super();
-    continuousFetch({request: this});
+  @computed
+  get isDefault () {
+    return filtersAreEqual(
+      this,
+      {
+        statuses: DEFAULT_STATUSES,
+        onlyMasterJobs: true
+      }
+    );
+  }
+
+  /**
+   * @param {RunCount} otherRequest
+   * @returns {boolean}
+   */
+  filtersEquals (otherRequest) {
+    if (!otherRequest) {
+      return false;
+    }
+    return filtersAreEqual(this, otherRequest);
+  }
+
+  @computed
+  get runsCount () {
+    return this._runsCount || 0;
+  }
+
+  async fetch () {
+    if (this.usePreferenceValue) {
+      await preferencesLoad.fetchIfNeededOrWait();
+      const {
+        statuses = this.statuses,
+        onlyMasterJobs = this.onlyMasterJobs
+      } = preferencesLoad.uiRunsCounterFilter || {};
+      this.statuses = statuses;
+      this.onlyMasterJobs = onlyMasterJobs;
+    }
+    await super.send({
+      statuses: this.statuses || ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'],
+      userModified: !this.onlyMasterJobs,
+      parentId: this.parentId,
+      pipelineIds: this.pipelineIds,
+      eagerGrouping: false
+    });
+    this._runsCount = this.value;
+    (this.listeners || [])
+      .filter((aListener) => typeof aListener === 'function')
+      .forEach((aListener) => aListener(this.value));
   }
 }
+
+class RunCountDefault extends RunCount {
+  /**
+   * @param {RunCount} globalCounter
+   * @param {{statuses: string[], onlyMasterJobs: boolean}} [filters]
+   */
+  constructor (globalCounter, filters = {}) {
+    const {
+      statuses = DEFAULT_STATUSES,
+      onlyMasterJobs = true
+    } = filters;
+    super({
+      autoUpdate: false,
+      statuses,
+      onlyMasterJobs,
+      usePreferenceValue: false
+    });
+    this.globalCounter = globalCounter;
+    this.updateFromGlobalCounter();
+    if (globalCounter && globalCounter.filtersEquals(this)) {
+      globalCounter.addListener(this.updateFromGlobalCounter);
+    }
+  }
+
+  updateFromGlobalCounter = () => {
+    if (this.globalCounter && this.globalCounter.filtersEquals(this)) {
+      this._runsCount = this.globalCounter.runsCount;
+    }
+  };
+
+  destroy () {
+    if (this.globalCounter) {
+      this.globalCounter.removeListener(this.updateFromGlobalCounter);
+    }
+  }
+
+  @action
+  async fetch () {
+    if (this.globalCounter && this.globalCounter.filtersEquals(this)) {
+      this._runsCount = this.globalCounter.runsCount;
+      return;
+    }
+    await super.fetch();
+  }
+}
+
+export {RunCountDefault, UserRunCount};
+export default RunCount;

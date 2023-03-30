@@ -64,7 +64,7 @@ CounterMenuItem.propTypes = {
   id: PropTypes.string.isRequired,
   icon: PropTypes.string,
   className: PropTypes.string,
-  tooltip: PropTypes.string,
+  tooltip: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
   count: PropTypes.number,
   maxCount: PropTypes.number
 };

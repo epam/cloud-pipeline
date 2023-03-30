@@ -45,6 +45,7 @@ import PreviewModal from './preview/preview-modal';
 import VSIPreviewPage from '../vsi-preview';
 import {fastCheckPreviewAvailable} from '../special/hcs-image/utilities/check-preview-available';
 import {getStaticResourceUrl} from '../../models/static-resources';
+import auditStorageAccessManager from '../../utils/audit-storage-access';
 
 const PAGE_SIZE = 40;
 
@@ -194,6 +195,11 @@ export default class Browser extends React.Component {
       message.error(request.error);
     } else {
       hide();
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.props.storageId,
+        path: item.path,
+        reportStorageType: 'S3'
+      });
       const a = document.createElement('a');
       a.href = request.value.url;
       a.download = item.name;

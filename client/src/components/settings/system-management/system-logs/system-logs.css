@@ -18,16 +18,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  height: 100%;
+  overflow: auto;
 }
 
 .logs-container {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-
-.logs-scroll-container {
   flex: 1;
   overflow: auto;
 }

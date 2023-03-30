@@ -21,13 +21,13 @@
  */
 
 import GenerateDownloadUrls from '../../models/dataStorage/GenerateDownloadUrls';
+import auditStorageAccessManager from '../../utils/audit-storage-access';
 
 /**
  * @param {StorageItem[]} items
  * @returns {Promise<string[]>}
  */
 async function downloadSingleStorageItems (items = []) {
-  console.log(items);
   if (items.length === 0) {
     return Promise.resolve([]);
   }
@@ -57,4 +57,9 @@ export default async function downloadStorageItems (items) {
   );
   const links = results.reduce((r, c) => ([...r, ...c]), []);
   links.forEach((link) => window.open(link, '_blank'));
+  auditStorageAccessManager.reportReadAccess(...items.map((item) => ({
+    storageId: item.storageId,
+    path: item.downloadOverride || item.path,
+    reportStorageType: 'S3'
+  })));
 }

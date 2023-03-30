@@ -61,6 +61,9 @@ function HcsVideoPlayer ({className, style, videoSource}) {
         </div>
       );
     }
+    const onLoadStart = () => typeof videoSource.videoAccessCallback === 'function'
+      ? videoSource.videoAccessCallback()
+      : undefined;
     return (
       <div
         className={
@@ -78,6 +81,7 @@ function HcsVideoPlayer ({className, style, videoSource}) {
           autoPlay
           loop={videoSource.loop}
           crossOrigin={videoSource.crossOrigin}
+          onLoadStart={onLoadStart}
         >
           <source src={videoSource.videoUrl} type={videoSource.videoSourceType} />
           <p>Your browser cannot play the provided video file.</p>

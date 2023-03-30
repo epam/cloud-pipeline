@@ -42,6 +42,7 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
@@ -357,5 +358,10 @@ public class RunApiService {
     @PreAuthorize(ADMIN_ONLY)
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
         return runManager.loadRunsByPoolId(poolId);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public List<RunInfo> loadRunsByParentId(final Long runId) {
+        return runManager.loadRunsByParentId(runId);
     }
 }

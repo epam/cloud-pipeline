@@ -20,25 +20,11 @@ import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import {Icon, Alert} from 'antd';
 import FileSaver from 'file-saver';
-import {Analysis} from '../model/analysis';
 import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
 import {generateResourceUrl} from '../model/analysis/output-utilities';
 import displayDate from '../../../../utils/displayDate';
+import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 import styles from './cell-profiler.css';
-
-/**
- * @param {AnalysisOutputResult} output
- * @returns {Promise<string>}
- */
-function getDownloadUrl (output) {
-  if (!output) {
-    return Promise.resolve(undefined);
-  }
-  if (typeof output.fetchUrl === 'function') {
-    return output.fetchUrl();
-  }
-  return Promise.resolve(output.url);
-}
 
 function getFileNameExtensionFromUrl (url) {
   try {
@@ -54,6 +40,7 @@ class AnalysisOutputWithDownload extends React.Component {
   state = {
     url: undefined,
     downloadUrl: undefined,
+    downloadPath: undefined,
     analysisUrl: undefined,
     data: undefined,
     output: undefined,
@@ -69,8 +56,6 @@ class AnalysisOutputWithDownload extends React.Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (
-      prevProps.url !== this.props.url ||
-      prevProps.downloadUrl !== this.props.downloadUrl ||
       prevProps.storageId !== this.props.storageId ||
       prevProps.path !== this.props.path ||
       prevProps.downloadPath !== this.props.downloadPath
@@ -79,8 +64,7 @@ class AnalysisOutputWithDownload extends React.Component {
     }
     if (
       prevProps.analysisStorageId !== this.props.analysisStorageId ||
-      prevProps.analysisPath !== this.props.analysisPath ||
-      prevProps.analysisUrl !== this.props.analysisUrl
+      prevProps.analysisPath !== this.props.analysisPath
     ) {
       this.updateAnalysisUrl();
     }
@@ -88,8 +72,6 @@ class AnalysisOutputWithDownload extends React.Component {
 
   updateUrl = () => {
     const {
-      url,
-      downloadUrl,
       storageId,
       path,
       downloadPath
@@ -99,6 +81,7 @@ class AnalysisOutputWithDownload extends React.Component {
       error: undefined,
       url: undefined,
       downloadUrl: undefined,
+      downloadPath: undefined,
       data: undefined
     }, async () => {
       const state = {
@@ -107,24 +90,30 @@ class AnalysisOutputWithDownload extends React.Component {
         data: undefined
       };
       try {
-        const _url = await generateResourceUrl({url, storageId, path});
+        const _url = await generateResourceUrl({storageId, path});
         if (!_url) {
           throw new Error('Cannot generate download url');
         }
+        auditStorageAccessManager.reportReadAccess({
+          storageId,
+          path,
+          reportStorageType: 'S3'
+        });
         state.data = await fetchContents(_url);
         if (state.data) {
           state.url = _url;
         }
         const _downloadUrl = await generateResourceUrl({
-          url: downloadUrl,
           storageId,
           path: downloadPath,
           checkExists: true
         });
         if (_downloadUrl) {
           state.downloadUrl = _downloadUrl;
+          state.downloadPath = downloadPath;
         } else {
           state.downloadUrl = _url;
+          state.downloadPath = path;
         }
       } catch (error) {
         state.error = error.message;
@@ -136,7 +125,6 @@ class AnalysisOutputWithDownload extends React.Component {
 
   updateAnalysisUrl = () => {
     const {
-      analysisUrl,
       analysisPath,
       analysisStorageId
     } = this.props;
@@ -150,7 +138,6 @@ class AnalysisOutputWithDownload extends React.Component {
       };
       try {
         const _url = await generateResourceUrl({
-          url: analysisUrl,
           storageId: analysisStorageId,
           path: analysisPath,
           checkExists: true
@@ -168,7 +155,8 @@ class AnalysisOutputWithDownload extends React.Component {
   handleDownload = async (e) => {
     e.preventDefault();
     const {
-      downloadUrl
+      downloadUrl,
+      downloadPath
     } = this.state;
     if (!downloadUrl) {
       return null;
@@ -176,7 +164,8 @@ class AnalysisOutputWithDownload extends React.Component {
     const {
       input = 'analysis',
       analysisDate,
-      analysisName
+      analysisName,
+      storageId
     } = this.props;
     const hcsFileName = input
       .split(/[\\/]/)
@@ -195,6 +184,11 @@ class AnalysisOutputWithDownload extends React.Component {
     ].filter(Boolean).join('-');
     const extension = getFileNameExtensionFromUrl(downloadUrl) || 'xlsx';
     fileName = fileName.concat('.').concat(extension);
+    auditStorageAccessManager.reportReadAccess({
+      storageId,
+      path: downloadPath,
+      reportStorageType: 'S3'
+    });
     fetch(downloadUrl)
       .then(res => res.blob())
       .then(blob => FileSaver.saveAs(blob, fileName));
@@ -210,7 +204,9 @@ class AnalysisOutputWithDownload extends React.Component {
     }
     const {
       input = 'analysis',
-      analysisName
+      analysisName,
+      analysisStorageId,
+      analysisPath
     } = this.props;
     const hcsFileName = input
       .split(/[\\/]/)
@@ -225,6 +221,11 @@ class AnalysisOutputWithDownload extends React.Component {
     ].filter(Boolean).join('_');
     const extension = getFileNameExtensionFromUrl(analysisUrl) || 'xlsx';
     fileName = fileName.concat('.').concat(extension);
+    auditStorageAccessManager.reportReadAccess({
+      storageId: analysisStorageId,
+      path: analysisPath,
+      reportStorageType: 'S3'
+    });
     fetch(analysisUrl)
       .then(res => res.blob())
       .then(blob => FileSaver.saveAs(blob, fileName));
@@ -345,121 +346,43 @@ AnalysisOutputWithDownload.propTypes = {
   downloadPath: PropTypes.string,
   analysisStorageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   analysisPath: PropTypes.string,
-  url: PropTypes.string,
-  downloadUrl: PropTypes.string,
-  analysisUrl: PropTypes.string,
   onClose: PropTypes.func,
   input: PropTypes.string,
   analysisDate: PropTypes.string,
   analysisName: PropTypes.string
 };
 
-@observer
-class AnalysisOutput extends React.Component {
-  state = {
-    url: undefined,
-    downloadUrl: undefined,
-    output: undefined,
-    pending: false,
-    error: undefined
-  };
-
-  componentDidMount () {
-    if (this.props.analysis) {
-      this.props.analysis.addEventListener(Analysis.Events.analysisDone, this.updateUrls);
-    }
-    this.updateUrls();
+function AnalysisOutput (
+  {
+    analysis,
+    className,
+    style,
+    onClose
   }
-
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    if (this.props.analysis !== prevProps.analysis) {
-      if (prevProps.analysis) {
-        prevProps.analysis.removeEventListeners(
-          Analysis.Events.analysisDone,
-          this.updateUrls
-        );
-      }
-      this.props.analysis.addEventListener(Analysis.Events.analysisDone, this.updateUrls);
-    }
+) {
+  if (
+    !analysis ||
+    !analysis.defineResultsOutputs ||
+    analysis.defineResultsOutputs.length === 0
+  ) {
+    return null;
   }
-
-  componentWillUnmount () {
-    if (this.props.analysis) {
-      this.props.analysis.removeEventListeners(Analysis.Events.analysisDone, this.updateUrls);
-    }
-  }
-
-  updateUrls = () => {
-    const outputs = this.props.analysis
-      ? this.props.analysis.defineResultsOutputs
-      : [];
-    const output = outputs.find(o => o.table);
-    const xlsx = outputs.find(o => o.xlsx);
-    if (output) {
-      this.setState({
-        pending: true,
-        error: undefined,
-        url: undefined,
-        downloadUrl: undefined
-      }, () => {
-        Promise.all([
-          getDownloadUrl(output),
-          getDownloadUrl(xlsx)
-        ])
-          .then(([url, downloadUrl]) => this.setState({
-            pending: false,
-            error: undefined,
-            url,
-            downloadUrl
-          }))
-          .catch(e => this.setState({
-            pending: false,
-            error: e.message,
-            url: undefined,
-            downloadUrl: undefined
-          }));
-      });
-    } else {
-      this.setState({
-        pending: true,
-        error: undefined,
-        url: undefined,
-        downloadUrl: undefined
-      });
-    }
-  };
-
-  render () {
-    const {
-      analysis,
-      className,
-      style,
-      onClose
-    } = this.props;
-    if (
-      !analysis ||
-      !analysis.defineResultsOutputs ||
-      analysis.defineResultsOutputs.length === 0
-    ) {
-      return null;
-    }
-    const {
-      url,
-      downloadUrl
-    } = this.state;
-    return (
-      <AnalysisOutputWithDownload
-        className={className}
-        style={style}
-        url={url}
-        downloadUrl={downloadUrl}
-        onClose={onClose}
-        input={analysis.path}
-        analysisDate={analysis.analysisDate}
-        analysisName={analysis.pipeline ? analysis.pipeline.name : undefined}
-      />
-    );
-  }
+  const outputs = analysis.defineResultsOutputs;
+  const output = outputs.find(o => o.table);
+  const xlsx = outputs.find(o => o.xlsx);
+  return (
+    <AnalysisOutputWithDownload
+      className={className}
+      style={style}
+      storageId={output ? output.storageId : undefined}
+      path={output ? output.storagePath : undefined}
+      downloadPath={xlsx ? xlsx.storagePath : undefined}
+      onClose={onClose}
+      input={analysis.path}
+      analysisDate={analysis.analysisDate}
+      analysisName={analysis.pipeline ? analysis.pipeline.name : undefined}
+    />
+  );
 }
 
 AnalysisOutput.propTypes = {
@@ -470,4 +393,4 @@ AnalysisOutput.propTypes = {
 };
 
 export {AnalysisOutputWithDownload};
-export default AnalysisOutput;
+export default observer(AnalysisOutput);
