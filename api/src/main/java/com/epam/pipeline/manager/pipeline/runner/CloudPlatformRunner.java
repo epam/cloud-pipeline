@@ -187,16 +187,14 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
                                                         final PipelineConfiguration configuration,
                                                         final String clusterId, final boolean startNFS,
                                                         final PipelineStart startVO) {
-        final PipelineConfiguration runConfiguration;
         if (!StringUtils.hasText(clusterId)) {
             log.debug("Launching master entry {}", entry.getName());
-            runConfiguration = pipelineConfigurationManager.copyAsMasterConfiguration(configuration, startNFS);
+            return pipelineConfigurationManager.generateMasterConfiguration(configuration, startNFS);
         } else {
             log.debug("Launching worker entry {}", entry.getName());
-            runConfiguration = pipelineConfigurationManager
+            return pipelineConfigurationManager
                     .generateWorkerConfiguration(clusterId, startVO, configuration, startNFS, true);
         }
-        return runConfiguration;
     }
 
     @Data

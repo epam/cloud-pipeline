@@ -308,8 +308,8 @@ public class PipelineConfigurationManager {
         configuration.buildEnvVariables();
     }
 
-    public PipelineConfiguration copyAsMasterConfiguration(final PipelineConfiguration configuration,
-                                                           final boolean isNFS) {
+    public PipelineConfiguration generateMasterConfiguration(final PipelineConfiguration configuration,
+                                                             final boolean isNFS) {
         final PipelineConfiguration copiedConfiguration = configuration.clone();
         updateMasterConfiguration(configuration, isNFS);
         return copiedConfiguration;
