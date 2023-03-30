@@ -165,11 +165,7 @@ export default class TicketsBrowser extends React.Component {
     };
     return (
       <div
-        className={classNames(
-          'cp-divider',
-          'bottom',
-          styles.headerContainer
-        )}
+        className={styles.headerContainer}
       >
         {content[this.mode] || null}
       </div>);

@@ -32,9 +32,7 @@
 }
 
 .editor-container {
-  border-radius: 5px;
-  padding: 10px;
-  flex: 1 1 0px;
+  flex: 1 1 0;
   max-width: 100%;
 }
 

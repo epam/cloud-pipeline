@@ -16,7 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import {
   Input,
   Radio,
@@ -26,7 +25,7 @@ import {
   Modal
 } from 'antd';
 import Markdown from '../../../markdown';
-import blobFilesToBase64 from '../blobFilesToBase64';
+import blobFilesToBase64 from '../utilities/blob-files-to-base64';
 import styles from './new-ticket-form.css';
 
 const PREVIEW_MODES = {
@@ -153,10 +152,7 @@ export default class NewTicketForm extends React.Component {
     const {uploadEnabled, renderAsModal} = this.props;
     return (
       <div
-        className={classNames(
-          'cp-bordered',
-          styles.editorContainer
-        )}
+        className={styles.editorContainer}
       >
         <Input
           value={title}

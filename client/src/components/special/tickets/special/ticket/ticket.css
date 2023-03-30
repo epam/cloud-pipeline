@@ -27,9 +27,11 @@
 }
 
 .ticket-header {
-  margin-bottom: 15px;
+  margin: 0 0 5px 5px;
   font-size: larger;
-  margin-left: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .ticket-header .ticket-id {
@@ -52,10 +54,6 @@
 
 .comments-container .card {
   margin-left: -25px;
-}
-
-.comments-container .card.primary {
-  filter: brightness(0.9);
 }
 
 .comments-container .card:not(:last-child) {

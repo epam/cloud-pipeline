@@ -21,9 +21,13 @@ import {computed, observable} from 'mobx';
 import {observer, inject} from 'mobx-react';
 import {Alert, message, Spin} from 'antd';
 import moment from 'moment-timezone';
-import {CommentCard, CommentEditor, Label, getAuthor} from '../index.js';
+import CommentCard from '../comment-card';
+import CommentEditor from '../comment-editor';
+import Label from '../label';
+import getAuthor from '../utilities/get-author';
 import GitlabIssueLoad from '../../../../../models/gitlab-issues/GitlabIssueLoad';
 import GitlabIssueComment from '../../../../../models/gitlab-issues/GitlabIssueComment';
+import UserName from '../../../UserName';
 import styles from './ticket.css';
 
 @inject('preferences')
@@ -155,6 +159,7 @@ export default class Ticket extends React.Component {
       >
         {[this.ticket, ...this.comments]
           .filter(Boolean)
+          .filter((comment) => comment.description || comment.body)
           .map((comment, index) => {
             const commentId = comment.iid || comment.id;
             if (editComment !== undefined && editComment === commentId) {
@@ -178,9 +183,7 @@ export default class Ticket extends React.Component {
                 comment={comment}
                 className={classNames(
                   'cp-card-background-color',
-                  styles.card,
-                  {[styles.primary]: index === 0},
-                  {'cp-primary border': index === 0}
+                  styles.card
                 )}
               />
             );
@@ -204,9 +207,11 @@ export default class Ticket extends React.Component {
           'bottom'
         )}>
           <span>Author:</span>
-          <span style={{marginLeft: '10px'}}>
-            {getAuthor(this.ticket)}
-          </span>
+          <UserName
+            style={{marginLeft: 10}}
+            userName={getAuthor(this.ticket)}
+            showIcon
+          />
         </div>
         <div className={classNames(
           styles.infoBlock,

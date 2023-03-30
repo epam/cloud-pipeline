@@ -25,7 +25,7 @@ import {
   Icon
 } from 'antd';
 import Markdown from '../../../markdown';
-import blobFilesToBase64 from '../blobFilesToBase64';
+import blobFilesToBase64 from '../utilities/blob-files-to-base64';
 
 const MODES = {
   edit: 'edit',

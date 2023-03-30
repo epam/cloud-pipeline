@@ -19,7 +19,7 @@
   flex-direction: column;
   overflow: hidden;
   border-radius: 3px;
-  padding: 2px 5px 0 5px;
+  padding: 2px 0 0;
 }
 
 .ticket-container {
@@ -43,7 +43,7 @@
   align-items: center;
   font-size: larger;
   padding: 0 5px;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .ticket-container:not(.header) .status {

@@ -35,22 +35,15 @@ import displayDate from '../../../../../utils/displayDate';
 import highlightText from '../../../../special/highlightText';
 import Label from '../label';
 import GitlabIssuesLoad from '../../../../../models/gitlab-issues/GitlabIssuesLoad';
+import getAuthor from '../utilities/get-author';
+import UserName from '../../../UserName';
 import styles from './ticket-list.css';
 
 const PAGE_SIZE = 20;
 
-function getAuthor (ticket = {}) {
-  const authorLabel = (ticket.labels || [])
-    .find(label => label.toLowerCase().includes('on behalf of'));
-  if (authorLabel) {
-    return authorLabel.split('of').pop().trim();
-  }
-  return '';
-};
-
 @inject('preferences')
 @observer
-export default class TicketsList extends React.Component {
+class TicketsList extends React.Component {
   static propTypes = {
     refreshTokenId: PropTypes.number,
     onSelectTicket: PropTypes.func,
@@ -328,7 +321,13 @@ export default class TicketsList extends React.Component {
             className="cp-text-not-important"
             style={{fontSize: 'smaller'}}
           >
-            Opened {displayDate(ticket.created_at, 'D MMM YYYY, HH:mm')} by {getAuthor(ticket)}
+            {'Opened '}
+            {displayDate(ticket.created_at, 'D MMM YYYY, HH:mm')}
+            {' by '}
+            <UserName
+              showIcon
+              userName={getAuthor(ticket)}
+            />
           </span>
         </div>
         <div className={styles.controls}>
@@ -396,4 +395,4 @@ export default class TicketsList extends React.Component {
   }
 }
 
-export {getAuthor};
+export default TicketsList;

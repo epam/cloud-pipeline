@@ -24,7 +24,8 @@ import {
 } from 'antd';
 import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';
-import {getAuthor} from '../index.js';
+import getAuthor from '../utilities/get-author';
+import UserName from '../../../UserName';
 
 export default class CommentCard extends React.Component {
   static propTypes = {
@@ -35,13 +36,26 @@ export default class CommentCard extends React.Component {
     style: PropTypes.object
   };
 
-  get commentInfo () {
+  getCommentInfo () {
     const {comment} = this.props;
-    let author = '';
-    let text = comment.description || comment.body;
-    if (comment && comment.labels) {
+    if (!comment) {
+      return {
+        author: undefined,
+        text: ''
+      };
+    }
+    const {
+      author: systemAuthor = {},
+      description,
+      body,
+      type
+    } = comment;
+    let {
+      author = ''
+    } = systemAuthor.name;
+    let text = description || body;
+    if (/^issue$/i.test(type)) {
       author = getAuthor(comment);
-      text = comment.title;
     } else {
       const authorLabel = text
         .split('\n')
@@ -73,6 +87,10 @@ export default class CommentCard extends React.Component {
     if (!comment) {
       return null;
     }
+    const {
+      author,
+      text
+    } = this.getCommentInfo();
     const messageMenu = (
       <Menu
         onClick={({key}) => this.onSelectMenu(key, comment)}
@@ -115,10 +133,13 @@ export default class CommentCard extends React.Component {
           }}
         >
           <div>
-            {this.commentInfo.author}
+            <UserName
+              userName={author}
+              showIcon={!!author}
+            />
             <span
               className="cp-text-not-important"
-              style={{fontSize: 'smaller', marginLeft: '5px'}}
+              style={{marginLeft: '5px'}}
             >
               commented {displayDate(comment.updated_at, 'D MMM YYYY, HH:mm')}
             </span>
@@ -141,7 +162,7 @@ export default class CommentCard extends React.Component {
           ) : null}
         </div>
         <Markdown
-          md={this.commentInfo.text}
+          md={text}
           style={{
             margin: '10px 0',
             minHeight: '32px',

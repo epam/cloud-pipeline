@@ -19,7 +19,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 30px;
+  padding: 5px;
   overflow-y: auto;
 }
 
@@ -27,8 +27,8 @@
   display: flex;
   flex-wrap: nowrap;
   justify-content: flex-end;
-  margin-bottom: 20px;
-  padding-bottom: 5px;
+  align-items: center;
+  padding: 0 5px 5px;
 }
 
 .header-container .heading {
