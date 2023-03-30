@@ -308,11 +308,20 @@ public class PipelineConfigurationManager {
         configuration.buildEnvVariables();
     }
 
-    public void updateWorkerConfiguration(String parentId, PipelineStart runVO,
-            PipelineConfiguration configuration, boolean isNFS, boolean clearParams) {
-        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_WORKER_ENDPOINTS));
-        final Map<String, PipeConfValueVO> configParameters = MapUtils.isEmpty(configuration.getParameters()) ?
-                new HashMap<>() : configuration.getParameters();
+    public PipelineConfiguration generateMasterConfiguration(final PipelineConfiguration configuration,
+                                                             final boolean isNFS) {
+        final PipelineConfiguration copiedConfiguration = configuration.clone();
+        updateMasterConfiguration(configuration, isNFS);
+        return copiedConfiguration;
+    }
+
+    public PipelineConfiguration generateWorkerConfiguration(final String parentId, final PipelineStart runVO,
+                                                             final PipelineConfiguration configuration,
+                                                             final boolean isNFS, final boolean clearParams) {
+        final PipelineConfiguration workerConfiguration = configuration.clone();
+        workerConfiguration.setEraseRunEndpoints(hasBooleanParameter(workerConfiguration, ERASE_WORKER_ENDPOINTS));
+        final Map<String, PipeConfValueVO> configParameters = MapUtils.isEmpty(workerConfiguration.getParameters()) ?
+                new HashMap<>() : workerConfiguration.getParameters();
         final Map<String, PipeConfValueVO> updatedParams = clearParams ? new HashMap<>() : configParameters;
         final List<DefaultSystemParameter> systemParameters = preferenceManager.getPreference(
                 SystemPreferences.LAUNCH_SYSTEM_PARAMETERS);
@@ -331,20 +340,21 @@ public class PipelineConfigurationManager {
         } else {
             updatedParams.remove(NFS_CLUSTER_ROLE);
         }
-        configuration.setParameters(updatedParams);
-        configuration.setClusterRole(WORKER_CLUSTER_ROLE);
-        configuration.setCmdTemplate(StringUtils.hasText(runVO.getWorkerCmd()) ?
+        workerConfiguration.setParameters(updatedParams);
+        workerConfiguration.setClusterRole(WORKER_CLUSTER_ROLE);
+        workerConfiguration.setCmdTemplate(StringUtils.hasText(runVO.getWorkerCmd()) ?
                 runVO.getWorkerCmd() : WORKER_CMD_TEMPLATE);
-        configuration.setPrettyUrl(null);
+        workerConfiguration.setPrettyUrl(null);
         //remove node count parameter for workers
-        configuration.setNodeCount(null);
+        workerConfiguration.setNodeCount(null);
         // if podAssignPolicy is a simple policy to assign run pod to dedicated instance, then we need to cleared it
         // and workers then will be assigned to its own nodes, otherwise keep existing policy to assign workers
         // as was configured in policy object
-        if (configuration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL, parentId)) {
-            configuration.setPodAssignPolicy(null);
+        if (workerConfiguration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL, parentId)) {
+            workerConfiguration.setPodAssignPolicy(null);
         }
-        configuration.buildEnvVariables();
+        workerConfiguration.buildEnvVariables();
+        return workerConfiguration;
     }
 
     public boolean hasNFSParameter(PipelineConfiguration entry) {
