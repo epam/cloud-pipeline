@@ -319,7 +319,7 @@ export default class TicketsList extends React.Component {
             className="cp-text-not-important"
             style={{fontSize: 'smaller'}}
           >
-            Opened {displayDate(ticket.created_at, 'D MMM YYYY, HH:mm')} by {ticket.author.username}
+            Opened {displayDate(ticket.created_at, 'D MMM YYYY, HH:mm')} by {ticket.author.name}
           </span>
         </div>
         <div className={styles.controls}>
