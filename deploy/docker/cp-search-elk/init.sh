@@ -318,6 +318,8 @@ EDGE_PIPELINE="{
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/edge -d "$EDGE_PIPELINE"
 
+curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/audit_dav -d "@/etc/search-elk/pipelines/audit-dav.json"
+
 API_SRV_PIPELINE="{
 
     \"description\" : \"Log data extraction pipeline from API server\",
