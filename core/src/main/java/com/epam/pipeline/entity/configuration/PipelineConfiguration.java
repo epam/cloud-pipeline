@@ -32,6 +32,7 @@ import lombok.Setter;
 import org.apache.commons.collections4.ListUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,7 +49,7 @@ import java.util.stream.Collectors;
 @Getter
 @NoArgsConstructor
 @EqualsAndHashCode
-public class PipelineConfiguration {
+public class PipelineConfiguration implements Cloneable {
 
     private static final String MAIN_FILE = "main_file";
     private static final String MAIN_CLASS = "main_class";
@@ -225,5 +226,22 @@ public class PipelineConfiguration {
         return runsSids.stream()
                 .peek(runSid -> runSid.setIsPrincipal(principal))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public PipelineConfiguration clone() {
+        try {
+            final PipelineConfiguration clone = (PipelineConfiguration) super.clone();
+            clone.setParameters(new HashMap<>(this.parameters));
+            clone.setEnvironmentParams(new HashMap<>(this.environmentParams));
+            clone.setSharedWithUsers(new ArrayList<>(this.sharedWithUsers));
+            clone.setSharedWithRoles(new ArrayList<>(this.sharedWithRoles));
+            clone.setNotifications(new ArrayList<>(this.notifications));
+            clone.setTags(new HashMap<>(this.tags));
+            clone.setKubeLabels(new HashMap<>(this.kubeLabels));
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("There was an error while trying to clone PipelineConfiguration object", e);
+        }
     }
 }
