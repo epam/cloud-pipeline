@@ -138,6 +138,7 @@ class Logs extends localization.LocalizedReactComponent {
     showActiveWorkersOnly: false,
     nestedRuns: [],
     hasNestedRuns: false,
+    totalNestedRuns: 0,
     nestedRunsPending: false,
     runTasks: [],
     language: undefined,
@@ -188,6 +189,7 @@ class Logs extends localization.LocalizedReactComponent {
         error: undefined,
         nestedRuns: [],
         hasNestedRuns: false,
+        totalNestedRuns: 0,
         nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
@@ -223,6 +225,7 @@ class Logs extends localization.LocalizedReactComponent {
         error: undefined,
         nestedRuns: [],
         hasNestedRuns: false,
+        totalNestedRuns: 0,
         nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
@@ -1342,7 +1345,9 @@ class Logs extends localization.LocalizedReactComponent {
     const {
       nestedRuns: originalNestedRuns = [],
       hasNestedRuns,
-      nestedRunsPending
+      totalNestedRuns = 0,
+      nestedRunsPending,
+      showActiveWorkersOnly
     } = this.state;
     if (!hasNestedRuns) {
       return null;
@@ -1393,6 +1398,14 @@ class Logs extends localization.LocalizedReactComponent {
     };
     const searchParts = [`parent.id=${this.props.runId}`];
     const search = searchParts.join(' and ');
+    const nestedRunsInfos = [
+      totalNestedRuns,
+      'nested'
+    ];
+    if (showActiveWorkersOnly) {
+      nestedRunsInfos.push('active');
+    }
+    nestedRunsInfos.push(totalNestedRuns === 1 ? 'run' : 'runs');
     return (
       <tr>
         <th
@@ -1400,21 +1413,30 @@ class Logs extends localization.LocalizedReactComponent {
         >
           Nested runs:
         </th>
-        <td
-          className={styles.nestedRuns}
-        >
+        <td>
           {
-            nestedRuns.length === 0 && nestedRunsPending && (
-              <Icon type="loading" />
+            !nestedRunsPending && (
+              <div>
+                {nestedRunsInfos.join(' ')}
+              </div>
             )
           }
-          {nestedRuns.map(renderSingleRun)}
-          <Link
-            className={styles.allNestedRuns}
-            to={`/runs/filter?search=${encodeURIComponent(search)}`}
+          <div
+            className={styles.nestedRuns}
           >
-            show all nested runs
-          </Link>
+            {
+              nestedRuns.length === 0 && nestedRunsPending && (
+                <Icon type="loading" />
+              )
+            }
+            {nestedRuns.map(renderSingleRun)}
+            <Link
+              className={styles.allNestedRuns}
+              to={`/runs/filter?search=${encodeURIComponent(search)}`}
+            >
+              show all nested runs
+            </Link>
+          </div>
         </td>
       </tr>
     );
