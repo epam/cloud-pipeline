@@ -311,7 +311,7 @@ public class PipelineConfigurationManager {
     public PipelineConfiguration generateMasterConfiguration(final PipelineConfiguration configuration,
                                                              final boolean isNFS) {
         final PipelineConfiguration copiedConfiguration = configuration.clone();
-        updateMasterConfiguration(configuration, isNFS);
+        updateMasterConfiguration(copiedConfiguration, isNFS);
         return copiedConfiguration;
     }
 
