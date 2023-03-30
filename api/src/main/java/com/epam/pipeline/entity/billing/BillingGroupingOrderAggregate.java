@@ -16,26 +16,36 @@
 
 package com.epam.pipeline.entity.billing;
 
+import com.epam.pipeline.manager.billing.BillingUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Set;
 
 @Getter
 @RequiredArgsConstructor
 public enum BillingGroupingOrderAggregate {
 
-    DEFAULT(null, "cost", "cost"),
+    DEFAULT(null, BillingUtils.COST_FIELD, BillingUtils.COST_FIELD, null),
 
-    STORAGE(BillingGrouping.STORAGE, "cost", "usage_bytes"),
-    STANDARD(BillingGrouping.STORAGE,
-            "standard_total_cost", "standard_total_usage_bytes"),
-    GLACIER(BillingGrouping.STORAGE,
-            "glacier_total_cost", "glacier_total_usage_bytes"),
-    GLACIER_IR(BillingGrouping.STORAGE,
-            "glacier_ir_total_cost", "glacier_ir_total_usage_bytes"),
-    DEEP_ARCHIVE(BillingGrouping.STORAGE,
-            "deep_archive_total_cost", "deep_archive_total_usage_bytes");
+    STORAGE(BillingGrouping.getStorageGrouping(), BillingUtils.COST_FIELD, BillingUtils.STORAGE_USAGE_FIELD, null),
+    STANDARD(BillingGrouping.getStorageGrouping(),
+            "standard_total_cost", "standard_total_usage_bytes", null),
+    GLACIER(BillingGrouping.getStorageGrouping(),
+            "glacier_total_cost", "glacier_total_usage_bytes", null),
+    GLACIER_IR(BillingGrouping.getStorageGrouping(),
+            "glacier_ir_total_cost", "glacier_ir_total_usage_bytes", null),
+    DEEP_ARCHIVE(BillingGrouping.getStorageGrouping(),
+            "deep_archive_total_cost", "deep_archive_total_usage_bytes", null),
+    RUN(BillingGrouping.getRunGrouping(), BillingUtils.COST_FIELD,
+            BillingUtils.RUN_USAGE_FIELD, BillingUtils.RUN_ID_FIELD),
+    RUN_COMPUTE(BillingGrouping.getRunGrouping(), BillingUtils.COMPUTE_COST_FIELD,
+            BillingUtils.RUN_USAGE_FIELD, BillingUtils.RUN_ID_FIELD),
+    RUN_DISK(BillingGrouping.getRunGrouping(), BillingUtils.DISK_COST_FIELD,
+            BillingUtils.RUN_USAGE_FIELD, BillingUtils.RUN_ID_FIELD);
 
-    private final BillingGrouping group;
+    private final Set<BillingGrouping> groups;
     private final String costField;
     private final String usageField;
+    private final String countField;
 }
