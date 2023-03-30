@@ -34,6 +34,7 @@
 - [Data access audit](#data-access-audit)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
+- [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
 
 ***
 
@@ -1246,6 +1247,30 @@ Example:
 
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_TransferBetweenRegions_1.png)
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_TransferBetweenRegions_2.png)
+
+## AWS: switching of Cloud Regions for launched jobs in case of insufficient capacity
+
+Previously, if user started an `AWS` job and there were not enough instances of specified type to launch that job in a region - it would fail.  
+In the current version, the ability to automatically relaunch such runs in other `AWS` region(s) was implemented.  
+
+For that functionality, a new setting was added to the Cloud Region configuration - "**Run shift policy**":  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_1.png)
+
+If this setting is enabled for some `AWS region 1` and for some `AWS region 2` - then a job launched in the `AWS region 1` will automatically try to be relaunched in the `AWS region 2` in case when there are not enough instances of selected type in the `AWS region 1` (`InsufficientInstanceCapacity` error):
+
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_2.png)
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_3.png)
+
+Original job is being automatically stopped, new job with the same instance type as in the original run but in the `AWS region 2` will be launched.  
+If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".
+
+Feature is not available:
+
+- for spot runs
+- for runs that have any Cloud dependent parameter
+- for worker or cluster runs
+
+More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
 
 ***
 
