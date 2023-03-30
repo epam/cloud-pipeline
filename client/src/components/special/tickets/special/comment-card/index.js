@@ -24,6 +24,7 @@ import {
 } from 'antd';
 import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';
+import {getAuthor} from '../index.js';
 
 export default class CommentCard extends React.Component {
   static propTypes = {
@@ -33,6 +34,28 @@ export default class CommentCard extends React.Component {
     headerClassName: PropTypes.string,
     style: PropTypes.object
   };
+
+  get commentInfo () {
+    const {comment} = this.props;
+    let author = '';
+    let text = comment.description || comment.body;
+    if (comment && comment.labels) {
+      author = getAuthor(comment);
+      text = comment.title;
+    } else {
+      const authorLabel = text
+        .split('\n')
+        .find(part => part.toLowerCase().includes('on behalf of'));
+      if (authorLabel) {
+        author = authorLabel.split('of').pop().trim();
+        text = text.replace(authorLabel, '');
+      }
+    }
+    return {
+      author,
+      text
+    };
+  }
 
   onSelectMenu = (key, comment) => {
     const {onSelectMenu} = this.props;
@@ -92,7 +115,7 @@ export default class CommentCard extends React.Component {
           }}
         >
           <div>
-            {comment.author.name}
+            {this.commentInfo.author}
             <span
               className="cp-text-not-important"
               style={{fontSize: 'smaller', marginLeft: '5px'}}
@@ -118,7 +141,7 @@ export default class CommentCard extends React.Component {
           ) : null}
         </div>
         <Markdown
-          md={comment.description || comment.body}
+          md={this.commentInfo.text}
           style={{
             margin: '10px 0',
             minHeight: '32px',

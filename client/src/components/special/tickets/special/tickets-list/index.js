@@ -39,6 +39,15 @@ import styles from './ticket-list.css';
 
 const PAGE_SIZE = 20;
 
+function getAuthor (ticket = {}) {
+  const authorLabel = (ticket.labels || [])
+    .find(label => label.toLowerCase().includes('on behalf of'));
+  if (authorLabel) {
+    return authorLabel.split('of').pop().trim();
+  }
+  return '';
+};
+
 @inject('preferences')
 @observer
 export default class TicketsList extends React.Component {
@@ -319,7 +328,7 @@ export default class TicketsList extends React.Component {
             className="cp-text-not-important"
             style={{fontSize: 'smaller'}}
           >
-            Opened {displayDate(ticket.created_at, 'D MMM YYYY, HH:mm')} by {ticket.author.name}
+            Opened {displayDate(ticket.created_at, 'D MMM YYYY, HH:mm')} by {getAuthor(ticket)}
           </span>
         </div>
         <div className={styles.controls}>
@@ -386,3 +395,5 @@ export default class TicketsList extends React.Component {
     );
   }
 }
+
+export {getAuthor};

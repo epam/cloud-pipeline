@@ -21,7 +21,7 @@ import {computed, observable} from 'mobx';
 import {observer, inject} from 'mobx-react';
 import {Alert, message, Spin} from 'antd';
 import moment from 'moment-timezone';
-import {CommentCard, CommentEditor, Label} from '../index.js';
+import {CommentCard, CommentEditor, Label, getAuthor} from '../index.js';
 import GitlabIssueLoad from '../../../../../models/gitlab-issues/GitlabIssueLoad';
 import GitlabIssueComment from '../../../../../models/gitlab-issues/GitlabIssueComment';
 import styles from './ticket.css';
@@ -205,7 +205,7 @@ export default class Ticket extends React.Component {
         )}>
           <span>Author:</span>
           <span style={{marginLeft: '10px'}}>
-            {this.ticket.author.name}
+            {getAuthor(this.ticket)}
           </span>
         </div>
         <div className={classNames(

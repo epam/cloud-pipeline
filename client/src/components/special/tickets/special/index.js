@@ -16,7 +16,7 @@
 
 import CommentCard from './comment-card';
 import CommentEditor from './comment-editor';
-import TicketsList from './tickets-list';
+import TicketsList, {getAuthor} from './tickets-list';
 import Label from './label';
 import NewTicketForm from './new-ticket-form';
 import Ticket from './ticket';
@@ -29,5 +29,6 @@ export {
   Label,
   NewTicketForm,
   Ticket,
-  blobFilesToBase64
+  blobFilesToBase64,
+  getAuthor
 };
