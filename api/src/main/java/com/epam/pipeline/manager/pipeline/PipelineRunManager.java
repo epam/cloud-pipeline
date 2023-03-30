@@ -1272,12 +1272,13 @@ public class PipelineRunManager {
                                    PipelineConfiguration configuration) {
         String parentId = Long.toString(run.getId());
         Integer nodeCount = configuration.getNodeCount();
-        configurationManager.updateWorkerConfiguration(parentId, runVO, configuration, false, true);
         for (int i = 0; i < nodeCount; i++) {
+            final PipelineConfiguration workerConfiguration = configurationManager.generateWorkerConfiguration(
+                    parentId, runVO, configuration, false, true);
             launchPipeline(
-                    configuration, pipeline, version, runVO.getInstanceType(), runVO.getConfigurationName(),
+                    workerConfiguration, pipeline, version, runVO.getInstanceType(), runVO.getConfigurationName(),
                     parentId, run.getId(), null, null, runVO.getRunSids(),
-                    configuration.getNotifications()
+                    workerConfiguration.getNotifications()
             );
         }
     }

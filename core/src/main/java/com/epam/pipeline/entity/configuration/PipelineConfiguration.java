@@ -25,10 +25,13 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +44,8 @@ import java.util.Optional;
 @Setter
 @Getter
 @NoArgsConstructor
-public class PipelineConfiguration {
+@EqualsAndHashCode
+public class PipelineConfiguration implements Cloneable {
 
     private static final String MAIN_FILE = "main_file";
     private static final String MAIN_CLASS = "main_class";
@@ -199,6 +203,23 @@ public class PipelineConfiguration {
     private static void putParamIfPresent(final Map<String, String> params, final String name, final Number value) {
         if (value != null) {
             putParamIfPresent(params, name, String.valueOf(value));
+        }
+    }
+
+    @Override
+    public PipelineConfiguration clone() {
+        try {
+            final PipelineConfiguration clone = (PipelineConfiguration) super.clone();
+            clone.setParameters(new HashMap<>(this.parameters));
+            clone.setEnvironmentParams(new HashMap<>(this.environmentParams));
+            clone.setSharedWithUsers(new ArrayList<>(this.sharedWithUsers));
+            clone.setSharedWithRoles(new ArrayList<>(this.sharedWithRoles));
+            clone.setNotifications(new ArrayList<>(this.notifications));
+            clone.setTags(new HashMap<>(this.tags));
+            clone.setKubeLabels(new HashMap<>(this.kubeLabels));
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("There was an error while trying to clone PipelineConfiguration object", e);
         }
     }
 }
