@@ -1717,12 +1717,11 @@ class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
         try:
             Logger.info('Recording details of additional worker #%s...' % run_id)
             run = self._api.load_run(run_id)
-            initialize_node_tasks = self._api.load_task(run_id, 'InitializeNode')
             run_name = run.get('podId')
             run_started = self._to_datetime(run.get('startDate'))
             run_stopped = self._to_datetime(run.get('endDate'))
             instance_type = run.get('instance', {}).get('nodeType')
-            has_insufficient_instance_capacity = self._has_insufficient_instance_capacity(run, initialize_node_tasks)
+            has_insufficient_instance_capacity = self._has_insufficient_instance_capacity(run)
             record = GridEngineWorkerRecord(id=run_id, name=run_name, instance_type=instance_type,
                                             started=run_started, stopped=run_stopped,
                                             has_insufficient_instance_capacity=has_insufficient_instance_capacity)
@@ -1740,14 +1739,13 @@ class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
             return None
         return datetime.strptime(run_started, self._datetime_format)
 
-    def _has_insufficient_instance_capacity(self, run, initialize_node_tasks):
-        if initialize_node_tasks:
-            initialize_node_task = initialize_node_tasks[-1]
-            if initialize_node_task.get('status') == 'FAILURE' \
-                    and 'InsufficientInstanceCapacity' in initialize_node_task.get('logText', ''):
-                Logger.warn('Insufficient instance capacity detected for %s instance type'
-                            % run.get('instance', {}).get('nodeType'))
-                return True
+    def _has_insufficient_instance_capacity(self, run):
+        run_status = run.get('status')
+        run_status_reason = run.get('stateReasonMessage')
+        if run_status == 'FAILURE' and run_status_reason == 'Insufficient instance capacity.':
+            Logger.warn('Insufficient instance capacity detected for %s instance type'
+                        % run.get('instance', {}).get('nodeType'))
+            return True
         return False
 
     def get(self):
