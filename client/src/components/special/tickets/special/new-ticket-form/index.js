@@ -50,6 +50,24 @@ export default class NewTicketForm extends React.Component {
     fileList: []
   }
 
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.modalVisible !== this.props.modalVisible &&
+      this.props.renderAsModal
+    ) {
+      this.reset();
+    }
+  }
+
+  reset = () => {
+    this.setState({
+      description: '',
+      title: '',
+      mode: PREVIEW_MODES.edit,
+      fileList: []
+    });
+  };
+
   get submitDisabled () {
     const {description, title} = this.state;
     const {pending} = this.props;
