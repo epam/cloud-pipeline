@@ -97,6 +97,7 @@ import evaluateRunPrice from '../../../utils/evaluate-run-price';
 import DataStorageLink from '../../special/data-storage-link';
 import fetchRunInfo from './misc/fetch-run-info';
 import RestartedRunsInfo from './misc/restarted-runs-info';
+import NestedRunsModal from './forms/NestedRunsModal';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -156,7 +157,8 @@ class Logs extends localization.LocalizedReactComponent {
     shareDialogOpened: false,
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
-    commitAllowed: false
+    commitAllowed: false,
+    nestedRunsModalVisible: false
   };
 
   @observable runScheduleRequest;
@@ -1419,6 +1421,15 @@ class Logs extends localization.LocalizedReactComponent {
             !nestedRunsPending && (
               <div>
                 {nestedRunsInfos.join(' ')}
+                {' - '}
+                <a
+                  onClick={this.openNestedRunsModal}
+                  style={{
+                    marginLeft: 5
+                  }}
+                >
+                  show cluster usage
+                </a>
               </div>
             )
           }
@@ -1441,6 +1452,26 @@ class Logs extends localization.LocalizedReactComponent {
         </td>
       </tr>
     );
+  };
+
+  openNestedRunsModal = () => {
+    this.setState({
+      nestedRunsModalVisible: true
+    });
+  }
+
+  closeNestedRunsModal = () => {
+    this.setState({
+      nestedRunsModalVisible: false
+    });
+  }
+
+  closeNestedRunsModalAndNavigateToRun = (runId) => {
+    this.setState({
+      nestedRunsModalVisible: false
+    }, () => {
+      this.props.router.push(`/run/${runId}`);
+    });
   };
 
   render () {
@@ -2122,6 +2153,12 @@ class Logs extends localization.LocalizedReactComponent {
       }
     }
 
+    const navigateToRun = (runId) => {
+      if (Number(this.props.runId) !== Number(runId)) {
+        this.closeNestedRunsModalAndNavigateToRun(runId);
+      }
+    };
+
     return (
       <Card
         className={
@@ -2232,6 +2269,12 @@ class Logs extends localization.LocalizedReactComponent {
           payload={this.runPayload}
           visible={this.state.showLaunchCommands}
           onClose={this.hideLaunchCommands}
+        />
+        <NestedRunsModal
+          runId={this.props.runId}
+          visible={this.state.nestedRunsModalVisible}
+          onCancel={this.closeNestedRunsModal}
+          onRunClick={navigateToRun}
         />
       </Card>
     );
