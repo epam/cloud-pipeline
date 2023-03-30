@@ -177,9 +177,9 @@ CRON_PID="$!"
 nohup bash /etc/maintenance/crontab.sh &> /dev/null &
 MAINTENANCE_CRON_PID="$!"
 
-# Run Filebeat
-envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
-nohup filebeat &
+# Run Filebeat instances
+nohup filebeat -c filebeat-security-log.yml &
+nohup filebeat -c filebeat-audit-dav.yml &
 
 # Prepare the static assets
 for static_file in /etc/nginx/static/*; do
