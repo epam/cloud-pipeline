@@ -19,6 +19,11 @@ package com.epam.pipeline.entity.billing;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 @Getter
 @RequiredArgsConstructor
 public enum BillingGrouping {
@@ -36,4 +41,11 @@ public enum BillingGrouping {
     private final boolean runUsageDetailsRequired;
     private final boolean storageUsageDetailsRequired;
 
+    public static Set<BillingGrouping> getStorageGrouping() {
+        return Collections.singleton(STORAGE);
+    }
+
+    public static Set<BillingGrouping> getRunGrouping() {
+        return new HashSet<>(Arrays.asList(RUN_COMPUTE_TYPE, PIPELINE, TOOL, USER, BILLING_CENTER));
+    }
 }

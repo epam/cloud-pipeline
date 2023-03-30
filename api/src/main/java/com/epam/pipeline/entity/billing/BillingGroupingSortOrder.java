@@ -16,9 +16,12 @@
 
 package com.epam.pipeline.entity.billing;
 
+import com.epam.pipeline.manager.billing.BillingUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 
 @Getter
 @RequiredArgsConstructor
@@ -32,7 +35,7 @@ public class BillingGroupingSortOrder {
     );
 
     public enum BillingGroupingSortMetric {
-        COST, USAGE
+        COST, USAGE, USAGE_RUNS, COUNT_RUNS
     }
 
     private final BillingGroupingSortMetric metric;
@@ -44,11 +47,29 @@ public class BillingGroupingSortOrder {
             case COST:
                 return aggregate.getCostField();
             case USAGE:
+            case USAGE_RUNS:
                 return aggregate.getUsageField();
+            case COUNT_RUNS:
+                return aggregate.getCountField();
             default:
                 return BillingGroupingOrderAggregate.DEFAULT.getCostField();
         }
 
+    }
+
+    public AggregationBuilder getAggregation() {
+        final String aggregateField = getAggregateToOrderBy();
+        switch (metric) {
+            case USAGE:
+                return AggregationBuilders.avg(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
+                        .field(aggregateField);
+            case COUNT_RUNS:
+                return AggregationBuilders.count(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
+                        .field(aggregateField);
+            default:
+                return AggregationBuilders.sum(aggregateField + BillingUtils.SORT_AGG_POSTFIX)
+                        .field(aggregateField);
+        }
     }
 }
 
