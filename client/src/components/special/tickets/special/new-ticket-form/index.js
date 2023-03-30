@@ -136,7 +136,8 @@ export default class NewTicketForm extends React.Component {
         style={{
           margin: '10px 0',
           minHeight: '32px',
-          padding: '0 10px'
+          padding: '0 10px',
+          overflowWrap: 'break-word'
         }}
       />
     );
@@ -236,6 +237,7 @@ export default class NewTicketForm extends React.Component {
           title={title}
           visible={modalVisible}
           onCancel={this.onCancelClick}
+          width="50%"
           footer={(
             <div className={styles.modalFooter}>
               <Button
