@@ -305,6 +305,7 @@ public class PipelineRunManager {
         run.setLastChangeCommitTime(DateUtils.now());
         run.setRunSids(runVO.getRunSids());
         run.setOwner(parentRun.getOwner());
+        run.setSensitive(checkRunForSensitivity(MapUtils.emptyIfNull(configuration.getParameters())));
         final String launchedCommand = pipelineLauncher.launch(
                 run, configuration, endpoints, false, parentRun.getPodId(), null
         );
