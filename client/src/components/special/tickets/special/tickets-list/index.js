@@ -141,6 +141,9 @@ class TicketsList extends React.Component {
       default:
         value = undefined;
     }
+    if (field === 'labels') {
+      value = [value];
+    }
     this.setState({
       page: 1,
       filters: {
@@ -249,21 +252,22 @@ class TicketsList extends React.Component {
             className={styles.tableControl}
             style={{minWidth: '200px'}}
           />
-          <Select
-            onChange={this.onFiltersChange('labels', 'select')}
-            value={filters.labels}
-            style={{minWidth: '200px'}}
-            className={styles.tableControl}
-            placeholder="Select ticket status"
-            mode="multiple"
-            id="tickets-labels-filter"
-          >
-            {this.predefinedLabels.map(label => (
-              <Select.Option key={label}>
-                {`${label.charAt(0).toUpperCase()}${label.slice(1)}`}
-              </Select.Option>
-            ))}
-          </Select>
+          {this.predefinedLabels.length > 0 ? (
+            <Select
+              onChange={this.onFiltersChange('labels', 'select')}
+              value={filters.labels}
+              style={{minWidth: '200px'}}
+              className={styles.tableControl}
+              placeholder="Select ticket status"
+              id="tickets-labels-filter"
+            >
+              {this.predefinedLabels.map(label => (
+                <Select.Option key={label}>
+                  {`${label.charAt(0).toUpperCase()}${label.slice(1)}`}
+                </Select.Option>
+              ))}
+            </Select>
+          ) : null}
           <Button
             className={classNames(
               styles.tableControl,
@@ -352,7 +356,7 @@ class TicketsList extends React.Component {
         </div>
       </div>
     );
-  }
+  };
 
   render () {
     const {page} = this.state;
