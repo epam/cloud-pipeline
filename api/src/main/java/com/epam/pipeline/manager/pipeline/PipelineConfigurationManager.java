@@ -133,17 +133,19 @@ public class PipelineConfigurationManager {
             mergeParametersFromTool(configuration, tool);
         }
 
-        getParametersFromNetworkConfig(runVO.getInstanceType(), runVO.getCloudRegionId())
-                .forEach((key, parameter) -> {
-                    if(!configuration.getParameters().containsKey(key)) {
-                        configuration.getParameters().put(key, parameter);
-                    }
-                });
-
         //client always sends actual node count value
         configuration.setNodeCount(Optional.ofNullable(runVO.getNodeCount()).orElse(0));
         configuration.setCloudRegionId(runVO.getCloudRegionId());
         setEndpointsErasure(configuration);
+
+        if (!StringUtils.isEmpty(configuration.getInstanceType()) && configuration.getCloudRegionId() != null) {
+            getParametersFromNetworkConfig(configuration.getInstanceType(), configuration.getCloudRegionId())
+                    .forEach((key, parameter) -> {
+                        if (!configuration.getParameters().containsKey(key)) {
+                            configuration.getParameters().put(key, parameter);
+                        }
+                    });
+        }
         return configuration;
     }
 
