@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.visible;
 import com.epam.pipeline.autotests.ao.LogAO;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -28,26 +30,33 @@ public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineR
 
     private static final String CONFIG_JSON = "/timeout.json";
     private static final String SLEEP_SHELL = "/sleep2m.sh";
+    private static final String TASK_NAME = "Task1";
+    private String testPipeline = "";
+    private String pipelineFileName = "";
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-376"})
     public void preparePipelineAndValidate() {
         navigationMenu()
-                .createPipeline(Template.SHELL, getPipelineName())
+                .createPipeline(Template.SHELL, testPipeline = getPipelineName());
+        pipelineFileName = Utils.getFileNameFromPipelineName(testPipeline, "sh");
+        library()
+                .clickOnPipeline(testPipeline)
                 .firstVersion()
                 .codeTab()
                 .clearAndFillPipelineFile("config.json", Utils.readResourceFully(CONFIG_JSON)
+                        .replace("{{file_name}}", pipelineFileName)
                         .replace("{{instance_type}}", C.DEFAULT_INSTANCE))
                 .runPipeline();
+
     }
 
     @Test(dependsOnMethods = {"preparePipelineAndValidate"})
     @TestCase(value = {"EPMCMBIBPC-396"})
     public void pipelineShouldStartWithTimeout() {
-        String pipelineFileName = Utils.getFileNameFromPipelineName(getPipelineName(), "sh");
         navigationMenu()
                 .library()
-                .clickOnPipeline(getPipelineName())
+                .clickOnPipeline(testPipeline)
                 .firstVersion()
                 .codeTab()
                 .clearAndFillPipelineFile(pipelineFileName, Utils.readResourceFully(SLEEP_SHELL))
@@ -55,6 +64,10 @@ public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineR
                 .runPipeline()
                 .launch(this)
                 .showLogForce(getRunId())
+                .waitForTask(TASK_NAME)
+                .ensure(taskWithName(TASK_NAME), visible)
+                .click(taskWithName(TASK_NAME))
+                .waitForLog("Running shell pipeline")
                 .waitFor(LogAO.Status.FAILURE);
     }
 }
