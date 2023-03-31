@@ -33,9 +33,9 @@ public class Launch_NonRequiredParameterTest extends AbstractAutoRemovingPipelin
                 .createPipeline(Template.SHELL, getPipelineName())
                 .firstVersion()
                 .codeTab()
-                .clearAndFillPipelineFile(
-                        "config.json",
+                .clearAndFillPipelineFile("config.json",
                         Utils.readResourceFully(CONFIG_JSON)
+                                .replace("{{file_name}}", Utils.getFileNameFromPipelineName(getPipelineName(), "sh"))
                                 .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
                 .runPipeline()

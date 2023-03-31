@@ -35,10 +35,10 @@ public class Launch_ChangeLanguageFromWDLTest extends AbstractAutoRemovingPipeli
                 .createPipeline(Template.WDL, getPipelineName())
                 .firstVersion()
                 .codeTab()
-                .clearAndFillPipelineFile(
-                        "config.json",
+                .clearAndFillPipelineFile("config.json",
                         Utils.readResourceFully(CONFIG_JSON)
-                        .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
+                                .replace("{{file_name}}", Utils.getFileNameFromPipelineName(getPipelineName(), "sh"))
+                                .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
                 .ensure(GRAPH_TAB, not(visible));
     }

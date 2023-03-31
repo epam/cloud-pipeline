@@ -37,6 +37,7 @@ public class Launch_DifferentTypesParametersValidationTest extends AbstractAutoR
             .firstVersion()
             .codeTab()
             .clearAndFillPipelineFile("config.json", Utils.readResourceFully(CONFIG_JSON)
+                    .replace("{{file_name}}", Utils.getFileNameFromPipelineName(getPipelineName(), "sh"))
                     .replace("{{storage_type}}", C.STORAGE_PREFIX)
                     .replace("{{instance_type}}", C.DEFAULT_INSTANCE));
     }

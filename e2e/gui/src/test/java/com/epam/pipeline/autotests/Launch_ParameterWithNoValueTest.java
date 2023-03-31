@@ -35,10 +35,10 @@ public class Launch_ParameterWithNoValueTest extends AbstractAutoRemovingPipelin
                 .createPipeline(Template.SHELL, getPipelineName())
                 .firstVersion()
                 .codeTab()
-                .clearAndFillPipelineFile(
-                        "config.json",
+                .clearAndFillPipelineFile("config.json",
                         Utils.readResourceFully(CONFIG_JSON)
-                        .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
+                                .replace("{{file_name}}", Utils.getFileNameFromPipelineName(getPipelineName(), "sh"))
+                                .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
                 .sleep(2, SECONDS)
                 .runPipeline()

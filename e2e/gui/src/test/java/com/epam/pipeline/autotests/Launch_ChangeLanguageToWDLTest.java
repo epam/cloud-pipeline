@@ -34,6 +34,7 @@ public class Launch_ChangeLanguageToWDLTest extends AbstractAutoRemovingPipeline
                 .codeTab()
                 .clickOnFile("config.json")
                 .editFile(configuration -> Utils.readResourceFully(CONFIG_JSON)
+                        .replace("{{file_name}}", Utils.getFileNameFromPipelineName(getPipelineName(), "sh"))
                         .replace("{{instance_type}}", C.DEFAULT_INSTANCE))
                 .saveAndCommitWithMessage("test: Change configuration from SHELL to WDL")
                 .graphTab();

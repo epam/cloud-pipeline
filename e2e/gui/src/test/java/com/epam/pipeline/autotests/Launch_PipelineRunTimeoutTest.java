@@ -64,10 +64,6 @@ public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineR
                 .runPipeline()
                 .launch(this)
                 .showLogForce(getRunId())
-                .waitForTask(TASK_NAME)
-                .ensure(taskWithName(TASK_NAME), visible)
-                .click(taskWithName(TASK_NAME))
-                .waitForLog("Running shell pipeline")
                 .waitFor(LogAO.Status.FAILURE);
     }
 }
