@@ -633,7 +633,7 @@ public class LogAO implements AccessObject<LogAO> {
             click(ADD_USER);
             SelenideElement selectUserPopup = Utils.getPopupByTitle("Select user");
             setValue(selectUserPopup.$(byClassName("ant-select-search__field")), userName);
-            $(byXpath(format("//li[.='%s']", userName))).click();
+            $(byClassName("ant-select-dropdown-menu")).$(byText(userName)).click();
             selectUserPopup.find(button("OK")).shouldBe(visible).click();
             if (sshConnection) {
                 checkEnableSShConnection(userName);
