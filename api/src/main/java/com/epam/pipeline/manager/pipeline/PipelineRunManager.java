@@ -1284,9 +1284,10 @@ public class PipelineRunManager {
                                    PipelineConfiguration configuration) {
         String parentId = Long.toString(run.getId());
         Integer nodeCount = configuration.getNodeCount();
+        final PipelineConfiguration workerConfigurationTemplate = configurationManager.generateWorkerConfiguration(
+                parentId, runVO, configuration, false, true);
         for (int i = 0; i < nodeCount; i++) {
-            final PipelineConfiguration workerConfiguration = configurationManager.generateWorkerConfiguration(
-                    parentId, runVO, configuration, false, true);
+            final PipelineConfiguration workerConfiguration = workerConfigurationTemplate.clone();
             launchPipeline(
                     workerConfiguration, pipeline, version, runVO.getInstanceType(), runVO.getConfigurationName(),
                     parentId, run.getId(), null, null, runVO.getRunSids(),
