@@ -167,9 +167,10 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
         Pipeline pipeline = entry.getPipelineId() != null ? pipelineManager.load(entry.getPipelineId()) : null;
         List<PipelineRun> result = new ArrayList<>();
         log.debug("Launching total {} copies of entry {}", copies, entry.getName());
+        final PipelineConfiguration runConfigurationTemplate =
+                buildRunConfiguration(entry, configuration, clusterId, startNFS, startVO);
         for (int i = 0; i < copies; i++) {
-            final PipelineConfiguration runConfiguration =
-                    buildRunConfiguration(entry, configuration, clusterId, startNFS, startVO);
+            final PipelineConfiguration runConfiguration = runConfigurationTemplate.clone();
             //only first node may be a NFS server
             if (i != 0) {
                 runConfiguration.setCmdTemplate(WORKER_CMD_TEMPLATE);
