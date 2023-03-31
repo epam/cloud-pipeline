@@ -46,6 +46,7 @@ public enum BillingGrouping {
     }
 
     public static Set<BillingGrouping> getRunGrouping() {
-        return new HashSet<>(Arrays.asList(RUN_COMPUTE_TYPE, PIPELINE, TOOL, USER, BILLING_CENTER));
+        return new HashSet<>(Arrays.asList(RUN_INSTANCE_TYPE, RUN_COMPUTE_TYPE, PIPELINE,
+                TOOL, USER, BILLING_CENTER));
     }
 }
