@@ -475,8 +475,8 @@ public class GitlabClient {
     public PagedResult<List<GitlabIssue>> getIssues(final String project, final List<String> labels,
                                               final Integer page, final Integer pageSize, final String search)
             throws GitClientException {
-        Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labels, page,
-                pageSize, search));
+        Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project,
+                String.join(",", labels), page, pageSize, search));
         int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
         return new PagedResult<>(response.body(), totalPages);
     }
