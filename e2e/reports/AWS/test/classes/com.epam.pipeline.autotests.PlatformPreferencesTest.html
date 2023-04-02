@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">10m43.52s</div>
+<div class="counter">15m56.74s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">87%</div>
+<div class="percent">75%</div>
 <p>successful</p>
 </div>
 </td>
@@ -69,6 +69,42 @@
 </ul>
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
+<div class="test">
+<a name="checkHelpContent - 897"></a>
+<h3 class="failures">checkHelpContent - 897</h3>
+<span class="code">
+<pre>Element should value '{&quot;ROLE_ADMIN&quot;: {&quot;iconHCS&quot;: { &quot;icon&quot;: &quot;rocket&quot;, &quot;action&quot;: &quot;hcs&quot;}},  &quot;_default&quot;: {&quot;icon2&quot;: {&quot;icon&quot; : &quot;customer-service&quot;, &quot;content&quot; : &quot;### How to submit a question/request?\n\n**[ServiceNow request](https://sanofiservices.service-now.com/its?id=request_order&amp;sys_id=94a922cd1b857090e4aebb739b4bcbd0&amp;table=sc_cat_item)**\n&lt;br/&gt;&lt;br/&gt;\n### How to be updated on Magellan news?\n\n**[Yammer group](https://www.yammer.com/sanofi.com/#/threads/inGroup?type=in_group&amp;feedId=17707513&amp;view=all)**&quot;}}}' {[unknown locator]}
+Element: '&lt;input class=&quot;ant-input ant-input-sm&quot; type=&quot;text&quot; value=&quot;{&quot;ROLE_ADMIN&quot;: {&quot;iconHCS&quot;: { &quot;icon&quot;: &quot;rocket&quot;, &quot;action&quot;: &quot;hcs&quot;}, &quot;iconTicket&quot;: { &quot;icon&quot;: &quot;frown&quot;, &quot;action&quot;: &quot;create-ticket&quot;, &quot;hint&quot;: &quot;Create ticket&quot;}, &quot;iconTickets&quot;: {&quot;icon&quot;: &quot;aliwangwang&quot;, &quot;action&quot;: &quot;open-tickets&quot;, &quot;hint&quot;: &quot;Browse tickets&quot;}},  &quot;_default&quot;: {&quot;icon2&quot;: {&quot;icon&quot; : &quot;customer-service&quot;, &quot;content&quot; : &quot;### How to submit a question/request?\n\n**[ServiceNow request](https://sanofiservices.service-now.com/its?id=request_order&amp;sys_id=94a922cd1b857090e4aebb739b4bcbd0&amp;table=sc_cat_item)**\n&lt;br/&gt;&lt;br/&gt;\n### How to be updated on Magellan news?\n\n**[Yammer group](https://www.yammer.com/sanofi.com/#/threads/inGroup?type=in_group&amp;feedId=17707513&amp;view=all)**&quot;}}}&quot;&gt;&lt;/input&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1680382234179.113.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1680382234179.113.html
+Timeout: 150 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:191)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO$UserInterfaceAO.checkSupportTemplate(SettingsPageAO.java:1719)
+	at com.epam.pipeline.autotests.PlatformPreferencesTest.checkHelpContent(PlatformPreferencesTest.java:62)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
 <div class="test">
 <a name="checkLaunchSystemParameters - 223"></a>
 <h3 class="failures">checkLaunchSystemParameters - 223</h3>
@@ -1157,42 +1193,42 @@
 </thead>
 <tr>
 <td class="success">checkClusterAllowedInstanceTypes - TC-PARAMETERS-1</td>
-<td>8.406s</td>
+<td>8.253s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkClusterAllowedInstanceTypesDocker - TC-PARAMETERS-2</td>
-<td>7.026s</td>
+<td>7.250s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkConfigureClusterAwsEBSvolumeType - TC-PARAMETERS-3</td>
-<td>8m27.86s</td>
+<td>11m12.51s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">checkHelpContent - 897</td>
-<td>10.516s</td>
-<td class="success">passed</td>
+<td class="failures">checkHelpContent - 897</td>
+<td>2m36.63s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">checkLaunchContainerCpuResource - 783</td>
-<td>14.972s</td>
+<td>15.147s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">checkLaunchSystemParameters - 223</td>
-<td>14.629s</td>
+<td>14.512s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">checkLustreMountOption - 1489</td>
-<td>2.328s</td>
+<td>2.261s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkSeveralSupportIconsConfiguration - 2356</td>
-<td>1m17.79s</td>
+<td>1m20.18s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -1205,7 +1241,7 @@
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 26, 2023 3:04:41 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 2, 2023 1:58:20 AM</p>
 </div>
 </div>
 </body>

@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">9m15.41s</div>
+<div class="counter">19m21.25s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,15 +73,16 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="interactiveEndpointsAccess - EPMCMBIBPC-3166"></a>
-<h3 class="failures">interactiveEndpointsAccess - EPMCMBIBPC-3166</h3>
+<a name="userAuthentication - EPMCMBIBPC-3162"></a>
+<h3 class="failures">userAuthentication - EPMCMBIBPC-3162</h3>
 <span class="code">
-<pre>java.util.NoSuchElementException: Supposed log info '.*\[SECURITY\] Application: /pipeline-40456-8081-0/; User: USER2; Status: Successfully authenticated message for USER2 with security type. Screenshot: SystemLogsForUSER2_4590328841942678544' is not found.
-	at com.epam.pipeline.autotests.ao.SystemManagementAO$SystemLogsAO.lambda$getInfoRow$1(SystemManagementAO.java:90)
-	at java.util.Optional.orElseThrow(Optional.java:290)
-	at com.epam.pipeline.autotests.ao.SystemManagementAO$SystemLogsAO.getInfoRow(SystemManagementAO.java:87)
-	at com.epam.pipeline.autotests.ao.SystemManagementAO$SystemLogsAO.validateRow(SystemManagementAO.java:132)
-	at com.epam.pipeline.autotests.SystemLoggingTest.interactiveEndpointsAccess(SystemLoggingTest.java:288)
+<pre>java.lang.AssertionError: expected [true] but found [false]
+	at org.testng.Assert.fail(Assert.java:93)
+	at org.testng.Assert.failNotEquals(Assert.java:512)
+	at org.testng.Assert.assertTrue(Assert.java:41)
+	at org.testng.Assert.assertTrue(Assert.java:51)
+	at com.epam.pipeline.autotests.ao.SystemManagementAO$SystemLogsAO.validateTimeOrder(SystemManagementAO.java:128)
+	at com.epam.pipeline.autotests.SystemLoggingTest.userAuthentication(SystemLoggingTest.java:105)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -99,15 +100,15 @@
 </span>
 </div>
 <div class="test">
-<a name="userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163"></a>
-<h3 class="failures">userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163</h3>
+<a name="userProfileModifications - EPMCMBIBPC-3164"></a>
+<h3 class="failures">userProfileModifications - EPMCMBIBPC-3164</h3>
 <span class="code">
-<pre>java.util.NoSuchElementException: Supposed log info 'Authentication failed! User USER4 is blocked! message for USER1 with security type. Screenshot: SystemLogsForUSER1_4604906493209784813' is not found.
+<pre>java.util.NoSuchElementException: Supposed log info 'Assing role. RoleId=[0-9]+ UserIds=11 message for USER1 with security type. Screenshot: SystemLogsForUSER1_4592052223533202248' is not found.
 	at com.epam.pipeline.autotests.ao.SystemManagementAO$SystemLogsAO.lambda$getInfoRow$1(SystemManagementAO.java:90)
 	at java.util.Optional.orElseThrow(Optional.java:290)
 	at com.epam.pipeline.autotests.ao.SystemManagementAO$SystemLogsAO.getInfoRow(SystemManagementAO.java:87)
 	at com.epam.pipeline.autotests.ao.SystemManagementAO$SystemLogsAO.validateRow(SystemManagementAO.java:132)
-	at com.epam.pipeline.autotests.SystemLoggingTest.userAuthenticationUnsuccessfulAttempt(SystemLoggingTest.java:148)
+	at com.epam.pipeline.autotests.SystemLoggingTest.userProfileModifications(SystemLoggingTest.java:221)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -137,43 +138,44 @@
 </thead>
 <tr>
 <td class="success">createAndDeleteUser - EPMCMBIBPC-3167</td>
-<td>21.883s</td>
+<td>22.104s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">interactiveEndpointsAccess - EPMCMBIBPC-3166</td>
-<td>3m30.34s</td>
-<td class="failures">failed</td>
+<td class="success">interactiveEndpointsAccess - EPMCMBIBPC-3166</td>
+<td>13m36.96s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">permissionsManagement - EPMCMBIBPC-3165</td>
-<td>1m15.68s</td>
+<td>1m15.36s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">userAuthentication - EPMCMBIBPC-3162</td>
-<td>2m35.35s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="failures">userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163</td>
-<td>52.639s</td>
+<td class="failures">userAuthentication - EPMCMBIBPC-3162</td>
+<td>2m34.57s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">userProfileModifications - EPMCMBIBPC-3164</td>
-<td>39.513s</td>
+<td class="success">userAuthenticationUnsuccessfulAttempt - EPMCMBIBPC-3163</td>
+<td>51.241s</td>
 <td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">userProfileModifications - EPMCMBIBPC-3164</td>
+<td>41.023s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 40456 from [40456]
-Returns latest run with runId 40456 from [40456]
-Returns latest run with runId 40456 from [40456]
-Returns latest run with runId 40456 from [40456]
+<pre>Returns latest run with runId 41113 from [41113]
+Returns latest run with runId 41113 from [41113]
+Returns latest run with runId 41113 from [41113]
+Returns latest run with runId 41113 from [41113]
+Returns latest run with runId 41113 from [41113]
 </pre>
 </span>
 </div>
@@ -185,7 +187,7 @@ Returns latest run with runId 40456 from [40456]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 26, 2023 3:04:41 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 2, 2023 1:58:20 AM</p>
 </div>
 </div>
 </body>
