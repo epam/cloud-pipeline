@@ -34,7 +34,8 @@ class SupportMenu extends React.Component {
     containerClassName: PropTypes.string,
     itemClassName: PropTypes.string,
     containerStyle: PropTypes.object,
-    itemStyle: PropTypes.object
+    itemStyle: PropTypes.object,
+    router: PropTypes.object
   };
 
   state = {
@@ -130,6 +131,7 @@ class SupportMenu extends React.Component {
           target={target}
           url={url}
           hint={hint}
+          router={this.props.router}
         />
       </div>
     );

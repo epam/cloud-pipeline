@@ -330,6 +330,7 @@ export default class Navigation extends React.Component {
           </Popover>
           {menuItems}
           <SupportMenu
+            router={this.props.router}
             itemClassName="cp-navigation-menu-item"
             containerStyle={{
               position: 'absolute',

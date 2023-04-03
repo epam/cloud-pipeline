@@ -152,6 +152,7 @@ public final class BillingUtils {
     public static final String DISCOUNT_SCRIPT_TEMPLATE = "_value + _value * (%s)";
     public static final String RESOURCE_TYPE = "resource_type";
     public static final String COMPUTE_GROUP = "COMPUTE";
+    public static final String SORT_AGG_POSTFIX = "_sort_order";
 
     private BillingUtils() {
     }

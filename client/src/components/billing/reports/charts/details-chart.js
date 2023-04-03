@@ -35,7 +35,7 @@ function getMaximum (values) {
   return Math.ceil(extended / basis) * basis;
 }
 
-function StorageLayers (
+function DetailsChart (
   {
     highlightedLabel,
     axisPosition = 'left',
@@ -52,7 +52,8 @@ function StorageLayers (
     reportThemes,
     highlightTickFn,
     loading,
-    discounts = ((o) => o)
+    discounts = ((o) => o),
+    showTotal = true
   }
 ) {
   const totals = rawData.datasets
@@ -170,6 +171,9 @@ function StorageLayers (
           return value;
         },
         footer: function (items) {
+          if (!showTotal) {
+            return undefined;
+          }
           const total = items.reduce((acc, current) => acc + current.yLabel, 0);
           return `Total: ${valueFormatter(total)}`;
         }
@@ -256,4 +260,4 @@ function StorageLayers (
   );
 }
 
-export default inject('reportThemes')(observer(StorageLayers));
+export default inject('reportThemes')(observer(DetailsChart));

@@ -260,6 +260,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get gitlabIssueStatuses () {
+    const value = this.getPreferenceValue('git.gitlab.issue.statuses');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "git.gitlab.issue.statuses" preference:', e);
+      }
+    }
+    return [];
+  }
+
+  @computed
   get sharedStoragesSystemDirectory () {
     const value = this.getPreferenceValue('data.sharing.storage.folders.directory');
     if (value && !Number.isNaN(Number(value))) {

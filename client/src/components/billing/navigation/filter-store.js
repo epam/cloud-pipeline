@@ -18,7 +18,7 @@ import {observable, isObservableArray} from 'mobx';
 import {Period, getPeriod} from '../../special/periods';
 import RunnerType from './runner-types';
 import ReportsRouting from './reports-routing';
-import {parseStorageMetrics} from './metrics';
+import {parseInstanceMetrics, parseStorageMetrics} from './metrics';
 import {parseStorageAggregate, StorageAggregate} from './aggregate';
 
 class Filter {
@@ -61,6 +61,8 @@ class Filter {
     this.region = (region || '').split(Filter.REGION_SEPARATOR).filter(Boolean);
     if (ReportsRouting.isStorage(this.report)) {
       this.metrics = parseStorageMetrics(metrics);
+    } else if (ReportsRouting.isInstances(this.report)) {
+      this.metrics = parseInstanceMetrics(metrics);
     } else {
       this.metrics = undefined;
     }
@@ -99,7 +101,10 @@ class Filter {
     if (metrics === undefined) {
       metrics = this.metrics;
     }
-    if (!ReportsRouting.isStorage(report)) {
+    if (
+      ReportsRouting.isStorage(report) !== ReportsRouting.isStorage(this.report) ||
+      ReportsRouting.isInstances(report) !== ReportsRouting.isInstances(this.report)
+    ) {
       metrics = undefined;
     }
     if (storageAggregate === undefined) {

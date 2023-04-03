@@ -182,8 +182,9 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
                 configuration.buildEnvVariables();
             }
             result.add(pipelineRunManager.launchPipeline(configuration, pipeline, entry.getPipelineVersion(),
-                    startVO.getInstanceType(), startVO.getConfigurationName(), clusterId,
-                    null, entityIds, configurationId, startVO.getRunSids(), startVO.getNotifications()));
+                    startVO.getInstanceType(), startVO.getParentNodeId(),
+                    startVO.getConfigurationName(), clusterId, null, entityIds, configurationId,
+                    startVO.getRunSids(), startVO.getNotifications()));
         }
         return result;
     }

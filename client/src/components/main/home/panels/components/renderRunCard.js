@@ -63,7 +63,11 @@ function renderPipeline (run) {
     displayName = parts[parts.length - 1];
   }
   let clusterIcon;
-  if (run.nodeCount > 0) {
+  if (
+    run.nodeCount > 0 ||
+    run.clusterRun ||
+    run.childRunsCount > 0
+  ) {
     clusterIcon = <Icon type="database" />;
   }
   const runName = (

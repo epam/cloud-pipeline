@@ -210,6 +210,9 @@ export default `
 @THEME .cp-primary {
   color: @primary-color;
 }
+@THEME .cp-primary.border {
+  border-color: @primary-color;
+}
 @THEME .cp-disabled {
   color: @application-color-disabled;
 }
@@ -219,8 +222,14 @@ export default `
 @THEME .cp-warning {
   color: @color-yellow;
 }
+@THEME .cp-warning.border {
+  border-color: @color-yellow;
+}
 @THEME .cp-success {
   color: @color-green;
+}
+@THEME .cp-success.border {
+  border-color: @color-green;
 }
 @THEME .cp-error,
 @THEME .cp-danger {

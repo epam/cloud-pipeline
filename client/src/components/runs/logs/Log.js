@@ -97,6 +97,7 @@ import evaluateRunPrice from '../../../utils/evaluate-run-price';
 import DataStorageLink from '../../special/data-storage-link';
 import fetchRunInfo from './misc/fetch-run-info';
 import RestartedRunsInfo from './misc/restarted-runs-info';
+import NestedRunsModal from './forms/NestedRunsModal';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -144,6 +145,7 @@ class Logs extends localization.LocalizedReactComponent {
     showActiveWorkersOnly: false,
     nestedRuns: [],
     hasNestedRuns: false,
+    totalNestedRuns: 0,
     nestedRunsPending: false,
     runTasks: [],
     language: undefined,
@@ -155,7 +157,8 @@ class Logs extends localization.LocalizedReactComponent {
     shareDialogOpened: false,
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
-    commitAllowed: false
+    commitAllowed: false,
+    nestedRunsModalVisible: false
   };
 
   @observable runScheduleRequest;
@@ -194,6 +197,7 @@ class Logs extends localization.LocalizedReactComponent {
         error: undefined,
         nestedRuns: [],
         hasNestedRuns: false,
+        totalNestedRuns: 0,
         nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
@@ -229,6 +233,7 @@ class Logs extends localization.LocalizedReactComponent {
         error: undefined,
         nestedRuns: [],
         hasNestedRuns: false,
+        totalNestedRuns: 0,
         nestedRunsPending: false,
         showActiveWorkersOnly: false,
         runTasks: [],
@@ -1343,7 +1348,9 @@ class Logs extends localization.LocalizedReactComponent {
     const {
       nestedRuns: originalNestedRuns = [],
       hasNestedRuns,
-      nestedRunsPending
+      totalNestedRuns = 0,
+      nestedRunsPending,
+      showActiveWorkersOnly
     } = this.state;
     if (!hasNestedRuns) {
       return null;
@@ -1394,6 +1401,14 @@ class Logs extends localization.LocalizedReactComponent {
     };
     const searchParts = [`parent.id=${this.props.runId}`];
     const search = searchParts.join(' and ');
+    const nestedRunsInfos = [
+      totalNestedRuns,
+      'nested'
+    ];
+    if (showActiveWorkersOnly) {
+      nestedRunsInfos.push('active');
+    }
+    nestedRunsInfos.push(totalNestedRuns === 1 ? 'run' : 'runs');
     return (
       <tr>
         <th
@@ -1401,24 +1416,62 @@ class Logs extends localization.LocalizedReactComponent {
         >
           Nested runs:
         </th>
-        <td
-          className={styles.nestedRuns}
-        >
+        <td>
           {
-            nestedRuns.length === 0 && nestedRunsPending && (
-              <Icon type="loading" />
+            !nestedRunsPending && (
+              <div>
+                {nestedRunsInfos.join(' ')}
+                {' - '}
+                <a
+                  onClick={this.openNestedRunsModal}
+                  style={{
+                    marginLeft: 5
+                  }}
+                >
+                  show cluster usage
+                </a>
+              </div>
             )
           }
-          {nestedRuns.map(renderSingleRun)}
-          <Link
-            className={styles.allNestedRuns}
-            to={`/runs/filter?search=${encodeURIComponent(search)}`}
+          <div
+            className={styles.nestedRuns}
           >
-            show all nested runs
-          </Link>
+            {
+              nestedRuns.length === 0 && nestedRunsPending && (
+                <Icon type="loading" />
+              )
+            }
+            {nestedRuns.map(renderSingleRun)}
+            <Link
+              className={styles.allNestedRuns}
+              to={`/runs/filter?search=${encodeURIComponent(search)}`}
+            >
+              show all nested runs
+            </Link>
+          </div>
         </td>
       </tr>
     );
+  };
+
+  openNestedRunsModal = () => {
+    this.setState({
+      nestedRunsModalVisible: true
+    });
+  }
+
+  closeNestedRunsModal = () => {
+    this.setState({
+      nestedRunsModalVisible: false
+    });
+  }
+
+  closeNestedRunsModalAndNavigateToRun = (runId) => {
+    this.setState({
+      nestedRunsModalVisible: false
+    }, () => {
+      this.props.router.push(`/run/${runId}`);
+    });
   };
 
   render () {
@@ -2100,6 +2153,12 @@ class Logs extends localization.LocalizedReactComponent {
       }
     }
 
+    const navigateToRun = (runId) => {
+      if (Number(this.props.runId) !== Number(runId)) {
+        this.closeNestedRunsModalAndNavigateToRun(runId);
+      }
+    };
+
     return (
       <Card
         className={
@@ -2210,6 +2269,12 @@ class Logs extends localization.LocalizedReactComponent {
           payload={this.runPayload}
           visible={this.state.showLaunchCommands}
           onClose={this.hideLaunchCommands}
+        />
+        <NestedRunsModal
+          runId={this.props.runId}
+          visible={this.state.nestedRunsModalVisible}
+          onCancel={this.closeNestedRunsModal}
+          onRunClick={navigateToRun}
         />
       </Card>
     );

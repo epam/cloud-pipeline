@@ -126,7 +126,8 @@ class AllRuns extends React.Component {
         const counter = continuousFetch({
           fetchImmediate: true,
           call,
-          afterInvoke: after
+          afterInvoke: after,
+          intervalMS: 10000
         });
         this.counters[filter.key] = {
           counter,
@@ -246,7 +247,10 @@ class AllRuns extends React.Component {
         <LoadingView />
       );
     }
-    const filters = {...(current.filters || {})};
+    const filters = {
+      ...(current.filters || {}),
+      onlyMasterJobs: true
+    };
     if (
       current.showPersonalRuns &&
       !all &&

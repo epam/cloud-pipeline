@@ -32,6 +32,7 @@ import lombok.Setter;
 import org.apache.commons.collections4.ListUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,7 +49,7 @@ import java.util.stream.Collectors;
 @Getter
 @NoArgsConstructor
 @EqualsAndHashCode
-public class PipelineConfiguration {
+public class PipelineConfiguration implements Cloneable {
 
     private static final String MAIN_FILE = "main_file";
     private static final String MAIN_CLASS = "main_class";
@@ -225,5 +226,37 @@ public class PipelineConfiguration {
         return runsSids.stream()
                 .peek(runSid -> runSid.setIsPrincipal(principal))
                 .collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    @Override
+    public PipelineConfiguration clone() {
+        try {
+            final PipelineConfiguration clone = (PipelineConfiguration) super.clone();
+            if (this.parameters != null) {
+                clone.setParameters(new HashMap<>(this.parameters));
+            }
+            if (this.environmentParams != null) {
+                clone.setEnvironmentParams(new HashMap<>(this.environmentParams));
+            }
+            if (this.sharedWithUsers != null) {
+                clone.setSharedWithUsers(new ArrayList<>(this.sharedWithUsers));
+            }
+            if (this.sharedWithRoles != null) {
+                clone.setSharedWithRoles(new ArrayList<>(this.sharedWithRoles));
+            }
+            if (this.notifications != null) {
+                clone.setNotifications(new ArrayList<>(this.notifications));
+            }
+            if (this.tags != null) {
+                clone.setTags(new HashMap<>(this.tags));
+            }
+            if (this.kubeLabels != null) {
+                clone.setKubeLabels(new HashMap<>(this.kubeLabels));
+            }
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("There was an error while trying to clone PipelineConfiguration object", e);
+        }
     }
 }
