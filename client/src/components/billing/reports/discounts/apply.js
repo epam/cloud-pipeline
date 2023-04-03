@@ -69,10 +69,21 @@ function applyDiscountsForCostDetails (costDetails, discountFn, periodFn) {
   Object.entries(tiers).forEach(([tierKey, tier]) => {
     processedTiers[tierKey] = applyDiscountsForTierCostDetails(tier, discountFn, periodFn);
   });
-  return {
+  const result = {
     ...rest,
     tiers: processedTiers
   };
+  return applyDiscountsForObject(
+    result,
+    discountFn,
+    [
+      'computeCost',
+      'accumulatedComputeCost',
+      'diskCost',
+      'accumulatedDiskCost'
+    ],
+    periodFn
+  );
 }
 
 function applyDiscounts (obj, discountFn) {

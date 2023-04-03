@@ -106,6 +106,14 @@ const reportsRouting = {
     const path = this.getPath(report);
     return path === this.storages.object.path;
   },
+  isInstances: function (report) {
+    const path = this.getPath(report);
+    return [
+      this.instances.path,
+      this.instances.cpu.path,
+      this.instances.gpu.path
+    ].includes(path);
+  },
   isQuota: function (report) {
     const path = this.getPath(report);
     return [

@@ -18,6 +18,7 @@ import moment from 'moment';
 import BaseBillingRequest from './base-billing-request';
 import GetDataWithPrevious from './get-data-with-previous';
 import {costMapper} from './utils';
+import extendFiltersWithFilterBy from './filter-by-payload';
 
 class GetBillingData extends BaseBillingRequest {
   /**
@@ -49,31 +50,10 @@ class GetBillingData extends BaseBillingRequest {
     if (this.filters && this.filters.tick) {
       this.body.interval = this.filters.tick;
     }
-    if (this.filters.filterBy) {
-      if ([
-        GetBillingData.FILTER_BY.storages,
-        GetBillingData.FILTER_BY.fileStorages,
-        GetBillingData.FILTER_BY.objectStorages
-      ].includes(this.filters.filterBy)) {
-        this.body.filters.resource_type = ['STORAGE'];
-        if (this.filters.filterBy === GetBillingData.FILTER_BY.fileStorages) {
-          this.body.filters.storage_type = ['FILE_STORAGE'];
-        } else if (this.filters.filterBy === GetBillingData.FILTER_BY.objectStorages) {
-          this.body.filters.storage_type = ['OBJECT_STORAGE'];
-        }
-      } else if ([
-        GetBillingData.FILTER_BY.compute,
-        GetBillingData.FILTER_BY.cpu,
-        GetBillingData.FILTER_BY.gpu
-      ].includes(this.filters.filterBy)) {
-        this.body.filters.resource_type = ['COMPUTE'];
-        if (this.filters.filterBy === GetBillingData.FILTER_BY.cpu) {
-          this.body.filters.compute_type = ['CPU'];
-        } else if (this.filters.filterBy === GetBillingData.FILTER_BY.gpu) {
-          this.body.filters.compute_type = ['GPU'];
-        }
-      }
-    }
+    this.body.filters = extendFiltersWithFilterBy(
+      this.body.filters,
+      this.filters ? this.filters.filterBy : {}
+    );
     if (this.loadCostDetails) {
       this.body.loadCostDetails = true;
     }

@@ -3,6 +3,7 @@ import RemotePost from '../basic/RemotePost';
 import TimedOutCache from '../basic/timed-out-cache';
 import {bytesToGbs, costMapper} from './utils';
 import defer from '../../utils/defer';
+import extendFiltersWithFilterBy from './filter-by-payload';
 
 export const KEYS = {
   cost: 'cost',
@@ -115,7 +116,7 @@ export default class BaseBillingRequest extends RemotePost {
       ? this.filters.start.toISOString() : undefined;
     this.body.to = this.filters && this.filters.end
       ? this.filters.end.toISOString() : undefined;
-    this.body.filters = {};
+    this.body.filters = extendFiltersWithFilterBy({}, this.filters ? this.filters.filterBy : {});
     if (this.filters && this.filters.user) {
       this.body.filters.owner = asArray(this.filters.user);
     }
@@ -188,6 +189,9 @@ export default class BaseBillingRequest extends RemotePost {
       processKeys(sizeKeys, bytesToGbs);
       return result;
     };
+    const processCost = (value) => value !== undefined && !Number.isNaN(Number(value))
+      ? costMapper(Number(value))
+      : undefined;
     return (items || []).map((item) => {
       const {
         costDetails = {},
@@ -195,6 +199,10 @@ export default class BaseBillingRequest extends RemotePost {
       } = item;
       const {
         tiers = [],
+        computeCost,
+        diskCost,
+        accumulatedComputeCost,
+        accumulatedDiskCost,
         ...costDetailsRest
       } = costDetails;
       const processedTiers = tiers.map(processTier);
@@ -219,6 +227,10 @@ export default class BaseBillingRequest extends RemotePost {
         ...rest,
         costDetails: {
           ...costDetailsRest,
+          computeCost: processCost(computeCost),
+          diskCost: processCost(diskCost),
+          accumulatedComputeCost: processCost(accumulatedComputeCost),
+          accumulatedDiskCost: processCost(accumulatedDiskCost),
           tiers: processedTiers
             .reduce((result, tier) => ({
               ...result,

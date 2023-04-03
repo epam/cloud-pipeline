@@ -16,6 +16,7 @@
 
 export default {
   summary: 'summary',
+  details: 'details',
   instances: 'instances',
   pipelines: 'pipelines',
   tools: 'tools'
