@@ -96,6 +96,7 @@ nav:
     - 12.12. System logs: 'manual/12_Manage_Settings/12.12._System_logs.md'
     - 12.13. System dictionaries: 'manual/12_Manage_Settings/12.13._System_dictionaries.md'
     - 12.14. NAT gateway: 'manual/12_Manage_Settings/12.14._NAT_gateway.md'
+    - 12.15. System jobs: 'manual/12_Manage_Settings/12.15._System_jobs.md'
   - 13. Permissions: 'manual/13_Permissions/13._Permissions.md'
   - 14. CLI interface:
     - 14.0. Overview: 'manual/14_CLI/14._Command-line_interface.md'

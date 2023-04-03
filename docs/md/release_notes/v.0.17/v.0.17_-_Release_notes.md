@@ -32,6 +32,7 @@
 - [Image history](#image-history)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
+- [System Jobs](#system-jobs)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
@@ -1023,7 +1024,7 @@ See example [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#r
 Previously, if the **Cloud Pipeline** Platform was being deployed in some private subnet, it could be quite difficult for the admin to expose a network endpoint for some service to use in a Platform. This required manual execution of a number of tasks on the Platform Core instance and, accordingly, might lead to errors.  
 To resolve this, in the current version, the convenient way to manage network routes (creating/removing) from the GUI was implemented.
 
-For that, a new **NAT gateway** subtab was added to the [**System Management**](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-management) section of the System settings.  
+For that, a new **NAT gateway** subtab was added to the [**System Management**](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-management) section of the **System Settings**.  
 The **NAT gateway** subtab allows to configure network routes:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_01.png)
 
@@ -1189,6 +1190,43 @@ Examples of logs:
 ![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_3.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12.12._System_logs.md#type-filter).
+
+## System Jobs
+
+Sometimes it's desirable for admin to get some statistics or system information about current Cloud Pipeline deployment state - for example, collect information about all storages that have specific size or list all unattached `EBS` volumes, or set some specific policy to all storages, etc.  
+For such purposes, specific scripts can be written and launched in some way. Number of these "admin" scripts can grow very quickly and it would be convenient to have some solution to create and run such scripts in a system, and also view results (logs) and store them.
+
+In the current version, a new solution was implemeted for "admin" scripts - **System Jobs**.  
+System jobs solution uses the existing Cloud-Pipeline infrastructure, to reduce number of preparation steps to be done to get desire output.  
+
+In a nutshell, the **System Jobs** solution includes the following:
+
+- special prepared system pipeline, that contains system jobs scripts. Admin can add new scripts or edit/delete existing ones. Also, pipeline config contains:  
+    - `Kubernetes` service account to perform `kubectl` commands from such pipeline during the system job run
+    - special assign policy that allows to assign the pipeline to one of the running system node (`MASTER` node, for example). It is convenient as no additional instances (waiting or initializing ones) are required to perform a job
+- special prepared docker image that includes pre-installed packages such as system packages (`curl`, `nano`, `git`, etc.), `kubectl`, `pipe` CLI, Cloud CLI (`AWS`/`Azure`/`GCP`), `LustreFS` client
+- separate **System Jobs** form that displays all available system job scripts, allows to run existing scripts and view results of their performing
+
+Userjourney looks like:
+
+1. Admin creates a new system job script and places it to the specific path inside the special system pipeline (_pipeline and path are defined by System Preferences_), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_1.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_3.png)
+2. Admin opens the **System Jobs** panel from the **System Settings**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_4.png)  
+    Here, there is the whole list of stored system scripts and results of their runs.
+3. To run a script - admin selects any script and launch it:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_5.png)
+4. When admin launches a system job - the system instance (`MASTER` instance, by default) is used for the job performing. At that system instance, the docker-container is launched from the special prepared docker-image for system jobs. In the launched docker-container, the system job script is being performed.
+5. At the **System jobs** form, states of the performing job are shown similar to the pipeline states, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_6.png)
+6. Once the script is performed, the state will be changed to **Success**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_7.png)
+7. By the button **LOG**, the script performing output can be viewed:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_8.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.15._System_jobs.md).
 
 ## AWS: seamless authentication
 
