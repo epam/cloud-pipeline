@@ -101,7 +101,7 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     public StorageRulesTabAO storageRulesTab() {
-        return onTab(StorageRulesTabAO.class);
+        return onTab(StorageRulesTabAO.class).tabShouldBeActive(STORAGE_RULES_TAB);
     }
 
     protected void changeTabTo(Primitive tab) {
