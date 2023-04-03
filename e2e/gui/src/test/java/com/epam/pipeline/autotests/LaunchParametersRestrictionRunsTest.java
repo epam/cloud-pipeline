@@ -226,7 +226,7 @@ public class LaunchParametersRestrictionRunsTest
                     .resume(runID3[0], nameWithoutGroup(tool))
                     .messageShouldAppear(format(launchErrorMessage, user.login, USER_LIMIT, USER_MAX_RUNS))
                     .completedRuns()
-                    .rerun(runID3[1], nameWithoutGroup(tool))
+                    .rerun(runID3[1])
                     .expandTab(EXEC_ENVIRONMENT)
                     .ensure(byText(format(warningMessage, USER_MAX_RUNS)), visible)
                     .checkLaunchMessage("message",

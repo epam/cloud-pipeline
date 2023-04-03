@@ -1085,7 +1085,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                 public EditGroupPopup addUser(final Account name) {
                     click(SEARCH);
-                    actions().sendKeys(user.login).perform();
+                    actions().sendKeys(name.login).perform();
                     $(byClassName("ant-select-dropdown")).shouldBe(Condition.visible);
                     enter();
                     click(ADD);

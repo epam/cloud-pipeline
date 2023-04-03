@@ -395,7 +395,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
-    public PipelineRunFormAO rerun(final String runId, final String pipelineName) {
+    public PipelineRunFormAO rerun(final String runId) {
         $("#run-" + runId + "-rerun-button").shouldBe(visible).click();
         return new PipelineRunFormAO();
     }
