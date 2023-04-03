@@ -78,7 +78,7 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
     }
 
     public PipelineHistoryTabAO shouldHaveEmptyHistory() {
-        return ensure(byText("No Data"), visible);
+        return ensure(byText("No data"), visible);
     }
 
     public PipelineHistoryTabAO shouldContainActiveRun(String pipelineName, String runId, String versionPattern, int maxElapsedTime, String owner) {
