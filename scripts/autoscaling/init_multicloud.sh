@@ -78,6 +78,12 @@ function setup_swap_device {
     fi
 }
 
+GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
+if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
+  GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
+fi
+export GLOBAL_DISTRIBUTION_URL
+
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 

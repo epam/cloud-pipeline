@@ -1,16 +1,26 @@
 import {GetGroupedInstances} from './get-grouped-instances';
-import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
+import GetGroupedComputeDataWithPrevious from './get-grouped-compute-data-with-previous';
 
 export class GetGroupedTools extends GetGroupedInstances {
-  constructor (filters, pagination = null) {
-    super(filters, pagination);
+  /**
+   * @param {GetGroupedInstancesOptions} options
+   */
+  constructor (options = {}) {
+    super(options);
     this.grouping = 'TOOL';
   }
 }
 
-export class GetGroupedToolsWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+export class GetGroupedToolsWithPrevious extends GetGroupedComputeDataWithPrevious {
+  /**
+   * @param {GetGroupedInstancesOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {
       end,
       endStrict,
@@ -25,8 +35,11 @@ export class GetGroupedToolsWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedTools,
-      formattedFilters,
-      pagination
+      {
+        filters: formattedFilters,
+        pagination
+      },
+      'tools'
     );
   }
 

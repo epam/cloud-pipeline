@@ -21,6 +21,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 
 /**
  * Provides methods for AWS S3 operations in specified region.
@@ -29,8 +30,10 @@ public class RegionAwareS3Helper extends S3Helper {
 
     private final AwsRegion region;
 
-    public RegionAwareS3Helper(final AwsRegion region, final MessageHelper messageHelper) {
-        super(messageHelper);
+    public RegionAwareS3Helper(final StorageEventCollector events,
+                               final MessageHelper messageHelper,
+                               final AwsRegion region) {
+        super(events, messageHelper);
         this.region = region;
     }
 

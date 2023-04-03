@@ -18,6 +18,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
@@ -25,6 +26,8 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.ldap.LdapManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
@@ -34,7 +37,10 @@ import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
+import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -71,7 +77,8 @@ import java.util.concurrent.Executor;
         DBConfiguration.class,
         CacheConfiguration.class,
         MappersConfiguration.class,
-        ContextualPreferenceConfiguration.class})
+        ContextualPreferenceConfiguration.class,
+        BillingConfiguration.class})
 @EnableAutoConfiguration(exclude = {
         SecurityAutoConfiguration.class,
         ManagementWebSecurityAutoConfiguration.class,
@@ -142,7 +149,7 @@ public class TestApplication {
     public UserRunnersManager mockUserRunnersManager;
 
     @MockBean
-    public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+    public RunServiceUrlDao runServiceUrlDao;
 
     @MockBean
     public LdapManager ldapManager;
@@ -154,10 +161,28 @@ public class TestApplication {
     public PipelineUserRepository pipelineUserRepository;
 
     @MockBean
+    protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
+
+    @MockBean
+    protected DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
+
+    @MockBean
+    protected DataStorageRestoreActionRepository dataStorageRestoreActionRepository;
+
+    @MockBean
     public OnlineUsersService onlineUsersService;
 
     @MockBean
     public NodePoolUsageService nodePoolUsageService;
+
+    @MockBean
+    public DataStorageLifecycleManager dataStorageLifecycleManager;
+
+    @MockBean
+    protected UserNotificationRepository userNotificationRepository;
+
+    @MockBean
+    public StorageEventCollector events;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

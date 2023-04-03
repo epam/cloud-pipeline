@@ -39,19 +39,10 @@ const IdleNotificationsTitle = (
   </div>
 );
 
-const PausedNotificationsTitle = (
-  <div>
-    {/* eslint-disable-next-line max-len */}
-    Common <b>Long Paused</b>-notifications ( <i>LONG_PAUSED</i>, <i>LONG_PAUSED_STOPPED</i>) settings
-  </div>
-);
-
 const PreferencesSectionTitle = {
   [IdleRunType]: IdleNotificationsTitle,
   [IdleRunPausedType]: IdleNotificationsTitle,
-  [IdleRunStoppedType]: IdleNotificationsTitle,
-  [LongPausedType]: PausedNotificationsTitle,
-  [LongPausedStoppedType]: PausedNotificationsTitle
+  [IdleRunStoppedType]: IdleNotificationsTitle
 };
 
 const SystemDiskConsumeThresholdPreference = {
@@ -270,10 +261,8 @@ const NotificationPreferences = {
     SystemIdleActionPreference.preference
   ],
   [LongPausedType]: [
-    SystemLongPausedActionPreference.preference
-  ],
-  [LongPausedStoppedType]: [
-    SystemLongPausedActionPreference.preference
+    SystemLongPausedActionPreference.preference,
+    SystemLongPausedActionTimeoutMinutesPreference.preference
   ]
 };
 

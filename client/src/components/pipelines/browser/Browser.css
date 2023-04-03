@@ -164,6 +164,10 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   margin-left: 5px;
 }
 
+.storage-actions > * {
+  margin-bottom: 3px;
+}
+
 .item-actions {
   text-align: right;
 }
@@ -273,7 +277,8 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
 }
 
 .app-link span,
-.app-link img {
+.app-link img,
+.app-link i {
   vertical-align: middle;
 }
 
@@ -365,6 +370,23 @@ tr.table-row-selected {
   border-bottom: none;
   padding: 5px;
   min-height: 37px;
+  flex-wrap: nowrap;
+}
+
+.metadata-predefined-filters {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: none;
+  border-top: none;
+  padding: 0 5px 5px;
+  min-height: 37px;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+}
+
+.metadata-predefined-filter {
+  margin-right: 5px;
+  margin-bottom: 2px;
 }
 
 .action-link:hover {

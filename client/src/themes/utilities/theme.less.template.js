@@ -180,6 +180,20 @@ export default `
 @THEME .cp-divider.right {
   border-right: 1px solid @panel-border-color;
 }
+@THEME .cp-divider.top.dashed,
+@THEME .cp-divider.horizontal.dashed {
+  border-top: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.bottom.dashed {
+  border-bottom: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.left.dashed,
+@THEME .cp-divider.vertical.dashed {
+  border-left: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.right.dashed {
+  border-right: 1px dashed @panel-border-color;
+}
 @THEME .cp-divider.horizontal {
   width: 100%;
   height: 1px;
@@ -196,6 +210,9 @@ export default `
 @THEME .cp-primary {
   color: @primary-color;
 }
+@THEME .cp-primary.border {
+  border-color: @primary-color;
+}
 @THEME .cp-disabled {
   color: @application-color-disabled;
 }
@@ -205,8 +222,14 @@ export default `
 @THEME .cp-warning {
   color: @color-yellow;
 }
+@THEME .cp-warning.border {
+  border-color: @color-yellow;
+}
 @THEME .cp-success {
   color: @color-green;
+}
+@THEME .cp-success.border {
+  border-color: @color-green;
 }
 @THEME .cp-error,
 @THEME .cp-danger {
@@ -389,7 +412,8 @@ export default `
 @THEME .cp-error .ant-input,
 @THEME .ant-input.cp-error,
 @THEME .ant-select.cp-error .ant-select-selection,
-@THEME .ant-input-number.cp-error {
+@THEME .ant-input-number.cp-error,
+@THEME .cp-run-capabilities-input.cp-error {
   border-color: @color-red;
   color: @color-red;
   box-shadow: none;
@@ -413,7 +437,9 @@ export default `
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
-@THEME .ant-form-item-control.has-error .ant-input {
+@THEME .ant-form-item-control.has-error .ant-select-selection,
+@THEME .ant-form-item-control.has-error .ant-input,
+@THEME .ant-form-item-control.has-error .CodeMirror-wrap {
   border-color: @color-red;
 }
 @THEME .cp-text-not-important {
@@ -537,6 +563,14 @@ export default `
 @THEME .ant-tabs.cp-tabs-no-padding.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   padding: 0;
 }
+@THEME .ant-tabs-tab-prev,
+@THEME .ant-tabs-tab-next {
+  color: @application-color;
+}
+@THEME .ant-tabs-tab-btn-disabled,
+@THEME .ant-tabs-tab-btn-disabled:hover {
+  color: @application-color-disabled;
+}
 @THEME .cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   border-bottom: 0;
 }
@@ -545,6 +579,9 @@ export default `
   border-left: 1px solid @card-border-color;
   border-right: 1px solid @card-border-color;
   border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-tabs-no-padding .ant-tabs-bar {
+  margin-bottom: 0;
 }
 @THEME .ant-checkbox-wrapper + span {
   color: @application-color;
@@ -638,6 +675,16 @@ export default `
   color: @application-color;
   background-color: @panel-background-color;
   border-color: @input-border;
+}
+@THEME .cp-button.primary {
+  background: @primary-color;
+  color: @primary-text-color;
+  border-color: @primary-color;
+}
+@THEME .cp-button.primary:hover {
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-btn-clicked::after {
   border: 0 solid @primary-color;
@@ -848,6 +895,13 @@ export default `
   background-color: @card-background-color;
   color: @application-color-disabled;
 }
+@THEME .cp-table-element-dimmed {
+  background-color: @card-background-color;
+  color: @application-color-disabled;
+}
+@THEME .cp-table-element-dimmed:hover {
+  background-color: @table-element-hover-background-color;
+}
 @THEME .ant-table-row-expand-icon {
   border-color: @table-border-color;
   background: inherit;
@@ -1049,6 +1103,12 @@ export default `
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;
 }
+@THEME .cp-run-capabilities-input .cp-run-capabilities-input-tag.tag-placeholder {
+  color: @application-color-disabled;
+}
+@THEME .cp-run-capabilities-input .cp-run-capabilities-input-tag.required {
+  color: @color-red;
+}
 @THEME .ant-select-selection--multiple .ant-select-selection__choice__remove {
   color: @application-color-faded;
 }
@@ -1099,7 +1159,8 @@ export default `
 @THEME .ant-pagination-item-active:focus {
   background-color: @primary-hover-color;
 }
-@THEME .ant-pagination-item.ant-pagination-item-active > a {
+@THEME .ant-pagination-item.ant-pagination-item-active > a,
+@THEME span.ant-pagination-item.ant-pagination-item-active {
   color: @primary-text-color;
 }
 @THEME .ant-pagination-jump-prev::after,
@@ -1540,6 +1601,9 @@ export default `
 @THEME .cp-panel.cp-panel-borderless:hover {
   border-color: transparent;
 }
+@THEME .cp-card-background-color {
+  background-color: @card-background-color;
+}
 @THEME .cp-panel .cp-panel-card {
   border: 1px solid @card-border-color;
   background-color: @card-background-color;
@@ -1942,8 +2006,17 @@ export default `
   background-color: @card-header-background;
   border: 1px solid @card-border-color;
 }
-@THEME .cp-run-nested-run-link {
+@THEME .cp-run-nested-run-link,
+@THEME .cp-run-nested-run-link:active,
+@THEME .cp-run-nested-run-link:focus,
+@THEME .cp-run-nested-run-link:visited {
   color: @application-color-accent;
+}
+@THEME .ant-tooltip-inner .cp-run-nested-run-link,
+@THEME .ant-tooltip-inner .cp-run-nested-run-link:active,
+@THEME .ant-tooltip-inner .cp-run-nested-run-link:focus,
+@THEME .ant-tooltip-inner .cp-run-nested-run-link:visited {
+  color: @application-color-tooltip;
 }
 @THEME .cp-wdl-task[data-type=VisualStep] rect,
 @THEME .cp-wdl-task[data-type=VisualGroup] rect,
@@ -2020,6 +2093,27 @@ export default `
 @THEME .cp-run-name.editable:hover {
   outline: 1px solid @panel-border-color;
   background-color: @element-selected-background-color !important;
+}
+@THEME .cp-run-timeline-table td,
+@THEME .cp-run-timeline-table th {
+  background-color: @panel-background-color;
+  color: @application-color;
+  border: 1px solid @panel-border-color;
+}
+@THEME .cp-console-output {
+  background-color: @application-console-background-color;
+  color: @application-console-color;
+}
+@THEME .cp-console-output-details {
+  color: @application-console-color-details
+}
+@THEME .cp-console-follow-log {
+  color: @application-console-color;
+}
+@THEME .cp-console-scroll-down-indicator {
+  background-color: @panel-background-color;
+  border: 1px solid @panel-border-color;
+  color: @application-color;
 }
 
 @THEME .cp-billing-menu {
@@ -2148,13 +2242,26 @@ export default `
 @THEME .cp-billing-action-tag .ant-tag-text {
   background-color: @color-warning;
 }
+@THEME .cp-report-table td,
+@THEME .cp-report-table th {
+  background-color: @panel-background-color;
+  color: @application-color;
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-report-table tbody tr:not(:last-child) > *,
+@THEME .cp-report-table th {
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-report-table tr > *.fixed-column {
+  border-right: 1px solid @card-border-color;
+}
+@THEME .cp-report-table tr.cp-warning-row {
+  background-color: fade(@color-error, 20%);
+}
 
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;
   color: @primary-text-color;
-}
-@THEME .cp-search-actions > * {
-  border-right: 1px solid @panel-border-color;
 }
 @THEME .cp-search-clear-button {
   color: @application-color-faded;
@@ -2183,6 +2290,7 @@ export default `
   position: sticky;
   top: 0;
   font-weight: bold;
+  z-index: 2;
 }
 @THEME .cp-search-results-table-header-cell {
   margin: 0;
@@ -2336,6 +2444,10 @@ export default `
   background-color: @search-highlight-text-background-color;
   color: @search-highlight-text-color;
 }
+@THEME .cp-search-highlight-text.inactive {
+  background-color: @search-highlight-text-inactive-background-color;
+  color: @search-highlight-text-color;
+}
 @THEME .cp-search-csv-table {
   border: 1px solid @card-border-color;
   background-color: @card-background-color;
@@ -2347,31 +2459,14 @@ export default `
 }
 @THEME .cp-search-faceted-button {
   color: @application-color;
-  background-color: @panel-background-color;
-  border: 1px solid @input-border;
 }
-@THEME .cp-search-faceted-button:hover,
-@THEME .cp-search-faceted-button:focus {
+@THEME .cp-search-faceted-button.selected,
+@THEME .cp-search-faceted-button .selected {
   color: @primary-color;
-  background-color: @panel-background-color;
-  border-color: @primary-color;
-}
-@THEME .cp-search-faceted-button.selected {
-  color: @primary-text-color;
-  background-color: @primary-color;
-  border-color: @primary-color;
-}
-@THEME .cp-search-faceted-button.selected:hover,
-@THEME .cp-search-faceted-button.selected:focus {
-  color: @primary-text-color;
-  background-color: @primary-hover-color;
-  border-color: @primary-hover-color;
 }
 @THEME .cp-search-faceted-button.disabled,
 @THEME .cp-search-faceted-button:hover.disabled {
   color: @btn-disabled-color;
-  background-color: transparent;
-  border-color: transparent;
   cursor: default;
 }
 @THEME .cp-search-type-button {
@@ -2401,6 +2496,9 @@ export default `
 @THEME .cp-fast-search-result-item.cp-table-element-hover {
   background-color: @table-element-hover-background-color;
   color: @table-element-hover-color;
+}
+@THEME .cp-tabs-no-content.cp-faceted-filters .ant-tabs-content {
+  padding: 0!important;
 }
 
 @THEME .cp-versioned-storage-breadcrumb {
@@ -2584,6 +2682,35 @@ export default `
 @THEME .cp-sample-sheet-table td {
   border-color: @card-border-color;
 }
+@THEME .cp-metadata-predefined-filter.cp-primary {
+  color: @primary-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-primary:not(.cp-library-metadata-cell) {
+  border-color: @primary-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-primary.applied.cp-library-metadata-cell,
+@THEME .cp-metadata-predefined-filter.cp-primary.applied {
+  color: @primary-text-color;
+  background-color: @primary-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-primary.applied:not(.cp-library-metadata-cell) {
+  border-color: @primary-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-danger.cp-library-metadata-cell,
+@THEME .cp-metadata-predefined-filter.cp-danger {
+  color: @btn-danger-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-danger:not(.cp-library-metadata-cell) {
+  border-color: @btn-danger-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-danger.applied.cp-library-metadata-cell,
+@THEME .cp-metadata-predefined-filter.cp-danger.applied {
+  color: @btn-danger-active-color;
+  background-color: @btn-danger-active-background;
+}
+@THEME .cp-metadata-predefined-filter.cp-danger.applied:not(.cp-library-metadata-cell) {
+  background-color: @btn-danger-active-background;
+}
 
 @THEME .cp-node-tag {
   border-color: @application-color-disabled;
@@ -2636,6 +2763,9 @@ export default `
 }
 @THEME .cp-setting-critical {
   color: @color-red;
+}
+@THEME .cp-setting-message {
+  color: @primary-color;
 }
 @THEME .cp-settings-table thead,
 @THEME .cp-settings-table thead th {
@@ -2740,7 +2870,7 @@ export default `
 @THEME .markdown h6 {
   margin: 2px 0;
 }
-@THEME .markdown p {
+@THEME .markdown:not(.no-margin-markdown) p {
   margin: 5px 0;
 }
 @THEME .markdown p a {
@@ -3116,8 +3246,26 @@ export default `
 @THEME .cell-profiler-module.expanded .cell-profiler-module-header {
   border-bottom: 1px @card-border-color solid;
 }
-@THEME .cell-profiler-module-header:hover {
+@THEME .cell-profiler-module:not(.empty) .cell-profiler-module-header:hover {
   background-color: darken(@card-background-color, 5%);
+}
+@THEME .cell-profiler-results-table {
+  background-color: @card-background-color;
+}
+@THEME .cell-profiler-results-table td,
+@THEME .cell-profiler-results-table th {
+  border: 1px solid @table-border-color;
+}
+@THEME .cell-profiler-job:nth-child(even) {
+  background-color: @even-element-background;
+}
+@THEME .cell-profiler-job:hover {
+  background-color: @table-element-hover-background-color;
+  color: @table-element-hover-color;
+}
+@THEME .cell-profiler-job.selected {
+  background-color: @table-element-selected-background-color;
+  color: @table-element-selected-color;
 }
 
 `;

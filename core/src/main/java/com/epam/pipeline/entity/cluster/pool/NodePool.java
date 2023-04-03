@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Data
-public class NodePool {
+public class NodePool implements NodePoolInfo {
 
     private Long id;
     private String name;

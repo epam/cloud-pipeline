@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import json
+import os
 
 from .pipeline_run_parameter_model import PipelineRunParameterModel
 from ..utilities import date_utilities
+import logging
 
 
 class RunSid(object):
@@ -51,10 +52,14 @@ class PipelineRunModel(object):
 
     @property
     def is_initialized(self):
+        task_to_check = os.getenv('CP_SSH_INIT_TASK_NAME', 'InitializeEnvironment')
+        task_status = task_to_check == 'NONE' or \
+                        next(( True for t in self.tasks \
+                            if t.name == task_to_check and t.status == 'SUCCESS' ), False)
+        
         return self.status == 'RUNNING' and \
-            self.pod_ip is not None and \
-                next(( True for t in self.tasks \
-                    if t.name == 'InitializeEnvironment' and t.status == 'SUCCESS' ), False)
+                    self.pod_ip is not None and \
+                        task_status
 
     @classmethod
     def load(cls, result):
@@ -118,9 +123,14 @@ class PipelineRunModel(object):
     def parse_service_urls(items):
         endpoints = []
         for region, service_urls_string in items:
-            service_urls = {record["name"]: record['url'] for record in json.loads(service_urls_string) if 'url' in record}
-            for name, service_url in service_urls.items():
-                endpoints.append("%s : %s : %s" % (name, region, service_url))
+            try:
+                if not service_urls_string:
+                    continue
+                service_urls = {record["name"]: record['url'] for record in json.loads(service_urls_string) if 'url' in record}
+                for name, service_url in service_urls.items():
+                    endpoints.append("%s : %s : %s" % (name, region, service_url))
+            except Exception:
+                logging.exception('Service URL cannot be parsed.')
         return endpoints
 
 

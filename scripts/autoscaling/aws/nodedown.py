@@ -20,6 +20,7 @@ import time
 RUN_ID_LABEL = 'runid'
 AWS_REGION_LABEL = 'aws_region'
 CLOUD_REGION_LABEL = 'cloud_region'
+KUBE_CONFIG_PATH = '~/.kube/config'
 AWS_TERMINATION_ATTEMPTS = 3
 
 
@@ -110,7 +111,10 @@ def get_aws_region(api, run_id):
 
 
 def get_kube_api():
-    api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
+    try:
+        api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+    except Exception:
+        api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
     api.session.verify = False
     return api
 

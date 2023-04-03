@@ -17,6 +17,10 @@
 import S3Storage from '../models/s3-upload/s3-storage';
 import DataStorageItemContent from '../models/dataStorage/DataStorageItemContent';
 import GenerateDownloadUrl from '../models/dataStorage/GenerateDownloadUrl';
+import storagesRequest from '../models/dataStorage/DataStorageAvailable';
+import DataStorageRequest from '../models/dataStorage/DataStoragePage';
+import DataStorageItemUpdateContent from '../models/dataStorage/DataStorageItemUpdateContent';
+import auditStorageAccessManager from './audit-storage-access';
 
 const parser = new DOMParser();
 
@@ -67,14 +71,15 @@ async function readS3Response (response, asJSON = false, requestedFile = undefin
 }
 
 class ObjectStorage {
-  constructor (options = {}) {
+  constructor (options = {}, permissions = {}) {
     const {
       id,
       type,
       path,
       pathMask,
       region,
-      delimiter = '/'
+      delimiter = '/',
+      mountPoint
     } = options;
     this.id = id;
     this.type = type;
@@ -83,6 +88,24 @@ class ObjectStorage {
     this.pathMask = pathMask;
     this.delimiter = delimiter;
     this.s3Storage = undefined;
+    this.permissions = permissions;
+    this.mountPoint = mountPoint;
+    if (/^nfs$/i.test(type)) {
+      if (mountPoint) {
+        this.localRoot = mountPoint;
+      } else {
+        this.localRoot = '/cloud-data/'.concat(path.replace(/[:]/g, ''));
+      }
+    } else {
+      this.localRoot = '/cloud-data/'.concat(path);
+    }
+  }
+
+  get initialized () {
+    if (this.id && this.type && this.path && /^s3$/i.test(this.type)) {
+      return !!this.s3Storage;
+    }
+    return true;
   }
 
   async initialize (permissions = {}) {
@@ -99,6 +122,9 @@ class ObjectStorage {
   }
 
   async generateFileUrl (file) {
+    if (!this.s3Storage) {
+      await this.initialize(this.permissions);
+    }
     if (this.s3Storage) {
       await this.s3Storage.refreshCredentialsIfNeeded();
       return this.s3Storage.getSignedUrl(file);
@@ -118,6 +144,11 @@ class ObjectStorage {
     if (this.s3Storage) {
       await this.s3Storage.refreshCredentialsIfNeeded();
       const url = this.s3Storage.getSignedUrl(file);
+      auditStorageAccessManager.reportReadAccess({
+        storageId: this.id,
+        path: file,
+        reportStorageType: 'S3'
+      });
       const response = await fetch(url);
       return readS3Response(response, json, file);
     }
@@ -128,6 +159,88 @@ class ObjectStorage {
     }
     return atob((request.value || {}).content);
   }
+
+  async getFolderContents (folder) {
+    if (!this.id) {
+      throw new Error(`Storage ID not specified`);
+    }
+    const id = this.id;
+    function fetchPage (marker) {
+      return new Promise((resolve) => {
+        const request = new DataStorageRequest(
+          id,
+          decodeURIComponent(folder),
+          false,
+          false,
+          50
+        );
+        request
+          .fetchPage(marker)
+          .then(() => {
+            if (request.loaded) {
+              const pathRegExp = new RegExp(`^${folder}\\/`, 'i');
+              const nextPageMarker = (request.value || {}).nextPageMarker;
+              const items = ((request.value || {}).results || [])
+                .filter(item => pathRegExp.test(item.path));
+              return Promise.resolve({items, nextPageMarker});
+            } else {
+              return Promise.resolve({items: []});
+            }
+          })
+          .then(({items, nextPageMarker}) => {
+            if (!nextPageMarker) {
+              return Promise.resolve([items]);
+            } else {
+              return Promise.all([
+                Promise.resolve(items),
+                fetchPage(nextPageMarker)
+              ]);
+            }
+          })
+          .then(itemsArray => resolve(itemsArray.reduce((r, c) => ([...r, ...c]), [])))
+          .catch(() => {
+            resolve([]);
+          });
+      });
+    }
+    return fetchPage();
+  }
+
+  getRelativePath = (path) => {
+    if (this.pathMask) {
+      const e = (new RegExp(`^${this.pathMask}/(.+)$`, 'i')).exec(path);
+      if (e && e.length) {
+        return e[1];
+      }
+    }
+    return path;
+  };
+
+  joinPaths = (...path) => {
+    const removeSlashes = o => {
+      let result = o || '';
+      if (result.startsWith(this.delimiter)) {
+        result = result.slice(1);
+      }
+      if (result.endsWith(this.delimiter)) {
+        result = result.slice(0, -1);
+      }
+      return result;
+    };
+    return path.map(removeSlashes).join(this.delimiter);
+  };
+
+  getLocalPath = (path) => {
+    return (this.localRoot || '').concat('/').concat(path).replace(/\/\//g, '/');
+  }
+
+  writeFile = async (path, content) => {
+    const request = new DataStorageItemUpdateContent(this.id, path);
+    await request.send(content);
+    if (request.error) {
+      throw new Error(request.error);
+    }
+  };
 }
 
 function findStorageByIdentifierFn (storageId) {
@@ -139,7 +252,8 @@ function findStorageByIdentifierFn (storageId) {
 function findStorageByPathFn (storagePath) {
   return function predicate (storage) {
     const storageMask = new RegExp(`^${storage.pathMask}(/|$)`, 'i');
-    return storageMask.test(storagePath);
+    const storagePathMask = new RegExp(`^${storage.path}(/|$)`, 'i');
+    return storageMask.test(storagePath) || storagePathMask.test(storagePath);
   };
 }
 
@@ -162,9 +276,19 @@ async function getStorages (storages) {
  * @param {*[]|Remote} storages - available storages
  * @param {string|number|Object} storage - storage id, storage path or storage object
  * @param {{read: boolean, write: boolean}} [permissions]
+ * @param {{isURL: boolean?, generateCredentials: boolean?}} [options]
  * @return {Promise<ObjectStorage|undefined>}
  */
-export async function createObjectStorageWrapper (storages, storage, permissions) {
+export async function createObjectStorageWrapper (
+  storages,
+  storage,
+  permissions,
+  options
+) {
+  const {
+    isURL = false,
+    generateCredentials = true
+  } = options || {};
   let obj;
   let storagesArray = [];
   try {
@@ -172,29 +296,58 @@ export async function createObjectStorageWrapper (storages, storage, permissions
   } catch (e) {
     console.warn(e.message);
   }
-  if (!Number.isNaN(Number(storage))) {
+  const filteredStoragesArray = storagesArray && typeof storagesArray.filter === 'function'
+    ? storagesArray.filter(s => !s.shared)
+    : undefined;
+  if (!isURL && !Number.isNaN(Number(storage))) {
     const storageId = Number(storage);
-    if (storagesArray && typeof storagesArray.find === 'function') {
-      obj = storagesArray.find(findStorageByIdentifierFn(storageId));
+    if (filteredStoragesArray) {
+      obj = filteredStoragesArray.find(findStorageByIdentifierFn(storageId));
     }
     if (!obj) {
       obj = {id: storageId};
     }
   } else if (
     typeof storage === 'string' &&
-    storagesArray &&
-    typeof storagesArray.find === 'function'
+    filteredStoragesArray
   ) {
-    obj = storagesArray.find(findStorageByPathFn(storage));
+    obj = filteredStoragesArray.find(findStorageByPathFn(storage));
   } else if (typeof storage === 'object' && storage.id) {
     obj = {...storage};
   }
   if (obj) {
-    const objectStorage = new ObjectStorage(obj);
-    await objectStorage.initialize(permissions);
+    const objectStorage = new ObjectStorage(obj, permissions);
+    if (generateCredentials) {
+      await objectStorage.initialize(permissions);
+    }
     return objectStorage;
   }
   return undefined;
 }
 
-export {ObjectStorage};
+async function getStorageFileAccessInfo (path) {
+  const objectStorage = await createObjectStorageWrapper(
+    storagesRequest,
+    path,
+    {write: false, read: true},
+    {isURL: true, generateCredentials: false}
+  );
+  if (objectStorage) {
+    if (objectStorage.pathMask) {
+      const e = (new RegExp(`^${objectStorage.pathMask}/(.+)$`, 'i')).exec(path);
+      if (e && e.length) {
+        return {
+          objectStorage,
+          path: e[1]
+        };
+      }
+    }
+    return {
+      objectStorage,
+      path
+    };
+  }
+  return undefined;
+}
+
+export {ObjectStorage, getStorageFileAccessInfo};

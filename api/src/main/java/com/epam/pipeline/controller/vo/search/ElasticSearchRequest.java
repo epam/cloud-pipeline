@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -33,6 +34,8 @@ public class ElasticSearchRequest {
     private boolean aggregate = false;
     private boolean highlight = false;
     private List<SearchDocumentType> filterTypes;
+    private String objectIdentifier;
+    private Set<String> filterGlobs;
     private List<String> metadataFields;
     private ScrollingParameters scrollingParameters;
     private List<SearchRequestSort> sorts;

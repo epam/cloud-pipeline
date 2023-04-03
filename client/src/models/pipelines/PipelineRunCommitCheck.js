@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import React from 'react';
 import Remote from '../basic/Remote';
 
 export class PipelineRunCommitCheck extends Remote {
@@ -23,7 +22,3 @@ export class PipelineRunCommitCheck extends Remote {
     this.url = `/run/${id}/commit/check`;
   }
 }
-
-export const PIPELINE_RUN_COMMIT_CHECK_FAILED = (
-  <span>This operation may fail due to <b>'Out of disk'</b> error</span>
-);

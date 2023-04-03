@@ -22,6 +22,7 @@
   margin-left: 1px;
   padding: 1px 3px;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .link .run-tag {

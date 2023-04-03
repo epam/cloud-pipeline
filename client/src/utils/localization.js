@@ -71,6 +71,7 @@ class LocalizedReactComponent extends React.Component {
 
 export default {
   localizedComponent,
+  localization: new Localization(),
   Localization,
   LocalizedReactComponent
 };

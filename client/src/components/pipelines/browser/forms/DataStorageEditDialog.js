@@ -40,6 +40,7 @@ import {
   DataStoragePathInput,
   parseFSMountPath
 } from './DataStoragePathInput';
+import LifeCycleRules from './life-cycle-rules';
 import styles from './DataStorageEditDialog.css';
 
 export const ServiceTypes = {
@@ -100,7 +101,9 @@ export class DataStorageEditDialog extends React.Component {
       authenticatedUserInfo.loaded;
     if (loaded) {
       const isAdmin = authenticatedUserInfo.value.admin;
-      return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
+      const isOwner = roleModel.isOwner(dataStorage);
+      return isAdmin ||
+        (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
     }
     return false;
   }
@@ -158,6 +161,41 @@ export class DataStorageEditDialog extends React.Component {
       : this.props.isNfsMount;
   }
 
+  get userPermissions () {
+    const {dataStorage} = this.props;
+    if (!dataStorage) {
+      return {read: false, write: false};
+    }
+    const readAllowed = roleModel.readAllowed(dataStorage);
+    const writeAllowed = roleModel.writeAllowed(dataStorage);
+    return {
+      read: (
+        roleModel.isOwner(dataStorage) ||
+        roleModel.isManager.archiveManager(this) ||
+        roleModel.isManager.archiveReader(this)
+      ) && readAllowed,
+      write: (
+        roleModel.isOwner(dataStorage) ||
+        roleModel.isManager.archiveManager(this)
+      ) && writeAllowed
+    };
+  }
+
+  @computed
+  get transitionRulesAvailable () {
+    const {
+      dataStorage
+    } = this.props;
+    return (this.userPermissions.read || this.userPermissions.write) &&
+      dataStorage &&
+      dataStorage.id &&
+      /^s3$/i.test(dataStorage.storageType || dataStorage.type);
+  }
+
+  get transitionRulesReadOnly () {
+    return this.userPermissions.read && !this.userPermissions.write;
+  }
+
   @computed
   get awsRegions () {
     return this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : [];
@@ -211,7 +249,7 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getEditFooter = () => {
-    if (roleModel.writeAllowed(this.props.dataStorage)) {
+    if (roleModel.isOwner(this.props.dataStorage)) {
       return (
         <Row type="flex" justify="space-between">
           <Col span={12}>
@@ -221,7 +259,7 @@ export class DataStorageEditDialog extends React.Component {
                   <Button
                     id="edit-storage-dialog-delete-button"
                     type="danger"
-                    onClick={this.openDeleteDialog}>Delete</Button>
+                    onClick={this.openDeleteDialog}>DELETE</Button>
                 )
               }
             </Row>
@@ -230,12 +268,12 @@ export class DataStorageEditDialog extends React.Component {
             <Row type="flex" justify="end">
               <Button
                 id="edit-storage-dialog-cancel-button"
-                onClick={this.props.onCancel}>Cancel</Button>
+                onClick={this.props.onCancel}>CANCEL</Button>
               <Button
                 id="edit-storage-dialog-save-button"
                 type="primary"
                 htmlType="submit"
-                onClick={this.handleSubmit}>Save</Button>
+                onClick={this.handleSubmit}>SAVE</Button>
             </Row>
           </Col>
         </Row>
@@ -245,7 +283,7 @@ export class DataStorageEditDialog extends React.Component {
         <Row type="flex" justify="end">
           <Button
             id="edit-storage-dialog-cancel-button"
-            onClick={this.props.onCancel}>Cancel</Button>
+            onClick={this.props.onCancel}>CANCEL</Button>
         </Row>
       );
     }
@@ -322,7 +360,7 @@ export class DataStorageEditDialog extends React.Component {
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
     const isReadOnly = this.props.dataStorage
-      ? this.props.dataStorage.locked || !roleModel.writeAllowed(this.props.dataStorage)
+      ? this.props.dataStorage.locked || !roleModel.isOwner(this.props.dataStorage)
       : false;
     const modalFooter = this.props.pending ? false : (
       this.props.dataStorage ? this.getEditFooter() : this.getCreateFooter()
@@ -347,7 +385,8 @@ export class DataStorageEditDialog extends React.Component {
                 : 'Create object storage'))
         }
         onCancel={this.props.onCancel}
-        width={this.isNfsMount ? '50%' : '33%'}
+        style={{transition: 'width 0.2s ease'}}
+        width={(this.state.activeTab === 'transitionRules' || this.isNfsMount) ? '50%' : '33%'}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>
         <Spin spinning={this.props.pending}>
           <Tabs
@@ -454,38 +493,6 @@ export class DataStorageEditDialog extends React.Component {
                       )}
                     </Form.Item>
                   )
-                }
-                {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="STS duration">
-                    {getFieldDecorator('shortTermStorageDuration', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                        ? this.props.dataStorage.storagePolicy.shortTermStorageDuration : undefined
-                    })(
-                      <InputNumber
-                        style={{width: '100%'}}
-                        disabled={this.props.pending || isReadOnly} />
-                    )}
-                  </Form.Item>
-                }
-                {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="LTS duration">
-                    {getFieldDecorator('longTermStorageDuration', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                        ? this.props.dataStorage.storagePolicy.longTermStorageDuration: undefined
-                    })(
-                      <InputNumber
-                        style={{width: '100%'}}
-                        disabled={this.props.pending || isReadOnly} />
-                    )}
-                  </Form.Item>
                 }
                 {
                   !this.isNfsMount &&
@@ -605,6 +612,14 @@ export class DataStorageEditDialog extends React.Component {
                   objectType="DATA_STORAGE" />
               </Tabs.TabPane>
             }
+            {this.transitionRulesAvailable && (
+              <Tabs.TabPane key="transitionRules" tab="Transition rules">
+                <LifeCycleRules
+                  storageId={this.props.dataStorage.id}
+                  readOnly={this.transitionRulesReadOnly}
+                />
+              </Tabs.TabPane>
+            )}
           </Tabs>
         </Spin>
         <Modal

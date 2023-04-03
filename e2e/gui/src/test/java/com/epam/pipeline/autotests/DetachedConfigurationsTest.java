@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.function.Consumer;
+
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -126,6 +128,7 @@ public class DetachedConfigurationsTest
     private final String runWithParametersConfiguration = "run-with-parameters-configuration-" + Utils.randomSuffix();
     private final String configuration1611 = "configuration-1611-" + Utils.randomSuffix();
     private final String configuration1601 = "configuration-1601-" + Utils.randomSuffix();
+    private final By estimatedPrice = byText("Estimated price per hour:");
 
     @BeforeClass
     public void createPipelines() {
@@ -150,6 +153,7 @@ public class DetachedConfigurationsTest
                     .setName(pathParameterName)
                     .close()
                     .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611)
             )
             .sleep(5, SECONDS)
             .editConfiguration(pipelineDefaultProfile, profile -> {
@@ -157,7 +161,9 @@ public class DetachedConfigurationsTest
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
-                    .click(SAVE);
+                    .sleep(3, SECONDS)
+                    .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611);
             })
             .sleep(5, SECONDS)
             .editConfiguration(pipelineProfile1611, profile -> {
@@ -561,7 +567,8 @@ public class DetachedConfigurationsTest
             .createConfiguration(configuration1611)
             .configurationWithin(configuration1611, configuration ->
                 configuration.selectPipeline(pipeline1, pipelineProfile1611)
-                    .click(SAVE)
+                        .ensure(estimatedPrice, visible)
+                        .click(SAVE)
                     .sleep(2, SECONDS)
             )
             .refresh()
@@ -583,11 +590,15 @@ public class DetachedConfigurationsTest
         library()
             .createConfiguration(runWithParametersConfiguration)
             .configurationWithin(runWithParametersConfiguration, configuration -> {
-                        configuration.selectPipeline(pipeline1)
+                        configuration
+                                .selectPipeline(pipeline1)
+                                .ensure(estimatedPrice, visible)
                                 .click(SAVE)
+                                .ensure(estimatedPrice, visible)
                                 .addProfile(secondConfigurationProfile)
-                                .sleep(10, SECONDS)
+                                .ensure(estimatedPrice, visible)
                                 .selectPipeline(pipeline1, pipelineCustomProfile)
+                                .sleep(5, SECONDS)
                                 .click(SAVE)
                                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .getParameterByIndex(parameterByName(stringParameterName).index())
@@ -601,7 +612,8 @@ public class DetachedConfigurationsTest
                                 .validateParameter(pathParameterName, pathParameterValue2)
                                 .ensure(PARAMETER_NAME, disabled);
                         configuration
-                                .click(SAVE);
+                                .click(SAVE)
+                                .ensureDisable(SAVE);
                     }
             );
     }

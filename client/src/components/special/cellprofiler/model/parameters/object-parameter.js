@@ -18,13 +18,19 @@ import {computed} from 'mobx';
 import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
+/**
+ * @param {AnalysisModule} cpModule
+ * @returns {*[]}
+ */
 function getObjectsForModule (cpModule) {
-  const idx = cpModule.analysis.modules.indexOf(cpModule);
-  return cpModule.analysis.modules.slice(0, idx)
-    .filter((cpModule) => !cpModule.hidden)
-    .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
-    .filter((output) => output.type === AnalysisTypes.object)
-    .map((output) => output.value);
+  if (cpModule) {
+    return cpModule.modulesBefore
+      .filter((cpModule) => !cpModule.hidden)
+      .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
+      .filter((output) => output.type === AnalysisTypes.object)
+      .map((output) => output.name);
+  }
+  return [];
 }
 
 class ObjectParameter extends ModuleParameter {
@@ -41,16 +47,30 @@ class ObjectParameter extends ModuleParameter {
 
   @computed
   get values () {
-    return getObjectsForModule(this.cpModule).map((object) => ({
-      value: object,
-      id: object,
-      key: object,
-      title: object
-    }));
+    return this.wrapValuesWithEmptyValue(
+      getObjectsForModule(this.cpModule)
+        .map((object) => ({
+          value: object,
+          id: object,
+          key: object,
+          title: object
+        })));
   }
 
   get defaultValue () {
+    let defaultValue;
+    if (typeof this._defaultValue === 'function') {
+      defaultValue = this._defaultValue(this.cpModule);
+    } else if (this._defaultValue !== undefined) {
+      defaultValue = this._defaultValue;
+    }
     const firstValue = this.values[0];
+    const predefinedValue = defaultValue
+      ? this.values.find(o => o.value === defaultValue)
+      : undefined;
+    if (predefinedValue) {
+      return predefinedValue.value;
+    }
     return firstValue ? firstValue.value : undefined;
   }
 }

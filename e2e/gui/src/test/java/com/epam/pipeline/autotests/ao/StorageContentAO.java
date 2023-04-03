@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -724,8 +724,6 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                 entry(NAME, $(byId("name"))),
                 entry(PATH, $(byId("edit-storage-storage-path-input"))),
                 entry(DESCRIPTION, $(byId("description"))),
-                entry(STS_DURATION, $(byId("shortTermStorageDuration"))),
-                entry(LTS_DURATION, $(byId("longTermStorageDuration"))),
                 entry(ENABLE_VERSIONING, $(withText("Enable versioning"))),
                 entry(MOUNT_POINT, $(byId("mountPoint"))),
                 entry(MOUNT_OPTIONS, $(byId("mountOptions"))),
@@ -753,11 +751,6 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
         public POPUP_AO setDescription(String description) {
             return setValue(DESCRIPTION, description);
-        }
-
-        public POPUP_AO setDurations(String stsDuration, String ltsDuration) {
-            return setValue(STS_DURATION, stsDuration)
-                    .setValue(LTS_DURATION, ltsDuration);
         }
 
         @SuppressWarnings("unchecked")
@@ -797,8 +790,6 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                     .ensure(DESCRIPTION, visible)
                     .performIf(C.CLOUD_PROVIDER.equalsIgnoreCase(Cloud.AWS.name())
                             || C.CLOUD_PROVIDER.equalsIgnoreCase(Cloud.GCP.name()), popup -> popup
-                            .ensure(STS_DURATION, visible)
-                            .ensure(LTS_DURATION, visible)
                             .ensure(ENABLE_VERSIONING, visible))
                     .ensure(MOUNT_POINT, visible)
                     .ensure(MOUNT_OPTIONS, visible)

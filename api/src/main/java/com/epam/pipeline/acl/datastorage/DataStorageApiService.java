@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
@@ -40,6 +41,8 @@ import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
@@ -49,7 +52,6 @@ import com.epam.pipeline.manager.datastorage.StorageEventsService;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
-import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
 import com.epam.pipeline.manager.security.acl.storage.StorageAclRead;
 import com.epam.pipeline.manager.security.acl.storage.StorageAclReadAndWrite;
 import com.epam.pipeline.manager.security.acl.storage.StorageAclReadOrWrite;
@@ -92,10 +94,7 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorages();
     }
 
-    @PostFilter("hasRole('ADMIN')"
-                + " OR @storagePermissionManager.storageWithSharePermission(filterObject, 'READ')"
-                + " OR @storagePermissionManager.storageWithSharePermission(filterObject, 'WRITE')")
-    @AclMaskDelegateList
+    //Workaround for performance: all permission logic is handled inside method
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }
@@ -128,16 +127,20 @@ public class DataStorageApiService {
         return dataStorageManager.loadAllByPath(identifier);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public DataStorageListing getDataStorageItems(final Long id, final String path,
-                                                  Boolean showVersion, Integer pageSize, String marker) {
-        return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker);
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public DataStorageListing getDataStorageItems(final Long id, final String path, final Boolean showVersion,
+                                                  final Integer pageSize, final String marker,
+                                                  final boolean showArchived) {
+        return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public DataStorageListing getDataStorageItemsOwner(Long id, String path,
-                                                       Boolean showVersion, Integer pageSize, String marker) {
-        return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker);
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public DataStorageListing getDataStorageItemsOwner(final Long id, final String path,
+                                                       final Boolean showVersion, final Integer pageSize,
+                                                       final String marker, final boolean showArchived) {
+        return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
@@ -223,7 +226,7 @@ public class DataStorageApiService {
         return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'WRITE')")
+    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'OWNER')")
     @AclMask
     public AbstractDataStorage update(DataStorageVO dataStorageVO) {
         return dataStorageManager.update(dataStorageVO);
@@ -235,7 +238,7 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('STORAGE_MANAGER') AND "
-            + "@storagePermissionManager.storagePermissionById(#id, 'WRITE'))")
+            + "@storagePermissionManager.storagePermissionById(#id, 'OWNER'))")
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
         return dataStorageManager.delete(id, proceedOnCloud);
     }
@@ -295,14 +298,19 @@ public class DataStorageApiService {
         return dataStorageManager.deleteDataStorageObjectTags(id, path, version, tags);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public AbstractDataStorageItem getDataStorageItemWithTags(Long id, String path, Boolean showVersion) {
-        return dataStorageManager.getDataStorageItemWithTags(id, path, showVersion);
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public AbstractDataStorageItem getDataStorageItemWithTags(final Long id, final String path,
+                                                              final Boolean showVersion, final boolean showArchived) {
+        return dataStorageManager.getDataStorageItemWithTags(id, path, showVersion, showArchived);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
-    public AbstractDataStorageItem getDataStorageItemOwnerWithTags(Long id, String path, Boolean showVersion) {
-        return dataStorageManager.getDataStorageItemWithTags(id, path, showVersion);
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public AbstractDataStorageItem getDataStorageItemOwnerWithTags(final Long id, final String path,
+                                                                   final Boolean showVersion,
+                                                                   final boolean showArchived) {
+        return dataStorageManager.getDataStorageItemWithTags(id, path, showVersion, showArchived);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
@@ -368,5 +376,21 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByName(#id, 'WRITE')")
     public void updateStorageUsage(final String id) {
         eventsService.ifPresent(s -> s.addReindexEvent(id));
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public DataStorageItemType getItemType(final Long id, final String path, final String version) {
+        return dataStorageManager.getItemType(id, path, version);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    public DataStorageItemType getItemTypeOwner(final Long id, final String path, final String version) {
+        return dataStorageManager.getItemType(id, path, version);
+    }
+
+    @PostFilter(AclExpressions.ADMIN_OR_GENERAL_USER)
+    public List<DataStorageTagSearchResult> searchDataStorageItemByTag(
+            final DataStorageObjectSearchByTagRequest request) {
+        return dataStorageManager.searchDataStorageItemByTag(request);
     }
 }

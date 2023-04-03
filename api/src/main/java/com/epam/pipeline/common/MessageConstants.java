@@ -36,6 +36,9 @@ public final class MessageConstants {
     public static final String ERROR_INVALID_PIPELINE_NAME = "error.pipeline.name.invalid";
     public static final String ERROR_INVALID_PIPELINE_REVISION_NAME = "error.pipeline.revision.name.invalid";
     public static final String ERROR_REPOSITORY_PATH_DOESNT_EXIST = "error.repository.path.doesnt.exist";
+    public static final String ERROR_REPOSITORY_SRC_NOT_FOUND = "error.repository.src.not.found";
+    public static final String ERROR_REPOSITORY_DOCS_NOT_FOUND = "error.repository.docs.not.found";
+    public static final String ERROR_ISSUE_PROJECT_NOT_SET = "error.issue.project.not.set";
 
     //Pipeline config
     public static final String ERROR_CONFIG_INVALID = "error.pipeline.config.invalid";
@@ -130,12 +133,21 @@ public final class MessageConstants {
     public static final String ERROR_INSTANCE_IMAGE_NOT_FOUND = "error.run.instance.image.not.found";
     public static final String ERROR_COMMIT_OPERATION_IS_FORBIDDEN = "error.run.commit.is.forbidden";
     public static final String ERROR_RUN_OPERATION_FORBIDDEN = "error.run.operation.forbidden";
+    public static final String ERROR_RUN_REGION_RELAUNCH_FORBIDDEN = "error.run.region.relaunch.forbidden";
+    public static final String ERROR_RUN_NEXT_REGION_NOT_FOUND = "error.run.next.region.not.found";
+    public static final String ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT = "error.run.parameters.cloud.dependent";
+    public static final String ERROR_RESTART_CLUSTER_FORBIDDEN = "error.restart.cluster.forbidden";
+    public static final String ERROR_RESTART_WORKER_FORBIDDEN = "error.restart.worker.forbidden";
+    public static final String ERROR_RESTART_RUN_FAILURE = "error.restart.run.failure";
+    public static final String INFO_RESTART_RUN_SUCCESS = "info.restart.run.success";
+    public static final String ERROR_RUN_START_FAILURE = "error.run.start.failure";
 
     //PipelineRun messages
     public static final String ERROR_WRONG_RUN_STATUS_UPDATE = "error.wrong.run.status.update";
     public static final String ERROR_RUN_PARAMETER_IS_REQUIRED = "error.run.parameter.required";
     public static final String ERROR_RUN_PIPELINES_NOT_FOUND = "error.run.pipelines.not.found";
     public static final String ERROR_RUN_PIPELINES_COMMIT_FAILED = "error.run.pipeline.commit.failed";
+    public static final String ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED = "error.container.layers.count.failed";
     public static final String ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND = "error.container.id.for.run.not.found";
     public static final String INFO_EXECUTE_COMMIT_RUN_PIPELINES = "info.execute.ssh.run.pipeline.command";
     public static final String ERROR_RUN_PIPELINES_PAUSE_FAILED = "error.run.pipeline.pause.failed";
@@ -166,6 +178,7 @@ public final class MessageConstants {
     public static final String ERROR_RUN_CLOUD_REGION_NOT_ALLOWED = "error.run.cloud.region.not.allowed";
     public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
+    public static final String WARN_INSTANCE_STOPPING = "warn.instance.stopping";
     public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
@@ -288,6 +301,69 @@ public final class MessageConstants {
 
     public static final String ERROR_DATASTORAGE_NFS_PATH_NOT_FOUND = "error.datastorage.nfs.path.not.found";
     public static final String ERROR_DATASTORAGE_CANNOT_CREATE_FILE = "error.datastorage.cannot.set.file.permission";
+
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND =
+            "error.datastorage.lifecycle.rule.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_DEFINE_DAYS_TO_PROLONG =
+            "error.datastorage.lifecycle.rule.cant.define.days.to.prolong";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG =
+            "error.datastorage.lifecycle.rule.wrong.days.to.prolong";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANT_BE_PROLONGED =
+        "error.datastorage.lifecycle.rule.cant.be.prolonged";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE =
+            "error.datastorage.lifecycle.rule.was.prolong.before";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.rule.datastorage.id.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.root.path.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_IS_NOT_ABSOLUTE =
+            "error.datastorage.lifecycle.path.is.not.absolute";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.transitions.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS =
+            "error.datastorage.lifecycle.wrong.notify.before.days";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.transition.method.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ALREADY_EXISTS =
+            "error.datastorage.lifecycle.rule.already.exists";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE =
+            "error.datastorage.lifecycle.rule.assigned.to.another.datastorage";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ID_IS_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.rule.id.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB =
+            "error.datastorage.lifecycle.rule.path.doesnt.match.glob";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.path.not.provided";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_FOUND =
+            "error.datastorage.lifecycle.rule.execution.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_MATCH =
+            "error.datastorage.lifecycle.rule.execution.not.match";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_PARSE_NOTIFICATION =
+            "error.datastorage.lifecycle.rule.cant.parse.notification";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ENABLE_FLAG_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.provide.enable.flag";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.transition.criterion.value.is.not.provided";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_WRONG_CRITERION =
+            "error.datastorage.lifecycle.rule.one.by.one.has.default.criterion";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_NOTIFICATION_ENABLED =
+            "error.datastorage.lifecycle.rule.one.by.one.notification.enabled";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED =
+            "error.datastorage.lifecycle.restore.path.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE =
+            "error.datastorage.lifecycle.restore.cannot.be.done";
+    public static final String DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE =
+            "debug.datastorage.lifecycle.existing.restore";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED =
+            "error.datastorage.lifecycle.path.already.restored";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_CANNOT_FIND_RESTORE =
+            "error.datastorage.lifecycle.restore.action.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_IN_FINAL_STATUS =
+            "error.datastorage.lifecycle.restore.in.final.status";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_NOTIFICATION_CONFIGURED_INCORRECTLY =
+            "error.datastorage.lifecycle.restore.rule.cant.parse.notification";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOTIFICATION_RECIPIENTS_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.notification.recipients.not.provided";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";
@@ -515,8 +591,12 @@ public final class MessageConstants {
     public static final String ERROR_REGION_CREDENTIALS_NOT_FOUND = "error.region.credentials.not.found";
     public static final String ERROR_REGION_DEFAULT_UNDEFINED = "error.region.default.undefined";
     public static final String ERROR_REGION_NAME_MISSING = "error.region.name.missing";
-    public static final String ERROR_REGION_MOUNT_RULE_MISSING = "error.region.mount.rule.missing";
-    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING = "error.region.mont.credentials.missing";
+    public static final String ERROR_REGION_MOUNT_OBJECT_STORAGE_RULE_MISSING =
+            "error.region.mount.object.storage.rule.missing";
+    public static final String ERROR_REGION_MOUNT_FILE_STORAGE_RULE_MISSING =
+            "error.region.mount.file.storage.rule.missing";
+    public static final String ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING =
+            "error.region.mount.credentials.rule.missing";
     public static final String ERROR_REGION_PROVIDER_MISMATCH = "error.region.provider.mismatch";
     public static final String ERROR_REGION_REGIONID_MISSING = "error.region.regionid.missing";
     public static final String ERROR_REGION_REGIONID_INVALID = "error.region.regionid.invalid";
@@ -618,6 +698,7 @@ public final class MessageConstants {
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
     public static final String ERROR_LUSTRE_MISSING_INSTANCE = "error.lustre.missing.instance";
     public static final String ERROR_LUSTRE_MISSING_NETWORK = "error.lustre.missing.network";
+    public static final String ERROR_LUSTRE_MISSING_THROUGHPUT = "error.lustre.missing.throughput";
 
     //Node Schedule
     public static final String ERROR_NODE_SCHEDULE_MISSING_ENTRIES = "error.node.schedule.missing.entries";
@@ -740,6 +821,11 @@ public final class MessageConstants {
 
     // Launch limits
     public static final String ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED = "error.run.launch.user.limit.exceeded";
+    public static final String ERROR_RUN_ASSIGN_POLICY_MALFORMED = "error.run.assign.policy.malformed";
+    public static final String ERROR_RUN_ASSIGN_POLICY_FORBIDDEN = "error.run.assign.policy.forbidden";
+    public static final String ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN = "error.run.with.service.account.forbidden";
+
+
 
     // Ngs preprocessing
     public static final String ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED =
@@ -762,6 +848,11 @@ public final class MessageConstants {
             "error.ngs.preprocessing.no.folder.metadata";
     public static final String ERROR_NGS_PREPROCESSING_SAMPLE_ID_NOT_FOUND =
             "error.ngs.preprocessing.sampleid.is.not.found";
+
+    // Static resource
+    public static final String ERROR_STATIC_RESOURCES_INVALID_PATH = "error.static.resources.invalid.path";
+    public static final String ERROR_STATIC_RESOURCES_FOLDER_PATH = "error.static.resources.folder.path";
+
 
     private MessageConstants() {
         // no-op

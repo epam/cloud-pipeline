@@ -97,5 +97,14 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteQuotaTriggerQuery">
+            <value>
+                <![CDATA[
+                    DELETE
+                    FROM pipeline.last_triggered_storage_quota
+                    WHERE storage_id = ?
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

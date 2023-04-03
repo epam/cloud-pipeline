@@ -27,20 +27,12 @@
   right: 0;
   top: 0;
   text-align: justify;
-  transition: all 250ms ease;
-}
-
-.notification {
-
+  transition: all 450ms ease-in-out;
 }
 
 .title {
   font-weight: bold;
   font-size: larger;
-}
-
-.body {
-
 }
 
 .icon-column {

@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.entity.utils;
 
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -41,5 +43,14 @@ public final class DateUtils {
 
     public static LocalDateTime toLocalDateTime(final Date date) {
         return date.toInstant().atZone(ZoneId.of("Z")).toLocalDateTime();
+    }
+
+    public static LocalDateTime parse(final DateFormat format, final String dateString) {
+        try {
+            return toLocalDateTime(format.parse(dateString));
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(
+                    String.format("Filed to parse date: %s with format: %s", dateString, format), e);
+        }
     }
 }

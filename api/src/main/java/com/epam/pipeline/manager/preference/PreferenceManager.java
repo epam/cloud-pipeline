@@ -132,7 +132,8 @@ public class PreferenceManager {
      * @return a List of Preference
      */
     public Collection<Preference> loadVisible() {
-        return preferenceDao.loadVisiblePreferences();
+        final Collection<Preference> preferences = loadAll();
+        return preferences.stream().filter(Preference::isVisible).collect(Collectors.toList());
     }
 
     /**

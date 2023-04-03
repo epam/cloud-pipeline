@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,10 @@ import {
 import classNames from 'classnames';
 
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';
+import KubeLabels, {
+  kubeLabelsHasChanges,
+  prepareKubeLabelsPayload
+} from '../elements/KubeLabels';
 import CodeEditor from '../../special/CodeEditor';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import EditToolFormParameters from './EditToolFormParameters';
@@ -73,6 +77,7 @@ import {
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
   RUN_CAPABILITIES,
+  RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
   applyCapabilities,
   checkRunCapabilitiesModified,
@@ -86,6 +91,13 @@ import {
   getSkippedParameters as getGPUScalingSkippedParameters,
   readGPUScalingPreference
 } from '../../pipelines/launch/form/utilities/enable-gpu-scaling';
+import JobNotifications from '../../pipelines/launch/dialogs/job-notifications';
+import {
+  notificationArraysAreEqual
+} from '../../pipelines/launch/dialogs/job-notifications/notifications-equal';
+import {
+  mapObservableNotification
+} from '../../pipelines/launch/dialogs/job-notifications/job-notification';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -148,6 +160,11 @@ export default class EditToolForm extends React.Component {
 
   state = {
     labels: [],
+    kubeLabels: [],
+    initialKubeLabels: [],
+    notifications: [],
+    initialNotifications: [],
+    kubeLabelsHasErrors: false,
     labelInputVisible: false,
     labelInputValue: '',
     endpointInputVisible: false,
@@ -217,6 +234,13 @@ export default class EditToolForm extends React.Component {
 
   saveLabelInputRef = input => {
     this.input = input;
+  };
+
+  onKubeLabelsChange = (labels = [], errors = {}) => {
+    this.setState({
+      kubeLabels: labels,
+      kubeLabelsHasErrors: Object.keys(errors).length > 0
+    });
   };
 
   handleSubmit = (e) => {
@@ -308,7 +332,7 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          applyCapabilities(
+          parameters = applyCapabilities(
             parameters,
             this.state.runCapabilities,
             this.props.preferences,
@@ -342,7 +366,9 @@ export default class EditToolForm extends React.Component {
           instance_disk: values.disk,
           instance_size: values.instanceType,
           instance_image: values.instanceImage,
-          is_spot: `${values.is_spot}` === 'true'
+          is_spot: `${values.is_spot}` === 'true',
+          kubeLabels: prepareKubeLabelsPayload(this.state.kubeLabels),
+          notifications: this.state.notifications
         };
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
@@ -400,6 +426,15 @@ export default class EditToolForm extends React.Component {
       return provider;
     }
     return null;
+  };
+
+  getCloudRegion = () => {
+    const instanceType = this.getInstanceTypeValue();
+    if (this.props.awsRegions.loaded) {
+      return this.awsRegions
+        .find(a => (instanceType && a.id === instanceType.regionId) || !instanceType);
+    }
+    return undefined;
   };
 
   getPriceTypeInitialValue = () => {
@@ -501,6 +536,15 @@ export default class EditToolForm extends React.Component {
         const gpuScalingParameters = state.gpuScalingConfiguration
           ? getGPUScalingSkippedParameters(this.props.preferences)
           : [];
+        const kubeLabels = Object
+          .entries((this.props.configuration || {}).kubeLabels || {})
+          .map(([key, value]) => ({key, value}));
+        state.kubeLabels = kubeLabels;
+        state.initialKubeLabels = kubeLabels;
+        state.notifications = props.configuration
+          ? (props.configuration.notifications || []).map(mapObservableNotification)
+          : [];
+        state.initialNotifications = (state.notifications || []).map(mapObservableNotification);
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
@@ -847,7 +891,12 @@ export default class EditToolForm extends React.Component {
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
+      kubeLabelsHasChanges(
+        this.state.initialKubeLabels,
+        this.state.kubeLabels
+      ) ||
+      !notificationArraysAreEqual(this.state.notifications, this.state.initialNotifications);
   };
 
   initializeEndpointsControl = (control) => {
@@ -1238,6 +1287,26 @@ export default class EditToolForm extends React.Component {
                   <Input disabled={this.state.pending || this.props.readOnly} />
                 )}
               </Form.Item>
+              <Row style={{marginBottom: 10, marginTop: 10}}>
+                <Col
+                  xs={24}
+                  sm={6}
+                  style={{paddingRight: 10}}
+                  className={classNames(
+                    'cp-accent',
+                    styles.toolSettingsTitle
+                  )}
+                >
+                  Notifications:
+                </Col>
+                <Col xs={24} sm={12}>
+                  <JobNotifications
+                    value={this.state.notifications}
+                    onChange={o => this.setState({notifications: o})}
+                    linkStyle={{margin: 0}}
+                  />
+                </Col>
+              </Row>
               {
                 !this.isWindowsPlatform && (
                   <Form.Item
@@ -1314,6 +1383,27 @@ export default class EditToolForm extends React.Component {
                     )}
                   </Form.Item>
                 )
+              }
+              {
+                <Row style={{marginBottom: 10, marginTop: 10}}>
+                  <Col
+                    xs={24}
+                    sm={6}
+                    style={{paddingRight: 10}}
+                    className={classNames(
+                      'cp-accent',
+                      styles.toolSettingsTitle
+                    )}
+                  >
+                    Runtime labels:
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <KubeLabels
+                      labels={this.state.kubeLabels}
+                      onChange={this.onKubeLabelsChange}
+                    />
+                  </Col>
+                </Row>
               }
               {
                 !this.isWindowsPlatform && (
@@ -1422,12 +1512,15 @@ export default class EditToolForm extends React.Component {
                       platform={this.props.platform}
                       dockerImageOS={this.props.dockerOSVersion}
                       provider={this.getCloudProvider()}
+                      region={this.getCloudRegion()}
+                      mode={RUN_CAPABILITIES_MODE.edit}
                     />
                   </Form.Item>
                 )
               }
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
+                instanceTypes={this.allowedInstanceTypes}
                 launchCluster={this.state.launchCluster}
                 cloudRegionProvider={this.getCloudProvider()}
                 autoScaledPriceType={this.state.autoScaledPriceType}
@@ -1594,7 +1687,8 @@ export default class EditToolForm extends React.Component {
                   this.props.readOnly ||
                   !this.modified() ||
                   (this.toolFormSystemParameters && !this.toolFormSystemParameters.isValid) ||
-                  (this.toolFormParameters && !this.toolFormParameters.isValid)
+                  (this.toolFormParameters && !this.toolFormParameters.isValid) ||
+                  this.state.kubeLabelsHasErrors
                 }>
                 SAVE
               </Button>

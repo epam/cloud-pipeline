@@ -1,0 +1,63 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-gitlab-db
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-gitlab-db: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-gitlab-db: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-gitlab-db
+          image: postgres:${GITLAB_DATABASE_VERSION}
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - --shared_buffers=${GITLAB_DATABASE_SHARED_BUFFERS}
+            - --max_connections=${GITLAB_DATABASE_MAX_CONNECTIONS}
+          ports:
+            - containerPort: ${PSG_PORT}
+          env:
+            - name: POSTGRES_DB
+              value: "postgres"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: PGDATA
+              value: /var/lib/postgresql/data
+            - name: DB_EXTENSION
+              value: pg_trgm
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: gitlab-pgdata
+            - mountPath: /dev/shm
+              name: gitlab-dshm
+          readinessProbe:
+            tcpSocket:
+              port: ${PSG_PORT}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: ${PSG_PORT}
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 4
+      volumes:
+        - name: gitlab-pgdata
+          hostPath:
+            path: /opt/gitlab-postgresql/data
+        - name: gitlab-dshm
+          emptyDir:
+            medium: Memory
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

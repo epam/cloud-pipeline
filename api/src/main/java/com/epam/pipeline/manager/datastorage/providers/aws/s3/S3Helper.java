@@ -83,6 +83,11 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.exception.ObjectNotFoundException;
+import com.epam.pipeline.entity.datastorage.access.DataAccessEventType;
+import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
 import com.google.common.primitives.SignedBytes;
@@ -110,6 +115,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
@@ -137,7 +143,10 @@ public class S3Helper {
     private static final CannedAccessControlList DEFAULT_CANNED_ACL = CannedAccessControlList.BucketOwnerFullControl;
     private static final String FOLDER_GLOB_SUFFIX = "/**";
     private static final String EMPTY_STRING = "";
+    public static final String STANDARD_STORAGE_CLASS = "STANDARD";
+    public static final String STORAGE_CLASS = "StorageClass";
 
+    private final StorageEventCollector events;
     private final MessageHelper messageHelper;
 
     public AmazonS3 getDefaultS3Client() {
@@ -322,8 +331,10 @@ public class S3Helper {
     }
 
     private void moveS3Objects(final AmazonS3 client, final String bucket, final List<MoveObjectRequest> moveRequests) {
-        try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, bucket)) {
+        try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, events, bucket)) {
             moveRequests.forEach(moveRequest -> {
+                events.put(new DataAccessEvent(bucket, moveRequest.getSourcePath(), DataAccessEventType.READ),
+                        new DataAccessEvent(bucket, moveRequest.getDestinationPath(), DataAccessEventType.WRITE));
                 client.copyObject(moveRequest.toCopyRequest(bucket));
                 deleter.deleteKey(moveRequest.getSourcePath(), moveRequest.getVersion());
             });
@@ -339,7 +350,8 @@ public class S3Helper {
 
     public DataStorageListing getItems(final String bucket, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker, final String prefix,
-                                       final Set<String> masks) {
+                                       final Set<String> masks,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
         String requestPath = Optional.ofNullable(path).orElse(EMPTY_STRING);
         AmazonS3 client = getDefaultS3Client();
         if (!StringUtils.isNullOrEmpty(requestPath)) {
@@ -348,9 +360,9 @@ public class S3Helper {
                 requestPath += ProviderUtils.DELIMITER;
             }
         }
-        DataStorageListing result = showVersion ?
-                listVersions(client, bucket, requestPath, pageSize, marker, prefix, masks) :
-                listFiles(client, bucket, requestPath, pageSize, marker, prefix, masks);
+        DataStorageListing result = showVersion
+                ? listVersions(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing)
+                : listFiles(client, bucket, requestPath, pageSize, marker, prefix, masks, restoredListing);
         result.getResults().sort(AbstractDataStorageItem.getStorageItemComparator());
         return result;
     }
@@ -384,7 +396,7 @@ public class S3Helper {
             file.setVersion(metadata.getVersionId());
             final Map<String, String> labels = new HashMap<>();
             if (metadata.getStorageClass() != null) {
-                labels.put("StorageClass", metadata.getStorageClass());
+                labels.put(STORAGE_CLASS, metadata.getStorageClass());
             }
             file.setLabels(labels);
             return Optional.of(file);
@@ -451,6 +463,7 @@ public class S3Helper {
 
     private DataStorageFile putFileToBucket(String bucket, String path, AmazonS3 client,
                                             InputStream dataStream, String owner) {
+        events.put(new DataAccessEvent(bucket, path, DataAccessEventType.WRITE));
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setLastModified(new Date());
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, path, dataStream, objectMetadata);
@@ -476,13 +489,13 @@ public class S3Helper {
                 || !isFolder && hasExactMatch(listing.getObjectSummaries(), listing.getCommonPrefixes(), path);
     }
 
-    private void deleteAllInBucketObjects(String bucket, AmazonS3 s3client) {
-        try(S3ObjectDeleter deleter = new S3ObjectDeleter(s3client, bucket)) {
+    private void deleteAllInBucketObjects(String bucket, AmazonS3 client) {
+        try(S3ObjectDeleter deleter = new S3ObjectDeleter(client, events, bucket)) {
             ObjectListing listing;
             ListObjectsRequest request = new ListObjectsRequest();
             request.setBucketName(bucket);
             do {
-                listing = s3client.listObjects(request);
+                listing = client.listObjects(request);
                 for (S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
                     deleter.deleteKey(s3ObjectSummary.getKey());
                 }
@@ -533,7 +546,7 @@ public class S3Helper {
             if (!StringUtils.hasValue(version) && totally) {
                 deleteAllVersions(client, bucket, path);
             } else {
-                try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, bucket)) {
+                try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, events, bucket)) {
                     deleter.deleteKey(path, version);
                 }
             }
@@ -558,7 +571,7 @@ public class S3Helper {
         } else {
             //indicates that only DUMMY file is present in a folder and thus it should be deleted completely
             boolean noFiles = true;
-            try(S3ObjectDeleter deleter = new S3ObjectDeleter(client, bucket)) {
+            try(S3ObjectDeleter deleter = new S3ObjectDeleter(client, events, bucket)) {
                 ListObjectsRequest request = new ListObjectsRequest();
                 request.setBucketName(bucket);
                 request.setPrefix(path);
@@ -584,7 +597,7 @@ public class S3Helper {
     }
 
     private void deleteAllVersions(AmazonS3 client, String bucket, String path) {
-        try(S3ObjectDeleter s3ObjectDeleter = new S3ObjectDeleter(client, bucket)) {
+        try(S3ObjectDeleter s3ObjectDeleter = new S3ObjectDeleter(client, events, bucket)) {
             ListVersionsRequest request = new ListVersionsRequest().withBucketName(bucket);
             if (path != null) {
                 request = request.withPrefix(path);
@@ -629,7 +642,7 @@ public class S3Helper {
         return client.getObjectMetadata(request).getContentLength() > COPYING_FILE_SIZE_LIMIT;
     }
 
-    public DataStorageFolder moveFolder(String bucket, String rawOldPath, String rawNewPath)
+    public DataStorageFolder moveFolder(final String bucket, final String rawOldPath, final String rawNewPath)
             throws DataStorageException {
         if (StringUtils.isNullOrEmpty(rawOldPath) || StringUtils.isNullOrEmpty(rawNewPath)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
@@ -637,27 +650,32 @@ public class S3Helper {
         final String oldPath = ProviderUtils.withTrailingDelimiter(rawOldPath);
         final String newPath = ProviderUtils.withTrailingDelimiter(rawNewPath);
         final String folderFullPath = newPath.substring(0, newPath.length() - 1);
-        String[] parts = newPath.split(ProviderUtils.DELIMITER);
+        final String[] parts = newPath.split(ProviderUtils.DELIMITER);
         final String folderName = parts[parts.length - 1];
-        AmazonS3 client = getDefaultS3Client();
+        final AmazonS3 client = getDefaultS3Client();
         checkItemExists(client, bucket, oldPath, true);
         checkItemDoesNotExist(client, bucket, newPath, true);
-        ListObjectsRequest req = new ListObjectsRequest();
-        req.setBucketName(bucket);
+        final ListObjectsRequest req = new ListObjectsRequest()
+                .withBucketName(bucket)
+                .withPrefix(oldPath);
         ObjectListing listing = client.listObjects(req);
         boolean listingFinished = false;
-        List<String> oldKeys = new ArrayList<>();
+        final List<String> oldKeys = new ArrayList<>();
         while (!listingFinished) {
-            for (S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
+            for (final S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
+                final String objectPath = s3ObjectSummary.getKey();
                 if (s3ObjectSummary.getSize() > COPYING_FILE_SIZE_LIMIT) {
                     throw new DataStorageException(String.format("Moving folder '%s' was aborted because " +
                                     "some of its files '%s' size exceeds the limit of %s bytes",
-                            oldPath, s3ObjectSummary.getKey(), COPYING_FILE_SIZE_LIMIT));
+                            oldPath, objectPath, COPYING_FILE_SIZE_LIMIT));
                 }
-                String relativePath = s3ObjectSummary.getKey();
-                if (relativePath.startsWith(oldPath)) {
-                    oldKeys.add(relativePath);
+                final String itemStorageClass = s3ObjectSummary.getStorageClass();
+                if(!STANDARD_STORAGE_CLASS.equals(itemStorageClass)) {
+                    throw new DataStorageException(String.format("Moving folder '%s' was aborted because " +
+                                    "some of its files '%s' located in %s storage class",
+                            oldPath, objectPath, itemStorageClass));
                 }
+                oldKeys.add(objectPath);
             }
             if (listing.isTruncated()) {
                 listing = client.listNextBatchOfObjects(listing);
@@ -669,7 +687,7 @@ public class S3Helper {
                 .map(oldKey -> new MoveObjectRequest(oldKey, newPath + oldKey.substring(oldPath.length())))
                 .collect(Collectors.toList());
         moveS3Objects(client, bucket, moveRequests);
-        DataStorageFolder folder = new DataStorageFolder();
+        final DataStorageFolder folder = new DataStorageFolder();
         folder.setName(folderName);
         folder.setPath(folderFullPath);
         return folder;
@@ -733,6 +751,9 @@ public class S3Helper {
                 .withId(name)
                 .withFilter(new LifecycleFilter(new LifecyclePrefixPredicate(EMPTY_STRING)))
                 .withNoncurrentVersionExpirationInDays(duration)
+                .withExpiredObjectDeleteMarker(true)
+                .withAbortIncompleteMultipartUpload(
+                        new AbortIncompleteMultipartUpload().withDaysAfterInitiation(duration))
                 .withStatus(BucketLifecycleConfiguration.ENABLED);
     }
 
@@ -754,7 +775,8 @@ public class S3Helper {
 
     private DataStorageListing listFiles(final AmazonS3 client, final String bucket, final String requestPath,
                                          final Integer pageSize, final String marker, final String prefix,
-                                         final Set<String> masks) {
+                                         final Set<String> masks,
+                                         final DataStorageLifecycleRestoredListingContainer restoredListing) {
         ListObjectsV2Request req = new ListObjectsV2Request();
         req.setBucketName(bucket);
         req.setPrefix(requestPath);
@@ -804,8 +826,8 @@ public class S3Helper {
                         AbstractS3ObjectWrapper.getWrapper(s3ObjectSummary)
                                 .convertToStorageFile(requestPath, prefix);
                 if (file != null) {
+                    final String fileName = requestPath + file.getName();
                     if (maskingEnabled) {
-                        final String fileName = requestPath + file.getName();
                         if (compareStrings(fileName, latestMarker) > 0) {
                             listing.setTruncated(false);
                             break;
@@ -814,11 +836,17 @@ public class S3Helper {
                             continue;
                         }
                     }
+                    if (filterNotRestored(file, fileName, restoredListing)) {
+                        continue;
+                    }
                     previous = getPreviousKey(previous, s3ObjectSummary.getKey());
                     items.add(file);
                 }
             }
             req.setContinuationToken(listing.getNextContinuationToken());
+            if (pageSize != null) {
+                req.setMaxKeys(pageSize - items.size());
+            }
         } while(listing.isTruncated() && (pageSize == null || items.size() < pageSize));
         String returnToken = listing.isTruncated() ? previous : null;
         return new DataStorageListing(returnToken, items);
@@ -845,7 +873,8 @@ public class S3Helper {
 
     private DataStorageListing listVersions(final AmazonS3 client, final String bucket, final String requestPath,
                                             final Integer pageSize, final String marker, final String prefix,
-                                            final Set<String> masks) {
+                                            final Set<String> masks,
+                                            final DataStorageLifecycleRestoredListingContainer restoredListing) {
         ListVersionsRequest request = new ListVersionsRequest()
                 .withBucketName(bucket).withPrefix(requestPath).withDelimiter(ProviderUtils.DELIMITER);
         if (StringUtils.hasValue(marker)) {
@@ -900,6 +929,9 @@ public class S3Helper {
                 DataStorageFile file =
                         AbstractS3ObjectWrapper.getWrapper(versionSummary).convertToStorageFile(requestPath, prefix);
                 if (file == null) {
+                    continue;
+                }
+                if (filterNotRestored(file, file.getPath(), restoredListing)) {
                     continue;
                 }
                 final String fileName = file.getName();
@@ -1017,6 +1049,7 @@ public class S3Helper {
             AmazonS3 client = getDefaultS3Client();
             GetObjectRequest rangeObjectRequest =
                     new GetObjectRequest(dataStorage.getRoot(), path, version).withRange(0, maxDownloadSize - 1);
+            events.put(new DataAccessEvent(dataStorage.getRoot(), path, DataAccessEventType.READ));
             S3Object objectPortion = client.getObject(rangeObjectRequest);
             return downloadContent(maxDownloadSize, objectPortion);
         } catch (AmazonS3Exception e) {
@@ -1040,6 +1073,7 @@ public class S3Helper {
             AmazonS3 client = getDefaultS3Client();
             GetObjectRequest rangeObjectRequest =
                 new GetObjectRequest(dataStorage.getRoot(), path, version);
+            events.put(new DataAccessEvent(dataStorage.getRoot(), path, DataAccessEventType.READ));
             S3Object object = client.getObject(rangeObjectRequest);
             return new DataStorageStreamingContent(object.getObjectContent(), object.getKey());
         } catch (AmazonS3Exception e) {
@@ -1106,7 +1140,7 @@ public class S3Helper {
         } else if (!listing.getObjectSummaries().isEmpty()) {
             return DataStorageItemType.File;
         } else {
-            throw new IllegalArgumentException(messageHelper
+            throw new ObjectNotFoundException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket));
         }
     }
@@ -1123,7 +1157,7 @@ public class S3Helper {
         } else if (!listing.getVersionSummaries().isEmpty()) {
             return DataStorageItemType.File;
         } else {
-            throw new IllegalArgumentException(messageHelper
+            throw new ObjectNotFoundException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket));
         }
     }
@@ -1210,6 +1244,12 @@ public class S3Helper {
         }
     }
 
+    public DataStorageItemType getItemType(final String bucket,
+                                           final String path,
+                                           final String version) {
+        return checkItemType(getDefaultS3Client(), bucket, path, StringUtils.hasValue(version));
+    }
+
     private static void validatePathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
         final Set<String> linkingMasks = dataStorage.getLinkingMasks();
         if (CollectionUtils.isNotEmpty(linkingMasks)) {
@@ -1278,5 +1318,15 @@ public class S3Helper {
     private int compareStrings(final String s1, final String s2) {
         return SignedBytes.lexicographicalComparator()
                 .compare(s1.getBytes(Charsets.UTF_8), s2.getBytes(Charsets.UTF_8));
+    }
+
+    private boolean filterNotRestored(final DataStorageFile file, final String fileName,
+                                      final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        return Objects.nonNull(restoredListing) && isArchived(file) && !restoredListing.containsPath(fileName);
+    }
+
+    private boolean isArchived(final DataStorageFile item) {
+        final String storageClass = MapUtils.emptyIfNull(item.getLabels()).get(STORAGE_CLASS);
+        return !StringUtils.isNullOrEmpty(storageClass) && !STANDARD_STORAGE_CLASS.equals(storageClass);
     }
 }

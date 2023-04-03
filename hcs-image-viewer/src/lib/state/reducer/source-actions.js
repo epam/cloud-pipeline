@@ -84,7 +84,7 @@ export function setImage(state, action) {
     mesh,
     overlayImages = [],
   } = action;
-  const { metadata = [] } = state;
+  const { metadata = [], imageIndex: currentImageIndex } = state;
   let metadataItem;
   if (index !== undefined && index !== null) {
     metadataItem = metadata[index];
@@ -102,7 +102,7 @@ export function setImage(state, action) {
     return {
       ...state,
       imageIndex,
-      imagePending: true,
+      imagePending: currentImageIndex !== imageIndex,
       imageTimePosition,
       imageZPosition,
       mesh,
@@ -123,8 +123,11 @@ export function setOverlayImages(state, action) {
 }
 
 export function setImageViewportLoaded(state) {
-  return {
-    ...state,
-    imagePending: false,
-  };
+  if (state.imagePending) {
+    return {
+      ...state,
+      imagePending: false,
+    };
+  }
+  return state;
 }

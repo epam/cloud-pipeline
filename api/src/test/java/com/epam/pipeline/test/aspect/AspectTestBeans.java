@@ -60,6 +60,7 @@ import com.epam.pipeline.dao.pipeline.RunStatusDao;
 import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolGroupDao;
 import com.epam.pipeline.dao.tool.ToolVersionDao;
@@ -67,10 +68,15 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.ldap.LdapTemplateProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
@@ -100,12 +106,14 @@ import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.cluster.pool.NodePoolUsageRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
+import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.OnlineUsersRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
@@ -376,6 +384,12 @@ public class AspectTestBeans {
     protected OntologyRepository mockOntologyRepository;
 
     @MockBean
+    protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
+
+    @MockBean
+    protected DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
+
+    @MockBean
     protected PreferenceDao mockPreferenceDao;
 
     @MockBean
@@ -385,7 +399,7 @@ public class AspectTestBeans {
     protected UserRunnersManager mockUserRunnersManager;
 
     @MockBean
-    protected PipelineRunServiceUrlRepository mockPipelineRunServiceUrlRepository;
+    protected RunServiceUrlDao mockRunServiceUrlDao;
 
     @MockBean
     protected ContextualNotificationManager contextualNotificationManager;
@@ -399,11 +413,29 @@ public class AspectTestBeans {
     @MockBean
     protected CacheManager cacheManager;
 
+    @MockBean(name = "aclCacheManager")
+    protected CacheManager aclCacheManager;
+
     @MockBean
     protected NatGatewayDao natGatewayDao;
 
     @MockBean
     protected LdapTemplateProvider ldapTemplateProvider;
+
+    @MockBean
+    protected BillingManager billingManager;
+
+    @MockBean(name = "pipelineBillingDetailsLoader")
+    protected EntityBillingDetailsLoader pipelineBillingDetailsLoader;
+
+    @MockBean(name = "toolBillingDetailsLoader")
+    protected EntityBillingDetailsLoader toolBillingDetailsLoader;
+
+    @MockBean(name = "storageBillingDetailsLoader")
+    protected EntityBillingDetailsLoader storageBillingDetailsLoader;
+
+    @MockBean(name = "userBillingDetailsLoader")
+    protected EntityBillingDetailsLoader userBillingDetailsLoader;
 
     @MockBean
     protected QuotaRepository quotaRepository;
@@ -437,4 +469,16 @@ public class AspectTestBeans {
 
     @MockBean
     protected BitbucketMapper bitbucketMapper;
+
+    @MockBean
+    protected DataStorageLifecycleManager storageLifecycleManager;
+
+    @MockBean
+    protected DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
+
+    @MockBean
+    protected UserNotificationRepository userNotificationRepository;
+
+    @MockBean
+    protected StorageEventCollector events;
 }

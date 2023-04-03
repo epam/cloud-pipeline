@@ -25,6 +25,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.BaseMatcher;
@@ -56,10 +57,14 @@ public class S3HelperTest {
     private static final String NO_VERSION = null;
     private static final long EXCEEDED_OBJECT_SIZE = Long.MAX_VALUE;
     private static final String SIZE_EXCEEDS_EXCEPTION_MESSAGE = "size exceeds the limit";
+    private static final String ARCHIVE_STORAGE_EXCEPTION_MESSAGE = "storage class";
+    public static final String DEEP_ARCHIVE = "DEEP_ARCHIVE";
+
 
     private final AmazonS3 amazonS3 = mock(AmazonS3.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final S3Helper helper = spy(new S3Helper(messageHelper));
+    private final StorageEventCollector events = mock(StorageEventCollector.class);
+    private final S3Helper helper = spy(new S3Helper(events, messageHelper));
 
     @Before
     public void setUp() {
@@ -103,7 +108,7 @@ public class S3HelperTest {
                                                       "8.10.249.0/24", "77.75.64.0/23", "77.75.66.0/23",
                                                       "193.202.91.0/24");
 
-        S3Helper helper = new S3Helper(messageHelper);
+        S3Helper helper = new S3Helper(events, messageHelper);
         ObjectMapper objectMapper = new ObjectMapper();
 
         String populatedPolicyString = helper.populateBucketPolicy("testBucket", policyStr, testAllowedCidrs, true);
@@ -192,6 +197,26 @@ public class S3HelperTest {
     }
 
     @Test
+    public void testMoveFolderShouldThrowIfAtLeastOneOfItsFilesLocatedInArchiveTier() {
+        final ObjectListing sourceListing = new ObjectListing();
+        sourceListing.setCommonPrefixes(Collections.singletonList(OLD_PATH));
+        final ObjectListing destinationListing = new ObjectListing();
+        destinationListing.setCommonPrefixes(Collections.emptyList());
+        final ObjectListing bucketListing = spy(new ObjectListing());
+        final S3ObjectSummary fileSummary = new S3ObjectSummary();
+        fileSummary.setKey(OLD_PATH + "/fileFromDeepArchive");
+        fileSummary.setStorageClass(DEEP_ARCHIVE);
+        when(bucketListing.getObjectSummaries()).thenReturn(Collections.singletonList(fileSummary));
+        when(amazonS3.listObjects(any(ListObjectsRequest.class)))
+                .thenReturn(sourceListing, destinationListing, bucketListing);
+
+        assertThrows(
+            e -> e instanceof DataStorageException && e.getMessage().contains(ARCHIVE_STORAGE_EXCEPTION_MESSAGE),
+            () -> helper.moveFolder(BUCKET, OLD_PATH, NEW_PATH)
+        );
+    }
+
+    @Test
     public void testMoveFolderShouldCopyAndDeleteAllOfItsFiles() {
         final String firstFileOldPath = OLD_PATH + "/firstFile";
         final String firstFileNewPath = NEW_PATH + "/firstFile";
@@ -204,8 +229,10 @@ public class S3HelperTest {
         final ObjectListing bucketListing = spy(new ObjectListing());
         final S3ObjectSummary firstFileSummary = new S3ObjectSummary();
         firstFileSummary.setKey(firstFileOldPath);
+        firstFileSummary.setStorageClass(S3Helper.STANDARD_STORAGE_CLASS);
         final S3ObjectSummary secondFileSummary = new S3ObjectSummary();
         secondFileSummary.setKey(secondFileOldPath);
+        secondFileSummary.setStorageClass(S3Helper.STANDARD_STORAGE_CLASS);
         when(bucketListing.getObjectSummaries()).thenReturn(Arrays.asList(firstFileSummary, secondFileSummary));
         when(amazonS3.listObjects(any(ListObjectsRequest.class)))
                 .thenReturn(sourceListing, destinationListing, bucketListing);

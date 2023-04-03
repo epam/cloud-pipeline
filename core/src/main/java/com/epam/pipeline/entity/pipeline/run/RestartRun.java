@@ -28,4 +28,6 @@ public class RestartRun {
     private Long parentRunId;
     private Long restartedRunId;
     private Date date;
+    private Long parentRunRegionId;
+    private Long restartedRunRegionId;
 }

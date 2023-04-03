@@ -256,3 +256,10 @@
 .nested-run:hover .run-id {
   text-decoration: underline;
 }
+
+.timing-btn {
+  position: absolute;
+  top: 4px;
+  right: 25px;
+  z-index: 2;
+}

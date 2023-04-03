@@ -72,7 +72,6 @@ public class InstanceOfferSchedulerCore {
         try {
             priceUpdateLock.lock();
             instanceOfferManager.updatePriceListForRegion(region);
-            instanceOfferManager.updateOfferedInstanceTypes();
         } finally {
             priceUpdateLock.unlock();
         }

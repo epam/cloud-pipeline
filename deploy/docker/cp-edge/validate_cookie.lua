@@ -132,6 +132,9 @@ if token then
     if ngx.var.auth_user_name ~= nil then
         ngx.var.auth_user_name = username
     end
+    if ngx.var.auth_user_name_cropped ~= nil and username ~= nil then
+        ngx.var.auth_user_name_cropped = split_str(username, '@')[1]
+    end
     ngx.req.set_header('X-Auth-User', username)
     return
 end

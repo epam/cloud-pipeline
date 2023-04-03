@@ -33,7 +33,7 @@ from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
-from src.utilities.du_format_type import DuFormatType
+from src.utilities.datastorage_du_operation import DuOutput
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
@@ -49,7 +49,7 @@ from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
 from src.utilities.dts_operations_manager import DtsOperationsManager
-from src.version import __version__, __bundle_info__
+from src.version import __version__, __bundle_info__, __component_version__
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
@@ -86,7 +86,7 @@ def print_version(ctx, param, value):
     if value is False:
         return
     silent_print_api_version()
-    click.echo('Cloud Pipeline CLI, version {}'.format(__version__))
+    click.echo('Cloud Pipeline CLI, version {} ({})'.format(__version__, __component_version__))
     silent_print_creds_info()
     ctx.exit()
 
@@ -1075,8 +1075,9 @@ def mvtodir(name, directory):
               help="Option for configuring storage summary details listing mode. Possible values: "
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
+@click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, output):
+def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
     """Lists storage contents
     """
     show_extended = False
@@ -1085,7 +1086,8 @@ def storage_list(path, show_details, show_versions, recursive, page, all, output
             click.echo('Extended output could be configured for the storage summary listing only!', err=True)
             sys.exit(1)
         show_extended = True
-    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended)
+    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
+                                       show_archive)
 
 
 @storage.command(name='mkdir')
@@ -1109,7 +1111,8 @@ def storage_mk_dir(folders):
               help='Include only files matching this pattern into processing')
 @common_options
 def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include):
-    """ Removes file or folder from a datastorage
+    """
+    Removes files/directories.
     """
     DataStorageOperations.storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include)
 
@@ -1168,18 +1171,24 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
                    '[fail] fails immediately (default); \n'
                    '[fail-after] fails only after all files are processed; \n'
                    '[skip] skips all failures.')
+@click.option('--on-empty-files', required=False, default='allow',
+              envvar='CP_CLI_TRANSFER_EMPTY_FILES',
+              help='Configure how empty files should be handled. '
+                   'Allowed values: \n'
+                   '[allow] allows empty files transferring (default); \n'
+                   '[skip] skips empty files transferring.')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
-                      verify_destination):
+                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
+                      on_failures, verify_destination):
     """
     Moves files/directories between data storages or between a local filesystem and a data storage.
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                              symlinks, threads, io_threads,
-                             on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+                             on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=True, skip_existing=skip_existing, verify_destination=verify_destination)
 
 
@@ -1227,6 +1236,12 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               envvar='CP_CLI_TRANSFER_UNSAFE_CHARS_REPLACEMENT',
               help='Specify a string to replace unsafe characters with. '
                    'The option has effect only if --unsafe-chars option is set to replace value.')
+@click.option('--on-empty-files', required=False, default='allow',
+              envvar='CP_CLI_TRANSFER_EMPTY_FILES',
+              help='Configure how empty files should be handled. '
+                   'Allowed values: \n'
+                   '[allow] allows empty files transferring (default); \n'
+                   '[skip] skips empty files transferring.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
               type=click.Choice(['fail', 'fail-after', 'skip']),
@@ -1241,26 +1256,40 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
-                      skip_existing, verify_destination):
+                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
+                      on_failures, skip_existing, verify_destination):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
     """
     DataStorageOperations.cp(source, destination, recursive, force,
                              exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
-                             on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+                             on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=False, skip_existing=skip_existing, verify_destination=verify_destination)
 
 
 @storage.command('du')
 @click.argument('name', required=False)
 @click.option('-p', '--relative-path', required=False, help='Relative path')
+@click.option('-c', '--cloud', required=False, is_flag=True, default=False,
+              help='Force to get data directly from the cloud.')
+@click.option('-o', '--output-mode', help='Output mode [brief/full]. '
+                                          '"brief(b)" - reports in format Storage size/Archive size. '
+                                          '"full(f)" - reports in format divided by Storage Class.',
+              type=click.Choice(DuOutput.possible_modes()), required=False, default='brief')
+@click.option('-g', '--generation', help='File generation to inspect [all/current/old]. '
+                                         '"all(a)" - reports sum of sizes for current and old file versions. '
+                                         '"current(c)" - reports size of current file versions only. '
+                                         '"old(o)" - reports size of old file versions only. ',
+              type=click.Choice(DuOutput.possible_generations()), required=False, default='all')
 @click.option('-f', '--format', help='Format for size [G/M/K]',
-              type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
+              type=click.Choice(DuOutput.possible_size_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
 @common_options
-def du(name, relative_path, format, depth):
-    DataStorageOperations.du(name, relative_path, format, depth)
+def du(name, relative_path, depth, cloud, output_mode, generation, format):
+    """
+    Displays data storage usage statistics.
+    """
+    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format)
 
 
 @storage.command('restore')
@@ -1338,9 +1367,10 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
 @click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
               default=1000, type=int)
+@click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @common_options
 def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode,
-                  timeout):
+                  timeout, show_archive):
     """
     Mounts either all available network file systems or a single object storage to a local folder.
 
@@ -1365,7 +1395,8 @@ def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, l
     """
     DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
                                         bucket=bucket, options=options, custom_options=custom_options,
-                                        quiet=quiet, threading=threads, mode=mode, timeout=timeout)
+                                        quiet=quiet, threading=threads, mode=mode, timeout=timeout,
+                                        show_archive=show_archive)
 
 
 @storage.command('umount')
@@ -1668,8 +1699,8 @@ def start_tunnel_options(decorating_func):
                   help='Path to .ssh directory for passwordless ssh configuration on Linux.')
     @click.option('-sh', '--ssh-host', required=False, type=str,
                   help='Host name for passwordless ssh configuration.')
-    @click.option('-su', '--ssh-user', required=False, type=str,
-                  help='User name for passwordless ssh configuration.')
+    @click.option('-su', '--ssh-user', required=False, type=str, multiple=True,
+                  help='User name for passwordless ssh configuration. Multiple options supported.')
     @click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
                   help='Keeps passwordless ssh configuration after tunnel stopping.')
     @click.option('-d', '--direct', required=False, is_flag=True, default=False,

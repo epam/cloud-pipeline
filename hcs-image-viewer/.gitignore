@@ -6,6 +6,8 @@
 # production
 /dist
 
+/src/.test
+
 # misc
 .DS_Store
 .env

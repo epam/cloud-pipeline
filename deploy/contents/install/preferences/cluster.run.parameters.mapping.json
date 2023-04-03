@@ -1,0 +1,25 @@
+{
+    "CP_CAP_TARGET_AVAILABILITY_ZONE": {
+        "argumentName": "--availability_zone"
+    },
+    "CP_CAP_TARGET_NETWORK_INTERFACE": {
+        "argumentName": "--network_interface"
+    },
+    "CP_CAP_DEDICATED_INSTANCE": {
+        "argumentName": "--dedicated",
+        "type": "BOOLEAN"
+    },
+    "CP_CAP_TARGET_SECURITY_GROUPS": {
+        "argumentName": "--security_groups"
+    },
+    "CP_CAP_TARGET_SUBNET_ID": {
+        "argumentName": "--subnet_id"
+    },
+    "CP_NODE_SSH_PORT": {
+        "argumentName": "--node_ssh_port"
+    },
+    "CP_CAP_EFA_ENABLED": {
+        "argumentName": "--performance_network",
+        "type": "BOOLEAN"
+    }
+}

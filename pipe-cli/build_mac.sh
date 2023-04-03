@@ -36,6 +36,7 @@ python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
 python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+                                --paths "${PIPE_CLI_SOURCES_DIR}" \
                                 --hidden-import=UserList \
                                 --hidden-import=UserString \
                                 --hidden-import=commands \
@@ -97,6 +98,10 @@ function build_pipe {
     echo "__bundle_info__ = { 'bundle_type': '$bundle_type', 'build_os_id': 'macos', 'build_os_version_id': '$build_os_version_id' }" >> $version_file
 
     cd $PIPE_CLI_SOURCES_DIR
+    sed -i '/__component_version__/d' $version_file
+    local pipe_commit_hash=$(git log --pretty=tformat:"%H" -n1 .)
+    echo "__component_version__='$pipe_commit_hash'" >> $version_file
+
     python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
                                     --hidden-import=UserList \

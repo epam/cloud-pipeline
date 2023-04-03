@@ -14,355 +14,271 @@
  * limitations under the License.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
-import {Card, Col, Menu, Row} from 'antd';
+import {computed} from 'mobx';
+import {Card, Col, Menu, Popover, Row} from 'antd';
 import classNames from 'classnames';
-import * as styles from './AllRuns.css';
-import RunTable from './RunTable';
+import {Link} from 'react-router';
+import RunTable, {Columns} from './run-table';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
-import AdaptedLink from '../special/AdaptedLink';
-import pipelineRun from '../../models/pipelines/PipelineRun';
-import pipelines from '../../models/pipelines/Pipelines';
-import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import parseQueryParameters from '../../utils/queryParameters';
-import {openReRunForm} from './actions';
-import moment from 'moment-timezone';
+import LoadingView from '../special/LoadingView';
+import {RunCountDefault} from '../../models/pipelines/RunCount';
+import continuousFetch from '../../utils/continuous-fetch';
+import styles from './AllRuns.css';
+import RunsFilterDescription from './run-table/runs-filter-description';
 
-const getStatusForServer = status => (status === 'active'
+const getStatusForServer = active => active
   ? ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
-  : ['SUCCESS', 'FAILURE', 'STOPPED']);
-const pageSize = 20;
-const refreshInterval = 10000;
+  : ['SUCCESS', 'FAILURE', 'STOPPED'];
 
-@connect({
-  pipelineRun
-})
+const DEFAULT_ACTIVE_FILTERS = {
+  key: 'active',
+  title: 'Active Runs',
+  filters: {
+    statuses: getStatusForServer(true),
+    onlyMasterJobs: true
+  },
+  autoUpdate: true,
+  showCount: true,
+  showPersonalRuns: true
+};
+
+const DEFAULT_COMPLETED_FILTERS = {
+  key: 'completed',
+  title: 'Completed Runs',
+  filters: {
+    statuses: getStatusForServer(false),
+    onlyMasterJobs: true
+  },
+  autoUpdate: false,
+  showPersonalRuns: false
+};
+
 @roleModel.authenticationInfo
-@inject(({routing, counter, pipelineRun, authenticatedUserInfo}, {params}) => {
-  let runFilter;
-  let runParams;
-  let allUsers = false;
-  if (params.status === 'active') {
-    const queryParameters = parseQueryParameters(routing);
-    allUsers = queryParameters.hasOwnProperty('all')
-      ? (queryParameters.all === undefined ? true : queryParameters.all === 'true')
-      : false;
-    if (!allUsers && authenticatedUserInfo.loaded) {
-      runParams = {
-        page: 1,
-        pageSize: pageSize,
-        statuses: getStatusForServer(params.status),
-        owners: [authenticatedUserInfo.value.userName],
-        userModified: false
-      };
-      runFilter = pipelineRun.runFilter(runParams, true);
-    } else if (allUsers) {
-      runParams = {
-        page: 1,
-        pageSize: pageSize,
-        statuses: getStatusForServer(params.status),
-        userModified: false
-      };
-      runFilter = pipelineRun.runFilter(runParams, true);
-    }
-  } else {
-    runParams = {
-      page: 1,
-      pageSize: pageSize,
-      statuses: getStatusForServer(params.status),
-      userModified: false
-    };
-    runFilter = pipelineRun.runFilter(runParams, true);
-  }
+@inject('counter', 'preferences')
+@inject(({routing}, {params}) => {
+  const {
+    status = 'active'
+  } = params;
+  const query = parseQueryParameters(routing);
+  const all = query.hasOwnProperty('all') && /^(true|undefined)$/i.test(`${query.all}`);
   return {
-    runFilter,
-    initialRunParams: runParams,
-    counter,
-    pipelines: pipelines,
-    status: params.status,
-    authenticatedUserInfo,
-    pipelineRun,
-    allUsers
+    status,
+    all
   };
 })
 @observer
-class AllRuns extends Component {
-
-  initializeRunFilter = (filterParams) => {
-    this._runFilter = this.props.pipelineRun.runFilter(filterParams, true);
-    this._initialRunParams = filterParams;
-  };
-  reloadTable = () => {
-    this.runFilter && this.runFilter.fetch();
-    this.props.counter && this.props.counter.fetch();
+class AllRuns extends React.Component {
+  state = {
+    counters: {}
   };
 
-  handleTableChange (pagination, filter) {
-    const {current} = pagination;
-    this.setState({
-      activeRuns: this.state.activeRuns,
-      currentPage: current,
-      filter
-    });
-  }
-
-  filterArrayChanged = (oldFilter, newFilter, key) => {
-    const oldArray = oldFilter[key] ? oldFilter[key] : [];
-    const newArray = newFilter[key] ? newFilter[key] : [];
-    if (oldArray.length !== newArray.length) {
-      return true;
-    } else {
-      for (let i = 0; i < oldArray.length; i++) {
-        if (newArray.indexOf(oldArray[i]) === -1) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
-  filterStatusesChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'statuses');
-  };
-
-  filterPipelinesChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'pipelineIds');
-  };
-
-  filterDockerImagesChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'dockerImages');
-  };
-
-  filterOwnerChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'owners');
-  };
-
-  filterStartDateChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'started');
-  };
-
-  filterEndDateChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'completed');
-  };
-
-  filterParentIdChanged = (oldFilter, newFilter) => {
-    return this.filterArrayChanged(oldFilter, newFilter, 'parentRunIds');
-  };
-
-  filterChanged = (oldFilter, newFilter) => {
-    return this.filterStatusesChanged(oldFilter, newFilter) ||
-      this.filterPipelinesChanged(oldFilter, newFilter) ||
-      this.filterDockerImagesChanged(oldFilter, newFilter) ||
-      this.filterOwnerChanged(oldFilter, newFilter) ||
-      this.filterStartDateChanged(oldFilter, newFilter) ||
-      this.filterEndDateChanged(oldFilter, newFilter) ||
-      this.filterParentIdChanged(oldFilter, newFilter);
-  };
-
-  navigateToActiveRuns = (my = false) => {
-    SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
-    SessionStorageWrapper.navigateToActiveRuns(this.props.router);
-  };
-
-  renderOwnersSwitch = () => {
-    if (this.props.status !== 'active') {
-      return null;
-    }
-    if (!this.props.counter.loaded || !this.runFilter || !this.runFilter.loaded) {
-      return null;
-    }
-    if (!this.props.allUsers &&
-      this.props.counter.value <= this.runFilter.total) {
-      return null;
-    }
-    if (this.props.allUsers) {
-      return (
-        <Row style={{marginBottom: 5, padding: 2}}>
-          Currently viewing <b>all available active runs</b>. <a onClick={() => this.navigateToActiveRuns(true)}>View only <b>your active runs</b></a>
-        </Row>
-      );
-    } else {
-      return (
-        <Row style={{marginBottom: 5, padding: 2}}>
-          Currently viewing only <b>your active runs ({this.runFilter.total} out of {this.props.counter.value})</b>. <a onClick={() => this.navigateToActiveRuns(false)}>View <b>other available active runs</b></a>
-        </Row>
-      );
-    }
-  };
-
-  state = {activeRuns: 0, currentPage: 1, filter: {}};
-
-  initializeRunTable = (control) => {
-    if (control) {
-      this.runTable = control;
-    }
-  };
-  launchPipeline = (run) => {
-    return openReRunForm(run, this.props);
-  };
-  onSelectRun = ({id}) => {
-    this.props.router.push(`/run/${id}`);
-  };
-  refreshTimer;
-  startTimer = () => {
-    if (!this.refreshTimer) {
-      this.refreshTimer = setInterval(this.reloadTable, refreshInterval);
-    }
-  };
-  endTimer = () => {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-      this.refreshTimer = null;
-    }
-  };
-
-  @observable _runFilter;
-  @observable _initialRunParams;
-
-  @computed
-  get runFilter () {
-    return this.props.runFilter || this._runFilter;
-  }
-
-  @computed
-  get initialRunParams () {
-    return this.props.initialRunParams || this._initialRunParams;
-  }
-
-  @computed
-  get currentRunParams () {
-    return {
-      statuses: this.state.filter && this.state.filter.statuses && this.state.filter.statuses.length
-        ? this.state.filter.statuses
-        : getStatusForServer(this.props.status),
-      pipelineIds: this.state.filter && this.state.filter.pipelineIds
-        ? this.state.filter.pipelineIds
-        : undefined,
-      dockerImages: this.state.filter && this.state.filter.dockerImages
-        ? this.state.filter.dockerImages
-        : undefined,
-      owners: this.props.status === 'active' && !this.props.allUsers && this.props.authenticatedUserInfo.loaded
-        ? [this.props.authenticatedUserInfo.value.userName]
-        : (this.state.filter && this.state.filter.owners
-          ? this.state.filter.owners
-          : undefined),
-      started: this.state.filter && this.state.filter.started
-        ? this.state.filter.started
-        : undefined,
-      completed: this.state.filter && this.state.filter.completed
-        ? this.state.filter.completed
-        : undefined,
-      parentRunIds: this.state.filter && this.state.filter.parentRunIds
-        ? this.state.filter.parentRunIds
-        : undefined
-    };
-  }
-
-  @computed
-  get userModifiedFilter () {
-    if (!this.initialRunParams) {
-      return false;
-    }
-    return this.filterStatusesChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterPipelinesChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterDockerImagesChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterOwnerChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterStartDateChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterEndDateChanged(this.initialRunParams, this.currentRunParams) ||
-      this.filterParentIdChanged(this.initialRunParams, this.currentRunParams);
-  }
-
-  getFilterParams () {
-    const statuses = this.state.filter.statuses && this.state.filter.statuses.length
-      ? this.state.filter.statuses
-      : getStatusForServer(this.props.params.status);
-    const startDateFrom = this.state.filter.started && this.state.filter.started.length === 1
-      ? moment(this.state.filter.started[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS')
-      : undefined;
-    const endDateTo = this.state.filter.completed && this.state.filter.completed.length === 1
-      ? moment(this.state.filter.completed[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS')
-      : undefined;
-    const parentId = this.state.filter.parentRunIds && this.state.filter.parentRunIds.length === 1
-      ? this.state.filter.parentRunIds[0] : undefined;
-
-    return {
-      page: this.state.currentPage,
-      pageSize,
-      statuses: statuses,
-      pipelineIds: this.state.filter.pipelineIds,
-      dockerImages: this.state.filter.dockerImages,
-      owners: (!this.props.allUsers && this.props.status === 'active' && this.props.authenticatedUserInfo.loaded)
-        ? [this.props.authenticatedUserInfo.value.userName]
-        : this.state.filter.owners,
-      startDateFrom,
-      endDateTo,
-      parentId,
-      userModified: this.userModifiedFilter
-    };
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.params.status !== this.props.params.status) {
-      this.setState(
-        {
-          activeRuns: this.props.counter.value,
-          currentPage: 1,
-          filter: {}
-        }, () => {
-          if (this.runTable && this.runTable.clearState) {
-            this.runTable.clearState();
-          }
-        }
-      );
-    }
-  }
+  countersManagementToken = 0;
+  counters = {};
 
   componentDidMount () {
-    if (this.props.status.toLowerCase() === 'active') {
-      this.startTimer();
-    } else {
-      this.endTimer();
-    }
+    (this.manageCounters)();
   }
 
   componentWillUnmount () {
-    this.endTimer();
+    this.countersManagementToken += 1;
+    this.stopCounters();
   }
 
-  componentDidUpdate (prevProps, prevState) {
-    if ((!this.props.counter.pending && prevState.activeRuns !== this.props.counter.value) ||
-      (prevState.currentPage !== this.state.currentPage) ||
-      this.filterChanged(prevState.filter, this.state.filter)) {
-      this.setState(
-        {
-          activeRuns: this.props.counter.value,
-          status: this.props.params.status
-        }
-      );
-      if (!this.runFilter) {
-        this.initializeRunFilter(this.getFilterParams());
-      } else {
-        this.runFilter.filter(this.getFilterParams(), true);
+  manageCounters = async () => {
+    this.countersManagementToken += 1;
+    this.counters = {};
+    const token = this.countersManagementToken;
+    const {
+      counter: globalCounter,
+      preferences
+    } = this.props;
+    try {
+      await preferences.fetchIfNeededOrWait();
+      if (token !== this.countersManagementToken) {
+        return;
       }
-    }
-    if (!this.runFilter && this.props.authenticatedUserInfo.loaded) {
-      this.initializeRunFilter(this.getFilterParams());
-    }
-    if (prevProps.status !== this.props.status) {
-      if (this.props.status.toLowerCase() === 'active') {
-        this.startTimer();
-      } else {
-        this.endTimer();
+      const filters = this.uiRunsFilters
+        .filter((aFilter) => aFilter.showCount || aFilter.showPersonalRuns);
+      for (const filter of filters) {
+        const request = new RunCountDefault(
+          globalCounter,
+          filter.filters
+        );
+        const call = async () => {
+          await request.fetch();
+          if (request.networkError) {
+            throw new Error(request.networkError);
+          }
+        };
+        const after = () => {
+          const {counters = {}} = this.state;
+          this.setState({
+            counters: {
+              ...counters,
+              [filter.key]: request.runsCount
+            }
+          });
+        };
+        const counter = continuousFetch({
+          fetchImmediate: true,
+          call,
+          afterInvoke: after,
+          intervalMS: 10000
+        });
+        this.counters[filter.key] = {
+          counter,
+          request
+        };
       }
+    } catch (error) {
+      console.warn(error.message);
     }
+  };
+
+  stopCounters = () => {
+    Object.values(this.counters || {}).forEach(({counter, request}) => {
+      if (typeof request.destroy === 'function') {
+        request.destroy();
+      }
+      const {stop} = counter;
+      if (typeof stop === 'function') {
+        stop();
+      }
+    });
+  };
+
+  @computed
+  get uiRunsFilters () {
+    const {preferences} = this.props;
+    let runsFilters = [];
+    if (preferences.loaded) {
+      runsFilters = (preferences.uiRunsFilters || []).slice();
+    }
+    if (!runsFilters.find((filter) => filter.key === 'active')) {
+      runsFilters = [
+        DEFAULT_ACTIVE_FILTERS,
+        ...runsFilters
+      ];
+    }
+    if (!runsFilters.find((filter) => filter.key === 'completed')) {
+      runsFilters = [
+        ...runsFilters,
+        DEFAULT_COMPLETED_FILTERS
+      ];
+    }
+    return runsFilters;
   }
+
+  get currentFilters () {
+    const {
+      status
+    } = this.props;
+    const filters = this.uiRunsFilters;
+    return filters
+      .find((aFilter) => aFilter.key.toLowerCase() === (status || '').toLowerCase());
+  }
+
+  navigateToRuns = (status, my = false) => {
+    SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
+    SessionStorageWrapper.navigateToRuns(this.props.router, status);
+  };
+
+  renderOwnersSwitch = (total) => {
+    const {
+      all
+    } = this.props;
+    const current = this.currentFilters;
+    if (
+      !current ||
+      !current.showPersonalRuns
+    ) {
+      return null;
+    }
+    const description = current.title ? current.title.toLowerCase() : `${current.key} runs`;
+    if (all) {
+      return (
+        <Row style={{marginBottom: 5, padding: 2}}>
+          Currently viewing <b>all available {description}</b>.
+          {' '}
+          <a onClick={() => this.navigateToRuns(current.key, true)}>
+            View only <b>your {description}</b>
+          </a>
+        </Row>
+      );
+    }
+    const {
+      counters = {}
+    } = this.state;
+    const allRunsCount = counters[current.key] || 0;
+    let totalInfo = '';
+    if (total > 0 && total < allRunsCount) {
+      totalInfo = ` (${total} out of ${allRunsCount})`;
+    }
+    return (
+      <Row style={{marginBottom: 5, padding: 2}}>
+        Currently viewing only
+        {' '}
+        <b>
+          your {description}
+          {totalInfo}
+        </b>.
+        {' '}
+        <a
+          onClick={() => this.navigateToRuns(current.key, false)}
+        >
+          View <b>other available {description}</b>
+        </a>
+      </Row>
+    );
+  };
+
+  renderTable = () => {
+    const {
+      all,
+      authenticatedUserInfo
+    } = this.props;
+    const current = this.currentFilters;
+    if (!current) {
+      return (
+        <LoadingView />
+      );
+    }
+    const filters = {
+      ...(current.filters || {}),
+      onlyMasterJobs: true
+    };
+    if (
+      current.showPersonalRuns &&
+      !all &&
+      !authenticatedUserInfo.loaded &&
+      authenticatedUserInfo.pending
+    ) {
+      return (
+        <LoadingView />
+      );
+    }
+    if (current.showPersonalRuns && !all && authenticatedUserInfo.loaded) {
+      filters.owners = [authenticatedUserInfo.value.userName].filter(Boolean);
+    }
+    return (
+      <RunTable
+        filters={filters}
+        autoUpdate={current.autoUpdate}
+        disableFilters={current.showPersonalRuns && !all ? [Columns.owner] : []}
+        beforeTable={({total}) => this.renderOwnersSwitch(total)}
+      />
+    );
+  };
 
   render () {
-    const {status} = this.props.params;
-
+    const current = this.currentFilters;
+    const {
+      counters = {}
+    } = this.state;
     return (
       <Card
         className={
@@ -378,20 +294,38 @@ class AllRuns extends Component {
         <Row type="flex" align="bottom">
           <Col offset={2} span={20}>
             <Row type="flex" justify="center">
-              <Menu mode="horizontal" selectedKeys={[status]} className={styles.tabsMenu}>
-                <Menu.Item key="active">
-                  <AdaptedLink
-                    id="active-runs-button"
-                    to={SessionStorageWrapper.getActiveRunsLink()}
-                    location={location}>Active Runs
-                    {this.props.counter.value ? ` (${this.props.counter.value})` : ''}</AdaptedLink>
-                </Menu.Item>
-                <Menu.Item key="completed">
-                  <AdaptedLink
-                    id="completed-runs-button"
-                    to={'/runs/completed'}
-                    location={location}>Completed Runs</AdaptedLink>
-                </Menu.Item>
+              <Menu
+                mode="horizontal"
+                selectedKeys={current ? [current.key] : []}
+                className={styles.tabsMenu}
+              >
+                {
+                  this.uiRunsFilters.map((filter) => (
+                    <Menu.Item key={filter.key}>
+                      <Popover
+                        content={(
+                          <RunsFilterDescription
+                            filters={filter.filters}
+                            style={{maxWidth: 200}}
+                          />
+                        )}
+                        trigger={['hover']}
+                      >
+                        <Link
+                          id={`${filter.key}-runs-button`}
+                          to={SessionStorageWrapper.getRunsLink(filter.key)}
+                        >
+                          {filter.title || `${filter.key} runs`}
+                          {
+                            filter.showCount && counters[filter.key] > 0
+                              ? ` (${counters[filter.key]})`
+                              : ''
+                          }
+                        </Link>
+                      </Popover>
+                    </Menu.Item>
+                  ))
+                }
               </Menu>
             </Row>
           </Col>
@@ -399,34 +333,19 @@ class AllRuns extends Component {
             span={2}
             type="flex"
             style={{textAlign: 'right', padding: 5, textTransform: 'uppercase'}}>
-            <AdaptedLink
+            <Link
               id="advanced-runs-filter-button"
               to={'/runs/filter'}
-              location={location}>
+            >
               Advanced filter
-            </AdaptedLink>
+            </Link>
           </Col>
         </Row>
         {
-          this.renderOwnersSwitch()
+          this.renderTable()
         }
-        <Row>
-          <RunTable
-            onInitialized={this.initializeRunTable}
-            useFilter={true}
-            loading={this.props.authenticatedUserInfo.pending || !this.runFilter || this.runFilter.pending}
-            dataSource={this.runFilter ? this.runFilter.value : []}
-            handleTableChange={::this.handleTableChange}
-            statuses={getStatusForServer(this.props.params.status)}
-            pipelines={this.props.pipelines.pending ? [] : (this.props.pipelines.value || []).map(p => p)}
-            pagination={{total: this.runFilter ? this.runFilter.total : 0, pageSize, current: this.state.currentPage}}
-            ownersDisabled={this.props.status === 'active' && !this.props.allUsers}
-            reloadTable={this.reloadTable}
-            launchPipeline={this.launchPipeline}
-            onSelect={this.onSelectRun}
-          />
-        </Row>
-      </Card>);
+      </Card>
+    );
   }
 }
 

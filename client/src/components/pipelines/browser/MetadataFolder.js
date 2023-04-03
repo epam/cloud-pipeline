@@ -131,11 +131,9 @@ export default class MetadataFolder extends React.Component {
     if (folder && folder.loaded) {
       const dataFolder = generateTreeData(
         this.props.folder.value,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        this.props.hiddenObjectsTreeFilter()
+        {
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
       const metadataFolder = dataFolder.find(m => m.type === ItemTypes.metadataFolder);
       return metadataFolder ? metadataFolder.children : [];

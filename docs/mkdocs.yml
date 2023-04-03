@@ -57,6 +57,9 @@ nav:
     - 8.7. Create shared file system: 'manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md'
     - 8.8. Data sharing: 'manual/08_Manage_Data_Storage/8.8._Data_sharing.md'
     - 8.9. Mapping storages: 'manual/08_Manage_Data_Storage/8.9._Mapping_storages.md'
+    - 8.10. Storage lifecycle: 'manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md'
+    - 8.11. Sensitive storages: 'manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md'
+    - 8.12. Cloud Data application: 'manual/08_Manage_Data_Storage/8.12._Cloud_Data_app.md'
   - 9. Manage cluster nodes:
     - 9.0. Cluster nodes: 'manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md'
     - 9.1. Hot node pools: 'manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md'
@@ -87,7 +90,7 @@ nav:
     - 12.6. Edit a group/role: 'manual/12_Manage_Settings/12.6._Edit_a_group_role.md'
     - 12.7. Delete a group: 'manual/12_Manage_Settings/12.7._Delete_a_group.md'
     - 12.8. Change a set of roles/groups for a user: 'manual/12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user.md'
-    - 12.9. Change email notification: 'manual/12_Manage_Settings/12.9._Change_email_notification.md'
+    - 12.9. Email notifications: 'manual/12_Manage_Settings/12.9._Change_email_notification.md'
     - 12.10. Manage system-level settings: 'manual/12_Manage_Settings/12.10._Manage_system-level_settings.md'
     - 12.11. Advanced features: 'manual/12_Manage_Settings/12.11._Advanced_features.md'
     - 12.12. System logs: 'manual/12_Manage_Settings/12.12._System_logs.md'
@@ -135,3 +138,7 @@ nav:
     - AWS: 'installation/prerequisites/aws.md'
     - Azure: 'installation/prerequisites/azure.md'
     - GCP: 'installation/prerequisites/gcp.md'
+  - Management:
+    - Environments sync: 'installation/management/environments_sync.md'
+  - Change Kubernetes certificates: 'installation/change_kube_certificates.md'
+  - Support Windows runs: 'installation/support_windows_runs.md'

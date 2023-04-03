@@ -30,6 +30,7 @@ import Menu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import FileSaver from 'file-saver';
 import moment from 'moment-timezone';
+import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import styles from './ClusterNode.css';
 import {
@@ -40,9 +41,9 @@ import {
 } from './charts';
 import {ResponsiveContainer} from './charts/utilities';
 import ClusterNodeUsageReport, * as usageUtilities
-  from '../../models/cluster/ClusterNodeUsageReport';
+from '../../models/cluster/ClusterNodeUsageReport';
 import ClusterUsageExportSettingsDialog from './ClusterUsageExportSettingsDialog';
-import classNames from "classnames";
+import continuousFetch from '../../utils/continuous-fetch';
 
 const MIN_CHART_SIZE = {width: 500, height: 350};
 const CHART_MARGIN = 2;
@@ -124,8 +125,6 @@ class ClusterNodeMonitor extends React.Component {
     exportWindowVisible: false
   };
 
-  liveUpdateTimer;
-
   @computed
   get windowsOS () {
     const {node} = this.props;
@@ -143,13 +142,13 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get wholeRangeEnabled() {
+  get wholeRangeEnabled () {
     const {chartsData} = this.props;
     return !!chartsData.instanceFrom;
   }
 
   @computed
-  get lastWeekEnabled() {
+  get lastWeekEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -159,7 +158,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get lastDayEnabled() {
+  get lastDayEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -169,7 +168,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get lastHourEnabled() {
+  get lastHourEnabled () {
     const {chartsData} = this.props;
     return !chartsData.rangeEndIsFixed && (
       !chartsData.instanceFrom ||
@@ -179,7 +178,7 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   @computed
-  get retentionPeriodExceeded() {
+  get retentionPeriodExceeded () {
     const {preferences, chartsData} = this.props;
     const {end} = this.state;
     if (end && preferences.loaded) {
@@ -199,15 +198,36 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   componentDidMount () {
-    this.liveUpdateTimer = setInterval(
-      this.invokeLiveUpdate,
-      LIVE_UPDATE_INTERVAL
-    );
     this.initializeRange();
     this.checkWindowsBasedNode();
+    this.initializeContinuousMonitorUpdate();
+  }
+
+  initializeContinuousMonitorUpdate () {
+    this.stopContinuousMonitorUpdate();
+    const {
+      stop,
+      reset
+    } = continuousFetch({
+      call: () => this.invokeLiveUpdate(),
+      intervalMS: LIVE_UPDATE_INTERVAL
+    });
+    this.stopContinuosFetch = stop;
+    this.resetContinuousFetch = reset;
+  }
+
+  stopContinuousMonitorUpdate () {
+    if (this.stopContinuosFetch) {
+      this.stopContinuosFetch();
+    }
+    this.stopContinuosFetch = undefined;
+    this.resetContinuousFetch = undefined;
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.nodeName !== this.props.nodeName) {
+      this.initializeContinuousMonitorUpdate();
+    }
     this.initializeRange();
     this.checkWindowsBasedNode();
   }
@@ -224,11 +244,8 @@ class ClusterNodeMonitor extends React.Component {
     }
   }
 
-  componentWillUnmount() {
-    if (this.liveUpdateTimer) {
-      clearInterval(this.liveUpdateTimer);
-      delete this.liveUpdateTimer;
-    }
+  componentWillUnmount () {
+    this.stopContinuousMonitorUpdate();
   }
 
   onResizeContainer = (width, height) => {
@@ -254,13 +271,21 @@ class ClusterNodeMonitor extends React.Component {
     }
   };
 
+  fetch = () => {
+    const {chartsData} = this.props;
+    chartsData.loadData();
+    if (this.resetContinuousFetch) {
+      this.resetContinuousFetch();
+    }
+  };
+
   reloadData = () => {
     const {chartsData} = this.props;
     const {followCommonRange} = chartsData;
     if (followCommonRange && chartsData.initialized) {
       chartsData.from = chartsData.correctDateToFixRange(this.state.start);
       chartsData.to = chartsData.correctDateToFixRange(this.state.end);
-      chartsData.loadData();
+      this.fetch();
     }
   };
 
@@ -268,10 +293,10 @@ class ClusterNodeMonitor extends React.Component {
     let {start, end} = this.state;
     const {chartsData} = this.props;
     if (chartsData.pending) {
-      return;
+      return Promise.resolve();
     }
     chartsData.updateRange();
-    start = start || chartsData.instanceFrom || moment().add(-1, 'day').unix();
+    start = start || chartsData.instanceFrom || moment().add(-1, 'hour').unix();
     end = end || chartsData.instanceTo || moment().unix();
     const range = end - start;
     if (!chartsData.rangeEndIsFixed) {
@@ -280,10 +305,21 @@ class ClusterNodeMonitor extends React.Component {
     start = end - range;
     chartsData.from = chartsData.correctDateToFixRange(start);
     chartsData.to = chartsData.correctDateToFixRange(end);
-    chartsData.loadData();
-    this.setState({
-      start: chartsData.from,
-      end: chartsData.to
+    return new Promise((resolve, reject) => {
+      this.setState({
+        start: chartsData.from,
+        end: chartsData.to
+      }, () => {
+        chartsData
+          .loadData()
+          .then(() => {
+            if (chartsData.networkError) {
+              reject(new Error(chartsData.networkError));
+            } else {
+              resolve();
+            }
+          });
+      });
     });
   };
 
@@ -292,13 +328,9 @@ class ClusterNodeMonitor extends React.Component {
     const {chartsData} = this.props;
     if (liveUpdate) {
       chartsData.followCommonRange = true;
-      if (!this.liveUpdateTimer) {
-        this.liveUpdateTimer = setInterval(this.invokeLiveUpdate, LIVE_UPDATE_INTERVAL);
-      }
-      this.invokeLiveUpdate();
-    } else if (this.liveUpdateTimer) {
-      clearInterval(this.liveUpdateTimer);
-      delete this.liveUpdateTimer;
+      this.initializeContinuousMonitorUpdate();
+    } else {
+      this.stopContinuousMonitorUpdate();
     }
     const state = {
       liveUpdate
@@ -336,7 +368,7 @@ class ClusterNodeMonitor extends React.Component {
       start: chartsData.from,
       end: chartsData.to
     });
-    chartsData.loadData();
+    this.fetch();
   };
 
   onStartChanged = (start) => {
@@ -405,7 +437,7 @@ class ClusterNodeMonitor extends React.Component {
     chartsData.to = end;
     this.setState({start, end, liveUpdate: false}, () => {
       if (final) {
-        chartsData.loadData();
+        this.fetch();
       }
       this.setLiveUpdate(false);
     });
@@ -414,7 +446,7 @@ class ClusterNodeMonitor extends React.Component {
   onFollowCommonRangeChanged = (e) => {
     const {chartsData} = this.props;
     chartsData.followCommonRange = e.target.checked;
-    chartsData.loadData();
+    this.fetch();
     if (!chartsData.followCommonRange) {
       this.setLiveUpdate(false, true);
     }
@@ -514,7 +546,7 @@ class ClusterNodeMonitor extends React.Component {
     } = this.props;
     if (chartsData.error) {
       return (
-        <Alert type={'error'} message={chartsData.error}/>
+        <Alert type={'error'} message={chartsData.error} />
       );
     }
     if (!chartsData.initialized) {

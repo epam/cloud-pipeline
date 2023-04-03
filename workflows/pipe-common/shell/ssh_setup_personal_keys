@@ -50,21 +50,8 @@ OWNER_SSH_CONFIG_LOCATION=$OWNER_SSH_DIR/config
 mkdir -p $(dirname $OWNER_SSH_PRV_LOCATION)
 
 ## SSH keys configuration
-### Setup user id
-echo "Getting owner ($OWNER) user id"
-OWNER_ID=$(curl -s \
-            --max-time 30 \
-            -X GET \
-            --insecure \
-            --header "Accept: application/json" \
-            --header "Authorization: Bearer $API_TOKEN" \
-            "$API/whoami" | jq -r '.payload.id // 0')
 
-if [ "$OWNER_ID" == 0 ]; then
-    echo "Cannot determine owner's user id (current owner is $OWNER)"
-    exit 1
-fi
-echo "Owner ($OWNER) user id is: $OWNER_ID"
+echo "Resolving $OWNER user (id: $OWNER_ID) attributes..."
 
 ### Setup user's keys values
 OWNER_ATTRIBUTES="$(curl -s \

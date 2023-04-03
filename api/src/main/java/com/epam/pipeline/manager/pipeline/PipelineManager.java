@@ -203,6 +203,9 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
         dbPipeline.setBranch(pipelineVO.getBranch());
+        dbPipeline.setVisibility(pipelineVO.getVisibility());
+        dbPipeline.setCodePath(pipelineVO.getCodePath());
+        dbPipeline.setDocsPath(pipelineVO.getDocsPath());
         dbPipeline.setConfigurationPath(StringUtils.strip(pipelineVO.getConfigurationPath(), Constants.PATH_DELIMITER));
         pipelineDao.updatePipeline(dbPipeline);
 

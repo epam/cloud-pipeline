@@ -29,7 +29,6 @@ import {
   Tooltip
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
-import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -103,7 +102,8 @@ class UploadButton extends React.Component {
         id: storageId,
         path,
         delimiter,
-        region
+        region,
+        read: false
       };
       if (this.s3Storage) {
         this.s3Storage.storage = storage;

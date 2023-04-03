@@ -31,10 +31,13 @@ class AnalysisFile {
 /**
  * @typedef {Object} HCSSourceFileOptions
  * @property {string} sourceDirectory
- * @property {{x: number, y: number}} well
- * @property {string} image
+ * @property {number} x
+ * @property {number} y
  * @property {number} z
- * @property {number} time
+ * @property {number} t
+ * @property {number} c
+ * @property {string} channel
+ * @property {string} fieldID
  */
 
 /**
@@ -45,46 +48,97 @@ class AnalysisFile {
 function sourceFileOptionsEqual (optionsA, optionsB) {
   const {
     sourceDirectory: aSourceDirectory,
-    well: aWell,
-    image: aImage,
-    z: aZ,
-    time: aTime
+    x: ax,
+    y: ay,
+    z: az,
+    fieldID: aF,
+    channel: aChannel,
+    c: ac,
+    t: at
   } = optionsA || {};
   const {
-    x: aX,
-    y: aY
-  } = aWell || {};
-  const {
     sourceDirectory: bSourceDirectory,
-    well: bWell,
-    image: bImage,
-    z: bZ,
-    time: bTime
+    x: bx,
+    y: by,
+    z: bz,
+    fieldID: bF,
+    channel: bChannel,
+    c: bc,
+    t: bt
   } = optionsB || {};
-  const {
-    x: bX,
-    y: bY
-  } = bWell || {};
   return aSourceDirectory === bSourceDirectory &&
-    aX === bX &&
-    aY === bY &&
-    aZ === bZ &&
-    aTime === bTime &&
-    aImage === bImage;
+    ax === bx &&
+    ay === by &&
+    az === bz &&
+    at === bt &&
+    ac === bc &&
+    aChannel === bChannel &&
+    aF === bF;
+}
+
+/**
+ * @param {HCSSourceFileOptions} a
+ * @param {HCSSourceFileOptions} b
+ * @returns {number}
+ */
+function sortSourceFiles (a, b) {
+  const {
+    x: ax,
+    y: ay,
+    z: az,
+    fieldID: aF,
+    c: ac,
+    t: at
+  } = a || {};
+  const {
+    x: bx,
+    y: by,
+    z: bz,
+    fieldID: bF,
+    c: bc,
+    t: bt
+  } = b || {};
+  return (ax - bx) || (ay - by) || (az - bz) || (at - bt) || (aF - bF) || (ac - bc);
+}
+
+/**
+ * @param {HCSSourceFileOptions[]} a
+ * @param {HCSSourceFileOptions[]} b
+ * @returns {boolean}
+ */
+function sourceFileOptionsSetsEqual (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b || a.length !== b.length) {
+    return false;
+  }
+  const aSorted = a.slice().sort(sortSourceFiles);
+  const bSorted = b.slice().sort(sortSourceFiles);
+  for (let i = 0; i < aSorted.length; i++) {
+    if (!sourceFileOptionsEqual(aSorted[i], bSorted[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 class HCSSourceFile extends AnalysisFile {
   /**
-   * @param {HCSSourceFileOptions} options
+   * @param {HCSSourceFileOptions} aFile
    * @returns {boolean}
    */
-  static check (options) {
-    const {
-      sourceDirectory,
-      well,
-      image
-    } = options || {};
-    return !!sourceDirectory && !!well && well.x !== undefined && well.y !== undefined && !!image;
+  static check (...aFile) {
+    return !aFile.some((fileInfo) => {
+      const {
+        sourceDirectory,
+        fieldID,
+        channel
+      } = fileInfo || {};
+      return !sourceDirectory ||
+        !fieldID ||
+        !channel;
+    });
   }
   /**
    *
@@ -94,23 +148,32 @@ class HCSSourceFile extends AnalysisFile {
   constructor (cpModule, options) {
     const {
       sourceDirectory,
-      well,
-      image,
-      z = 0,
-      time = 0
+      c,
+      channel,
+      fieldID,
+      t,
+      y,
+      x,
+      z
     } = options;
-    super(cpModule, sourceDirectory, image);
+    super(
+      cpModule,
+      sourceDirectory,
+      `Field ${fieldID}, Well (${x},${y}), z=${z}, t=${t}, channel ${channel} (#${c})`
+    );
     this.sourceDirectory = sourceDirectory;
-    this.x = well ? well.x : undefined;
-    this.y = well ? well.y : undefined;
-    this.image = image;
+    this.x = x;
+    this.y = y;
     this.z = z;
-    this.time = time;
+    this.t = t;
+    this.c = c;
+    this.channel = channel;
+    this.fieldID = fieldID;
   }
 }
 
 export {
   AnalysisFile,
   HCSSourceFile,
-  sourceFileOptionsEqual
+  sourceFileOptionsSetsEqual
 };

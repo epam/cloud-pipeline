@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -506,9 +506,13 @@ public class ToolsTest
     }
 
     public Consumer<ToolGroupDeletionPopup> confirmGroupDeletion(final String groupName) {
-        return confirmation -> confirmation.ensureGroupNameIs(groupName)
-                        .sleep(1, SECONDS)
-                        .ok();
+        return confirmation -> {
+            confirmation.ensureGroupNameIs(groupName).sleep(1, SECONDS);
+            if (confirmation.context().find(byText("Delete child tools")).exists()) {
+                confirmation.click(byText("Delete child tools"));
+            }
+            confirmation.ok();
+        };
     }
 
     private String personalGroupActualName(final String login) {

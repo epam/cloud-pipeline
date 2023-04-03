@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo.billing;
 
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import lombok.Value;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 
@@ -27,12 +28,15 @@ import java.util.Map;
 @Value
 public class BillingChartRequest {
 
-    private LocalDate from;
-    private LocalDate to;
-    private Map<String, List<String>> filters;
-    private DateHistogramInterval interval;
-    private BillingGrouping grouping;
-    private boolean loadDetails;
-    private Long pageSize;
-    private Long pageNum;
+    LocalDate from;
+    LocalDate to;
+    Map<String, List<String>> filters;
+    DateHistogramInterval interval;
+    BillingGrouping grouping;
+    BillingGroupingSortOrder order;
+    boolean loadDetails;
+    boolean loadCostDetails;
+    Long pageSize;
+    Long pageNum;
+
 }

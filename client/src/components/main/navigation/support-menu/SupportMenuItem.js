@@ -17,9 +17,35 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Button, Icon, Popover} from 'antd';
-import Markdown from "../../../special/markdown";
+import {Button, Icon, message, Popover, Tooltip} from 'antd';
+import Markdown from '../../../special/markdown';
+import {HcsImageAnalysisJobsModal} from '../../../special/hcs-image/hcs-image-analysis-jobs';
+import GitlabIssueCreate from '../../../../models/gitlab-issues/GitlabIssueCreate';
+import {NewTicketForm} from '../../../special/tickets/special';
 import styles from './SupportMenu.css';
+
+const actions = {
+  hcs: 'hcs',
+  createTicket: 'create-ticket',
+  openTickets: 'open-tickets'
+};
+
+const allActions = new Set(Object.values(actions));
+
+const Hint = ({children, hint}) => {
+  if (!hint) {
+    return children;
+  }
+  return (
+    <Tooltip
+      trigger={['hover']}
+      title={hint}
+      placement="right"
+    >
+      {children}
+    </Tooltip>
+  );
+};
 
 function replaceLineBreaks (text) {
   if (!text) {
@@ -49,7 +75,76 @@ class SupportMenuItem extends React.Component {
     visible: PropTypes.bool,
     style: PropTypes.object,
     content: PropTypes.string,
-    icon: PropTypes.string
+    icon: PropTypes.string,
+    url: PropTypes.string,
+    action: PropTypes.string,
+    target: PropTypes.string,
+    hint: PropTypes.string,
+    entryName: PropTypes.string,
+    router: PropTypes.object
+  };
+
+  state = {
+    hcsJobsModalVisible: false,
+    createTicketModalVisible: false,
+    ticketPending: false
+  };
+
+  openHCSJobs = () => {
+    this.setState({
+      hcsJobsModalVisible: true
+    });
+  };
+
+  closeHCSJobs = () => {
+    this.setState({
+      hcsJobsModalVisible: false
+    });
+  };
+
+  openCreateTicketModal = () => {
+    this.setState({
+      createTicketModalVisible: true
+    });
+  };
+
+  closeCreateTicketModal = () => {
+    this.setState({
+      createTicketModalVisible: false
+    });
+  };
+
+  createTicket = (payload) => {
+    this.setState({ticketPending: true}, async () => {
+      const hide = message.loading(`Creating ticket...`, 0);
+      try {
+        const request = new GitlabIssueCreate();
+        await request.send(payload);
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        this.setState({
+          ticketPending: false,
+          createTicketModalVisible: false
+        }, () => this.navigateToTickets());
+      } catch (error) {
+        message.error(error.message, 5);
+        this.setState({
+          ticketPending: false
+        });
+      } finally {
+        hide();
+      }
+    });
+  };
+
+  navigateToTickets = () => {
+    const {
+      router
+    } = this.props;
+    if (router && typeof router.push === 'function') {
+      router.push('/tickets');
+    }
   };
 
   renderIcon = () => {
@@ -67,14 +162,93 @@ class SupportMenuItem extends React.Component {
     );
   };
 
+  openUrl = () => {
+    const {
+      url,
+      target = '_blank'
+    } = this.props;
+    if (url) {
+      window.open(url, target);
+    }
+  };
+
+  doAction = () => {
+    const {
+      action
+    } = this.props;
+    switch (action) {
+      case actions.hcs:
+        this.openHCSJobs();
+        break;
+      case actions.createTicket:
+        this.openCreateTicketModal();
+        break;
+      case actions.openTickets:
+        this.navigateToTickets();
+        break;
+    }
+  };
+
   render () {
     const {
       className,
       onVisibilityChanged,
       visible,
       style,
-      content
+      content,
+      url,
+      action,
+      hint,
+      entryName
     } = this.props;
+    const id = `navigation-button-support-${(entryName || 'default').replace(/[\s.,;]/g, '-')}`;
+    if (url) {
+      return (
+        <Hint
+          hint={hint}
+        >
+          <Button
+            id={id}
+            className={className}
+            style={style}
+            onClick={this.openUrl}
+          >
+            {this.renderIcon()}
+          </Button>
+        </Hint>
+      );
+    }
+    if (action && !allActions.has(action)) {
+      return null;
+    }
+    if (action) {
+      return (
+        <Hint
+          hint={hint}
+        >
+          <Button
+            id={id}
+            className={className}
+            style={style}
+            onClick={this.doAction}
+          >
+            {this.renderIcon()}
+            <HcsImageAnalysisJobsModal
+              visible={this.state.hcsJobsModalVisible}
+              onClose={this.closeHCSJobs}
+            />
+            <NewTicketForm
+              renderAsModal
+              modalVisible={this.state.createTicketModalVisible}
+              title="Create new ticket"
+              pending={this.state.ticketPending}
+              onCancel={this.closeCreateTicketModal}
+              onSave={this.createTicket}
+            />
+          </Button>
+        </Hint>
+      );
+    }
     if (!content) {
       return null;
     }
@@ -97,7 +271,7 @@ class SupportMenuItem extends React.Component {
         visible={visible}
       >
         <Button
-          id="navigation-button-support"
+          id={id}
           className={className}
           style={style}
         >

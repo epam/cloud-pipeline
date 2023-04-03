@@ -49,6 +49,7 @@ import java.util.function.BiFunction;
 @Slf4j
 public class ReassignHandler {
     private static final String CP_CREATE_NEW_NODE = "CP_CREATE_NEW_NODE";
+    private static final String CP_CAP_DEDICATED_INSTANCE = "CP_CAP_DEDICATED_INSTANCE";
 
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
@@ -200,7 +201,13 @@ public class ReassignHandler {
                                      && isValueTrue(parameter.getValue()))
                 .findAny())
             .isPresent();
-        return !(isWindowsRun || requiresNewNode);
+        final boolean dedicatedNode = pipelineRun
+                .flatMap(run -> run.getPipelineRunParameters().stream()
+                        .filter(parameter -> Objects.equals(parameter.getName(), CP_CAP_DEDICATED_INSTANCE)
+                                && isValueTrue(parameter.getValue()))
+                        .findAny())
+                .isPresent();
+        return !(isWindowsRun || requiresNewNode || dedicatedNode);
     }
 
     private boolean isValueTrue(final String value) {

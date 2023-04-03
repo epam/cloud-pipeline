@@ -45,6 +45,7 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -102,7 +103,7 @@ public class ServerlessConfigurationManagerTest {
                 .thenReturn(Collections.singletonList(pipelineRun));
         when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
-        when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
+        when(runManager.loadPipelineRun(any(), eq(false))).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
         when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
 
@@ -130,7 +131,7 @@ public class ServerlessConfigurationManagerTest {
                 .thenReturn(Collections.singletonList(pipelineRun));
         when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
-        when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
+        when(runManager.loadPipelineRun(any(), eq(false))).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
         when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
 
@@ -155,7 +156,7 @@ public class ServerlessConfigurationManagerTest {
         when(runConfigurationManager.load(any())).thenReturn(configuration);
         when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
-        when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
+        when(runManager.loadPipelineRun(any(), eq(false))).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
         when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.of(
                 StopServerlessRun.builder()
@@ -191,7 +192,7 @@ public class ServerlessConfigurationManagerTest {
         when(runConfigurationManager.load(any())).thenReturn(configuration);
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE)).thenReturn(1);
-        when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
+        when(runManager.loadPipelineRun(any(), eq(false))).thenReturn(pipelineRun);
         when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
         when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
 
@@ -255,7 +256,7 @@ public class ServerlessConfigurationManagerTest {
                 .thenReturn(Collections.singletonList(pipelineRun));
         when(runManager.searchPipelineRuns(any(), anyBoolean())).thenReturn(activeRuns);
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_WAIT_COUNT)).thenReturn(1);
-        when(runManager.loadPipelineRun(any())).thenReturn(pipelineRun);
+        when(runManager.loadPipelineRun(any(), eq(false))).thenReturn(pipelineRun);
         doReturn(StringUtils.EMPTY).when(serverlessConfigurationManager).sendRequest(any(), any());
         when(stopServerlessRunManager.loadByRunId(any())).thenReturn(Optional.empty());
 

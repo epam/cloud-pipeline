@@ -35,7 +35,7 @@ class JobNotifications extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (!notificationArraysAreEqual(prevProps.notifications, this.props.notifications)) {
+    if (!notificationArraysAreEqual(prevProps.value, this.props.value)) {
       this.updateState();
     }
   }
@@ -55,14 +55,14 @@ class JobNotifications extends React.Component {
   }
 
   get modified () {
-    const {notifications: initial = []} = this.props;
+    const {value: initial = []} = this.props;
     const {notifications = []} = this.state;
     return !notificationArraysAreEqual(notifications, initial);
   }
 
   updateState = () => new Promise(resolve => {
     const {
-      notifications = []
+      value: notifications = []
     } = this.props;
     this.setState({
       notifications: notifications.map(o => ({...o}))
@@ -92,8 +92,10 @@ class JobNotifications extends React.Component {
 
   renderTitle = () => {
     const {
-      notifications = [],
-      multiple
+      value: notifications = [],
+      multiple,
+      linkClassName,
+      linkStyle
     } = this.props;
     if (notifications.length === 0) {
       return null;
@@ -153,9 +155,11 @@ class JobNotifications extends React.Component {
           classNames(
             'cp-text',
             'underline',
-            styles.link
+            styles.link,
+            linkClassName
           )
         }
+        style={linkStyle}
         onClick={this.openConfigurationDialog}
       >
         <Icon type="setting" />
@@ -340,11 +344,13 @@ class JobNotifications extends React.Component {
 }
 
 JobNotifications.propTypes = {
-  notifications: PropTypes.array,
+  value: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   onChange: PropTypes.func,
   availableNotificationTypes: PropTypes.array,
   defaultNotificationType: PropTypes.string,
-  multiple: PropTypes.bool
+  multiple: PropTypes.bool,
+  linkClassName: PropTypes.string,
+  linkStyle: PropTypes.object
 };
 
 JobNotifications.defaultProps = {

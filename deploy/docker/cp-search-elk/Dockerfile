@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ COPY curator-actions-template.yml /root/.curator/
 
 COPY get-aws-profile.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/get-aws-profile.sh
+
+RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+    chmod +x /usr/bin/jq
 
 COPY init.sh /
 RUN chmod +x /init.sh

@@ -53,6 +53,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -77,6 +78,9 @@ public class NFSQuotasMonitor {
 
     private static final int GB_TO_BYTES = 1024 * 1024 * 1024;
     private static final int PERCENTS_MULTIPLIER = 100;
+    private static final String NFS_STORAGE_TIER = "STANDARD";
+    private static final StorageUsage.StorageUsageStats EMPTY_USAGE = new StorageUsage.StorageUsageStats(
+            NFS_STORAGE_TIER, 0L, 0L, 0L, 0L, 0L, 0L);
 
     private final DataStorageManager dataStorageManager;
     private final SearchManager searchManager;
@@ -304,7 +308,8 @@ public class NFSQuotasMonitor {
     private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
                                  final Set<String> storageSizeMasks) {
         final Double originalLimit = notification.getValue();
-        final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, false, storageSizeMasks);
+        final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, false, storageSizeMasks,
+                storage.getType().getStorageClasses(), false);
         final StorageQuotaType notificationType = notification.getType();
         switch (notificationType) {
             case GIGABYTES:
@@ -319,7 +324,8 @@ public class NFSQuotasMonitor {
 
     private boolean exceedsAbsoluteLimit(final Double originalLimit, final StorageUsage storageUsage) {
         final long limitBytes = (long) (originalLimit * GB_TO_BYTES);
-        return storageUsage.getEffectiveSize() > limitBytes;
+        return storageUsage.getUsage()
+                .getOrDefault(NFS_STORAGE_TIER, EMPTY_USAGE).getEffectiveSize() > limitBytes;
     }
 
     private boolean exceedsPercentageLimit(final NFSDataStorage storage, final Double originalLimit,
@@ -331,7 +337,8 @@ public class NFSQuotasMonitor {
                 return lustreManager.findLustreFS(shareMount)
                     .map(LustreFS::getCapacityGb)
                     .map(maxSize -> convertLustrePercentageLimitToAbsoluteValue(originalLimit, maxSize) * GB_TO_BYTES)
-                    .map(limit -> storageUsage.getEffectiveSize() > limit)
+                    .map(limit -> storageUsage.getUsage()
+                            .getOrDefault(NFS_STORAGE_TIER, EMPTY_USAGE).getEffectiveSize() > limit)
                     .orElse(false);
             case NFS:
                 log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN,
@@ -419,17 +426,20 @@ public class NFSQuotasMonitor {
     }
 
     private void controlNotifications(final Map<Long, NFSDataStorage> nfsMapping, final LocalDateTime checkTime) {
+        final List<NFSQuotaTrigger> triggersToDelete = new ArrayList<>();
         latestTriggers.values().stream()
             .filter(NFSQuotaTrigger::isNotificationRequired)
             .filter(trigger -> trigger.getExecutionTime()
                 .plus(notificationResendTimeout, ChronoUnit.MINUTES)
                 .isBefore(checkTime))
             .forEach(expiredTrigger ->
-                         resendNotification(expiredTrigger, nfsMapping.get(expiredTrigger.getStorageId()), checkTime));
+                         resendNotification(expiredTrigger, nfsMapping.get(expiredTrigger.getStorageId()), checkTime,
+                                 triggersToDelete));
+        ListUtils.emptyIfNull(triggersToDelete).forEach(this::deleteTrigger);
     }
 
     private void resendNotification(final NFSQuotaTrigger expiredTrigger, final NFSDataStorage storage,
-                                    final LocalDateTime checkTime) {
+                                    final LocalDateTime checkTime, final List<NFSQuotaTrigger> triggersToDelete) {
         final NFSStorageMountStatus newStatus = expiredTrigger.getTargetStatus();
         final NFSQuotaNotificationEntry notification = expiredTrigger.getQuota();
         final List<NFSQuotaNotificationRecipient> recipients = expiredTrigger.getRecipients();
@@ -437,7 +447,17 @@ public class NFSQuotasMonitor {
                                                           storage.getMountStatus().equals(newStatus)
                                                           ? null
                                                           : expiredTrigger.getTargetStatusActivationTime());
-        updateTrigger(expiredTrigger.toBuilder().executionTime(checkTime).build());
+        if (expiredTrigger.getQuota().equals(NO_ACTIVE_QUOTAS_NOTIFICATION)) {
+            //NO_ACTIVE_QUOTA is sent only once
+            triggersToDelete.add(expiredTrigger);
+        } else {
+            updateTrigger(expiredTrigger.toBuilder().executionTime(checkTime).build());
+        }
+    }
+
+    private void deleteTrigger(final NFSQuotaTrigger expiredTrigger) {
+        triggersManager.delete(expiredTrigger);
+        latestTriggers.remove(expiredTrigger.getStorageId());
     }
 
     private void updateTrigger(final NFSQuotaTrigger triggerUpdate) {

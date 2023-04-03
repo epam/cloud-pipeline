@@ -86,6 +86,8 @@ import PlatformIcon from './platform-icon';
 import HiddenObjects from '../../utils/hidden-objects';
 import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
 import Markdown from '../special/markdown';
+import {applyUserCapabilities} from '../pipelines/launch/form/utilities/run-capabilities';
+import ToolHistory from './ToolHistory';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
@@ -125,7 +127,8 @@ export default class Tool extends localization.LocalizedReactComponent {
     showIssuesPanel: false,
     instanceTypesManagementPanel: false,
     createLinkInProgress: false,
-    createLinkFormVisible: false
+    createLinkFormVisible: false,
+    versionFilterValue: undefined
   };
 
   @observable defaultVersionSettings;
@@ -201,6 +204,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (this.registries.length > 0 && this.props.tool.loaded) {
       return this.registries
         .find(r => r.id === this.props.tool.value.registryId);
+    }
+    return null;
+  }
+
+  @computed
+  get toolImage () {
+    if (this.props.tool.loaded) {
+      return `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
     }
     return null;
   }
@@ -741,6 +752,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     return this.props.authenticatedUserInfo.value.admin;
   };
 
+  historyAvailableForUser = () => {
+    if (!this.props.tool.loaded) {
+      return false;
+    }
+    return roleModel.writeAllowed(this.props.tool.value) ||
+      roleModel.executeAllowed(this.props.tool.value);
+  };
+
   getVersionScanningInfo = (item) => {
     if (/^windows$/i.test(item.platform)) {
       return null;
@@ -850,7 +869,6 @@ export default class Tool extends localization.LocalizedReactComponent {
         keyIndex += 1;
       });
     }
-
     return data;
   }
 
@@ -1085,9 +1103,16 @@ export default class Tool extends localization.LocalizedReactComponent {
     }];
 
     let data = this.toolVersionScanResults;
-    const isContainsUnscannedVersion = this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && data.filter(item => item.status === ScanStatuses.notScanned).length > 0;
+    const containsUnScannedVersion = this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
+      data.filter(item => item.platform !== 'windows' && item.status === ScanStatuses.notScanned).length > 0;
     if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) && !this.state.isShowUnscannedVersion) {
-      data = data.filter(d => d.status !== ScanStatuses.notScanned);
+      data = data.filter(d => d.platform === 'windows' || d.status !== ScanStatuses.notScanned);
+    }
+    const {versionFilterValue} = this.state;
+    if (versionFilterValue && versionFilterValue.length) {
+      data = data.filter((item) => (
+        item.name.toLowerCase().includes(versionFilterValue.toLocaleLowerCase())
+      ));
     }
     return (
       <Row style={{width: '100%'}}>
@@ -1098,6 +1123,14 @@ export default class Tool extends localization.LocalizedReactComponent {
             message={this.props.versions.error}
             style={{margin: '5px 0 10px 0'}} />
         }
+        <Input
+          value={versionFilterValue}
+          onChange={(e) => {
+            this.setState({versionFilterValue: e.target.value});
+          }}
+          placeholder="Enter version name"
+          className={styles.versionFilterInput}
+        />
         <Table
           className={styles.table}
           loading={this.props.versions.pending}
@@ -1106,8 +1139,10 @@ export default class Tool extends localization.LocalizedReactComponent {
             styles.versionTableRow,
             {
               [styles.whiteListedVersionRow]: item.fromWhiteList &&
+              !/^windows$/i.test(item.platform) &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry),
               'cp-tool-white-listed-version': item.fromWhiteList &&
+                !/^windows$/i.test(item.platform) &&
                 this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
             }
           )}
@@ -1116,6 +1151,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           pagination={{pageSize: 20}}
           onRowClick={(version) => {
             if (this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
+              !/^windows$/i.test(version.platform) &&
               version.status !== ScanStatuses.notScanned) {
               this.props.router.push(`/tool/${this.props.toolId}/info/${version.name}/scaninfo`);
             } else {
@@ -1124,7 +1160,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           }}
           size="small" />
         {
-          isContainsUnscannedVersion &&
+          containsUnScannedVersion &&
           <Row className={styles.viewUnscannedVersion}>
             <Button
               style={{marginTop: 10, lineHeight: 1}}
@@ -1132,7 +1168,6 @@ export default class Tool extends localization.LocalizedReactComponent {
               size="large"
               type="primary"
               ghost
-              disabled={!isContainsUnscannedVersion}
               onClick={this.onChangeViewUnscannedVersion}
             >
               {
@@ -1216,11 +1251,21 @@ export default class Tool extends localization.LocalizedReactComponent {
     );
   };
 
+  renderToolHistory = () => {
+    if (!this.props.tool.loaded || !this.historyAvailableForUser()) {
+      return undefined;
+    }
+    return (
+      <ToolHistory image={this.toolImage} />
+    );
+  };
+
   renderToolContent = () => {
     switch (this.props.section) {
       case 'description': return this.renderDescription();
       case 'versions': return this.renderVersions();
       case 'settings': return this.renderToolSettings();
+      case 'history': return this.renderToolHistory();
     }
     return undefined;
   };
@@ -1377,6 +1422,13 @@ export default class Tool extends localization.LocalizedReactComponent {
         <MenuHorizontal.Item key="settings">
           SETTINGS
         </MenuHorizontal.Item>
+        {
+          this.historyAvailableForUser() && (
+            <MenuHorizontal.Item key="history">
+              HISTORY
+            </MenuHorizontal.Item>
+          )
+        }
       </MenuHorizontal>
     );
   };
@@ -1494,6 +1546,11 @@ export default class Tool extends localization.LocalizedReactComponent {
     ]);
     const info = this.getVersionRunningInformation(version || this.defaultTag);
     const platform = this.defaultVersionPlatform;
+    payload.params = await applyUserCapabilities(
+      payload.params || {},
+      this.props.preferences,
+      platform
+    );
     if (await run(this)(
       payload,
       true,
@@ -2071,6 +2128,13 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (!this.defaultVersionSettings && this.defaultTag) {
       this.defaultVersionSettings = new LoadToolVersionSettings(this.props.tool.value.id, this.defaultTag);
       this.defaultVersionSettings.fetch();
+    }
+    if (
+      this.props.tool.loaded &&
+      !this.historyAvailableForUser() &&
+      /^history$/i.test(this.props.section)
+    ) {
+      this.props.router.push(`/tool/${this.props.toolId}`);
     }
   }
 

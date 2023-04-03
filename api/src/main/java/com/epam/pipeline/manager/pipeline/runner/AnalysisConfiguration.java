@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.pipeline.runner;
 
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,4 +34,5 @@ public class AnalysisConfiguration<T extends AbstractRunConfigurationEntry> {
     private String expansionExpression;
     private List<Long> entitiesIds;
     private String refreshToken;
+    private List<PipelineStartNotificationRequest> notifications;
 }

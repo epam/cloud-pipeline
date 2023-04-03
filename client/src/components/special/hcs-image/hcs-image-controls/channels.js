@@ -31,7 +31,8 @@ function HcsImageChannelsControl (
   const {
     channels = [],
     pending,
-    channelsLocked
+    allChannelsLocked,
+    lockedChannels
   } = hcsViewerState || {};
   if (pending && channels.length === 0) {
     return (
@@ -52,7 +53,10 @@ function HcsImageChannelsControl (
         </span>
         <Checkbox
           onChange={(e) => hcsViewerState.setChannelsLocked(e.target.checked)}
-          checked={channelsLocked}
+          checked={allChannelsLocked}
+          indeterminate={
+            lockedChannels.length > 0 && lockedChannels.length < channels.length
+          }
         >
           Persist channels state
         </Checkbox>
@@ -64,12 +68,16 @@ function HcsImageChannelsControl (
             identifier={channel.identifier}
             name={channel.name}
             visible={channel.visible}
+            locked={lockedChannels.includes(channel.name)}
             color={channel.color}
             domain={channel.domain}
             contrastLimits={channel.contrastLimits}
             loading={pending}
             onVisibilityChanged={
               (visible) => hcsViewerState.changeChannelVisibility(channel, visible)
+            }
+            onLockedChanged={
+              (locked) => hcsViewerState.setChannelLocked(channel, locked)
             }
             onContrastLimitsChanged={
               (limits) => hcsViewerState.changeChannelContrastLimits(channel, limits)

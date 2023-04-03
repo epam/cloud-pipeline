@@ -435,7 +435,7 @@ class PipelineRunOperations(object):
         if ROLE_ADMIN in all_user_roles:
             return
         default_system_parameters_dict = {param.name: param for param in Pipeline.get_default_run_parameters()}
-        for run_param_name, run_param_value in run_params_dict.iteritems():
+        for run_param_name, run_param_value in run_params_dict.items():
             if run_param_name in default_system_parameters_dict:
                 default_system_parameter = default_system_parameters_dict[run_param_name]
                 if default_system_parameter.value != run_param_value:

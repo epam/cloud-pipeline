@@ -1,0 +1,6 @@
+{
+  "keepInformedAdmins":false,
+  "keepInformedOwner":false,
+  "enabled":true,
+  "subject":"Data transition is scheduled for storage #$templateParameters[\"storageName\"]"
+}

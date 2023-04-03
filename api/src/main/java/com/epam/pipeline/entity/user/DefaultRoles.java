@@ -31,7 +31,11 @@ public enum DefaultRoles {
     ROLE_BILLING_MANAGER(new Role(null, "ROLE_BILLING_MANAGER", true, false, null, null, null, null)),
     ROLE_ANONYMOUS_USER(new Role(null, "ROLE_ANONYMOUS_USER", true, false, null, null, null, null)),
     ROLE_ADVANCED_USER(new Role(null, "ROLE_ADVANCED_USER", true, false, null, null, null, null)),
-    ROLE_DTS_MANAGER(new Role(null, "ROLE_DTS_MANAGER", true, false, null, null, null, null));
+    ROLE_DTS_MANAGER(new Role(null, "ROLE_DTS_MANAGER", true, false, null, null, null, null)),
+    ROLE_SERVICE_ACCOUNT(new Role(null, "ROLE_SERVICE_ACCOUNT", true, false, null, null, null, null)),
+    ROLE_ALLOW_ALL_POLICY(new Role(null, "ROLE_ALLOW_ALL_POLICY", true, false, null, null, null, null)),
+    ROLE_STORAGE_ARCHIVE_MANAGER(new Role(null, "ROLE_STORAGE_ARCHIVE_MANAGER", true, false, null, null, null, null)),
+    ROLE_STORAGE_ARCHIVE_READER(new Role(null, "ROLE_STORAGE_ARCHIVE_READER", true, false, null, null, null, null));
 
     private Role role;
 

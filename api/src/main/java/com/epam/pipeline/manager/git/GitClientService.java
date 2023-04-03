@@ -33,7 +33,7 @@ public interface GitClientService {
 
     RepositoryType getType();
 
-    GitProject createRepository(String description, String repositoryPath, String token);
+    GitProject createRepository(String description, String repositoryPath, String token, String visibility);
 
     GitProject renameRepository(String currentRepositoryPath, String newName, String token);
 

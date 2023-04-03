@@ -21,8 +21,12 @@ import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.re
 import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFolderPathMatchingMasks;
 
 import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -32,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -44,7 +49,9 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -59,9 +66,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +84,16 @@ import java.util.stream.Stream;
 @Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
+    /**
+     * See {@link StorageClass} from s3 model.
+     * */
+    private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList(
+            "GLACIER", "DEEP_ARCHIVE", "GLACIER_IR", "DELETION");
+
+    public static final String STANDARD_RESTORE_MODE = "STANDARD";
+    private static final List<String> SUPPORTED_RESTORE_MODES = Arrays.asList(STANDARD_RESTORE_MODE, "BULK");
     private final AuthManager authManager;
+    private final StorageEventCollector s3Events;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
@@ -143,7 +161,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public void applyStoragePolicy(S3bucketDataStorage dataStorage) {
+    public void applyStoragePolicy(final S3bucketDataStorage dataStorage) {
         final AwsRegion awsRegion = getAwsRegion(dataStorage);
         final StoragePolicy storagePolicy = buildPolicy(awsRegion, dataStorage.getStoragePolicy());
         getS3Helper(dataStorage).applyStoragePolicy(dataStorage.getRoot(), storagePolicy);
@@ -184,13 +202,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public DataStorageListing getItems(S3bucketDataStorage dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker) {
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
+    }
+
+    @Override
+    public DataStorageListing getItems(final S3bucketDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
         final Set<String> activeLinkingMasks = resolveFolderPathListingMasks(dataStorage, path);
         return getS3Helper(dataStorage)
-            .getItems(datastoragePath.getRoot(),
-                      ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
-                      ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
-                      Optional.of(activeLinkingMasks).filter(CollectionUtils::isNotEmpty).orElse(null));
+                .getItems(datastoragePath.getRoot(),
+                        ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
+                        ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
+                        Optional.of(activeLinkingMasks).filter(CollectionUtils::isNotEmpty).orElse(null),
+                        restoredListing);
     }
 
     @Override
@@ -378,21 +404,62 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                 ProviderUtils.buildPath(dataStorage, path), pathDescription);
     }
 
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        rule.getTransitions().forEach(t -> {
+            Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(t.getStorageClass()),
+                    "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+            Assert.isTrue(t.getTransitionAfterDays() != null || t.getTransitionDate() != null,
+                    "transitionAfterDays or transitionDate should be provided!");
+            Assert.isTrue(!(t.getTransitionAfterDays() != null && t.getTransitionDate() != null),
+                    "Only transitionAfterDays or transitionDate could be provided, but not both!");
+        });
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(execution.getStorageClass()),
+                "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+    }
+
+    @Override
+    public void verifyRestoreActionSupported() {
+        // s3 provider supports restore - nothing to do
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest restoreActionRequest) {
+        if (StringUtils.isEmpty(restoreActionRequest.getRestoreMode())) {
+            return STANDARD_RESTORE_MODE;
+        }
+        Assert.isTrue(SUPPORTED_RESTORE_MODES.contains(restoreActionRequest.getRestoreMode()),
+                "Restore request mode should be one of: " + SUPPORTED_RESTORE_MODES);
+        return restoreActionRequest.getRestoreMode();
+    }
+
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
-        AwsRegion region = getAwsRegion(dataStorage);
+        final AwsRegion region = getAwsRegion(dataStorage);
         if (dataStorage.isUseAssumedCredentials()) {
             final String roleArn = Optional.ofNullable(dataStorage.getTempCredentialsRole())
                     .orElse(region.getTempCredentialsRole());
-            return new AssumedCredentialsS3Helper(roleArn, region, messageHelper);
+            return new AssumedCredentialsS3Helper(s3Events, messageHelper, region, roleArn);
         }
         if (StringUtils.isNotBlank(region.getIamRole())) {
-            return new AssumedCredentialsS3Helper(region.getIamRole(), region, messageHelper);
+            return new AssumedCredentialsS3Helper(s3Events, messageHelper, region, region.getIamRole());
         }
-        return new RegionAwareS3Helper(region, messageHelper);
+        return new RegionAwareS3Helper(s3Events, messageHelper, region);
     }
 
     public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
-        return new TemporaryCredentialsS3Helper(credentials, messageHelper, region);
+        return new TemporaryCredentialsS3Helper(s3Events, messageHelper, region, credentials);
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final S3bucketDataStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        return getS3Helper(dataStorage).getItemType(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path), version);
     }
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {

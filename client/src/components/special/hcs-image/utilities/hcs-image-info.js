@@ -98,6 +98,31 @@ class HCSInfo {
           .join(objectStorage ? objectStorage.delimiter : '/'),
         timeSeries: timeSeriesDetails[sequence] || []
       }));
+    this.sequences
+      .forEach(aSequence => aSequence.addURLsGeneratedListener(this.sequenceURLsRegenerated));
+    this.listeners = [];
+  }
+
+  addURLsRegeneratedListener = (listener) => {
+    this.removeURLsRegeneratedListener(listener);
+    this.listeners.push(listener);
+  };
+
+  removeURLsRegeneratedListener = (listener) => {
+    this.listeners = this.listeners.filter(aListener => aListener !== listener);
+  };
+
+  sequenceURLsRegenerated = (sequence) => {
+    this.listeners
+      .filter(aListener => typeof aListener === 'function')
+      .forEach(aListener => aListener(sequence, this));
+  };
+
+  destroy () {
+    this.listeners = undefined;
+    this.sequences.forEach(aSequence => aSequence.destroy());
+    this.sequences = undefined;
+    this.objectStorage = undefined;
   }
 
   /**

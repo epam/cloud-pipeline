@@ -207,6 +207,17 @@ class Viewer {
     });
   }
 
+  setDefaultChannelsColors(defaultColors = {}) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setDefaultChannelsColors')(defaultColors);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
   setMesh(mesh) {
     return new Promise((resolve, reject) => {
       this.waitForInitialization()

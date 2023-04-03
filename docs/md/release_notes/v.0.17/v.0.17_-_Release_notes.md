@@ -2,12 +2,14 @@
 
 - [Billing reports enhancements](#billing-reports-enhancements)
 - [System dictionaries](#system-dictionaries)
+- [Cloud Data application](#cloud-data-application)
 - [Sending of email notifications enhancements](#sending-of-email-notifications-enhancements)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
 - [Export custom user's attributes](#export-custom-users-attributes)
 - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
+- [Sensitive storages](#sensitive-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
@@ -25,6 +27,10 @@
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
 - [Resolve variables for a rerun](#resolve-variables-for-a-rerun)
 - [NAT gateway](#nat-gateway)
+- [Custom Run capabilities](#custom-run-capabilities)
+- [Storage lifecycle management](#storage-lifecycle-management)
+- [Image history](#image-history)
+- [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -119,6 +125,41 @@ In **`v0.17`**, it was implemented - the user can view **Billing reports** with 
 - Reports (charts and tables) will be rebuilt for the configured custom date range:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_08.png)
 
+### Spendings for old versions of object storages
+
+As object storages supports versioning, it is convenient to view spendings for the old (previous) versions of the storage data. Old versions include all non-last (previous) versions of the versioning object storage.  
+From the current version, the **Object storages** report supports the displaying of the corresponding related information.
+
+At the summary chart, new dashed lines of the same colors (as for current and previous periods) appeared - these lines show summary spendings on the data usage for all _old versions_ of object storages:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_14.png)
+
+On all other object storage charts, bars are presented as stacks of _current version_ spendings / _old versions_ spendings. _Current version_ spendings are shown with solid filling, _old versions_ spendings are shown without filling, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_15.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_16.png)
+
+Also now, the detailed spendings table for object storages shows the info for spendings/usage in the format `total spendings/usage for all versions` / `spendings/usage for old versions only`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_21.png)
+
+### Spendings for object storages layers
+
+As object storages supports archiving data into different archive tiers (layers), it is convenient to view spendings separately for each layer.  
+From the current version, the **Object storages** report supports the displaying of the corresponding related information.  
+This information is shown on the separate chart - bar chart with division to different tiers (archive types). This chart does not contain any information for _previous_ period. Only layers used for data storing in the _current_ period according to selected filters are shown. Up to 4 layers can be here: `Standard`, `Glacier`, `Glacier IR`, `Deep Archive`.  
+Example:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_17.png)
+
+Object storage layers chart can show the information as storages usage costs - in `$` or as average storages volumes - in `Gb`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_18.png)
+
+If data in the storage is storing in different tiers (archive types), this can be viewed in a tooltip of other object storages charts - there will be a division of spendings by the used tiers, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_19.png)
+
+User can select one of the object storage layers - by click it on this new chart.  
+In this case, all charts and tables will be updated - only storages, that contain files in the selected layer type, will be shown in forms.  
+Also, shown spendings/data volume will be related only to files in the selected layer, not for the whole storage(s) or other layers.  
+For example, `Glasier IR` was selected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_20.png)
+
 ### Displaying different user's attributes in the Billing reports
 
 Previously, in all the **Billing reports**, info about users was displayed as user ID only. In some cases, it would be more convenient to display user names or emails - to take a more readable form.
@@ -129,15 +170,15 @@ It defines which user's attribute shall be used to display the users in the **Bi
 
 Possible values for described preference: _`userName`_, _`FirstName`_, _`LastName`_, etc.
 
-### Export reports in `csv` from any Billing page
+### Export reports in `CSV` from any Billing page
 
-Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `*.csv` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `*.png` image format only.
+Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `CSV` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `PNG` image format only.
 
-Currently, `*.csv` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
+Currently, `CSV` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
 
 - reports display the same structure as in the GUI - the top 10 records of the corresponding entities (e.g. storages or instances)
 - for the reports, which contain more than one table - all the tables are exported one after another
-- export in `*.csv` from the "General" page remains the same
+- export in `CSV` from the "General" page remains the same
 
 Example of an export from the "CPU" page:
 
@@ -146,10 +187,10 @@ Example of an export from the "CPU" page:
 
 ### Breakdown the billing reports by month
 
-**Cloud Pipeline** allows exporting billing reports in the `*.csv`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
+**Cloud Pipeline** allows exporting billing reports in the `CSV`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
 
 In the current version, this ability is implemented.  
-Now, if any period - longer than a month is selected (including a `custom` period), the `*.csv`-report contains an aggregate for each month of that period.  
+Now, if any period - longer than a month is selected (including a `custom` period), the `CSV`-report contains an aggregate for each month of that period.  
 The whole period summary is being included as well (as previously).
 
 Example of the report for a custom period:  
@@ -194,6 +235,42 @@ In the GUI, such connection is being handled in the following way:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_05.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-dictionaries).
+
+## Cloud Data application
+
+Previously, there were several ways to manage data between local workstation and Cloud data storages, including CLI, GUI, mounting data storages as a network drives, and others.  
+
+In the current version, a new Platform capability was implemented that provides a simple and convenient way to manage files, copy/move them between Cloud data storage and local workstation or even FTP-server.  
+This introduces via the new separate application that can be downloaded from the Cloud Pipeline Platform and launched at the local machine - **Cloud Data** application.
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_01.png)
+
+Cloud Data application allows you manage files/folders as in a file commander.  
+Main application form contains two panels (left and right).  
+In each panel, one of the following sources can be opened: **local workstation** / **FTP server** / **Cloud data** (datastorages).
+
+- the **_local_** content shows files and folders of the local workstation (by default, _home_ user's directory). Navigation between and inside folders is available:  
+   ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_02.png)
+- the **_Cloud data_** content includes:
+    - all FS mounts from the Cloud Pipeline environment - to which current user has permissions.  
+      They are shown as simple folders
+    - those object storages from the Cloud Pipeline environment - to which current user has permissions and "File system access" was requested.  
+      They are shown with storage icon
+    - Navigation between and inside folders/storages is available  
+   ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_03.png)
+- the **_ftp_** content shows files and folders of the FTP/SFTP server. Navigation between and inside folders is available:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_04.png)
+
+The base scenario of the application usage:
+
+1. User selects desired source and destination in panels, e.g. FTP server and object datastorage correspondingly:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_05.png)
+2. Users selects desired files/folders in the source and clicks the data management button in the source panel - according to the action user wants to perform, e.g. to copy a file:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_06.png)
+3. Action will be performed, content of the panels will be updated:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_07.png)
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app.md).
 
 ## Sending of email notifications enhancements
 
@@ -265,6 +342,29 @@ So, a new System preference **`system.notifications.exclude.instance.types`** wa
 If the node type is specified in this preference, listed above notifications will not be submitted to the jobs, that use this node type.  
 This preference allows a comma-separated list of the node types and wildcards, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_07.png)
+
+### Push notifications
+
+Previously, Cloud Pipeline platform sent notifications to users via email only. For many cases it would be useful to show such notifications in the GUI as well. In the current version, such ability was implemented.
+
+Now, all email notifications, that are sending by the platform, are also duplicated as push notifications. This allows to view notifications right in the Cloud Pipeline GUI.  
+Push notifications do not require additional configuring - they are fully the same as corresponding email notifications, i.e. have the same header, content, recepients list, frequency and trigger of sending, etc.
+
+Once any system event is occurred and its trigger for sending email notification has fired, email will be sent to the configured recipients. Simultaneously, the push notification (with the same subject and body as in the email) will be "sent" to the same recipients, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_01.png)
+
+Click it to view the whole notification - it will be opened in a pop-up:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_02.png)
+
+Additionally, a new section appeared in the main menu - **Notifications**.  
+It allows to view all push notifications/emails sent to the current user, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_03.png)
+
+User can switch notifications lists - to display only new "unread" notifications or only "read" ones.  
+To view the notification full details, user can click it - notification will be opened in a pop-up:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_04.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md#push-notifications).
 
 ## Allowed price types for a cluster master node
 
@@ -349,6 +449,35 @@ In the current version, such ability was implemented:
 - if the user clicks any object in the list - its regular page is being opened
 - for each "repository", there is a search field for the quick search over objects list
 
+## Sensitive storages
+
+Previously, Cloud Pipeline platform allows performing upload/download operations for any authorized data storage.  
+But certain storages may contain sensitive data, which shall not be copied anywhere outside that storage.
+
+For storing such data, special "sensitive" storages are implemented.  
+Sensitive data from that storages can be used for calculations or different other jobs, but this data cannot be copy/download to another regular storage/local machine/via the Internet etc.  
+Viewing of the sensitive data is also partially restricted.
+
+Sensitive storage is being created similar to general object storage, user only should tick the corresponding checkbox:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_1.png)
+
+Via the GUI, the sensitive storage looks similar to the regular object storage, but there are some differences (even for admin/storage **_OWNER_**):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_3.png)  
+
+I.e. files/folders in the sensitive storage can be created/renamed/removed but can't be downloaded/viewed or edited by any user.
+
+Sensitive storages can be mounted to the run. In this case, the run will become _sensitive_ too.  
+In sensitive runs, all storages selected for the mounting including sensitive are being mounted in **readonly** mode to exclude any copy/move operations between storages.
+
+Files from the sensitive storages can be viewed **_inside_** the sensitive run and also copied into the inner instance disk, but not to any other storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_4.png)
+
+Files from the sensitive storages can't be viewed **_outside_** the sensitive run or copied/moved anywhere (for example, when using not the web-terminal version of `pipe` SSH):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_5.png)
+
+For more details and restrictions that are imposed by using of sensitive storages see [here](../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md).
+
 ## Updates of "Limit mounts" for object storages
 
 ### Displaying of the `CP_CAP_LIMIT_MOUNTS` in a user-friendly manner
@@ -427,9 +556,9 @@ For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.
 
 ## Export cluster utilization in Excel format
 
-Previously, users could export **Cluster Node Monitor** reports only in **`csv`** format.
+Previously, users could export **Cluster Node Monitor** reports only in **`CSV`** format.
 
-From now, the ability to export these reports in **`xls`** format is implemented.  
+From now, the ability to export these reports in **`XLSX`** format is implemented.  
 Users can choose the format of the report before the download:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
 
@@ -680,6 +809,23 @@ In some cases, it could be convenient not to specify entity ID during import. Th
 
 > **_Note_**: IDs still should be unique
 
+### Ability to add SampleSet item via GUI
+
+Now, users may create SampleSets or other "Container-like" entities from the GUI (previously it was possible via the `CSV` import only).  
+This feature could be useful, if the Samples were imported using the IDs autogeneration, as it could be complicated to grab those IDs and copy to the `CSV`.
+
+To create a new SampleSet:
+
+- Click the **+ Add instance** button in the Metadata section and choose the _SampleSet_ instance type:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_16.png)
+- Provide the information for the new SampleSet and click the **Browse** button to select a list of Samples, which will be associated with the creating SampleSet:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_17.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_18.png)
+- After creation, the new SampleSet will appear in the corresponding metadata class:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_19.png)
+
+See details [here](../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items.md#add-sampleset-item).
+
 ### Preselect instances for a rerun
 
 Additionally, if metadata instances were used for the run via the expansion expressions in the parameters - then for the rerun of such run, the ability to choose was implemented - to use the same resolved expressions values from the initial run or preselect another metadata instance(s) for a coming rerun, e.g.:  
@@ -889,6 +1035,135 @@ To add a route, admin shall:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_05.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12.14._NAT_gateway.md).
+
+## Custom Run capabilities
+
+Previously, users might select only predefined "system" **Run capabilities** for a job.  
+In some cases or deployments, these capabilities may not be enough.  
+In the current version, the ability for admins to add custom **Run capabilities** was implemented. Use them for a job/tool run all users can.
+
+Managing of the custom capabilities is being performed via the new system preference **`launch.capabilities`**.  
+This preference contains an array of capability descriptions in `JSON`-format and has the following structure:
+
+``` json
+{
+  "<capability_name_1>": {
+    "description": "<Description of the capability>",
+    "commands": [
+        "<command_1>",
+        "<command_2>",
+        ...
+    ],
+    "params": {
+        "<parameter_1>": "<value_1>",
+        "<parameter_2>": "<value_2>",
+        ...
+    }
+  },
+  "<capability_name_2": {
+      ...
+  },
+  ...
+}
+```
+
+For example:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_1.png)
+
+Saved capability then can be used for a job/tool:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_3.png)
+
+For more details see [here](../../manual/10_Manage_Tools/10.9._Run_capabilities.md#custom-capabilities).
+
+## Storage lifecycle management
+
+Previously, users had the simplified opportunity to configure the lifecycle of data in storages - via specifying STS/LTS durations in the storage settings.  
+This way is rather primitive and does not allow to fine-tune data archiving/restoring.
+
+In the current version, the ability to configure datastorage lifecycle in details was implemented.  
+This new option allows to perform the automatical data transition from standard storage to different types of archival storages by occurance of a certain event and restore that data back as well if needed.  
+Previous functionality (STS/LTS durations) was excluded.  
+For the new one, an additional tab was included to the storage settings - **Transition rules**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_01.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_02.png)
+
+New implemented functionality includes abilities:
+
+- automatic data archiving/removing according to specified transition rule(s)
+- restoring of previously archived data for the specified period
+
+_Data archiving_ is provided by configurable set of transition rules for each separate storage. Each rule defines which files, when (specific date or by the event) and where (different types of archive) shall be automatically transferred:
+
+- firstly, user creates a rule for a storage - specifying the path and glob pattern for a file(s) name(s) which shall be transferred, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_03.png)  
+    User can select to transfer files one-by-one or in bulk-mode by the first/last appeared file in a group.  
+    Also, an additional condition for the files transition can be configured.
+- then user selects an archive class as the data destination. Here, several destinations can be added (for different dates), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_04.png)  
+    **_Note_**: archive classes depend on the Cloud Provider
+- then user defines the event by which the data shall be transferred - after certain period after the file(s) creation or at the specific date:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_05.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_06.png)
+- also, notifications can be configured for the rule events (optionally):  
+    - recipients list
+    - notification title and text
+    - ability to specify a delay for data transition - user that receive such notification will have the ability to prolong (delay) transition for some period  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_07.png)
+- created rule can be found in the **Transition rules** tab of the storage settings:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_08.png)
+- after the rule is created, it starts to work. If file matches the condition of any storage rule - it will be transferred to some archive or removed (if `Deletion` is set as data destination). Transferred file becomes disabled for changing/renaming from the GUI/CLI. At the GUI, near such file a label appears that corresponds to the transition destination, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_09.png)
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#archiving).
+
+_Data restoring_ can be applied to previously archived files. Separate files or whole folders (with sub-folders) can be restored:
+
+- user selects which files/folders shall be restored, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_10.png)
+- user defines the period for which files shall be restored and notification recipients list:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_11.png)
+- after the confirmation, the restore process begins - it is shown by the special status icon:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_12.png)
+- when file is restored - it is shown by the special status icon as well:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_13.png)
+- once the restore period is over, files will be automatically transferred to the archive where they were before
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#restoring).
+
+## Image history
+
+**Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
+
+- Available software packages
+- Possible vulnerabilities of those packages
+
+The users may leverage this feature to choose which docker image to use, depending on the needs for a specific application.  
+But this list of the software packages may not show the full list of the applications as the scanning mechanism uses only the "well-known" filesystem locations to collect the applications/versions informations. Some of the apps, might be installed into any custom location and the scanner won't be able to find it.
+
+To fulfill this gap and to address some advanced cases, in the current version, a new feature was introduced: now it's possible to view the list of the "Docker layers" and corresponding commands, which were used to generate those layers.  
+It can be viewed via the specific tab in the tool version menu - **Image history**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_1.png)
+
+This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.
+
+For more details see [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#image-history).
+
+## Environments synchronization via `pipectl`
+
+In some cases, admins need to synchronize two different environments of the Cloud Pipeline.  
+New special routine in the [`pipectl`](https://github.com/epam/cloud-pipeline/tree/develop/deploy/README.md) utility is implemented for that - `pipectl sync`.
+
+It allows to synchronize from the source environment to the destination one the following objects:
+
+- users / user groups / user roles
+- docker registry / tool groups / tools
+
+Synchronization can be performed with or without synchronization of attributes (metadata) for the specified Platform objects.
+
+During the synchronization, changes are being performed only in the **_destination_** environment, the **_source_** environment remains the same.
+
+For details and examples see [here](../../installation/management/environments_sync.md).
 
 ## AWS: seamless authentication
 

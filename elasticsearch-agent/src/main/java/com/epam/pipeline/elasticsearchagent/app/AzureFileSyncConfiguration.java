@@ -49,6 +49,9 @@ public class AzureFileSyncConfiguration {
     @Value("${sync.az-blob.index.name}")
     private String indexName;
 
+    @Value("${sync.az-file.tag.value.delimiter:;}")
+    private String tagDelimiter;
+
     @Bean
     public ObjectStorageFileManager azFileManager() {
         return new AzureBlobManager();
@@ -65,6 +68,7 @@ public class AzureFileSyncConfiguration {
                 azFileManager, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.AZ,
-                SearchDocumentType.AZ_BLOB_FILE);
+                SearchDocumentType.AZ_BLOB_FILE,
+                tagDelimiter, false);
     }
 }

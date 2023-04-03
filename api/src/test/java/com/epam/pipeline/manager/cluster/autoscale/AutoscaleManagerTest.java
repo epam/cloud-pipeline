@@ -26,6 +26,7 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunRegionShiftHandler;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.util.CurrentThreadExecutorService;
@@ -102,6 +103,8 @@ public class AutoscaleManagerTest {
 
     @Mock
     private PoolAutoscaler poolAutoscaler;
+    @Mock
+    private RunRegionShiftHandler runRegionShiftHandler;
 
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
@@ -113,7 +116,8 @@ public class AutoscaleManagerTest {
                 pipelineRunManager, executorService,
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
-                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler);
+                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
+                runRegionShiftHandler);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
@@ -198,16 +202,17 @@ public class AutoscaleManagerTest {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID),
-                                    argThat(Matchers.hasProperty("spot", Matchers.is(true)))))
+                argThat(Matchers.hasProperty("spot", Matchers.is(true))), any()))
             .thenThrow(new CmdExecutionException("", 5, ""));
 
         autoscaleManagerCore.runAutoscaling(); // this time spot scheduling should fail
         verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID),
-                                       argThat(Matchers.hasProperty("spot", Matchers.is(true))));
+                argThat(Matchers.hasProperty("spot", Matchers.is(true))),
+                any());
 
         autoscaleManagerCore.runAutoscaling(); // this time it should be a on-demand request
         verify(cloudFacade, times(2))
             .scaleUpNode(eq(TEST_RUN_ID), argThat(
-                Matchers.hasProperty("spot", Matchers.is(false))));
+                Matchers.hasProperty("spot", Matchers.is(false))), any());
     }
 }

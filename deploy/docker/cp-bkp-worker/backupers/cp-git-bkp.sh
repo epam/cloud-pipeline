@@ -22,7 +22,12 @@ gitlab_settings_bkp_file="$bkp_dir/cp-bkp-git-settings-dump-$(date +%Y%m%d).tgz"
 
 # GitLab DB and repos backup
 # backup will be created in /var/opt/gitlab/backups/ and then moved to $bkp_dir
-gitlab-rake gitlab:backup:create
+if [ -z "$CP_GITLAB_VERSION" ] || [ "$CP_GITLAB_VERSION" -lt "12" ]; then
+  gitlab-rake gitlab:backup:create
+else
+  gitlab-backup create
+fi
+
 gitlab_repos_bkp_file_path="$(find /var/opt/gitlab/backups/ -maxdepth 1 -name '*.tar' -printf '%p\n' | sort -r | head -n 1)"
 if [ -z "$gitlab_repos_bkp_file_path" ] || [ ! -f "$gitlab_repos_bkp_file_path" ]; then
     echo "Unable to find a gitlab backup file"

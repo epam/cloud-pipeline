@@ -304,8 +304,22 @@
     {
         "name": "CP_CAP_SHARE_FS_SIZE",
         "type": "int",
-        "description": "Allows to specify shared file system size (supported for luster FS only)",
+        "description": "Allows to specify shared file system size (supported for Lustre FS only)",
         "defaultValue": "1200",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE",
+        "type": "string",
+        "description": "Allows to specify shared file deployment type: [SCRATCH_1, SCRATCH_2, PERSISTENT_1, PERSISTENT_2] (supported for Lustre FS only)",
+        "defaultValue": "SCRATCH_2",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_THROUGHPUT",
+        "type": "int",
+        "description": "Allows to specify shared file system throughput (supported for persistent Lustre FS only)",
+        "defaultValue": "500",
         "passToWorkers": false
     },
     {
@@ -482,7 +496,7 @@
     },
     {
         "name": "CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE",
-        "type": "boolen",
+        "type": "boolean",
         "description": "Whether fail or keep a job running if a config file based localization fails",
         "defaultValue": "true",
         "passToWorkers": false
@@ -500,5 +514,47 @@
         "description": "Specifies the target ENI to be attached to the node for run",
         "defaultValue": "",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_DEDICATED_INSTANCE",
+        "type": "boolean",
+        "description": "Specifies if the instance should be dedicated (has a dedicated hardware)",
+        "defaultValue": "false",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_TARGET_SECURITY_GROUPS",
+        "type": "string",
+        "description": "Specifies which security groups shall be attached to the instance",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_TARGET_SUBNET_ID",
+        "type": "string",
+        "description": "Specifies which subnet shall be used for an instance",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_NODE_SSH_PORT",
+        "type": "int",
+        "description": "Sets SSH port, which is used by a host node of the job",
+        "defaultValue": "22",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_EFA_ENABLED",
+        "type": "boolean",
+        "description": "Specifies if EFA should be enabled for this instance",
+        "defaultValue": "false",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_USE_HOST_NETWORK",
+        "type": "boolean",
+        "description": "Specifies if run pod should be run with host network capability",
+        "defaultValue": "false",
+        "passToWorkers": true
     }
 ]

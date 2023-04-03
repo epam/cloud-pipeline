@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -87,11 +87,6 @@ public class PipelineController extends AbstractRestController {
     private static final int BYTES_IN_KB = 1024;
     private static final String INCLUDE_DIFF = "include_diff";
     private static final String COMMIT = "commit";
-
-    @Autowired
-    private PipelineApiService pipelineApiService;
-
-
     private static final String ID = "id";
     private static final String NAME = "name";
     private static final String VERSION = "version";
@@ -100,8 +95,9 @@ public class PipelineController extends AbstractRestController {
     private static final String PAGE_SIZE = "page_size";
     private static final String KEEP_REPOSITORY = "keep_repository";
     private static final String RECURSIVE = "recursive";
-
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineController.class);
+    @Autowired
+    private PipelineApiService pipelineApiService;
 
     @RequestMapping(value = "/pipeline/register", method = RequestMethod.POST)
     @ResponseBody

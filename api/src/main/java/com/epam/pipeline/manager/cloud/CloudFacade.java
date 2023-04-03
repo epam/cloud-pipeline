@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface CloudFacade {
-    RunInstance scaleUpNode(Long runId, RunInstance instance);
+    RunInstance scaleUpNode(Long runId, RunInstance instance, Map<String, String> runtimeParameters);
 
     RunInstance scaleUpPoolNode(String nodeId, NodePool node);
 
@@ -97,9 +97,9 @@ public interface CloudFacade {
 
     CloudInstanceState getInstanceState(Long runId);
 
-    InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord dnsRecord);
+    InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord record);
 
-    InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord dnsRecord);
+    InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord record);
 
     InstanceImage getInstanceImageDescription(Long regionId, String imageId);
 }

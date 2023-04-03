@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitFile;
@@ -24,12 +26,16 @@ import com.epam.pipeline.entity.git.GitGroupRequest;
 import com.epam.pipeline.entity.git.GitHookRequest;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectRequest;
+import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
+import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueComment;
+import com.epam.pipeline.entity.git.GitlabUpload;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.git.UpdateGitFileRequest;
@@ -40,11 +46,17 @@ import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.UriUtils;
 import retrofit2.HttpException;
 import retrofit2.Response;
@@ -62,16 +74,21 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.git.RestApiUtils.execute;
+import static com.epam.pipeline.manager.git.RestApiUtils.getResponse;
 
 @Wither
 @AllArgsConstructor
@@ -119,6 +136,7 @@ public class GitlabClient {
     private Long adminId;
     private String adminName;
     private GitLabApi gitLabApi;
+    private String apiVersion;
 
     /**
      * Indicates that user-provided adminToken shall be used for authentication. Mainly it means
@@ -127,7 +145,8 @@ public class GitlabClient {
     private boolean externalHost;
 
     GitlabClient(String host, String namespace, String user, String adminToken, String project,
-                         String fullUrl, Long gitAdminId, String adminName, boolean externalHost) {
+                 String fullUrl, Long gitAdminId, String adminName, boolean externalHost,
+                 String apiVersion) {
         this.gitHost = host;
         this.namespace = namespace;
         this.projectName = project;
@@ -138,11 +157,16 @@ public class GitlabClient {
         this.externalHost = externalHost;
         this.gitLabApi = buildGitLabApi(host, adminToken);
         this.user = user;
+        this.apiVersion = apiVersion;
     }
 
-    public static GitlabClient initializeGitlabClientFromRepositoryAndToken(String user, String repository,
-                                                                            String token, Long adminId,
-                                                                            String adminName, boolean externalHost) {
+    public static GitlabClient initializeGitlabClientFromRepositoryAndToken(final String user,
+                                                                            final String repository,
+                                                                            final String token,
+                                                                            final Long adminId,
+                                                                            final String adminName,
+                                                                            final boolean externalHost,
+                                                                            final String apiVersion) {
         final GitRepositoryUrl gitRepositoryUrl = GitRepositoryUrl.from(repository);
         final String host = gitRepositoryUrl.getProtocol() + gitRepositoryUrl.getHost();
         final String namespace = gitRepositoryUrl.getNamespace()
@@ -154,12 +178,14 @@ public class GitlabClient {
 
         LOGGER.trace("Created Git client for repository {}", repository);
         return new GitlabClient(host, namespace, userOrNamespace, token, project,
-                repository, adminId, adminName, externalHost);
+                repository, adminId, adminName, externalHost, apiVersion);
     }
 
-    public static GitlabClient initializeGitlabClientFromHostAndToken(String gitHost, String token, String userName,
-                                                                      Long gitAdminId, String adminName) {
-        return new GitlabClient(gitHost, adminName, userName, token, null, null, gitAdminId, adminName, false);
+    public static GitlabClient initializeGitlabClientFromHostAndToken(final String gitHost, final String token,
+                                                                      final String userName, final Long gitAdminId,
+                                                                      final String adminName, final String apiVersion) {
+        return new GitlabClient(gitHost, adminName, userName, token, null, null, gitAdminId,
+                adminName, false, apiVersion);
     }
 
     public GitCredentials buildCloneCredentials(boolean useEnvVars, boolean issueToken, Long duration)
@@ -216,16 +242,18 @@ public class GitlabClient {
     }
 
     public GitProject createTemplateRepository(Template template, String name, String description,
-                                               boolean indexingEnabled, String hookUrl) throws GitClientException {
+                                               boolean indexingEnabled, String hookUrl,
+                                               String visibility) throws GitClientException {
         return createGitProject(template, description,
                                 GitUtils.convertPipeNameToProject(name),
-                                indexingEnabled, hookUrl);
+                                indexingEnabled, hookUrl, visibility);
     }
 
     public GitProject createEmptyRepository(final String name, final String description,
                                             final boolean indexingEnabled, final boolean initCommit,
-                                            final String hookUrl) throws GitClientException {
-        final GitProject project = createRepo(name, description);
+                                            final String hookUrl,
+                                            final String visibility) throws GitClientException {
+        final GitProject project = createRepo(name, description, visibility);
         if (indexingEnabled) {
             addProjectHook(String.valueOf(project.getId()), hookUrl);
         }
@@ -238,7 +266,7 @@ public class GitlabClient {
     public boolean projectExists(final String namespace, final String name) throws GitClientException {
         try {
             String projectId = makeProjectId(namespace, GitUtils.convertPipeNameToProject(name));
-            Response<GitProject> response = gitLabApi.getProject(projectId).execute();
+            Response<GitProject> response = gitLabApi.getProject(apiVersion, projectId).execute();
             return response.isSuccessful();
         } catch (IOException e) {
             throw new GitClientException(e.getMessage(), e);
@@ -256,34 +284,34 @@ public class GitlabClient {
     public List<GitlabBranch> getBranches() {
         String project = GitUtils.convertPipeNameToProject(projectName);
         String projectId = makeProjectId(namespace, project);
-        return execute(gitLabApi.getBranches(projectId));
+        return execute(gitLabApi.getBranches(apiVersion, projectId));
     }
 
     public GitProject getProject(String name) throws GitClientException {
         String project = GitUtils.convertPipeNameToProject(name);
         String projectId = makeProjectId(namespace, project);
-        return execute(gitLabApi.getProject(projectId));
+        return execute(gitLabApi.getProject(apiVersion, projectId));
     }
 
     public void deleteRepository() throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        execute(gitLabApi.deleteProject(projectId));
+        execute(gitLabApi.deleteProject(apiVersion, projectId));
     }
 
     public GitTagEntry getRepositoryRevision(String tag) throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.getRevision(projectId, tag));
+        return execute(gitLabApi.getRevision(apiVersion, projectId, tag));
     }
 
     public GitCommitEntry getRepositoryCommit(String commitId) throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.getCommit(projectId, commitId, null));
+        return execute(gitLabApi.getCommit(apiVersion, projectId, commitId, null));
     }
 
     public List<GitTagEntry> getRepositoryRevisions(final String namespace, final String projectName)
             throws GitClientException {
         final String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.getRevisions(projectId, null, null));
+        return execute(gitLabApi.getRevisions(apiVersion, projectId, null, null));
     }
 
     public List<GitTagEntry> getRepositoryRevisions() throws GitClientException {
@@ -293,7 +321,7 @@ public class GitlabClient {
     public GitTagEntry createRepositoryRevision(String name, String ref, String message, String releaseDescription)
             throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.createRevision(projectId, name, ref, message, releaseDescription));
+        return execute(gitLabApi.createRevision(apiVersion, projectId, name, ref, message, releaseDescription));
     }
 
     public List<GitCommitEntry> getCommits() throws GitClientException {
@@ -312,7 +340,8 @@ public class GitlabClient {
         String projectId = makeProjectId(namespace, projectName);
         String sinceDate = since != null ? DATE_FORMAT.format(since) : null;
         String untilDate = until != null ? DATE_FORMAT.format(until) : null;
-        return execute(gitLabApi.getCommits(projectId, refName, sinceDate, untilDate, null, null, null));
+        return execute(gitLabApi.getCommits(apiVersion, projectId, refName, sinceDate, untilDate,
+                null, null, null));
     }
 
     /**
@@ -332,7 +361,7 @@ public class GitlabClient {
         });
 
         String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.postCommit(projectId, commitEntry));
+        return execute(gitLabApi.postCommit(apiVersion, projectId, commitEntry));
     }
 
     public byte[] getFileContents(String path, String revision) throws GitClientException {
@@ -344,7 +373,7 @@ public class GitlabClient {
             projectId = makeProjectId(namespace, projectName);
         }
         try {
-            GitFile gitFile = execute(gitLabApi.getFiles(projectId, encodePath(path), revision));
+            GitFile gitFile = execute(gitLabApi.getFiles(apiVersion, projectId, encodePath(path), revision));
             return Base64.getDecoder().decode(gitFile.getContent());
         } catch (IOException e) {
             throw new GitClientException("Error receiving file content!", e);
@@ -367,7 +396,7 @@ public class GitlabClient {
                                         : projectId;
         try {
             return RestApiUtils.getFileContent(gitLabApi
-                    .getFilesRawContent(currentProjectId, encodePath(path), revision), byteLimit);
+                    .getFilesRawContent(apiVersion, currentProjectId, encodePath(path), revision), byteLimit);
         } catch (IOException e) {
             throw new GitClientException("Error receiving raw file content!", e);
         }
@@ -385,15 +414,17 @@ public class GitlabClient {
     public GitProject updateProjectName(final String currentName, final String newName, final String namespace)
             throws GitClientException {
         final String normalizedNewName = GitUtils.convertPipeNameToProject(newName);
-        return execute(gitLabApi.updateProject(makeProjectId(namespace, GitUtils.convertPipeNameToProject(currentName)),
-                                               GitProjectRequest.builder()
-                                                   .name(normalizedNewName)
-                                                   .path(normalizedNewName)
-                                                   .build()));
+        return execute(gitLabApi.updateProject(apiVersion,
+                makeProjectId(namespace, GitUtils.convertPipeNameToProject(currentName)),
+                GitProjectRequest.builder()
+                        .name(normalizedNewName)
+                        .path(normalizedNewName)
+                        .build()));
     }
 
     public GitGroup createGroup(final String newGroupName) throws GitClientException {
         return execute(gitLabApi.createGroup(
+                apiVersion,
                 GitGroupRequest.builder()
                         .name(newGroupName)
                         .path(newGroupName)
@@ -401,19 +432,89 @@ public class GitlabClient {
     }
 
     public GitGroup deleteGroup(final String groupName) throws GitClientException {
-        return execute(gitLabApi.deleteGroup(groupName));
+        return execute(gitLabApi.deleteGroup(apiVersion, groupName));
     }
 
     public GitProject forkProject(final String projectName, final String namespaceFrom, final String namespaceTo)
             throws GitClientException {
-        return execute(gitLabApi.forkProject(
+        return execute(gitLabApi.forkProject(apiVersion,
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
+    }
+
+    public GitlabIssue createIssue(final String project,
+                                   final GitlabIssue issue,
+                                   final Map<String, String> attachments) throws GitClientException {
+        issue.setDescription(formatTextWithAttachments(project,
+                attachments,
+                issue.getDescription()));
+        return execute(gitLabApi.createIssue(apiVersion, project, issue));
+    }
+
+    public GitlabIssue updateIssue(final String project,
+                                   final GitlabIssue issue,
+                                   final Map<String, String> attachments) throws GitClientException {
+        issue.setDescription(formatTextWithAttachments(project,
+                attachments,
+                issue.getDescription()));
+        return issue.getId() == null ? execute(gitLabApi.createIssue(apiVersion, project, issue)) :
+                execute(gitLabApi.updateIssue(apiVersion, project, issue.getId(), issue));
+    }
+
+    public Boolean deleteIssue(final String project, final Long issueId) throws GitClientException {
+        return execute(gitLabApi.deleteIssue(apiVersion, project, issueId));
+    }
+
+    public GitlabUpload upload(final String project, final String name, final String content)
+            throws GitClientException {
+        final MultipartBody.Part filePart = MultipartBody.Part.createFormData(
+                "file", name,
+                RequestBody.create(MediaType.parse("multipart/form-data"), content));
+        return execute(gitLabApi.upload(apiVersion, project, filePart));
+    }
+
+    public PagedResult<List<GitlabIssue>> getIssues(final String project, final List<String> labels,
+                                              final Integer page, final Integer pageSize, final String search)
+            throws GitClientException {
+        Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labels, page,
+                pageSize, search));
+        int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
+        return new PagedResult<>(response.body(), totalPages);
+    }
+
+    public GitlabIssue getIssue(final String project, final Long issueId) throws GitClientException {
+        final GitlabIssue issue = execute(gitLabApi.getIssue(apiVersion, project, issueId));
+        final Pair<String, List<String>> a = extractAttachments(issue.getDescription());
+        issue.setDescription(a.getKey());
+        issue.setAttachments(a.getValue());
+        final List<GitlabIssueComment> comments = getIssueComments(project, issueId);
+        issue.setComments(comments);
+        return issue;
+    }
+
+    public List<GitlabIssueComment> getIssueComments(final String project,
+                                                     final Long issueId) throws GitClientException {
+        final List<GitlabIssueComment> comments = execute(gitLabApi.getIssueComments(apiVersion, project, issueId));
+        comments.forEach(c -> {
+            Pair<String, List<String>> a = extractAttachments(c.getBody());
+            c.setBody(a.getKey());
+            c.setAttachments(a.getValue());
+        });
+        return comments;
+    }
+
+    public GitlabIssueComment addIssueComment(final String project,
+                                              final Long issueId,
+                                              final GitlabIssueCommentRequest comment) throws GitClientException {
+        comment.setBody(formatTextWithAttachments(project,
+                comment.getAttachments(),
+                comment.getBody()));
+        return execute(gitLabApi.addIssueComment(apiVersion, project, issueId, comment.toComment()));
     }
 
     public Optional<GitlabUser> findUser(final String userName) throws GitClientException {
         Optional<GitlabUser> gitlabUser = Optional.empty();
         for (String name : generateGitLabUsernames(userName)) {
-            gitlabUser = Optional.of(execute(gitLabApi.searchUser(name)))
+            gitlabUser = Optional.of(execute(gitLabApi.searchUser(apiVersion, name)))
                     .map(List::stream)
                     .flatMap(Stream::findFirst);
             if (gitlabUser.isPresent()) {
@@ -423,19 +524,26 @@ public class GitlabClient {
         return gitlabUser;
     }
 
-    private GitProject createRepo(String repoName, String description) throws GitClientException {
-        GitProjectRequest gitProject = GitProjectRequest.builder().name(repoName).description(description)
-                .visibility(PUBLIC_VISIBILITY).build();
-        return execute(gitLabApi.createProject(gitProject));
+    public GitProjectStorage getProjectStorage(final String project) throws GitClientException {
+        return execute(gitLabApi.getProjectStorage(makeProjectId(namespace, project)));
     }
 
-    public GitProject createRepo(final String description) throws GitClientException {
-        return createRepo(projectName, description);
+    private GitProject createRepo(String repoName, String description, String visibility) throws GitClientException {
+        GitProjectRequest gitProject = GitProjectRequest.builder()
+                .name(repoName)
+                .description(description)
+                .visibility(visibility)
+                .build();
+        return execute(gitLabApi.createProject(apiVersion, gitProject));
+    }
+
+    public GitProject createRepo(final String description, final String visibility) throws GitClientException {
+        return createRepo(projectName, description, visibility);
     }
 
     public void createFile(final GitProject project, final String path, final String content, final String branch) {
         try {
-            final Response<GitFile> response = gitLabApi.createFiles(
+            final Response<GitFile> response = gitLabApi.createFiles(apiVersion,
                     project.getId().toString(), path, buildCreateFileRequest(content, branch)).execute();
             if (!response.isSuccessful()) {
                 throw new HttpException(response);
@@ -493,6 +601,7 @@ public class GitlabClient {
             throw new IllegalArgumentException("Token may be issued only for local Gitlab.");
         }
         return execute(gitLabApi.issueToken(
+                apiVersion,
                 String.valueOf(userId),
                 GitTokenRequest.builder()
                         .name(tokenName)
@@ -510,6 +619,7 @@ public class GitlabClient {
     public GitRepositoryEntry addProjectHook(String projectId, String hookUrl) throws GitClientException {
         return execute(
                 gitLabApi.addProjectHook(
+                        apiVersion,
                         projectId,
                         GitHookRequest.builder().hookUrl(hookUrl)
                                 .pushEvents(true).branch(DEFAULT_BRANCH)
@@ -517,8 +627,10 @@ public class GitlabClient {
     }
 
     private GitProject createGitProject(Template template, String description, String repoName,
-                                        boolean indexingEnabled, String hookUrl) throws GitClientException {
-        final GitProject project = createEmptyRepository(repoName, description, indexingEnabled, false, hookUrl);
+                                        boolean indexingEnabled, String hookUrl,
+                                        String visibility) throws GitClientException {
+        final GitProject project = createEmptyRepository(repoName, description, indexingEnabled,
+                false, hookUrl, visibility);
         uploadFolder(template, repoName, project);
         try {
             boolean fileExists = getFileContents(project.getId().toString(), DEFAULT_README, DEFAULT_BRANCH) != null;
@@ -575,5 +687,31 @@ public class GitlabClient {
     private String encodePath(final String path) throws UnsupportedEncodingException {
         return UriUtils.encodePathSegment(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
                                                                                   DOT_CHAR_URL_ENCODING_REPLACEMENT);
+    }
+    private List<String> uploadAttachments(final String project, final Map<String, String> attachments) {
+        return attachments.entrySet()
+                .stream()
+                .map(a -> upload(project, a.getKey(), a.getValue())
+                        .getMarkdown().replace("!", ""))
+                .collect(Collectors.toList());
+    }
+
+    private static Pair<String, List<String>> extractAttachments(String text) {
+        final String[] description = text.split("!");
+        final List<String> descriptionList = Arrays.stream(description).map(String::trim).collect(Collectors.toList());
+        return new ImmutablePair<>(descriptionList.get(0), description.length > 1 ?
+                descriptionList.subList(1, descriptionList.size()) : Collections.emptyList());
+    }
+    private String formatTextWithAttachments(final String project,
+                                             final Map<String, String> attachments,
+                                             final String text) {
+        if (CollectionUtils.isEmpty(attachments)) {
+            return text;
+        }
+        final List<String> uploads = uploadAttachments(project, attachments);
+        final List<String> body = new ArrayList<>();
+        body.add(text);
+        body.addAll(uploads);
+        return String.join("\n\n!", body);
     }
 }

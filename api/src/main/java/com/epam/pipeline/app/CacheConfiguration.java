@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,12 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.security.acl.redis.AclImplDeserializer;
+import com.epam.pipeline.security.acl.redis.AclImplSerializer;
+import com.epam.pipeline.security.acl.redis.JsonRedisSerializer;
+import com.epam.pipeline.entity.preference.Preference;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
@@ -27,9 +33,10 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.acls.domain.AclImpl;
 import redis.clients.jedis.JedisPoolConfig;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 
 @EnableCaching
@@ -57,14 +64,33 @@ public class CacheConfiguration {
     @Value("${redis.pool.timeout:20000}")
     private Integer poolTimeout;
 
+    @Value("${redis.use.optimized.parsing:false}")
+    private boolean useOptimizedParsing;
+
+    @Value("${redis.expose.connection:false}")
+    private boolean exposeConnection;
+
     @Bean
     @Primary
-    public CacheManager cacheManager(final Optional<RedisCacheManager> redisCacheManager) {
+    public CacheManager cacheManager(final Optional<RedisCacheManager> redisCacheManagerPref) {
         switch (cacheType) {
             case MEMORY:
-                return new ConcurrentMapCacheManager(PREFERENCE_CACHE, ACL_CACHE);
+                return new ConcurrentMapCacheManager(PREFERENCE_CACHE);
             case REDIS:
-                return redisCacheManager
+                return redisCacheManagerPref
+                        .orElseThrow(IllegalArgumentException::new);
+            default:
+                return new NoOpCacheManager();
+        }
+    }
+
+    @Bean
+    public CacheManager aclCacheManager(final Optional<RedisCacheManager> redisCacheManagerAcl) {
+        switch (cacheType) {
+            case MEMORY:
+                return new ConcurrentMapCacheManager(ACL_CACHE);
+            case REDIS:
+                return redisCacheManagerAcl
                         .orElseThrow(IllegalArgumentException::new);
             default:
                 return new NoOpCacheManager();
@@ -73,8 +99,14 @@ public class CacheConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisCacheManager redisCacheManager(final RedisTemplate template) {
-        return new RedisCacheManager(template, Arrays.asList(PREFERENCE_CACHE, ACL_CACHE));
+    public RedisCacheManager redisCacheManagerPref(final RedisTemplate<String, Preference> templatePreference) {
+        return new RedisCacheManager(templatePreference, Collections.singleton(PREFERENCE_CACHE));
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
+    public RedisCacheManager redisCacheManagerAcl(final RedisTemplate<Object, AclImpl> templateACl) {
+        return new RedisCacheManager(templateACl, Collections.singleton(ACL_CACHE));
     }
 
     @Bean
@@ -93,9 +125,26 @@ public class CacheConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisTemplate<Object, Object> redisTemplate(final RedisConnectionFactory redisConnectionFactory) {
-        final RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
+    public RedisTemplate<String, Preference> templatePreference(final RedisConnectionFactory redisConnectionFactory) {
+        final RedisTemplate<String, Preference> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
+        return redisTemplate;
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
+    public RedisTemplate<Object, AclImpl> templateACl(final RedisConnectionFactory redisConnectionFactory) {
+        final RedisTemplate<Object, AclImpl> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        if (useOptimizedParsing) {
+            final JsonMapper jsonMapper = new JsonMapper();
+            final SimpleModule module = new SimpleModule();
+            module.addDeserializer(AclImpl.class, new AclImplDeserializer());
+            module.addSerializer(AclImpl.class, new AclImplSerializer());
+            jsonMapper.registerModule(module);
+            redisTemplate.setDefaultSerializer(new JsonRedisSerializer(jsonMapper));
+        }
+        redisTemplate.setExposeConnection(exposeConnection);
         return redisTemplate;
     }
 }

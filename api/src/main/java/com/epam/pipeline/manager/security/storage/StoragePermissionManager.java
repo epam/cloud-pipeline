@@ -24,7 +24,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
@@ -34,6 +36,7 @@ import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +57,7 @@ public class StoragePermissionManager {
     private final PermissionsService permissionsService;
     private final QuotaService quotaService;
     private final AuthManager authManager;
+    private final DataStoragePathLoader storagePathLoader;
 
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
@@ -96,6 +100,16 @@ public class StoragePermissionManager {
         return grantPermissionManager.storagePermission(storage, permissionName);
     }
 
+    public boolean storagePermissionByPath(final String path,
+                                           final String permissionName) {
+        try {
+            final AbstractSecuredEntity storage = storagePathLoader.loadDataStorageByPathOrId(path);
+            return grantPermissionManager.storagePermission(storage, permissionName);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames) {
         filterStorage(storages, permissionNames, false);
@@ -124,6 +138,20 @@ public class StoragePermissionManager {
             storages.clear();
             storages.addAll(filtered);
         }
+    }
+
+    public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
+        return grantPermissionManager.isOwnerOrAdmin(storage.getOwner())
+                || permissionHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
+    }
+
+    private boolean checkStorageArchiveRoles() {
+        final GrantedAuthoritySid archiveManager = new GrantedAuthoritySid(
+                DefaultRoles.ROLE_STORAGE_ARCHIVE_MANAGER.getName());
+        final GrantedAuthoritySid archiveReader = new GrantedAuthoritySid(
+                DefaultRoles.ROLE_STORAGE_ARCHIVE_READER.getName());
+        return permissionHelper.getSids().stream()
+                .anyMatch(sid -> sid.equals(archiveManager) || sid.equals(archiveReader));
     }
 
     private boolean checkPermissions(final List<AclPermission> permissions,

@@ -84,6 +84,7 @@ fi
 # Search for the matching remote URLs in a file and export them as env vars
 pipe_log_info "Searching for the matching remote URLs in the files" "$LOCALIZE_FROM_FILES_TASK_NAME"
 _has_something_to_localize=false
+_files_to_recursive_localize=""
 for _path in ${_files_to_localize[@]}; do
     _env_name=$(echo "$_path" | cut -f1 -d':')
     _real_path=$(echo "$_path" | cut -f2 -d':')
@@ -100,6 +101,10 @@ for _path in ${_files_to_localize[@]}; do
         _match_env_var_name="${_file_as_env_var}_${i}"
         declare -x "${_match_env_var_name}"="$_match"
         declare -x "${_match_env_var_name}${CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX}"="input"
+        if [ "$CP_LOCALIZE_FROM_FILES_RECURSIVE" == "true" ]; then
+            _files_to_recursive_localize="${_files_to_recursive_localize} ${_match_env_var_name}"
+            pipe_log_info "Adding file ${_match_env_var_name} for recursive localization" "$LOCALIZE_FROM_FILES_TASK_NAME"
+        fi
         i=$((i+1))
         _has_something_to_localize=true
     done <<< "$(grep -oP "$_localize_re_pattern" "$_real_path")"
@@ -161,11 +166,21 @@ for _path in ${_files_to_localize[@]}; do
         i=$((i+1))
 
         if (($i>1000)); then
-            pipe_log_want "Looks like we've ran into an endless loop for ${_real_path} file, skipping further iterations" "$LOCALIZE_FROM_FILES_TASK_NAME"
+            pipe_log_warn "Looks like we've ran into an endless loop for ${_real_path} file, skipping further iterations" "$LOCALIZE_FROM_FILES_TASK_NAME"
             break
         fi
     done
 done
 pipe_log_info "--> Replacement is done" "$LOCALIZE_FROM_FILES_TASK_NAME"
+
+if [ "$CP_LOCALIZE_FROM_FILES_RECURSIVE" == "true" ]; then
+    if [ ! -z "${_files_to_recursive_localize}" ]; then
+        echo $_files_to_recursive_localize
+        pipe_log_info "--> Starting recursive file localization" "$LOCALIZE_FROM_FILES_TASK_NAME"
+        unset CP_LOCALIZE_FROM_FILES_RECURSIVE
+        export CP_LOCALIZE_FROM_FILES="${_files_to_recursive_localize}"
+        localize_inputs_from_files "$LOCALIZE_GENERAL_TASK_NAME" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    fi
+fi
 
 pipe_log_success "Config file based localization is done" "$LOCALIZE_FROM_FILES_TASK_NAME"

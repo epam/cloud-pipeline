@@ -18,7 +18,7 @@ import React from 'react';
 import StatusIcon from '../../../../special/run-status-icon';
 import {Icon, Popover, Row} from 'antd';
 import moment from 'moment-timezone';
-import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
+import evaluateRunPrice from '../../../../../utils/evaluate-run-price';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../../../special/job-estimated-price-info';
@@ -37,7 +37,9 @@ function renderTitle (run) {
     nodeType = run.instance.nodeType;
     nodeDisk = run.instance.nodeDisk ? `${run.instance.nodeDisk} Gb` : undefined;
   }
-  nodeCount = run.nodeCount ? `cluster (${run.nodeCount + 1} nodes)` : undefined;
+  nodeCount = run.childRunsCount && run.childRunsCount > 0
+    ? `cluster (${run.childRunsCount + 1} nodes)`
+    : undefined;
   return [
     podId,
     nodeCount,
@@ -61,7 +63,11 @@ function renderPipeline (run) {
     displayName = parts[parts.length - 1];
   }
   let clusterIcon;
-  if (run.nodeCount > 0) {
+  if (
+    run.nodeCount > 0 ||
+    run.clusterRun ||
+    run.childRunsCount > 0
+  ) {
     clusterIcon = <Icon type="database" />;
   }
   const runName = (
@@ -130,16 +136,10 @@ function renderCommitStatus (run) {
 }
 
 function renderEstimatedPrice (run) {
-  if (!run.pricePerHour) {
-    return null;
-  }
-  const diff = evaluateRunDuration(run) * run.pricePerHour;
-  // const price = (Math.ceil(diff * 100.0) / 100.0) * (run.nodeCount ? (run.nodeCount + 1) : 1);
-  const masterPrice = Math.ceil(diff * 100.0) / 100.0;
-  const price = masterPrice + (run.workersPrice || 0);
+  const price = evaluateRunPrice(run);
   return (
     <JobEstimatedPriceInfo>
-      , estimated price: <b>{price.toFixed(2)}$</b>
+      , estimated price: <b>{price.total.toFixed(2)}$</b>
     </JobEstimatedPriceInfo>
   );
 }
@@ -166,8 +166,16 @@ export default function renderRunCard (run) {
     </Row>,
     <Row key="title" style={{fontSize: 'smaller'}}>
       {renderTitle(run)}
-      {run.sensitive ? ',' : null}
-      {run.sensitive ? (<span className="cp-sensitive" style={{whiteSpace: 'pre'}}> sensitive</span>) : null}
+      {
+        run.sensitive
+          ? ','
+          : null
+      }
+      {
+        run.sensitive
+          ? (<span className="cp-sensitive" style={{whiteSpace: 'pre'}}> sensitive</span>)
+          : null
+      }
     </Row>,
     <Row key="time" style={{fontSize: 'smaller'}}>
       {renderTime(run)}{renderEstimatedPrice(run)}

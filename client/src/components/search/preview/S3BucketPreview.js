@@ -35,7 +35,14 @@ const PAGE_SIZE = 100;
     dataStorageInfo: params.item && params.item.id
       ? dataStorages.load(params.item.id)
       : null,
-    items: params.item && params.item.id ? new DataStorageRequest(params.item.id, null, false, PAGE_SIZE) : null
+    items: params.item && params.item.id
+      ? new DataStorageRequest(
+        params.item.id,
+        null,
+        false,
+        false,
+        PAGE_SIZE
+      ) : null
   };
 })
 @observer

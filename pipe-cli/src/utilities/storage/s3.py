@@ -15,7 +15,10 @@
 from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 
-from src.utilities.encoding_utilities import to_string, to_ascii, is_safe_chars
+from src.model.datastorage_usage_model import StorageUsage
+from src.utilities.audit import StorageDataAccessEntry, DataAccessType
+from src.utilities.datastorage_lifecycle_manager import DataStorageLifecycleManager
+from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
@@ -94,8 +97,9 @@ copies.CopyObjectTask._main = _copy_object_task_main
 
 class StorageItemManager(object):
 
-    def __init__(self, session, bucket=None, region_name=None, cross_region=False):
+    def __init__(self, session, audit=None, bucket=None, region_name=None, cross_region=False):
         self.session = session
+        self.audit = audit
         self.region_name = region_name
         _boto_config = S3BucketOperations.get_proxy_config(cross_region=cross_region)
         self.s3 = session.resource('s3', config=_boto_config,
@@ -164,8 +168,8 @@ class StorageItemManager(object):
 
 class DownloadManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, region_name=None):
-        super(DownloadManager, self).__init__(session, bucket=bucket, region_name=region_name)
+    def __init__(self, session, bucket, audit, region_name=None):
+        super(DownloadManager, self).__init__(session, audit=audit, bucket=bucket, region_name=region_name)
 
     def get_destination_key(self, destination_wrapper, relative_path):
         if destination_wrapper.path.endswith(os.path.sep):
@@ -190,17 +194,19 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
             progress_callback = None
+        self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, source_key, DataAccessType.READ))
         self.bucket.download_file(source_key, to_string(destination_key),
                                   Callback=progress_callback,
                                   Config=transfer_config)
         if clean:
+            self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, source_key, DataAccessType.DELETE))
             source_wrapper.delete_item(source_key)
 
 
 class UploadManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, region_name=None):
-        super(UploadManager, self).__init__(session, bucket=bucket, region_name=region_name)
+    def __init__(self, session, bucket, audit, region_name=None):
+        super(UploadManager, self).__init__(session, audit=audit, bucket=bucket, region_name=region_name)
 
     def get_destination_key(self, destination_wrapper, relative_path):
         return S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
@@ -230,6 +236,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
             progress_callback = None
+        self.audit.put(StorageDataAccessEntry(destination_wrapper.bucket, destination_key, DataAccessType.WRITE))
         self.bucket.upload_file(to_string(source_key), destination_key,
                                 Callback=progress_callback,
                                 Config=transfer_config,
@@ -243,8 +250,9 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
 
 class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, region_name=None):
-        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, bucket=bucket, region_name=region_name)
+    def __init__(self, session, bucket, audit, region_name=None):
+        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, audit=audit, bucket=bucket,
+                                                               region_name=region_name)
 
     def get_destination_key(self, destination_wrapper, relative_path):
         if destination_wrapper.path.endswith(os.path.sep):
@@ -273,6 +281,7 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
         file_stream = urlopen(source_key)
+        self.audit.put(StorageDataAccessEntry(destination_wrapper.bucket, destination_key, DataAccessType.WRITE))
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.upload_fileobj(file_stream, destination_key, Callback=ProgressPercentage(relative_path, size),
                                        ExtraArgs=extra_args)
@@ -285,10 +294,10 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
 
 class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, region_name=None, cross_region=False):
+    def __init__(self, session, bucket, audit, region_name=None, cross_region=False):
         self.cross_region = cross_region
-        super(TransferBetweenBucketsManager, self).__init__(session, bucket=bucket, region_name=region_name,
-                                                            cross_region=cross_region)
+        super(TransferBetweenBucketsManager, self).__init__(session, audit=audit, bucket=bucket,
+                                                            region_name=region_name, cross_region=cross_region)
 
     def get_destination_key(self, destination_wrapper, relative_path):
         return S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
@@ -314,12 +323,15 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         extra_args = {
             'ACL': 'bucket-owner-full-control'
         }
+        self.audit.put_all([StorageDataAccessEntry(source_wrapper.bucket, path, DataAccessType.READ),
+                            StorageDataAccessEntry(destination_wrapper.bucket, destination_key, DataAccessType.WRITE)])
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.copy(copy_source, destination_key, Callback=ProgressPercentage(relative_path, size),
                              ExtraArgs=extra_args, SourceClient=source_client)
         else:
             self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
         if clean:
+            self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, path, DataAccessType.DELETE))
             source_wrapper.delete_item(path)
         version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
         return TransferResult(source_key=path, destination_key=destination_key, destination_version=version,
@@ -354,8 +366,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 class RestoreManager(StorageItemManager, AbstractRestoreManager):
     VERSION_NOT_EXISTS_ERROR = 'Version "%s" doesn\'t exist.'
 
-    def __init__(self, bucket, session, region_name=None):
-        super(RestoreManager, self).__init__(session, region_name=region_name)
+    def __init__(self, bucket, session, audit, region_name=None):
+        super(RestoreManager, self).__init__(session, audit=audit, region_name=region_name)
         self.bucket = bucket
         self.listing_manager = bucket.get_list_manager(True)
 
@@ -375,11 +387,10 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         relative_path = self.bucket.path
         self._validate_version(bucket, client, version, file_items)
         try:
+            self.audit.put(StorageDataAccessEntry(self.bucket.bucket, relative_path, DataAccessType.WRITE))
             copied_object = client.copy_object(Bucket=bucket, Key=relative_path,
                                                CopySource=dict(Bucket=bucket, Key=relative_path, VersionId=version))
-            delete_us = dict(Objects=[])
-            delete_us['Objects'].append(dict(Key=relative_path, VersionId=version))
-            client.delete_objects(Bucket=bucket, Delete=delete_us)
+            client.delete_objects(Bucket=bucket, Delete=dict(Objects=[dict(Key=relative_path, VersionId=version)]))
             DataStorage.batch_copy_object_tags(self.bucket.bucket.identifier, [{
                 'source': {
                     'path': relative_path,
@@ -485,15 +496,20 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             operation_parameters['Delimiter'] = delimiter
         paginator = client.get_paginator('list_object_versions')
         pages = paginator.paginate(**operation_parameters)
-        restore_us = dict(Objects=[])
+        restore_items = []
         for page in pages:
-            S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_us, delimiter, exclude, include, prefix,
+            S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_items, delimiter, exclude, include, prefix,
                                                versions=True)
-            # flush once aws limit reached
-            restore_us = S3BucketOperations.send_delete_objects_request(client, bucket, restore_us)
-        # flush rest
-        if len(restore_us['Objects']):
-            client.delete_objects(Bucket=bucket, Delete=restore_us)
+            restore_items, flushing_items = S3BucketOperations.split_by_aws_limit(restore_items)
+            if flushing_items:
+                self._restore_objects(client, bucket, flushing_items)
+        if restore_items:
+            self._restore_objects(client, bucket, restore_items)
+
+    def _restore_objects(self, client, bucket, items):
+        self.audit.put_all([StorageDataAccessEntry(self.bucket.bucket, item['Key'], DataAccessType.WRITE)
+                            for item in items])
+        client.delete_objects(Bucket=bucket, Delete=dict(Objects=items))
 
     def _validate_version(self, bucket, client, version, file_items):
         current_item = self.load_item(bucket, client)
@@ -507,8 +523,9 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
 
 
 class DeleteManager(StorageItemManager, AbstractDeleteManager):
-    def __init__(self, bucket, session, region_name=None):
-        super(DeleteManager, self).__init__(session, region_name=region_name)
+
+    def __init__(self, bucket, session, audit, region_name=None):
+        super(DeleteManager, self).__init__(session, audit=audit, region_name=region_name)
         self.bucket = bucket
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
@@ -518,12 +535,13 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         prefix = StorageOperations.get_prefix(relative_path)
 
         if not recursive and not hard_delete:
-            delete_us = dict(Objects=[])
+            delete_items = []
             if version is not None:
-                delete_us['Objects'].append(dict(Key=prefix, VersionId=version))
+                delete_items.append(dict(Key=prefix, VersionId=version))
             else:
-                delete_us['Objects'].append(dict(Key=prefix))
-            client.delete_objects(Bucket=bucket, Delete=delete_us)
+                delete_items.append(dict(Key=prefix))
+            self.audit.put(StorageDataAccessEntry(self.bucket.bucket, prefix, DataAccessType.DELETE))
+            client.delete_objects(Bucket=bucket, Delete=dict(Objects=delete_items))
             if self.bucket.bucket.policy.versioning_enabled:
                 if version:
                     latest_version = self.get_s3_file_version(bucket, prefix)
@@ -537,12 +555,12 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
                                 'path': relative_path
                             }
                         }])
-                        self._delete_object_tags(delete_us)
+                        self._delete_object_tags(delete_items)
                     else:
-                        delete_us['Objects'].append(dict(Key=prefix))
-                        self._delete_object_tags(delete_us)
+                        delete_items.append(dict(Key=prefix))
+                        self._delete_object_tags(delete_items)
             else:
-                self._delete_object_tags(delete_us)
+                self._delete_object_tags(delete_items)
         else:
             operation_parameters = {
                 'Bucket': bucket,
@@ -553,34 +571,37 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
             else:
                 paginator = client.get_paginator('list_objects_v2')
             pages = paginator.paginate(**operation_parameters)
-            delete_us = dict(Objects=[])
+            delete_items = []
             for page in pages:
-                S3BucketOperations.process_listing(page, 'Contents', delete_us, delimiter, exclude, include, prefix)
-                S3BucketOperations.process_listing(page, 'Versions', delete_us, delimiter, exclude, include, prefix,
+                S3BucketOperations.process_listing(page, 'Contents', delete_items, delimiter, exclude, include, prefix)
+                S3BucketOperations.process_listing(page, 'Versions', delete_items, delimiter, exclude, include, prefix,
                                                    versions=True)
-                S3BucketOperations.process_listing(page, 'DeleteMarkers', delete_us, delimiter, exclude, include,
+                S3BucketOperations.process_listing(page, 'DeleteMarkers', delete_items, delimiter, exclude, include,
                                                    prefix, versions=True)
-                # flush once aws limit reached
-                if not self.bucket.bucket.policy.versioning_enabled or hard_delete:
-                    self._delete_all_object_tags(delete_us)
-                delete_us = S3BucketOperations.send_delete_objects_request(client, bucket, delete_us)
-            # flush rest
-            if len(delete_us['Objects']):
-                if not self.bucket.bucket.policy.versioning_enabled or hard_delete:
-                    self._delete_all_object_tags(delete_us)
-                client.delete_objects(Bucket=bucket, Delete=delete_us)
+                delete_items, flushing_items = S3BucketOperations.split_by_aws_limit(delete_items)
+                if flushing_items:
+                    self._delete_objects(client, bucket, hard_delete, flushing_items)
+            if delete_items:
+                self._delete_objects(client, bucket, hard_delete, delete_items)
 
-    def _delete_all_object_tags(self, delete_us, chunk_size=100):
-        item_names = list(set(item['Key'] for item in delete_us['Objects']))
+    def _delete_objects(self, client, bucket, hard_delete, items):
+        if not self.bucket.bucket.policy.versioning_enabled or hard_delete:
+            self._delete_all_object_tags(items)
+        self.audit.put_all([StorageDataAccessEntry(self.bucket.bucket, item['Key'], DataAccessType.DELETE)
+                            for item in items])
+        client.delete_objects(Bucket=bucket, Delete=dict(Objects=items))
+
+    def _delete_all_object_tags(self, items, chunk_size=100):
+        item_names = list(set(item['Key'] for item in items))
         for item_names_chunk in [item_names[i:i + chunk_size]
                                  for i in range(0, len(item_names), chunk_size)]:
             DataStorage.batch_delete_all_object_tags(self.bucket.bucket.identifier,
                                                      [{'path': item_name}
                                                       for item_name in item_names_chunk])
 
-    def _delete_object_tags(self, delete_us, chunk_size=100):
-        for items_chunk in [delete_us['Objects'][i:i + chunk_size]
-                            for i in range(0, len(delete_us['Objects']), chunk_size)]:
+    def _delete_object_tags(self, items, chunk_size=100):
+        for items_chunk in [items[i:i + chunk_size]
+                            for i in range(0, len(items), chunk_size)]:
             DataStorage.batch_delete_object_tags(self.bucket.bucket.identifier,
                                                  [{'path': item['Key'], 'version': item.get('VersionId')}
                                                   for item in items_chunk])
@@ -595,7 +616,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         self.show_versions = show_versions
 
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                   show_all=False):
+                   show_all=False, show_archive=False):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         client = self._get_client()
         operation_parameters = {
@@ -615,9 +636,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             operation_parameters['Prefix'] = prefix
 
         if self.show_versions:
-            return self.list_versions(client, prefix, operation_parameters, recursive, page_size)
+            return self.list_versions(client, prefix, operation_parameters, recursive, page_size, show_archive)
         else:
-            return self.list_objects(client, prefix, operation_parameters, recursive, page_size)
+            return self.list_objects(client, prefix, operation_parameters, recursive, page_size, show_archive)
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         bucket_name = self.bucket.bucket.path
@@ -641,7 +662,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 for file in page['Contents']:
                     name = self.get_file_name(file, prefix, True)
                     size = file['Size']
-                    accumulator.add_path(name, size)
+                    tier = file['StorageClass']
+                    accumulator.add_path(name, tier, size)
             if not page['IsTruncated']:
                 break
         return accumulator.get_tree()
@@ -659,18 +681,16 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
 
-        total_size = 0
-        total_objects = 0
+        storage_usage = StorageUsage()
 
         for page in page_iterator:
             if 'Contents' in page:
                 for file in page['Contents']:
                     if self.prefix_match(file, relative_path):
-                        total_size += file['Size']
-                        total_objects += 1
+                        storage_usage.add_item(file["StorageClass"], file['Size'])
             if not page['IsTruncated']:
                 break
-        return delimiter.join([self.bucket.bucket.path, relative_path]), total_objects, total_size
+        return delimiter.join([self.bucket.bucket.path, relative_path]), storage_usage
 
     @classmethod
     def prefix_match(cls, page_file, relative_path=None):
@@ -687,12 +707,14 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             return True
         return False
 
-    def list_versions(self, client, prefix,  operation_parameters, recursive, page_size):
+    def list_versions(self, client, prefix,  operation_parameters, recursive, page_size, show_archive):
         paginator = client.get_paginator('list_object_versions')
         page_iterator = paginator.paginate(**operation_parameters)
         items = []
         item_keys = collections.OrderedDict()
         items_count = 0
+        lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
+
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
@@ -702,7 +724,17 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             if 'Versions' in page:
                 for version in page['Versions']:
                     name = self.get_file_name(version, prefix, recursive)
-                    item = self.get_file_object(version, name, version=True)
+                    restore_status = None
+                    if version['StorageClass'] != 'STANDARD':
+                        restore_status, versions_restored = lifecycle_manager.find_lifecycle_status(name)
+                        version_not_restored = restore_status and not version['IsLatest'] and not versions_restored
+                        if not show_archive:
+                            if not restore_status or version_not_restored:
+                                continue
+                        else:
+                            if version_not_restored:
+                                restore_status = None
+                    item = self.get_file_object(version, name, version=True, lifecycle_status=restore_status)
                     self.process_version(item, item_keys, name)
             if 'DeleteMarkers' in page:
                 for delete_marker in page['DeleteMarkers']:
@@ -730,11 +762,13 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 item.versions = versions
                 item_keys[name] = item
 
-    def list_objects(self, client, prefix, operation_parameters, recursive, page_size):
+    def list_objects(self, client, prefix, operation_parameters, recursive, page_size, show_archive):
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
         items = []
         items_count = 0
+        lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
+
         for page in page_iterator:
             if 'CommonPrefixes' in page:
                 for folder in page['CommonPrefixes']:
@@ -744,14 +778,19 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             if 'Contents' in page:
                 for file in page['Contents']:
                     name = self.get_file_name(file, prefix, recursive)
-                    item = self.get_file_object(file, name)
+                    lifecycle_status = None
+                    if file['StorageClass'] != 'STANDARD':
+                        lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
+                        if not show_archive and not lifecycle_status:
+                            continue
+                    item = self.get_file_object(file, name, lifecycle_status=lifecycle_status)
                     items.append(item)
                     items_count += 1
             if self.need_to_stop_paging(page, page_size, items_count):
                 break
         return items
 
-    def get_file_object(self, file, name, version=False, storage_class=True):
+    def get_file_object(self, file, name, version=False, storage_class=True, lifecycle_status=None):
         item = DataStorageItemModel()
         item.type = 'File'
         item.name = name
@@ -760,7 +799,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         item.path = name
         item.changed = file['LastModified'].astimezone(Config.instance().timezone())
         if storage_class:
-            item.labels = [DataStorageItemLabelModel('StorageClass', file['StorageClass'])]
+            lifecycle_status = lifecycle_status if lifecycle_status else ''
+            item.labels = [DataStorageItemLabelModel('StorageClass', file['StorageClass'] + lifecycle_status)]
         if version:
             item.version = file['VersionId']
             item.latest = file['IsLatest']
@@ -976,14 +1016,14 @@ class S3BucketOperations(object):
                               region_name=source_wrapper.bucket.region)
 
     @classmethod
-    def get_delete_manager(cls, source_wrapper, versioning=False):
+    def get_delete_manager(cls, source_wrapper, audit, versioning=False):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'mv', versioning=versioning)
-        return DeleteManager(source_wrapper, session, source_wrapper.bucket.region)
+        return DeleteManager(source_wrapper, session, audit, source_wrapper.bucket.region)
 
     @classmethod
-    def get_restore_manager(cls, source_wrapper):
+    def get_restore_manager(cls, source_wrapper, audit):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'mv', versioning=True)
-        return RestoreManager(source_wrapper, session, source_wrapper.bucket.region)
+        return RestoreManager(source_wrapper, session, audit, source_wrapper.bucket.region)
 
     @classmethod
     def delete_item(cls, storage_wrapper, relative_path, session=None):
@@ -999,9 +1039,7 @@ class S3BucketOperations(object):
         else:
             prefix = delimiter
 
-        delete_us = dict(Objects=[])
-        delete_us['Objects'].append(dict(Key=prefix))
-        client.delete_objects(Bucket=bucket, Delete=delete_us)
+        client.delete_objects(Bucket=bucket, Delete=dict(Objects=[dict(Key= prefix)]))
 
     @classmethod
     def normalize_s3_path(cls, destination_wrapper, relative_path):
@@ -1029,7 +1067,7 @@ class S3BucketOperations(object):
         return Session(botocore_session=s)
 
     @classmethod
-    def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, audit, command):
         source_id = source_wrapper.bucket.identifier
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(source_id, destination_id, command)
@@ -1037,31 +1075,31 @@ class S3BucketOperations(object):
         source_wrapper.session = session
         destination_bucket = destination_wrapper.bucket.path
         cross_region = destination_wrapper.bucket.region != source_wrapper.bucket.region
-        return TransferBetweenBucketsManager(session, destination_bucket, destination_wrapper.bucket.region,
-                                             cross_region)
+        return TransferBetweenBucketsManager(session, destination_bucket, audit,
+                                             destination_wrapper.bucket.region, cross_region)
 
     @classmethod
-    def get_download_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_download_manager(cls, source_wrapper, destination_wrapper, audit, command):
         source_id = source_wrapper.bucket.identifier
         session = cls.assumed_session(source_id, None, command)
         # replace session to be able to delete source for move
         source_wrapper.session = session
         source_bucket = source_wrapper.bucket.path
-        return DownloadManager(session, source_bucket, source_wrapper.bucket.region)
+        return DownloadManager(session, source_bucket, audit, source_wrapper.bucket.region)
 
     @classmethod
-    def get_upload_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_upload_manager(cls, source_wrapper, destination_wrapper, audit, command):
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
-        return UploadManager(session, destination_bucket, destination_wrapper.bucket.region)
+        return UploadManager(session, destination_bucket, audit, destination_wrapper.bucket.region)
 
     @classmethod
-    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, audit, command):
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
-        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket, destination_wrapper.bucket.region)
+        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket, audit, destination_wrapper.bucket.region)
 
     @classmethod
     def get_full_path(cls, path, param):
@@ -1073,14 +1111,14 @@ class S3BucketOperations(object):
         return StorageOperations.remove_double_slashes(path)
 
     @staticmethod
-    def process_listing(page, name, delete_us, delimiter, exclude, include, prefix, versions=False):
+    def process_listing(page, name, items, delimiter, exclude, include, prefix, versions=False):
         found_file = False
         if name in page:
             if not versions:
                 single_file_item = S3BucketOperations.get_single_file_item(name, page, prefix)
                 if single_file_item:
                     S3BucketOperations.add_item_to_deletion(single_file_item, prefix, delimiter, include, exclude,
-                                                            versions, delete_us)
+                                                            versions, items)
                     return True
             for item in page[name]:
                 if item is None:
@@ -1089,7 +1127,7 @@ class S3BucketOperations(object):
                     found_file = True
                 if S3BucketOperations.expect_to_delete_file(prefix, item):
                     continue
-                S3BucketOperations.add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, delete_us)
+                S3BucketOperations.add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, items)
         return found_file
 
     @staticmethod
@@ -1109,7 +1147,7 @@ class S3BucketOperations(object):
                and not item['Key'].startswith(prefix + S3BucketOperations.S3_PATH_SEPARATOR)
 
     @staticmethod
-    def add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, delete_us):
+    def add_item_to_deletion(item, prefix, delimiter, include, exclude, versions, items):
         name = S3BucketOperations.get_item_name(item['Key'], prefix=prefix)
         name = S3BucketOperations.get_prefix(delimiter, name)
         if not PatternMatcher.match_any(name, include):
@@ -1117,13 +1155,13 @@ class S3BucketOperations(object):
         if PatternMatcher.match_any(name, exclude, default=False):
             return
         if versions:
-            delete_us['Objects'].append(dict(Key=item['Key'], VersionId=item['VersionId']))
+            items.append(dict(Key=item['Key'], VersionId=item['VersionId']))
         else:
-            delete_us['Objects'].append(dict(Key=item['Key']))
+            items.append(dict(Key=item['Key']))
 
     @staticmethod
-    def send_delete_objects_request(client, bucket, delete_us, limit=S3_REQUEST_ELEMENTS_LIMIT):
-        if len(delete_us['Objects']) >= limit:
-            client.delete_objects(Bucket=bucket, Delete=dict(Objects=delete_us['Objects'][:limit]))
-            return dict(Objects=delete_us['Objects'][limit:])
-        return delete_us
+    def split_by_aws_limit(items, limit=S3_REQUEST_ELEMENTS_LIMIT):
+        if len(items) < limit:
+            return items, []
+        flushing_items, remaining_items = items[:limit], items[limit:]
+        return remaining_items, flushing_items

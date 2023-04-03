@@ -17,6 +17,7 @@
 package com.epam.pipeline.vmmonitor.service.k8s;
 
 import com.epam.pipeline.vmmonitor.model.k8s.TinyproxyThresholdEvent;
+import com.epam.pipeline.vmmonitor.service.Monitor;
 import com.epam.pipeline.vmmonitor.service.pipeline.TinyproxyStatsClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @ConditionalOnProperty(value = "monitor.tinyproxy.enable", havingValue = "true")
-public class TinyproxyMonitor {
+public class TinyproxyMonitor implements Monitor {
 
     private final KubernetesNotifier kubernetesNotifier;
     private final TinyproxyStatsClient statsClient;
@@ -57,6 +58,7 @@ public class TinyproxyMonitor {
         this.lastNotification = new HashMap<>();
     }
 
+    @Override
     public void monitor() {
         if (MapUtils.isEmpty(statsThresholds)) {
             log.info("No thresholds configured for tinyproxy monitoring.");

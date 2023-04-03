@@ -28,7 +28,6 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
-import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketBranch;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
@@ -42,7 +41,8 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.git.GitClientService;
 import com.epam.pipeline.manager.git.RestApiUtils;
-import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.utils.AuthorizationUtils;
 import com.epam.pipeline.utils.GitUtils;
@@ -69,14 +69,15 @@ public class BitbucketService implements GitClientService {
 
     private final BitbucketMapper mapper;
     private final MessageHelper messageHelper;
-    private final AuthManager authManager;
+    private final PreferenceManager preferenceManager;
+
 
     public BitbucketService(final BitbucketMapper mapper,
                             final MessageHelper messageHelper,
-                            final AuthManager authManager) {
+                            final PreferenceManager preferenceManager) {
         this.mapper = mapper;
         this.messageHelper = messageHelper;
-        this.authManager = authManager;
+        this.preferenceManager = preferenceManager;
     }
 
     @Override
@@ -106,7 +107,10 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
-    public GitProject createRepository(final String description, final String path, final String token) {
+    public GitProject createRepository(final String description,
+                                       final String path,
+                                       final String token,
+                                       final String visibility) {
         final BitbucketRepository bitbucketRepository = BitbucketRepository.builder()
                 .isPublic(false)
                 .description(description)
@@ -199,9 +203,7 @@ public class BitbucketService implements GitClientService {
                                               final boolean issueToken, final Long duration) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.fromBitbucket(pipeline.getRepository());
         final String token = pipeline.getRepositoryToken();
-        final BitbucketAuthor user = getClient(pipeline.getRepository(), token)
-                .findUser(authManager.getAuthorizedUser());
-        final String username = user.getDisplayName();
+        final String username = preferenceManager.getPreference(SystemPreferences.BITBUCKET_USER_NAME);
         final String host = repositoryUrl.getHost() + "/scm";
         return GitCredentials.builder()
                 .url(GitRepositoryUrl.asString(repositoryUrl.getProtocol(), username, token, host,
@@ -209,7 +211,6 @@ public class BitbucketService implements GitClientService {
                         repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME))))
                 .userName(username)
                 .token(token)
-                .email(user.getEmailAddress())
                 .build();
     }
 

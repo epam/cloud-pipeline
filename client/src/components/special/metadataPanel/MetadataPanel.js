@@ -24,7 +24,10 @@ import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEnti
 import MetadataEntityDelete from '../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEntityUpdateKey';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
+import PathAttributeShareButton from '../metadata/special/path-attribute-share-button';
 import PropTypes from 'prop-types';
+import RunsAttribute, {isRunsValue} from '../metadata/special/runs-attribute';
+import AttributeValue from '../metadata/special/attribute-value';
 
 @inject((args, params) => ({
   currentItem: params.currentItem,
@@ -45,12 +48,13 @@ export default class MetadataPanel extends React.Component {
     externalId: PropTypes.string,
     parentId: PropTypes.number,
     currentItem: PropTypes.object,
-    onUpdateMetadata: PropTypes.func
+    onUpdateMetadata: PropTypes.func,
+    pathAttributes: PropTypes.arrayOf(PropTypes.string)
   };
 
   static defaultProps = {
     readOnlyKeys: ['ID'],
-    columnNamesFn: (o => o)
+    columnNamesFn: o => o
   };
 
   state = {
@@ -453,13 +457,21 @@ export default class MetadataPanel extends React.Component {
   renderMetadataItem = (metadataItem) => {
     let valueElement = [];
     for (let key in metadataItem) {
-      const isReadOnlyItem = this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0;
-      const isReadOnlyItemOrArray = isReadOnlyItem || metadataItem[key].type.startsWith('Array');
+      let isReadOnlyItem = this.props.readOnly ||
+        (this.props.readOnlyKeys || []).indexOf(key) >= 0;
       if (key !== 'rowKey' && metadataItem[key]) {
         let value = metadataItem[key].value;
+        const runsValue = isRunsValue(value);
+        isReadOnlyItem = isReadOnlyItem || runsValue;
         if (metadataItem[key].type.startsWith('Array')) {
           try {
-            value = JSON.parse(value).map(v => <div key={`${key}_value_${v}`}>{v}</div>);
+            value = JSON.parse(value).map(v => (
+              <div
+                key={`${key}_value_${v}`}
+              >
+                <AttributeValue value={v} />
+              </div>
+            ));
           } catch (___) {}
         }
         const inputOptions = (field, key, value) => {
@@ -518,6 +530,19 @@ export default class MetadataPanel extends React.Component {
                 style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
                 onClick={this.onMetadataEditStarted('key', key, value)}>
                 {this.props.columnNamesFn(key)}
+                {
+                  PathAttributeShareButton.shareButtonAvailable({
+                    key,
+                    value: metadataItem[key].value,
+                    pathKeys: this.props.pathAttributes
+                  }) && (
+                    <PathAttributeShareButton
+                      path={metadataItem[key].value}
+                      id={`share-metadata-paths-${key}-button`}
+                      style={{marginLeft: 5}}
+                    />
+                  )
+                }
               </td>
               {
                 this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0
@@ -537,7 +562,25 @@ export default class MetadataPanel extends React.Component {
             </tr>
           ));
         }
-        if (
+        if (runsValue) {
+          valueElement.push((
+            <tr
+              key={`${key}_value`}
+              className={
+                classNames(
+                  'cp-metadata-item-row',
+                  'value'
+                )
+              }
+            >
+              <td colSpan={6}>
+                <RunsAttribute
+                  value={value}
+                />
+              </td>
+            </tr>
+          ));
+        } else if (
           this.state.editableValue === key &&
           (this.props.readOnlyKeys || []).indexOf(key) === -1
         ) {
@@ -575,7 +618,7 @@ export default class MetadataPanel extends React.Component {
                 id={`value-column-${key}`}
                 colSpan={6}
                 onClick={this.onMetadataEditStarted('value', key, metadataItem[key].value)}>
-                {value}
+                <AttributeValue value={value} />
               </td>
             </tr>
           ));

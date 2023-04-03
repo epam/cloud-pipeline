@@ -25,9 +25,10 @@ export default {
     '@application-background-color': '#ececec',
     '@application-dark-background-color': '#000',
     '@application-color': 'rgba(0, 0, 0, 0.65)',
+    '@application-color-tooltip': '#ececec',
     '@application-color-faded': 'fadeout(@application-color, 20%)',
     '@application-color-disabled': 'fadeout(@application-color, 40%)',
-    '@application-color-accent': 'fadein(@application-color, 20%)',
+    '@application-color-accent': 'fadein(@application-color, 20%);  ',
     '@primary-color': '#108ee9',
     '@primary-hover-color': '#49a9ee',
     '@primary-active-color': '#0e77ca',
@@ -144,7 +145,8 @@ export default {
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@card-background-color-not-faded': 'fade(@card-background-color, 100%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': 'yellow',
+    '@search-highlight-text-background-color': '#ffff00',
+    '@search-highlight-text-inactive-background-color': 'fadeout(#ffff00, 50%)',
     '@background-image': 'none',
     '@navigation-background-image': 'none',
     '@logo-image': "@static_resource('logo.png')",
@@ -159,6 +161,9 @@ export default {
     '@vs-color-deletion-applied-background': '#d9d9d9',
     '@vs-color-change-background': 'rgba(252, 230, 162, 0.4)',
     '@vs-color-change-border': '#f5e3aa',
-    '@vs-color-change-applied-background': '@vs-color-change-background'
+    '@vs-color-change-applied-background': '@vs-color-change-background',
+    '@application-console-background-color': '#222222',
+    '@application-console-color': '#ececec',
+    '@application-console-color-details': '#aaaaaa'
   }
 };

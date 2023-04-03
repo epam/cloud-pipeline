@@ -18,11 +18,15 @@ import React from 'react';
 import Channels from './channels';
 import ColorMap from './color-map';
 import Lens from './lens';
+import PlaybackSpeed from './playback-speed';
+import HcsVideoGenerationModeToggle from './video-generation-mode-toggle';
 import styles from './hcs-image-controls.css';
 
 function HcsImageControls () {
   return (
     <div className={styles.container}>
+      <PlaybackSpeed />
+      <HcsVideoGenerationModeToggle />
       <ColorMap />
       <Lens />
       <Channels />

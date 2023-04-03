@@ -69,40 +69,40 @@ function injection (stores, props) {
     ...periodInfo
   };
   const billingCentersStorageRequest = new GetGroupedBillingCentersWithPrevious(
-    {...filters, resourceType: 'STORAGE'}
+    {filters: {...filters, resourceType: 'STORAGE'}}
   );
   billingCentersStorageRequest.fetch();
   const billingCentersComputeRequest = new GetGroupedBillingCentersWithPrevious(
-    {...filters, resourceType: 'COMPUTE'}
+    {filters: {...filters, resourceType: 'COMPUTE'}}
   );
   billingCentersComputeRequest.fetch();
   let billingCentersComputeTableRequest;
   let billingCentersStorageTableRequest;
   if (group) {
     billingCentersComputeTableRequest = new GetGroupedBillingCenters(
-      {...filters, resourceType: 'COMPUTE'}
+      {filters: {...filters, resourceType: 'COMPUTE'}}
     );
     billingCentersComputeTableRequest.fetch();
     billingCentersStorageTableRequest = new GetGroupedBillingCenters(
-      {...filters, resourceType: 'STORAGE'}
+      {filters: {...filters, resourceType: 'STORAGE'}}
     );
     billingCentersStorageTableRequest.fetch();
   }
-  const resources = new GetGroupedResourcesWithPrevious(filters);
+  const resources = new GetGroupedResourcesWithPrevious({filters});
   resources.fetch();
-  const summaryCompute = new GetBillingData(
-    {
+  const summaryCompute = new GetBillingData({
+    filters: {
       ...filters,
       filterBy: GetBillingData.FILTER_BY.compute
     }
-  );
+  });
   summaryCompute.fetch();
-  const summaryStorages = new GetBillingData(
-    {
+  const summaryStorages = new GetBillingData({
+    filters: {
       ...filters,
       filterBy: GetBillingData.FILTER_BY.storages
     }
-  );
+  });
   summaryStorages.fetch();
   return {
     user,

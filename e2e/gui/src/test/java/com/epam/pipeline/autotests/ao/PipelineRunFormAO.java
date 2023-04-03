@@ -44,6 +44,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
+import org.openqa.selenium.NoSuchWindowException;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.fail;
@@ -331,6 +332,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO launch() {
+        ensure(byText("Estimated price per hour:"), visible);
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();

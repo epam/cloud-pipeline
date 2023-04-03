@@ -16,7 +16,7 @@ public class StorageBillingWriterTest extends AbstractBillingWriterTest<StorageB
 
     @Override
     public BillingWriter<StorageBilling> getWriter(final Writer writer) {
-        return new StorageBillingWriter(writer, START_DATE, FINISH_DATE);
+        return new StorageBillingWriter(writer, START_DATE, FINISH_DATE, null);
     }
 
     @Override

@@ -14,13 +14,19 @@ function getDayOfWeek (value) {
   return '';
 }
 
-export default class RunSchedulingList extends React.Component {
+class RunSchedulingList extends React.Component {
   static propTypes = {
     rules: PropTypes.array,
     allowEdit: PropTypes.bool,
     onSubmit: PropTypes.func,
-    pending: PropTypes.bool
+    pending: PropTypes.bool,
+    availableActions: PropTypes.arrayOf(PropTypes.oneOf([
+      RunScheduleDialog.Actions.pause,
+      RunScheduleDialog.Actions.resume
+    ]))
   };
+
+  static Actions = RunScheduleDialog.Actions;
 
   state = {
     rules: [],
@@ -99,6 +105,8 @@ export default class RunSchedulingList extends React.Component {
         rules={rules}
         visible={editScheduleDialogVisible}
         onClose={this.closeRunSchedulingDialog}
+        availableActions={this.props.availableActions}
+        showActionType
       />
     );
     return (
@@ -147,3 +155,12 @@ export default class RunSchedulingList extends React.Component {
     );
   }
 }
+
+RunSchedulingList.defaultProps = {
+  availableActions: [
+    RunScheduleDialog.Actions.pause,
+    RunScheduleDialog.Actions.resume
+  ]
+};
+
+export default RunSchedulingList;

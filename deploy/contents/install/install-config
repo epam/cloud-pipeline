@@ -55,12 +55,15 @@ CP_PREF_API_STATIC_DIRECTORY_EXT=/opt/api/ext/templates/static
 CP_PREF_API_ETC_DIRECTORY=/opt/api/etc
 
 # cp-git config
+GITLAB_DATABASE_VERSION=9.6
+GITLAB_DATABASE_SHARED_BUFFERS=128MB
+GITLAB_DATABASE_MAX_CONNECTIONS=100
 GITLAB_DATABASE_ADAPTER=postgresql
 GITLAB_DATABASE_DATABASE=gitlabhq_production
 GITLAB_DATABASE_USERNAME=gitlab
 GITLAB_DATABASE_PASSWORD=gitlab
-GITLAB_DATABASE_HOST=cp-api-db.default.svc.cluster.local
-GITLAB_DATABASE_PORT=5432
+GITLAB_DATABASE_HOST=cp-gitlab-db.default.svc.cluster.local
+GITLAB_DATABASE_PORT=6543
 GITLAB_DATABASE_ENCODING=utf8
 GITLAB_ROOT_USER=root
 GITLAB_ROOT_PASSWORD=Passw0rd
@@ -69,6 +72,7 @@ CP_GITLAB_INTERNAL_HOST=cp-git.default.svc.cluster.local
 CP_GITLAB_INTERNAL_PORT=30080
 CP_GITLAB_EXTERNAL_PORT=30080
 CP_GITLAB_CERT_DIR=/opt/gitlab/pki
+CP_GITLAB_VERSION=9
 
 # cp-idp config
 IDP_HOST=cp-idp.default.svc.cluster.local
@@ -159,6 +163,7 @@ CP_SHARE_SRV_CERT_DIR=/opt/share-srv/pki
 CP_SHARE_SRV_FED_META_DIR=/opt/share-srv/sso
 CP_SHARE_SRV_SAMPLE_ROLE_CLAIMS=groups
 # CP_SHARE_SRV_SAML_ID_TRAIL=
+CP_SHARE_SRV_STATIC_DIR=/opt/share-srv/static
 
 # cp-dav
 CP_DAV_INTERNAL_HOST=cp-dav.default.svc.cluster.local
@@ -201,6 +206,9 @@ CP_GITLAB_READER_WORKER_COUNT=2
 CP_GITLAB_READER_INTERNAL_PORT=35800
 CP_GITLAB_READER_INTERNAL_HOST=cp-gitlab-reader.default.svc.cluster.local
 CP_GITLAB_READER_LOG_DIR=/var/log/cp-git-reader/
+
+# cp-notifier
+CP_NOTIFIER_UI_ENABLE=true
 
 # Other params, specified on command line
 #

@@ -20,7 +20,7 @@ RUN conda install -c conda-forge jupyterlab==1.0.7 -y && \
     jupyter serverextension enable --py jupyterlab --sys-prefix
 
 # NodeJS for git plugin
-RUN conda install -c anaconda nodejs -y
+RUN conda install -c anaconda nodejs==10.13.0 -y
 
 # Git Plugin
 ## Set WITH_GIT_PLUGIN to NO for python2-based conda images
@@ -32,7 +32,7 @@ RUN if [ "$WITH_GIT_PLUGIN" == "YES" ]; then \
     fi
 
 # Add nbdime to the jupyterlab build
-RUN pip install --upgrade nbdime && \
+RUN pip install --upgrade nbdime==3.1.1 && \
     jupyter nbextension enable nbdime --py --sys-prefix && \
     jupyter lab build
 

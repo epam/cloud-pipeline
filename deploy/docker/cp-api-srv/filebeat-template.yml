@@ -13,7 +13,12 @@ filebeat:
       json.add_error_key: true
       fields:
         service: api-srv
-        type: security
 processors:
+  - rename:
+      fields:
+        - from: "log_context"
+          to: "fields.type"
+      ignore_missing: true
+      fail_on_error: false
   - drop_fields:
-      fields: ["instant", "beat", "log", "loggerFqcn", "threadId", "log_context", "offset", "threadPriority", "endOfBatch", "agent", "log.offset", "esc" ]
+      fields: ["instant", "beat", "log", "loggerFqcn", "threadId", "offset", "threadPriority", "endOfBatch", "agent", "log.offset", "esc" ]

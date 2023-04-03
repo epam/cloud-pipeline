@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RestartRunManager {
@@ -56,5 +57,14 @@ public class RestartRunManager {
      */
     public List<RestartRun> loadRestartedRunsForInitialRun(Long initialRunId) {
         return restartRunDao.loadAllRestartedRunsForInitialRun(initialRunId);
+    }
+
+    /**
+     * Loads restart run by ID
+     * @param id restarted run ID
+     * @return restarted run if presents
+     */
+    public Optional<RestartRun> findRestartRunById(final Long id) {
+        return restartRunDao.loadRestartedRunById(id);
     }
 }

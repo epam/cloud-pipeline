@@ -15,8 +15,8 @@
  */
 
 import Panels from './panels';
-import defaultSizes from './default-panels-sizes';
-import defaultState from './default-panels-state';
+import {defaultSizes, defaultObjectsSizes} from './default-panels-sizes';
+import {defaultState, defaultObjectsState} from './default-panels-state';
 import {buildGridStyle, buildLayout} from '../../../../special/grid-layout';
 
 const GridStyles = buildGridStyle({top: 0, maxLayoutColumns: 4});
@@ -29,4 +29,12 @@ const Layout = buildLayout({
   gridStyle: GridStyles
 });
 
-export {GridStyles, Layout, Panels};
+const ObjectsLayout = buildLayout({
+  defaultState: defaultObjectsState,
+  storage: 'panelsLayout-Billing-Storages-Report-Objects',
+  defaultSizes: defaultObjectsSizes,
+  panelNeighbors: [],
+  gridStyle: GridStyles
+});
+
+export {GridStyles, Layout, ObjectsLayout, Panels};

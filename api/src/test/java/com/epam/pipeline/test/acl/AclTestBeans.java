@@ -59,6 +59,8 @@ import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
@@ -93,6 +95,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
+import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
@@ -125,6 +128,7 @@ import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.report.NodePoolReportService;
 import com.epam.pipeline.manager.report.UsersUsageReportService;
+import com.epam.pipeline.manager.resource.StaticResourcesService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -141,6 +145,7 @@ import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
+import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -197,7 +202,7 @@ public class AclTestBeans {
     @MockBean(name = "aclCache")
     protected AclCache mockAclCache;
 
-    @MockBean
+    @MockBean(name = "aclCacheManager")
     protected CacheManager mockCacheManager;
 
     @MockBean
@@ -561,6 +566,21 @@ public class AclTestBeans {
 
     @MockBean
     protected RunLimitsService runLimitsService;
+
+    @MockBean
+    protected DataStorageLifecycleManager storageLifecycleManager;
+
+    @MockBean
+    protected DataStorageLifecycleRestoreManager storageLifecycleRestoreManager;
+
+    @MockBean
+    protected StaticResourcesService staticResourcesService;
+
+    @MockBean
+    protected UserNotificationManager userNotificationManager;
+
+    @MockBean
+    protected UserNotificationRepository userNotificationRepository;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

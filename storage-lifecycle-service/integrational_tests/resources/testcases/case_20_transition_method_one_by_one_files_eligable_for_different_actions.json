@@ -1,0 +1,67 @@
+{
+  "cloud": {
+    "storages": [
+      {
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "files": [
+          {"key": "data/file1.txt", "creationDateShift": 3, "storageClass": "STANDARD"},
+          {"key": "data/file2.txt", "creationDateShift": 12, "storageClass": "STANDARD"},
+          {"key": "data/file3.txt", "creationDateShift": 20, "storageClass": "GLACIER"}
+        ]
+      }
+    ]
+  },
+  "platform": {
+    "storages": [
+      {
+        "id": 1,
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "rules": [
+          {
+            "id": 1,
+            "datastorageId": 1,
+            "pathGlob": "/data",
+            "objectGlob": "*.txt",
+            "transitionMethod": "ONE_BY_ONE",
+            "transitionCriterion": {
+              "type": "DEFAULT"
+            },
+            "transitions": [
+              {
+                "transitionAfterDays": 10,
+                "storageClass": "GLACIER"
+              },
+              {
+                "transitionAfterDays": 20,
+                "storageClass": "DEEP_ARCHIVE"
+              }
+            ],
+            "notification": {
+              "enabled": false
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "result": {
+    "cloud": {
+      "storages": [
+        {
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "storageProvider": "S3",
+          "files": [
+            {"key": "data/file1.txt"},
+            {"key": "data/file2.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
+            {"key": "data/file3.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "DEEP_ARCHIVE"}}
+          ]
+        }
+      ]
+    },
+    "platform": {
+      "storages": []
+    }
+  }
+}

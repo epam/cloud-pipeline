@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row")).stream()
                         .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(2))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
-                        .filter(el -> el.find(By.className("ant-table-row-spaced")).exists())
+                        .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
+                                el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
             }
         };
@@ -101,7 +102,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row")).stream()
                         .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
-                        .filter(el -> el.find(By.className("ant-table-row-spaced")).exists())
+                        .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
+                                el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
             }
         };
@@ -115,7 +117,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row")).stream()
                         .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
-                        .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists())
+                        .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists() &&
+                                !el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
             }
         };
@@ -236,11 +239,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
 
     public NATGatewayAO deleteRouteIfExists(final String externalIPAddressOrServerName, final String port) {
         performIf(getRouteRecord(externalIPAddressOrServerName, port).has(visible), route -> {
-            getRouteRecord(externalIPAddressOrServerName, port)
-                    .find(".at-getaway-configuration__actions-column")
-                    .find(byClassName("ant-btn-danger"))
-                    .shouldBe(visible)
-                    .click();
+            deleteRoute(externalIPAddressOrServerName, port);
             sleep(1, SECONDS)
                     .click(SAVE)
                     .sleep(1, SECONDS)
@@ -314,7 +313,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 entry(SERVER_NAME, context().find(byAttribute("placeholder", "Server name"))),
                 entry(PORT, context().find(byText("Port:"))
                         .closest(".dd-route-modal__form-item-container")
-                        .find(".dd-route-modal__form-item").find("input")),
+                        .find(".dd-route-modal__form-item")),
                 entry(COMMENT, context().find(byAttribute("placeholder", "Comment"))),
                 entry(SPECIFY_IP, context().find(elementWithText(byClassName("ant-checkbox-wrapper"),
                         "Specify IP address"))),
@@ -356,8 +355,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
 
          public NATAddRouteAO addMorePorts(final String port, int portNumber) {
              context().findAll(By.className("cp-nat-route-port-control")).get(portNumber - 1)
-                     .find(".ant-form-item-control")
-                     .find("input")
+                     .find(".dd-route-modal__form-item")
                      .shouldBe(visible)
                      .setValue(port);
              return this;

@@ -48,7 +48,7 @@ public class GitCommitEntry {
     @JsonProperty("created_at")
     private String createdAt;
     private String message;
-    @JsonProperty("parend_ids")
+    @JsonProperty("parent_ids")
     private List<String> parentIds;
 
     private String getCommittedDateString() {

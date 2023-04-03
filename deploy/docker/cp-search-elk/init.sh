@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,11 +30,15 @@ sed -i "s/Xmx1g/Xmx$_HEAP_SIZE/g" /usr/share/elasticsearch/config/jvm.options
 
 ulimit -n ${CP_SEARCH_ELK_ULIMIT:-65536} && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh &
 
+CP_SEARCH_ELK_INIT_ATTEMPTS="${CP_SEARCH_ELK_INIT_ATTEMPTS:-600}"
 not_initialized=true
 try_count=0
-while [ $not_initialized ] && [ $try_count -lt 60 ]; do
+while [ $not_initialized ] && [ $try_count -lt $CP_SEARCH_ELK_INIT_ATTEMPTS ]; do
     echo "Tring to curl health endpoint of Elastic..."
-    curl http://localhost:9200/_cluster/health > /dev/null 2>&1 && unset not_initialized
+    _elk_health_status=$(curl -s http://localhost:9200/_cluster/health?pretty | jq -r '.status')
+    if [ "$_elk_health_status" == "green" ] || [ "$_elk_health_status" == "yellow" ]; then
+      unset not_initialized
+    fi
     if [ $not_initialized ]; then
       echo "...Failed."
     else
@@ -389,6 +393,88 @@ API_SRV_PIPELINE="{
 }"
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/api_server -d "$API_SRV_PIPELINE"
+
+TINY_PROXY_PIPELINE="{
+    \"description\" : \"Log data extraction pipeline from TinyProxy\",
+    \"processors\": [
+      {
+        \"grok\": {
+          \"field\": \"message\",
+          \"patterns\": [\"%{DATESTAMP:log_timestamp} %{GREEDYDATA} RunOwner: %{DATA:user}, %{GREEDYDATA}\"]
+        }
+      },
+       {
+         \"rename\": {
+           \"field\": \"fields.type\",
+           \"target_field\": \"type\"
+         }
+       },
+       {
+         \"set\": {
+           \"field\": \"service_account\",
+           \"value\": false,
+           \"ignore_failure\": true
+          }
+       },
+        {
+         \"script\": {
+           \"ignore_failure\": false,
+           \"lang\": \"painless\",
+           \"source\": \"ctx.event_id=System.nanoTime()\"
+         }
+       },
+       {
+         \"set\": {
+           \"if\": \"ctx.user.equalsIgnoreCase('$CP_DEFAULT_ADMIN_NAME')\",
+           \"field\": \"service_account\",
+           \"value\": true,
+           \"ignore_failure\": true
+          }
+       },
+       {
+         \"rename\": {
+           \"field\": \"fields.service\",
+           \"target_field\": \"service_name\"
+         }
+       },
+       {
+         \"rename\": {
+           \"field\": \"host.name\",
+           \"target_field\": \"hostname\"
+         }
+       },
+       {
+         \"date\": {
+            \"field\" : \"log_timestamp\",
+            \"target_field\" : \"message_timestamp\",
+            \"formats\" : [\"yy/MM/dd HH:mm:ss\"]
+         }
+       },
+       {
+         \"remove\": {
+           \"field\": \"log_timestamp\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
+          }
+       },
+       {
+         \"remove\": {
+           \"field\": \"fields\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
+          }
+       },
+       {
+         \"remove\": {
+           \"field\": \"host\",
+           \"ignore_missing\": true,
+           \"ignore_failure\": true
+          }
+       }
+    ]
+}"
+
+curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ingest/pipeline/tiny_proxy -d "$TINY_PROXY_PIPELINE"
 
 if [ "$CP_CLOUD_PLATFORM" == 'aws' ]; then
     LOG_BACKUP_REPO="{

@@ -17,7 +17,7 @@
 import { CompositeLayer } from '@deck.gl/core';
 import { BitmapLayer } from '@deck.gl/layers';
 import getImageSize from '../../../state/utilities/get-image-size';
-import IgnoreColorExtension from '../extensions/ignore-color';
+import { IgnoreColorExtension, IgnoreColorAndTintExtension } from '../extensions/ignore-color';
 
 const ImageOverlayLayer = class extends CompositeLayer {
   renderLayers() {
@@ -25,6 +25,7 @@ const ImageOverlayLayer = class extends CompositeLayer {
       loader,
       id,
       url,
+      color,
       ignoreColor,
       ignoreColorAccuracy,
     } = this.props;
@@ -34,8 +35,10 @@ const ImageOverlayLayer = class extends CompositeLayer {
       image: url,
       bounds: [0, height, width, 0],
       ignoreColorAccuracy,
+      color,
       extensions: [
-        ignoreColor ? new IgnoreColorExtension() : false
+        ignoreColor && !color ? new IgnoreColorExtension() : false,
+        ignoreColor && color ? new IgnoreColorAndTintExtension() : false,
       ].filter(Boolean),
     });
     return [imageLayer];
@@ -55,6 +58,7 @@ ImageOverlayLayer.defaultProps = {
   },
   id: { type: 'string', value: 'image-overlay-layer', compare: true },
   url: { type: 'string', value: undefined, compare: true },
+  color: { type: 'string', value: undefined, compare: true },
   ignoreColor: { type: 'boolean', value: false, compare: true },
   ignoreColorAccuracy: { type: 'number', value: 0.1, compare: true },
   pickable: { type: 'boolean', value: true, compare: true },

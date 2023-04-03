@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.dao.filter.FilterDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -44,7 +45,6 @@ import com.epam.pipeline.manager.filter.FilterExpression;
 import com.epam.pipeline.manager.filter.FilterExpressionType;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.Before;
@@ -124,6 +124,8 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String TAG_KEY_2 = "key2";
     private static final String TAG_VALUE_1 = "value1";
     private static final String TAG_VALUE_2 = "value2";
+    private static final String TAG_KEY_3 = "key3";
+    private static final String TAG_VALUE_3 = "value3";
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     private static final String DOCKER_IMAGE = "dockerImage";
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
@@ -157,7 +159,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private CloudRegionDao regionDao;
 
     @Autowired
-    private PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+    private RunServiceUrlDao runServiceUrlDao;
 
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
@@ -299,6 +301,36 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void shouldSearchPipelineByTags() {
+        final PipelineRun run1 = createTestPipelineRun();
+        final Map<String, String> tags1 = new HashMap<>();
+        tags1.put(TAG_KEY_1, TAG_VALUE_1);
+        tags1.put(TAG_KEY_2, TAG_VALUE_2);
+        tags1.put(TAG_KEY_3, TAG_VALUE_3);
+        updateTagsAndVerifySaveIsCorrect(run1, tags1);
+
+        final PipelineRun run2 = createTestPipelineRun();
+        final Map<String, String> tags2 = new HashMap<>();
+        tags2.put(TAG_KEY_1, TAG_VALUE_1);
+        tags2.put(TAG_KEY_2, TAG_VALUE_1);
+        tags2.put(TAG_KEY_3, TAG_VALUE_3);
+        updateTagsAndVerifySaveIsCorrect(run2, tags2);
+
+        final Map<String, String> filterTags = new HashMap<>();
+        filterTags.put(TAG_KEY_1, TAG_VALUE_1);
+        filterTags.put(TAG_KEY_2, TAG_VALUE_2);
+
+        final PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setPage(1);
+        filterVO.setPageSize(TEST_PAGE_SIZE);
+        filterVO.setTags(filterTags);
+        final List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filterVO);
+        assertFalse(runs.isEmpty());
+        assertEquals(1, runs.size());
+        assertEquals(run1.getId(), runs.get(0).getId());
+    }
+
+    @Test
     public void pipelineRunShouldContainsCmdTemplateAndActualCmd() {
         PipelineRun run = new PipelineRun();
 
@@ -387,7 +419,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     public void searchGroupingRun() {
         Pipeline testPipeline = getPipeline();
         PipelineRun parent = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
-        PipelineRun child = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
+        createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
         PipelineRun lonely = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
         parent.setTags(Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1));
         pipelineRunDao.updateRunTags(parent);
@@ -396,12 +428,11 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         filterVO.setPageSize(TEST_PAGE_SIZE);
         filterVO.setStatuses(Collections.singletonList(TaskStatus.SUCCESS));
 
-        List<PipelineRun> runs = pipelineRunDao.searchPipelineGroups(filterVO, null);
+        List<PipelineRun> runs = pipelineRunDao.searchPipelineParentRuns(filterVO, null);
         assertEquals(2, runs.size());
         assertEquals(lonely.getId(), runs.get(0).getId());
         assertEquals(parent.getId(), runs.get(1).getId());
-        assertEquals(1, runs.get(1).getChildRuns().size());
-        assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
+        assertEquals(1, runs.get(1).getChildRunsCount().intValue());
 
         assertThat(runs.get(1).getTags(), is(parent.getTags()));
         assertEquals(2L, pipelineRunDao.countRootRuns(filterVO, null).longValue());
@@ -1206,7 +1237,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertEquals(expectedFieldValue,
                 fieldFunction.apply(pipelineRunDao.searchPipelineRuns(pagingRunFilterVO).get(0)));
         assertEquals(expectedFieldValue,
-                fieldFunction.apply(pipelineRunDao.searchPipelineGroups(pagingRunFilterVO, null).get(0)));
+                fieldFunction.apply(pipelineRunDao.searchPipelineParentRuns(pagingRunFilterVO, null).get(0)));
     }
 
     private void createRunWithStartEndDates(final LocalDateTime startDate, final LocalDateTime endDate) {
@@ -1243,7 +1274,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         pipelineRunServiceUrl.setServiceUrl(TEST_SERVICE_URL);
         pipelineRunServiceUrl.setRegion(TEST_REGION);
         pipelineRunServiceUrl.setPipelineRunId(runId);
-        pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl);
+        runServiceUrlDao.save(pipelineRunServiceUrl);
         return pipelineRunServiceUrl;
     }
 

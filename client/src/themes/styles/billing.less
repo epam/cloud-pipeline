@@ -172,3 +172,23 @@
 .cp-billing-action-tag .ant-tag-text{
   background-color: @color-warning;
 }
+
+.cp-report-table td,
+.cp-report-table th {
+  background-color: @panel-background-color;
+  color: @application-color;
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-report-table tbody tr:not(:last-child) > *,
+.cp-report-table th {
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-report-table tr > *.fixed-column {
+  border-right: 1px solid @card-border-color;
+}
+
+.cp-report-table tr.cp-warning-row {
+  background-color: fade(@color-error, 20%);
+}

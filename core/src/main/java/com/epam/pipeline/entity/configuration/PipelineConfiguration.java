@@ -19,6 +19,8 @@ package com.epam.pipeline.entity.configuration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -27,11 +29,17 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.collections4.ListUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Class represents pipeline configuration, that is described in config.json file and
@@ -41,7 +49,7 @@ import java.util.Optional;
 @Getter
 @NoArgsConstructor
 @EqualsAndHashCode
-public class PipelineConfiguration {
+public class PipelineConfiguration implements Cloneable {
 
     private static final String MAIN_FILE = "main_file";
     private static final String MAIN_CLASS = "main_class";
@@ -64,6 +72,8 @@ public class PipelineConfiguration {
     private static final String RUN_AS = "run_as";
     private static final String SHARED_WITH_USERS = "share_with_users";
     private static final String SHARED_WITH_ROLES = "share_with_roles";
+    private static final String NOTIFICATIONS = "notifications";
+    private static final String RAW_EDIT = "raw";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -144,7 +154,19 @@ public class PipelineConfiguration {
     @JsonProperty(value = SHARED_WITH_ROLES)
     private List<RunSid> sharedWithRoles;
 
+    @JsonProperty(value = NOTIFICATIONS)
+    private List<PipelineStartNotificationRequest> notifications;
+
     private Map<String, String> tags;
+
+    private Map<String, String> kubeLabels;
+
+    private RunAssignPolicy podAssignPolicy;
+
+    private String kubeServiceAccount;
+
+    @JsonProperty(value = RAW_EDIT)
+    private Boolean rawEdit;
 
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {
@@ -189,6 +211,52 @@ public class PipelineConfiguration {
     private static void putParamIfPresent(final Map<String, String> params, final String name, final Number value) {
         if (value != null) {
             putParamIfPresent(params, name, String.valueOf(value));
+        }
+    }
+
+    @JsonIgnore
+    public List<RunSid> mergeRunSids(final List<RunSid> external) {
+        final Set<RunSid> runSids = new HashSet<>(ListUtils.emptyIfNull(external));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(sharedWithUsers), true));
+        runSids.addAll(adjustPrincipal(ListUtils.emptyIfNull(sharedWithRoles), false));
+        return new ArrayList<>(runSids);
+    }
+
+    private List<RunSid> adjustPrincipal(final List<RunSid> runsSids, final boolean principal) {
+        return runsSids.stream()
+                .peek(runSid -> runSid.setIsPrincipal(principal))
+                .collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    @Override
+    public PipelineConfiguration clone() {
+        try {
+            final PipelineConfiguration clone = (PipelineConfiguration) super.clone();
+            if (this.parameters != null) {
+                clone.setParameters(new HashMap<>(this.parameters));
+            }
+            if (this.environmentParams != null) {
+                clone.setEnvironmentParams(new HashMap<>(this.environmentParams));
+            }
+            if (this.sharedWithUsers != null) {
+                clone.setSharedWithUsers(new ArrayList<>(this.sharedWithUsers));
+            }
+            if (this.sharedWithRoles != null) {
+                clone.setSharedWithRoles(new ArrayList<>(this.sharedWithRoles));
+            }
+            if (this.notifications != null) {
+                clone.setNotifications(new ArrayList<>(this.notifications));
+            }
+            if (this.tags != null) {
+                clone.setTags(new HashMap<>(this.tags));
+            }
+            if (this.kubeLabels != null) {
+                clone.setKubeLabels(new HashMap<>(this.kubeLabels));
+            }
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("There was an error while trying to clone PipelineConfiguration object", e);
         }
     }
 }

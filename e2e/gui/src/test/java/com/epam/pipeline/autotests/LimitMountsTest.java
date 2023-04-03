@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization, Tools {
 
@@ -77,6 +78,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .ok();
         Stream.of(storage2, storage3, storage4).forEach(s -> givePermissionsToStorage(user, s));
         cleanToolLimitMounts();
+        cleanUserLimitMounts();
         logout();
     }
 
@@ -159,6 +161,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .perform(registry, group, testTool, tool ->
                         tool
                                 .settings()
+                                .sleep(1, SECONDS)
                                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                                 .runWithCustomSettings()
                 )
@@ -252,6 +255,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .switchToUsers()
                 .searchUserEntry(user.login.toUpperCase())
                 .edit()
+                .sleep(2, SECONDS)
                 .doNotMountStoragesSelect(true)
                 .doNotMountStoragesSelect(false)
                 .ok();

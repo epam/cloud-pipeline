@@ -22,6 +22,7 @@ import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.acl.LookupStrategyImpl;
 import com.epam.pipeline.security.acl.PermissionGrantingStrategyImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -64,6 +65,7 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
     private PermissionFactory permissionFactory;
 
     @Autowired
+    @Qualifier("aclCacheManager")
     private CacheManager cacheManager;
 
     @Override

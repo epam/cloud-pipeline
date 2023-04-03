@@ -34,7 +34,7 @@ VSVersionInfo(
         StringStruct(u'FileVersion', u'${PIPE_CLI_MAJOR_VERSION}.${PIPE_CLI_MINOR_VERSION}.${PIPE_CLI_PATCH_VERSION}.${PIPE_CLI_BUILD_VERSION}'),
         StringStruct(u'InternalName', u'pipe'),
         StringStruct(u'LegalCopyright', u'Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)'),
-        StringStruct(u'OriginalFilename', u'pipe.exe'),
+        StringStruct(u'OriginalFilename', u'pipe.bat'),
         StringStruct(u'ProductName', u'Cloud Pipeline CLI'),
         StringStruct(u'ProductVersion', u'${PIPE_CLI_MAJOR_VERSION}.${PIPE_CLI_MINOR_VERSION}.${PIPE_CLI_PATCH_VERSION}.${PIPE_CLI_BUILD_VERSION}')])
       ]), 

@@ -58,6 +58,15 @@ import getZoomLevel from '../state/utilities/get-zoom-level';
 const additiveColorMapExtension = new AdditiveColormapExtension();
 const lensExtension = new LensExtension();
 
+const deckProps = {
+  glOptions: {
+    preserveDrawingBuffer: true,
+  },
+};
+
+const colorMapExtensions = [additiveColorMapExtension];
+const defaultExtensions = [lensExtension];
+
 function HCSImageViewer(
   {
     className,
@@ -80,9 +89,10 @@ function HCSImageViewer(
   const {
     mesh,
     overlayImages,
+    pending
   } = state;
   const containerRef = useRef();
-  const { sizeRef } = useElementSize(containerRef);
+  const size = useElementSize(containerRef);
   useEffect(() => {
     if (onStateChange) {
       onStateChange(state);
@@ -113,6 +123,7 @@ function HCSImageViewer(
     useLens,
     lensEnabled,
     lensChannel,
+    pending: viewerStatePending
   } = viewerState;
   useEffect(() => {
     if (typeof setImageViewportLoading === 'function') {
@@ -124,20 +135,19 @@ function HCSImageViewer(
     if (
       loader
       && loader.length
-      && sizeRef.current
-      && sizeRef.current.width
-      && sizeRef.current.height
+      && size.width
+      && size.height
     ) {
       const [first] = Array.isArray(loader) ? loader : [loader];
       const last = Array.isArray(loader) ? loader[loader.length - 1] : loader;
       const defaultViewState = [{
-        ...getDefaultInitialViewState(loader, sizeRef.current, defaultZoomBackOff),
+        ...getDefaultInitialViewState(loader, size, defaultZoomBackOff),
         id: DETAIL_VIEW_ID,
         minZoom: minZoomBackOff !== undefined
-          ? getZoomLevel(first, sizeRef.current, minZoomBackOff)
+          ? getZoomLevel(first, size, minZoomBackOff)
           : -Infinity,
         maxZoom: maxZoomBackOff !== undefined
-          ? getZoomLevel(last, sizeRef.current, maxZoomBackOff)
+          ? getZoomLevel(last, size, maxZoomBackOff)
           : Infinity,
       }];
       setViewState(defaultViewState);
@@ -146,7 +156,7 @@ function HCSImageViewer(
     }
   }, [
     loader,
-    sizeRef,
+    size,
     setViewState,
     minZoomBackOff,
     maxZoomBackOff,
@@ -154,9 +164,8 @@ function HCSImageViewer(
   ]);
   const readyForRendering = loader
     && ready
-    && sizeRef.current
-    && sizeRef.current.width
-    && sizeRef.current.height
+    && size.width
+    && size.height
     && viewState;
   return (
     <div
@@ -167,16 +176,16 @@ function HCSImageViewer(
       {
         readyForRendering && (
           <VivViewer
-            mesh={mesh}
+            mesh={pending || viewerStatePending ? undefined : mesh}
             overlayImages={overlayImages}
             contrastLimits={contrastLimits}
             colors={colors}
             channelsVisible={channelsVisibility}
             loader={loader}
             selections={selections}
-            height={sizeRef.current.height}
-            width={sizeRef.current.width}
-            extensions={colorMap ? [additiveColorMapExtension] : [lensExtension]}
+            height={size.height}
+            width={size.width}
+            extensions={colorMap ? colorMapExtensions : defaultExtensions}
             colormap={colorMap || 'viridis'}
             onViewportLoad={setImageViewportLoaded}
             viewStates={viewState}
@@ -185,11 +194,7 @@ function HCSImageViewer(
             lensSelection={useLens && lensEnabled ? lensChannel : undefined}
             lensEnabled={useLens && lensEnabled}
             onCellClick={onCellClick}
-            deckProps={{
-              glOptions: {
-                preserveDrawingBuffer: true,
-              },
-            }}
+            deckProps={deckProps}
           />
         )
       }

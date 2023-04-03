@@ -15,7 +15,7 @@
  */
 
 import ViewerStateActions from './actions';
-import changeChannelProperties from './change-channel-properties';
+import { changeChannelProperties, setDefaultChannelsColors } from './change-channel-properties';
 import lockChannelsState from './lock-channels-state';
 import { GlobalDimensionFields } from '../constants';
 
@@ -33,6 +33,10 @@ export default function reducer(state, action) {
     case ViewerStateActions.setChannelProperties: {
       const { channel, properties } = action;
       return changeChannelProperties(state, channel, properties);
+    }
+    case ViewerStateActions.setDefaultChannelsColors: {
+      const { defaultColors } = action;
+      return setDefaultChannelsColors(state, defaultColors);
     }
     case ViewerStateActions.setColorMap: {
       const { colorMap = '' } = action;
@@ -104,6 +108,7 @@ export default function reducer(state, action) {
     case ViewerStateActions.setLockChannels: {
       const { lock } = action;
       const {
+        channels = EMPTY_ARRAY,
         contrastLimits = EMPTY_ARRAY,
         realDomains = EMPTY_ARRAY,
       } = state;
@@ -111,23 +116,33 @@ export default function reducer(state, action) {
         ...state,
         lockChannels: lock,
       };
-      if (!lock) {
-        newState.domains = realDomains.slice();
-        newState.contrastLimits = contrastLimits.map((limit, index) => {
-          const domain = realDomains[index];
-          if (domain && Array.isArray(domain) && domain.length === 2) {
-            const [cFrom, cTo, ...limitRest] = limit;
-            const [dFrom, dTo] = domain;
-            const correct = (l) => Math.max(dFrom, Math.min(dTo, l));
-            return [
-              correct(cFrom),
-              correct(cTo),
-              ...limitRest,
-            ];
-          }
+      // eslint-disable-next-line no-nested-ternary
+      const channelsToLock = Array.isArray(lock)
+        ? lock.slice()
+        : (lock ? channels.slice() : []);
+      newState.domains = (newState.domains || []).map((domain, idx) => {
+        if (channelsToLock.includes(channels[idx])) {
+          return domain;
+        }
+        return realDomains[idx] || domain;
+      });
+      newState.contrastLimits = contrastLimits.map((limit, index) => {
+        if (channelsToLock.includes(channels[index])) {
           return limit;
-        });
-      }
+        }
+        const domain = newState.domains[index];
+        if (domain && Array.isArray(domain) && domain.length === 2) {
+          const [cFrom, cTo, ...limitRest] = limit;
+          const [dFrom, dTo] = domain;
+          const correct = (l) => Math.max(dFrom, Math.min(dTo, l));
+          return [
+            correct(cFrom),
+            correct(cTo),
+            ...limitRest,
+          ];
+        }
+        return limit;
+      });
       return newState;
     }
     case ViewerStateActions.setDefault: {

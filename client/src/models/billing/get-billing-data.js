@@ -20,11 +20,19 @@ import GetDataWithPrevious from './get-data-with-previous';
 import {costMapper} from './utils';
 
 class GetBillingData extends BaseBillingRequest {
-  constructor (filter) {
-    super(filter);
-    const {dateFilter, dateMapper} = filter;
+  /**
+   * @param {BaseBillingRequestOptions} options
+   */
+  constructor (options = {}) {
+    super(options);
+    const {
+      filters = {},
+      loadCostDetails
+    } = options;
+    const {dateFilter, dateMapper} = filters;
     this.dateMapper = dateMapper || (o => o);
     this.dateFilter = dateFilter || (() => true);
+    this.loadCostDetails = loadCostDetails;
   }
 
   static FILTER_BY = {
@@ -36,8 +44,8 @@ class GetBillingData extends BaseBillingRequest {
     gpu: 'GPU'
   };
 
-  async prepareBody () {
-    await super.prepareBody();
+  prepareBody () {
+    super.prepareBody();
     if (this.filters && this.filters.tick) {
       this.body.interval = this.filters.tick;
     }
@@ -66,6 +74,9 @@ class GetBillingData extends BaseBillingRequest {
         }
       }
     }
+    if (this.loadCostDetails) {
+      this.body.loadCostDetails = true;
+    }
   }
 
   postprocess (value) {
@@ -81,6 +92,7 @@ class GetBillingData extends BaseBillingRequest {
       if (this.dateFilter(initialDate)) {
         const momentDate = this.dateMapper(initialDate);
         res.values.push({
+          costDetails: item.costDetails,
           date: moment(momentDate).format('DD MMM YYYY'),
           value: isNaN(item.accumulatedCost) ? undefined : costMapper(item.accumulatedCost),
           cost: isNaN(item.cost) ? undefined : costMapper(item.cost),
@@ -95,8 +107,11 @@ class GetBillingData extends BaseBillingRequest {
 }
 
 class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
-  constructor (filter) {
-    super(GetBillingData, filter);
+  /**
+   * @param {BaseBillingRequestOptions} options
+   */
+  constructor (options) {
+    super(GetBillingData, options);
   }
 
   static FILTER_BY = GetBillingData.FILTER_BY;
@@ -118,12 +133,14 @@ class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
           ...o,
           previous: o.value,
           previousCost: o.cost,
-          previousInitialDate: o.initialDate
+          previousInitialDate: o.initialDate,
+          previousCostDetails: o.costDetails
         }))
       : [];
     result.forEach((o) => {
       delete o.value;
       delete o.cost;
+      delete o.costDetails;
     });
     for (let i = 0; i < (currentValues || []).length; i++) {
       const item = currentValues[i];
@@ -132,6 +149,7 @@ class GetBillingDataWithPreviousRange extends GetDataWithPrevious {
       if (prev) {
         prev.value = item.value;
         prev.cost = item.cost;
+        prev.costDetails = item.costDetails;
       } else {
         result.push(item);
       }

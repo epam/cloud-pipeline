@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,15 @@ import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -38,7 +41,6 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
@@ -60,6 +62,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -110,6 +113,9 @@ public class ResourceMonitoringManagerTest {
     private static final Map<String, String> PRESSURE_TAGS =
         Collections.singletonMap(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
     private static final String PLATFORM = "linux";
+    private static final int LONG_PAUSED_ACTION_TIMEOUT = 30;
+    public static final long PAUSED_RUN_ID = 234L;
+    public static final int ONE_HOUR = 60;
 
     @InjectMocks
     private ResourceMonitoringManager resourceMonitoringManager;
@@ -134,6 +140,8 @@ public class ResourceMonitoringManagerTest {
     private StopServerlessRunManager stopServerlessRunManager;
     @Mock
     private PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
+    @Mock
+    private RunStatusManager runStatusManager;
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -164,8 +172,10 @@ public class ResourceMonitoringManagerTest {
                                                                         monitoringESDao,
                                                                         messageHelper,
                                                                         preferenceManager,
-                                                                        stopServerlessRunManager);
-        resourceMonitoringManager = new ResourceMonitoringManager(instanceOfferManager, core);
+                                                                        stopServerlessRunManager,
+                                                                        instanceOfferManager,
+                                                                        runStatusManager);
+        resourceMonitoringManager = new ResourceMonitoringManager(core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
         Whitebox.setInternalState(resourceMonitoringManager, "scheduler", taskScheduler);
@@ -190,6 +200,8 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
                 .thenReturn(LongPausedRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES))
+                .thenReturn(LONG_PAUSED_ACTION_TIMEOUT);
         when(stopServerlessRunManager.loadActiveServerlessRuns()).thenReturn(Collections.emptyList());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -202,13 +214,8 @@ public class ResourceMonitoringManagerTest {
         testType.setVCPU(2);
         testType.setName("t1.test");
 
-        BehaviorSubject<List<InstanceType>> mockSubject = BehaviorSubject.createDefault(
-                Collections.singletonList(testType));
-
-        when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(mockSubject);
-
         RunInstance spotInstance = new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "spotNode", PLATFORM, true, null, null, null, null, null);
+                null, null, "spotNode", PLATFORM, true);
         final Map <String, String> stubTagMap = new HashMap<>();
         okayRun = new PipelineRun();
         okayRun.setInstance(spotInstance);
@@ -222,7 +229,7 @@ public class ResourceMonitoringManagerTest {
 
         idleSpotRun = new PipelineRun();
         idleSpotRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "idleSpotNode", PLATFORM, true, null, null, null, null, null));
+                null, null, "idleSpotNode", PLATFORM, true));
         idleSpotRun.setPodId("idle-spot");
         idleSpotRun.setId(TEST_IDLE_SPOT_RUN_ID);
         idleSpotRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
@@ -233,7 +240,7 @@ public class ResourceMonitoringManagerTest {
 
         autoscaleMasterRun = new PipelineRun();
         autoscaleMasterRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "autoscaleMasterRun", PLATFORM, false, null, null, null, null, null));
+                null, null, "autoscaleMasterRun", PLATFORM, false));
         autoscaleMasterRun.setPodId("autoscaleMasterRun");
         autoscaleMasterRun.setId(TEST_AUTOSCALE_RUN_ID);
         autoscaleMasterRun
@@ -248,7 +255,7 @@ public class ResourceMonitoringManagerTest {
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
                 new RunInstance(testType.getName(), 0, 0, null, null, null, 
-                        "idleNode", PLATFORM, false, null, null, null, null, null));
+                        "idleNode", PLATFORM, false));
         idleOnDemandRun.setPodId("idle-on-demand");
         idleOnDemandRun.setId(TEST_IDLE_ON_DEMAND_RUN_ID);
         idleOnDemandRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -260,7 +267,7 @@ public class ResourceMonitoringManagerTest {
         idleRunToProlong = new PipelineRun();
         idleRunToProlong.setInstance(
                 new RunInstance(testType.getName(), 0, 0, null, null, null, 
-                        "prolongedNode", PLATFORM, false, null, null, null, null, null));
+                        "prolongedNode", PLATFORM, false));
         idleRunToProlong.setPodId("idle-to-prolong");
         idleRunToProlong.setId(TEST_IDLE_RUN_TO_PROLONG_ID);
         idleRunToProlong.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -271,7 +278,7 @@ public class ResourceMonitoringManagerTest {
 
         highConsumingRun = new PipelineRun();
         highConsumingRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "highConsumingNode", PLATFORM, true, null, null, null, null, null));
+                null, null, "highConsumingNode", PLATFORM, true));
         highConsumingRun.setPodId(HIGH_CONSUMING_POD_ID);
         highConsumingRun.setId(TEST_HIGH_CONSUMING_RUN_ID);
         highConsumingRun.setStartDate(new Date(Instant.now().toEpochMilli()));
@@ -294,10 +301,7 @@ public class ResourceMonitoringManagerTest {
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
 
-        resourceMonitoringManager.init();
-
-        verify(taskScheduler).scheduleWithFixedDelay(any(), eq(TEST_RESOURCE_MONITORING_DELAY.longValue()));
-        Assert.assertNotNull(Whitebox.getInternalState(core, "instanceTypeMap"));
+        when(instanceOfferManager.getAllInstanceTypes()).thenReturn(Collections.singletonList(testType));
     }
 
     @Test
@@ -675,6 +679,49 @@ public class ResourceMonitoringManagerTest {
         assertThat(spyPressuredRun.getTags(), CoreMatchers.is(PRESSURE_TAGS));
         verifyZeroInteractionWithTagsMethods(spyIdledRun, UTILIZATION_LEVEL_LOW);
         verifyZeroInteractionWithTagsMethods(spyPressuredRun, UTILIZATION_LEVEL_HIGH);
+    }
+
+    @Test
+    public void shouldNotifyPausedRunBeforeActionTimeout() {
+        final PipelineRun longPausedRun = getPausedRun(1);
+        final List<PipelineRun> runs = Collections.singletonList(longPausedRun);
+        when(pipelineRunManager.loadRunsByStatuses(any())).thenReturn(runs);
+        when(pipelineRunManager.loadPipelineRunWithStatuses(eq(PAUSED_RUN_ID)))
+                .thenReturn(longPausedRun);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
+                .thenReturn(LongPausedRunAction.STOP.name());
+
+        resourceMonitoringManager.monitorResourceUsage();
+        verify(notificationManager, never()).notifyLongPausedRunsBeforeStop(eq(runs));
+        verify(notificationManager, times(1)).notifyLongPausedRuns(eq(runs));
+    }
+
+    @Test
+    public void shouldStopPausedRunAfterTimeout() {
+        final PipelineRun longPausedRun = getPausedRun(LONG_PAUSED_ACTION_TIMEOUT + 1);
+        final List<PipelineRun> runs = Collections.singletonList(longPausedRun);
+        when(pipelineRunManager.loadRunsByStatuses(any())).thenReturn(runs);
+        when(runStatusManager.loadRunStatus(eq(Collections.singletonList(PAUSED_RUN_ID))))
+                .thenReturn(Collections.singletonMap(PAUSED_RUN_ID, longPausedRun.getRunStatuses()));
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
+                .thenReturn(LongPausedRunAction.STOP.name());
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager, times(1)).notifyLongPausedRunsBeforeStop(eq(runs));
+    }
+
+    private static PipelineRun getPausedRun(final int pausedPeriod) {
+        final PipelineRun longPausedRun = new PipelineRun();
+        longPausedRun.setId(PAUSED_RUN_ID);
+        longPausedRun.setStatus(TaskStatus.PAUSED);
+        final LocalDateTime currentTime = DateUtils.nowUTC();
+        final ArrayList<RunStatus> statuses = new ArrayList<>();
+        statuses.add(new RunStatus(PAUSED_RUN_ID, TaskStatus.RUNNING, "", currentTime.minusMinutes(ONE_HOUR)));
+        statuses.add(new RunStatus(PAUSED_RUN_ID, TaskStatus.PAUSED, "",
+                currentTime.minusMinutes(pausedPeriod)));
+        longPausedRun.setRunStatuses(statuses);
+        return longPausedRun;
     }
 
     private void setTagsAndLastNotificationTimeOfRun(final PipelineRun run, final Map<String, String> tags,

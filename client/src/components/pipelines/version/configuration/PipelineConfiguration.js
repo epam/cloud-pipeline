@@ -515,7 +515,7 @@ export default class PipelineConfiguration extends React.Component {
             canExecute={false}
             canRemove={!this.state.pending && this.canModifySources && this.props.configurations.value.length > 1}
             onRemoveConfiguration={this.onRemoveConfigurationClicked(this.selectedConfiguration)}
-            editConfigurationMode={true}
+            editConfigurationMode
             currentConfigurationName={this.selectedConfigurationName}
             currentConfigurationIsDefault={this.selectedConfigurationIsDefault}
             onSetConfigurationAsDefault={this.onSetAsDefaultClicked}

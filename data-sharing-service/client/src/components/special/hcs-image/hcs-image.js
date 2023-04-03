@@ -20,11 +20,11 @@ import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, Button, Icon, Radio} from 'antd';
-
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
 import HcsCellSelector from './hcs-cell-selector';
 import HcsSequenceSelector from './hcs-sequence-selector';
+import {cellsAreEqual, ascSorter} from './utilities/cells-utilities';
 import ViewerState from './utilities/viewer-state';
 import SourceState from './utilities/source-state';
 import {getWellMesh, getWellImageFromMesh} from './utilities/get-well-mesh';
@@ -58,7 +58,10 @@ class HcsImage extends React.PureComponent {
     sequences: [],
     showDetails: false,
     showConfiguration: false,
-    showEntireWell: false
+    selectedSequenceTimePoints: [],
+    selectedZCoordinates: [],
+    selectedWells: [],
+    selectedFields: []
   };
 
   @observable hcsInfo;
@@ -83,6 +86,10 @@ class HcsImage extends React.PureComponent {
 
   componentWillUnmount () {
     this.container = undefined;
+    if (this.hcsInfo) {
+      this.hcsInfo.destroy();
+      this.hcsInfo = undefined;
+    }
   }
 
   @computed
@@ -93,16 +100,91 @@ class HcsImage extends React.PureComponent {
     return (this.hcsInfo.sequences || []).map(s => s);
   }
 
-  get wellViewAvailable () {
-    const {wellImageId, sequenceId} = this.state;
-    if (sequenceId) {
-      const sequence = this.sequences.find(s => s.id === sequenceId);
-      return sequence &&
-        sequence.overviewOmeTiff &&
-        sequence.overviewOffsetsJson &&
-        wellImageId;
+  get selectedSequences () {
+    const {selectedSequenceTimePoints = []} = this.state;
+    const selectedSequencesIds = [
+      ...new Set(selectedSequenceTimePoints.map(o => o.sequence))
+    ];
+    return this.sequences.filter(aSequence => selectedSequencesIds.includes(aSequence.id));
+  }
+
+  get selectedSequence () {
+    return this.selectedSequences[0];
+  }
+
+  get selectedTimePoints () {
+    const sequence = this.selectedSequence;
+    if (sequence) {
+      const {selectedSequenceTimePoints = []} = this.state;
+      return selectedSequenceTimePoints
+        .filter(o => o.sequence === sequence.id)
+        .map(o => o.timePoint)
+        .sort((a, b) => Number(a) - Number(b));
     }
-    return false;
+    return [];
+  }
+
+  get selectedTimePoint () {
+    return this.selectedTimePoints[0] || 0;
+  }
+
+  get selectedZCoordinate () {
+    const [field] = this.selectedWellFields;
+    if (field) {
+      const {
+        selectedZCoordinates = []
+      } = this.state;
+      const available = selectedZCoordinates
+        .filter(z => Number(z) < field.depth)
+        .sort(ascSorter);
+      return available[0] || 0;
+    }
+    return 0;
+  }
+
+  get selectedWells () {
+    const sequence = this.selectedSequence;
+    if (sequence) {
+      const {selectedWells = []} = this.state;
+      const wellIsSelected = aWell => selectedWells
+        .some(o => o.id === aWell.id);
+      const {wells = []} = sequence;
+      return wells
+        .filter(wellIsSelected)
+        .sort((a, b) => (a.x - b.x) || (a.y - b.y));
+    }
+    return [];
+  }
+
+  get selectedWell () {
+    return this.selectedWells[0];
+  }
+
+  get selectedWellFields () {
+    const well = this.selectedWell;
+    if (well) {
+      const {selectedFields = []} = this.state;
+      const fieldIsSelected = aField => selectedFields
+        .some(o => aField.id === o.id);
+      return (well.images || [])
+        .filter(fieldIsSelected)
+        .sort((a, b) => (a.x - b.x) || (a.y - b.y));
+    }
+    return [];
+  }
+
+  get wellViewAvailable () {
+    const sequence = this.selectedSequence;
+    const well = this.selectedWell;
+    return sequence &&
+      sequence.overviewOmeTiff &&
+      sequence.overviewOffsetsJson &&
+      well &&
+      well.wellImageId;
+  }
+
+  get showEntireWell () {
+    return this.wellViewAvailable && this.selectedWellFields.length > 1;
   }
 
   prepare = () => {
@@ -111,21 +193,19 @@ class HcsImage extends React.PureComponent {
       storageId,
       path
     } = this.props;
+    if (this.hcsInfo) {
+      this.hcsInfo.destroy();
+      this.hcsInfo = undefined;
+    }
     if ((storageId || storage) && path) {
       this.setState({
         sequencePending: false,
         pending: true,
         error: undefined,
-        wells: [],
-        fields: [],
         plateWidth: 0,
         plateHeight: 0,
-        wellWidth: 0,
-        wellHeight: 0,
-        imageId: undefined,
-        wellId: undefined,
-        sequenceId: undefined,
-        sequences: []
+        selectedSequenceTimePoints: [],
+        selectedZCoordinates: []
       }, () => {
         HCSInfo.fetch({storageInfo: storage, storageId, path})
           .then(info => {
@@ -134,19 +214,26 @@ class HcsImage extends React.PureComponent {
               width,
               height
             } = info;
-            const sequencesIds = sequences.map(o => o.sequence);
+            const [first] = sequences;
+            const {
+              sequence,
+              timeSeries = []
+            } = first || {};
             this.setState({
               pending: false,
               error: undefined,
-              wells: [],
-              fields: [],
               plateWidth: width,
-              plateHeight: height,
-              sequences: sequencesIds
+              plateHeight: height
             }, () => {
               this.hcsInfo = info;
-              const {sequences} = this.state;
-              this.changeSequence(sequences[0]);
+              this.hcsInfo
+                .addURLsRegeneratedListener(this.loadImage);
+              this.onChangeSequenceTimePoints([
+                {
+                  sequence,
+                  timePoint: timeSeries.length > 0 ? timeSeries[0].id : 0
+                }
+              ]);
             });
           })
           .catch((error) => {
@@ -155,14 +242,8 @@ class HcsImage extends React.PureComponent {
               error: error.message,
               plateWidth: 0,
               plateHeight: 0,
-              wellWidth: 0,
-              wellHeight: 0,
-              wells: [],
-              fields: [],
-              imageId: undefined,
-              wellId: undefined,
-              sequenceId: undefined,
-              sequences: []
+              selectedSequenceTimePoints: [],
+              selectedZCoordinates: []
             }, () => {
               this.hcsInfo = undefined;
             });
@@ -175,201 +256,138 @@ class HcsImage extends React.PureComponent {
         error: undefined,
         plateWidth: 0,
         plateHeight: 0,
-        wellWidth: 0,
-        wellHeight: 0,
-        wells: [],
-        fields: [],
-        imageId: undefined,
-        wellId: undefined,
-        sequenceId: undefined,
-        sequences: []
+        selectedSequenceTimePoints: [],
+        selectedZCoordinates: []
       }, () => {
         this.hcsInfo = undefined;
       });
     }
   };
 
-  changeTimePoint = (sequence, timePoint) => {
-    const {
-      timePointId: currentTimePointId,
-      sequenceId
-    } = this.state;
-    const timePointId = timePoint
-      ? timePoint.id
-      : undefined;
-    if (timePoint.id === currentTimePointId && sequence === sequenceId) {
-      return;
-    }
-    if (sequence !== sequenceId) {
-      this.changeSequence(sequence, timePointId);
-    } else {
-      this.setState({timePointId}, () => {
-        if (this.hcsImageViewer) {
-          this.hcsImageViewer.setGlobalTimePosition(timePointId);
-        }
+  onChangeSequenceTimePoints = (selection = []) => {
+    const currentSequence = this.selectedSequence;
+    const currentSequenceId = currentSequence ? currentSequence.id : undefined;
+    this.setState({
+      selectedSequenceTimePoints: selection.slice()
+    }, () => {
+      const newSequence = this.selectedSequence;
+      const newSequenceId = newSequence ? newSequence.id : undefined;
+      const timePointId = this.selectedTimePoint;
+      if (newSequenceId !== currentSequenceId) {
+        this.changeSequence();
+      } else if (this.hcsImageViewer) {
+        this.hcsImageViewer.setGlobalTimePosition(timePointId);
+      }
+    });
+  };
+
+  onChangeZCoordinates = (selection = []) => {
+    const currentZ = this.selectedZCoordinate;
+    this.setState({
+      selectedZCoordinates: selection.slice()
+    }, () => {
+      const newZ = this.selectedZCoordinate;
+      if (newZ !== currentZ && this.hcsImageViewer) {
+        this.hcsImageViewer.setGlobalZPosition(Number(newZ));
+      }
+    });
+  };
+
+  changeSequence = () => {
+    const sequence = this.selectedSequence;
+    if (sequence) {
+      this.setState({
+        sequencePending: true
+      }, () => {
+        sequence
+          .fetch()
+          .then(() => {
+            const {wells = []} = sequence;
+            this.setState({
+              sequencePending: false,
+              error: undefined
+            }, () => {
+              const firstWell = wells[0];
+              if (firstWell) {
+                this.changeWells([firstWell]);
+              }
+            });
+          })
+          .catch(e => {
+            this.setState({
+              error: e.message,
+              sequencePending: false
+            });
+          });
       });
     }
   };
 
-  changeSequence = (sequenceId, timePointId) => {
-    const {sequenceId: currentSequenceId} = this.state;
-    if (currentSequenceId !== sequenceId) {
-      if (this.hcsInfo) {
-        const {sequences = []} = this.hcsInfo;
-        const sequenceInfo = sequences.find(o => o.id === sequenceId);
-        if (sequenceInfo) {
-          this.setState({
-            sequencePending: true
-          }, () => {
-            sequenceInfo
-              .fetch()
-              .then(() => sequenceInfo.resignDataURLs())
-              .then(() => {
-                const {wells = [], timeSeries = []} = sequenceInfo;
-                const defaultTimePointId = timeSeries.length > 0
-                  ? timeSeries[0].id
-                  : 0;
-                this.setState({
-                  sequencePending: false,
-                  error: undefined,
-                  sequenceId,
-                  timePointId: timePointId === undefined
-                    ? defaultTimePointId
-                    : timePointId,
-                  wells,
-                  showEntireWell: false
-                }, () => {
-                  const firstWell = wells[0];
-                  if (firstWell) {
-                    this.changeWell(firstWell);
-                  }
-                });
-              })
-              .catch(e => {
-                this.setState({
-                  error: e.message,
-                  sequencePending: false,
-                  wells: []
-                });
-              });
-          });
-        }
+  changeWells = (wellsSelection = []) => {
+    const currentWell = this.selectedWell;
+    this.setState({
+      selectedWells: wellsSelection
+    }, () => {
+      const well = this.selectedWell;
+      if (well && !cellsAreEqual(currentWell, well)) {
+        const {
+          wellViewByDefault
+        } = this.props;
+        const {images = []} = well;
+        const fields = wellViewByDefault ? images.slice() : images.slice(0, 1);
+        this.changeWellImages(fields);
       }
-    }
-  };
-
-  changeWell = ({x, y} = {}) => {
-    const {
-      sequenceId,
-      wellId
-    } = this.state;
-    const {wellViewByDefault} = this.props;
-    if (this.hcsInfo) {
-      const sequence = (this.hcsInfo.sequences || []).find(s => s.id === sequenceId);
-      if (sequence) {
-        const {wells = []} = sequence;
-        const well = wells.find(w => w.x === x && w.y === y);
-        if (well && wellId !== well.id) {
-          const {images = []} = well;
-          const [firstImage] = images;
-          this.setState({
-            wellId: well.id,
-            wellWidth: well.width,
-            wellHeight: well.height,
-            imageId: undefined,
-            wellImageId: well.wellImageId,
-            fields: images,
-            ...(wellViewByDefault ? {showEntireWell: true} : {})
-          }, () => this.changeWellImage(firstImage, true));
-        }
-      }
-    }
+    });
   };
 
   onMeshCellClick = (viewer, cell) => {
-    const {
-      sequenceId,
-      wellId
-    } = this.state;
-    if (this.hcsInfo) {
-      const sequence = (this.hcsInfo.sequences || []).find(s => s.id === sequenceId);
-      if (sequence) {
-        const {wells = []} = sequence;
-        const well = wells.find(w => w.id === wellId);
-        if (well) {
-          const image = getWellImageFromMesh(well, cell);
-          if (image) {
-            this.changeWellImage(image);
-          }
-        }
+    const well = this.selectedWell;
+    if (well) {
+      const image = getWellImageFromMesh(well, cell);
+      if (image) {
+        this.changeWellImages([image]);
       }
     }
   };
 
-  changeWellImage = ({x, y} = {}, keepShowEntireWell = false) => {
-    const {
-      sequenceId,
-      wellId,
-      imageId: currentImageId,
-      showEntireWell
-    } = this.state;
-    if (this.hcsInfo) {
-      const sequence = (this.hcsInfo.sequences || []).find(s => s.id === sequenceId);
-      if (sequence) {
-        const {wells = []} = sequence;
-        const well = wells.find(w => w.id === wellId);
-        if (well) {
-          const {images = []} = well;
-          const image = images.find(i => i.x === x && i.y === y);
-          if (showEntireWell || (image && image.id !== currentImageId)) {
-            // todo: re-fetch signed urls here?
-            this.setState({
-              imageId: image.id,
-              showEntireWell: keepShowEntireWell ? showEntireWell : false
-            }, () => this.loadImage());
-          }
-        }
-      }
-    }
+  changeWellImages = (images = []) => {
+    this.setState({
+      selectedFields: images.slice()
+    }, () => this.loadImage());
   };
 
   loadImage = () => {
-    const {
-      sequenceId,
-      imageId,
-      wellId,
-      timePointId,
-      wellImageId,
-      showEntireWell
-    } = this.state;
-    if (this.hcsImageViewer && this.hcsInfo) {
-      const z = this.hcsViewerState
-        ? this.hcsViewerState.imageZPosition
-        : 0;
-      const {sequences = []} = this.hcsInfo;
-      const sequence = sequences.find(s => s.id === sequenceId);
-      if (sequence && sequence.omeTiff) {
-        let url = sequence.omeTiff;
-        let offsetsJsonUrl = sequence.offsetsJson;
-        let id = imageId;
-        const {wells = []} = sequence;
-        const well = wells.find(w => w.id === wellId);
-        if (this.wellViewAvailable && showEntireWell) {
-          url = sequence.overviewOmeTiff;
-          offsetsJsonUrl = sequence.overviewOffsetsJson;
-          id = wellImageId;
-        }
+    const sequence = this.selectedSequence;
+    const well = this.selectedWell;
+    const fields = this.selectedWellFields;
+    if (
+      sequence &&
+      sequence.omeTiff &&
+      well &&
+      fields.length > 0
+    ) {
+      let url = sequence.omeTiff;
+      let offsetsJsonUrl = sequence.offsetsJson;
+      let {id} = fields[0];
+      if (this.showEntireWell) {
+        url = sequence.overviewOmeTiff;
+        offsetsJsonUrl = sequence.overviewOffsetsJson;
+        id = well.wellImageId;
+      }
+      if (this.hcsImageViewer) {
+        sequence.reportReadAccess(this.showEntireWell);
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
             if (this.hcsImageViewer) {
-              this.hcsImageViewer.setImage({
+              const imagePayload = {
                 ID: id,
-                imageTimePosition: timePointId,
-                imageZPosition: z,
-                mesh: showEntireWell && this.wellViewAvailable
-                  ? getWellMesh(well)
+                imageTimePosition: this.selectedTimePoint || 0,
+                imageZPosition: this.selectedZCoordinate,
+                mesh: this.showEntireWell
+                  ? getWellMesh(well, this.selectedWellFields)
                   : undefined
-              });
+              };
+              this.hcsImageViewer.setImage(imagePayload);
             }
           });
       }
@@ -425,37 +443,43 @@ class HcsImage extends React.PureComponent {
     } else {
       return null;
     }
-  }
+  };
 
   showDetails = () => {
     this.setState({
       showDetails: true
     });
-  }
+  };
 
   hideDetails = () => {
     this.setState({
       showDetails: false
     });
-  }
+  };
 
   showConfiguration = () => {
     this.setState({
       showConfiguration: true
     });
-  }
+  };
 
   hideConfiguration = () => {
     this.setState({
       showConfiguration: false
     });
-  }
+  };
 
   toggleWellView = () => {
-    const {showEntireWell} = this.state;
-    this.setState({showEntireWell: !showEntireWell}, () => {
-      this.loadImage();
-    });
+    if (this.showEntireWell) {
+      this.setState({
+        selectedFields: this.selectedWellFields.slice(0, 1)
+      }, this.loadImage);
+    } else if (this.wellViewAvailable && this.selectedWell) {
+      const {images = []} = this.selectedWell;
+      this.setState({
+        selectedFields: images.slice()
+      }, this.loadImage);
+    }
   };
 
   showDetailsPanel = () => {
@@ -474,11 +498,43 @@ class HcsImage extends React.PureComponent {
     );
   }
 
+  renderDownloadBtn (options = {}) {
+    const {
+      showTitle = false,
+      buttonSize = 'small'
+    } = options;
+    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer);
+    const handleClickDownload = () => downloadCurrentTiff(
+      this.hcsImageViewer,
+      {
+        wellView: this.showEntireWell,
+        wellId: this.selectedWell ? this.selectedWell.id : undefined
+      }
+    );
+    const btnContent = showTitle
+      ? 'Download current image'
+      : (
+        <Icon
+          type={'camera'}
+          className="cp-larger"
+        />
+      );
+    return (
+      <Button
+        className={styles.action}
+        disabled={!downloadAvailable}
+        onClick={handleClickDownload}
+        size={buttonSize}
+      >
+        {btnContent}
+      </Button>
+    );
+  }
+
   renderConfigurationActions = () => {
     const {
       error,
-      showConfiguration,
-      showEntireWell
+      showConfiguration
     } = this.state;
     if (
       error ||
@@ -488,7 +544,6 @@ class HcsImage extends React.PureComponent {
     ) {
       return null;
     }
-    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer);
     if (!showConfiguration) {
       return (
         <div
@@ -501,21 +556,11 @@ class HcsImage extends React.PureComponent {
                 size="small"
                 onClick={this.toggleWellView}
               >
-                <Icon type={showEntireWell ? 'appstore' : 'appstore-o'} />
+                <Icon type={this.showEntireWell ? 'appstore' : 'appstore-o'} />
               </Button>
             )
           }
-          <Button
-            className={styles.action}
-            size="small"
-            disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
-          >
-            <Icon
-              type="camera"
-              className="cp-larger"
-            />
-          </Button>
+          {this.renderDownloadBtn()}
           <Button
             className={styles.action}
             size="small"
@@ -541,7 +586,7 @@ class HcsImage extends React.PureComponent {
             <div className={styles.action}>
               <Radio.Group
                 onChange={this.toggleWellView}
-                value={showEntireWell ? 'enabled' : 'disabled'}
+                value={this.showEntireWell ? 'enabled' : 'disabled'}
                 className={styles.wellViewGroup}
               >
                 <Radio.Button
@@ -559,52 +604,165 @@ class HcsImage extends React.PureComponent {
               </Radio.Group>
             </div>
           )}
-          <Button
-            className={styles.action}
-            disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
-          >
-            Download current image
-          </Button>
+          {this.renderDownloadBtn({showTitle: true, buttonSize: 'default'})}
         </div>
       </Panel>
     );
   };
 
-  render () {
-    const {
-      className,
-      style
-    } = this.props;
+  renderViewer () {
     const {
       error,
       pending: hcsImagePending,
       sequencePending,
-      sequenceId,
-      timePointId,
-      wellId,
-      imageId,
-      wells = [],
-      fields = [],
-      plateWidth,
-      plateHeight,
-      wellWidth,
-      wellHeight,
-      showDetails,
-      showEntireWell
+      showDetails
     } = this.state;
     const pending = hcsImagePending ||
       sequencePending ||
       !this.hcsImageViewer ||
       this.hcsSourceState.pending ||
       this.hcsViewerState.pending;
-    const {sequences = []} = this.hcsInfo || {};
-    const sequenceInfo = sequences.find(o => o.id === sequenceId);
-    const selectedWell = wells.find(o => o.id === wellId);
+    return (
+      <div
+        className={
+          classNames(
+            styles.hcsImageRenderer,
+            'cp-dark-background'
+          )
+        }
+      >
+        {
+          pending && (
+            <LoadingView
+              className={styles.loadingView}
+            />
+          )
+        }
+        {
+          error && (
+            <div
+              className={styles.alertContainer}
+            >
+              {
+                this.renderDetailsActions(
+                  styles.hiddenDetailsActions,
+                  false
+                )
+              }
+              <Alert
+                className={styles.alert}
+                type="error"
+                message={error}
+              />
+            </div>
+          )
+        }
+        {
+          !error && this.renderConfigurationActions()
+        }
+        {
+          showDetails
+            ? this.showDetailsPanel()
+            : this.renderDetailsActions()
+        }
+        <div
+          className={
+            classNames(
+              styles.hcsImage,
+              {
+                [styles.pending]: pending
+              }
+            )
+          }
+          ref={this.init}
+        >
+          {'\u00A0'}
+        </div>
+      </div>
+    );
+  }
+
+  renderSelectors () {
+    const {
+      plateWidth,
+      plateHeight,
+      selectedSequenceTimePoints = [],
+      selectedZCoordinates = [],
+      selectedWells = [],
+      selectedFields = []
+    } = this.state;
+    const sequenceInfo = this.selectedSequence;
+    const selectedWell = this.selectedWell;
+    const selectedImage = this.selectedWellFields[0];
+    if (
+      sequenceInfo &&
+      !sequenceInfo.error &&
+      selectedWell
+    ) {
+      return (
+        <div
+          className={
+            classNames(
+              styles.hcsImageControls,
+              'cp-content-panel'
+            )
+          }
+        >
+          <HcsCellSelector
+            className={styles.selectorContainer}
+            title="Plate"
+            cells={sequenceInfo.wells}
+            selected={selectedWells}
+            onChange={this.changeWells}
+            width={HcsCellSelector.widthCorrection(plateWidth, sequenceInfo.wells)}
+            height={HcsCellSelector.heightCorrection(plateHeight, sequenceInfo.wells)}
+            showRulers
+            searchPlaceholder="Search wells"
+            showElementHint
+          />
+          <HcsCellSelector
+            className={styles.selectorContainer}
+            title={selectedWell.id}
+            cells={selectedWell.images}
+            selected={selectedFields}
+            onChange={this.changeWellImages}
+            gridMode="CROSS"
+            width={
+              HcsCellSelector.widthCorrection(selectedWell.width, selectedWell.images)
+            }
+            height={
+              HcsCellSelector.heightCorrection(selectedWell.height, selectedWell.images)
+            }
+            scaleToROI
+            radius={selectedWell.radius}
+          />
+          <HcsSequenceSelector
+            sequences={this.sequences}
+            selection={selectedSequenceTimePoints}
+            onChange={this.onChangeSequenceTimePoints}
+            multiple
+          />
+          <HcsZPositionSelector
+            image={selectedImage}
+            selection={selectedZCoordinates}
+            onChange={this.onChangeZCoordinates}
+          />
+        </div>
+      );
+    }
+    return null;
+  }
+
+  render () {
+    const {
+      className,
+      style
+    } = this.props;
     return (
       <Provider
         hcsViewerState={this.hcsViewerState}
         hcsSourceState={this.hcsSourceState}
+        hcsAnalysis={this.hcsAnalysis}
       >
         <div
           className={
@@ -615,108 +773,8 @@ class HcsImage extends React.PureComponent {
           }
           style={style}
         >
-          <div
-            className={
-              classNames(
-                styles.hcsImageRenderer,
-                'cp-dark-background'
-              )
-            }
-          >
-            {
-              pending && (
-                <LoadingView
-                  className={styles.loadingView}
-                />
-              )
-            }
-            {
-              error && (
-                <div
-                  className={styles.alertContainer}
-                >
-                  {
-                    this.renderDetailsActions(
-                      styles.hiddenDetailsActions,
-                      false
-                    )
-                  }
-                  <Alert
-                    className={styles.alert}
-                    type="error"
-                    message={error}
-                  />
-                </div>
-              )
-            }
-            {
-              !error && this.renderConfigurationActions()
-            }
-            {
-              showDetails
-                ? this.showDetailsPanel()
-                : this.renderDetailsActions()
-            }
-            <div
-              className={
-                classNames(
-                  styles.hcsImage,
-                  {
-                    [styles.pending]: pending
-                  }
-                )
-              }
-              ref={this.init}
-            >
-              {'\u00A0'}
-            </div>
-          </div>
-          {
-            sequenceInfo && !sequenceInfo.error && (
-              <div
-                className={
-                  classNames(
-                    styles.hcsImageControls,
-                    'cp-content-panel'
-                  )
-                }
-              >
-                <HcsCellSelector
-                  className={styles.selectorContainer}
-                  cells={wells}
-                  selectedId={wellId}
-                  onChange={this.changeWell}
-                  width={HcsCellSelector.widthCorrection(plateWidth, wells)}
-                  height={HcsCellSelector.heightCorrection(plateHeight, wells)}
-                  title="Plate"
-                  cellShape={HcsCellSelector.Shapes.circle}
-                  showLegend
-                />
-                <HcsCellSelector
-                  className={styles.selectorContainer}
-                  cells={fields}
-                  onChange={this.changeWellImage}
-                  selectedId={imageId}
-                  width={HcsCellSelector.widthCorrection(wellWidth, fields)}
-                  height={HcsCellSelector.heightCorrection(wellHeight, fields)}
-                  title={selectedWell ? selectedWell.id : undefined}
-                  cellShape={HcsCellSelector.Shapes.rect}
-                  gridShape={HcsCellSelector.Shapes.circle}
-                  gridRadius={selectedWell && selectedWell.radius ? selectedWell.radius : undefined}
-                  flipVertical
-                  showLegend={false}
-                  entireWellView={showEntireWell}
-                />
-                <HcsSequenceSelector
-                  sequences={this.sequences}
-                  selectedSequence={sequenceId}
-                  selectedTimePoint={timePointId}
-                  onChangeTimePoint={this.changeTimePoint}
-                />
-                <HcsZPositionSelector />
-              </div>
-            )
-          }
+          {this.renderViewer()}
+          {this.renderSelectors()}
         </div>
       </Provider>
     );

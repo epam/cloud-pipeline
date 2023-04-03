@@ -29,6 +29,8 @@ import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -206,13 +208,16 @@ public class DataStorageController extends AbstractRestController {
     public Result<List<AbstractDataStorageItem>> getDataStorageItems(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH, required = false) final String path,
-            @RequestParam(defaultValue = FALSE) final Boolean showVersion) {
+            @RequestParam(defaultValue = FALSE) final Boolean showVersion,
+            @RequestParam(defaultValue = FALSE) final boolean showArchived) {
         if (showVersion) {
             return Result.success(dataStorageApiService
-                    .getDataStorageItemsOwner(id, path, showVersion, null, null).getResults());
+                    .getDataStorageItemsOwner(id, path, showVersion, null, null, showArchived)
+                    .getResults());
         } else {
             return Result.success(dataStorageApiService
-                    .getDataStorageItems(id, path, showVersion, null, null).getResults());
+                    .getDataStorageItems(id, path, showVersion, null, null, showArchived)
+                    .getResults());
         }
     }
 
@@ -230,13 +235,14 @@ public class DataStorageController extends AbstractRestController {
             @RequestParam(value = PATH, required = false) final String path,
             @RequestParam(defaultValue = FALSE) final Boolean showVersion,
             @RequestParam(required = false) final Integer pageSize,
-            @RequestParam(required = false) final String marker) {
+            @RequestParam(required = false) final String marker,
+            @RequestParam(defaultValue = FALSE) final boolean showArchived) {
         if (showVersion) {
             return Result.success(dataStorageApiService
-                    .getDataStorageItemsOwner(id, path, showVersion, pageSize, marker));
+                    .getDataStorageItemsOwner(id, path, showVersion, pageSize, marker, showArchived));
         } else {
             return Result.success(dataStorageApiService
-                    .getDataStorageItems(id, path, showVersion, pageSize, marker));
+                    .getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived));
         }
     }
 
@@ -397,6 +403,26 @@ public class DataStorageController extends AbstractRestController {
         } else {
             return Result.success(dataStorageApiService.generateDataStorageItemUrl(id, path, version,
                     contentDisposition));
+        }
+    }
+
+    @RequestMapping(value = "/datastorage/{id}/type", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns data storage item's type.",
+            notes = "Returns data storage item's type",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<DataStorageItemType> getStorageItemType(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH) final String path,
+            @RequestParam(value = VERSION, required = false) final String version) {
+        if (StringUtils.hasText(version)) {
+            return Result.success(dataStorageApiService.getItemTypeOwner(id, path, version));
+        } else {
+            return Result.success(dataStorageApiService.getItemType(id, path, version));
         }
     }
 
@@ -659,10 +685,29 @@ public class DataStorageController extends AbstractRestController {
     public Result<AbstractDataStorageItem> getDataStorageItemsWithTags(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH) final String path,
-            @RequestParam(defaultValue = FALSE) final Boolean showVersion) {
+            @RequestParam(defaultValue = FALSE) final Boolean showVersion,
+            @RequestParam(defaultValue = FALSE) final boolean showArchived) {
         return showVersion
-                ? Result.success(dataStorageApiService.getDataStorageItemOwnerWithTags(id, path, showVersion))
-                : Result.success(dataStorageApiService.getDataStorageItemWithTags(id, path, showVersion));
+                ? Result.success(dataStorageApiService.getDataStorageItemOwnerWithTags(
+                        id, path, showVersion, showArchived))
+                : Result.success(dataStorageApiService.getDataStorageItemWithTags(
+                        id, path, showVersion, showArchived));
+    }
+
+    @RequestMapping(value = "/datastorage/tags/search", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Search datastorage items by tag.",
+            notes = "Search datastorage items by tag. " +
+                    "Returns map where key is a storage ID and value is a list of DataStorageTag" +
+                    " representing storage item with specified tag",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<DataStorageTagSearchResult>> searchDataStorageItemByTag(
+            @RequestBody final DataStorageObjectSearchByTagRequest request) {
+        return Result.success(dataStorageApiService.searchDataStorageItemByTag(request));
     }
 
     @GetMapping(value = "/datastorage/{id}/sharedLink")

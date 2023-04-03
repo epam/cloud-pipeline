@@ -78,6 +78,10 @@ _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
+version_file="/pipe-cli/src/version.py"
+sed -i '/__component_version__/d' \$version_file
+echo "__component_version__='\${PIPE_COMMIT_HASH}'" >> \$version_file
+
 cat > /tmp/pipe-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/pipe-win-version-info.txt)" && \
 pip install --upgrade 'setuptools<=45.1.0' && \
 pip install -r /pipe-cli/requirements.txt && \
@@ -85,7 +89,8 @@ pip install pywin32==300 && \
 cd /pipe-cli/mount && \
 cp libfuse/dokanfuse1.dll.1.5.0.3000 libfuse/dokanfuse1.dll.frozen && \
 pip install -r /pipe-cli/mount/requirements.txt && \
-pyinstaller --hidden-import=UserList \
+pyinstaller --paths "/pipe-cli" \
+            --hidden-import=UserList \
             --hidden-import=UserString \
             --hidden-import=commands \
             --hidden-import=ConfigParser \
@@ -139,10 +144,18 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --add-data "/pipe-cli/ntlmaps;ntlmaps" \
             --add-data "/tmp/mount/dist/pipe-fuse;mount" \
             --version-file /tmp/pipe-win-version-info.txt \
-            --icon /pipe-cli/res/cloud-pipeline.ico && \
+            --icon /pipe-cli/res/cloud-pipeline.ico \
+            --name pipe-cli && \
 cd /pipe-cli/dist/win64 && \
+cp /pipe-cli/pipe.bat pipe-cli/pipe.bat && \
+cp /pipe-cli/pipe.bat pipe-cli/pipe.exe.bat && \
+mv pipe-cli pipe && \
 zip -r -q pipe.zip pipe
 EOL
+
+cd $PIPE_CLI_SOURCES_DIR
+PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
+cd -
 
 docker run -i --rm \
            -v $PIPE_CLI_SOURCES_DIR:/pipe-cli \
@@ -152,6 +165,7 @@ docker run -i --rm \
            -e PIPE_CLI_MINOR_VERSION=$PIPE_CLI_MINOR_VERSION \
            -e PIPE_CLI_PATCH_VERSION=$PIPE_CLI_PATCH_VERSION \
            -e PIPE_CLI_BUILD_VERSION=$(cut -d. -f1 <<< "$PIPE_CLI_BUILD_VERSION") \
+           -e PIPE_COMMIT_HASH=$PIPE_COMMIT_HASH \
            $CP_PYINSTALL_WIN64_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 

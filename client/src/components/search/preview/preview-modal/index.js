@@ -59,7 +59,8 @@ class PreviewModal extends React.Component {
   render () {
     const {
       preview,
-      onClose
+      onClose,
+      closable
     } = this.props;
     if (!preview) {
       return null;
@@ -81,8 +82,16 @@ class PreviewModal extends React.Component {
     };
     return (
       <div
-        className={classNames(styles.previewWrapper, 'cp-search-preview-wrapper')}
-        onClick={handleClosePreview}
+        className={
+          classNames(
+            styles.previewWrapper,
+            'cp-search-preview-wrapper',
+            {
+              [styles.closable]: closable
+            }
+          )
+        }
+        onClick={closable ? handleClosePreview : undefined}
       >
         <div
           className={
@@ -132,7 +141,8 @@ class PreviewModal extends React.Component {
 
 PreviewModal.propTypes = {
   preview: PropTypes.object,
-  onClose: PropTypes.func
+  onClose: PropTypes.func,
+  closable: PropTypes.bool
 };
 
 export default PreviewModal;

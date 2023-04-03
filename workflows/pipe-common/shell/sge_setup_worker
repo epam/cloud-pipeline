@@ -267,7 +267,7 @@ fi
 export _CP_CAP_SGE_DEFAULT_QUEUE_NAME="$CP_CAP_SGE_QUEUE_NAME"
 export _CP_CAP_SGE_DEFAULT_HOSTLIST_NAME="$CP_CAP_SGE_HOSTLIST_NAME"
 
-for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
     (
         # shellcheck source=/dev/null
         [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"

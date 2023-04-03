@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,17 +14,14 @@
 
 import logging
 import time
-
 from datetime import datetime
 from threading import RLock
 
 from dateutil.tz import tzlocal
 
-from pipefuse.fsclient import File, FileSystemClientDecorator
 from pipefuse import fuseutils
-
-
-_ANY_ERROR = BaseException
+from pipefuse.fsclient import File, FileSystemClientDecorator
+from pipefuse.lock import synchronized
 
 
 class ListingCache:
@@ -98,28 +95,17 @@ class ListingCache:
         return False
 
 
-def synchronized(func):
-    def wrapper(*args, **kwargs):
-        lock = args[0]._lock
-        try:
-            lock.acquire()
-            return_value = func(*args, **kwargs)
-            return return_value
-        finally:
-            lock.release()
-    return wrapper
-
-
 class ThreadSafeListingCache:
 
-    def __init__(self, inner):
+    def __init__(self, inner, lock=None):
         """
         Thread safe listing cache.
 
         :param inner: Not thread safe listing cache.
+        :param lock: Reentrant lock.
         """
         self._inner = inner
-        self._lock = RLock()
+        self._lock = lock or RLock()
 
     @synchronized
     def get(self, path):
@@ -150,18 +136,18 @@ class ThreadSafeListingCache:
         self._inner.invalidate_cache(path)
 
 
-class CachingFileSystemClient(FileSystemClientDecorator):
+class CachingListingFileSystemClient(FileSystemClientDecorator):
 
     def __init__(self, inner, cache):
         """
-        Caching file system client decorator.
+        Caching listing file system client decorator.
 
-        It caches listing calls to reduce number of calls to an inner file system client.
+        It caches listing calls to reduce a number of calls to an inner file system client.
 
         :param inner: Decorating file system client.
         :param cache: Listing cache.
         """
-        super(CachingFileSystemClient, self).__init__(inner)
+        super(CachingListingFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._cache = cache
         self._delimiter = '/'
@@ -170,7 +156,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         return self.attrs(path) is not None
 
     def attrs(self, path):
-        logging.info('Getting attributes for %s' % path)
+        logging.info('Getting attributes for %s...' % path)
         parent_path, file_name = fuseutils.split_path(path)
         if not file_name:
             return self._root()
@@ -207,7 +193,8 @@ class CachingFileSystemClient(FileSystemClientDecorator):
                     mtime=time.mktime(datetime.now(tz=tzlocal()).timetuple()),
                     ctime=None,
                     contenttype=None,
-                    is_dir=True)
+                    is_dir=True,
+                    storage_class=None)
 
     def ls(self, path, depth=1):
         return self._ls_as_dict(path, depth).values()
@@ -216,7 +203,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         try:
             self._inner.upload(buf, path)
             self._cache.replace_in_parent_cache(path, self._inner.attrs(path))
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Standalone uploading has failed for %s' % path)
             self._cache.invalidate_parent_cache(path)
             raise
@@ -225,7 +212,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         try:
             self._inner.delete(path)
             self._cache.replace_in_parent_cache(path)
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Deleting has failed for %s' % path)
             self._cache.invalidate_parent_cache(path)
             raise
@@ -235,7 +222,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
             self._inner.mv(old_path, path)
             self._cache.move_from_parent_cache(old_path, path)
             self._cache.invalidate_cache_recursively(old_path)
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Moving from %s to %s has failed' % (old_path, path))
             self._cache.invalidate_parent_cache(old_path)
             self._cache.invalidate_cache_recursively(old_path)
@@ -246,7 +233,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         try:
             self._inner.mkdir(path)
             self._cache.replace_in_parent_cache(path, self._inner.attrs(path))
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Mkdir has failed for %s' % path)
             self._cache.invalidate_parent_cache(path)
             raise
@@ -256,7 +243,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
             self._inner.rmdir(path)
             self._cache.replace_in_parent_cache(path)
             self._cache.invalidate_cache_recursively(path)
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Rmdir has failed for %s' % path)
             self._cache.invalidate_parent_cache(path)
             self._cache.invalidate_cache_recursively(path)
@@ -266,7 +253,7 @@ class CachingFileSystemClient(FileSystemClientDecorator):
         try:
             self._inner.flush(fh, path)
             self._cache.replace_in_parent_cache(path, self._inner.attrs(path))
-        except _ANY_ERROR:
+        except Exception:
             logging.exception('Flushing has failed for %s' % path)
             self._cache.invalidate_parent_cache(path)
             raise

@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 public class AzureEARawPriceLoader extends AbstractAzureRawPriceLoader {
 
     private static final String API_VERSION = "2019-10-01";
+    private static final int AZURE_PRICE_SHEET_PAGE_SIZE = 10000;
 
     @Autowired
     public AzureEARawPriceLoader(final @Value("${sync.storage.azure.price.retention.minutes:30}")
@@ -52,8 +53,8 @@ public class AzureEARawPriceLoader extends AbstractAzureRawPriceLoader {
         return getPriceSheet(region, credentials);
     }
 
-    private List<AzurePricingEntity> getPriceSheet(final AzureRegion region, final ApplicationTokenCredentials credentials)
-            throws IOException {
+    private List<AzurePricingEntity> getPriceSheet(
+            final AzureRegion region, final ApplicationTokenCredentials credentials) throws IOException {
         return getPriceSheet(region, credentials, new ArrayList<>(), null)
                     .stream()
                     .filter(details -> region.getMeterRegionName().equals(details.getMeterRegion()))
@@ -72,18 +73,22 @@ public class AzureEARawPriceLoader extends AbstractAzureRawPriceLoader {
     private List<AzureEAPricingMeter> getPriceSheet(final AzureRegion region, ApplicationTokenCredentials credentials,
                                                     final List<AzureEAPricingMeter> buffer, String skiptoken
     ) throws IOException {
-        Response<AzureEAPricingResult> meterDetails = buildRetrofitClient(credentials.environment().resourceManagerEndpoint())
-                .getPricesheet(String.format(AUTH_TOKEN_TEMPLATE,
+        final Response<AzureEAPricingResult> meterDetails = buildRetrofitClient(
+                credentials.environment().resourceManagerEndpoint()
+        ).getPricesheet(String.format(AUTH_TOKEN_TEMPLATE,
                         credentials.getToken(credentials.environment().resourceManagerEndpoint())),
                         region.getSubscription(),
-                        API_VERSION, "meterDetails", 10000, skiptoken).execute();
+                        API_VERSION, "meterDetails", AZURE_PRICE_SHEET_PAGE_SIZE, skiptoken
+        ).execute();
+
         if (!meterDetails.isSuccessful()) {
             throw new IllegalStateException(String.format("Can't load Azure price list for region with id=%s!",
                     region.getId()));
         }
-        Optional<AzureEAPricingResult.PricingProperties> pricingProperties = Optional.ofNullable(meterDetails.body()).map(AzureEAPricingResult::getProperties);
+        final Optional<AzureEAPricingResult.PricingProperties> pricingProperties = Optional.ofNullable(
+                meterDetails.body()).map(AzureEAPricingResult::getProperties);
         if (pricingProperties.isPresent()) {
-            AzureEAPricingResult.PricingProperties properties = pricingProperties.get();
+            final AzureEAPricingResult.PricingProperties properties = pricingProperties.get();
             buffer.addAll(properties.getPricesheets());
             if (StringUtils.isNotBlank(properties.getNextLink())) {
                 Pattern pattern = Pattern.compile(".*skiptoken=([^&]+).*");

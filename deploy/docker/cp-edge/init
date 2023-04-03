@@ -75,6 +75,11 @@ export CP_EDGE_SSL_CIPHERS="EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
 export CP_EDGE_INVALIDATE_AUTH_PATH=${CP_EDGE_INVALIDATE_AUTH_PATH:-/invalidate}
 export CP_EDGE_ROOT_PROXY_PASS_DESTINATION="${CP_EDGE_ROOT_PROXY_PASS_DESTINATION:-\$proxy_type}"
 
+export CP_EDGE_CONNECT_PROXY_AUTHENTICATION_ENABLED="${CP_EDGE_CONNECT_PROXY_AUTHENTICATION_ENABLED:-false}"
+if [ "$CP_EDGE_CONNECT_PROXY_AUTHENTICATION_ENABLED" == "true" ]; then
+    export CP_EDGE_CONNECT_PROXY_AUTHENTICATION="access_by_lua_file /etc/nginx/validate_proxy_auth.lua;"
+fi
+
 if [ -z "$CP_API_SRV_EXTERNAL_HOST" ] || [ -z "$CP_API_SRV_EXTERNAL_PORT" ]; then
     export CP_EDGE_FSBROWSER_CORS="*"
     export CP_EDGE_INVALIDATE_URL_CORS="*"
@@ -105,7 +110,7 @@ echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
 NGINX_COMMON_CONF="$(envsubst '${CP_EDGE_SSL_PROTOCOLS} ${CP_EDGE_SSL_CIPHERS}' < /etc/nginx/endpoints-config/server.common.conf)"
 echo "$NGINX_COMMON_CONF" > /etc/nginx/endpoints-config/server.common.conf
 
-NGINX_CONF="$(envsubst '${CP_EDGE_ROOT_PROXY_PASS_DESTINATION} ${CP_EDGE_INVALIDATE_AUTH_PATH} ${CP_EDGE_INVALIDATE_URL_CORS} ${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT}' < /etc/nginx/nginx.conf)"
+NGINX_CONF="$(envsubst '${CP_EDGE_REGION} ${CP_EDGE_CONNECT_PROXY_AUTHENTICATION} ${CP_EDGE_ROOT_PROXY_PASS_DESTINATION} ${CP_EDGE_INVALIDATE_AUTH_PATH} ${CP_EDGE_INVALIDATE_URL_CORS} ${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
 # Add the "ingress" configuration to the nginx, which will force all the client traffic to flow via EDGE
@@ -124,6 +129,37 @@ if [ "$CP_KUBE_SERVICES_TYPE" == "ingress" ]; then
 else
     rm -f /etc/nginx/ingress/*
 fi
+
+# Copy the "external apps" configurations to a docker filesystem
+# Previously we were working with the "external apps" directly, i.e. /opt/edge/external-apps mounted to /etc/nginx/external-apps
+# And /etc/nginx/external-apps was modified from an edge container, e.g. adding location blocks to the custom domains
+# This was causing an issue, if:
+#   * Any "external app" had a location block defined
+#   * EDGE fails for some reason (e.g. wetty OOM) and restarts
+#   * EDGE has a location block in an "external app", but it does not exist in the container filesystem
+#   * Nginx cannot start at all as the configuration is invalid
+# So it's better to have everything local to a docker filesystem, this way the configuration would be consistent
+if [ -d /etc/nginx/ext/external-apps ]; then
+    echo "Copying /etc/nginx/ext/external-apps -> /etc/nginx/external-apps..."
+    cp -r /etc/nginx/ext/external-apps /etc/nginx/external-apps
+fi
+
+# Copy the "pki" service keys to a docker filesystem
+# Previously all the pki keys were available directly from a shared file system
+# This was causing an issue, if:
+#   * EDGE and shared file system are deployed to different regions
+# So it's better to have everything local to a docker filesystem, this way nginx performance will be optimal
+pki_mount_dir="/opt"
+pki_local_dir="/etc"
+for service_mount_dir in "$pki_mount_dir"/*; do
+    service_name="$(basename "$service_mount_dir")"
+    service_local_dir="$pki_local_dir/$service_name"
+    if [ -d "$service_mount_dir/pki" ]; then
+      echo "Copying $service_mount_dir/pki -> $service_local_dir/pki..."
+      mkdir -p "$service_local_dir"
+      cp -rL "$service_mount_dir/pki" "$service_local_dir/pki"
+    fi
+done
 
 # Start wetty.js for SSH proxy
 nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/wetty.log 2>&1 &
@@ -145,7 +181,14 @@ MAINTENANCE_CRON_PID="$!"
 envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
 nohup filebeat &
 
+# Prepare the static assets
+for static_file in /etc/nginx/static/*; do
+    static_content="$(envsubst '${API_EXTERNAL}' < $static_file)"
+    echo "$static_content" > "$static_file"
+done
+
 # Start nginx
+echo "Starting nginx..."
 nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf
 
 sleep 5

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@ from scp import SCPClient, SCPException
 from src.api.cluster import Cluster
 from src.api.user import User
 
-from src.config import is_frozen
-from src.utilities.pipe_shell import plain_shell, interactive_shell
+from src.config import Config, is_frozen
+from src.utilities.pipe_shell import plain_shell, interactive_shell, PYTHON3
 from src.utilities.platform_utilities import is_windows, is_mac
 from src.api.pipeline_run import PipelineRun
 from src.api.preferenceapi import PreferenceAPI
@@ -66,10 +66,12 @@ class TunnelError(Exception):
 
 class PasswordlessSSHConfig:
 
-    def __init__(self, run_id, conn_info, ssh_user=None, ssh_path=None):
+    def __init__(self, run_id, conn_info, ssh_users=None, ssh_path=None):
         self.run_ssh_mode = resolve_run_ssh_mode(conn_info)
         self.run_owner = conn_info.owner.split('@')[0]
-        self.user = ssh_user or resolve_run_ssh_user(self.run_ssh_mode, self.run_owner)
+        _non_unique_users = ssh_users or [resolve_run_ssh_user(self.run_ssh_mode, self.run_owner)]
+        self.users = list(set(_non_unique_users))
+        self.user = _non_unique_users[0]
         self.key_name = 'pipeline-{}-{}-{}'.format(run_id, int(time.time()), random.randint(0, sys.maxsize))
 
         self.remote_keys_path = '/root/.pipe/.keys'
@@ -78,7 +80,7 @@ class PasswordlessSSHConfig:
         self.remote_ppk_key_path = '{}.ppk'.format(self.remote_private_key_path)
         self.remote_host_rsa_public_key_path = '/etc/ssh/ssh_host_rsa_key.pub'
         self.remote_host_ed25519_public_key_path = '/etc/ssh/ssh_host_ed25519_key.pub'
-        self.remote_authorized_users = list({DEFAULT_SSH_USER, self.run_owner, self.user})
+        self.remote_authorized_users = self.users
 
         self.local_keys_path = os.path.join(os.path.expanduser('~'), '.pipe', '.keys')
         self.local_private_key_path = os.path.join(self.local_keys_path, self.key_name)
@@ -100,7 +102,7 @@ class PasswordlessSSHConfig:
 class TunnelArgs:
 
     def __init__(self, host_id=None, local_ports=None, remote_ports=None,
-                 ssh=None, ssh_path=None, ssh_host=None,
+                 ssh=None, ssh_path=None, ssh_host=None, ssh_users=None,
                  direct=None):
         self.host_id = str(host_id) if host_id else None
         self.local_ports = local_ports
@@ -112,6 +114,7 @@ class TunnelArgs:
         self.ssh = ssh
         self.ssh_path = str(ssh_path) if ssh_path else None
         self.ssh_host = str(ssh_host) if ssh_host else None
+        self.ssh_users = ssh_users
         self.direct = direct
 
     @staticmethod
@@ -123,6 +126,7 @@ class TunnelArgs:
             ssh=parsed_args.get('ssh'),
             ssh_path=parsed_args.get('ssh_path'),
             ssh_host=parsed_args.get('ssh_host'),
+            ssh_users=parsed_args.get('ssh_user'),
             direct=parsed_args.get('direct'),
         )
 
@@ -192,6 +196,19 @@ def direct_connect(target, timeout=None, retries=None):
             raise
 
 
+def base64ify(bytes_or_str):
+    import base64
+    if PYTHON3 and isinstance(bytes_or_str, str):
+        input_bytes = bytes_or_str.encode('utf8')
+    else:
+        input_bytes = bytes_or_str
+
+    output_bytes = base64.urlsafe_b64encode(input_bytes)
+    if PYTHON3:
+        return output_bytes.decode('ascii')
+    else:
+        return output_bytes
+
 def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
     timeout = timeout or None
     retries = retries or 0
@@ -201,7 +218,13 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
         sock.connect(proxy)
-        cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n\r\n" % target
+
+        config = Config.instance()
+        auth_token = base64ify('%s:%s' % (config.get_current_user().split('@')[0], config.access_key))
+        headers = {'proxy-authorization': 'Basic ' + auth_token}
+
+        cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n" % target
+        cmd_connect += '\r\n'.join('%s: %s' % (k, v) for (k, v) in headers.items()) + '\r\n\r\n'
         sock.sendall(cmd_connect.encode('UTF-8'))
         response = []
         sock.settimeout(2)  # quick hack - replace this with something better performing.
@@ -235,6 +258,8 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
 
 def get_conn_info(run_id, region=None):
     run_model = PipelineRun.get(run_id)
+    if not run_model.is_initialized:
+        raise RuntimeError('The specified Run ID #{} is not initialized for the SSH session'.format(run_id))
     proxy_url = Cluster.get_edge_external_url(region)
     if not proxy_url:
         raise RuntimeError('Cannot retrieve EDGE service external url')
@@ -306,6 +331,7 @@ def setup_authenticated_paramiko_transport(run_id, user, retries, region=None):
                    else resolve_run_ssh_mode(conn_info)
     run_owner = conn_info.owner.split('@')[0]
     user = user or User.whoami().get('userName')
+    user = user.split('@')[0]
     if run_ssh_mode == 'user':
         sshuser = user
         sshpass = sshuser
@@ -347,10 +373,11 @@ def resolve_run_ssh_mode(conn_info):
 
 
 def resolve_run_ssh_user(run_ssh_mode, run_owner):
-    return User.whoami().get('userName') if run_ssh_mode == 'user' \
+    user = User.whoami().get('userName') if run_ssh_mode == 'user' \
            else run_owner if run_ssh_mode == 'owner' \
            else run_owner if run_ssh_mode == 'owner-sshpass' \
            else DEFAULT_SSH_USER
+    return user.split('@')[0]
 
 
 def resolve_run_ssh_pass(conn_info, region=None):
@@ -454,7 +481,7 @@ def parse_scp_location(location):
 
 
 def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout,
-                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
+                  ssh, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                   retries, region, parse_tunnel_args):
@@ -479,13 +506,13 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
         raise RuntimeError('Option -s/--ssh can be used only for run tunnels.')
     if not ignore_existing:
         check_existing_tunnels(host_id, local_ports, remote_ports,
-                               ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
+                               ssh, ssh_path, ssh_host, ssh_users, direct, log_file, timeout_stop,
                                keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
                                region, retries, parse_tunnel_args)
         check_local_ports(local_ports)
     if run_id:
         create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
-                             ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
+                             ssh, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
                              timeout, foreground, retries, region)
     else:
         create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
@@ -510,13 +537,14 @@ def parse_ports(port_str):
 
 
 def check_existing_tunnels(host_id, local_ports, remote_ports,
-                           ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
+                           ssh, ssh_path, ssh_host, ssh_users, direct, log_file, timeout_stop,
                            keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
                            region, retries, parse_tunnel_args):
     for existing_tunnel in find_tunnels(parse_tunnel_args):
         existing_tunnel_args = TunnelArgs.from_args(existing_tunnel.parsed_args)
         creating_tunnel_args = TunnelArgs(host_id=host_id, local_ports=local_ports, remote_ports=remote_ports,
-                                          ssh=ssh, ssh_path=ssh_path, ssh_host=ssh_host, direct=direct)
+                                          ssh=ssh, ssh_path=ssh_path, ssh_host=ssh_host, ssh_users=ssh_users,
+                                          direct=direct)
         if not any(local_port in creating_tunnel_args.local_ports for local_port in existing_tunnel_args.local_ports):
             logging.debug('Skipping tunnel process #%s '
                           'because it has %s local ports but %s local ports are required...',
@@ -566,7 +594,7 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
             if existing_tunnel_args.ssh and has_different_owner(existing_tunnel.owner):
                 configure_ssh(existing_tunnel_run_id,
                               existing_tunnel_args.local_ports[0], existing_tunnel_args.remote_ports[0],
-                              existing_tunnel_args.ssh_path, ssh_user, existing_tunnel_remote_host,
+                              existing_tunnel_args.ssh_path, ssh_users, existing_tunnel_remote_host,
                               log_file, retries)
             sys.exit(0)
         if replace_different and not is_same_tunnel:
@@ -591,7 +619,7 @@ def check_existing_tunnels(host_id, local_ports, remote_ports,
             if existing_tunnel_args.ssh and has_different_owner(existing_tunnel.owner):
                 configure_ssh(existing_tunnel_run_id,
                               existing_tunnel_args.local_ports[0], existing_tunnel_args.remote_ports[0],
-                              existing_tunnel_args.ssh_path, ssh_user, existing_tunnel_remote_host,
+                              existing_tunnel_args.ssh_path, ssh_users, existing_tunnel_remote_host,
                               log_file, retries)
             sys.exit(0)
         if has_different_owner(existing_tunnel.owner):
@@ -700,7 +728,7 @@ def get_current_user():
 
 
 def configure_ssh(run_id, local_port, remote_port,
-                  ssh_path, ssh_user, remote_host,
+                  ssh_path, ssh_users, remote_host,
                   log_file, retries):
     def _establish_tunnel():
         pass
@@ -708,11 +736,11 @@ def configure_ssh(run_id, local_port, remote_port,
     ssh_keep = True
     if is_windows():
         configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
-                                             ssh_user, ssh_keep, remote_host,
+                                             ssh_users, ssh_keep, remote_host,
                                              retries, _establish_tunnel)
     else:
         configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
-                                           ssh_path, ssh_user, ssh_keep, remote_host, log_file,
+                                           ssh_path, ssh_users, ssh_keep, remote_host, log_file,
                                            retries, _establish_tunnel)
 
 
@@ -725,7 +753,7 @@ def get_flag_value(proc_args, arg_index, arg_names):
 
 
 def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
-                         ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
+                         ssh, ssh_path, ssh_host, ssh_users, ssh_keep, direct, log_file, log_level,
                          timeout, foreground, retries, region=None):
     conn_info = get_conn_info(run_id, region)
     if conn_info.sensitive:
@@ -734,7 +762,7 @@ def create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
     if foreground:
         if ssh:
             create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
-                                              ssh_path, ssh_user, ssh_keep,
+                                              ssh_path, ssh_users, ssh_keep,
                                               remote_host, direct, log_file, log_level, retries)
         else:
             create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
@@ -888,25 +916,25 @@ def is_tunnel_listen_all_ports(tunnel_pid, local_ports, serving_procs):
 
 
 def create_foreground_tunnel_with_ssh(run_id, local_ports, remote_ports, connection_timeout, conn_info,
-                                      ssh_path, ssh_user, ssh_keep, remote_host, direct, log_file, log_level, retries):
+                                      ssh_path, ssh_users, ssh_keep, remote_host, direct, log_file, log_level, retries):
     def _establish_tunnel():
         create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
                                  remote_host, direct, log_level, retries)
     if is_windows():
         configure_ssh_and_execute_on_windows(run_id, local_ports[0], remote_ports[0], conn_info,
-                                             ssh_user, ssh_keep, remote_host,
+                                             ssh_users, ssh_keep, remote_host,
                                              retries, _establish_tunnel)
     else:
         configure_ssh_and_execute_on_linux(run_id, local_ports[0], remote_ports[0], conn_info,
-                                           ssh_path, ssh_user, ssh_keep, remote_host, log_file,
+                                           ssh_path, ssh_users, ssh_keep, remote_host, log_file,
                                            retries, _establish_tunnel)
 
 
 def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_info,
-                                         ssh_user, ssh_keep, remote_host,
+                                         ssh_users, ssh_keep, remote_host,
                                          retries, func):
     logging.info('Configuring putty and openssh passwordless ssh...')
-    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_user)
+    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_users)
     if not os.path.exists(passwordless_config.local_openssh_path):
         os.makedirs(passwordless_config.local_openssh_path, mode=stat.S_IRWXU)
     if not os.path.exists(passwordless_config.local_keys_path):
@@ -937,10 +965,10 @@ def configure_ssh_and_execute_on_windows(run_id, local_port, remote_port, conn_i
 
 
 def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_info,
-                                       ssh_path, ssh_user, ssh_keep, remote_host, log_file,
+                                       ssh_path, ssh_users, ssh_keep, remote_host, log_file,
                                        retries, func):
     logging.info('Configuring openssh passwordless ssh...')
-    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_user, ssh_path)
+    passwordless_config = PasswordlessSSHConfig(run_id, conn_info, ssh_users, ssh_path)
     if not os.path.exists(passwordless_config.local_openssh_path):
         os.makedirs(passwordless_config.local_openssh_path, mode=stat.S_IRWXU)
     if not os.path.exists(passwordless_config.local_keys_path):
@@ -1109,7 +1137,7 @@ def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config)
                             cat "{remote_public_key_path}" | tee -a "$user_authorized_keys_path" > /dev/null
                         done
                         if ! command -v puttygen; then
-                            wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/putty/puttygen.tgz" -O "/tmp/puttygen.tgz"
+                            wget -q "${{GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}}tools/putty/puttygen.tgz" -O "/tmp/puttygen.tgz"
                             tar -zxf "/tmp/puttygen.tgz" -C "${{CP_USR_BIN:-/usr/cpbin}}"
                             rm -f "/tmp/puttygen.tgz"
                         fi

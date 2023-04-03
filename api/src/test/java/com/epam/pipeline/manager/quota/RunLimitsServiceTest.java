@@ -30,7 +30,6 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.exception.quota.LaunchQuotaExceededException;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -49,6 +48,8 @@ public class RunLimitsServiceTest {
     private static final Long GROUP_ID = 2L;
     private static final String USER_NAME = "TEST_USER";
     private static final String GROUP_NAME = "TEST_GROUP";
+    private static final String LAUNCH_MAX_RUNS_USER_LIMIT = "launch.max.runs.user";
+    private static final String LAUNCH_MAX_RUNS_GROUP_LIMIT = "launch.max.runs.group";
 
     private final PipelineRunManager runManager = Mockito.mock(PipelineRunManager.class);
     private final RoleManager roleManager = Mockito.mock(RoleManager.class);
@@ -91,7 +92,7 @@ public class RunLimitsServiceTest {
 
     @Test
     public void shouldFailIfUserLimitExceeds() {
-        mockLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, 1, ContextualPreferenceLevel.USER, USER_ID);
+        mockLimitPreference(LAUNCH_MAX_RUNS_USER_LIMIT, 1, ContextualPreferenceLevel.USER, USER_ID);
         assertThrows(LaunchQuotaExceededException.class, () -> runLimitsService.checkRunLaunchLimits(1));
         verify(roleManager, Mockito.never()).loadAllRoles(Mockito.anyBoolean());
     }
@@ -99,7 +100,7 @@ public class RunLimitsServiceTest {
     @Test
     public void shouldFailIfGroupLimitExceeds() {
         mockRoleLoading();
-        mockLimitPreferencesByKey(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT,
+        mockLimitPreferencesByKey(LAUNCH_MAX_RUNS_GROUP_LIMIT,
                                   1, ContextualPreferenceLevel.ROLE, GROUP_ID);
         assertThrows(LaunchQuotaExceededException.class, () -> runLimitsService.checkRunLaunchLimits(1));
         verify(roleManager).loadAllRoles(Mockito.anyBoolean());
@@ -115,12 +116,12 @@ public class RunLimitsServiceTest {
     public void shouldReturnConfiguredLimitsForUser() {
         doReturn(Optional.empty()).when(preferenceManager).findPreference(SystemPreferences.CLUSTER_MAX_SIZE);
         Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits(true)).hasSize(0);
-        mockLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, 5, ContextualPreferenceLevel.USER, USER_ID);
+        mockLimitPreference(LAUNCH_MAX_RUNS_USER_LIMIT, 5, ContextualPreferenceLevel.USER, USER_ID);
         Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits(true))
             .hasSize(1)
             .containsEntry("<user-contextual-limit>", 5);
         mockRoleLoading();
-        mockLimitPreferencesByKey(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT, 2,
+        mockLimitPreferencesByKey(LAUNCH_MAX_RUNS_GROUP_LIMIT, 2,
                                   ContextualPreferenceLevel.ROLE, GROUP_ID);
         Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits(true))
             .hasSize(2)
@@ -139,23 +140,23 @@ public class RunLimitsServiceTest {
         return user;
     }
 
-    private void mockLimitPreference(final AbstractSystemPreference.IntPreference pref, final Integer value,
+    private void mockLimitPreference(final String pref, final Integer value,
                                      final ContextualPreferenceLevel resourceLevel, final Long resourceId) {
         final ContextualPreferenceExternalResource preferenceResource =
             new ContextualPreferenceExternalResource(resourceLevel, resourceId.toString());
         final ContextualPreference limitPreference =
-            new ContextualPreference(pref.getKey(), value.toString(), preferenceResource);
+            new ContextualPreference(pref, value.toString(), preferenceResource);
         doReturn(Optional.of(limitPreference)).when(contextualPreferenceManager)
-            .find(pref.getKey(), preferenceResource);
+            .find(pref, preferenceResource);
     }
 
-    private void mockLimitPreferencesByKey(final AbstractSystemPreference.IntPreference pref, final Integer value,
+    private void mockLimitPreferencesByKey(final String pref, final Integer value,
                                            final ContextualPreferenceLevel resourceLevel, final Long resourceId) {
         final ContextualPreferenceExternalResource preferenceResource =
             new ContextualPreferenceExternalResource(resourceLevel, resourceId.toString());
         final ContextualPreference limitPreference =
-            new ContextualPreference(pref.getKey(), value.toString(), preferenceResource);
-        doReturn(Collections.singletonList(limitPreference)).when(contextualPreferenceManager).load(pref.getKey());
+            new ContextualPreference(pref, value.toString(), preferenceResource);
+        doReturn(Collections.singletonList(limitPreference)).when(contextualPreferenceManager).load(pref);
     }
 
     private void mockRoleLoading() {

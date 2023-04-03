@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.utils;
 
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.regex.Matcher;
@@ -78,5 +79,12 @@ public final class GitUtils {
 
     public static String getBranchRefOrDefault(final String branch) {
         return String.format(BRANCH_REF_PATTERN, StringUtils.isNotBlank(branch) ? branch : GIT_MASTER_REPOSITORY);
+    }
+
+    public static String withoutLeadingDelimiter(final String path) {
+        if (StringUtils.isBlank(path) || ProviderUtils.DELIMITER.equals(path)) {
+            return path;
+        }
+        return ProviderUtils.withoutLeadingDelimiter(path);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ import AWSRegionTag from '../special/AWSRegionTag';
 import ProviderForm from './cloud-provider';
 import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
+import RunShiftPolicy, {runShiftPoliciesEqual} from './cloud-regions/run-shift-policy';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
 
@@ -89,10 +90,23 @@ function fromJSON (obj, defaultValue) {
   return defaultValue;
 }
 
+function parseSLSProperties (propertiesObject) {
+  if (propertiesObject) {
+    return toJSON(propertiesObject);
+  }
+  return '';
+}
+
+function buildSLSProperties (properties) {
+  if (!properties) {
+    return undefined;
+  }
+  return fromJSON(properties);
+}
+
 @inject('awsRegions', 'availableCloudRegions', 'cloudProviders', 'router', 'authenticatedUserInfo')
 @observer
 export default class AWSRegionsForm extends React.Component {
-
   static propTypes = {
     onInitialize: PropTypes.func
   };
@@ -151,7 +165,10 @@ export default class AWSRegionsForm extends React.Component {
           return {
             ...r,
             corsRules: preProcessJSON(r.corsRules),
-            policy: preProcessJSON(r.policy)
+            policy: preProcessJSON(r.policy),
+            storageLifecycleServiceProperties: parseSLSProperties(
+              r.storageLifecycleServiceProperties
+            )
           };
         }).filter(searchFn);
     }
@@ -180,16 +197,10 @@ export default class AWSRegionsForm extends React.Component {
     if (!this.awsRegionIds) {
       return [];
     }
-    if (this.awsRegionIds.loaded && this.props.awsRegions.loaded) {
-      const notAvailableRegions = (this.props.awsRegions.value || [])
-        .filter(r => (!!this.state.newRegion && r.provider === this.state.newRegion) ||
-          (!this.state.newRegion && r.id !== this.state.currentRegionId && r.provider === this.state.currentProvider))
-        .map(r => r.regionId);
-      const available = (this.awsRegionIds.value || [])
+    if (this.awsRegionIds.loaded) {
+      return (this.awsRegionIds.value || [])
         .map(r => r)
-        .filter(r => notAvailableRegions.indexOf(r) === -1);
-      available.sort();
-      return available;
+        .sort();
     }
     return [];
   }
@@ -677,7 +688,6 @@ export default class AWSRegionsForm extends React.Component {
 })
 @observer
 class AWSRegionForm extends React.Component {
-
   static propTypes = {
     regionIds: PropTypes.array,
     region: PropTypes.object,
@@ -735,6 +745,7 @@ class AWSRegionForm extends React.Component {
       'kmsKeyArn',
       'corsRules',
       'policy',
+      'storageLifecycleServiceProperties',
       'profile',
       'sshKeyName',
       'iamRole',
@@ -747,7 +758,12 @@ class AWSRegionForm extends React.Component {
       'versioningEnabled',
       'fileShareMounts',
       'mountStorageRule',
-      'mountCredentialsRule'
+      'mountFileStorageRule',
+      'mountCredentialsRule',
+      'dnsHostedZoneBase',
+      'dnsHostedZoneId',
+      'globalDistributionUrl',
+      'runShiftPolicy'
     ],
     AZURE: [
       'regionId',
@@ -767,7 +783,12 @@ class AWSRegionForm extends React.Component {
       'enterpriseAgreements',
       'fileShareMounts',
       'mountStorageRule',
-      'mountCredentialsRule'
+      'mountFileStorageRule',
+      'mountCredentialsRule',
+      'dnsHostedZoneBase',
+      'dnsHostedZoneId',
+      'globalDistributionUrl',
+      'runShiftPolicy'
     ],
     GCP: [
       'regionId',
@@ -782,7 +803,10 @@ class AWSRegionForm extends React.Component {
       'customInstanceTypes',
       'corsRules',
       'mountStorageRule',
+      'mountFileStorageRule',
       'mountCredentialsRule',
+      'dnsHostedZoneBase',
+      'dnsHostedZoneId',
       'policy',
       {
         key: 'backupDuration',
@@ -790,6 +814,8 @@ class AWSRegionForm extends React.Component {
         required: form => form.getFieldValue('versioningEnabled')
       },
       'versioningEnabled',
+      'globalDistributionUrl',
+      'runShiftPolicy'
     ]
   };
 
@@ -810,6 +836,45 @@ class AWSRegionForm extends React.Component {
   get provider () {
     return this.props.region ? this.props.region.provider : null;
   }
+
+  static Section = ({
+    title,
+    layout,
+    className,
+    children
+  }) => {
+    return (
+      <Row
+        className={
+          classNames(
+            styles.sectionContainer,
+            className
+          )
+        }
+      >
+        <Col
+          xs={layout.labelCol.xs.span}
+          sm={layout.labelCol.sm.span}
+          className={
+            classNames(
+              styles.sectionTitle,
+              'cp-settings-form-item-label'
+            )
+          }
+        >
+          <span>
+            {title}
+          </span>
+        </Col>
+        <Col
+          xs={layout.wrapperCol.xs.span}
+          sm={layout.wrapperCol.sm.span}
+        >
+          {children}
+        </Col>
+      </Row>
+    );
+  };
 
   getFieldClassName = (field, defaultClassName) => {
     const classNames = defaultClassName ? [defaultClassName] : [];
@@ -885,7 +950,7 @@ class AWSRegionForm extends React.Component {
       }
       try {
         const initialValueStr = preProcessJSON(initialValue, true);
-        return initialValueStr !== value;
+        return (initialValueStr || '') !== (value || '');
       } catch (__) {
 
       }
@@ -896,15 +961,24 @@ class AWSRegionForm extends React.Component {
         this.props.region.fileShareMounts, this.props.form.getFieldValue('fileShareMounts')
       );
     };
+    const checkRunShiftPolicy = () => !runShiftPoliciesEqual(
+      this.props.region.runShiftPolicy,
+      this.props.form.getFieldValue('runShiftPolicy')
+    );
     this._modified = check('regionId', checkStringValue) ||
       check('name', checkStringValue) ||
+      check('globalDistributionUrl', checkStringValue) ||
       check('default', checkBOOLValue) ||
       check('kmsKeyId', checkStringValue) ||
       check('kmsKeyArn', checkStringValue) ||
       check('corsRules', checkJSONValue) ||
       check('mountStorageRule', checkStringValue) ||
+      check('mountFileStorageRule', checkStringValue) ||
       check('mountCredentialsRule', checkStringValue) ||
+      check('dnsHostedZoneBase', checkStringValue) ||
+      check('dnsHostedZoneId', checkStringValue) ||
       check('policy', checkJSONValue) ||
+      check('storageLifecycleServiceProperties', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
       check('storageAccountKey', checkStringValue) ||
       check('resourceGroup', checkStringValue) ||
@@ -925,7 +999,8 @@ class AWSRegionForm extends React.Component {
       check('project', checkStringValue) ||
       check('applicationName', checkStringValue) ||
       check('customInstanceTypes', checkJSONValue) ||
-      check('fileShareMounts', checkMounts);
+      check('fileShareMounts', checkMounts) ||
+      checkRunShiftPolicy();
   };
 
   @computed
@@ -1058,6 +1133,9 @@ class AWSRegionForm extends React.Component {
       this.cloudRegionFileShareMountsComponent.validate &&
       this.cloudRegionFileShareMountsComponent.validate();
       if (!err && CloudRegionFileShareMountsFormItem.validationPassed(values.fileShareMounts)) {
+        values.storageLifecycleServiceProperties = buildSLSProperties(
+          values.storageLifecycleServiceProperties
+        );
         if (this.props.isNew) {
           this.props.onCreate && await this.props.onCreate(values);
         } else {
@@ -1458,7 +1536,7 @@ class AWSRegionForm extends React.Component {
                   style={{marginTop: 4}}
                   filterOption={
                     (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                      option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                   disabled={!this.props.isNew || this.props.pending}>
                   {
                     (this.props.regionIds || []).map(r => {
@@ -1517,48 +1595,124 @@ class AWSRegionForm extends React.Component {
                 </Checkbox>
               )}
             </Form.Item>
-            <Form.Item
-              {...this.formItemLayoutWideLabel}
-              className={this.getFieldClassName('mountStorageRule')}
-              label="Mount storages across regions"
+            <AWSRegionForm.Section
+              title="Mount rules:"
+              layout={this.formItemLayout}
             >
-              {getFieldDecorator('mountStorageRule', {
-                initialValue: this.props.region.mountStorageRule
-              })(
-                <Select
-                  size="small"
-                  allowClear={false}
-                  style={{marginTop: 4}}
-                >
-                  <Select.Option value="NONE">None</Select.Option>
-                  <Select.Option value="CLOUD">Same cloud</Select.Option>
-                  <Select.Option value="ALL">All</Select.Option>
-                </Select>
-              )}
-            </Form.Item>
-            <Form.Item
-              {...this.formItemLayoutWideLabel}
-              className={this.getFieldClassName('mountCredentialsRule')}
-              label="Mount credentials rule"
+              <Form.Item
+                className={classNames(
+                  styles.sectionFormItem,
+                  styles.mountRules,
+                  this.getFieldClassName('mountStorageRule')
+                )}
+                label="Object storages"
+              >
+                {getFieldDecorator('mountStorageRule', {
+                  initialValue: this.props.region.mountStorageRule
+                })(
+                  <Select
+                    size="small"
+                    allowClear={false}
+                    style={{marginTop: 4}}
+                  >
+                    <Select.Option value="NONE">None</Select.Option>
+                    <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="ALL">All</Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
+              <Form.Item
+                className={classNames(
+                  styles.sectionFormItem,
+                  styles.mountRules,
+                  this.getFieldClassName('mountFileStorageRule')
+                )}
+                label="File storages"
+              >
+                {getFieldDecorator('mountFileStorageRule', {
+                  initialValue: this.props.region.mountFileStorageRule
+                })(
+                  <Select
+                    size="small"
+                    allowClear={false}
+                    style={{marginTop: 4}}
+                  >
+                    <Select.Option value="NONE">None</Select.Option>
+                    <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="ALL">All</Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
+              <Form.Item
+                className={classNames(
+                  styles.sectionFormItem,
+                  styles.mountRules,
+                  this.getFieldClassName('mountCredentialsRule')
+                )}
+                label="Credentials"
+              >
+                {getFieldDecorator('mountCredentialsRule', {
+                  initialValue: this.props.region.mountCredentialsRule
+                })(
+                  <Select
+                    size="small"
+                    allowClear={false}
+                    style={{marginTop: 4}}
+                  >
+                    <Select.Option value="NONE">None</Select.Option>
+                    <Select.Option value="CLOUD">Same cloud</Select.Option>
+                    <Select.Option value="ALL">All</Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
+            </AWSRegionForm.Section>
+            <AWSRegionForm.Section
+              title="DNS hosted zone:"
+              layout={this.formItemLayout}
             >
-              {getFieldDecorator('mountCredentialsRule', {
-                initialValue: this.props.region.mountCredentialsRule
-              })(
-                <Select
-                  size="small"
-                  allowClear={false}
-                  style={{marginTop: 4}}
-                >
-                  <Select.Option value="NONE">None</Select.Option>
-                  <Select.Option value="CLOUD">Same cloud</Select.Option>
-                  <Select.Option value="ALL">All</Select.Option>
-                </Select>
-              )}
-            </Form.Item>
+              <Form.Item
+                className={classNames(
+                  styles.sectionFormItem,
+                  styles.dnsHostedZone,
+                  this.getFieldClassName('dnsHostedZoneBase')
+                )}
+                label="Base"
+              >
+                {getFieldDecorator('dnsHostedZoneBase', {
+                  initialValue: this.props.region.dnsHostedZoneBase
+                })(
+                  <Input
+                    size="small"
+                    disabled={this.props.pending}
+                  />
+                )}
+              </Form.Item>
+              <Form.Item
+                className={classNames(
+                  styles.sectionFormItem,
+                  styles.dnsHostedZone,
+                  this.getFieldClassName('dnsHostedZoneId')
+                )}
+                label="Id"
+              >
+                {getFieldDecorator('dnsHostedZoneId', {
+                  initialValue: this.props.region.dnsHostedZoneId
+                })(
+                  <Input
+                    size="small"
+                    disabled={this.props.pending}
+                  />
+                )}
+              </Form.Item>
+            </AWSRegionForm.Section>
             <Form.Item
               label="FS Mounts"
               {...this.formItemLayout}
-              className={this.getFieldClassName('fileShareMounts', 'edit-region-elastic-file-share-mounts-container')}>
+              className={this.getFieldClassName(
+                'fileShareMounts',
+                'edit-region-elastic-file-share-mounts-container'
+              )}
+            >
               {getFieldDecorator('fileShareMounts', {
                 initialValue: this.props.region.fileShareMounts
               })(
@@ -1576,7 +1730,10 @@ class AWSRegionForm extends React.Component {
               {...this.formItemLayout}>
               {getFieldDecorator('storageAccount', {
                 initialValue: this.props.region.storageAccount,
-                rules: [{required: this.providerSupportsField('storageAccount'), message: 'Storage account is required'}]
+                rules: [{
+                  required: this.providerSupportsField('storageAccount'),
+                  message: 'Storage account is required'
+                }]
               })(
                 <Input
                   size="small"
@@ -1899,6 +2056,49 @@ class AWSRegionForm extends React.Component {
               )}
             </Form.Item>
             <Form.Item
+              label="Run shift policy"
+              hasFeedback
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'runShiftPolicy',
+                  'edit-region-run-shift-policy-container'
+                )
+              }
+            >
+              {getFieldDecorator('runShiftPolicy', {
+                initialValue: this.props.region.runShiftPolicy
+              })(
+                <RunShiftPolicy
+                  disabled={this.props.pending}
+                />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="SLS properties"
+              hasFeedback
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'storageLifecycleServiceProperties',
+                  'edit-region-sls-policy-container'
+                )
+              }
+            >
+              {getFieldDecorator('storageLifecycleServiceProperties', {
+                initialValue: this.props.region.storageLifecycleServiceProperties,
+                rules: [{
+                  validator: this.jsonValidation
+                }]
+              })(
+                <CodeEditorFormItem
+                  ref={this.initializePolicyEditor}
+                  editorClassName={styles.codeEditor}
+                  editorLanguage="application/json"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
               label="Custom instance types"
               hasFeedback
               {...this.formItemLayout}
@@ -1913,6 +2113,24 @@ class AWSRegionForm extends React.Component {
                   ref={this.initializeCustomInstanceTypesEditor}
                   editorClassName={styles.codeEditor}
                   editorLanguage="application/json"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Distribution URL"
+              {...this.formItemLayout}
+              className={
+                this.getFieldClassName(
+                  'globalDistributionUrl',
+                  'edit-region-distribution-url-container'
+                )
+              }
+            >
+              {getFieldDecorator('globalDistributionUrl', {
+                initialValue: this.props.region.globalDistributionUrl
+              })(
+                <Input
+                  size="small"
                   disabled={this.props.pending} />
               )}
             </Form.Item>
@@ -2168,7 +2386,6 @@ const MountRootFormat = {
 
 @observer
 class CloudRegionFileShareMountFormItem extends React.Component {
-
   static propTypes = {
     index: PropTypes.number,
     value: PropTypes.object,
@@ -2389,12 +2606,10 @@ class CloudRegionFileShareMountFormItem extends React.Component {
       </Row>
     );
   }
-
 }
 
 @observer
 class CloudRegionFileShareMountsFormItem extends React.Component {
-
   static propTypes = {
     value: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
     onChange: PropTypes.func,
