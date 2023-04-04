@@ -26,7 +26,7 @@ import {LuigiGraph, WdlGraph, CwlGraph} from './visualization';
 const GraphComponents = {
   luigi: LuigiGraph,
   wdl: WdlGraph,
-  other: CwlGraph
+  cwl: CwlGraph
 };
 
 @localization.localizedComponent

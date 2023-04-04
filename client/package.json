@@ -11,6 +11,7 @@
     "codemirror": "^5.28.0",
     "color-convert": "^2.0.1",
     "cwl-svg": "^2.1.13",
+    "cwlts": "^1.23.10",
     "cytoscape": "^2.7.16",
     "cytoscape-dagre": "^1.5.0",
     "dagre": "^0.7.4",
