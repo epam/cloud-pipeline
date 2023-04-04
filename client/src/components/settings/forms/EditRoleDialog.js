@@ -738,6 +738,14 @@ class EditRoleDialog extends React.Component {
                 REVERT
               </Button>
               <Button
+                onClick={() => {
+                  this.revertChanges();
+                  this.onClose();
+                }}
+              >
+                CANCEL
+              </Button>
+              <Button
                 id="close-edit-user-form"
                 type="primary"
                 onClick={this.operationWrapper(this.saveChanges)}
