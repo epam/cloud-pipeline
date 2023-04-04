@@ -19,8 +19,6 @@ function is_root() {
 }
 
 if ! is_root; then
-    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/manage_sge_profiles.py" "$@"
-else
     echo "Grid engine can be managed only by root."
     echo "Please use the following commands to manage grid engine:"
     echo ""
@@ -31,4 +29,7 @@ else
         echo "sge" "$@"
     fi
     echo ""
+    exit 0
 fi
+
+"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/manage_sge_profiles.py" "$@"
