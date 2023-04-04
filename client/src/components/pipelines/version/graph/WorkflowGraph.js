@@ -21,11 +21,12 @@ import {computed} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, Row} from 'antd';
-import {LuigiGraph, WdlGraph} from './visualization';
+import {LuigiGraph, WdlGraph, CwlGraph} from './visualization';
 
 const GraphComponents = {
   luigi: LuigiGraph,
-  wdl: WdlGraph
+  wdl: WdlGraph,
+  cwl: CwlGraph
 };
 
 @localization.localizedComponent
