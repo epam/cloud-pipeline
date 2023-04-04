@@ -276,7 +276,8 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public String getNestedRunID(int childNum) {
-        return $(withText("Nested runs:")).closest("tr").find(byXpath(format("td/a[%s]/b", childNum))).getText();
+        return $(withText("Nested runs:")).closest("tr")
+                .find(byXpath(format("td/div[2]/a[1]/b", childNum))).getText();
     }
 
     public LogAO shareWithGroup(final String groupName) {
