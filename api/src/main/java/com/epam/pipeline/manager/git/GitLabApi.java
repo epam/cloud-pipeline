@@ -377,7 +377,7 @@ public interface GitLabApi {
     @GET("api/{api_version}/projects/{project}/issues")
     Call<List<GitlabIssue>> getIssues(@Path(API_VERSION) String apiVersion,
                        @Path(PROJECT) String idOrName,
-                       @Query("labels") List<String> labels,
+                       @Query("labels") String labels,
                        @Query("page") Integer page,
                        @Query("per_page") Integer pageSize,
                        @Query("search") String search);
