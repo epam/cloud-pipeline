@@ -33,8 +33,10 @@ host_storage = MemoryHostStorage()
 grid_engine = Mock()
 api = Mock()
 scale_down_handler = Mock()
+common_utils = Mock()
 worker_validator = GridEngineWorkerValidator(cmd_executor=executor, api=api, host_storage=host_storage,
-                                             grid_engine=grid_engine, scale_down_handler=scale_down_handler)
+                                             grid_engine=grid_engine, scale_down_handler=scale_down_handler,
+                                             common_utils=common_utils)
 
 
 def setup_function():
@@ -45,7 +47,7 @@ def setup_function():
     grid_engine.is_valid = MagicMock(side_effect=[True, False, True])
     grid_engine.get_jobs = MagicMock(return_value=[])
     grid_engine.kill_jobs = MagicMock()
-    scale_down_handler._get_run_id_from_host = MagicMock(side_effect=[HOST1_RUN_ID, HOST2_RUN_ID, HOST3_RUN_ID])
+    common_utils.get_run_id_from_host = MagicMock(side_effect=[HOST1_RUN_ID, HOST2_RUN_ID, HOST3_RUN_ID])
 
 
 def test_stopping_hosts_that_are_invalid_in_grid_engine():

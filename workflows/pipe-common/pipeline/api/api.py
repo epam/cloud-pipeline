@@ -253,6 +253,8 @@ class PipelineAPI:
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
     GRANT_PERMISSIONS_URL = "/grant"
     PERMISSION_URL = "/permissions"
+    RUN_TAG = '/run/{id}/tag'
+    RUN_PARENTS = '/run/parents/{runId}'
 
     # Pipeline API default header
 
@@ -1386,3 +1388,14 @@ class PipelineAPI:
             raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
                 entity_class, str(entity_id), str(e)))
 
+    def update_pipeline_run_tags(self, run_id, tags):
+        try:
+            return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data=tags)
+        except Exception as e:
+            raise RuntimeError("Failed to update tags for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+    def load_cluster_runs_py_parent_id(self, parent_id):
+        try:
+            return self._request(endpoint=self.RUN_PARENTS.format(runId=str(parent_id)), http_method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load nested runs for run ID '{}', error: {}".format(str(parent_id), str(e)))
