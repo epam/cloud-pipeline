@@ -5091,9 +5091,32 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }}
         onClick={handleChangeRawEdit}
       >
-        <Checkbox checked={this.state.isRawEditEnabled}>
-          Raw edit
-        </Checkbox>
+        <Popover
+          placement="topLeft"
+          content={(
+            <div>
+              <b>Raw edit</b> mode:
+              <ul
+                className={styles.list}
+              >
+                <li>
+                  disables parameters validation;
+                </li>
+                <li>
+                  displays all available parameters, despite any visibility controls.
+                </li>
+              </ul>
+            </div>
+          )}
+        >
+          <Checkbox checked={this.state.isRawEditEnabled}>
+            Raw edit
+            <Icon
+              type="info-circle"
+              style={{marginLeft: 5}}
+            />
+          </Checkbox>
+        </Popover>
       </div>
     );
   };
