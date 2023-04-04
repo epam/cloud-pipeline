@@ -44,6 +44,7 @@ import {
   LoadEntityCredentialProfiles
 } from '../../../../models/cloudCredentials';
 import roleModel from '../../../../utils/roleModel';
+import displayDate from '../../../../utils/displayDate';
 import {
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY,
@@ -815,6 +816,42 @@ export default class EditUserRolesDialog extends React.Component {
     }
   };
 
+  renderUserInfo = () => {
+    const {userName, registrationDate, attributes} = this.props.user || {};
+    return (
+      <div className={styles.userInfo}>
+        <div className={styles.header}>
+          <UserName userName={userName} />
+        </div>
+        <table className={styles.attributes}>
+          <tbody>
+            <tr>
+              <td className={styles.info}>User name:</td>
+              <td>{userName}</td>
+            </tr>
+            {
+              registrationDate && (
+                <tr>
+                  <td className={styles.info}>Registration date:</td>
+                  <td>{displayDate(registrationDate, 'd MMMM YYYY')}</td>
+                </tr>
+              )
+            }
+            {
+              Object.entries(attributes || {})
+                .map(([key, value]) => (
+                  <tr key={key}>
+                    <td className={styles.info}>{key}:</td>
+                    <td>{value}</td>
+                  </tr>
+                ))
+            }
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   renderUserRolesTab = () => {
     const {readOnly} = this.props;
     const {metadata} = this.state;
@@ -854,6 +891,7 @@ export default class EditUserRolesDialog extends React.Component {
         <div
           style={{display: 'flex', flexDirection: 'column', height: '100%'}}
           key={CONTENT_PANEL_KEY}>
+          {this.renderUserInfo()}
           <Row type="flex" style={{marginBottom: 10}} align="middle">
             <span style={{marginRight: 5, fontWeight: 'bold', width: 160}}>
               Default data storage:
