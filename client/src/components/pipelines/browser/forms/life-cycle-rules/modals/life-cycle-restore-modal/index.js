@@ -56,6 +56,7 @@ class LifeCycleRestoreModal extends React.Component {
   state={
     days: 30,
     recipients: [],
+    notifyUsers: false,
     restoreMode: RESTORATION_MODES.STANDARD,
     restoreVersions: false,
     force: false
@@ -124,7 +125,8 @@ class LifeCycleRestoreModal extends React.Component {
       recipients,
       restoreVersions,
       restoreMode,
-      force
+      force,
+      notifyUsers
     } = this.state;
     const payload = {
       days,
@@ -134,8 +136,9 @@ class LifeCycleRestoreModal extends React.Component {
         ? force
         : true,
       notification: {
-        enabled: recipients.length > 0,
-        ...(recipients.length > 0 && {recipients})
+        enabled: recipients.length > 0 || notifyUsers,
+        ...(recipients.length > 0 ? {recipients} : {}),
+        notifyUsers
       }
     };
     if (mode === 'file') {
@@ -220,7 +223,8 @@ class LifeCycleRestoreModal extends React.Component {
       days,
       recipients,
       restoreVersions,
-      restoreMode
+      restoreMode,
+      notifyUsers
     } = this.state;
     return (
       <Modal
@@ -278,6 +282,16 @@ class LifeCycleRestoreModal extends React.Component {
               onChange={this.onChangeValue('recipients', 'select')}
               disabled={pending}
             />
+          </div>
+          <div className={styles.inputContainer}>
+            <span className={styles.label} />
+            <Checkbox
+              disabled={pending}
+              onChange={this.onChangeValue('notifyUsers', 'checkbox')}
+              value={notifyUsers}
+            >
+              Storage users
+            </Checkbox>
           </div>
           <div className={styles.inputContainer}>
             <span className={styles.label}>
