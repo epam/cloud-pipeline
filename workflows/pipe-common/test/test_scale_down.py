@@ -70,7 +70,7 @@ def test_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout():
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_down_timeout))
 
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     autoscaler.scale_down.assert_called_with(ADDITIONAL_HOST)
 
@@ -90,7 +90,7 @@ def test_not_scale_down_if_all_jobs_are_running_for_less_than_scale_down_timeout
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_down_timeout - 1))
 
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     autoscaler.scale_down.assert_not_called()
 
@@ -110,7 +110,7 @@ def test_not_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_down_timeout))
 
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     autoscaler.scale_down.assert_not_called()
 
@@ -135,7 +135,7 @@ def test_that_scale_down_only_stops_inactive_additional_hosts():
 
     for i in range(0, len(inactive_hosts) * 2):
         grid_engine.get_host_to_scale_down = MagicMock(return_value=inactive_hosts[i % 2])
-        autoscaler.scale()
+        autoscaler.process_jobs()
 
     for inactive_host in inactive_hosts:
         autoscaler.scale_down.assert_any_call(inactive_host)
@@ -164,7 +164,7 @@ def test_that_deadlock_can_be_resolved():
         autoscaler.host_storage.add_host(inactive_host)
 
     grid_engine.get_host_to_scale_down = MagicMock(return_value='inactive-host-1')
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     hosts = autoscaler.host_storage.load_hosts()
     assert len(hosts) == 2
@@ -186,7 +186,7 @@ def test_scale_down_if_there_are_no_pending_and_running_jobs_for_more_than_scale
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     clock.now = MagicMock(return_value=submit_datetime)
 
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     autoscaler.scale_down.assert_not_called()
     hosts = autoscaler.host_storage.load_hosts()
@@ -196,7 +196,7 @@ def test_scale_down_if_there_are_no_pending_and_running_jobs_for_more_than_scale
     grid_engine.get_jobs = MagicMock(return_value=[])
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_down_timeout))
 
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     autoscaler.scale_down.assert_called_with(ADDITIONAL_HOST)
     assert len(autoscaler.host_storage.load_hosts()) == 0
@@ -225,7 +225,7 @@ def test_not_scale_down_if_there_are_pending_jobs_and_running_jobs():
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_down_timeout))
 
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     autoscaler.scale_down.assert_not_called()
 
@@ -244,7 +244,7 @@ def test_not_scale_down_if_there_are_pending_jobs_and_no_running_jobs_yet():
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     clock.now = MagicMock(return_value=submit_datetime)
 
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     autoscaler.scale_down.assert_not_called()
 
@@ -265,7 +265,7 @@ def test_host_is_not_removed_from_storage_if_scaling_down_is_aborted():
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_down_timeout))
     autoscaler.scale_down = MagicMock(return_value=False)
 
-    autoscaler.scale()
+    autoscaler.process_jobs()
 
     autoscaler.scale_down.assert_called()
     assert ADDITIONAL_HOST in autoscaler.host_storage.load_hosts()

@@ -21,6 +21,7 @@ import re
 import subprocess
 import threading
 import traceback
+from abc import ABCMeta, abstractmethod
 from collections import Counter, namedtuple
 from xml.etree import ElementTree
 
@@ -1413,7 +1414,15 @@ class GridEngineWorkerTagsHandler:
             self.api.update_pipeline_run_tags(run_id, tags)
 
 
-class GridEngineAutoscaler:
+class GridEngineJobsHandler:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def process_jobs(self):
+        pass
+
+
+class GridEngineAutoscaler(GridEngineJobsHandler):
 
     def __init__(self, grid_engine, cmd_executor, scale_up_orchestrator, scale_down_handler, host_storage, scale_up_timeout,
                  scale_down_timeout, max_additional_hosts, idle_timeout=30, clock=Clock()):
@@ -1452,7 +1461,7 @@ class GridEngineAutoscaler:
         self.latest_running_job = None
         self.idle_timeout = timedelta(seconds=idle_timeout)
 
-    def scale(self):
+    def process_jobs(self):
         now = self.clock.now()
         Logger.info('Start scaling step at %s.' % now)
         additional_hosts = self.host_storage.load_hosts()
@@ -2051,18 +2060,18 @@ class AllocationRule:
 
 class GridEngineAutoscalingDaemon:
 
-    def __init__(self, autoscaler, worker_validator, worker_tags_handler, autoscale_enabled, polling_timeout=5):
+    def __init__(self, jobs_handler, worker_validator, worker_tags_handler, autoscale_enabled, polling_timeout=5):
         """
         Grid engine autoscaling daemon.
 
-        :param autoscaler: Autoscaler.
+        :param jobs_handler: Jobs handler: autoscaler if autoscaling enabled and monitoring otherwise
         :param worker_validator: Additional workers validator.
         :param worker_tags_handler: Additional workers tags handler
         :param autoscale_enabled: Indicates if autoscaling shall be enabled.
                                   Otherwise, only monitoring actions shall proceed.
         :param polling_timeout: Autoscaler polling timeout - in seconds.
         """
-        self.autoscaler = autoscaler
+        self.jobs_handler = jobs_handler
         self.worker_validator = worker_validator
         self.worker_tags_handler = worker_tags_handler
         self.autoscale_enabled = autoscale_enabled
@@ -2075,7 +2084,7 @@ class GridEngineAutoscalingDaemon:
                 time.sleep(self.timeout)
                 if self.autoscale_enabled:
                     self.worker_validator.validate_hosts()
-                self.autoscaler.scale()
+                self.jobs_handler.process_jobs()
                 self.worker_tags_handler.process_tags()
             except KeyboardInterrupt:
                 Logger.warn('Manual stop of the autoscaler daemon.', crucial=True)
@@ -2190,7 +2199,7 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     return launch_params
 
 
-class MonitoringScaler:
+class MonitoringJobsHandler(GridEngineJobsHandler):
 
     def __init__(self, clock, host_storage, grid_engine, api, parent_run_id, common_utils):
         """
@@ -2210,7 +2219,7 @@ class MonitoringScaler:
         self.parent_run_id = parent_run_id
         self.common_utils = common_utils
 
-    def scale(self):
+    def process_jobs(self):
         now = self.clock.now()
         Logger.info('Start monitoring step at %s.' % now)
         if not self.host_storage.load_hosts():
@@ -2402,17 +2411,17 @@ def main():
     worker_tags_handler = GridEngineWorkerTagsHandler(api=api, run_activation_timeout=30, host_storage=host_storage,
                                                       clock=clock, common_utils=common_utils)
     if autoscale_enabled:
-        autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
-                                          scale_up_orchestrator=scale_up_orchestrator,
-                                          scale_down_handler=scale_down_handler,
-                                          host_storage=host_storage, scale_up_timeout=scale_up_timeout,
-                                          scale_down_timeout=scale_down_timeout,
-                                          max_additional_hosts=autoscaling_hosts_number,
-                                          idle_timeout=scale_down_idle_timeout, clock=clock)
+        jobs_handler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
+                                            scale_up_orchestrator=scale_up_orchestrator,
+                                            scale_down_handler=scale_down_handler,
+                                            host_storage=host_storage, scale_up_timeout=scale_up_timeout,
+                                            scale_down_timeout=scale_down_timeout,
+                                            max_additional_hosts=autoscaling_hosts_number,
+                                            idle_timeout=scale_down_idle_timeout, clock=clock)
     else:
-        autoscaler = MonitoringScaler(grid_engine=grid_engine, clock=clock, host_storage=host_storage, api=api,
-                                      parent_run_id=master_run_id, common_utils=common_utils)
-    daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
+        jobs_handler = MonitoringJobsHandler(grid_engine=grid_engine, clock=clock, host_storage=host_storage, api=api,
+                                             parent_run_id=master_run_id, common_utils=common_utils)
+    daemon = GridEngineAutoscalingDaemon(jobs_handler=jobs_handler, worker_validator=worker_validator,
                                          worker_tags_handler=worker_tags_handler, autoscale_enabled=autoscale_enabled,
                                          polling_timeout=10)
     daemon.start()
