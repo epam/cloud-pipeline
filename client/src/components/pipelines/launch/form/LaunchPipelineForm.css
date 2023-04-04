@@ -268,3 +268,7 @@
   display: flex;
   justify-content: center;
 }
+
+ul.list {
+  list-style: disc inside;
+}
