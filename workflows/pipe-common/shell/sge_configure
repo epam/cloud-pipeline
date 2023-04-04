@@ -14,20 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-function is_root() {
-    [ "$(id -u)" == "0" ]
-}
+echo "######################################################################"
+echo "##                                                                  ##"
+echo "##                        DEPRECATION WARNING                       ##"
+echo "##                                                                  ##"
+echo "##   Command sge_configure is deprecated in favor of sge command.   ##"
+echo "##   Support for sge_configure will be removed in the future.       ##"
+echo "##   Please use the following command instead:                      ##"
+echo "##                                                                  ##"
+echo "##   sge configure                                                  ##"
+echo "##                                                                  ##"
+echo "##   Please refer to the following command for the details:         ##"
+echo "##                                                                  ##"
+echo "##   sge --help                                                     ##"
+echo "##                                                                  ##"
+echo "######################################################################"
+echo ""
 
-if is_root; then
-    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_sge_profiles_interactively.py"
-else
-    echo "Grid Engine autoscaling profiles can be configured only by root."
-    echo "Please use the following commands to configure grid engine autoscaling profiles:"
-    echo ""
-    if check_cp_cap CP_CAP_SUDO_ENABLE; then
-        echo "sudo sge_configure"
-    else
-        echo "su root"
-        echo "sge_configure"
-    fi
-fi
+sge configure

@@ -1,0 +1,353 @@
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import logging
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+from collections import namedtuple
+
+import click
+import psutil
+import sys
+import time
+
+from pipeline.api import PipelineAPI
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
+from scripts.generate_sge_profiles import generate_sge_profiles, \
+    PROFILE_QUEUE_FORMAT, PROFILE_AUTOSCALING_FORMAT, PROFILE_QUEUE_PATTERN
+
+Profile = namedtuple('Profile', 'name,path_queue,path_autoscaling')
+
+
+class SGEProfileConfigurationError(RuntimeError):
+    pass
+
+
+class ManagementTask:
+    ADD = 'ADD'
+    LS = 'LS'
+    CONFIGURE = 'CONFIGURE'
+
+
+def manage(task, profile_name=None):
+    logging_dir = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOG_DIR', default=os.getenv('LOG_DIR', '/var/log'))
+    logging_level = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL', default='INFO')
+    logging_level_local = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_LOCAL', default='DEBUG')
+    logging_level_console = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_CONSOLE', default='INFO')
+    logging_format = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_FORMAT', default='%(asctime)s:%(levelname)s: %(message)s')
+    logging_task = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_TASK', default='ConfigureSGEProfiles')
+    logging_file = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_FILE', default='configure_sge_profiles_interactively.log')
+
+    api_url = os.environ['API']
+    run_id = os.environ['RUN_ID']
+    parent_run_id = os.getenv('parent_id')
+    runs_root = os.getenv('CP_RUNS_ROOT_DIR', default='/runs')
+    pipeline_name = os.getenv('PIPELINE_NAME', default='DefaultPipeline')
+    run_dir = os.getenv('RUN_DIR', default=os.path.join(runs_root, pipeline_name + '-' + run_id))
+    common_repo_dir = os.getenv('COMMON_REPO_DIR', default=os.path.join(run_dir, 'CommonRepo'))
+    cap_scripts_dir = os.getenv('CP_CAP_SCRIPTS_DIR', default='/common/cap_scripts')
+    autoscaling_script_path = os.path.join(common_repo_dir, 'scripts', 'autoscale_sge.py')
+    queue_profile_regexp = re.compile(PROFILE_QUEUE_PATTERN)
+
+    logging_formatter = logging.Formatter(logging_format)
+    logging_logger = logging.getLogger()
+    if not logging_logger.handlers:
+        logging_logger.setLevel(logging_level_local)
+
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging_level_console)
+        console_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(console_handler)
+
+        file_handler = logging.FileHandler(os.path.join(logging_dir, logging_file))
+        file_handler.setLevel(logging_level_local)
+        file_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(file_handler)
+
+    api = PipelineAPI(api_url=api_url, log_dir=logging_dir)
+    logger = RunLogger(api=api, run_id=run_id)
+    logger = TaskLogger(task=logging_task, inner=logger)
+    logger = LevelLogger(level=logging_level, inner=logger)
+    logger = LocalLogger(inner=logger)
+
+    try:
+        if task == ManagementTask.ADD:
+            if not profile_name:
+                logger.warning('Grid engine profile name is required.\n'
+                               'Please use the following command to create a grid engine profile:\n\n'
+                               'sge add myqueue.q\n\n')
+                raise SGEProfileConfigurationError()
+            logger.info('Initiating grid engine profiles creation...')
+            editor = _find_editor(logger)
+            profiles = list(_collect_profiles(cap_scripts_dir, queue_profile_regexp, logger))
+            profiles = _filter_profiles(profiles, profile_name)
+            if profiles:
+                logger.warning('Grid engine profile already exists.')
+                raise SGEProfileConfigurationError()
+            profile_names = [profile_name]
+            _generate_profiles(profile_names, logger)
+            profiles = list(_collect_profiles(cap_scripts_dir, queue_profile_regexp, logger))
+            profiles = _filter_profiles(profiles, profile_name)
+            list(_configure_profiles(profiles, editor, logger))
+            _create_queues(profiles, logger)
+            _restart_autoscalers(profiles, autoscaling_script_path, logger)
+        elif task == ManagementTask.LS:
+            logger.info('Initiating grid engine profiles listing...')
+            profiles = list(_collect_profiles(cap_scripts_dir, queue_profile_regexp, logger))
+            for profile in profiles:
+                logger.info('Grid engine {} profile has been found.'.format(profile.name))
+        else:
+            if parent_run_id:
+                logger.warning('Grid engine profiles shall be managed from cluster parent run.\n'
+                               'Please use the following commands to configure grid engine profiles:\n\n'
+                               'ssh pipeline-{}\n'
+                               'sge configure\n\n'.format(parent_run_id))
+                raise SGEProfileConfigurationError()
+            logger.info('Initiating grid engine profiles configuration...')
+            editor = _find_editor(logger)
+            profiles = list(_collect_profiles(cap_scripts_dir, queue_profile_regexp, logger))
+            profiles = _filter_profiles(profiles, profile_name)
+            if not profiles:
+                logger.warning('Grid engine profiles have not been found.')
+                raise SGEProfileConfigurationError()
+            modified_profiles = list(_configure_profiles(profiles, editor, logger))
+            _restart_autoscalers(modified_profiles, autoscaling_script_path, logger)
+    except KeyboardInterrupt:
+        logger.warning('Interrupted.')
+    except SGEProfileConfigurationError:
+        exit(1)
+
+
+def _filter_profiles(profiles, profile_name):
+    if not profile_name:
+        return profiles
+    return [profile for profile in profiles if profile.name == profile_name]
+
+
+def _generate_profiles(profile_names, logger):
+    current_timestamp = int(time.time())
+    for profile_id, profile_name in enumerate(profile_names):
+        profile_index = str(current_timestamp) + str(profile_id)
+        logger.debug('Creating grid engine {} profile...'.format(profile_name))
+        os.environ['CP_CAP_SGE_QUEUE_NAME_{}'.format(profile_index)] = profile_name
+    generate_sge_profiles()
+    for profile_name in profile_names:
+        logger.info('Grid engine {} profile has been created.'.format(profile_name))
+
+
+def _create_queues(profiles, logger):
+    for profile in profiles:
+        logger.debug('Creating grid engine {} queue...'.format(profile.name))
+        subprocess.check_call("""
+source "{autoscaling_profile_path}"
+sge_setup_queue
+        """.format(autoscaling_profile_path=profile.path_queue),
+                              shell=True)
+        logger.info('Grid engine {} queue has been created.'.format(profile.name))
+
+
+def _find_editor(logger):
+    logger.debug('Searching for editor...')
+    default_editor = os.getenv('VISUAL', os.getenv('EDITOR'))
+    fallback_editors = ['nano', 'vi', 'vim']
+    editors = [default_editor] + fallback_editors if default_editor else fallback_editors
+    editor = None
+    for potential_editor in editors:
+        try:
+            subprocess.check_output('command -v ' + potential_editor, shell=True, stderr=subprocess.STDOUT)
+            editor = potential_editor
+            logger.debug('Editor {} has been found.'.format(editor))
+            break
+        except subprocess.CalledProcessError as e:
+            logger.debug('Editor {} has not been found because {}.'
+                         .format(potential_editor, e.output or 'the tool is not installed'))
+
+    if not editor:
+        logger.warning('Grid engine profiles configuration requires a text editor to be installed locally.\n'
+                       'Please set VISUAL/EDITOR environment variable or install vi/vim/nano using one of the commands below.\n\n'
+                       'yum install -y nano\n'
+                       'apt-get install -y nano')
+        raise SGEProfileConfigurationError()
+    return editor
+
+
+def _collect_profiles(cap_scripts_dir, profile_regexp, logger):
+    logger.debug('Collecting existing profiles...')
+    for profile_name in os.listdir(cap_scripts_dir):
+        profile_match = profile_regexp.match(profile_name)
+        if not profile_match:
+            continue
+        queue_name = profile_match.group(1)
+        logger.debug('Profile {} has been collected.'.format(queue_name))
+        yield Profile(name=queue_name,
+                      path_queue=os.path.join(cap_scripts_dir, PROFILE_QUEUE_FORMAT.format(queue_name)),
+                      path_autoscaling=os.path.join(cap_scripts_dir, PROFILE_AUTOSCALING_FORMAT.format(queue_name)))
+
+
+def _configure_profiles(profiles, editor, logger):
+    for profile in profiles:
+        tmp_profile_path = tempfile.mktemp()
+        logger.debug('Copying grid engine {} profile to {}...'.format(profile.name, tmp_profile_path))
+        shutil.copy2(profile.path_autoscaling, tmp_profile_path)
+        logger.debug('Modifying temporary grid engine {} profile...'.format(profile.name))
+        subprocess.check_call([editor, tmp_profile_path])
+        profile_changes = _compare_profiles(profile.name, profile.path_autoscaling, tmp_profile_path, logger)
+        if not profile_changes:
+            logger.info('Grid engine {} profile has not been changed.'.format(profile.name))
+            continue
+        logger.info('Grid engine {} profile has been changed:\n{}'.format(profile.name, profile_changes))
+        logger.debug('Persisting grid engine {} profile changes...'.format(profile.name))
+        shutil.move(tmp_profile_path, profile.path_autoscaling)
+        yield profile
+
+
+def _compare_profiles(profile_name, before_path, after_path, logger):
+    logger.debug('Extracting changes from grid engine {} profile...'
+                 .format(profile_name, after_path))
+    try:
+        return subprocess.check_output(['diff', before_path, after_path], stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        return e.output
+
+
+def _restart_autoscalers(profiles, autoscaling_script_path, logger):
+    for profile in profiles:
+        _stop_autoscaler(profile, autoscaling_script_path, logger)
+        _launch_autoscaler(profile, autoscaling_script_path, logger)
+
+
+def _stop_autoscaler(profile, autoscaling_script_path, logger):
+    logger.debug('Searching for {} autoscaler processes...'.format(profile.name))
+    for proc in _get_processes(logger, autoscaling_script_path, CP_CAP_SGE_QUEUE_NAME=profile.name):
+        logger.debug('Stopping process #{}...'.format(proc.pid))
+        proc.terminate()
+
+
+def _get_processes(logger, *args, **kwargs):
+    for proc in psutil.process_iter():
+        try:
+            proc_cmdline = proc.cmdline()
+            proc_environ = proc.environ()
+        except KeyboardInterrupt:
+            raise
+        except Exception:
+            logger.error('Please use root account to configure grid engine profiles.')
+            raise SGEProfileConfigurationError()
+        if all(arg in proc_cmdline for arg in args) \
+                and all(proc_environ.get(k) == v for k, v in kwargs.items()):
+            yield proc
+
+
+def _launch_autoscaler(profile, autoscaling_script_path, logger):
+    logger.debug('Launching grid engine queue {} autoscaling...'.format(profile.name))
+    subprocess.check_call("""
+source "{autoscaling_profile_path}"
+if check_cp_cap "CP_CAP_AUTOSCALE"; then
+    nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
+fi
+    """.format(autoscaling_profile_path=profile.path_queue,
+               autoscaling_script_path=autoscaling_script_path),
+                          shell=True)
+    logger.info('Grid engine {} autoscaling has been launched.'.format(profile.name))
+
+
+@click.group()
+def cli():
+    """
+    Grid engine profiles management utility.
+
+    It allows to interactively manage grid engine profiles (queues).
+
+    Examples:
+
+    I. Add a new grid engine profile
+
+        sge add queue.q
+
+    II. Configure an existing grid engine profile
+
+        sge configure queue.q
+
+    III. List all existing grid engine profiles
+
+        sge ls
+
+    """
+    pass
+
+
+@cli.command()
+@click.argument('name', required=True, type=str)
+def add(name):
+    """
+    Adds profiles.
+
+    It adds a new profile (queue) and provides a text editor to configure its parameters.
+
+    Depending on the value of CP_CAP_AUTOSCALE parameter (true/false)
+    the corresponding queue's autoscaler may be started.
+
+    Examples:
+
+        sge add queue.q
+
+    """
+    manage(task=ManagementTask.ADD, profile_name=name)
+
+
+@cli.command()
+def ls():
+    """
+    Lists profiles.
+
+    It lists all the existing grid engine profiles (queues).
+
+    Examples:
+
+        sge ls
+
+    """
+    manage(task=ManagementTask.LS)
+
+
+@cli.command()
+@click.argument('name', required=False, type=str)
+def configure(name):
+    """
+    Configures profiles.
+
+    It provides a text editor to configure either a single grid engine profile (queue) or multiple profiles.
+
+    Depending on the value of CP_CAP_AUTOSCALE parameter (true/false)
+    the corresponding queue's autoscaler may be started/restarted/stopped.
+
+    Examples:
+
+    I. Configure all existing grid engine profiles one by one:
+
+        sge configure
+
+    II. Configure only single grid engine profile (queue.q):
+
+        sge configure queue.q
+
+    """
+    manage(task=ManagementTask.CONFIGURE, profile_name=name)
+
+
+if __name__ == '__main__':
+    cli(sys.argv[1:])
