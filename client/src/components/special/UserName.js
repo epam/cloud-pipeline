@@ -21,6 +21,20 @@ import {computed} from 'mobx';
 import {Icon, Row, Tooltip} from 'antd';
 import {compareUserNames, compareUserNamesWithoutDomain} from '../../utils/users-filters';
 
+function getAttribute (attributes, ...attribute) {
+  const variants = attribute.map((attr) => ([
+    attr,
+    attr.toLowerCase(),
+    attr.toUpperCase(),
+    attr.slice(0, 1).toUpperCase().concat(attr.slice(1)),
+    attr.slice(0, 1).toLowerCase().concat(attr.slice(1))
+  ])).reduce((r, c) => ([...r, ...c]), []);
+  const [result] = variants
+    .map((variant) => (attributes || {})[variant])
+    .filter((value) => value !== undefined);
+  return result;
+}
+
 @inject('usersInfo')
 @observer
 export default class UserName extends React.Component {
@@ -70,11 +84,27 @@ export default class UserName extends React.Component {
   };
 
   renderUserName = (user) => {
-    if (user.attributes && user.attributes.Name) {
-      return <span>{user.attributes.Name}</span>;
-    } else {
-      return <span>{(user.name || '').toLowerCase()}</span>;
+    const {
+      attributes = {},
+      name,
+      userName
+    } = user;
+    const firstName = getAttribute(attributes, 'FirstName', 'First Name');
+    const lastName = getAttribute(attributes, 'LastName', 'Last Name');
+    const attrName = getAttribute(attributes, 'name');
+    if (firstName && lastName && firstName !== lastName) {
+      return `${lastName} ${firstName}`;
     }
+    if (firstName && lastName) {
+      return firstName;
+    }
+    if (attrName) {
+      return attrName;
+    }
+    if (name) {
+      return name;
+    }
+    return (userName || '').toLowerCase();
   };
 
   render () {

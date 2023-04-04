@@ -41,3 +41,20 @@
   top: 0;
   right: 0;
 }
+
+.user-info {
+  margin-bottom: 10px;
+}
+
+.user-info .header {
+  font-size: large;
+  font-weight: bold;
+}
+
+.user-info .attributes {
+  margin-left: -2px;
+}
+
+.user-info .info {
+  width: 150px;
+}
