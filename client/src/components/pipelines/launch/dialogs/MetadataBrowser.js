@@ -217,6 +217,13 @@ export default class MetadataBrowser extends React.Component {
     } else {
       this.onSelectFolder(item.id);
     }
+    this.onExpand(
+      this.state.expandedKeys,
+      {
+        expanded: !node.node.props.expanded,
+        node: node.node
+      }
+    );
   };
 
   generateTree () {
