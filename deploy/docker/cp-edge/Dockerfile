@@ -145,4 +145,4 @@ ADD ingress-config /etc/nginx/ingress
 RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 
-COPY filebeat-template.yml /etc/filebeat/
+COPY filebeat-config/* /etc/filebeat/
