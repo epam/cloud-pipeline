@@ -26,6 +26,7 @@ import PipelineRunParents from '../../../../models/pipelines/pipeline-run-parent
 import LoadingView from '../../../special/LoadingView';
 import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import StatusIcon from '../../../special/run-status-icon';
+import displayDate from '../../../../utils/displayDate';
 import styles from './NestedRunsModal.css';
 
 const DEFAULT_COLOR = '#108ee9';
@@ -431,9 +432,9 @@ class NestedRunsChart extends React.Component {
           }
           const run = runRequest.value;
           state.periodTitle = [
-            moment.utc(run.startDate).format('D MMMM, YYYY HH:mm:ss'),
+            displayDate(run.startDate, 'D MMMM, YYYY HH:mm:ss'),
             run.endDate
-              ? moment.utc(run.endDate).format('D MMMM, YYYY HH:mm:ss')
+              ? displayDate(run.endDate, 'D MMMM, YYYY HH:mm:ss')
               : `till now`
           ].join(' - ');
           state.runsData = [
