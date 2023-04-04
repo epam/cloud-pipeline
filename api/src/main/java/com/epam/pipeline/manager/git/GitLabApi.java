@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabIssue;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
+import com.epam.pipeline.entity.git.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitlabUpload;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
@@ -361,13 +362,13 @@ public interface GitLabApi {
     @POST("api/{api_version}/projects/{project}/issues")
     Call<GitlabIssue> createIssue(@Path(API_VERSION) String apiVersion,
                                   @Path(PROJECT) String idOrName,
-                                  @Body GitlabIssue issue);
+                                  @Body GitlabIssueRequest issue);
 
     @PUT("api/{api_version}/projects/{project}/issues/{issue_id}")
     Call<GitlabIssue> updateIssue(@Path(API_VERSION) String apiVersion,
                                   @Path(PROJECT) String idOrName,
                                   @Path(ISSUE_ID) Long issueId,
-                                  @Body GitlabIssue issue);
+                                  @Body GitlabIssueRequest issue);
 
     @DELETE("api/{api_version}/projects/{project}/issues/{issue_id}")
     Call<Boolean> deleteIssue(@Path(API_VERSION) String apiVersion,

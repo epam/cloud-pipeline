@@ -19,7 +19,7 @@ package com.epam.pipeline.acl.pipeline.issue;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueFilter;
-import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueRequest;
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueVO;
 import com.epam.pipeline.entity.git.GitlabIssue;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.manager.git.GitManager;
@@ -34,11 +34,11 @@ public class GitlabIssueApiService {
 
     private final GitManager gitManager;
 
-    public GitlabIssue createIssue(final GitlabIssueRequest issue) {
+    public GitlabIssue createIssue(final GitlabIssueVO issue) {
         return gitManager.createIssue(issue);
     }
 
-    public GitlabIssue updateIssue(final GitlabIssueRequest issue) {
+    public GitlabIssue updateIssue(final GitlabIssueVO issue) {
         return gitManager.updateIssue(issue);
     }
 

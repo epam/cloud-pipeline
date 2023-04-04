@@ -22,7 +22,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueFilter;
-import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueRequest;
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueVO;
 import com.epam.pipeline.entity.git.GitlabIssue;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
 import io.swagger.annotations.Api;
@@ -61,7 +61,7 @@ public class GitlabIssueController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<GitlabIssue> createIssue(@RequestBody final GitlabIssueRequest issue) {
+    public Result<GitlabIssue> createIssue(@RequestBody final GitlabIssueVO issue) {
         return Result.success(gitlabIssueApiService.createIssue(issue));
     }
 
@@ -74,7 +74,7 @@ public class GitlabIssueController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<GitlabIssue> updateIssue(@RequestBody final GitlabIssueRequest issue) {
+    public Result<GitlabIssue> updateIssue(@RequestBody final GitlabIssueVO issue) {
         return Result.success(gitlabIssueApiService.updateIssue(issue));
     }
 

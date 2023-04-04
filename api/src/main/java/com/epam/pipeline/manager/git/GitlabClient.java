@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabIssue;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
+import com.epam.pipeline.entity.git.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitlabUpload;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
@@ -442,7 +443,7 @@ public class GitlabClient {
     }
 
     public GitlabIssue createIssue(final String project,
-                                   final GitlabIssue issue,
+                                   final GitlabIssueRequest issue,
                                    final Map<String, String> attachments) throws GitClientException {
         issue.setDescription(formatTextWithAttachments(project,
                 attachments,
@@ -451,7 +452,7 @@ public class GitlabClient {
     }
 
     public GitlabIssue updateIssue(final String project,
-                                   final GitlabIssue issue,
+                                   final GitlabIssueRequest issue,
                                    final Map<String, String> attachments) throws GitClientException {
         issue.setDescription(formatTextWithAttachments(project,
                 attachments,
@@ -473,11 +474,13 @@ public class GitlabClient {
     }
 
     public PagedResult<List<GitlabIssue>> getIssues(final String project, final List<String> labels,
-                                              final Integer page, final Integer pageSize, final String search)
+                                                    final Integer page, final Integer pageSize,
+                                                    final String search)
             throws GitClientException {
-        Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project,
-                String.join(",", labels), page, pageSize, search));
-        int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
+        final String labelStr = CollectionUtils.isEmpty(labels) ? null : String.join(",", labels);
+        final Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labelStr,
+                page, pageSize, search));
+        final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
         return new PagedResult<>(response.body(), totalPages);
     }
 

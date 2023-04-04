@@ -24,7 +24,7 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueCommentRequest;
 import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueFilter;
-import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueRequest;
+import com.epam.pipeline.controller.vo.pipeline.issue.GitlabIssueVO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitlabIssue;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
+import com.epam.pipeline.entity.git.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
@@ -612,20 +613,20 @@ public class GitManager {
         ));
     }
 
-    public GitlabIssue createIssue(final GitlabIssueRequest request) throws GitClientException {
+    public GitlabIssue createIssue(final GitlabIssueVO request) throws GitClientException {
         final String authorizedUser = authManager.getCurrentUser().getUserName();
-        final GitlabIssue issue = request.toIssue();
-        final List<String> labels = Optional.ofNullable(issue.getLabels()).orElse(new ArrayList<>());
+        final GitlabIssueRequest issue = request.toIssue();
+        final List<String> labels = Optional.ofNullable(request.getLabels()).orElse(new ArrayList<>());
         labels.add(String.format(ON_BEHALF_OF, authorizedUser));
         final List<String> defaultLabels = preferenceManager.getPreference(SystemPreferences.GITLAB_DEFAULT_LABELS);
         if (CollectionUtils.isNotEmpty(defaultLabels)) {
             labels.addAll(defaultLabels);
         }
-        issue.setLabels(labels);
+        issue.setLabels(String.join(",", labels));
         return getDefaultGitlabClient().createIssue(getProjectForIssues(), issue, request.getAttachments());
     }
 
-    public GitlabIssue updateIssue(final GitlabIssueRequest request) throws GitClientException {
+    public GitlabIssue updateIssue(final GitlabIssueVO request) throws GitClientException {
         return getDefaultGitlabClient().updateIssue(getProjectForIssues(), request.toIssue(), request.getAttachments());
     }
 

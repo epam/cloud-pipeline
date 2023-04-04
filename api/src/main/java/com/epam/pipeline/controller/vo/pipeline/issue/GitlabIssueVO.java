@@ -16,15 +16,16 @@
 
 package com.epam.pipeline.controller.vo.pipeline.issue;
 
-import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
-public class GitlabIssueRequest {
+public class GitlabIssueVO {
 
     @JsonProperty("iid")
     private Long id;
@@ -33,12 +34,14 @@ public class GitlabIssueRequest {
     private Map<String, String> attachments;
     private List<String> labels;
 
-    public GitlabIssue toIssue() {
-        final GitlabIssue gitlabIssue = new GitlabIssue();
+    public GitlabIssueRequest toIssue() {
+        final GitlabIssueRequest gitlabIssue = new GitlabIssueRequest();
         gitlabIssue.setId(id);
         gitlabIssue.setTitle(title);
         gitlabIssue.setDescription(description);
-        gitlabIssue.setLabels(labels);
+        if (CollectionUtils.isNotEmpty(labels)) {
+            gitlabIssue.setLabels(String.join(",", labels));
+        }
         return gitlabIssue;
     }
 }
