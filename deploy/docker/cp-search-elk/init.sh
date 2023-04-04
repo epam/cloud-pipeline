@@ -242,7 +242,7 @@ INDEX="{
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
 
-for _pipeline_path in "/etc/search-elk/pipelines/*.json"; do
+for _pipeline_path in /etc/search-elk/pipelines/*.json; do
   _pipeline_name="$(basename "$_pipeline_path" .json)"
   envsubst_inplace "$_pipeline_path"
   curl -H 'Content-Type: application/json' -XPUT "localhost:9200/_ingest/pipeline/$_pipeline_name" -d "@$_pipeline_path"
