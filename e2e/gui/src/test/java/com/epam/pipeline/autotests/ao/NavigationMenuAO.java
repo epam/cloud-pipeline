@@ -28,9 +28,12 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.Selenide.screenshot;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.testng.Assert.assertEquals;
 
 public class NavigationMenuAO {
 
@@ -83,6 +86,13 @@ public class NavigationMenuAO {
         return new GlobalSearchAO();
     }
 
+    public BillingTabAO billing() {
+        $(byId("navigation-button-billing")).shouldBe(visible).click();
+        sleep(1, SECONDS);
+        $(byClassName("illing-navigation__menu")).waitUntil(visible, 5000);
+        return new BillingTabAO();
+    }
+
     public PipelineLibraryContentAO createPipeline(final Template template, final String name) {
         return new PipelinesLibraryAO()
                 .createPipeline(template, name)
@@ -107,5 +117,10 @@ public class NavigationMenuAO {
             return;
         }
         throw new RuntimeException("Could not login");
+    }
+
+    public NavigationMenuAO checkBillingVisible(boolean bool) {
+        assertEquals($(byId("navigation-button-billing")).is(visible), bool);
+        return this;
     }
 }

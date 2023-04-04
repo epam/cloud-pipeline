@@ -51,7 +51,7 @@ import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
+public class HotNodePoolsAO implements AccessObject<ClusterMenuAO> {
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(REFRESH, context().$(button("Refresh"))),

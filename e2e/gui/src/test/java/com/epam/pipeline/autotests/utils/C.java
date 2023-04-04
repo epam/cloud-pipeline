@@ -124,6 +124,7 @@ public class C {
                 .split(","));
         BACKUP_STORAGE_PATH = conf.getProperty("e2e.ui.backup.storage.path");
         BACKUP_STORAGE_OFFSET = Integer.parseInt(conf.getProperty("e2e.ui.backup.storage.offset"));
+        ELASTIC_URL = conf.getProperty("e2e.ui.elastic.url");
         DEFAULT_CLUSTER_AWS_EBS_TYPE = conf.getProperty("e2e.ui.cluster.aws.ebs.type");
     }
 
@@ -210,6 +211,7 @@ public class C {
     public static final String PIPE_OPERATION_SYSTEM;
     public static final String PIPE_INSTALLATION_CONTENT;
     public static final String PIPE_CONFIG_CONTENT_PATH;
+    public static final String ELASTIC_URL;
 
     public static final String IMPERSONATE_AUTH;
     public static final String EXTENSION_PATH;

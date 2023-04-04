@@ -99,7 +99,8 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO assertPageAfterCommandContainsStrings(String command, String... messages) {
         Arrays.stream(messages)
-                .forEach(message -> assertTrue(lastCommandResult(command).contains(message)));
+                .forEach(message -> assertTrue(lastCommandResult(command).contains(message),
+                        format("'%s' doesn't contain '%s'", lastCommandResult(command), message)));
         return this;
     }
 
@@ -125,8 +126,8 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public String lastCommandResult(String command) {
-        return context().text().substring(context().text().indexOf(command))
-                .replace("\n", "").replace(command, "");
+        String res = context().text().replace("\n", "");
+        return res.substring(res.indexOf(command));
     }
 
     public ShellAO assertPageContainsString(String str) {

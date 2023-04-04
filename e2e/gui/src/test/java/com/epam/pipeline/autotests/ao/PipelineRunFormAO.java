@@ -261,6 +261,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new RunsMenuAO();
     }
 
+    public PipelineRunFormAO launchWithError(String errorMessage) {
+        launch();
+        messageShouldAppear(errorMessage);
+        return this;
+    }
+
     public PipelineRunFormAO waitUntilLaunchButtonAppear() {
         $(button("Launch")).waitUntil(enabled, C.DEFAULT_TIMEOUT * 2);
         return this;

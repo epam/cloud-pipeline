@@ -11,6 +11,7 @@ ext {
     selenideVersion = '4.10.01'
     logVersion = '1.2'
     jacksonVersion = '2.9.3'
+    freemarkerVersion = '2.3.14'
 }
 
 repositories {
@@ -31,6 +32,8 @@ dependencies {
     testCompile group: 'org.testng', name: 'testng', version: testngVersion
 
     testCompile group: 'com.codeborne', name: 'selenide', version: selenideVersion
+
+    implementation group: 'org.freemarker', name: 'freemarker', version: freemarkerVersion
 }
 
 test() {

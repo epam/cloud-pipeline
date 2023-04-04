@@ -15,12 +15,14 @@
  */
 package com.epam.pipeline.autotests.mixins;
 
+import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Permission;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.Cookie;
 
 import java.util.Arrays;
@@ -38,6 +40,7 @@ import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.Collections.singletonList;
 import static org.openqa.selenium.By.tagName;
 
 public interface Authorization extends Navigation {
@@ -175,6 +178,28 @@ public interface Authorization extends Navigation {
 
     default void checkFailedAuthentication() {
         $(tagName("body")).shouldBe(empty);
+    }
+
+    default void validateWhileErrorPageMessage() {
+        if (impersonateMode()) {
+            navigationMenu()
+                    .settings()
+                    .switchToMyProfile()
+                    .validateUserName(admin.login);
+            return;
+        }
+        if ("true".equals(C.AUTH_TOKEN)) {
+            validateErrorPage(singletonList("User is blocked!"));
+            Selenide.clearBrowserCookies();
+            Utils.sleep(1, SECONDS);
+            return;
+        }
+        validateErrorPage(Arrays.asList(
+                "Please contact", "Support team", "to request the access",
+                format("login back to the %s", C.PLATFORM_NAME),
+                "if you already own an account")
+        );
+        loginBack();
     }
 
     class Account {

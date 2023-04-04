@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ENLARGE;
 import static com.epam.pipeline.autotests.ao.Primitive.FILE_PREVIEW;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_ALL;
 import static com.epam.pipeline.autotests.utils.Utils.getFile;
+import static com.epam.pipeline.autotests.utils.Utils.repeatString;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -115,11 +116,8 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     @Test(dependsOnMethods = "validateFilePreviewForFilesLessThan10kb")
     @TestCase(value = {"EPMCMBIBPC-1167"})
     public void validateFilePreviewForFilesMoreThan10kb() {
-        final File file = Utils.createFileAndFillWithString(
-                fileMoreThan10kb,
-                fileMoreThan10kbPartOfContent,
-                11000
-        );
+        String content = repeatString(fileMoreThan10kbPartOfContent, 11000 / fileMoreThan10kbPartOfContent.length());
+        final File file = Utils.createTempFileWithContent(fileMoreThan10kb, content);
         navigationMenu()
                 .library()
                 .selectStorage(bucket)

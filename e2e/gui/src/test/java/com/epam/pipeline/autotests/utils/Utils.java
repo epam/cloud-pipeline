@@ -324,14 +324,10 @@ public class Utils {
         return uploadedFile;
     }
 
-    public static File createFileAndFillWithString(String name,
-                                                   String repeatingString,
-                                                   int totalNumberOfChars) {
-
-        byte[] content = repeatString("abc1", totalNumberOfChars / repeatingString.length()).getBytes();
+    public static File createTempFileWithContent(String name, String content) {
         Path path = Paths.get(C.DOWNLOAD_FOLDER).resolve(name);
         try {
-            Files.write(path, content);
+            Files.write(path, content.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -340,7 +336,7 @@ public class Utils {
         return file;
     }
 
-    private static String repeatString(String str, int times) {
+    public static String repeatString(String str, int times) {
         return new String(new char[times]).replace("\0", str);
     }
 

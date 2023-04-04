@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.autotests.mixins;
 
+import com.epam.pipeline.autotests.ao.BillingTabAO;
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
 import com.epam.pipeline.autotests.ao.NavigationHomeAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
@@ -70,6 +71,13 @@ public interface Navigation {
         $(runsPageSelector).shouldBe(visible).click();
         $(runsPageSelector).shouldBe(selectedMenuItem);
         return new RunsMenuAO();
+    }
+
+    default BillingTabAO billingMenu() {
+        final By billingPageSelector = byId("navigation-button-billing");
+        $(billingPageSelector).shouldBe(visible).click();
+        $(billingPageSelector).shouldBe(selectedMenuItem);
+        return new BillingTabAO();
     }
 
     default NavigationHomeAO stopImpersonation() {
