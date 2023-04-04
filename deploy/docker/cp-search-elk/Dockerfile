@@ -32,5 +32,7 @@ RUN chmod +x /usr/local/bin/get-aws-profile.sh
 RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 
+COPY pipelines /etc/search-elk/pipelines
+
 COPY init.sh /
 RUN chmod +x /init.sh
