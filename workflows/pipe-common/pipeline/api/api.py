@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -253,6 +253,9 @@ class PipelineAPI:
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
     GRANT_PERMISSIONS_URL = "/grant"
     PERMISSION_URL = "/permissions"
+    REPORT_USERS = "report/users"
+    LOG_FILTER = "log/filter"
+    BILLING_EXPORT = "billing/export"
 
     # Pipeline API default header
 
@@ -1330,6 +1333,46 @@ class PipelineAPI:
             return result['elements'] if 'elements' in result else []
         except Exception as e:
             raise RuntimeError("Failed to load pipelines \n {}".format(e))
+
+    def report_users(self, start, end, users):
+        try:
+            data = {'from': start, 'to': end, 'users': users, 'interval': 'HOURS'}
+            return self._request(endpoint=self.REPORT_USERS, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load usage report \n {}".format(e))
+
+    def log_filter(self, start, end, users):
+        try:
+            data = {'messageTimestampFrom': start, 'messageTimestampTo': end, 'types': ['audit'],
+                    'users': users, 'pagination': {'pageSize': 20}}
+            result = self._request(endpoint=self.LOG_FILTER, http_method="post", data=data)
+            token = result['token'] if 'token' in result else None
+            log_entries = result['logEntries'] if 'logEntries' in result else []
+            while token:
+                data = {'messageTimestampFrom': start, 'messageTimestampTo': end, 'types': ['audit'],
+                        'users': users, 'pagination': {'pageSize': 20, 'token': token}}
+                result = self._request(endpoint=self.LOG_FILTER, http_method="post", data=data)
+                token = result['token'] if 'token' in result else None
+                log_entries_page = result['logEntries'] if 'logEntries' in result else None
+                if log_entries_page is not None:
+                    log_entries.extend(log_entries_page)
+            return log_entries
+        except Exception as e:
+            raise RuntimeError("Failed to load usage report \n {}".format(e))
+
+    def billing_export(self, start, end, owners, types):
+        try:
+            url = '{}/{}'.format(self.api_url, self.BILLING_EXPORT)
+            data = {"types": types, "from": start, "to": end, "filters": {"owner": owners},
+                    "discount": {"computes": 0, "storages": 0}}
+            response = requests.request(method="post", url=url, data=json.dumps(data),
+                                        headers=self.header, verify=False,
+                                        timeout=self.connection_timeout)
+            if response.status_code != 200:
+                raise HTTPError('API responded with http status %s.' % str(response.status_code))
+            return response.content
+        except Exception as e:
+            raise RuntimeError("Failed to load billing export \n {}".format(e))
 
     def delete_tool(self, image):
         try:
