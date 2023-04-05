@@ -2195,7 +2195,7 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     return launch_params
 
 
-def init_static_hosts(api, parent_run_id, common_utils, static_host_storage, clock):
+def init_static_hosts(api, parent_run_id, common_utils, static_host_storage, clock, run_activation_timeout):
     if static_host_storage.load_hosts():
         Logger.info('Static hosts already initialized.')
         return
@@ -2208,7 +2208,8 @@ def init_static_hosts(api, parent_run_id, common_utils, static_host_storage, clo
         static_host_storage.add_host(host)
         hosts.append(host)
     # to prevent false positive run tagging let's add outdated date to hosts:
-    timestamp = clock.now() - timedelta(seconds=60)
+    timeout = run_activation_timeout * 2
+    timestamp = clock.now() - timedelta(seconds=timeout)
     static_host_storage.update_hosts_activity(hosts, timestamp)
     Logger.info('Static hosts have been initialized.')
 
@@ -2359,9 +2360,11 @@ def main():
                                                 storage_file=os.path.join(work_dir,
                                                                           '.static.%s.storage' % queue_name),
                                                 clock=clock)
+    run_activation_timeout = 30
     if static_hosts_number:
         init_static_hosts(api=api, parent_run_id=master_run_id, common_utils=common_utils,
-                          static_host_storage=static_host_storage, clock=clock)
+                          static_host_storage=static_host_storage, clock=clock,
+                          run_activation_timeout=run_activation_timeout)
     if not autoscale_enabled:
         autoscaling_hosts_number = 0
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
@@ -2388,7 +2391,8 @@ def main():
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler,
                                                  common_utils=common_utils)
-    worker_tags_handler = GridEngineWorkerTagsHandler(api=api, run_activation_timeout=30, host_storage=host_storage,
+    worker_tags_handler = GridEngineWorkerTagsHandler(api=api, run_activation_timeout=run_activation_timeout,
+                                                      host_storage=host_storage,
                                                       static_host_storage=static_host_storage, clock=clock,
                                                       common_utils=common_utils)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
