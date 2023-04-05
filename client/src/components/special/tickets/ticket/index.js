@@ -84,12 +84,15 @@ class Ticket extends React.Component {
       .sort((a, b) => moment.utc(a.created_at) - moment.utc(b.created_at));
   }
 
-  onSaveNewComment = ({description}) => {
+  onSaveNewComment = ({attachments, description}) => {
     this.setState({pending: true}, async () => {
       const {ticketId} = this.props;
       const request = new GitlabIssueComment(ticketId);
       const hide = message.loading(`Creating comment...`, 0);
-      await request.send({body: description});
+      await request.send({
+        attachments,
+        body: description
+      });
       hide();
       if (request.error) {
         message.error(request.error, 5);

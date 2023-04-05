@@ -134,7 +134,6 @@ export default class CommentEditor extends React.Component {
     const {
       isNewComment,
       className,
-      uploadEnabled,
       disabled
     } = this.props;
     return (
@@ -205,19 +204,17 @@ export default class CommentEditor extends React.Component {
                   </Button>
                 </div>
               </div>
-              {uploadEnabled ? (
-                <Upload
-                  style={{width: '100%'}}
-                  fileList={fileList}
-                  onRemove={this.onRemoveFile}
-                  beforeUpload={this.beforeUpload}
-                  disabled={disabled}
-                >
-                  <Button style={{borderRadius: '0 0 4px 4px'}}>
-                    <Icon type="upload" /> Click to Upload
-                  </Button>
-                </Upload>
-              ) : (<span style={{height: 28}} />)}
+              <Upload
+                style={{width: '100%'}}
+                fileList={fileList}
+                onRemove={this.onRemoveFile}
+                beforeUpload={this.beforeUpload}
+                disabled={disabled}
+              >
+                <Button style={{borderRadius: '0 0 4px 4px'}}>
+                  <Icon type="upload" /> Upload attachment
+                </Button>
+              </Upload>
             </div>
           ) : (
             <Markdown

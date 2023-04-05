@@ -164,7 +164,6 @@ class NewTicketForm extends React.Component {
       fileList
     } = this.state;
     const {
-      uploadEnabled,
       renderAsModal,
       pending
     } = this.props;
@@ -228,21 +227,19 @@ class NewTicketForm extends React.Component {
                   </Button>
                 ) : null}
               </div>
-              {uploadEnabled ? (
-                <Upload
-                  style={{width: '100%'}}
-                  fileList={fileList}
-                  onRemove={this.onRemoveFile}
-                  beforeUpload={this.beforeUpload}
+              <Upload
+                style={{width: '100%'}}
+                fileList={fileList}
+                onRemove={this.onRemoveFile}
+                beforeUpload={this.beforeUpload}
+              >
+                <Button
+                  className={styles.uploadButton}
+                  disabled={pending}
                 >
-                  <Button
-                    className={styles.uploadButton}
-                    disabled={pending}
-                  >
-                    <Icon type="upload" /> Click to Upload
-                  </Button>
-                </Upload>
-              ) : <div style={{height: '28px'}} />}
+                  <Icon type="upload" /> Upload attachment
+                </Button>
+              </Upload>
             </div>
           ) : (
             this.renderPreview()

@@ -35,11 +35,11 @@
 }
 
 .comments-container .card {
-  margin-left: -25px;
+  margin-left: -25px !important;
 }
 
 .comments-container .card:not(:last-child) {
-  margin-bottom: 25px;
+  margin-bottom: 25px !important;
 }
 
 .info-section {
