@@ -262,7 +262,7 @@ class TicketsList extends React.Component {
           >
             {this.predefinedLabels.map(label => (
               <Select.Option key={label}>
-                {`${label.charAt(0).toUpperCase()}${label.slice(1)}`}
+                {label}
               </Select.Option>
             ))}
           </Select>
@@ -290,11 +290,8 @@ class TicketsList extends React.Component {
         </Menu.Item>
       </Menu>
     );
-    const getLabel = (labels) => {
-      const [label] = (labels || [])
-        .filter(label => this.predefinedLabels.includes(label.toLowerCase()));
-      return label;
-    };
+    const getLabel = (labels) => (labels || [])
+      .find(label => this.predefinedLabels.includes(label));
     return (
       <div
         key={ticket.iid}
