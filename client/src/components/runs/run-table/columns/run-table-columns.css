@@ -24,6 +24,25 @@
   min-width: 100px;
 }
 
+.filter-popover-container.docker {
+  max-height: 450px;
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-popover-container.docker .active-filters {
+  overflow-y: auto;
+  flex-shrink: 0;
+  max-height: 150px;
+}
+
+.filter-popover-container.docker .active-filters-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 2px 0;
+}
+
 .main-info {
   font-weight: bold;
 }
