@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
+import {observable} from 'mobx';
 import {
   Checkbox,
   Icon,
@@ -32,6 +33,9 @@ import {
 import registryName from '../../../tools/registryName';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
+
+const MINIMUM_SEARCH_LENGTH = 3;
+const touched = observable([]);
 
 function DockersFilterComponent (
   {
@@ -82,17 +86,20 @@ function DockersFilterComponent (
   }
   const imagesSorted = images.sort((a, b) => a.value.localeCompare(b.value));
   const searchString = (search || '').toLowerCase();
-  const filterImages = (image) => {
-    return searchString.length === 0 ||
-      image.value.toLowerCase().includes(searchString) ||
-      (image.registry || '').toLowerCase().includes(searchString) ||
-      (image.group || '').toLowerCase().includes(searchString);
-  };
   const enabled = new Set(value || []);
+  const recentActivity = new Set([...enabled, ...touched]);
+  const filteredImages = imagesSorted.filter(({value, registry, group}) => {
+    const targets = [value, registry, group].filter(Boolean);
+    return searchString.length >= MINIMUM_SEARCH_LENGTH &&
+      !recentActivity.has(value) &&
+      targets.some(string => string.toLowerCase().includes(searchString));
+  });
   const onChangeSelection = (dockerImage) => (event) => {
     if (event.target.checked && !enabled.has(dockerImage)) {
+      touched.push(dockerImage);
       onChange([...enabled, dockerImage]);
     } else if (!event.target.checked && enabled.has(dockerImage)) {
+      touched.push(dockerImage);
       onChange([...enabled].filter((s) => s !== dockerImage));
     }
   };
@@ -101,11 +108,37 @@ function DockersFilterComponent (
       onSearch(event.target.value);
     }
   };
+  const clearTouched = () => touched.splice(0, touched.length);
+  const onOkClicked = () => {
+    onOk();
+  };
+  const onClearClicked = () => {
+    clearTouched();
+    onClear();
+  };
+  const renderFilterField = (image) => {
+    const checked = enabled.has(image.value);
+    return (
+      <Row key={image.value} style={{margin: 5}}>
+        <Checkbox
+          onChange={onChangeSelection(image.value)}
+          checked={checked}
+        >
+          <span>{image.registry}</span>
+          <Icon type="right" />
+          <span>{image.group}</span>
+          <Icon type="right" />
+          <span>{image.image}</span>
+        </Checkbox>
+      </Row>
+    );
+  };
   return (
     <div
       className={
         classNames(
           styles.filterPopoverContainer,
+          styles.docker,
           'cp-filter-popover-container'
         )
       }
@@ -116,38 +149,41 @@ function DockersFilterComponent (
           placeholder="Filter"
           onChange={onSearchChanged} />
       </Row>
-      <Row>
-        <div style={{maxHeight: 400, overflowY: 'auto'}}>
-          {
-            imagesSorted
-              .filter(filterImages)
-              .map((image) => (
-                <Row
-                  style={{margin: 5}}
-                  key={image.value}
-                >
-                  <Checkbox
-                    onChange={onChangeSelection(image.value)}
-                    checked={enabled.has(image.value)}
-                  >
-                    <span>{image.registry}</span>
-                    <Icon type="right" />
-                    <span>{image.group}</span>
-                    <Icon type="right" />
-                    <span>{image.image}</span>
-                  </Checkbox>
-                </Row>
-              ))
+      {filteredImages.length > 0 ? (
+        <Row style={{overflowY: 'auto'}}>
+          {filteredImages.map(renderFilterField)}
+        </Row>
+      ) : (
+        null
+      )}
+      {recentActivity.size > 0 ? (
+        <Row
+          className={classNames(
+            styles.activeFilters,
+            {'cp-divider top': filteredImages.length > 0}
+          )}
+        >
+          <div
+            className={classNames(
+              styles.activeFiltersHeading,
+              'cp-card-background-color'
+            )}
+          >
+            Active filters:
+          </div>
+          {imagesSorted
+            .filter(({value}) => recentActivity.has(value))
+            .map(renderFilterField)
           }
-        </div>
-      </Row>
+        </Row>
+      ) : null}
       <Row
         type="flex"
         justify="space-between"
         className={styles.filterActionsButtonsContainer}
       >
-        <a onClick={onOk}>OK</a>
-        <a onClick={onClear}>Clear</a>
+        <a onClick={onOkClicked}>OK</a>
+        <a onClick={onClearClicked}>Clear</a>
       </Row>
     </div>
   );
