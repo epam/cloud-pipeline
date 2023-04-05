@@ -33,16 +33,12 @@ const PREVIEW_MODES = {
   preview: 'preview'
 };
 
-export default class NewTicketForm extends React.Component {
-  static propTypes = {
-    onSave: PropTypes.func,
-    onCancel: PropTypes.func,
-    title: PropTypes.string,
-    pending: PropTypes.bool,
-    renderAsModal: PropTypes.bool,
-    modalVisible: PropTypes.bool
-  };
+const PreviewModeNames = {
+  [PREVIEW_MODES.edit]: 'Write',
+  [PREVIEW_MODES.preview]: 'Preview'
+};
 
+class NewTicketForm extends React.Component {
   state = {
     description: '',
     title: '',
@@ -167,19 +163,28 @@ export default class NewTicketForm extends React.Component {
       title,
       fileList
     } = this.state;
-    const {uploadEnabled, renderAsModal} = this.props;
+    const {
+      uploadEnabled,
+      renderAsModal,
+      pending
+    } = this.props;
     return (
       <div
         className={styles.editorContainer}
       >
         <Input
           value={title}
+          disabled={pending}
           onChange={this.onChangeValue('title', 'input')}
           placeholder="Title"
           style={{marginBottom: 10}}
         />
         <div>
-          <Radio.Group value={mode} onChange={this.onChangeMode}>
+          <Radio.Group
+            value={mode}
+            onChange={this.onChangeMode}
+            disabled={pending}
+          >
             {Object.values(PREVIEW_MODES).map((key) => (
               <Radio.Button
                 key={key}
@@ -189,7 +194,7 @@ export default class NewTicketForm extends React.Component {
                   borderRadius: '4px 4px 0 0'
                 }}
               >
-                {key}
+                {PreviewModeNames[key] || key}
               </Radio.Button>
             ))}
           </Radio.Group>
@@ -203,6 +208,7 @@ export default class NewTicketForm extends React.Component {
               <div style={{position: 'relative'}}>
                 <Input.TextArea
                   rows={8}
+                  disabled={pending}
                   onChange={this.onChangeValue('description', 'input', true)}
                   value={description}
                   onClick={e => e.stopPropagation()}
@@ -229,7 +235,10 @@ export default class NewTicketForm extends React.Component {
                   onRemove={this.onRemoveFile}
                   beforeUpload={this.beforeUpload}
                 >
-                  <Button className={styles.uploadButton}>
+                  <Button
+                    className={styles.uploadButton}
+                    disabled={pending}
+                  >
                     <Icon type="upload" /> Click to Upload
                   </Button>
                 </Upload>
@@ -286,3 +295,14 @@ export default class NewTicketForm extends React.Component {
     );
   }
 }
+
+NewTicketForm.propTypes = {
+  onSave: PropTypes.func,
+  onCancel: PropTypes.func,
+  title: PropTypes.string,
+  pending: PropTypes.bool,
+  renderAsModal: PropTypes.bool,
+  modalVisible: PropTypes.bool
+};
+
+export default NewTicketForm;

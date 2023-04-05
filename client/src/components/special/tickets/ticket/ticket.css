@@ -14,36 +14,18 @@
  * limitations under the License.
  */
 
-.container {
-  display: flex;
-  justify-content: center;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  max-width: 1400px;
-  flex-grow: 1;
-}
-
-.ticket-header {
-  margin: 0 0 5px 5px;
-  font-size: larger;
+.ticket-content {
   display: flex;
   flex-direction: row;
-  align-items: center;
-}
-
-.ticket-header .ticket-id {
-  opacity: 0.8;
-  font-size: larger;
-  margin-left: 10px;
+  flex: 1;
+  overflow: auto;
 }
 
 .comments-section {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  overflow: auto;
 }
 
 .comments-container {

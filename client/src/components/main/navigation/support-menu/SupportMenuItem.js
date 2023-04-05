@@ -21,7 +21,7 @@ import {Button, Icon, message, Popover, Tooltip} from 'antd';
 import Markdown from '../../../special/markdown';
 import {HcsImageAnalysisJobsModal} from '../../../special/hcs-image/hcs-image-analysis-jobs';
 import GitlabIssueCreate from '../../../../models/gitlab-issues/GitlabIssueCreate';
-import {NewTicketForm} from '../../../special/tickets/special';
+import NewTicketForm from '../../../special/tickets/special/new-ticket-form';
 import styles from './SupportMenu.css';
 
 const actions = {

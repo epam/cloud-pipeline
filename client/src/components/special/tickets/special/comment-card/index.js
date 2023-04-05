@@ -88,6 +88,17 @@ export default class CommentCard extends React.Component {
       return null;
     }
     const {
+      type,
+      updated_at: updatedAt,
+      created_at: createdAt
+    } = comment;
+    let date = updatedAt || createdAt;
+    let dateDescription = 'commented';
+    if (/^issue$/i.test(type)) {
+      date = createdAt || updatedAt;
+      dateDescription = 'created ticket';
+    }
+    const {
       author,
       text
     } = this.getCommentInfo();
@@ -141,7 +152,7 @@ export default class CommentCard extends React.Component {
               className="cp-text-not-important"
               style={{marginLeft: '5px'}}
             >
-              commented {displayDate(comment.updated_at, 'D MMM YYYY, HH:mm')}
+              {dateDescription} {displayDate(date, 'D MMM YYYY, HH:mm')}
             </span>
           </div>
           {onSelectMenu ? (
