@@ -748,6 +748,7 @@ class EditRoleDialog extends React.Component {
               <Button
                 id="close-edit-user-form"
                 type="primary"
+                disabled={!this.modified}
                 onClick={this.operationWrapper(this.saveChanges)}
               >
                 OK
