@@ -763,6 +763,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         PARAMETERS,
         PARENT_ID,
         CHILD_RUNS_COUNT,
+        ACTIVE_CHILD_RUNS_COUNT,
         STATUS,
         COMMIT_STATUS,
         LAST_CHANGE_COMMIT_TIME,
@@ -1045,6 +1046,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     run.setEnvVars(getEnvVarsRowMapper().mapRow(rs, rowNum));
                 }
                 if (loadChildRunsCount) {
+                    run.setActiveChildRunsCount(rs.getInt(ACTIVE_CHILD_RUNS_COUNT.name()));
                     run.setChildRunsCount(rs.getInt(CHILD_RUNS_COUNT.name()));
                 }
                 return run;
