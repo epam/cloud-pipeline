@@ -1515,6 +1515,11 @@
                             FROM pipeline.pipeline_run cr
                             WHERE cr.parent_id = r.run_id
                         ) AS child_runs_count,
+                        (
+                            SELECT count(*)
+                            FROM pipeline.pipeline_run cr
+                            WHERE cr.parent_id = r.run_id AND cr.status = 2
+                        ) AS active_child_runs_count,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
