@@ -27,6 +27,7 @@ MASTER_HOST = 'pipeline-1000'
 cmd_executor = Mock()
 grid_engine = Mock()
 host_storage = MemoryHostStorage()
+static_storage = MemoryHostStorage()
 submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
 scale_up_timeout = 30
 scale_down_timeout = 30
@@ -37,6 +38,7 @@ autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
                                   scale_up_orchestrator=None,
                                   scale_down_handler=None,
                                   host_storage=host_storage,
+                                  static_host_storage=static_storage,
                                   scale_up_timeout=scale_up_timeout,
                                   scale_down_timeout=scale_down_timeout,
                                   max_additional_hosts=max_additional_hosts,
@@ -81,7 +83,7 @@ def test_scale_up_if_some_of_the_jobs_are_in_queue_for_more_than_scale_up_timeou
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
-    autoscaler.process_jobs()
+    autoscaler.scale()
 
     autoscaler.scale_up.assert_called()
 
@@ -111,7 +113,7 @@ def test_not_scale_up_if_none_of_the_jobs_are_in_queue_for_more_than_scale_up_ti
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout - 1))
 
-    autoscaler.process_jobs()
+    autoscaler.scale()
 
     autoscaler.scale_up.assert_not_called()
 
@@ -142,7 +144,7 @@ def test_that_scale_up_will_not_launch_more_additional_workers_than_limit():
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
     for _ in range(0, max_additional_hosts * 2):
-        autoscaler.process_jobs()
+        autoscaler.scale()
 
     assert autoscaler.scale_up.call_count == max_additional_hosts
     assert len(autoscaler.host_storage.load_hosts()) == max_additional_hosts
@@ -174,7 +176,7 @@ def test_that_scale_up_will_try_to_scale_down_smallest_host_if_additional_worker
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
     for _ in range(0, max_additional_hosts * 2):
-        autoscaler.process_jobs()
+        autoscaler.scale()
 
     assert autoscaler._scale_down.call_count == max_additional_hosts
     assert len(autoscaler.host_storage.load_hosts()) == max_additional_hosts
@@ -245,7 +247,7 @@ def test_scale_up_if_some_of_the_array_jobs_are_in_queue_for_more_than_scale_up_
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
-    autoscaler.process_jobs()
+    autoscaler.scale()
 
     autoscaler.scale_up.assert_called()
 
@@ -315,7 +317,7 @@ def test_not_scale_up_if_none_of_the_array_jobs_are_in_queue_for_more_than_scale
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout - 1))
 
-    autoscaler.process_jobs()
+    autoscaler.scale()
 
     autoscaler.scale_up.assert_not_called()
 
@@ -347,7 +349,7 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
-    autoscaler.process_jobs()
+    autoscaler.scale()
 
     autoscaler.scale_up.assert_not_called()
 
@@ -419,6 +421,6 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
-    autoscaler.process_jobs()
+    autoscaler.scale()
 
     autoscaler.scale_up.assert_not_called()
