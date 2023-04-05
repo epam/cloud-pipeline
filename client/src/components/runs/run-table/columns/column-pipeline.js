@@ -33,6 +33,8 @@ import {
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
 
+const MINIMUM_SEARCH_LENGTH = 3;
+
 function PipelinesFilterComponent (
   {
     pipelines: pipelinesRequest,
@@ -66,15 +68,14 @@ function PipelinesFilterComponent (
       </div>
     );
   }
-  const pipelines = pipelinesValue
-    .filter(
-      (pipeline) =>
-        !search ||
-        (search || '').length === 0 ||
-        (pipeline.name || '').toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const enabled = new Set((value || []).map((id) => Number(id)));
+  const pipelines = pipelinesValue
+    .filter((pipeline) => enabled.has(Number(pipeline.id)) || (
+      search &&
+      search.length >= MINIMUM_SEARCH_LENGTH &&
+      (pipeline.name || '').toLowerCase().includes(search.toLowerCase())
+    ))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const onChangeSelection = (pipelineId) => (event) => {
     if (event.target.checked && !enabled.has(Number(pipelineId))) {
       onChange([...enabled, Number(pipelineId)]);
@@ -95,10 +96,11 @@ function PipelinesFilterComponent (
           'cp-filter-popover-container'
         )
       }
+      style={{minWidth: 250}}
     >
       <Row>
         <Input.Search
-          placeholder="Filter"
+          placeholder="Filter pipelines"
           value={search}
           onChange={onSearchChanged}
         />

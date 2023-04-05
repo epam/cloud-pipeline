@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@ import {
 import registryName from '../../../tools/registryName';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
+
+const MINIMUM_SEARCH_LENGTH = 3;
 
 function DockersFilterComponent (
   {
@@ -82,13 +84,14 @@ function DockersFilterComponent (
   }
   const imagesSorted = images.sort((a, b) => a.value.localeCompare(b.value));
   const searchString = (search || '').toLowerCase();
-  const filterImages = (image) => {
-    return searchString.length === 0 ||
-      image.value.toLowerCase().includes(searchString) ||
-      (image.registry || '').toLowerCase().includes(searchString) ||
-      (image.group || '').toLowerCase().includes(searchString);
-  };
   const enabled = new Set(value || []);
+  const filteredImages = imagesSorted.filter(({value, registry, group}) => {
+    const targets = [value, registry, group].filter(Boolean);
+    return enabled.has(value) || (
+      searchString.length >= MINIMUM_SEARCH_LENGTH &&
+      targets.some(string => string.toLowerCase().includes(searchString))
+    );
+  });
   const onChangeSelection = (dockerImage) => (event) => {
     if (event.target.checked && !enabled.has(dockerImage)) {
       onChange([...enabled, dockerImage]);
@@ -101,6 +104,23 @@ function DockersFilterComponent (
       onSearch(event.target.value);
     }
   };
+  const renderFilterField = (image) => {
+    const checked = enabled.has(image.value);
+    return (
+      <Row key={image.value} style={{margin: 5}}>
+        <Checkbox
+          onChange={onChangeSelection(image.value)}
+          checked={checked}
+        >
+          <span>{image.registry}</span>
+          <Icon type="right" />
+          <span>{image.group}</span>
+          <Icon type="right" />
+          <span>{image.image}</span>
+        </Checkbox>
+      </Row>
+    );
+  };
   return (
     <div
       className={
@@ -109,35 +129,22 @@ function DockersFilterComponent (
           'cp-filter-popover-container'
         )
       }
+      style={{minWidth: 250}}
     >
       <Row>
         <Input.Search
           value={search}
-          placeholder="Filter"
+          placeholder="Filter docker images"
           onChange={onSearchChanged} />
       </Row>
       <Row>
         <div style={{maxHeight: 400, overflowY: 'auto'}}>
           {
-            imagesSorted
-              .filter(filterImages)
-              .map((image) => (
-                <Row
-                  style={{margin: 5}}
-                  key={image.value}
-                >
-                  <Checkbox
-                    onChange={onChangeSelection(image.value)}
-                    checked={enabled.has(image.value)}
-                  >
-                    <span>{image.registry}</span>
-                    <Icon type="right" />
-                    <span>{image.group}</span>
-                    <Icon type="right" />
-                    <span>{image.image}</span>
-                  </Checkbox>
-                </Row>
-              ))
+            filteredImages.length > 0 && (
+              <Row style={{overflowY: 'auto'}}>
+                {filteredImages.map(renderFilterField)}
+              </Row>
+            )
           }
         </div>
       </Row>
