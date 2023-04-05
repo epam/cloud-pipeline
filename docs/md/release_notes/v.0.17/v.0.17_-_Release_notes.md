@@ -33,6 +33,7 @@
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
 - [System Jobs](#system-jobs)
+- [Cluster run usage](#cluster-run-usage)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
@@ -1227,6 +1228,21 @@ Userjourney looks like:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_8.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12.15._System_jobs.md).
+
+## Cluster run usage
+
+Previously, user can view the state of the cluster run (master and its nested runs) via the **Run logs** page of the cluster master node. But this information was actual only at the specific time moment.  
+It would be convenient to view how the cluster usage has been changing over the whole cluster run duration.  
+This is especially useful information for auto-scaled clusters, as the number of worker nodes in such clusters can vary greatly over time.
+
+In **`v0.17`**, such ability was added. User can view a specific cluster's usage over time - by click the corresponding hyperlink at the **Run logs** page of the cluster's master node:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterUsage_1.png)  
+The chart pop-up will be opened, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterUsage_2.png)
+
+The chart shows a cluster usage - number of all active instances (including the master node) of the current cluster over time.
+
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#cluster-run-usage).
 
 ## AWS: seamless authentication
 
