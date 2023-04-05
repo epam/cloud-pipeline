@@ -29,6 +29,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -841,6 +842,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     public EditUserPopup addAllowedLaunchOptions(final String option, final String mask) {
                         SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                        sleep(1, SECONDS);
+                        return this;
+                    }
+
+                    public EditUserPopup addAllowedInstanceMaxCount(final String value) {
+                        if (StringUtils.isBlank(value)) {
+                            clearByKey(byClassName("ant-input-number-input"));
+                            return this;
+                        }
+                        setValue(byClassName("ant-input-number-input"), value);
                         return this;
                     }
 
@@ -954,6 +965,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return new CreateGroupPopup(this);
             }
 
+            public GroupsTabAO createGroupIfNoPresent(final String group) {
+                searchGroupBySubstring(group.split(StringUtils.SPACE)[0]);
+                performIf(!context().$$(byText(group)).filterBy(visible).first().exists(), t ->
+                        pressCreateGroup().enterGroupName(group).create());
+                return this;
+            }
+
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(2, SECONDS);
                 searchGroupBySubstring(group.split(StringUtils.SPACE)[0]);
@@ -1044,7 +1062,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
                         entry(OK, context().find(By.id("close-edit-user-form"))),
                         entry(PRICE_TYPE, context().find(byXpath(
-                                format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                                format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                        entry(SEARCH, $(By.id("find-user-autocomplete-container"))),
+                        entry(ADD, context().find(By.id("add-user-button")))
                 );
 
                 public EditGroupPopup(final GroupsTabAO parentAO) {
@@ -1063,8 +1083,28 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     return parentAO;
                 }
 
+                public EditGroupPopup addUser(final Account name) {
+                    click(SEARCH);
+                    actions().sendKeys(name.login).perform();
+                    $(byClassName("ant-select-dropdown")).shouldBe(Condition.visible);
+                    enter();
+                    click(ADD);
+                    return this;
+                }
+
                 public EditGroupPopup addAllowedLaunchOptions(String option, String mask) {
                     SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                    sleep(1, SECONDS);
+                    return this;
+                }
+
+                public EditGroupPopup addAllowedInstanceMaxCount(final String value) {
+                    final By optionField = byClassName("ant-input-number-input");
+                    if (StringUtils.isBlank(value)) {
+                        clearByKey(optionField);
+                        return this;
+                    }
+                    setValue(optionField, value);
                     return this;
                 }
 
@@ -1239,6 +1279,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             click(pref)
                     .clear(pref)
                     .setValue(pref, value);
+            setEyeOption(eyeIsChecked);
+            return this;
+        }
+
+        public PreferencesAO setNumberPreference(final String preference,
+                                                 final String value,
+                                                 final boolean eyeIsChecked) {
+            searchPreference(preference);
+            final Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
+            action.sendKeys(Keys.chord(Keys.CONTROL, "a")).sendKeys(value).perform();
             setEyeOption(eyeIsChecked);
             return this;
         }
@@ -1837,8 +1887,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
         if (StringUtils.isBlank(mask)) {
             clearByKey(optionField);
+            sleep(3, SECONDS);
             return;
         }
         setValue(optionField, mask);
+        sleep(3, SECONDS);
     }
 }
