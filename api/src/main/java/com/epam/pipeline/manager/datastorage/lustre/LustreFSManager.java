@@ -109,6 +109,15 @@ public class LustreFSManager {
                         messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
     }
 
+    public LustreFS getLustreFS(final String lustreId, final Long regionId) {
+        final AwsRegion region = getAwsRegion(regionManager.load(regionId));
+        final AmazonFSx fsxClient = buildFsxClient(region);
+        return findFs(lustreId, fsxClient)
+                .map(fs -> convert(fs, region))
+                .orElseThrow(() -> new LustreFSException(
+                        messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_ID_NOT_FOUND, lustreId)));
+    }
+
     public Optional<LustreFS> findLustreFS(final FileShareMount share) {
         final AwsRegion region = getAwsRegion(regionManager.load(share.getRegionId()));
         final DescribeFileSystemsResult result = buildFsxClient(region)
@@ -272,6 +281,8 @@ public class LustreFSManager {
                 .status(lustre.getLifecycle())
                 .mountOptions(preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_MOUNT_OPTIONS))
                 .capacityGb(lustre.getStorageCapacity())
+                .throughput(lustre.getLustreConfiguration().getPerUnitStorageThroughput())
+                .deploymentType(lustre.getLustreConfiguration().getDeploymentType())
                 .build();
     }
 
@@ -292,6 +303,12 @@ public class LustreFSManager {
         } else {
             return lustre.getDNSName();
         }
+    }
+
+    private Optional<FileSystem> findFs(final String lustreId, final AmazonFSx fsxClient) {
+        final DescribeFileSystemsResult result = fsxClient.describeFileSystems(
+                new DescribeFileSystemsRequest().withFileSystemIds(lustreId));
+        return ListUtils.emptyIfNull(result.getFileSystems()).stream().findFirst();
     }
 
     private Optional<FileSystem> findFsForRun(final Long runId, final String token, final AmazonFSx fsxClient) {
