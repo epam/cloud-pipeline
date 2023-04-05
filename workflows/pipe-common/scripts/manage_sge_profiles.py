@@ -35,14 +35,14 @@ Profile = namedtuple('Profile', 'name,path_queue,path_autoscaling')
 PROFILE_NAME_REMOVAL_PATTERN = r'[^a-zA-Z0-9.]+'
 
 
-class SGEProfileConfigurationError(RuntimeError):
+class GridEngineProfileError(RuntimeError):
     pass
 
 
 class ManagementTask:
-    ADD = 'ADD'
-    LS = 'LS'
+    CREATE = 'CREATE'
     CONFIGURE = 'CONFIGURE'
+    LIST = 'LIST'
 
 
 def manage(task, profile_name=None):
@@ -56,7 +56,6 @@ def manage(task, profile_name=None):
 
     api_url = os.environ['API']
     run_id = os.environ['RUN_ID']
-    parent_run_id = os.getenv('parent_id')
     runs_root = os.getenv('CP_RUNS_ROOT_DIR', default='/runs')
     pipeline_name = os.getenv('PIPELINE_NAME', default='DefaultPipeline')
     run_dir = os.getenv('RUN_DIR', default=os.path.join(runs_root, pipeline_name + '-' + run_id))
@@ -87,97 +86,41 @@ def manage(task, profile_name=None):
     logger = LocalLogger(inner=logger)
 
     try:
-        if parent_run_id:
-            logger.warning('Grid engine profiles shall be managed from cluster parent run.\n'
-                           'Please use the following commands to configure grid engine profiles:\n\n'
-                           'ssh pipeline-{}\n'
-                           'sge\n\n'.format(parent_run_id))
-            raise SGEProfileConfigurationError()
-        if task == ManagementTask.ADD:
-            if not profile_name:
-                logger.warning('Grid engine profile name is missing.\n'
-                               'Please use the following command to create a grid engine profile:\n\n'
-                               'sge add queue.q\n\n')
-                raise SGEProfileConfigurationError()
+        if task == ManagementTask.CREATE:
             logger.info('Initiating grid engine profiles creation...')
             editor = _find_editor(logger)
             profile_name = _preprocess_profile_name(profile_name, logger)
             profile = _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger)
             if profile:
                 logger.warning('Grid engine {} profile already exists.'.format(profile_name))
-                raise SGEProfileConfigurationError()
+                raise GridEngineProfileError()
             _generate_profile(profile_name, logger)
             profile = _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger)
             if not profile:
                 logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
-                raise SGEProfileConfigurationError()
-            profiles = [profile]
-            list(_configure_profiles(profiles, editor, logger))
-            _create_queues(profiles, logger)
-            _restart_autoscalers(profiles, autoscaling_script_path, logger)
-        elif task == ManagementTask.LS:
+                raise GridEngineProfileError()
+            _configure_profile(profile, editor, logger)
+            _create_queue(profile, logger)
+            _restart_autoscaler(profile, autoscaling_script_path, logger)
+        elif task == ManagementTask.LIST:
             logger.info('Initiating grid engine profiles listing...')
-            profiles = list(_collect_profiles(cap_scripts_dir, queue_profile_regexp, logger))
+            profiles = _collect_profiles(cap_scripts_dir, queue_profile_regexp, logger)
             for profile in profiles:
-                logger.info('Grid engine {} profile has been found.'.format(profile.name))
+                logger.info('Grid engine profile has been found: {}'.format(profile.name))
         else:
             logger.info('Initiating grid engine profiles configuration...')
             editor = _find_editor(logger)
-            if profile_name:
-                profile = _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger)
-                if not profile:
-                    logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
-                    raise SGEProfileConfigurationError()
-                profiles = [profile]
-            else:
-                profiles = list(_collect_profiles(cap_scripts_dir, queue_profile_regexp, logger))
-                if len(profiles) > 1:
-                    logger.warning('Notice that grid engine profiles can be configured separately.\n'
-                                   'Please use the following command to configure a specific grid engine profile:\n\n'
-                                   'sge configure queue.q\n\n')
-            modified_profiles = list(_configure_profiles(profiles, editor, logger))
-            _restart_autoscalers(modified_profiles, autoscaling_script_path, logger)
+            profile = _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger)
+            if not profile:
+                logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
+                raise GridEngineProfileError()
+            modified_profile = _configure_profile(profile, editor, logger)
+            if modified_profile:
+                _restart_autoscaler(modified_profile, autoscaling_script_path, logger)
     except KeyboardInterrupt:
         logger.warning('Interrupted.')
-    except SGEProfileConfigurationError:
+    except GridEngineProfileError:
         exit(1)
-
-
-def _preprocess_profile_name(profile_name, logger):
-    logging.debug('Preprocessing profile name...')
-    profile_name = re.sub(PROFILE_NAME_REMOVAL_PATTERN, '', profile_name.lower())
-    if not profile_name:
-        logger.warning('Grid engine profile name should consist of only alphanumeric characters and dots.')
-        raise SGEProfileConfigurationError()
-    if not profile_name.endswith('.q'):
-        profile_name = profile_name + '.q'
-    return profile_name
-
-
-def _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger):
-    profiles = list(_collect_profiles(cap_scripts_dir, queue_profile_regexp, logger))
-    for profile in profiles:
-        if profile.name == profile_name:
-            return profile
-
-
-def _generate_profile(profile_name, logger):
-    profile_index = str(int(time.time()))
-    logger.debug('Creating grid engine {} profile...'.format(profile_name))
-    os.environ['CP_CAP_SGE_QUEUE_NAME_{}'.format(profile_index)] = profile_name
-    generate_sge_profiles()
-    logger.info('Grid engine {} profile has been created.'.format(profile_name))
-
-
-def _create_queues(profiles, logger):
-    for profile in profiles:
-        logger.debug('Creating grid engine {} queue...'.format(profile.name))
-        subprocess.check_call("""
-source "{autoscaling_profile_path}"
-sge_setup_queue
-        """.format(autoscaling_profile_path=profile.path_queue),
-                              shell=True)
-        logger.info('Grid engine {} queue has been created.'.format(profile.name))
 
 
 def _find_editor(logger):
@@ -200,8 +143,26 @@ def _find_editor(logger):
                        'Please set VISUAL/EDITOR environment variable or install vi/vim/nano using one of the commands below.\n\n'
                        'yum install -y nano\n'
                        'apt-get install -y nano\n\n')
-        raise SGEProfileConfigurationError()
+        raise GridEngineProfileError()
     return editor
+
+
+def _preprocess_profile_name(profile_name, logger):
+    logging.debug('Preprocessing profile name...')
+    profile_name = re.sub(PROFILE_NAME_REMOVAL_PATTERN, '', profile_name.lower())
+    if not profile_name:
+        logger.warning('Grid engine profile name should consist only of alphanumeric characters and dots.')
+        raise GridEngineProfileError()
+    if not profile_name.endswith('.q'):
+        profile_name = profile_name + '.q'
+    return profile_name
+
+
+def _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger):
+    profiles = _collect_profiles(cap_scripts_dir, queue_profile_regexp, logger)
+    for profile in profiles:
+        if profile.name == profile_name:
+            return profile
 
 
 def _collect_profiles(cap_scripts_dir, profile_regexp, logger):
@@ -217,21 +178,28 @@ def _collect_profiles(cap_scripts_dir, profile_regexp, logger):
                       path_autoscaling=os.path.join(cap_scripts_dir, PROFILE_AUTOSCALING_FORMAT.format(queue_name)))
 
 
-def _configure_profiles(profiles, editor, logger):
-    for profile in profiles:
-        tmp_profile_path = tempfile.mktemp()
-        logger.debug('Copying grid engine {} profile to {}...'.format(profile.name, tmp_profile_path))
-        shutil.copy2(profile.path_autoscaling, tmp_profile_path)
-        logger.debug('Modifying temporary grid engine {} profile...'.format(profile.name))
-        subprocess.check_call([editor, tmp_profile_path])
-        profile_changes = _compare_profiles(profile.name, profile.path_autoscaling, tmp_profile_path, logger)
-        if not profile_changes:
-            logger.info('Grid engine {} profile has not been changed.'.format(profile.name))
-            continue
-        logger.info('Grid engine {} profile has been changed:\n{}'.format(profile.name, profile_changes))
-        logger.debug('Persisting grid engine {} profile changes...'.format(profile.name))
-        shutil.move(tmp_profile_path, profile.path_autoscaling)
-        yield profile
+def _generate_profile(profile_name, logger):
+    profile_index = str(int(time.time()))
+    logger.debug('Creating grid engine {} profile...'.format(profile_name))
+    os.environ['CP_CAP_SGE_QUEUE_NAME_{}'.format(profile_index)] = profile_name
+    generate_sge_profiles()
+    logger.info('Grid engine {} profile has been created.'.format(profile_name))
+
+
+def _configure_profile(profile, editor, logger):
+    tmp_profile_path = tempfile.mktemp()
+    logger.debug('Copying grid engine {} profile to {}...'.format(profile.name, tmp_profile_path))
+    shutil.copy2(profile.path_autoscaling, tmp_profile_path)
+    logger.debug('Modifying temporary grid engine {} profile...'.format(profile.name))
+    subprocess.check_call([editor, tmp_profile_path])
+    profile_changes = _compare_profiles(profile.name, profile.path_autoscaling, tmp_profile_path, logger)
+    if not profile_changes:
+        logger.info('Grid engine {} profile has not been changed.'.format(profile.name))
+        return None
+    logger.info('Grid engine {} profile has been changed:\n{}'.format(profile.name, profile_changes))
+    logger.debug('Persisting grid engine {} profile changes...'.format(profile.name))
+    shutil.move(tmp_profile_path, profile.path_autoscaling)
+    return profile
 
 
 def _compare_profiles(profile_name, before_path, after_path, logger):
@@ -243,10 +211,19 @@ def _compare_profiles(profile_name, before_path, after_path, logger):
         return e.output
 
 
-def _restart_autoscalers(profiles, autoscaling_script_path, logger):
-    for profile in profiles:
-        _stop_autoscaler(profile, autoscaling_script_path, logger)
-        _launch_autoscaler(profile, autoscaling_script_path, logger)
+def _create_queue(profile, logger):
+    logger.debug('Creating grid engine {} queue...'.format(profile.name))
+    subprocess.check_call("""
+source "{autoscaling_profile_path}"
+sge_setup_queue
+    """.format(autoscaling_profile_path=profile.path_queue),
+                          shell=True)
+    logger.info('Grid engine {} queue has been created.'.format(profile.name))
+
+
+def _restart_autoscaler(profile, autoscaling_script_path, logger):
+    _stop_autoscaler(profile, autoscaling_script_path, logger)
+    _launch_autoscaler(profile, autoscaling_script_path, logger)
 
 
 def _stop_autoscaler(profile, autoscaling_script_path, logger):
@@ -265,7 +242,7 @@ def _get_processes(logger, *args, **kwargs):
             raise
         except Exception:
             logger.error('Please use root account to configure grid engine profiles.')
-            raise SGEProfileConfigurationError()
+            raise GridEngineProfileError()
         if all(arg in proc_cmdline for arg in args) \
                 and all(proc_environ.get(k) == v for k, v in kwargs.items()):
             yield proc
@@ -293,9 +270,9 @@ def cli():
 
     Examples:
 
-    I. Add a new grid engine profile
+    I. Create new grid engine profile
 
-        sge add queue.q
+        sge create queue.q
 
     II. Configure an existing grid engine profile
 
@@ -303,69 +280,63 @@ def cli():
 
     III. List all existing grid engine profiles
 
-        sge ls
+        sge list
 
     """
     pass
 
 
 @cli.command()
-@click.argument('name', required=False, type=str)
-def add(name):
+@click.argument('name', required=True, type=str)
+def create(name):
     """
-    Adds profiles.
+    Creates profiles.
 
-    It adds a new profile (queue) and provides a text editor to configure its parameters.
+    It creates a new grid engine profile (queue) and provides a text editor to configure it.
 
     Depending on the value of CP_CAP_AUTOSCALE parameter (true/false)
     the corresponding queue's autoscaler may be started.
 
     Examples:
 
-        sge add queue.q
+        sge create queue.q
 
     """
-    manage(task=ManagementTask.ADD, profile_name=name)
+    manage(task=ManagementTask.CREATE, profile_name=name)
 
 
 @cli.command()
-def ls():
-    """
-    Lists profiles.
-
-    It lists all the existing grid engine profiles (queues).
-
-    Examples:
-
-        sge ls
-
-    """
-    manage(task=ManagementTask.LS)
-
-
-@cli.command()
-@click.argument('name', required=False, type=str)
+@click.argument('name', required=True, type=str)
 def configure(name):
     """
     Configures profiles.
 
-    It provides a text editor to configure either a single grid engine profile (queue) or multiple profiles.
+    It provides a text editor to configure an existing grid engine profile (queue).
 
     Depending on the value of CP_CAP_AUTOSCALE parameter (true/false)
     the corresponding queue's autoscaler may be started/restarted/stopped.
 
     Examples:
 
-    I. Configure all existing grid engine profiles one by one:
-
-        sge configure
-
-    II. Configure only single grid engine profile (queue.q):
-
         sge configure queue.q
 
     """
     manage(task=ManagementTask.CONFIGURE, profile_name=name)
+
+
+@cli.command(name='list')
+def ls():
+    """
+    Lists profiles.
+
+    It lists all existing grid engine profiles (queues).
+
+    Examples:
+
+        sge list
+
+    """
+    manage(task=ManagementTask.LIST)
 
 
 if __name__ == '__main__':

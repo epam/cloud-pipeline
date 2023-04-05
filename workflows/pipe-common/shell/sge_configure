@@ -16,19 +16,14 @@
 
 echo "######################################################################"
 echo "##                                                                  ##"
-echo "##                        DEPRECATION WARNING                       ##"
+echo "##                       DEPRECATION WARNING                        ##"
 echo "##                                                                  ##"
 echo "##   Command sge_configure is deprecated in favor of sge command.   ##"
-echo "##   Support for sge_configure will be removed in the future.       ##"
-echo "##   Please use the following command instead:                      ##"
-echo "##                                                                  ##"
-echo "##   sge configure                                                  ##"
-echo "##                                                                  ##"
-echo "##   Please refer to the following command for the details:         ##"
+echo "##   Please use the following commands instead:                     ##"
 echo "##                                                                  ##"
 echo "##   sge --help                                                     ##"
 echo "##                                                                  ##"
 echo "######################################################################"
 echo ""
 
-sge configure
+exit 1
