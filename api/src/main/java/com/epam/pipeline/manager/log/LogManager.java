@@ -100,6 +100,7 @@ public class LogManager {
     private static final String DEFAULT_SEVERITY = "INFO";
     private static final String ID = "event_id";
     private static final String SERVICE_ACCOUNT = "service_account";
+    private static final String STORAGE_ID = "storage_id";
     private static final String KEYWORD = ".keyword";
     private static final Period FILEBEAT_TRANSITION_PERIOD = Period.ofDays(1);
     private static final String INDEX_TYPE = "_doc";
@@ -233,6 +234,7 @@ public class LogManager {
                     .field(MESSAGE, logEntry.getMessage())
                     .field(SEVERITY, logEntry.getSeverity())
                     .field(SERVICE_ACCOUNT, authManager.isServiceUser(logEntry.getUser()))
+                    .field(STORAGE_ID, logEntry.getStorageId())
                     .endObject();
         } catch (IOException e) {
             throw new PipelineException(e);
