@@ -48,7 +48,7 @@ mount_system_fs() {
 }
 
 export INIT_TASK_NAME="ConfigureSystemJob"
-export MAIN_TASK_NAME="${$CP_SYSTEM_JOBS_OUTPUT_TASK:-SystemJob}"
+export MAIN_TASK_NAME="${CP_SYSTEM_JOBS_OUTPUT_TASK:-SystemJob}"
 
 configure_cloud_credentials
 mount_system_fs
@@ -65,10 +65,12 @@ if [ -z "$CP_SYSTEM_JOB" ]; then
   pipe_log_fail "CP_SYSTEM_JOB wasn't provided, exiting." $INIT_TASK_NAME
 fi
 
+MIRRORED_JOBS_PARAMS=`echo $CP_SYSTEM_JOB_PARAMS | sed 's|"|\\\"|g'`
+
 # Execution of the command itself
 if [ -z "$CP_SYSTEM_JOBS_RESULTS" ]; then
   pipe_log_warn "CP_SYSTEM_JOBS_RESULTS wasn't provided, running command with local output only." $INIT_TASK_NAME
-  pipe_exec "$SCRIPTS_DIR/$CP_SYSTEM_SCRIPTS_LOCATION/$CP_SYSTEM_JOB $CP_SYSTEM_JOB_PARAMS" $MAIN_TASK_NAME
+  pipe_exec "$SCRIPTS_DIR/$CP_SYSTEM_SCRIPTS_LOCATION/$CP_SYSTEM_JOB $MIRRORED_JOBS_PARAMS" $MAIN_TASK_NAME
 else
-  pipe_exec "$SCRIPTS_DIR/$CP_SYSTEM_SCRIPTS_LOCATION/$CP_SYSTEM_JOB $CP_SYSTEM_JOB_PARAMS | tee $ANALYSIS_DIR/${RUN_ID}.$CP_SYSTEM_JOB.result" $MAIN_TASK_NAME
+  pipe_exec "$SCRIPTS_DIR/$CP_SYSTEM_SCRIPTS_LOCATION/$CP_SYSTEM_JOB $MIRRORED_JOBS_PARAMS  | tee $ANALYSIS_DIR/${RUN_ID}.$CP_SYSTEM_JOB.result" $MAIN_TASK_NAME
 fi
