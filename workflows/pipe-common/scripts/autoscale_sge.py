@@ -2207,8 +2207,7 @@ def load_default_hosts(default_hostsfile):
         return []
 
 
-def init_static_hosts(default_hostsfile, static_host_storage, clock, tagging_active_timeout, static_hosts_enabled,
-                      common_utils, parent_run_id):
+def init_static_hosts(default_hostsfile, static_host_storage, clock, tagging_active_timeout, static_hosts_enabled):
     try:
         if static_host_storage.load_hosts():
             Logger.info('Static hosts already initialized.')
@@ -2219,7 +2218,7 @@ def init_static_hosts(default_hostsfile, static_host_storage, clock, tagging_act
             for host in hosts:
                 static_host_storage.add_host(host)
         else:
-            master_host = common_utils.retrieve_pod_name(parent_run_id)
+            master_host = os.getenv('HOSTNAME')
             static_host_storage.add_host(master_host)
             hosts = [master_host]
         # to prevent false positive run tagging let's add outdated date to hosts:
@@ -2380,9 +2379,8 @@ def main():
                                                                           '.static.%s.storage' % queue_name),
                                                 clock=clock)
     init_static_hosts(default_hostsfile=default_hostfile, static_host_storage=static_host_storage, clock=clock,
-                      tagging_active_timeout=tagging_active_timeout, common_utils=common_utils,
-                      static_hosts_enabled=queue_static and static_hosts_number,
-                      parent_run_id=master_run_id)
+                      tagging_active_timeout=tagging_active_timeout,
+                      static_hosts_enabled=queue_static and static_hosts_number)
     if not autoscale_enabled:
         Logger.info('Using non autoscaling mode...')
         autoscaling_hosts_number = 0
