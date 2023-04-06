@@ -21,6 +21,7 @@ import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.billingreportagent.model.storage.StorageDescription;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
@@ -30,6 +31,7 @@ import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -55,6 +57,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
+@Getter
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class StorageToBillingRequestConverter implements EntityToBillingRequestConverter<AbstractDataStorage> {
 
@@ -97,11 +100,11 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
         try {
-            final Long storageId = storageContainer.getEntity().getId();
-            final StorageUsage storageUsage = apiClient.getStorageUsage(String.valueOf(storageId), null);
+            final StorageDescription storageDescription = loadStorageDescription(storageContainer);
             return enableStorageHistoricalBillingGeneration ?
-                    buildRequestsForGivenPeriod(storageContainer, indexPrefix, previousSync, syncStart, storageUsage)
-                    : buildRequestsForGivenDate(storageContainer, indexPrefix, storageUsage, syncStart);
+                    buildRequestsForGivenPeriod(storageContainer, indexPrefix,
+                            previousSync, syncStart, storageDescription)
+                    : buildRequestsForGivenDate(storageContainer, indexPrefix, storageDescription, syncStart);
         } catch (Exception e) {
             log.error("An error during storage {} processing: {}",
                     storageContainer.getEntity().getId(), e.getMessage());
@@ -129,13 +132,13 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     private List<DocWriteRequest> buildStorageRequests(final EntityContainer<AbstractDataStorage> container,
                                                        final LocalDateTime syncStart,
-                                                       final StorageUsage storageUsage,
+                                                       final StorageDescription description,
                                                        final String fullIndex) {
 
         final Map<Boolean, Map<String, Long>> storageSizes = new HashMap<>();
         final Map<String, Long> currentVersions = new HashMap<>();
         final Map<String, Long> previousVersions = new HashMap<>();
-        MapUtils.emptyIfNull(storageUsage.getUsage())
+        MapUtils.emptyIfNull(description.getStorageUsage().getUsage())
                 .forEach((storageClass, usage) -> {
                     if (Objects.nonNull(usage.getSize()) && usage.getSize() > 0) {
                         currentVersions.put(storageClass, usage.getSize());
@@ -150,8 +153,8 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
             return Collections.emptyList();
         }
         final StorageBillingInfo billing = createBilling(
-                container, storageSizes, container.getRegion().getRegionCode(), syncStart.toLocalDate().minusDays(1)
-        );
+                container, storageSizes, container.getRegion().getRegionCode(),
+                syncStart.toLocalDate().minusDays(1), description);
         return Collections.singletonList(
                 getDocWriteRequest(fullIndex, container.getOwner(), container.getRegion(), billing));
     }
@@ -169,10 +172,12 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                 .id(billing.getEntity().getId().toString()).source(mapper.map(entity));
     }
 
-    StorageBillingInfo createBilling(final EntityContainer<AbstractDataStorage> storageContainer,
-                                             final Map<Boolean, Map<String, Long>> storageSizes,
-                                             final String regionLocation,
-                                             final LocalDate billingDate) {
+    StorageBillingInfo createBilling(
+            final EntityContainer<AbstractDataStorage> storageContainer,
+            final Map<Boolean, Map<String, Long>> storageSizes,
+            final String regionLocation,
+            final LocalDate billingDate,
+            final StorageDescription description) {
         final DataStorageType objectStorageType = getObjectStorageType(storageContainer);
         final MountType fileStorageType = objectStorageType != null ? null : getFileStorageType(storageContainer);
         final StorageBillingInfo.StorageBillingInfoBuilder billing =
@@ -183,7 +188,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                         .objectStorageType(objectStorageType)
                         .fileStorageType(fileStorageType);
         final List<StorageBillingInfo.StorageBillingInfoDetails> details = buildBillingDetails(
-                storageSizes, regionLocation, billingDate);
+                storageSizes, regionLocation, billingDate, description);
         billing.billingDetails(details)
             .cost(details.stream()
                 .map(dc -> dc.getCost() + dc.getOldVersionCost())
@@ -198,11 +203,13 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     private List<StorageBillingInfo.StorageBillingInfoDetails> buildBillingDetails(
             final Map<Boolean, Map<String, Long>> storageSizes,
-            final String regionLocation, final LocalDate billingDate) {
+            final String regionLocation,
+            final LocalDate billingDate,
+            final StorageDescription description) {
         final List<StorageBillingInfo.StorageBillingInfoDetails> current =
-                buildBillingDetails(storageSizes.get(true), true, regionLocation, billingDate);
+                buildBillingDetails(storageSizes.get(true), true, regionLocation, billingDate, description);
         final List<StorageBillingInfo.StorageBillingInfoDetails> oldVersions =
-                buildBillingDetails(storageSizes.get(false), false, regionLocation, billingDate);
+                buildBillingDetails(storageSizes.get(false), false, regionLocation, billingDate, description);
         return mergeBillingDetailsMaps(current, oldVersions);
     }
 
@@ -247,8 +254,9 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     }
 
     private List<StorageBillingInfo.StorageBillingInfoDetails> buildBillingDetails(
-        final Map<String, Long> sizesByStorageType, final boolean isCurrentObject,
-        final String regionLocation, final LocalDate billingDate) {
+            final Map<String, Long> sizesByStorageType, final boolean isCurrentObject,
+            final String regionLocation, final LocalDate billingDate,
+            final StorageDescription description) {
         if (sizesByStorageType == null) {
             return Collections.emptyList();
         }
@@ -261,7 +269,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
                 Long cost;
                 try {
-                    cost = calculateDailyCost(size, storageClass, regionLocation, billingDate);
+                    cost = calculateDailyCost(size, storageClass, regionLocation, billingDate, description);
                 } catch (IllegalArgumentException e) {
                     cost = calculateDailyCost(
                             size, storagePricing.getDefaultPriceGb(storageClass), billingDate);
@@ -320,7 +328,8 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     }
 
     Long calculateDailyCost(final Long sizeBytes, final String storageClass,
-                            final String region, final LocalDate date) {
+                            final String region, final LocalDate date,
+                            final StorageDescription description) {
         return Optional.ofNullable(storagePricing.getRegionPricing(region))
             .orElseGet(() -> {
                 final StoragePricing pricing = new StoragePricing();
@@ -332,6 +341,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
             })
             .getPrices(storageClass).stream()
             .filter(entity -> entity.getBeginRangeBytes() <= sizeBytes)
+            .filter(entity -> filterPrice(entity, sizeBytes, description))
             .mapToLong(entity -> {
                 final Long beginRange = entity.getBeginRangeBytes();
                 final Long endRange = entity.getEndRangeBytes();
@@ -345,7 +355,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                               final String indexPrefix,
                                                               final LocalDateTime previousSync,
                                                               final LocalDateTime syncStart,
-                                                              final StorageUsage storageUsage) {
+                                                              final StorageDescription description) {
         final LocalDateTime previousSyncDayStart = Optional.ofNullable(previousSync)
                 .map(LocalDateTime::toLocalDate)
                 .orElse(LocalDate.now())
@@ -353,7 +363,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         return Stream.iterate(previousSyncDayStart, date -> date.plusDays(1))
             .limit(Math.max(1, ChronoUnit.DAYS.between(previousSyncDayStart, syncStart)))
             .filter(reportDate -> storageExistsOnBillingDate(container, reportDate))
-            .map(date -> buildRequestsForGivenDate(container, indexPrefix, storageUsage, date))
+            .map(date -> buildRequestsForGivenDate(container, indexPrefix, description, date))
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
     }
@@ -369,10 +379,22 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     private List<DocWriteRequest> buildRequestsForGivenDate(final EntityContainer<AbstractDataStorage> storageContainer,
                                                             final String indexPrefix,
-                                                            final StorageUsage storageUsage,
+                                                            final StorageDescription description,
                                                             final LocalDateTime date) {
         final LocalDate reportDate = date.toLocalDate().minusDays(1);
         final String fullIndex = indexPrefix + parseDateToString(reportDate);
-        return buildStorageRequests(storageContainer, date, storageUsage, fullIndex);
+        return buildStorageRequests(storageContainer, date, description, fullIndex);
+    }
+
+    protected StorageDescription loadStorageDescription(final EntityContainer<AbstractDataStorage> container) {
+        final AbstractDataStorage storage = container.getEntity();
+        final StorageUsage storageUsage = apiClient.getStorageUsage(String.valueOf(storage.getId()), null);
+        return new StorageDescription(storageUsage, null, null);
+    }
+
+    protected boolean filterPrice(final StoragePricing.StoragePricingEntity price,
+                                  final Long sizeBytes,
+                                  final StorageDescription description) {
+        return true;
     }
 }

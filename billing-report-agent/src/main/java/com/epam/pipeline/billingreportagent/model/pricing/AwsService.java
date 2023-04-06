@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,17 @@
 
 package com.epam.pipeline.billingreportagent.model.pricing;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@Data
-public class AwsPricingCard {
+@AllArgsConstructor
+@Getter
+public enum AwsService {
 
-    private AwsProduct product;
+    S3_SERVICE("AmazonS3"),
+    S3_GLACIER_SERVICE("AmazonS3GlacierDeepArchive"),
+    EFS_SERVICE("AmazonEFS"),
+    LUSTRE_SERVICE("AmazonFSx");
 
-    private String serviceCode;
-
-    private String version;
-
-    private String publicationDate;
-
-    private AwsTerms terms;
-    private Integer throughput;
+    private String code;
 }

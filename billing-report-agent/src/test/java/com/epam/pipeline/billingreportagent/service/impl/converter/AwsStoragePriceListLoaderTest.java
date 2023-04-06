@@ -1,6 +1,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.billingreportagent.model.pricing.AwsService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -216,12 +217,12 @@ class AwsStoragePriceListLoaderTest {
     public static final String STANDARD_SC = "STANDARD";
     public static final String DEEP_ARCHIVE_SC = "DEEP_ARCHIVE";
     private final AwsStoragePriceListLoader s3listLoader = Mockito.spy(
-            new AwsStoragePriceListLoader("AmazonS3",
+            new AwsStoragePriceListLoader(AwsService.S3_SERVICE,
                     PriceLoadingMode.JSON, "https://localhost/mock.json")
     );
 
     private final AwsStoragePriceListLoader s3DeepArchivelistLoader = Mockito.spy(
-            new AwsStoragePriceListLoader("AmazonS3GlacierDeepArchive",
+            new AwsStoragePriceListLoader(AwsService.S3_GLACIER_SERVICE,
                     PriceLoadingMode.JSON, "https://localhost/mock.json")
     );
 

@@ -19,6 +19,7 @@ package com.epam.pipeline.billingreportagent.model.billing;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Getter
+@Setter
 public class StoragePricing {
 
     private final Map<String, List<StoragePricingEntity>> prices = new HashMap<>();
@@ -55,5 +57,14 @@ public class StoragePricing {
         private Long beginRangeBytes;
         private Long endRangeBytes;
         private BigDecimal priceCentsPerGb;
+        private Integer throughput;
+
+        public StoragePricingEntity(final Long beginRangeBytes,
+                                    final Long endRangeBytes,
+                                    final BigDecimal priceCentsPerGb) {
+            this.beginRangeBytes = beginRangeBytes;
+            this.endRangeBytes = endRangeBytes;
+            this.priceCentsPerGb = priceCentsPerGb;
+        }
     }
 }
