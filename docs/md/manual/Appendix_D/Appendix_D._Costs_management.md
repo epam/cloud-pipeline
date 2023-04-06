@@ -452,7 +452,8 @@ At the appeared page, you can see:
 User can select one of the runs cost layers (`Compute` or `Disk`) - by click it in the **_Cost details_** chart.  
 In this case:
 
-- charts **_Instance types_**, **_Pipelines_**, **_Tools_** will be updated - only spendings, that correspond to the selected layer will be shown
+- summary runs cost chart will be updated (for both periods - _current_ and _previous_) - only summary spendings, that correspond to the selected layer (`Compute` or `Disk`), will be shown
+- charts **_Instance types_**, **_Pipelines_**, **_Tools_** will be updated - only spendings, that correspond to the selected layer (`Compute` or `Disk`), will be shown
 - data in tables under charts will not be changed, but the sorting column will be set the same as the selected layer
 
 For example, if the `Compute` layer of the runs cost is selected:  
