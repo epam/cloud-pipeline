@@ -1361,6 +1361,7 @@ class GridEngineWorkerTagsHandler:
             Logger.info('Finish tags processing step at %s.' % self.clock.now())
         except Exception as e:
             Logger.warn('Tags processing has failed: %s' % str(e))
+            Logger.warn(traceback.format_exc())
 
     def _run_is_active(self, timestamp):
         return timestamp > self.clock.now() - self.tagging_active_timeout
@@ -2138,9 +2139,6 @@ class CloudPipelineAPI:
         body = {'tags': tags}
         self.pipe.update_pipeline_run_tags(run_id, body)
 
-    def load_cluster_runs_py_parent_id(self, run_id):
-        return self.pipe.load_cluster_runs_py_parent_id(run_id)
-
     def _execute_request(self, url):
         count = 0
         exceptions = []
@@ -2198,23 +2196,40 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     return launch_params
 
 
-def init_static_hosts(api, parent_run_id, common_utils, static_host_storage, clock, tagging_active_timeout):
-    if static_host_storage.load_hosts():
-        Logger.info('Static hosts already initialized.')
-        return
-    Logger.info('Starting static hosts initialization.')
-    nested_runs = api.load_cluster_runs_py_parent_id(parent_run_id)
-    hosts = list()
-    for nested_run in nested_runs:
-        run_id = nested_run.get('runId')
-        host = common_utils.retrieve_pod_name(run_id)
-        static_host_storage.add_host(host)
-        hosts.append(host)
-    # to prevent false positive run tagging let's add outdated date to hosts:
-    timeout = tagging_active_timeout * 2
-    timestamp = clock.now() - timedelta(seconds=timeout)
-    static_host_storage.update_hosts_activity(hosts, timestamp)
-    Logger.info('Static hosts have been initialized.')
+def load_default_hosts(default_hostsfile):
+    if os.path.exists(default_hostsfile):
+        with open(default_hostsfile) as hosts_file:
+            hosts = []
+            for line in hosts_file.readlines():
+                hosts.append(line.strip().strip(FileSystemHostStorage._LINE_BREAKER))
+            return hosts
+    else:
+        return []
+
+
+def init_static_hosts(default_hostsfile, static_host_storage, clock, tagging_active_timeout, static_hosts_enabled,
+                      common_utils, parent_run_id):
+    try:
+        if static_host_storage.load_hosts():
+            Logger.info('Static hosts already initialized.')
+            return
+        Logger.info('Starting static hosts initialization.')
+        if static_hosts_enabled:
+            hosts = load_default_hosts(default_hostsfile)
+            for host in hosts:
+                static_host_storage.add_host(host)
+        else:
+            master_host = common_utils.retrieve_pod_name(parent_run_id)
+            static_host_storage.add_host(master_host)
+            hosts = [master_host]
+        # to prevent false positive run tagging let's add outdated date to hosts:
+        timeout = tagging_active_timeout * 2
+        timestamp = clock.now() - timedelta(seconds=timeout)
+        static_host_storage.update_hosts_activity(hosts, timestamp)
+        Logger.info('Static hosts have been initialized.')
+    except Exception:
+        Logger.warn('Static hosts initialization has failed.')
+        Logger.warn(traceback.format_exc())
 
 
 def main():
@@ -2364,10 +2379,10 @@ def main():
                                                 storage_file=os.path.join(work_dir,
                                                                           '.static.%s.storage' % queue_name),
                                                 clock=clock)
-    if queue_static and static_hosts_number:
-        init_static_hosts(api=api, parent_run_id=master_run_id, common_utils=common_utils,
-                          static_host_storage=static_host_storage, clock=clock,
-                          tagging_active_timeout=tagging_active_timeout)
+    init_static_hosts(default_hostsfile=default_hostfile, static_host_storage=static_host_storage, clock=clock,
+                      tagging_active_timeout=tagging_active_timeout, common_utils=common_utils,
+                      static_hosts_enabled=queue_static and static_hosts_number,
+                      parent_run_id=master_run_id)
     if not autoscale_enabled:
         Logger.info('Using non autoscaling mode...')
         autoscaling_hosts_number = 0
