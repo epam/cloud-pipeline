@@ -82,7 +82,8 @@ public class DataStorageLifecycleRestoreManager {
         final StorageRestoreActionNotification notification = request.getNotification();
         final boolean notificationFormedCorrectly = notification != null
                 && (BooleanUtils.isFalse(notification.getEnabled())
-                || CollectionUtils.isNotEmpty(notification.getRecipients()));
+                || CollectionUtils.isNotEmpty(notification.getRecipients())
+                || BooleanUtils.isTrue(notification.getNotifyUsers()));
         Assert.state(notificationFormedCorrectly,
                 messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_NOTIFICATION_CONFIGURED_INCORRECTLY));
