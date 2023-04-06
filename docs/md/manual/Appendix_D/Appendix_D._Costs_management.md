@@ -17,6 +17,7 @@
             - [File storages report](#file-storages-report)
             - [Object storages report](#object-storages-report)
         - [Compute instances report](#compute-instances-report)
+            - [CPU/GPU division](#cpugpu-division)
     - [Export reports](#export-billling-reports)
     - [Report aggregation level according to the permissions](#report-aggregation-level-according-to-the-permissions)
 
@@ -345,7 +346,7 @@ Object storages report has the view (set of forms) distinct from [common storage
 Report includes:
 
 - General report table with summary costs for all used object storages during the selected and previous (_if it's available_) periods
-- The summary _Object storages_ spendings diagram over the _current_ and the _previous_ time periods according to selected configurations in the toolbar.  
+- **_Object storages usages_** - the summary spendings diagram over the _current_ and the _previous_ time periods according to selected configurations in the toolbar.  
     This data can be displayed:  
     - with the accumulation (as _line chart_).  
     Solid lines show summary spendings on the data usage for _current version_ of object storages (for _current_ and _previous_ periods).
@@ -356,12 +357,12 @@ Report includes:
     - or as fact (as _bar chart_ with actual spending values in each time point of the period without accumulation).
     Each bar is displayed as a stack of _current version_ spendings / _old versions_ spendings in the specific time point. _Current version_ spendings are shown with solid filling, _old versions_ spendings are shown without filling. For _current_ and _previous_ periods charts are shown in different colors.  
     ![CP_AppendixD](attachments/Costs_management_35.png)
-- The spendings bar chart with top `N` most costly object storages used during the selected period compared with the _previous_ one (_if it's available_).  
+- **_Object storages_** - the bar chart with top `N` most costly object storages used during the selected period compared with the _previous_ one (_if it's available_).  
     Each bar is displayed as a stack of _current version_ spendings / _old versions_ spendings of the specific object storage. _Current version_ spendings are shown with solid filling, _old versions_ spendings are shown without filling. For _previous_ period, charts are shown in different colors and only as dashed lines.  
     ![CP_AppendixD](attachments/Costs_management_36.png)  
     If data in the storage is storing in different tiers (archive types), this can be viewed in a tooltip - there will be a division of spendings by the used tiers. Versions division for each tier will be shown as well, e.g.:  
     ![CP_AppendixD](attachments/Costs_management_37.png)  
-- The spendings bar chart with division to different tiers (archive types). This chart does not contain any information for _previous_ period. Only layers used for data storing in the _current_ period according to selected filters are shown. Up to 4 layers can be here: `Standard`, `Glacier`, `Glacier IR`, `Deep Archive`. If any layer has _old versions_ - this will be shown as a stack of _current version_ spendings / _old versions_ spendings for that layer. _Current version_ spendings are shown with solid filling, _old versions_ spendings are shown without filling, e.g.:  
+- **_Object storages layers_** - the bar chart with cost division to different tiers (archive types). This chart does not contain any information for _previous_ period. Only layers used for data storing in the _current_ period according to selected filters are shown. Up to 4 layers can be here: `Standard`, `Glacier`, `Glacier IR`, `Deep Archive`. If any layer has _old versions_ - this will be shown as a stack of _current version_ spendings / _old versions_ spendings for that layer. _Current version_ spendings are shown with solid filling, _old versions_ spendings are shown without filling, e.g.:  
     ![CP_AppendixD](attachments/Costs_management_38.png)  
     Object storage layers chart can show the information as storages usage costs - in `$` (default, see the picture above) or as average storages volumes - in `Gb`:  
     ![CP_AppendixD](attachments/Costs_management_39.png)  
@@ -395,29 +396,75 @@ To clear selection of the object storage layer - click it again or click the cro
 To get info/charts of summary spendings in the selected period only for the _Compute instances_ resource group (costs of the launching instances for running tools/pipelines) you can click the corresponding item of the menu in the left side of the page:  
     ![CP_AppendixD](attachments/Costs_management_15.png)
 
-In this case, the summary costs for all launched instances during the selected period by selected users/Billing center will be calculated and displayed (launched tools/pipelines and both instance types - CPU/GPU).
-
-In the appeared page, you can see:
-
-- General report table with summary costs for all runs launched in the selected and previous (_if it's available_) periods
-- The summary _Compute instances_ spendings diagram over the current and the previous time periods according to selected configurations in the toolbar. This data could be displayed with the accumulation (as _line chart_) or as fact (as _bar chart_ with actual spending values in each time point of the period without accumulation)
-- The spendings bar chart with top `N` most costly instance types launched in the selected period compared to the previous one (_if it's available_)
-    - The detailed spendings table under that chart with the _full_ list of launched instance types in the selected period
-- The spendings bar chart with top `N` most costly tools launched in the selected period compared to the previous one (_if it's available_)
-    - The detailed spendings table under that chart with the _full_ list of launched tools in the selected period
-- The spendings bar chart with top `N` most costly pipelines launched in the selected period compared to the previous one (_if it's available_)
-    - The detailed spendings table under that chart with the full list of launched pipelines in the selected period
-- Additional control that allows to change displaying of spendings bar charts with the following possible values:
-    - **cost** (default) - on 3 above described bar charts top `N` most costly objects (instance types, tools, pipelines) are displayed. Data Unit - _currency_
-    - **usage** - on 3 above described bar charts top `N` most involved objects (instance types, tools, pipelines) are displayed. Data Unit - _usage hours_
-    - **runs** - on 3 above described bar charts top `N` objects (instance types, tools, pipelines) with the largest runs count are displayed. Data Unit - _runs count_
-
-Example:  
+In this case, the summary costs for all launched runs during the selected period by selected users/Billing center will be calculated and displayed - uniting launched tools/pipelines of both processing unit types (CPU/GPU):  
     ![CP_AppendixD](attachments/Costs_management_16.png)
 
-By default, in this form there isn't the division by workload type (CPU/GPU). All data is calculated and displayed summary for both types.  
-If you want to view costs only for instances with the specific workload type - you can select the corresponding one in the menu at the left side of the page.  
-E.g., for CPU:  
+At the appeared page, you can see:
+
+- General report table with summary costs for all runs launched in the selected and previous (_if it's available_) periods
+- **_Compute instances runs_** - the summary spendings chart over the current and the previous time periods according to selected configurations in the toolbar. This data can be displayed:  
+    - with the accumulation (as _line chart_)  
+    ![CP_AppendixD](attachments/Costs_management_53.png)
+    - or as fact (as _bar chart_ with actual spending values in each time point of the period without accumulation)  
+    ![CP_AppendixD](attachments/Costs_management_54.png)
+- **_Cost details_** - the bar chart that displays the sharing of the cost of runs launched during the selected period into layers - `Compute` (cost of compute instances used in runs) and `Disk` (cost of EBS drives connected to runs during their performing):  
+    ![CP_AppendixD](attachments/Costs_management_55.png)
+- **_Instance types_** - the bar chart with top `N` most costly instance types launched in the selected period compared to the previous one (_if it's available_), e.g.:  
+    ![CP_AppendixD](attachments/Costs_management_56.png)  
+    Under the chart, there is a detailed spendings table with the _full_ list of launched instance types (not only top `N`) during the selected period.  
+    This table contains the following info for each instance type:  
+    - **Instance** - instance type name
+    - **Usage (hours)** - summary number of hours that instances of this type were run
+    - **Runs count** - summary number of this instance type's runs
+    - **Cost** - summary cost of this instance type's runs
+    - **Compute cost** - separately the compute cost as part of summary runs cost
+    - **Disk cost** - separately the disk (EBS drives) cost as part of summary runs cost
+- **_Pipelines_** - the bar chart with top `N` most costly pipelines launched in the selected period compared to the previous one (_if it's available_), e.g.:  
+    ![CP_AppendixD](attachments/Costs_management_57.png)  
+    Under the chart, there is a detailed spendings table with the _full_ list of launched pipelines (not only top `N`) during the selected period.  
+    This table contains the following info for each pipeline:  
+    - **Pipeline** - pipeline name
+    - **Owner** - pipeline owner's username
+    - **Usage (hours)** - summary number of hours this pipeline was run
+    - **Runs count** - summary number of this pipeline's runs
+    - **Cost** - summary cost of this pipeline's runs
+    - **Compute cost** - separately the compute cost as part of summary runs cost of this pipeline
+    - **Disk cost** - separately the disk (EBS drives) cost as part of summary runs cost of this pipeline
+- **_Tools_** - the bar chart with top `N` most costly tools launched in the selected period compared to the previous one (_if it's available_), e.g.:  
+    ![CP_AppendixD](attachments/Costs_management_58.png)  
+    Under the chart, there is a detailed spendings table with the _full_ list of launched tools (not only top `N`) during the selected period.  
+    This table contains the following info for each tool:  
+    - **Tool** - tool name
+    - **Owner** - tool owner's username
+    - **Usage (hours)** - summary number of hours this tool was run
+    - **Runs count** - summary number of this tool's runs
+    - **Cost** - summary cost of this tool's runs
+    - **Compute cost** - separately the compute cost as part of summary runs cost of this tool
+    - **Disk cost** - separately the disk (EBS drives) cost as part of summary runs cost of this tool
+- Additional control that allows to change displaying of spendings bar charts (**_Instance types_**, **_Pipelines_**, **_Tools_**) with the following possible values:  
+    - **Cost** (_default_) - at 3 above described bar charts, top `N` most costly objects (instance types, pipelines, tools) are displayed. Data Unit - _currency_
+    - **Usage (hours)** - at 3 above described bar charts, top `N` most involved objects (instance types, pipelines, tools) are displayed. Data Unit - _usage hours_
+    - **Runs** - at 3 above described bar charts, top `N` objects (instance types, pipelines, tools) with the largest runs number are displayed. Data Unit - _runs count_  
+    For example, the **_Instance types_** chart in case when "**Usage (hours)**" displaying type is selected:  
+    ![CP_AppendixD](attachments/Costs_management_59.png)  
+    > Please note, this control changes only the chart view, but the data in tables under charts is not changed - only column is being changed by which tables are sorted.
+
+User can select one of the runs cost layers (`Compute` or `Disk`) - by click it in the **_Cost details_** chart.  
+In this case:
+
+- charts **_Instance types_**, **_Pipelines_**, **_Tools_** will be updated - only spendings, that correspond to the selected layer will be shown
+- data in tables under charts will not be changed, but the sorting column will be set the same as the selected layer
+
+For example, if the `Compute` layer of the runs cost is selected:  
+    ![CP_AppendixD](attachments/Costs_management_60.png)
+
+To clear selection of the runs cost layer - click it again or click the cross-button near the layer label in the top of the **_Cost details_** chart.
+
+##### CPU/GPU division
+
+By default, in **Compute instances** report form there is no division by processing unit type (CPU/GPU). All data is calculated and displayed summary for both types.  
+To view costs only for instances with the specific processing unit's type - select the corresponding one in the menu at the left side of the **Billing** page.  
+E.g., for CPU only:  
     ![CP_AppendixD](attachments/Costs_management_17.png)
 
 ### Export billling reports

@@ -166,6 +166,29 @@ Also, shown spendings/data volume will be related only to files in the selected 
 For example, `Glasier IR` was selected:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_20.png)
 
+### Spendings in runs cost layers
+
+From the current version, the **Compute instances** report (and sub-reports - for CPU/GPU) supports the displaying of the runs cost division into layers:
+
+- `Compute` - cost of compute instances used in runs
+- `Disk` - cost of EBS drives connected to runs during their performing
+
+This information is shown on the new **_Cost details_** chart - bar chart with division to these layers. This chart does not contain any information for _previous_ period - only cost of runs' layers in the _current_ period according to selected filters are shown.
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_22.png)
+
+Additionally, information about cost division are shown in details tables under charts **_Instance types_**, **_Pipelines_**, **_Tools_** - as separate columns, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_23.png)
+
+User can select one of the runs cost layers - by click it in the **_Cost details_** chart.  
+In this case:
+
+- charts **_Instance types_**, **_Pipelines_**, **_Tools_** will be updated - only spendings, that correspond to the selected layer will be shown
+- data in tables under charts will not be changed, but the sorting column will be set the same as the selected layer
+
+For example, if the `Compute` layer of the runs cost is selected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_24.png)
+
 ### Displaying different user's attributes in the Billing reports
 
 Previously, in all the **Billing reports**, info about users was displayed as user ID only. In some cases, it would be more convenient to display user names or emails - to take a more readable form.
