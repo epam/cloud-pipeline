@@ -18,39 +18,16 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
-import static com.epam.pipeline.autotests.utils.Utils.writeTempJsonFile;
 import org.testng.annotations.Test;
 
-import java.util.stream.Stream;
+public class RestorePreferencesTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
 
-public class PrerequisitesTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
     private static final String uiRunsFiltersJson = "/uiRunsFilters.json";
 
     @Test
-    public void prerequisitesTest() {}
-
-    @Test
-    public void muteTestUsersNotifications() {
-        Stream.of(admin, user, userWithoutCompletedRuns)
-                .forEach(user -> {
-                    logout();
-                    loginAs(user);
-                    navigationMenu()
-                            .settings()
-                            .switchToMyProfile()
-                            .muteEmailNotificationsSelect(true);
-                });
-    }
-
-    @Test
-    public void setUiRunsFilters() {
+    public void restoreUiRunsFilters() {
         logoutIfNeeded();
         loginAs(admin);
-        String[] json = navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .getPreference("ui.runs.filters");
-        writeTempJsonFile(uiRunsFiltersJson, json[0]);
         navigationMenu()
                 .settings()
                 .switchToPreferences()

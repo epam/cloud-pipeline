@@ -320,5 +320,6 @@ public enum Primitive {
     ENDS_ON_TIME,
     AUTOSCALED,
     PROTOCOL,
-    REINDEX
+    REINDEX,
+    MUTE_EMAIL_NOTIFICATIONS
 }
