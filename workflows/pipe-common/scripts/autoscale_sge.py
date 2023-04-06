@@ -918,7 +918,7 @@ class GridEngineScaleUpHandler:
             Logger.info('Scaling up additional worker (%s)...' % instance.name)
             run_id = self._launch_additional_worker(instance.name, owner)
             run_id_queue.put(run_id)
-            host = self.retrieve_pod_name(run_id)
+            host = self._retrieve_pod_name(run_id)
             self.host_storage.add_host(host)
             pod = self._await_pod_initialization(run_id)
             self._add_worker_to_master_hosts(pod)
@@ -972,7 +972,7 @@ class GridEngineScaleUpHandler:
         """
         return price_type.replace('_', '-')
 
-    def retrieve_pod_name(self, run_id):
+    def _retrieve_pod_name(self, run_id):
         Logger.info('Retrieving pod name of additional worker #%s...' % run_id)
         run = self.api.load_run(run_id)
         if 'podId' in run:
