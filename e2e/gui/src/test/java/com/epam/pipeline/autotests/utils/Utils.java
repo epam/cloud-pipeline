@@ -242,7 +242,7 @@ public class Utils {
     }
 
     private static String findRunId(final By runRowQualifier) {
-        final SelenideElement element = $(runRowQualifier).should(exist).find(byClassName("un-table__run-row-name"));
+        final SelenideElement element = $(runRowQualifier).should(exist).find(byClassName("un-table-columns__run-row-name"));
         final String runName = element.text();
         return runNameToRunId(runName);
     }
