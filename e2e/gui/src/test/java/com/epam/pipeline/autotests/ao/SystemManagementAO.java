@@ -75,22 +75,33 @@ public class SystemManagementAO extends SettingsPageAO {
 
     public class SystemLogsAO implements AccessObject<SystemLogsAO> {
 
-        private final ElementsCollection containerLogs = $(byClassName("ystem-logs__container"))
-                .$(byClassName("ant-table-tbody"))
-                .should(exist)
-                .findAll(byClassName("ant-table-row"));
+        private ElementsCollection containerLogs() {
+            return $(byClassName("ystem-logs__container"))
+                    .$(byClassName("ant-table-tbody"))
+                    .should(exist)
+                    .findAll(byClassName("ant-table-row"));
+        }
 
         public SelenideElement getInfoRow(final String message, final String user, final String type) {
-            return containerLogs.stream()
-                    .filter(r -> r.has(matchText(message)) && r.has(text(type)))
-                    .findFirst()
-                    .orElseThrow(() -> {
-                        String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());
-                        screenshot(screenshotName);
-                        return new NoSuchElementException(format("Supposed log info '%s' is not found.",
-                                format("%s message for %s with %s type. Screenshot: %s", message, user, type,
-                                        screenshotName)));
-                    });
+            int attempt = 0;
+            int maxAttempts = 10;
+            while (containerLogs().stream().filter(r ->
+                    r.has(matchText(message)) && r.has(text(type))).count() == 0
+                    && attempt < maxAttempts) {
+                sleep(3, SECONDS);
+                refresh();
+                filterBy(user);
+            }
+        return containerLogs().stream()
+                .filter(r -> r.has(matchText(message)) && r.has(text(type)))
+                .findFirst()
+                .orElseThrow(() -> {
+                    String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());
+                    screenshot(screenshotName);
+                    return new NoSuchElementException(format("Supposed log info '%s' is not found.",
+                            format("%s message for %s with %s type. Screenshot: %s", message, user, type,
+                                    screenshotName)));
+                });
         }
 
         public SystemLogsAO filterByUser(final String user) {

@@ -90,7 +90,6 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         try {
             if (impersonateMode()) {
                 systemLogsAO.filterByMessage("impersonation");
-                sleep(20, SECONDS);
             }
             adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", admin.login.toUpperCase()),
                     stopAction, admin);
