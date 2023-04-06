@@ -767,24 +767,12 @@ class Clock:
 
 class ScaleCommonUtils:
 
-    def __init__(self, api):
-        self.api = api
+    def __init__(self):
+        pass
 
     def get_run_id_from_host(self, host):
         host_elements = host.split('-')
         return host_elements[len(host_elements) - 1]
-
-    def retrieve_pod_name(self, run_id):
-        Logger.info('Retrieving pod name of additional worker #%s...' % run_id)
-        run = self.api.load_run(run_id)
-        if 'podId' in run:
-            name = run['podId']
-            Logger.info('Additional worker #%s pod name %s has been retrieved.' % (run_id, name))
-            return name
-        else:
-            error_msg = 'Additional worker #%s has no pod name specified.'
-            Logger.warn(error_msg, crucial=True)
-            raise ScalingError(error_msg)
 
 
 class GridEngineScaleUpOrchestrator:
@@ -869,7 +857,7 @@ class GridEngineScaleUpHandler:
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
                  instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name,
-                 common_utils, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
+                 polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  ge_polling_timeout=_GE_POLL_TIMEOUT, instance_launch_params=None, clock=Clock()):
         """
         Grid engine scale up handler.
@@ -890,7 +878,6 @@ class GridEngineScaleUpHandler:
         :param queue: Additional nodes queue.
         :param hostlist: Additional nodes hostlist.
         :param owner_param_name: Instance owner param name.
-        :param common_utils: helpful stuff
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         :param polling_delay: Polling delay - in seconds.
         :param ge_polling_timeout: Grid Engine polling timeout - in seconds.
@@ -910,7 +897,6 @@ class GridEngineScaleUpHandler:
         self.queue = queue
         self.hostlist = hostlist
         self.owner_param_name = owner_param_name
-        self.common_utils = common_utils
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
         self.ge_polling_timeout = ge_polling_timeout
@@ -932,7 +918,7 @@ class GridEngineScaleUpHandler:
             Logger.info('Scaling up additional worker (%s)...' % instance.name)
             run_id = self._launch_additional_worker(instance.name, owner)
             run_id_queue.put(run_id)
-            host = self.common_utils.retrieve_pod_name(run_id)
+            host = self.retrieve_pod_name(run_id)
             self.host_storage.add_host(host)
             pod = self._await_pod_initialization(run_id)
             self._add_worker_to_master_hosts(pod)
@@ -985,6 +971,18 @@ class GridEngineScaleUpHandler:
         pipe-cli price type.
         """
         return price_type.replace('_', '-')
+
+    def retrieve_pod_name(self, run_id):
+        Logger.info('Retrieving pod name of additional worker #%s...' % run_id)
+        run = self.api.load_run(run_id)
+        if 'podId' in run:
+            name = run['podId']
+            Logger.info('Additional worker #%s pod name %s has been retrieved.' % (run_id, name))
+            return name
+        else:
+            error_msg = 'Additional worker #%s has no pod name specified.'
+            Logger.warn(error_msg, crucial=True)
+            raise ScalingError(error_msg)
 
     def _await_pod_initialization(self, run_id):
         Logger.info('Waiting for additional worker #%s pod to initialize...' % run_id)
@@ -2373,7 +2371,7 @@ def main():
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
                                                            default_value=900))
     tagging_active_timeout = int(os.getenv('CP_CAP_AUTOSCALE_ACTIVE_TIMEOUT', 30))
-    common_utils = ScaleCommonUtils(api=api)
+    common_utils = ScaleCommonUtils()
     static_host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
                                                 storage_file=os.path.join(work_dir,
                                                                           '.static.%s.storage' % queue_name),
@@ -2395,7 +2393,7 @@ def main():
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_launch_params=instance_launch_params,
-                                                clock=clock, common_utils=common_utils)
+                                                clock=clock)
     worker_tags_handler = GridEngineWorkerTagsHandler(api=api, tagging_active_timeout=tagging_active_timeout,
                                                       host_storage=host_storage,
                                                       static_host_storage=static_host_storage, clock=clock,

@@ -16,7 +16,7 @@ import logging
 
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, Instance, ScaleCommonUtils
+from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, Instance
 from utils import assert_first_argument_contained
 
 try:
@@ -51,14 +51,13 @@ instance = Instance(name='instance', price_type=price_type, cpu=4, memory=16, gp
 queue_name = 'main.q'
 hostlist = '@allhosts'
 run_id_queue = Queue()
-common_utils = ScaleCommonUtils(api=api)
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                             host_storage=host_storage, parent_run_id=parent_run_id,
                                             default_hostfile=default_hostfile,
                                             instance_disk=instance_disk, instance_image=instance_image,
                                             cmd_template=cmd_template, price_type=price_type,
                                             region_id=region_id, queue=queue_name, hostlist=hostlist,
-                                            owner_param_name=owner_param_name, common_utils=common_utils,
+                                            owner_param_name=owner_param_name,
                                             polling_timeout=polling_timeout, polling_delay=0)
 
 
