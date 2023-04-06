@@ -32,7 +32,7 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
-import com.epam.pipeline.entity.datastorage.access.DataAccessEventType;
+import com.epam.pipeline.entity.datastorage.access.DataAccessType;
 import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
@@ -189,7 +189,7 @@ public class AzureStorageHelper {
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
                                       final String owner) {
         validatePath(path);
-        events.put(new DataAccessEvent(dataStorage.getPath(), path, DataAccessEventType.WRITE));
+        events.put(new DataAccessEvent(path, DataAccessType.WRITE, dataStorage));
         unwrap(getBlobUrl(dataStorage, path)
                 .upload(Flowable.just(ByteBuffer.wrap(contents)), contents.length, null,
                         StringUtils.isBlank(owner) ? null
@@ -297,7 +297,7 @@ public class AzureStorageHelper {
         validateBlob(dataStorage, path, true);
         final Long fileSize = getDataStorageFile(dataStorage, path).getSize();
         final BlobRange blobRange = new BlobRange().withCount(maxDownloadSize);
-        events.put(new DataAccessEvent(dataStorage.getPath(), path, DataAccessEventType.READ));
+        events.put(new DataAccessEvent(path, DataAccessType.READ, dataStorage));
         return unwrap(getBlobUrl(dataStorage, path).download(blobRange, null, false, null)
                         .flatMap(response -> FlowableUtil.collectBytesInArray(response.body(null))
                                 .map(bytes -> {
@@ -314,7 +314,7 @@ public class AzureStorageHelper {
     public DataStorageStreamingContent getStream(final AzureBlobStorage dataStorage, final String path) {
         //TODO: can be reason of error
         validateBlob(dataStorage, path, true);
-        events.put(new DataAccessEvent(dataStorage.getPath(), path, DataAccessEventType.READ));
+        events.put(new DataAccessEvent(path, DataAccessType.READ, dataStorage));
         return unwrap(getBlobUrl(dataStorage, path).download()
                         .map(r -> r.body(null))
                         .flatMap(FlowableUtil::collectBytesInArray)
@@ -453,7 +453,7 @@ public class AzureStorageHelper {
     }
 
     private void deleteBlob(final AzureBlobStorage dataStorage, final String path) {
-        events.put(new DataAccessEvent(dataStorage.getPath(), path, DataAccessEventType.DELETE));
+        events.put(new DataAccessEvent(path, DataAccessType.DELETE, dataStorage));
         unwrap(getBlobUrl(dataStorage, path).delete());
     }
 
@@ -634,8 +634,8 @@ public class AzureStorageHelper {
     }
 
     private void copyBlob(final AzureBlobStorage storage, final String sourcePath, final String destinationPath) {
-        events.put(new DataAccessEvent(storage.getPath(), sourcePath, DataAccessEventType.READ),
-                new DataAccessEvent(storage.getPath(), destinationPath, DataAccessEventType.WRITE));
+        events.put(new DataAccessEvent(sourcePath, DataAccessType.READ, storage),
+                new DataAccessEvent(destinationPath, DataAccessType.WRITE, storage));
         final String sourceBlobUrl = String.format(BLOB_URL_FORMAT + "/%s/%s", region.getStorageAccount(),
                 storage.getPath(), sourcePath);
         unwrap(getBlobUrl(storage, destinationPath).toPageBlobURL().startCopyFromURL(url(sourceBlobUrl)));

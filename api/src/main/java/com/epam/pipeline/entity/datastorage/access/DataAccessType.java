@@ -1,5 +1,5 @@
 package com.epam.pipeline.entity.datastorage.access;
 
-public enum DataAccessEventType {
+public enum DataAccessType {
     WRITE, READ, DELETE
 }
