@@ -117,11 +117,11 @@ class DataStorageWrapper(object):
             raise RuntimeError('There is no data storage wrapper for %s storage type.' % bucket.type)
 
     @classmethod
-    def get_operation_manager(cls, source_wrapper, destination_wrapper, audit, command):
+    def get_operation_manager(cls, source_wrapper, destination_wrapper, events, command):
         manager_types = source_wrapper.get_type(), destination_wrapper.get_type()
         if manager_types in DataStorageWrapper._transfer_manager_suppliers:
             supplier = DataStorageWrapper._transfer_manager_suppliers[manager_types]
-            return supplier(source_wrapper, destination_wrapper, audit, command)
+            return supplier(source_wrapper, destination_wrapper, events, command)
         else:
             raise RuntimeError('Transferring files between the following storage types %s -> %s is not supported.'
                                % manager_types)
@@ -253,7 +253,7 @@ class CloudDataStorageWrapper(DataStorageWrapper):
         pass
 
     @abstractmethod
-    def get_restore_manager(self, audit):
+    def get_restore_manager(self, events):
         pass
 
     @abstractmethod
@@ -261,7 +261,7 @@ class CloudDataStorageWrapper(DataStorageWrapper):
         pass
 
     @abstractmethod
-    def get_delete_manager(self, audit, versioning):
+    def get_delete_manager(self, events, versioning):
         pass
 
 
@@ -302,14 +302,14 @@ class S3BucketWrapper(CloudDataStorageWrapper):
     def delete_item(self, relative_path):
         S3BucketOperations.delete_item(self, relative_path, session=self.session)
 
-    def get_restore_manager(self, audit):
-        return S3BucketOperations.get_restore_manager(self, audit)
+    def get_restore_manager(self, events):
+        return S3BucketOperations.get_restore_manager(self, events)
 
     def get_list_manager(self, show_versions=False):
         return S3BucketOperations.get_list_manager(self, show_versions=show_versions)
 
-    def get_delete_manager(self, audit, versioning):
-        return S3BucketOperations.get_delete_manager(self, audit, versioning)
+    def get_delete_manager(self, events, versioning):
+        return S3BucketOperations.get_delete_manager(self, events, versioning)
 
 
 class AzureBucketWrapper(CloudDataStorageWrapper):
@@ -330,7 +330,7 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
     def get_type(self):
         return WrapperType.AZURE
 
-    def get_restore_manager(self, audit):
+    def get_restore_manager(self, events):
         raise RuntimeError('Versioning is not supported by AZURE cloud provider')
 
     def get_list_manager(self, show_versions=False):
@@ -338,10 +338,10 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
         return AzureListingManager(self._blob_service(read=True, write=False), self.bucket)
 
-    def get_delete_manager(self, audit, versioning):
+    def get_delete_manager(self, events, versioning):
         if versioning:
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
-        return AzureDeleteManager(self._blob_service(read=True, write=True), audit, self.bucket)
+        return AzureDeleteManager(self._blob_service(read=True, write=True), events, self.bucket)
 
     def _blob_service(self, read, write):
         if write or not self.service:
@@ -361,14 +361,14 @@ class GsBucketWrapper(CloudDataStorageWrapper):
     def get_type(self):
         return WrapperType.GS
 
-    def get_restore_manager(self, audit):
-        return GsRestoreManager(self._storage_client(write=True, versioning=True), audit, self)
+    def get_restore_manager(self, events):
+        return GsRestoreManager(self._storage_client(write=True, versioning=True), events, self)
 
     def get_list_manager(self, show_versions=False):
         return GsListingManager(self._storage_client(versioning=show_versions), self.bucket, show_versions)
 
-    def get_delete_manager(self, audit, versioning):
-        return GsDeleteManager(self._storage_client(write=True, versioning=versioning), audit, self.bucket)
+    def get_delete_manager(self, events, versioning):
+        return GsDeleteManager(self._storage_client(write=True, versioning=versioning), events, self.bucket)
 
     def _storage_client(self, read=True, write=False, versioning=False):
         return GsBucketOperations.get_client(self.bucket, read=read, write=write, versioning=versioning)

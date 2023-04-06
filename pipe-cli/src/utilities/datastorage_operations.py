@@ -123,7 +123,7 @@ class DataStorageOperations(object):
 
         audit_ctx = auditing()
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper,
-                                                           audit=audit_ctx.container, command=command)
+                                                           events=audit_ctx.container, command=command)
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                   include, exclude, force, quiet, skip_existing, verify_destination,
@@ -234,7 +234,7 @@ class DataStorageOperations(object):
         click.echo('Removing {} ...'.format(path), nl=False)
 
         with auditing() as audit:
-            manager = source_wrapper.get_delete_manager(audit=audit, versioning=version or hard_delete)
+            manager = source_wrapper.get_delete_manager(events=audit, versioning=version or hard_delete)
             manager.delete_items(source_wrapper.path,
                                  version=version, hard_delete=hard_delete,
                                  exclude=exclude, include=include,
@@ -313,7 +313,7 @@ class DataStorageOperations(object):
             click.echo('Flag --recursive (-r) is required to restore folders.', err=True)
             sys.exit(1)
         with auditing() as audit:
-            manager = source_wrapper.get_restore_manager(audit=audit)
+            manager = source_wrapper.get_restore_manager(events=audit)
             manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
