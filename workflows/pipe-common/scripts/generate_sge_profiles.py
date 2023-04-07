@@ -31,6 +31,7 @@ def generate_sge_profiles():
     logging_dir = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOG_DIR', default=os.getenv('LOG_DIR', '/var/log'))
     logging_level = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL', default='INFO')
     logging_level_local = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL_LOCAL', default='DEBUG')
+    logging_level_console = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL_CONSOLE', default='INFO')
     logging_format = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_FORMAT', default='%(asctime)s:%(levelname)s: %(message)s')
     logging_task = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_TASK', default='GenerateSGEProfiles')
     logging_file = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_FILE', default='generate_sge_profiles.log')
@@ -42,18 +43,19 @@ def generate_sge_profiles():
     default_queue_disabled = os.getenv('CP_CAP_SGE_DISABLE_DEFAULT_QUEUE', 'false').lower() == 'true'
 
     logging_formatter = logging.Formatter(logging_format)
+    logging_logger = logging.getLogger()
+    if not logging_logger.handlers:
+        logging_logger.setLevel(logging_level_local)
 
-    logging.getLogger().setLevel(logging_level_local)
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging_level_console)
+        console_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(console_handler)
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging_level_local)
-    console_handler.setFormatter(logging_formatter)
-    logging.getLogger().addHandler(console_handler)
-
-    file_handler = logging.FileHandler(os.path.join(logging_dir, logging_file))
-    file_handler.setLevel(logging_level_local)
-    file_handler.setFormatter(logging_formatter)
-    logging.getLogger().addHandler(file_handler)
+        file_handler = logging.FileHandler(os.path.join(logging_dir, logging_file))
+        file_handler.setLevel(logging_level_local)
+        file_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(file_handler)
 
     api = PipelineAPI(api_url=api_url, log_dir=logging_dir)
     logger = RunLogger(api=api, run_id=run_id)
@@ -78,6 +80,7 @@ def _generate_profiles(default_queue_disabled, logger):
 
 def _enhance_common_profile(common_profile):
     common_profile['CP_CAP_SGE_QUEUE_NAME'] = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
+    common_profile['CP_CAP_SGE_HOSTLIST_NAME'] = os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts')
     common_profile['CP_CAP_SGE_QUEUE_STATIC'] = 'true'
     common_profile['CP_CAP_SGE_QUEUE_DEFAULT'] = 'true'
     common_profile['CP_CAP_AUTOSCALE_TASK'] = 'GridEngineAutoscaling'
@@ -135,15 +138,19 @@ def _write_profiles(params, profiles, cap_scripts_dir, logger):
         autoscaling_profile_name = PROFILE_AUTOSCALING_FORMAT.format(profile_queue_name)
         autoscaling_profile_path = os.path.join(cap_scripts_dir, autoscaling_profile_name)
         _write_queue_profile(profile, profile_queue_name, params,
-                             queue_profile_path, autoscaling_profile_path)
+                             queue_profile_path, autoscaling_profile_path, logger)
         _write_autoscaling_profile(profile, profile_queue_name, params,
-                                   queue_profile_path, autoscaling_profile_path)
+                                   queue_profile_path, autoscaling_profile_path, logger)
 
 
 def _write_autoscaling_profile(profile, profile_queue_name, params,
-                               queue_profile_path, autoscaling_profile_path):
+                               queue_profile_path, autoscaling_profile_path, logger):
+    if os.path.exists(autoscaling_profile_path):
+        logger.debug('Skipping grid engine profile {queue_name} writing '
+                     'because it is already written...'.format(queue_name=profile_queue_name))
+        return
     with open(autoscaling_profile_path, 'w') as f:
-        f.write("""# Grid Engine {queue_name} autoscaling profile.
+        f.write("""# Grid engine {queue_name} profile.
 #
 # Please use this configuration file to dynamically modify
 # the corresponding grid engine queue's autoscaling.
@@ -177,9 +184,13 @@ def _write_autoscaling_profile(profile, profile_queue_name, params,
 
 
 def _write_queue_profile(profile, profile_queue_name, params,
-                         queue_profile_path, autoscaling_profile_path):
+                         queue_profile_path, autoscaling_profile_path, logger):
+    if os.path.exists(queue_profile_path):
+        logger.debug('Skipping grid engine queue profile {queue_name} writing '
+                     'because it is already written...'.format(queue_name=profile_queue_name))
+        return
     with open(queue_profile_path, 'w') as f:
-        f.write("""# Grid Engine {queue_name} queue profile.
+        f.write("""# Grid engine {queue_name} queue profile.
 #
 # This configuration file contains grid engine queue configuration.
 # It cannot be used to dynamically modify grid engine queue.
@@ -187,7 +198,7 @@ def _write_queue_profile(profile, profile_queue_name, params,
 # In order to dynamically modify grid engine queue's autoscaling
 # use the following command:
 #
-#     sge_configure
+#     sge configure
 #
 #
 # See also

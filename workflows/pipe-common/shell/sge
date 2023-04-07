@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+function is_root() {
+    [ "$(id -u)" == "0" ]
+}
+
+if ! is_root; then
+    echo "Grid engine can be managed only by root."
+    echo "Please use the following commands to manage grid engine:"
+    echo ""
+    if check_cp_cap CP_CAP_SUDO_ENABLE; then
+        echo "sudo sge" "$@"
+    else
+        echo "su root"
+        echo "sge" "$@"
+    fi
+    echo ""
+    exit 1
+fi
+
+if [ "$parent_id" ]; then
+    echo "Grid engine can be managed only from cluster parent run."
+    echo "Please use the following commands to manage grid engine:"
+    echo ""
+    echo "ssh pipeline-${parent_id}"
+    echo "sge" "$@"
+    echo ""
+    exit 1
+fi
+
+"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/manage_sge_profiles.py" "$@"
