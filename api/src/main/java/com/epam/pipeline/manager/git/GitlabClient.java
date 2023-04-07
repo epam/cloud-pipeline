@@ -474,12 +474,13 @@ public class GitlabClient {
     }
 
     public PagedResult<List<GitlabIssue>> getIssues(final String project, final List<String> labels,
-                                                    final Integer page, final Integer pageSize,
-                                                    final String search)
+                                                    final List<String> notLabels, final Integer page,
+                                                    final Integer pageSize, final String search)
             throws GitClientException {
         final String labelStr = CollectionUtils.isEmpty(labels) ? null : String.join(",", labels);
+        final String notLabelStr = CollectionUtils.isEmpty(notLabels) ? null : String.join(",", notLabels);
         final Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labelStr,
-                page, pageSize, search));
+                notLabelStr, page, pageSize, search));
         final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
         return new PagedResult<>(response.body(), totalPages);
     }

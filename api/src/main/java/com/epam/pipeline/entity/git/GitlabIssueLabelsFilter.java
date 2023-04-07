@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.pipeline.issue;
+package com.epam.pipeline.entity.git;
 
-import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
-public class GitlabIssueFilter {
-    private String search;
-    private GitlabIssueLabelsFilter labelsFilter;
+@NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class GitlabIssueLabelsFilter {
+
+    private List<String> labels;
+    private Boolean not;
 }
