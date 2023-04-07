@@ -15,11 +15,13 @@
 import collections
 import datetime
 import logging
-import pytz
 import socket
-import time
 from abc import abstractmethod, ABCMeta
+from contextlib import closing
 from threading import Thread
+
+import pytz
+import time
 
 try:
     from queue import Queue  # Python 3
@@ -270,8 +272,8 @@ class CloudPipelineAuditConsumer(AuditConsumer):
         self._log_severity = 'INFO'
 
     def consume(self, entries):
-        with self._ids() as event_ids:
-            self._consumer_func(list(self._to_logs(entries, event_ids)))
+        with closing(self._ids()) as ids:
+            self._consumer_func(list(self._to_logs(entries, ids)))
 
     def _ids(self):
         """
@@ -290,12 +292,12 @@ class CloudPipelineAuditConsumer(AuditConsumer):
     def _time_ns(self):
         return int(time.time() * 10 ** 9)
 
-    def _to_logs(self, entries, event_ids):
+    def _to_logs(self, entries, ids):
         now = datetime.datetime.now(tz=pytz.utc)
         now_str = now.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         for entry in entries:
             yield {
-                'eventId': next(event_ids),
+                'eventId': next(ids),
                 'messageTimestamp': now_str,
                 'hostname': self._log_hostname,
                 'serviceName': self._log_service,
