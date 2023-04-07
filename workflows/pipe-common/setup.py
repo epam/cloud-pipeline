@@ -62,6 +62,7 @@ setup(name='pipeline',
             'pywin32==300; platform_system == "Windows"',
             'watchdog==0.10.4',
             'psutil==5.8.0',
-            'PyJWT==1.7.1'
+            'PyJWT==1.7.1',
+            'click==6.7'
       ],
       zip_safe=False)
