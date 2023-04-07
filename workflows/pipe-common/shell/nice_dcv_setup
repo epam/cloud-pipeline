@@ -116,6 +116,17 @@ primary-selection-paste=true
 EOF
 }
 
+function configure_dcv_extras {
+mkdir -p /opt/dcv/extras
+cat <<EOF >>/opt/dcv/extras/xfce4launch
+#!/bin/bash
+mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
+cp /etc/xdg/xfce4/panel/default.xml ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+startxfce4
+EOF
+chmod +x /opt/dcv/extras/xfce4launch
+}
+
 function run_dcv {
   pipe_log_info "Starting DCV server and waiting for boot up" "$DCV_INSTALL_TASK"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
@@ -143,7 +154,12 @@ function run_dcv {
       exit 1
   fi
 
-  dcv create-session --owner $OWNER --user $OWNER session
+  CP_DCV_INIT_SCRIPT="${CP_DCV_INIT_SCRIPT:-/opt/dcv/extras/xfce4launch}"
+  if [ "$CP_DCV_INIT_SCRIPT" ]; then
+      CP_DCV_INIT_SCRIPT="--init $CP_DCV_INIT_SCRIPT"
+      pipe_log_info "Using \"$CP_DCV_INIT_SCRIPT\" initialization script for a DCV session" "$DCV_INSTALL_TASK"
+  fi
+  dcv create-session --owner $OWNER --user $OWNER $CP_DCV_INIT_SCRIPT session
 
   # Serve additional server to provide dcv desktop session file
   if [ -n "${CP_DCV_DESKTOP_PORT}" ]; then
@@ -199,7 +215,8 @@ if [ $IS_DCV_INSTALLED -eq 0 ]; then
 else
    install_prerequisites && \
    install_dcv && \
-   configure_dcv
+   configure_dcv && \
+   configure_dcv_extras
 
    if [ $? -ne 0 ]; then
     pipe_log_fail "[ERROR] DCV installation failed. Exiting" "$DCV_INSTALL_TASK"
@@ -209,4 +226,3 @@ fi
 
 run_dcv
 pipe_log_success "[INFO] DCV server is ready." "$DCV_INSTALL_TASK"
-
