@@ -90,9 +90,10 @@ public class SystemManagementAO extends SettingsPageAO {
                     && attempt < maxAttempts) {
                 sleep(3, SECONDS);
                 refresh();
+                attempt ++;
                 filterBy(user);
             }
-        return containerLogs().stream()
+            return containerLogs().stream()
                 .filter(r -> r.has(matchText(message)) && r.has(text(type)))
                 .findFirst()
                 .orElseThrow(() -> {
