@@ -79,14 +79,13 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         sleep(30, SECONDS);
         logout();
         loginAs(admin);
-        sleep(1, MINUTES);
+        sleep(30, SECONDS);
         SystemLogsAO systemLogsAO = navigationMenu()
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs();
         SelenideElement adminInfo;
         SelenideElement userInfo;
-        sleep(20, SECONDS);
         try {
             if (impersonateMode()) {
                 systemLogsAO.filterByMessage("impersonation");
