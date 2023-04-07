@@ -765,11 +765,21 @@ class Clock:
         return datetime.now()
 
 
+class ScaleCommonUtils:
+
+    def __init__(self):
+        pass
+
+    def get_run_id_from_host(self, host):
+        host_elements = host.split('-')
+        return host_elements[len(host_elements) - 1]
+
+
 class GridEngineScaleUpOrchestrator:
     _POLL_DELAY = 10
 
-    def __init__(self, scale_up_handler, grid_engine, host_storage, instance_selector, worker_recorder,
-                 batch_size, polling_delay=_POLL_DELAY, clock=Clock()):
+    def __init__(self, scale_up_handler, grid_engine, host_storage, static_host_storage, worker_tags_handler,
+                 instance_selector, worker_recorder, batch_size, polling_delay=_POLL_DELAY, clock=Clock()):
         """
         Grid engine scale up orchestrator.
 
@@ -780,6 +790,8 @@ class GridEngineScaleUpOrchestrator:
         :param scale_up_handler: Scaling up handler.
         :param grid_engine: Grid engine client.
         :param host_storage: Additional hosts storage.
+        :param static_host_storage: Static workers host storage
+        :param worker_tags_handler: Additional workers tags handler.
         :param instance_selector: Additional instances selector.
         :param worker_recorder: Additional hosts recorder.
         :param batch_size: Scaling up batch size.
@@ -788,6 +800,8 @@ class GridEngineScaleUpOrchestrator:
         self.scale_up_handler = scale_up_handler
         self.grid_engine = grid_engine
         self.host_storage = host_storage
+        self.static_host_storage = static_host_storage
+        self.worker_tags_handler = worker_tags_handler
         self.instance_selector = instance_selector
         self.worker_recorder = worker_recorder
         self.batch_size = batch_size
@@ -817,6 +831,7 @@ class GridEngineScaleUpOrchestrator:
             Logger.info('Only %s/%s additional workers have been scaled up.'
                         % (number_of_finished_threads, number_of_threads))
             self._update_last_activity_for_currently_running_jobs()
+            self.worker_tags_handler.process_tags()
         Logger.info('Recording details of %s additional workers...' % number_of_threads)
         while True:
             try:
@@ -830,6 +845,7 @@ class GridEngineScaleUpOrchestrator:
         running_jobs = [job for job in jobs if job.state == GridEngineJobState.RUNNING]
         if running_jobs:
             self.host_storage.update_running_jobs_host_activity(running_jobs, self.clock.now())
+            self.static_host_storage.update_running_jobs_host_activity(running_jobs, self.clock.now())
 
 
 class GridEngineScaleUpHandler:
@@ -840,7 +856,8 @@ class GridEngineScaleUpHandler:
     _GE_POLL_ATTEMPTS = 6
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
+                 instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name,
+                 polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  ge_polling_timeout=_GE_POLL_TIMEOUT, instance_launch_params=None, clock=Clock()):
         """
         Grid engine scale up handler.
@@ -1042,7 +1059,7 @@ class GridEngineScaleUpHandler:
 
 class GridEngineScaleDownHandler:
 
-    def __init__(self, cmd_executor, grid_engine, default_hostfile):
+    def __init__(self, cmd_executor, grid_engine, default_hostfile, common_utils):
         """
         Grid engine scale down handler.
 
@@ -1051,10 +1068,12 @@ class GridEngineScaleDownHandler:
         :param cmd_executor: Cmd executor.
         :param grid_engine: Grid engine client.
         :param default_hostfile: Default host file location.
+        :param common_utils: helpful stuff
         """
         self.executor = cmd_executor
         self.grid_engine = grid_engine
         self.default_hostfile = default_hostfile
+        self.common_utils = common_utils
 
     def scale_down(self, child_host):
         """
@@ -1088,14 +1107,10 @@ class GridEngineScaleDownHandler:
         Logger.info('Additional worker %s was removed from GE cluster configuration.' % host)
 
     def _stop_run(self, host):
-        run_id = self._get_run_id_from_host(host)
+        run_id = self.common_utils.get_run_id_from_host(host)
         Logger.info('Stopping run #%s...' % run_id)
         self.executor.execute('pipe stop --yes %s' % run_id)
         Logger.info('Run #%s was stopped.' % run_id)
-
-    def _get_run_id_from_host(self, host):
-        host_elements = host.split('-')
-        return host_elements[len(host_elements) - 1]
 
     def _remove_host_from_hosts(self, host):
         Logger.info('Removing host %s from hosts...' % host)
@@ -1300,10 +1315,116 @@ class FileSystemHostStorage:
             raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
 
 
+class LastActionMarker:
+
+    def __init__(self):
+        self.last_action_timestamp = None
+        self.last_tag_timestamp = None
+
+
+class GridEngineWorkerTagsHandler:
+    _WORKER_TAG = 'SGE_IN_USE'
+
+    def __init__(self, api, tagging_active_timeout, host_storage, static_host_storage, clock, common_utils):
+        """
+        Processes active additional workers tags: if at least one job is running at the additional host
+        the corresponding run shall be tagged.
+
+        :param api: Cloud pipeline client.
+        :param tagging_active_timeout: Indicates how many seconds must pass before the run is recognized as active.
+        :param host_storage: Additional hosts storage.
+        :param static_host_storage: Static workers host storage.
+        :param clock: Clock.
+        :param common_utils: helpful stuff.
+        """
+        self.api = api
+        self.host_storage = host_storage
+        self.static_host_storage = static_host_storage
+        self.clock = clock
+        self.last_monitored_hosts = {}
+        self.tagging_active_timeout = timedelta(seconds=tagging_active_timeout)
+        self.common_utils = common_utils
+        self.static_hosts = self.static_host_storage.load_hosts()
+
+    def process_tags(self):
+        try:
+            Logger.info('Start tags processing step at %s.' % self.clock.now())
+            current_hosts = self.host_storage.load_hosts()
+            hosts_activity = self.host_storage.get_hosts_activity(current_hosts)
+            hosts_activity.update(self.static_host_storage.get_hosts_activity(self.static_hosts))
+            monitored_hosts = list(self.last_monitored_hosts.keys())
+            current_hosts += self.static_hosts
+            self._process_current_hosts(current_hosts, hosts_activity)
+            self._process_outdated_hosts(monitored_hosts, current_hosts)
+            Logger.info('Finish tags processing step at %s.' % self.clock.now())
+        except Exception as e:
+            Logger.warn('Tags processing has failed: %s' % str(e))
+            Logger.warn(traceback.format_exc())
+
+    def _run_is_active(self, timestamp):
+        return timestamp > self.clock.now() - self.tagging_active_timeout
+
+    def _tag_run(self, host, timestamp, last_monitored_timestamps):
+        run_id = self.common_utils.get_run_id_from_host(host)
+        self._add_worker_tag(run_id)
+        last_monitored_timestamps.last_action_timestamp = timestamp
+        last_monitored_timestamps.last_tag_timestamp = self.clock.now()
+        self.last_monitored_hosts.update({host: last_monitored_timestamps})
+
+    def _untag_run(self, host, timestamp=None, last_monitored_timestamps=None):
+        Logger.info("Removing tag from run for host '%s'." % host)
+        run_id = self.common_utils.get_run_id_from_host(host)
+        self._remove_worker_tag(run_id)
+        if not last_monitored_timestamps:
+            del self.last_monitored_hosts[host]
+            return
+        last_monitored_timestamps.last_action_timestamp = timestamp
+        last_monitored_timestamps.last_tag_timestamp = None
+        self.last_monitored_hosts.update({host: last_monitored_timestamps})
+
+    def _process_current_hosts(self, current_hosts, hosts_activity):
+        for current_host in current_hosts:
+            timestamp = hosts_activity[current_host]
+            if not timestamp:
+                continue
+            last_monitored_timestamps = self.last_monitored_hosts.get(current_host, None)
+            if not last_monitored_timestamps:
+                last_action_marker = LastActionMarker()
+                self.last_monitored_hosts.update({current_host: last_action_marker})
+                continue
+            if self._run_is_active(timestamp):
+                if not last_monitored_timestamps.last_tag_timestamp:
+                    Logger.info("Adding tag to run for host '%s'." % current_host)
+                    self._tag_run(current_host, timestamp, last_monitored_timestamps)
+                # do nothing if active run was already tagged
+                continue
+            if last_monitored_timestamps and last_monitored_timestamps.last_tag_timestamp:
+                self._untag_run(current_host, timestamp, last_monitored_timestamps)
+
+    def _process_outdated_hosts(self, monitored_hosts, current_hosts):
+        for monitored_host in monitored_hosts:
+            if monitored_host not in current_hosts:
+                self._untag_run(monitored_host)
+
+    def _add_worker_tag(self, run_id):
+        run = self.api.load_run(run_id)
+        tags = run.get('tags') or {}
+        tags.update({self._WORKER_TAG: 'true'})
+        self.api.update_pipeline_run_tags(run_id, tags)
+
+    def _remove_worker_tag(self, run_id):
+        run = self.api.load_run(run_id)
+        tags = run.get('tags') or {}
+        if self._WORKER_TAG in tags:
+            del tags[self._WORKER_TAG]
+            self.api.update_pipeline_run_tags(run_id, tags)
+
+
 class GridEngineAutoscaler:
 
-    def __init__(self, grid_engine, cmd_executor, scale_up_orchestrator, scale_down_handler, host_storage, scale_up_timeout,
-                 scale_down_timeout, max_additional_hosts, idle_timeout=30, clock=Clock()):
+    def __init__(self, grid_engine, cmd_executor, scale_up_orchestrator, scale_down_handler, host_storage,
+                 static_host_storage, scale_up_timeout, scale_down_timeout, max_additional_hosts, idle_timeout=30,
+                 clock=Clock()):
         """
         Grid engine autoscaler.
 
@@ -1318,6 +1439,7 @@ class GridEngineAutoscaler:
         :param scale_up_orchestrator: Scaling up orchestrator.
         :param scale_down_handler: Scaling down handler.
         :param host_storage: Additional hosts storage.
+        :param static_host_storage: Static workers host storage
         :param scale_up_timeout: Maximum number of seconds job could wait in queue
         before autoscaler will scale up the cluster.
         :param scale_down_timeout: Maximum number of seconds the waiting queue could be empty
@@ -1331,6 +1453,7 @@ class GridEngineAutoscaler:
         self.scale_up_orchestrator = scale_up_orchestrator
         self.scale_down_handler = scale_down_handler
         self.host_storage = host_storage
+        self.static_host_storage = static_host_storage
         self.scale_up_timeout = timedelta(seconds=scale_up_timeout)
         self.scale_down_timeout = timedelta(seconds=scale_down_timeout)
         self.max_additional_hosts = max_additional_hosts
@@ -1349,6 +1472,7 @@ class GridEngineAutoscaler:
         pending_jobs = self._filter_pending_job(updated_jobs)
         if running_jobs:
             self.host_storage.update_running_jobs_host_activity(running_jobs, now)
+            self.static_host_storage.update_running_jobs_host_activity(running_jobs, now)
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
         if pending_jobs:
             Logger.info('There are %s waiting jobs.' % len(pending_jobs))
@@ -1470,7 +1594,7 @@ class GridEngineWorkerValidator:
     _SHOW_RUN_STATUS = 'pipe view-runs %s | grep Status | awk \'{print $2}\''
     _RUNNING_STATUS = 'RUNNING'
 
-    def __init__(self, cmd_executor, api, host_storage, grid_engine, scale_down_handler):
+    def __init__(self, cmd_executor, api, host_storage, grid_engine, scale_down_handler, common_utils):
         """
         Grid engine worker validator.
 
@@ -1483,12 +1607,14 @@ class GridEngineWorkerValidator:
         :param cmd_executor: Cmd executor.
         :param host_storage: Additional hosts storage.
         :param scale_down_handler: Scale down handler.
+        :param common_utils: helpful stuff
         """
         self.grid_engine = grid_engine
         self.api = api
         self.executor = cmd_executor
         self.host_storage = host_storage
         self.scale_down_handler = scale_down_handler
+        self.common_utils = common_utils
 
     def validate_hosts(self):
         """
@@ -1498,7 +1624,7 @@ class GridEngineWorkerValidator:
         Logger.info('Validate %s additional workers.' % len(hosts))
         invalid_hosts = []
         for host in hosts:
-            run_id = self.scale_down_handler._get_run_id_from_host(host)
+            run_id = self.common_utils.get_run_id_from_host(host)
             if (not self.grid_engine.is_valid(host)) or (not self._is_running(run_id)):
                 invalid_hosts.append((host, run_id))
         for host, run_id in invalid_hosts:
@@ -1936,16 +2062,18 @@ class AllocationRule:
 
 class GridEngineAutoscalingDaemon:
 
-    def __init__(self, autoscaler, worker_validator, polling_timeout=5):
+    def __init__(self, autoscaler, worker_validator, worker_tags_handler, polling_timeout=5):
         """
         Grid engine autoscaling daemon.
 
         :param autoscaler: Autoscaler.
         :param worker_validator: Additional workers validator.
+        :param worker_tags_handler: Additional workers tags handler.
         :param polling_timeout: Autoscaler polling timeout - in seconds.
         """
         self.autoscaler = autoscaler
         self.worker_validator = worker_validator
+        self.worker_tags_handler = worker_tags_handler
         self.timeout = polling_timeout
 
     def start(self):
@@ -1955,6 +2083,7 @@ class GridEngineAutoscalingDaemon:
                 time.sleep(self.timeout)
                 self.worker_validator.validate_hosts()
                 self.autoscaler.scale()
+                self.worker_tags_handler.process_tags()
             except KeyboardInterrupt:
                 Logger.warn('Manual stop of the autoscaler daemon.', crucial=True)
                 break
@@ -2003,6 +2132,10 @@ class CloudPipelineAPI:
     def load_task(self, run_id, task):
         result = self._execute_request(str(self.pipe.api_url) + self.pipe.GET_TASK_URL.format(run_id, task))
         return result or []
+
+    def update_pipeline_run_tags(self, run_id, tags):
+        body = {'tags': tags}
+        self.pipe.update_pipeline_run_tags(run_id, body)
 
     def _execute_request(self, url):
         count = 0
@@ -2061,6 +2194,41 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     return launch_params
 
 
+def load_default_hosts(default_hostsfile):
+    if os.path.exists(default_hostsfile):
+        with open(default_hostsfile) as hosts_file:
+            hosts = []
+            for line in hosts_file.readlines():
+                hosts.append(line.strip().strip(FileSystemHostStorage._LINE_BREAKER))
+            return hosts
+    else:
+        return []
+
+
+def init_static_hosts(default_hostsfile, static_host_storage, clock, tagging_active_timeout, static_hosts_enabled):
+    try:
+        if static_host_storage.load_hosts():
+            Logger.info('Static hosts already initialized.')
+            return
+        Logger.info('Starting static hosts initialization.')
+        if static_hosts_enabled:
+            hosts = load_default_hosts(default_hostsfile)
+            for host in hosts:
+                static_host_storage.add_host(host)
+        else:
+            master_host = os.getenv('HOSTNAME')
+            static_host_storage.add_host(master_host)
+            hosts = [master_host]
+        # to prevent false positive run tagging let's add outdated date to hosts:
+        timeout = tagging_active_timeout * 2
+        timestamp = clock.now() - timedelta(seconds=timeout)
+        static_host_storage.update_hosts_activity(hosts, timestamp)
+        Logger.info('Static hosts have been initialized.')
+    except Exception:
+        Logger.warn('Static hosts initialization has failed.')
+        Logger.warn(traceback.format_exc())
+
+
 def main():
     params = GridEngineParameters()
     pipeline_api = os.environ['API']
@@ -2070,6 +2238,7 @@ def main():
     static_hosts_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
     static_hosts_number = int(os.getenv('node_count', 0))
     autoscaling_hosts_number = int(os.getenv(params.autoscaling.autoscaling_hosts_number.name, 3))
+    autoscale_enabled = os.getenv(params.autoscaling.autoscale.name, 'false').strip().lower() == 'true'
 
     instance_cloud_provider = CloudProvider(os.getenv(params.autoscaling_advanced.instance_cloud_provider.name, os.environ['CLOUD_PROVIDER']))
     instance_region_id = os.getenv(params.autoscaling_advanced.instance_region_id.name, os.environ['CLOUD_REGION_ID'])
@@ -2201,6 +2370,18 @@ def main():
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
                                                            default_value=900))
+    tagging_active_timeout = int(os.getenv('CP_CAP_AUTOSCALE_ACTIVE_TIMEOUT', 30))
+    common_utils = ScaleCommonUtils()
+    static_host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
+                                                storage_file=os.path.join(work_dir,
+                                                                          '.static.%s.storage' % queue_name),
+                                                clock=clock)
+    init_static_hosts(default_hostsfile=default_hostfile, static_host_storage=static_host_storage, clock=clock,
+                      tagging_active_timeout=tagging_active_timeout,
+                      static_hosts_enabled=queue_static and static_hosts_number)
+    if not autoscale_enabled:
+        Logger.info('Using non autoscaling mode...')
+        autoscaling_hosts_number = 0
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                                 host_storage=host_storage,
                                                 parent_run_id=master_run_id, default_hostfile=default_hostfile,
@@ -2213,24 +2394,34 @@ def main():
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_launch_params=instance_launch_params,
                                                 clock=clock)
+    worker_tags_handler = GridEngineWorkerTagsHandler(api=api, tagging_active_timeout=tagging_active_timeout,
+                                                      host_storage=host_storage,
+                                                      static_host_storage=static_host_storage, clock=clock,
+                                                      common_utils=common_utils)
     scale_up_orchestrator = GridEngineScaleUpOrchestrator(scale_up_handler=scale_up_handler, grid_engine=grid_engine,
                                                           host_storage=host_storage,
+                                                          static_host_storage=static_host_storage,
+                                                          worker_tags_handler=worker_tags_handler,
                                                           instance_selector=instance_selector,
                                                           worker_recorder=worker_recorder,
                                                           batch_size=scale_up_batch_size,
                                                           polling_delay=scale_up_polling_delay,
                                                           clock=clock)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
-                                                    default_hostfile=default_hostfile)
+                                                    default_hostfile=default_hostfile, common_utils=common_utils)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
-                                                 grid_engine=grid_engine, scale_down_handler=scale_down_handler)
+                                                 grid_engine=grid_engine, scale_down_handler=scale_down_handler,
+                                                 common_utils=common_utils)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
-                                      scale_up_orchestrator=scale_up_orchestrator, scale_down_handler=scale_down_handler,
-                                      host_storage=host_storage, scale_up_timeout=scale_up_timeout,
-                                      scale_down_timeout=scale_down_timeout, max_additional_hosts=autoscaling_hosts_number,
+                                      scale_up_orchestrator=scale_up_orchestrator,
+                                      scale_down_handler=scale_down_handler,
+                                      host_storage=host_storage, static_host_storage=static_host_storage,
+                                      scale_up_timeout=scale_up_timeout,
+                                      scale_down_timeout=scale_down_timeout,
+                                      max_additional_hosts=autoscaling_hosts_number,
                                       idle_timeout=scale_down_idle_timeout, clock=clock)
     daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
-                                         polling_timeout=10)
+                                         worker_tags_handler=worker_tags_handler, polling_timeout=10)
     daemon.start()
 
 
