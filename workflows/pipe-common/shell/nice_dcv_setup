@@ -117,12 +117,14 @@ EOF
 }
 
 function configure_dcv_extras {
+mkdir -p /opt/dcv/extras
 cat <<EOF >>/opt/dcv/extras/xfce4launch
 #!/bin/bash
 mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
 cp /etc/xdg/xfce4/panel/default.xml ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
 startxfce4
 EOF
+chmod +x /opt/dcv/extras/xfce4launch
 }
 
 function run_dcv {
@@ -152,8 +154,10 @@ function run_dcv {
       exit 1
   fi
 
+  CP_DCV_INIT_SCRIPT="${CP_DCV_INIT_SCRIPT:-/opt/dcv/extras/xfce4launch}"
   if [ "$CP_DCV_INIT_SCRIPT" ]; then
-      export CP_DCV_INIT_SCRIPT="--init $CP_DCV_INIT_SCRIPT"
+      CP_DCV_INIT_SCRIPT="--init $CP_DCV_INIT_SCRIPT"
+      pipe_log_info "Using \"$CP_DCV_INIT_SCRIPT\" initialization script for a DCV session" "$DCV_INSTALL_TASK"
   fi
   dcv create-session --owner $OWNER --user $OWNER $CP_DCV_INIT_SCRIPT session
 
