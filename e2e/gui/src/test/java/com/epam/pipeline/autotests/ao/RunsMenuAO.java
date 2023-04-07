@@ -25,6 +25,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
@@ -466,6 +467,24 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public boolean isActiveRun(final String id) {
         return $(tagName("tbody")).shouldBe(visible)
                 .findAll(tagName("tr")).findBy(text(id)).is(exist);
+    }
+
+    public String getRunIdByTag(final String runTag) {
+         return $(tagName("tbody"))
+                .shouldBe(visible)
+                .findAll(className("ant-table-row"))
+                .stream()
+                .filter(element -> element.find(byClassName("un-tags__more-label")).exists())
+                .filter(element -> {
+                        element.find(byClassName("un-tags__more-label")).hover();
+                        $(byClassName("un-tags__run-tag")).has(text(runTag.toUpperCase()));
+                        return true;
+                    }
+                )
+                .findFirst()
+                .orElseThrow(() -> new NoSuchWindowException(format("No such run with tag {%s}.", runTag)))
+                .find(byClassName("un-name__original"))
+                .getText().replace("pipeline-","");
     }
 
     public enum HeaderColumn {

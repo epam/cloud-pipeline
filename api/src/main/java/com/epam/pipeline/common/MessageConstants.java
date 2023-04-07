@@ -693,6 +693,7 @@ public final class MessageConstants {
 
     //Lustre
     public static final String ERROR_LUSTRE_NOT_FOUND = "error.lustre.not.found.for.run";
+    public static final String ERROR_LUSTRE_ID_NOT_FOUND = "error.lustre.not.found.for.id";
     public static final String ERROR_LUSTRE_NOT_CREATED = "error.lustre.not.created.for.run";
     public static final String ERROR_LUSTRE_REGION_NOT_SUPPORTED = "error.lustre.region.not.supported";
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
@@ -821,6 +822,11 @@ public final class MessageConstants {
 
     // Launch limits
     public static final String ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED = "error.run.launch.user.limit.exceeded";
+    public static final String ERROR_RUN_ASSIGN_POLICY_MALFORMED = "error.run.assign.policy.malformed";
+    public static final String ERROR_RUN_ASSIGN_POLICY_FORBIDDEN = "error.run.assign.policy.forbidden";
+    public static final String ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN = "error.run.with.service.account.forbidden";
+
+
 
     // Ngs preprocessing
     public static final String ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED =

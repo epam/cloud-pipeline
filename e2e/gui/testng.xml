@@ -526,6 +526,12 @@
         </classes>
     </test>
 
+    <test name="EnvironmentTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.EnvironmentTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>

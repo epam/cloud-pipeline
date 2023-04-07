@@ -86,6 +86,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     private Long parentRunId;
     private List<PipelineRun> childRuns;
     private Integer childRunsCount;
+    private Integer activeChildRunsCount;
     private Boolean initialized;
     private Boolean queued;
     private List<Long> entitiesIds;

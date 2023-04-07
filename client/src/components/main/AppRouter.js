@@ -77,7 +77,9 @@ import ProjectHistory from '../pipelines/browser/ProjectHistory';
 import {FacetedSearchPage} from '../search';
 import {HcsImagePage} from '../special/hcs-image';
 import NotificationBrowser from './notification/NotificationBrowser';
-import TicketsBrowser from '../special/tickets';
+import TicketsBrowser from '../special/tickets/tickets-list';
+import TicketPage from '../special/tickets/ticket';
+import NewTicketPage from '../special/tickets/new-ticket-page';
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -111,7 +113,9 @@ function AppRouterComponent ({history, uiNavigation}) {
           path="/folder/:folder/metadata/:entity/redirect"
           component={MetadataClassEntityRedirection}
         />
-        <Route path="/tickets(/:id)" component={TicketsBrowser} />
+        <Route path="/tickets/new" component={NewTicketPage} />
+        <Route path="/tickets/:id" component={TicketPage} />
+        <Route path="/tickets" component={TicketsBrowser} />
         <Route path="search/advanced" component={FacetedSearchPage} />
         <Route path="search" component={RunsSearch} />
         <Redirect from="/settings" to="/settings/cli" />

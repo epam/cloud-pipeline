@@ -32,6 +32,11 @@ const MODES = {
   preview: 'preview'
 };
 
+const ModeNames = {
+  [MODES.edit]: 'Write',
+  [MODES.preview]: 'Preview'
+};
+
 export default class CommentEditor extends React.Component {
   static propTypes = {
     isNewComment: PropTypes.bool,
@@ -150,7 +155,7 @@ export default class CommentEditor extends React.Component {
                 borderRadius: '4px 4px 0 0'
               }}
             >
-              {key}
+              {ModeNames[key] || key}
             </Radio.Button>
           ))}
         </Radio.Group>
@@ -180,12 +185,16 @@ export default class CommentEditor extends React.Component {
                     height: '28px'
                   }}
                 >
-                  {!isNewComment ? (<Button
-                    onClick={this.onCancel}
-                    style={{marginRight: '5px', borderRadius: '0 0 4px 4px'}}
-                  >
-                    Cancel
-                  </Button>) : null}
+                  {
+                    !isNewComment && (
+                      <Button
+                        onClick={this.onCancel}
+                        style={{marginRight: '5px', borderRadius: '0 0 4px 4px'}}
+                      >
+                        Cancel
+                      </Button>
+                    )
+                  }
                   <Button
                     onClick={this.onSave}
                     type="primary"

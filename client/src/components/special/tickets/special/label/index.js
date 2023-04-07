@@ -19,6 +19,7 @@ import classNames from 'classnames';
 import styles from './label.css';
 
 export const STATUS_COLORS = {
+  new: 'cp-primary border',
   opened: 'cp-primary border',
   open: 'cp-primary border',
   closed: 'cp-success border',
