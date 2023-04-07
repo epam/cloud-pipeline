@@ -252,9 +252,7 @@ def _launch_autoscaler(profile, autoscaling_script_path, logger):
     logger.debug('Launching grid engine queue {} autoscaling...'.format(profile.name))
     subprocess.check_call("""
 source "{autoscaling_profile_path}"
-if check_cp_cap "CP_CAP_AUTOSCALE"; then
-    nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
-fi
+nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
     """.format(autoscaling_profile_path=profile.path_queue,
                autoscaling_script_path=autoscaling_script_path),
                           shell=True)
