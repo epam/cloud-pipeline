@@ -49,8 +49,8 @@ def get_global_token_refresh_threshold(api):
     return preference.get('value')
 
 
-def get_user_token_refresh_threshold(api, user_id):
-    preference = api.get_contextual_preference(GLOBAL_REFRESH_THRESHOLD, 'USER', user_id)
+def get_user_token_refresh_threshold(api):
+    preference = api.search_contextual_preference(GLOBAL_REFRESH_THRESHOLD)
     if not preference or not preference.get('value'):
         return None
     return preference.get('value')
@@ -64,8 +64,8 @@ def get_user_token(api, user_name, duration=None):
     return token
 
 
-def get_refresh_threshold(api, user_id):
-    refresh_threshold = get_user_token_refresh_threshold(api, user_id)
+def get_refresh_threshold(api):
+    refresh_threshold = get_user_token_refresh_threshold(api)
     if not refresh_threshold:
         refresh_threshold = get_global_token_refresh_threshold(api)
     if not refresh_threshold:
@@ -73,8 +73,8 @@ def get_refresh_threshold(api, user_id):
     return refresh_threshold
 
 
-def token_refresh_required(api, user_id, token_expiration_date):
-    refresh_threshold = get_refresh_threshold(api, user_id)
+def token_refresh_required(api, token_expiration_date):
+    refresh_threshold = get_refresh_threshold(api)
     current_time = time()
     return (int(token_expiration_date) - current_time) <= int(refresh_threshold)
 
@@ -95,9 +95,8 @@ def refresh_token():
     api = PipelineAPI(API_URL, LOG_DIR)
     user = api.load_current_user()
     username = user.get("userName", None)
-    user_id = user.get("id", None)
 
-    if not token_refresh_required(api, user_id, token_expiration_date):
+    if not token_refresh_required(api, token_expiration_date):
         # No token refresh required
         return
 
