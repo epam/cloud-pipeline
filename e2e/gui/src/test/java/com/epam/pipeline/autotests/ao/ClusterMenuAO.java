@@ -71,6 +71,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                         .or(contains(nodeLabel("CP-SEARCH-ELK")))
                         .or(contains(nodeLabel("HEAPSTER")))
                         .or(contains(nodeLabel("DNS")))
+                        .or(contains(nodeLabel("TMP")))
                         .test(element);
             }
         };
