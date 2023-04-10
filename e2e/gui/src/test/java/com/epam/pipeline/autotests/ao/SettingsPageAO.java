@@ -1011,7 +1011,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                 @Override
                 public GroupsTabAO ok() {
-                    click(OK);
+                    if (get(OK).isEnabled()) {
+                        click(OK);
+                    } else {
+                        click(CANCEL);
+                    }
                     return parentAO;
                 }
 
