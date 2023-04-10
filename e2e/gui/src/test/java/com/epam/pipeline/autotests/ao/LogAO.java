@@ -65,7 +65,7 @@ public class LogAO implements AccessObject<LogAO> {
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
-            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find(byXpath("td/div[2]/a[1]"))),
             entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a")),
             entry(SHOW_TIMINGS, $(byClassName("log__timing-btn")))
     );
@@ -277,7 +277,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public String getNestedRunID(int childNum) {
         return $(withText("Nested runs:")).closest("tr")
-                .find(byXpath(format("td/div[2]/a[1]/b", childNum))).getText();
+                .find(byXpath(format("td/div[2]/a[%s]/b", childNum))).getText();
     }
 
     public LogAO shareWithGroup(final String groupName) {
