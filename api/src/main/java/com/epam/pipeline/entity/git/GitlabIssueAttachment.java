@@ -16,29 +16,19 @@
 
 package com.epam.pipeline.entity.git;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.ZonedDateTime;
-import java.util.List;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GitlabIssueComment {
+public class GitlabIssueAttachment {
 
-    private Long id;
-    private String body;
-    @JsonProperty("created_at")
-    private ZonedDateTime createdAt;
-    @JsonProperty("updated_at")
-    private ZonedDateTime updatedAt;
-    private GitlabUser author;
-    @JsonIgnoreProperties
-    private List<GitlabIssueAttachment> attachments;
+    private String fileName;
+    private String content;
+    private String markdown;
+    private String url;
 }

@@ -54,7 +54,8 @@ public class GitlabIssue {
     private GitlabUser author;
     @JsonProperty("closed_by")
     private GitlabUser closedBy;
-    private List<String> attachments;
+    @JsonIgnoreProperties
+    private List<GitlabIssueAttachment> attachments;
     private List<GitlabUser> assignees;
     @JsonIgnoreProperties
     private List<GitlabIssueComment> comments;
