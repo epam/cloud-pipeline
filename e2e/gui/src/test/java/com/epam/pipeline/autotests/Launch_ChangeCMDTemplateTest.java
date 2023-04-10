@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ public class Launch_ChangeCMDTemplateTest extends AbstractAutoRemovingPipelineRu
                 .createPipeline(Template.SHELL, getPipelineName())
                 .firstVersion()
                 .codeTab()
-                .clearAndFillPipelineFile(
-                        "config.json",
-                        Utils.readResourceFully(CONFIG_JSON)
+                .clearAndFillPipelineFile("config.json", Utils.readResourceFully(CONFIG_JSON)
+                        .replace("{{file_name}}",
+                                Utils.getFileNameFromPipelineName(getPipelineName(), "sh"))
                         .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
                 .sleep(2, SECONDS)

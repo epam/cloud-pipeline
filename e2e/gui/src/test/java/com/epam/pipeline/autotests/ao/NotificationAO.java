@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ public class NotificationAO implements AccessObject<NotificationAO> {
         this.elements = initialiseElements(
                 entry(SEVERITY_ICON, context().find(byClassName("anticon"))),
                 entry(TITLE, context().find(byClassName("system-notification__title"))),
-                entry(BODY, context().find(byClassName("system-notification__body"))),
+                entry(BODY, context().find(byClassName("markdown"))),
                 entry(CLOSE, context().find(byId("notification-close-button"))),
                 entry(DATE, context().find(byClassName("system-notification__date")))
         );
@@ -63,7 +63,7 @@ public class NotificationAO implements AccessObject<NotificationAO> {
     }
 
     public NotificationAO ensureSeverityIs(String severity) {
-        ensure(SEVERITY_ICON, cssClass(String.format("anticon-%s-circle-o", severity.toLowerCase())));
+        ensure(SEVERITY_ICON, cssClass(String.format("cp-setting-%s", severity.toLowerCase())));
         return this;
     }
 

@@ -66,7 +66,8 @@ public class LogAO implements AccessObject<LogAO> {
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
             entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
-            entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
+            entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a")),
+            entry(SHOW_TIMINGS, $(byClassName("log__timing-btn")))
     );
 
     public LogAO waitForCompletion() {
@@ -275,7 +276,8 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public String getNestedRunID(int childNum) {
-        return $(withText("Nested runs:")).closest("tr").find(byXpath(format("td/a[%s]/b", childNum))).getText();
+        return $(withText("Nested runs:")).closest("tr")
+                .find(byXpath(format("td/div[2]/a[1]/b", childNum))).getText();
     }
 
     public LogAO shareWithGroup(final String groupName) {
@@ -633,7 +635,7 @@ public class LogAO implements AccessObject<LogAO> {
             click(ADD_USER);
             SelenideElement selectUserPopup = Utils.getPopupByTitle("Select user");
             setValue(selectUserPopup.$(byClassName("ant-select-search__field")), userName);
-            $(byXpath(format("//div[.='%s']", userName))).click();
+            $(byClassName("ant-select-dropdown-menu")).$(byText(userName)).click();
             selectUserPopup.find(button("OK")).shouldBe(visible).click();
             if (sshConnection) {
                 checkEnableSShConnection(userName);

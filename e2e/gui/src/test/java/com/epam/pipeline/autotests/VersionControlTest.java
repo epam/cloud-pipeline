@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Selectors.byText;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.BucketPermission;
@@ -121,6 +123,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
         loginAs(user)
                 .library()
                 .selectStorage(storageName)
+                .ensure(byText("Show files versions"), not(exist))
                 .selectFile(file.getName())
                 .delete()
                 .validateElementNotPresent(file.getName());
@@ -162,7 +165,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
         navigationMenu()
                 .library()
                 .selectStorage(storageName)
-                .showFilesVersions(false)
+                .ensure(byText("Show files versions"), not(exist))
                 .validateElementIsPresent(file.getName());
     }
 

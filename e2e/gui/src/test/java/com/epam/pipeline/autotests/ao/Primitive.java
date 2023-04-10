@@ -320,5 +320,7 @@ public enum Primitive {
     ENDS_ON_TIME,
     AUTOSCALED,
     PROTOCOL,
-    REINDEX
+    REINDEX,
+    CONDITION,
+    SHOW_TIMINGS
 }
