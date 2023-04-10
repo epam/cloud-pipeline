@@ -37,9 +37,13 @@ function renderTitle (run) {
     nodeType = run.instance.nodeType;
     nodeDisk = run.instance.nodeDisk ? `${run.instance.nodeDisk} Gb` : undefined;
   }
-  nodeCount = run.childRunsCount && run.childRunsCount > 0
-    ? `cluster (${run.childRunsCount + 1} nodes)`
-    : undefined;
+  if (run.childRunsCount > 0) {
+    const cluster = [
+      (run.activeChildRunsCount || 0) + 1,
+      (run.childRunsCount + 1)
+    ].join(' / ').concat(' nodes');
+    nodeCount = `cluster (${cluster})`;
+  }
   return [
     podId,
     nodeCount,
