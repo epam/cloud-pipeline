@@ -32,7 +32,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
-import com.epam.pipeline.entity.datastorage.access.DataAccessEventType;
+import com.epam.pipeline.entity.datastorage.access.DataAccessType;
 import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
@@ -117,10 +117,10 @@ public class GSBucketStorageHelper {
         return bucket.getName();
     }
 
-    public void deleteGoogleStorage(final String bucketName) {
+    public void deleteGoogleStorage(final GSBucketStorage storage) {
         final Storage client = gcpClient.buildStorageClient(region);
-        deleteAllVersions(bucketName, EMPTY_PREFIX, client);
-        deleteBucket(bucketName, client);
+        deleteAllVersions(client, storage, EMPTY_PREFIX);
+        deleteBucket(storage.getRoot(), client);
     }
 
     public Stream<DataStorageFile> listDataStorageFiles(final GSBucketStorage storage, final String path) {
@@ -180,7 +180,7 @@ public class GSBucketStorageHelper {
                 .setMetadata(StringUtils.isBlank(owner) ? null
                         : Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, owner))
                 .build();
-        events.put(new DataAccessEvent(bucketName, path, DataAccessEventType.WRITE));
+        events.put(new DataAccessEvent(path, DataAccessType.WRITE, storage));
         final Blob blob = client.create(blobInfo, contents);
         return createDataStorageFile(blob);
     }
@@ -210,7 +210,7 @@ public class GSBucketStorageHelper {
         final String bucketName = dataStorage.getPath();
 
         if (StringUtils.isBlank(version) && totally) {
-            deleteAllFileVersions(bucketName, path, client);
+            deleteAllFileVersions(client, dataStorage, path);
             return;
         }
 
@@ -219,7 +219,7 @@ public class GSBucketStorageHelper {
             return;
         }
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
-        deleteBlob(blob, client, StringUtils.isNotBlank(version));
+        deleteBlob(client, dataStorage, blob, StringUtils.isNotBlank(version));
     }
 
     public void deleteFolder(final GSBucketStorage dataStorage, final String path, final Boolean totally) {
@@ -232,12 +232,12 @@ public class GSBucketStorageHelper {
 
         final String bucketName = dataStorage.getPath();
         if (totally) {
-            deleteAllVersions(bucketName, folderPath, client);
+            deleteAllVersions(client, dataStorage, folderPath);
             return;
         }
 
         final Page<Blob> blobs = client.list(bucketName, Storage.BlobListOption.prefix(folderPath));
-        blobs.iterateAll().forEach(blob -> deleteBlob(blob, client, false));
+        blobs.iterateAll().forEach(blob -> deleteBlob(client, dataStorage, blob, false));
     }
 
     public DataStorageFile moveFile(final GSBucketStorage storage, final String oldPath, final String newPath) {
@@ -251,7 +251,7 @@ public class GSBucketStorageHelper {
         final Blob oldBlob = checkBlobExistsAndGet(bucketName, oldPath, client, null);
         checkBlobDoesNotExist(bucketName, newPath, client);
 
-        final Blob newBlob = moveBlob(client, oldBlob, BlobId.of(bucketName, newPath));
+        final Blob newBlob = moveBlob(client, storage, oldBlob, BlobId.of(bucketName, newPath));
 
         return createDataStorageFile(newBlob);
     }
@@ -274,19 +274,20 @@ public class GSBucketStorageHelper {
         blobs.iterateAll().forEach(oldBlob -> {
             final String oldBlobName = oldBlob.getName();
             final String newBlobName = newFolderPath + oldBlobName.substring(oldFolderPath.length());
-            moveBlob(client, oldBlob, BlobId.of(bucketName, newBlobName));
+            moveBlob(client, storage, oldBlob, BlobId.of(bucketName, newBlobName));
         });
 
         return createDataStorageFolder(newFolderPath);
     }
 
-    private Blob moveBlob(final Storage client, final Blob oldBlob, final BlobId newBlobId) {
-        events.put(new DataAccessEvent(oldBlob.getBucket(), oldBlob.getName(), DataAccessEventType.READ),
-                new DataAccessEvent(newBlobId.getBucket(), newBlobId.getName(), DataAccessEventType.WRITE));
+    private Blob moveBlob(final Storage client, final GSBucketStorage storage,
+                          final Blob oldBlob, final BlobId newBlobId) {
+        events.put(new DataAccessEvent(oldBlob.getName(), DataAccessType.READ, storage),
+                new DataAccessEvent(newBlobId.getName(), DataAccessType.WRITE, storage));
         final CopyWriter copyWriter = oldBlob.copyTo(newBlobId);
         final Blob newBlob = copyWriter.getResult();
         Assert.notNull(newBlob, "Created blob should not be empty");
-        deleteBlob(oldBlob, client, false);
+        deleteBlob(client, storage, oldBlob, false);
         return newBlob;
     }
 
@@ -315,7 +316,7 @@ public class GSBucketStorageHelper {
         content.setContentType(blob.getContentType());
         content.setTruncated(blob.getSize() > bufferSize);
 
-        events.put(new DataAccessEvent(bucketName, path, DataAccessEventType.READ));
+        events.put(new DataAccessEvent(path, DataAccessType.READ, storage));
         try (ReadChannel reader = blob.reader()) {
             final ByteBuffer bytes = ByteBuffer.allocate(bufferSize);
             reader.read(bytes);
@@ -338,7 +339,7 @@ public class GSBucketStorageHelper {
         final String bucketName = storage.getPath();
 
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
-        events.put(new DataAccessEvent(bucketName, path, DataAccessEventType.READ));
+        events.put(new DataAccessEvent(path, DataAccessType.READ, storage));
         try (ReadChannel reader = blob.reader()) {
             return new DataStorageStreamingContent(Channels.newInputStream(reader), path);
         }
@@ -412,9 +413,9 @@ public class GSBucketStorageHelper {
                 .setSourceOptions(Storage.BlobSourceOption.generationMatch())
                 .setTarget(BlobId.of(bucketName, path))
                 .build();
-        events.put(new DataAccessEvent(bucketName, path, DataAccessEventType.WRITE));
+        events.put(new DataAccessEvent(path, DataAccessType.WRITE, storage));
         client.copy(request).getResult();
-        deleteBlob(blob, client, true);
+        deleteBlob(client, storage, blob, true);
     }
 
     public void applyStoragePolicy(final GSBucketStorage storage, final StoragePolicy policy) {
@@ -615,30 +616,31 @@ public class GSBucketStorageHelper {
         return dataStorageFile;
     }
 
-    private void deleteAllFileVersions(final String bucketName, final String path, final Storage client) {
-        final Page<Blob> blobs = client.list(bucketName,
+    private void deleteAllFileVersions(final Storage client, final GSBucketStorage storage, final String path) {
+        final Page<Blob> blobs = client.list(storage.getRoot(),
                 Storage.BlobListOption.versions(true),
                 Storage.BlobListOption.currentDirectory(),
                 Storage.BlobListOption.prefix(path));
         blobs.iterateAll().forEach(blob -> {
             if (blob.getName().equals(path)) {
-                deleteBlob(blob, client, true);
+                deleteBlob(client, storage, blob, true);
             }
         });
     }
 
-    private void deleteAllVersions(final String bucketName, final String path, final Storage client) {
-        final Page<Blob> blobs = client.list(bucketName,
+    private void deleteAllVersions(final Storage client, final GSBucketStorage storage, final String path) {
+        final Page<Blob> blobs = client.list(storage.getRoot(),
                 Storage.BlobListOption.versions(true),
                 Storage.BlobListOption.prefix(path));
-        blobs.iterateAll().forEach(blob -> deleteBlob(blob, client, true));
+        blobs.iterateAll().forEach(blob -> deleteBlob(client, storage, blob, true));
     }
 
-    private void deleteBlob(final Blob blob, final Storage client, final boolean withVersion) {
+    private void deleteBlob(final Storage client, final GSBucketStorage storage,
+                            final Blob blob, final boolean withVersion) {
         final String bucketName = blob.getBucket();
         final String path = blob.getName();
         final BlobId blobId = BlobId.of(bucketName, path, withVersion ? blob.getGeneration() : null);
-        events.put(new DataAccessEvent(bucketName, path, DataAccessEventType.DELETE));
+        events.put(new DataAccessEvent(path, DataAccessType.DELETE, storage));
         final boolean deleted = client.delete(blobId);
         if (!deleted) {
             throw new DataStorageException(

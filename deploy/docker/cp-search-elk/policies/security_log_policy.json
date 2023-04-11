@@ -1,0 +1,19 @@
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "actions": {
+          "rollover": {
+            "max_age": "1d"
+          }
+        }
+      },
+      "delete": {
+        "min_age": "${CP_SECURITY_LOGS_ROLLOVER_DAYS}d",
+        "actions": {
+          "delete": {}
+        }
+      }
+    }
+  }
+}

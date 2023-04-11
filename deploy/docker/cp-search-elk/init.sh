@@ -63,184 +63,28 @@ if [ $not_initialized ]; then
     exit 1
 fi
 
-ILM_POLICY="{
-  \"policy\": {
-    \"phases\": {
-      \"hot\": {
-        \"actions\": {
-          \"rollover\": {
-            \"max_age\": \"1d\"
-          }
-        }
-      },
-      \"delete\": {
-        \"min_age\": \"${CP_SECURITY_LOGS_ROLLOVER_DAYS:-20}d\",
-        \"actions\": {
-          \"delete\": {}
-        }
-      }
-    }
-  }
-}"
+export CP_SECURITY_LOGS_ELASTIC_PREFIX="${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}"
+export CP_SECURITY_LOGS_ROLLOVER_DAYS="${CP_SECURITY_LOGS_ROLLOVER_DAYS:-20}"
 
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/_ilm/policy/security_log_policy -d "$ILM_POLICY"
+for _policy_path in /etc/search-elk/policies/*.json; do
+  _policy_name="$(basename "$_policy_path" .json)"
+  envsubst_inplace "$_policy_path"
+  curl -H 'Content-Type: application/json' -XPUT "localhost:9200/_ilm/policy/$_policy_name" -d "@$_policy_path"
+done
 
-INDEX_TEMPLATE="{
-  \"index_patterns\": [\"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-*\"],
-  \"settings\": {
-    \"number_of_shards\": 1,
-    \"number_of_replicas\": 0,
-    \"index.lifecycle.name\": \"security_log_policy\",
-    \"index.lifecycle.rollover_alias\": \"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}\"
-  },
-  \"mappings\": {
-    \"doc\" : {
-      \"properties\": {
-        \"@timestamp\": {
-          \"type\": \"date\"
-        },
-        \"event_id\": {
-          \"type\": \"long\"
-        },
-        \"hostname\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"application\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"level\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"loggerName\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"message\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"message_timestamp\": {
-          \"type\": \"date\"
-        },
-        \"service_account\": {
-          \"type\": \"boolean\"
-        },
-        \"service_name\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"source\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"thread\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"thrown\": {
-          \"properties\": {
-            \"commonElementCount\": {
-              \"type\": \"long\"
-            },
-            \"extendedStackTrace\": {
-              \"type\": \"text\",
-              \"fields\": {
-                \"keyword\": {
-                  \"type\": \"keyword\"
-                }
-              }
-            },
-            \"localizedMessage\": {
-              \"type\": \"text\",
-              \"fields\": {
-                \"keyword\": {
-                  \"type\": \"keyword\"
-                }
-              }
-            },
-            \"message\": {
-              \"type\": \"text\",
-              \"fields\": {
-                \"keyword\": {
-                  \"type\": \"keyword\"
-                }
-              }
-            },
-            \"name\": {
-              \"type\": \"text\",
-              \"fields\": {
-                \"keyword\": {
-                  \"type\": \"keyword\"
-                }
-              }
-            }
-          }
-        },
-        \"type\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        },
-        \"user\": {
-          \"type\": \"text\",
-          \"fields\": {
-            \"keyword\": {
-              \"type\": \"keyword\"
-            }
-          }
-        }
-      }
-    }
-  }
-}"
-
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/_template/security_log_template -d "$INDEX_TEMPLATE"
+for _template_path in /etc/search-elk/templates/*.json; do
+  _template_name="$(basename "$_template_path" .json)"
+  envsubst_inplace "$_template_path"
+  curl -H 'Content-Type: application/json' -XPUT "localhost:9200/_template/$_template_name" -d "@$_template_path"
+done
 
 INDEX="{
   \"aliases\": {
-    \"${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}\": {}
+    \"$CP_SECURITY_LOGS_ELASTIC_PREFIX\": {}
   }
 }"
 
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
+curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
 
 for _pipeline_path in /etc/search-elk/pipelines/*.json; do
   _pipeline_name="$(basename "$_pipeline_path" .json)"

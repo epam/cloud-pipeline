@@ -1,11 +1,12 @@
 package com.epam.pipeline.entity.datastorage.access;
 
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import lombok.Value;
 
 @Value
 public class DataAccessEvent {
 
-    String storage;
     String path;
-    DataAccessEventType type;
+    DataAccessType type;
+    AbstractDataStorage storage;
 }
