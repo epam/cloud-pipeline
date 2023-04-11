@@ -101,7 +101,7 @@ public class CloudPipelineAPIClient {
         return retryingApiExecutor.execute(cloudPipelineAPI.searchMetadata(key, value, entityClass));
     }
 
-    public LustreFS getLustre(final String lustreId, final Long regionId) {
-        return retryingApiExecutor.execute(cloudPipelineAPI.getLustre(lustreId, regionId));
+    public LustreFS getLustre(final String mountName, final Long regionId) {
+        return retryingApiExecutor.execute(cloudPipelineAPI.getLustre(mountName, regionId));
     }
 }

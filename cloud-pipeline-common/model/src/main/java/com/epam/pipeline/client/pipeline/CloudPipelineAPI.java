@@ -332,7 +332,7 @@ public interface CloudPipelineAPI {
             @Query("recursive") boolean recursive);
 
     @GET("lustre")
-    Call<Result<LustreFS>> getLustre(@Query("lustreId") String lustreId,
+    Call<Result<LustreFS>> getLustre(@Query("mountName") String mountName,
                                      @Query("regionId") Long regionId);
 
 }

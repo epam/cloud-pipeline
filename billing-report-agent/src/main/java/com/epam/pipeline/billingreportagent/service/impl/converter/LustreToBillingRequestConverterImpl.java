@@ -53,8 +53,8 @@ public class LustreToBillingRequestConverterImpl extends StorageToBillingRequest
     @Override
     protected StorageDescription loadStorageDescription(final EntityContainer<AbstractDataStorage> container) {
         final AbstractDataStorage storage = container.getEntity();
-        final String lustreId = storage.getPath().split("\\.")[0];
-        final LustreFS lustre = getApiClient().getLustre(lustreId, container.getRegion().getId());
+        final String mountName = storage.getPath().split("/")[1];
+        final LustreFS lustre = getApiClient().getLustre(mountName, container.getRegion().getId());
         final long byteSize = (long)lustre.getCapacityGb() * StoragePriceListLoader.GB_TO_BYTES;
         final StorageUsage usage = StorageUsage.builder()
                 .id(storage.getId())
