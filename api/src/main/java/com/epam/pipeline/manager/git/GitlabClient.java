@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueAttachment;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitlabUpload;
@@ -54,6 +55,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -444,7 +446,7 @@ public class GitlabClient {
 
     public GitlabIssue createIssue(final String project,
                                    final GitlabIssueRequest issue,
-                                   final Map<String, String> attachments) throws GitClientException {
+                                   final List<GitlabIssueAttachment> attachments) throws GitClientException {
         issue.setDescription(formatTextWithAttachments(project,
                 attachments,
                 issue.getDescription()));
@@ -453,7 +455,7 @@ public class GitlabClient {
 
     public GitlabIssue updateIssue(final String project,
                                    final GitlabIssueRequest issue,
-                                   final Map<String, String> attachments) throws GitClientException {
+                                   final List<GitlabIssueAttachment> attachments) throws GitClientException {
         issue.setDescription(formatTextWithAttachments(project,
                 attachments,
                 issue.getDescription()));
@@ -487,7 +489,7 @@ public class GitlabClient {
 
     public GitlabIssue getIssue(final String project, final Long issueId) throws GitClientException {
         final GitlabIssue issue = execute(gitLabApi.getIssue(apiVersion, project, issueId));
-        final Pair<String, List<String>> a = extractAttachments(issue.getDescription());
+        final Pair<String, List<GitlabIssueAttachment>> a = extractAttachments(issue.getDescription());
         issue.setDescription(a.getKey());
         issue.setAttachments(a.getValue());
         final List<GitlabIssueComment> comments = getIssueComments(project, issueId);
@@ -499,7 +501,7 @@ public class GitlabClient {
                                                      final Long issueId) throws GitClientException {
         final List<GitlabIssueComment> comments = execute(gitLabApi.getIssueComments(apiVersion, project, issueId));
         comments.forEach(c -> {
-            Pair<String, List<String>> a = extractAttachments(c.getBody());
+            Pair<String, List<GitlabIssueAttachment>> a = extractAttachments(c.getBody());
             c.setBody(a.getKey());
             c.setAttachments(a.getValue());
         });
@@ -700,21 +702,32 @@ public class GitlabClient {
                 .collect(Collectors.toList());
     }
 
-    private static Pair<String, List<String>> extractAttachments(String text) {
+    private static Pair<String, List<GitlabIssueAttachment>> extractAttachments(String text) {
         final String[] description = text.split("!");
         final List<String> descriptionList = Arrays.stream(description).map(String::trim).collect(Collectors.toList());
-        return new ImmutablePair<>(descriptionList.get(0), description.length > 1 ?
-                descriptionList.subList(1, descriptionList.size()) : Collections.emptyList());
+        final List<String> attachments = description.length > 1 ?
+                descriptionList.subList(1, descriptionList.size()) : Collections.emptyList();
+        return new ImmutablePair<>(descriptionList.get(0),  attachments.stream()
+                .map(a -> GitlabIssueAttachment.builder().markdown(a).build())
+                .collect(Collectors.toList()));
     }
+
     private String formatTextWithAttachments(final String project,
-                                             final Map<String, String> attachments,
+                                             final List<GitlabIssueAttachment> attachments,
                                              final String text) {
         if (CollectionUtils.isEmpty(attachments)) {
             return text;
         }
-        final List<String> uploads = uploadAttachments(project, attachments);
+        final List<String> uploaded = attachments.stream()
+                .filter(a -> TextUtils.isBlank(a.getContent())).map(GitlabIssueAttachment::getMarkdown)
+                .collect(Collectors.toList());
+        final Map<String, String> toUpload = attachments.stream()
+                .filter(a -> !TextUtils.isBlank(a.getContent()))
+                .collect(Collectors.toMap(GitlabIssueAttachment::getFileName, GitlabIssueAttachment::getContent));
+        final List<String> uploads = uploadAttachments(project, toUpload);
         final List<String> body = new ArrayList<>();
         body.add(text);
+        body.addAll(uploaded);
         body.addAll(uploads);
         return String.join("\n\n!", body);
     }
