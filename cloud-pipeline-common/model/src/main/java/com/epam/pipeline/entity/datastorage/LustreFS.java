@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.model.pricing;
+package com.epam.pipeline.entity.datastorage;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-public class AwsPricingCard {
+@AllArgsConstructor
+public class LustreFS {
 
-    private AwsProduct product;
-
-    private String serviceCode;
-
-    private String version;
-
-    private String publicationDate;
-
-    private AwsTerms terms;
+    private String id;
+    private String status;
+    private String mountPath;
+    private String mountOptions;
+    private Integer capacityGb;
     private Integer throughput;
+    private String deploymentType;
 }

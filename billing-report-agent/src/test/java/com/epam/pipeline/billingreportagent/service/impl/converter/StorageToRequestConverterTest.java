@@ -229,7 +229,7 @@ public class StorageToRequestConverterTest {
 
         final long dailyCostForTotalSize =
             s3Converter.calculateDailyCost(
-                    totalSize * BYTES_IN_1_GB, STORAGE_CLASS, Regions.US_EAST_2.getName(), syncDate);
+                    totalSize * BYTES_IN_1_GB, STORAGE_CLASS, Regions.US_EAST_2.getName(), syncDate, null);
 
         Assert.assertEquals(expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForTotalSize);
 
@@ -238,7 +238,7 @@ public class StorageToRequestConverterTest {
 
         final long dailyCostForArchiveTotalSize =
                 s3Converter.calculateDailyCost(
-                        totalSize * BYTES_IN_1_GB, ARCHIVE_CLASS, Regions.US_EAST_2.getName(), syncDate);
+                        totalSize * BYTES_IN_1_GB, ARCHIVE_CLASS, Regions.US_EAST_2.getName(), syncDate, null);
 
         Assert.assertEquals(usEast2expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForArchiveTotalSize);
     }
