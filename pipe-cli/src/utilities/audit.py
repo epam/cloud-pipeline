@@ -17,11 +17,10 @@ import os
 from src.api.log import SystemLog
 from src.common.audit import CloudPipelineAuditConsumer, LoggingAuditConsumer, StoragePathAuditConsumer, \
     ChunkingAuditConsumer, BufferingAuditConsumer, QueueAuditContainer, AuditDaemon, AuditContextManager, \
-    DataAccessEntry, StorageDataAccessEntry, DataAccessType
+    DataAccessEvent, DataAccessType
 from src.config import Config
 
-DataAccessEntry = DataAccessEntry
-StorageDataAccessEntry = StorageDataAccessEntry
+DataAccessEvent = DataAccessEvent
 DataAccessType = DataAccessType
 
 
