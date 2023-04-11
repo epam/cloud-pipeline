@@ -202,7 +202,8 @@ class S3Storage {
       UploadId: uploadId
     };
     auditStorageAccessManager.reportWriteAccess({
-      fullPath: `s3://${this._storage.path}/${this.prefix + name}`
+      fullPath: `s3://${this._storage.path}/${this.prefix + name}`,
+      storageId: this._storage.id
     });
     const upload = this._s3.uploadPart(params);
     upload.on('httpUploadProgress', uploadProgress);
