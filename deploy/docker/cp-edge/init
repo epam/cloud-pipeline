@@ -172,8 +172,14 @@ nohup bash /etc/maintenance/crontab.sh &> /dev/null &
 MAINTENANCE_CRON_PID="$!"
 
 # Run Filebeat instances
-nohup filebeat -c filebeat-security-log.yml &
-nohup filebeat -c filebeat-audit-dav.yml &
+nohup filebeat \
+      -path.data /var/lib/filebeat/security-log \
+      -path.logs /var/log/filebeat/security-log \
+      -c filebeat-security-log.yml &
+nohup filebeat \
+      -path.data /var/lib/filebeat/audit-dav \
+      -path.logs /var/log/filebeat/audit-dav \
+      -c filebeat-audit-dav.yml &
 
 # Start nginx
 echo "Starting nginx..."
