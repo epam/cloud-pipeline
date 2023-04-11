@@ -14,7 +14,7 @@
 
 from pipefuse.fsclient import FileSystemClientDecorator
 from pipefuse.storage import StorageLowLevelFileSystemClient
-from src.common.audit import DataAccessEntry, DataAccessType
+from src.common.audit import DataAccessEvent, DataAccessType
 
 
 class AuditFileSystemClient(FileSystemClientDecorator, StorageLowLevelFileSystemClient):
@@ -26,23 +26,23 @@ class AuditFileSystemClient(FileSystemClientDecorator, StorageLowLevelFileSystem
         self._fhs = set()
 
     def upload(self, buf, path):
-        self._container.put(DataAccessEntry(path, DataAccessType.WRITE))
+        self._container.put(DataAccessEvent(path, DataAccessType.WRITE))
         self._inner.upload(buf, path)
 
     def delete(self, path):
-        self._container.put(DataAccessEntry(path, DataAccessType.DELETE))
+        self._container.put(DataAccessEvent(path, DataAccessType.DELETE))
         self._inner.delete(path)
 
     def mv(self, old_path, path):
-        self._container.put_all([DataAccessEntry(old_path, DataAccessType.READ),
-                                 DataAccessEntry(old_path, DataAccessType.DELETE),
-                                 DataAccessEntry(path, DataAccessType.WRITE)])
+        self._container.put_all([DataAccessEvent(old_path, DataAccessType.READ),
+                                 DataAccessEvent(old_path, DataAccessType.DELETE),
+                                 DataAccessEvent(path, DataAccessType.WRITE)])
         self._inner.mv(old_path, path)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
         if fh not in self._fhs:
             self._fhs.add(fh)
-            self._container.put(DataAccessEntry(path, DataAccessType.READ))
+            self._container.put(DataAccessEvent(path, DataAccessType.READ))
         self._inner.download_range(fh, buf, path, offset, length)
 
     def flush(self, fh, path):
@@ -53,5 +53,5 @@ class AuditFileSystemClient(FileSystemClientDecorator, StorageLowLevelFileSystem
         self._inner.flush(fh, path)
 
     def new_mpu(self, path, file_size, download, mv):
-        self._container.put(DataAccessEntry(path, DataAccessType.WRITE))
+        self._container.put(DataAccessEvent(path, DataAccessType.WRITE))
         return self._inner.new_mpu(path, file_size, download, mv)
