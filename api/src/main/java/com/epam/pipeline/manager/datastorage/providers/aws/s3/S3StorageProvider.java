@@ -106,7 +106,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         }
         if (StringUtils.isNotBlank(prefix)) {
             try {
-                s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
+                s3Helper.createFile(storage, ProviderUtils.withTrailingDelimiter(prefix),
                         new byte[]{}, authManager.getAuthorizedUser());
             } catch (DataStorageException e) {
                 log.debug("Failed to create file {}.", prefix);
@@ -146,9 +146,9 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public void deleteStorage(final S3bucketDataStorage dataStorage) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
         if (StringUtils.isNotBlank(datastoragePath.getPath())) {
-            getS3Helper(dataStorage).deleteFolder(datastoragePath.getRoot(), datastoragePath.getPath(), true);
+            getS3Helper(dataStorage).deleteFolder(dataStorage, datastoragePath.getPath(), true);
         } else {
-            getS3Helper(dataStorage).deleteS3Bucket(dataStorage.getPath());
+            getS3Helper(dataStorage).deleteS3Bucket(dataStorage);
         }
     }
 
@@ -171,7 +171,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public void restoreFileVersion(S3bucketDataStorage dataStorage, String path, String version) {
-        getS3Helper(dataStorage).restoreFileVersion(dataStorage.getRoot(),
+        getS3Helper(dataStorage).restoreFileVersion(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version);
     }
 
@@ -223,7 +223,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path,
             byte[] contents) {
         return getS3Helper(dataStorage).createFile(
-                dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), contents,
+                dataStorage, ProviderUtils.buildPath(dataStorage, path), contents,
                 authManager.getAuthorizedUser());
     }
 
@@ -231,7 +231,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path, InputStream dataStream)
         throws DataStorageException {
         return getS3Helper(dataStorage).createFile(
-                dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path),
+                dataStorage, ProviderUtils.buildPath(dataStorage, path),
                 dataStream, authManager.getAuthorizedUser());
     }
 
@@ -242,7 +242,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public void deleteFile(S3bucketDataStorage dataStorage, String path, String version, Boolean totally) {
-        getS3Helper(dataStorage).deleteFile(dataStorage.getRoot(),
+        getS3Helper(dataStorage).deleteFile(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version,
                 totally && dataStorage.isVersioningEnabled());
     }
@@ -250,21 +250,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public void deleteFolder(S3bucketDataStorage dataStorage, String path, Boolean totally) {
         getS3Helper(dataStorage)
-                .deleteFolder(dataStorage.getRoot(),
+                .deleteFolder(dataStorage,
                         ProviderUtils.buildPath(dataStorage, path), totally && dataStorage.isVersioningEnabled());
 
     }
 
     @Override public DataStorageFile moveFile(S3bucketDataStorage dataStorage, String oldPath,
             String newPath) throws DataStorageException {
-        return getS3Helper(dataStorage).moveFile(dataStorage.getRoot(),
+        return getS3Helper(dataStorage).moveFile(dataStorage,
                 ProviderUtils.buildPath(dataStorage, oldPath),
                 ProviderUtils.buildPath(dataStorage, newPath));
     }
 
     @Override public DataStorageFolder moveFolder(S3bucketDataStorage dataStorage, String oldPath,
             String newPath) throws DataStorageException {
-        return getS3Helper(dataStorage).moveFolder(dataStorage.getRoot(),
+        return getS3Helper(dataStorage).moveFolder(dataStorage,
                 ProviderUtils.buildPath(dataStorage, oldPath),
                 ProviderUtils.buildPath(dataStorage, newPath));
     }
@@ -293,7 +293,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         }
         if (!dataStorage.isSensitive() && StringUtils.isNotBlank(datastoragePath.getPath())) {
             try {
-                s3Helper.createFile(datastoragePath.getRoot(),
+                s3Helper.createFile(dataStorage,
                     ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
                     new byte[]{}, authManager.getAuthorizedUser());
             } catch (DataStorageException e) {

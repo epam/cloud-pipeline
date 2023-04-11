@@ -77,7 +77,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     @Override
     public void deleteStorage(final GSBucketStorage dataStorage) throws DataStorageException {
-        getHelper(dataStorage).deleteGoogleStorage(dataStorage.getPath());
+        getHelper(dataStorage).deleteGoogleStorage(dataStorage);
     }
 
     @Override
