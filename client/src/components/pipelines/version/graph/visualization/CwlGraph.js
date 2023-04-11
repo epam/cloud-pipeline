@@ -28,7 +28,10 @@ import {
   ZoomPlugin,
   Workflow
 } from 'cwl-svg';
-import {WorkflowFactory} from 'cwlts/models';
+import {
+  WorkflowFactory,
+  isType
+} from 'cwlts/models';
 import yaml from 'js-yaml';
 import {Alert} from 'antd';
 import Graph from './Graph';
@@ -92,26 +95,80 @@ export default class CwlGraph extends Graph {
     this._fileRequest = null;
   }
 
-  initializeGraph = async () => {
-    if (this._fileRequest) {
-      const response = yaml.load(atob(this._fileRequest.response));
-      this.cwlWorkflow = new Workflow({
-        svgRoot: document.getElementById('cwl-workflow'),
-        model: WorkflowFactory.from(response),
-        plugins: [
-          new SVGArrangePlugin(),
-          new SVGPortDragPlugin(),
-          new SVGNodeMovePlugin(),
-          new SVGEdgeHoverPlugin(),
-          new SVGValidatePlugin(),
-          new SelectionPlugin(),
-          new ZoomPlugin(),
-          new DeletionPlugin()
-        ],
-        editingEnabled: true
+  initializeModel = (modelJson) => {
+    if (!modelJson) {
+      return {
+        cwlVersion: 'v1.0'
+      };
+    }
+    if (/^CommandLineTool$/i.test(modelJson.class)) {
+      const workflowModel = WorkflowFactory.from({cwlVersion: modelJson.cwlVersion || 'v1.0'});
+      const step = workflowModel.addStepFromProcess(modelJson);
+      if (modelJson.id) {
+        workflowModel.changeStepId(step, modelJson.id);
+      }
+      workflowModel.steps[0].in.forEach((input) => {
+        if (isType(input, ['File', 'Directory'])) {
+          workflowModel.createInputFromPort(input);
+        } else {
+          workflowModel.exposePort(input);
+        }
       });
+      workflowModel.steps[0].out.forEach((output) => {
+        workflowModel.createOutputFromPort(output);
+      });
+      return workflowModel;
+    }
+    return WorkflowFactory.from(modelJson);
+  };
 
-      window['wf'] = this.cwlWorkflow;
+  initializeGraph = async () => {
+    try {
+      if (this._fileRequest) {
+        const response = yaml.load(atob(this._fileRequest.response));
+        const workflowModel = this.initializeModel(response);
+        this.cwlWorkflow = new Workflow({
+          svgRoot: document.getElementById('cwl-workflow'),
+          model: workflowModel,
+          plugins: [
+            new SVGArrangePlugin(),
+            new SVGPortDragPlugin(),
+            new SVGNodeMovePlugin(),
+            new SVGEdgeHoverPlugin(),
+            new SVGValidatePlugin(),
+            new SelectionPlugin(),
+            new ZoomPlugin(),
+            new DeletionPlugin()
+          ],
+          editingEnabled: false
+        });
+        this.cwlWorkflow.fitToViewport();
+      }
+    } catch (error) {
+      console.warn('Error parsing CWL:', error.message);
+      this.cwlWorkflow = undefined;
+    }
+  }
+
+  draw () {
+    this.onFullScreenChanged();
+  }
+
+  onFullScreenChanged () {
+    if (this.cwlWorkflow) {
+      this.cwlWorkflow.fitToViewport();
+    }
+  }
+
+  zoomIn () {
+    if (this.cwlWorkflow) {
+
+    }
+  }
+
+  zoomOut () {
+    if (this.cwlWorkflow) {
+
     }
   }
 
