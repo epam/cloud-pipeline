@@ -218,7 +218,7 @@ public class S3Helper {
      * At first, we try to delete all versions present in bucket for buckets that have versioning enabled or suspended,
      * then we delete all left objects (mainly for buckets with disabled versioning).
      */
-    public void deleteS3Bucket(S3bucketDataStorage storage) {
+    public void deleteS3Bucket(final S3bucketDataStorage storage) {
         AmazonS3 s3client = getDefaultS3Client();
         if (s3client.doesBucketExistV2(storage.getRoot())) {
             deleteAllVersions(s3client, storage, null);
@@ -316,7 +316,7 @@ public class S3Helper {
 
     }
 
-    public void restoreFileVersion(S3bucketDataStorage bucket, String path, String version) {
+    public void restoreFileVersion(final S3bucketDataStorage bucket, final String path, final String version) {
         AmazonS3 client = getDefaultS3Client();
         if (fileSizeExceedsLimit(client, bucket.getRoot(), path, version)) {
             throw new DataStorageException(String.format("Restoring file '%s' version '%s' was aborted because " +
@@ -435,7 +435,8 @@ public class S3Helper {
         return generatePresignedUrl(client, expires, ownerTag, DEFAULT_CANNED_ACL.toString(), request);
     }
 
-    public DataStorageFile createFile(S3bucketDataStorage bucket, String path, byte[] contents, String owner)
+    public DataStorageFile createFile(final S3bucketDataStorage bucket, final String path,
+                                      final byte[] contents, final String owner)
             throws DataStorageException {
         if (StringUtils.isNullOrEmpty(path)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
@@ -449,7 +450,8 @@ public class S3Helper {
         }
     }
 
-    public DataStorageFile createFile(S3bucketDataStorage bucket, String path, InputStream dataStream, String owner)
+    public DataStorageFile createFile(final S3bucketDataStorage bucket, final String path,
+                                      final InputStream dataStream, final String owner)
         throws DataStorageException {
         if (StringUtils.isNullOrEmpty(path)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
@@ -462,8 +464,8 @@ public class S3Helper {
         }
     }
 
-    private DataStorageFile putFileToBucket(S3bucketDataStorage bucket, String path, AmazonS3 client,
-                                            InputStream dataStream, String owner) {
+    private DataStorageFile putFileToBucket(final S3bucketDataStorage bucket, final String path, final AmazonS3 client,
+                                            final InputStream dataStream, final String owner) {
         events.put(new DataAccessEvent(path, DataAccessType.WRITE, bucket));
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setLastModified(new Date());
@@ -490,7 +492,7 @@ public class S3Helper {
                 || !isFolder && hasExactMatch(listing.getObjectSummaries(), listing.getCommonPrefixes(), path);
     }
 
-    private void deleteAllInBucketObjects(AmazonS3 client, S3bucketDataStorage bucket) {
+    private void deleteAllInBucketObjects(final AmazonS3 client, final S3bucketDataStorage bucket) {
         try(S3ObjectDeleter deleter = new S3ObjectDeleter(client, events, bucket)) {
             ObjectListing listing;
             ListObjectsRequest request = new ListObjectsRequest();
@@ -534,7 +536,8 @@ public class S3Helper {
         }
     }
 
-    public void deleteFile(S3bucketDataStorage bucket, String path, String version, Boolean totally) {
+    public void deleteFile(final S3bucketDataStorage bucket, final String path, final String version,
+                           final Boolean totally) {
         if (StringUtils.isNullOrEmpty(path)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
         }
@@ -556,32 +559,33 @@ public class S3Helper {
         }
     }
 
-    public void deleteFolder(S3bucketDataStorage bucket, String path, Boolean totally) {
-        if (StringUtils.isNullOrEmpty(path)) {
+    public void deleteFolder(final S3bucketDataStorage bucket, final String path, final Boolean totally) {
+        String folderPath = path;
+        if (StringUtils.isNullOrEmpty(folderPath)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
         }
-        if (!path.endsWith(ProviderUtils.DELIMITER)) {
-            path += ProviderUtils.DELIMITER;
+        if (!folderPath.endsWith(ProviderUtils.DELIMITER)) {
+            folderPath += ProviderUtils.DELIMITER;
         }
         AmazonS3 client = getDefaultS3Client();
-        if (!totally && !itemExists(client, bucket.getRoot(), path, true)) {
+        if (!totally && !itemExists(client, bucket.getRoot(), folderPath, true)) {
             throw new DataStorageException("Folder does not exist");
         }
         if (totally) {
-            deleteAllVersions(client, bucket, path);
+            deleteAllVersions(client, bucket, folderPath);
         } else {
             //indicates that only DUMMY file is present in a folder and thus it should be deleted completely
             boolean noFiles = true;
             try(S3ObjectDeleter deleter = new S3ObjectDeleter(client, events, bucket)) {
                 ListObjectsRequest request = new ListObjectsRequest();
                 request.setBucketName(bucket.getRoot());
-                request.setPrefix(path);
+                request.setPrefix(folderPath);
                 ObjectListing listing;
                 do {
                     listing = client.listObjects(request);
                     for (S3ObjectSummary s3ObjectSummary : listing.getObjectSummaries()) {
                         String relativePath = s3ObjectSummary.getKey();
-                        if (relativePath.startsWith(path)) {
+                        if (relativePath.startsWith(folderPath)) {
                             if (!relativePath.endsWith(ProviderUtils.FOLDER_TOKEN_FILE)) {
                                 noFiles = false;
                             }
@@ -592,12 +596,12 @@ public class S3Helper {
                 } while (listing.isTruncated());
             }
             if (noFiles) {
-                deleteAllVersions(client, bucket, path);
+                deleteAllVersions(client, bucket, folderPath);
             }
         }
     }
 
-    private void deleteAllVersions(AmazonS3 client, S3bucketDataStorage bucket, String path) {
+    private void deleteAllVersions(final AmazonS3 client, final S3bucketDataStorage bucket, final String path) {
         try(S3ObjectDeleter s3ObjectDeleter = new S3ObjectDeleter(client, events, bucket)) {
             ListVersionsRequest request = new ListVersionsRequest().withBucketName(bucket.getRoot());
             if (path != null) {
@@ -618,7 +622,7 @@ public class S3Helper {
         }
     }
 
-    public DataStorageFile moveFile(S3bucketDataStorage bucket, String oldPath, String newPath)
+    public DataStorageFile moveFile(final S3bucketDataStorage bucket, final String oldPath, final String newPath)
             throws DataStorageException {
         if (StringUtils.isNullOrEmpty(oldPath) || StringUtils.isNullOrEmpty(newPath)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
@@ -1005,8 +1009,8 @@ public class S3Helper {
         return key.equals(path);
     }
 
-    public Map<String, String> updateObjectTags(S3bucketDataStorage dataStorage, String path, Map<String, String> tags,
-                                 String version) {
+    public Map<String, String> updateObjectTags(final S3bucketDataStorage dataStorage, final String path,
+                                                final Map<String, String> tags, final String version) {
         AmazonS3 client = getDefaultS3Client();
         SetObjectTaggingRequest setTaggingRequest = new SetObjectTaggingRequest(dataStorage.getRoot(), path,
                 new ObjectTagging(convertMapToAwsTags(tags)));
@@ -1017,7 +1021,8 @@ public class S3Helper {
         return listObjectTags(dataStorage, path, version);
     }
 
-    public Map<String, String> listObjectTags(S3bucketDataStorage dataStorage, String path, String version) {
+    public Map<String, String> listObjectTags(final S3bucketDataStorage dataStorage, final String path,
+                                              final String version) {
         try {
             AmazonS3 client = getDefaultS3Client();
             GetObjectTaggingRequest getTaggingRequest =
@@ -1036,8 +1041,8 @@ public class S3Helper {
         }
     }
 
-    public Map<String, String> deleteObjectTags(S3bucketDataStorage dataStorage, String path, Set<String> tagKeys,
-                                                String version) {
+    public Map<String, String> deleteObjectTags(final S3bucketDataStorage dataStorage, final String path,
+                                                final Set<String> tagKeys, final String version) {
         Map<String, String> existingTags = listObjectTags(dataStorage, path, version);
         tagKeys.forEach(tag -> Assert.isTrue(existingTags.containsKey(tag), messageHelper.getMessage(
                 MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag)));
@@ -1046,8 +1051,8 @@ public class S3Helper {
         return existingTags;
     }
 
-    public DataStorageItemContent getFileContent(S3bucketDataStorage dataStorage, String path, String version,
-            Long maxDownloadSize) {
+    public DataStorageItemContent getFileContent(final S3bucketDataStorage dataStorage, final String path,
+                                                 final String version, final Long maxDownloadSize) {
         try {
             AmazonS3 client = getDefaultS3Client();
             GetObjectRequest rangeObjectRequest =
@@ -1071,7 +1076,8 @@ public class S3Helper {
         }
     }
 
-    public DataStorageStreamingContent getFileStream(S3bucketDataStorage dataStorage, String path, String version) {
+    public DataStorageStreamingContent getFileStream(final S3bucketDataStorage dataStorage, final String path,
+                                                     final String version) {
         try {
             AmazonS3 client = getDefaultS3Client();
             GetObjectRequest rangeObjectRequest =
