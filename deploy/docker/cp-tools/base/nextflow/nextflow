@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,4 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$NXF_HOME/nextflow -c /etc/nextflow/default.config $@
+
+NEXTFLOW_CONFIG="/etc/nextflow/nextflow.config"
+mkdir -p $(dirname "$NEXTFLOW_CONFIG")
+rm -f "$NEXTFLOW_CONFIG"
+
+if [ "$CP_CAP_SINGULARITY" == "true" ]; then
+    echo "singularity.enabled = true" >> $NEXTFLOW_CONFIG
+elif [ "$CP_CAP_DIND_CONTAINER" == "true" ]; then
+    echo "docker.enabled = true" >> $NEXTFLOW_CONFIG
+    echo "docker.runOptions = '-u \$(id -u):\$(id -g) --privileged'" >> $NEXTFLOW_CONFIG
+fi
+
+if [ "$CP_CAP_SGE" == "true" ]; then
+    echo "process.executor = 'sge'" >> $NEXTFLOW_CONFIG
+    echo "process.penv = 'local'" >> $NEXTFLOW_CONFIG
+    echo "process.queue = 'main.q'" >> $NEXTFLOW_CONFIG
+    echo "process.clusterOptions = '-V'" >> $NEXTFLOW_CONFIG
+fi
+
+if [ -f "$NEXTFLOW_CONFIG" ]; then
+    NEXTFLOW_CONFIG_ARG="-c $NEXTFLOW_CONFIG"
+fi
+$NXF_HOME/nextflow $NEXTFLOW_CONFIG_ARG "$@"
