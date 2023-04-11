@@ -22,6 +22,7 @@ import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -98,5 +99,9 @@ public class CloudPipelineAPIClient {
 
     public List<EntityVO> searchEntriesByMetadata(final AclClass entityClass, final String key, final String value) {
         return retryingApiExecutor.execute(cloudPipelineAPI.searchMetadata(key, value, entityClass));
+    }
+
+    public LustreFS getLustre(final String mountName, final Long regionId) {
+        return retryingApiExecutor.execute(cloudPipelineAPI.getLustre(mountName, regionId));
     }
 }

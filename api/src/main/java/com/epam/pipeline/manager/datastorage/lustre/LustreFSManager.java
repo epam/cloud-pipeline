@@ -51,6 +51,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -107,6 +108,15 @@ public class LustreFSManager {
                 .map(fs -> convert(fs, region))
                 .orElseThrow(() -> new LustreFSException(
                         messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
+    }
+
+    public LustreFS getLustreFS(final String mountName, final Long regionId) {
+        final AwsRegion region = getAwsRegion(regionManager.load(regionId));
+        final AmazonFSx fsxClient = buildFsxClient(region);
+        return findFs(mountName, fsxClient)
+                .map(fs -> convert(fs, region))
+                .orElseThrow(() -> new LustreFSException(
+                        messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_MOUNT_NOT_FOUND, mountName)));
     }
 
     public Optional<LustreFS> findLustreFS(final FileShareMount share) {
@@ -272,6 +282,8 @@ public class LustreFSManager {
                 .status(lustre.getLifecycle())
                 .mountOptions(preferenceManager.getPreference(SystemPreferences.LUSTRE_FS_MOUNT_OPTIONS))
                 .capacityGb(lustre.getStorageCapacity())
+                .throughput(lustre.getLustreConfiguration().getPerUnitStorageThroughput())
+                .deploymentType(lustre.getLustreConfiguration().getDeploymentType())
                 .build();
     }
 
@@ -294,20 +306,33 @@ public class LustreFSManager {
         }
     }
 
+    private Optional<FileSystem> findFs(final String mountName, final AmazonFSx fsxClient) {
+        return findFs(null, fsxClient, fs -> fs.getLustreConfiguration().getMountName().equals(mountName));
+    }
+
     private Optional<FileSystem> findFsForRun(final Long runId, final String token, final AmazonFSx fsxClient) {
+        final Optional<FileSystem> result = findFs(token, fsxClient,
+            fs -> FileSystemType.LUSTRE.name().equals(fs.getFileSystemType()) && hasRunTag(runId, fs));
+        result.ifPresent(fileSystem ->
+                log.debug("Found a lustre fs with id {} for run {}.", fileSystem.getFileSystemId(), runId));
+        return result;
+    }
+
+    private Optional<FileSystem> findFs(final String token,
+                                        final AmazonFSx fsxClient,
+                                        final Predicate<FileSystem> predicate) {
         final DescribeFileSystemsResult result = fsxClient.describeFileSystems(
                 new DescribeFileSystemsRequest()
                         .withNextToken(token));
         final Optional<FileSystem> lustre = ListUtils.emptyIfNull(result.getFileSystems())
                 .stream()
-                .filter(fs -> FileSystemType.LUSTRE.name().equals(fs.getFileSystemType()) && hasRunTag(runId, fs))
+                .filter(predicate::evaluate)
                 .findFirst();
         if (lustre.isPresent()) {
-            log.debug("Found a lustre fs with id {} for run {}.", lustre.get().getFileSystemId(), runId);
             return lustre;
         }
         if (StringUtils.isNotBlank(result.getNextToken())) {
-            return findFsForRun(runId, result.getNextToken(), fsxClient);
+            return findFs(result.getNextToken(), fsxClient, predicate);
         }
         return Optional.empty();
     }
