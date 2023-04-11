@@ -634,15 +634,27 @@ public class GitManager {
         return getDefaultGitlabClient().deleteIssue(getProjectForIssues(), issueId);
     }
 
-    public PagedResult<List<GitlabIssue>> getIssues(final Integer page,
-                                                    final Integer pageSize,
+    public PagedResult<List<GitlabIssue>> getIssues(final Integer page, final Integer pageSize,
                                                     final GitlabIssueFilter filter) throws GitClientException {
-        final List<String> labels = Optional.ofNullable(filter.getLabels()).orElse(new ArrayList<>());
+        List<String> labels = new ArrayList<>();
+        List<String> notLabels = new ArrayList<>();
+        if (filter.getLabelsFilter() != null) {
+            Assert.notNull(filter.getLabelsFilter().getNot(),
+                    "Gitlab issue filter by labels should contain specified 'not' flag.");
+            Assert.isTrue(CollectionUtils.isNotEmpty(filter.getLabelsFilter().getLabels()),
+                    "Gitlab issue filter by labels should contain labels.");
+            if (filter.getLabelsFilter().getNot()) {
+                notLabels = filter.getLabelsFilter().getLabels();
+            } else {
+                labels = filter.getLabelsFilter().getLabels();
+            }
+        }
         if (!authManager.isAdmin()) {
             final String authorizedUser = authManager.getCurrentUser().getUserName();
             labels.add(String.format(ON_BEHALF_OF, authorizedUser));
         }
-        return getDefaultGitlabClient().getIssues(getProjectForIssues(), labels, page, pageSize, filter.getSearch());
+        return getDefaultGitlabClient().getIssues(getProjectForIssues(), labels, notLabels, page, pageSize,
+                filter.getSearch());
     }
 
     public GitlabIssue getIssue(final Long issueId) throws GitClientException {
