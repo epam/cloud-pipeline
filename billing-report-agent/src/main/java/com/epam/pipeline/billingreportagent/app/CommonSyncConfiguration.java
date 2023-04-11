@@ -17,6 +17,7 @@
 package com.epam.pipeline.billingreportagent.app;
 
 import com.epam.pipeline.billingreportagent.model.StorageType;
+import com.epam.pipeline.billingreportagent.model.pricing.AwsService;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
@@ -27,6 +28,7 @@ import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStoragePri
 import com.epam.pipeline.billingreportagent.service.impl.converter.AzureStoragePriceListLoader;
 import com.epam.pipeline.billingreportagent.service.impl.converter.FileShareMountsService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.GcpStoragePriceListLoader;
+import com.epam.pipeline.billingreportagent.service.impl.converter.LustreToBillingRequestConverterImpl;
 import com.epam.pipeline.billingreportagent.service.impl.converter.PriceLoadingMode;
 import com.epam.pipeline.billingreportagent.service.impl.converter.StoragePricingService;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
@@ -111,12 +113,12 @@ public class CommonSyncConfiguration {
                 new StoragePricingService(
                         new AwsPriceStorageListComposerLoader(
                                 new AwsStoragePriceListLoader(
-                                        "AmazonS3",
+                                        AwsService.S3_SERVICE,
                                         PriceLoadingMode.valueOf(priceMode.toUpperCase()),
                                         endpointTemplate
                                 ),
                                 new AwsStoragePriceListLoader(
-                                        "AmazonS3GlacierDeepArchive",
+                                        AwsService.S3_GLACIER_SERVICE,
                                         PriceLoadingMode.valueOf(priceMode.toUpperCase()),
                                         endpointTemplate
                                 )
@@ -151,7 +153,7 @@ public class CommonSyncConfiguration {
                                                final FileShareMountsService fileShareMountsService) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS",
+                new StoragePricingService(new AwsStoragePriceListLoader(AwsService.EFS_SERVICE,
                         PriceLoadingMode.valueOf(priceMode.toUpperCase()),
                         endpointTemplate));
         return new StorageSynchronizer(storageMapping,
@@ -168,6 +170,39 @@ public class CommonSyncConfiguration {
                         apiClient,
                         fileShareMountsService,
                         MountType.NFS,
+                        enableStorageHistoricalBillingGeneration),
+                DataStorageType.NFS);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.storage.lustre.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer lustreSynchronizer(
+            final StorageLoader loader,
+            final ElasticIndexService indexService,
+            final ElasticsearchServiceClient elasticsearchClient,
+            final CloudPipelineAPIClient apiClient,
+            final @Value("${sync.storage.price.load.mode:api}")
+            String priceMode,
+            final @Value("${sync.aws.json.price.endpoint.template}")
+            String endpointTemplate,
+            final FileShareMountsService fileShareMountsService) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
+        final StoragePricingService pricingService =
+                new StoragePricingService(new AwsStoragePriceListLoader(AwsService.LUSTRE_SERVICE,
+                        PriceLoadingMode.valueOf(priceMode.toUpperCase()),
+                        endpointTemplate));
+        return new StorageSynchronizer(storageMapping,
+                commonIndexPrefix,
+                storageIndexName,
+                bulkSize,
+                insertTimeout,
+                elasticsearchClient,
+                loader,
+                indexService,
+                new LustreToBillingRequestConverterImpl(mapper,
+                        pricingService,
+                        apiClient,
+                        fileShareMountsService,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.NFS);
     }

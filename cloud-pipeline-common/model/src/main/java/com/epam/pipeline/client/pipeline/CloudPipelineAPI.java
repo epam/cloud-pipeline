@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
@@ -279,6 +280,10 @@ public interface CloudPipelineAPI {
             @Path(ID) long datastorageId, @Query(PATH) String path,
             @Query("pathType") StorageRestorePathType pathType,
             @Query("recursive") boolean recursive);
+
+    @GET("lustre")
+    Call<Result<LustreFS>> getLustre(@Query("mountName") String mountName,
+                                     @Query("regionId") Long regionId);
 
 }
 
