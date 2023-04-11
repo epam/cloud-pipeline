@@ -51,7 +51,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         final SelenideElement settingMenu = $(PipelineSelectors.visible(byClassName("rc-dropdown-menu")));
         this.elements = initialiseElements(
                 entry(RUN, toolsActions.find(PipelineSelectors.button("Run"))),
-                entry(RUN_DROPDOWN, toolsActions.find(byId("run-latest-menu-button"))),
+                entry(RUN_DROPDOWN, toolsActions.find(byId("run-8-menu-button"))),
                 entry(TOOL_SETTINGS, toolsActions.find(byId("setting-button"))),
                 entry(DELETE, settingMenu.find(byText("Delete tool"))),
                 entry(PERMISSIONS, settingMenu.find(byText("Permissions"))),
