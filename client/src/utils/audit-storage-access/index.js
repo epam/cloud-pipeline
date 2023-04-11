@@ -27,7 +27,7 @@ const AccessTypes = {
 
 /**
  * @typedef {Object} StorageItemOptions
- * @property {number|string} [storageId}
+ * @property {number|string} storageId
  * @property {string} [path]
  * @property {string} [fullPath]
  * @property {string} [reportStorageType]
@@ -44,6 +44,7 @@ const AccessTypes = {
  * @typedef {Object} PreparedLogEntry
  * @property {moment.Moment} timestamp
  * @property {string} message
+ * @property {number|string} storageId
  */
 
 const REPORT_DEBOUNCE_MS = 1000;
@@ -106,14 +107,18 @@ async function prepareAuditItems (items) {
         path,
         reportStorageType
       } = object || {};
+      if (!storageId) {
+        return undefined;
+      }
+      const storageIdValue = storageId && !Number.isNaN(Number(storageId))
+        ? Number(storageId)
+        : storageId;
       if (fullPath) {
         return {
           timestamp,
-          message: `${accessType} ${fullPath}`
+          message: `${accessType} ${fullPath}`,
+          storageId: storageIdValue
         };
-      }
-      if (!storageId) {
-        return undefined;
       }
       const storage = loadedStorages.find((aStorage) => aStorage.id === Number(storageId) &&
         (!reportStorageType || aStorage.type === reportStorageType));
@@ -124,7 +129,8 @@ async function prepareAuditItems (items) {
       const full = [pathMask, path].filter(Boolean).join('/');
       return {
         timestamp,
-        message: `${accessType} ${full}`
+        message: `${accessType} ${full}`,
+        storageId: storageIdValue
       };
     }).filter(Boolean);
 }
@@ -164,7 +170,8 @@ class AuditStorageAccess {
         type: 'audit',
         severity: 'INFO',
         user: userName,
-        serviceName: 'gui'
+        serviceName: 'gui',
+        storageId: log.storageId
       }));
       if (payload.length > 0) {
         const request = new SendSystemLogs();

@@ -205,7 +205,10 @@ class S3Storage {
   doUpload = async (file, options, callbacks) => {
     if (this.storage) {
       const path = [this.prefix, file.name].filter((o) => o.length).join('/');
-      auditStorageAccessManager.reportWriteAccess({fullPath: `s3://${this.storage.path}/${path}`});
+      auditStorageAccessManager.reportWriteAccess({
+        fullPath: `s3://${this.storage.path}/${path}`,
+        storageId: this.storage.id
+      });
     }
     const {
       uploadID: currentUploadID,
