@@ -198,7 +198,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .setPriceType(onDemandPrice)
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 5m && sleep infinity")
+                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:20 sleep 5m && sleep infinity")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setDefaultChildNodes("1")
