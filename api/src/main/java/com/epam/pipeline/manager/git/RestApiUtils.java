@@ -67,6 +67,15 @@ public final class RestApiUtils {
         }
     }
 
+    public static byte[] getFileContent(final Call<ResponseBody> filesRawContent) {
+        try {
+            final ResponseBody body = filesRawContent.execute().body();
+            return body == null ? new byte[0] : body.bytes();
+        } catch (IOException e) {
+            throw new GitClientException("Error receiving raw file content!", e);
+        }
+    }
+
     private static int calculateBufferSize(final int byteLimit, final ResponseBody body) {
         final long length = body.contentLength();
         return (length >= 0 && length <= Integer.MAX_VALUE)

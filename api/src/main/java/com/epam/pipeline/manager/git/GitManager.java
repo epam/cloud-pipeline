@@ -613,6 +613,12 @@ public class GitManager {
         ));
     }
 
+    public byte[] downloadAttachment(final String secret, final String fileName) {
+        final String gitlabRepositoryPath = getGitlabRepositoryPath(getProjectForIssues());
+        final String path = Paths.get(gitlabRepositoryPath, secret, fileName).toString();
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.downloadAttachment(path));
+    }
+
     public GitlabIssue createIssue(final GitlabIssueVO request) throws GitClientException {
         final String authorizedUser = authManager.getCurrentUser().getUserName();
         final GitlabIssueRequest issue = request.toIssue();
@@ -848,6 +854,21 @@ public class GitManager {
             }
         }
         return Paths.get(namespace, project + GIT_REPO_EXTENSION).toString();
+    }
+
+    private String getGitlabRepositoryPath(final String project) {
+        final boolean hashedRepositoriesSupported = preferenceManager.getPreference(
+                SystemPreferences.GITLAB_HASHED_REPO_SUPPORT);
+        if (hashedRepositoriesSupported) {
+            final GitProjectStorage projectStorage = getDefaultGitlabClient().getProjectStorage(project);
+            if (Objects.nonNull(projectStorage)) {
+                return projectStorage.getDiskPath();
+            }
+        }
+        final String namespace = preferenceManager.getPreference(SystemPreferences.GITLAB_ISSUE_REPOSITORY_NAMESPACE);
+        Assert.isTrue(!StringUtils.isNullOrEmpty(project),
+                messageHelper.getMessage("Gitlab issue repository namespace not configured."));
+        return Paths.get(namespace, project).toString();
     }
 
     private String findRepoSrcPath(final Pipeline pipeline) {
