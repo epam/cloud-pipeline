@@ -29,6 +29,7 @@ import {
   Spin,
   Alert, message, Modal
 } from 'antd';
+import measureTextWidth from '../../../../utils/measure-text-width';
 import displayDate from '../../../../utils/displayDate';
 import highlightText from '../../highlightText';
 import Label from '../special/label';
@@ -107,6 +108,21 @@ class TicketsList extends React.Component {
   get filtersTouched () {
     const {filters} = this.state;
     return filters.search || filters.labels.length > 0;
+  }
+
+  get tableGridTemplate () {
+    const {
+      tickets
+    } = this.state;
+    const labelsOnPage = [...new Set((tickets || []).reduce((acc, cur) => {
+      acc.push(...(cur.labels || []));
+      return acc;
+    }, []))].filter(label => this.predefinedLabels.includes(label));
+    const [longestWidth] = measureTextWidth(labelsOnPage, '13px')
+      .sort((a, b) => b - a);
+    const minWidth = 50;
+    const statusWidth = `${Math.max(minWidth, longestWidth + 10)}px`;
+    return `"status title controls" auto / ${statusWidth} 1fr auto`;
   }
 
   setInitialFilters = () => {
@@ -247,6 +263,7 @@ class TicketsList extends React.Component {
             'cp-card-background-color'
           )
         }
+        style={{grid: this.tableGridTemplate}}
       >
         <b
           className={styles.status}
@@ -352,6 +369,7 @@ class TicketsList extends React.Component {
             {'cp-table-element-disabled': pending}
           )
         }
+        style={{grid: this.tableGridTemplate}}
         onClick={() => this.onSelectTicket(ticket)}
       >
         <Label

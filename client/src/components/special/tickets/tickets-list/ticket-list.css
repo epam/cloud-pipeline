@@ -16,7 +16,7 @@
 
 .ticket-container {
   display: grid;
-  grid: "status title controls" auto / 90px 1fr auto;
+  /* grid: "status title controls" auto / 90px 1fr auto; */
   padding: 3px 0;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -36,18 +36,18 @@
   font-size: larger;
   padding: 0 5px;
   justify-content: flex-start;
+  width: 100%;
 }
 
 .ticket-container:not(.header) .status {
   height: 24px;
   margin: auto;
-  font-size: small;
-  justify-content: center;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  display: inline-block;
+  justify-content: center
 }
 
 .ticket-container .title {
