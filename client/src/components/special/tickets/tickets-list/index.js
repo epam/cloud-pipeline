@@ -118,7 +118,7 @@ class TicketsList extends React.Component {
       acc.push(...(cur.labels || []));
       return acc;
     }, []))].filter(label => this.predefinedLabels.includes(label));
-    const [longestWidth] = measureTextWidth(labelsOnPage, '13px')
+    const [longestWidth = 0] = measureTextWidth(labelsOnPage, '13px')
       .sort((a, b) => b - a);
     const minWidth = 50;
     const statusWidth = `${Math.max(minWidth, longestWidth + 10)}px`;

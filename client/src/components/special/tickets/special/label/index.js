@@ -33,7 +33,6 @@ export default function Label ({label = '', style = {}, className}) {
   if (!label) {
     return null;
   }
-  console.log('style', style)
   return (
     <div
       className={classNames(
@@ -44,9 +43,7 @@ export default function Label ({label = '', style = {}, className}) {
       )}
       style={style}
     >
-      <span>
-        {label}
-      </span>
+      {label}
     </div>
   );
 };
