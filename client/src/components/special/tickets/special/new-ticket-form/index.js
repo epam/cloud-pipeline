@@ -22,7 +22,8 @@ import {
   Upload,
   Button,
   Icon,
-  Modal
+  Modal,
+  message
 } from 'antd';
 import Markdown from '../../../markdown';
 import blobFilesToBase64 from '../utilities/blob-files-to-base64';
@@ -104,6 +105,12 @@ class NewTicketForm extends React.Component {
   };
 
   beforeUpload = (file) => {
+    const {fileList} = this.state;
+    const nameDuplicate = fileList.find(({name}) => name === file.name);
+    if (nameDuplicate) {
+      message.error(`${file.name} - file name should be unique`, 5);
+      return false;
+    }
     this.setState(({fileList}) => ({
       fileList: [...fileList, file]
     }));
@@ -129,7 +136,7 @@ class NewTicketForm extends React.Component {
     const payload = {
       title,
       description,
-      ...(Object.keys(base64Files).length > 0 && {attachments: base64Files})
+      ...(base64Files.length > 0 && {attachments: base64Files})
     };
     onSave && onSave(payload, !renderAsModal);
   };
@@ -164,7 +171,6 @@ class NewTicketForm extends React.Component {
       fileList
     } = this.state;
     const {
-      uploadEnabled,
       renderAsModal,
       pending
     } = this.props;
@@ -228,21 +234,19 @@ class NewTicketForm extends React.Component {
                   </Button>
                 ) : null}
               </div>
-              {uploadEnabled ? (
-                <Upload
-                  style={{width: '100%'}}
-                  fileList={fileList}
-                  onRemove={this.onRemoveFile}
-                  beforeUpload={this.beforeUpload}
+              <Upload
+                style={{width: '100%'}}
+                fileList={fileList}
+                onRemove={this.onRemoveFile}
+                beforeUpload={this.beforeUpload}
+              >
+                <Button
+                  className={styles.uploadButton}
+                  disabled={pending}
                 >
-                  <Button
-                    className={styles.uploadButton}
-                    disabled={pending}
-                  >
-                    <Icon type="upload" /> Click to Upload
-                  </Button>
-                </Upload>
-              ) : <div style={{height: '28px'}} />}
+                  <Icon type="upload" /> Upload attachment
+                </Button>
+              </Upload>
             </div>
           ) : (
             this.renderPreview()

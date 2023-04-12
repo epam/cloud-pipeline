@@ -26,13 +26,13 @@ import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';
 import getAuthor from '../utilities/get-author';
 import UserName from '../../../UserName';
+import parseAttachment from '../utilities/parse-attachment';
 
-export default class CommentCard extends React.Component {
+class CommentCard extends React.Component {
   static propTypes = {
     comment: PropTypes.object,
     className: PropTypes.string,
     onSelectMenu: PropTypes.func,
-    headerClassName: PropTypes.string,
     style: PropTypes.object
   };
 
@@ -80,7 +80,6 @@ export default class CommentCard extends React.Component {
     const {
       comment,
       className,
-      headerClassName,
       onSelectMenu,
       style
     } = this.props;
@@ -88,6 +87,7 @@ export default class CommentCard extends React.Component {
       return null;
     }
     const {
+      attachments: rawAttachments = [],
       type,
       updated_at: updatedAt,
       created_at: createdAt
@@ -102,6 +102,10 @@ export default class CommentCard extends React.Component {
       author,
       text
     } = this.getCommentInfo();
+    const attachments = rawAttachments
+      .map(parseAttachment)
+      .filter(Boolean)
+      .filter((attachment) => attachment.link);
     const messageMenu = (
       <Menu
         onClick={({key}) => this.onSelectMenu(key, comment)}
@@ -124,18 +128,23 @@ export default class CommentCard extends React.Component {
           borderRadius: '4px',
           style
         }}
-        className={classNames(
-          'cp-panel',
-          className
-        )}
+        className={
+          classNames(
+            'cp-panel-card',
+            className
+          )
+        }
         key={comment.id}
       >
         <div
-          className={classNames(
-            'cp-divider',
-            'bottom',
-            headerClassName
-          )}
+          className={
+            classNames(
+              {
+                'cp-divider': !!text && text.length,
+                'bottom': !!text && text.length
+              }
+            )
+          }
           style={{
             padding: '5px 10px',
             display: 'flex',
@@ -155,22 +164,24 @@ export default class CommentCard extends React.Component {
               {dateDescription} {displayDate(date, 'D MMM YYYY, HH:mm')}
             </span>
           </div>
-          {onSelectMenu ? (
-            <Dropdown
-              overlay={messageMenu}
-              trigger={['click']}
-            >
-              <Icon
-                type="ellipsis"
-                style={{
-                  cursor: 'pointer',
-                  marginRight: 10,
-                  fontSize: 'large',
-                  fontWeight: 'bold'
-                }}
-              />
-            </Dropdown>
-          ) : null}
+          {
+            !!onSelectMenu && (
+              <Dropdown
+                overlay={messageMenu}
+                trigger={['click']}
+              >
+                <Icon
+                  type="ellipsis"
+                  style={{
+                    cursor: 'pointer',
+                    marginRight: 10,
+                    fontSize: 'large',
+                    fontWeight: 'bold'
+                  }}
+                />
+              </Dropdown>
+            )
+          }
         </div>
         <Markdown
           md={text}
@@ -180,7 +191,48 @@ export default class CommentCard extends React.Component {
             padding: '5px 10px'
           }}
         />
+        {
+          attachments.length > 0 && (
+            <div
+              className={
+                classNames(
+                  'cp-divider',
+                  'top'
+                )
+              }
+              style={{
+                padding: '5px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap'
+              }}
+            >
+              {
+                attachments.map((attachment) => (
+                  <a
+                    key={attachment.name}
+                    style={{marginRight: 5}}
+                    href={attachment.link}
+                    target="_blank"
+                  >
+                    <Icon type="paper-clip" style={{marginRight: 5}} />
+                    {attachment.name}
+                  </a>
+                ))
+              }
+            </div>
+          )
+        }
       </div>
     );
   }
 }
+
+CommentCard.propTypes = {
+  comment: PropTypes.object,
+  className: PropTypes.string,
+  onSelectMenu: PropTypes.func,
+  style: PropTypes.object
+};
+
+export default CommentCard;

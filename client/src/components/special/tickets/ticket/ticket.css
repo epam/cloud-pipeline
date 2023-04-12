@@ -35,11 +35,11 @@
 }
 
 .comments-container .card {
-  margin-left: -25px;
+  margin-left: -25px !important;
 }
 
 .comments-container .card:not(:last-child) {
-  margin-bottom: 25px;
+  margin-bottom: 25px !important;
 }
 
 .info-section {
@@ -57,6 +57,10 @@
 
 .info-block.row {
   flex-direction: row;
+}
+
+.info-block.column {
+  flex-direction: column;
 }
 
 .info-block:not(:last-child) {
@@ -81,4 +85,9 @@
 
 .status-icon.editable:not(.empty):hover {
   text-decoration: underline;
+}
+
+.info-block .all-attachments {
+  display: flex;
+  flex-direction: column;
 }
