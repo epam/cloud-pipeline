@@ -33,6 +33,7 @@ import CommentCard from '../special/comment-card';
 import CommentEditor from '../special/comment-editor';
 import Label from '../special/label';
 import getAuthor from '../special/utilities/get-author';
+import parseAttachment from '../special/utilities/parse-attachment';
 import GitlabIssueLoad from '../../../../models/gitlab-issues/GitlabIssueLoad';
 import GitlabIssueComment from '../../../../models/gitlab-issues/GitlabIssueComment';
 import GitlabIssueUpdate from '../../../../models/gitlab-issues/GitlabIssueUpdate';
@@ -93,12 +94,31 @@ class Ticket extends React.Component {
       .sort((a, b) => moment.utc(a.created_at) - moment.utc(b.created_at));
   }
 
-  onSaveNewComment = ({description}) => {
+  get allAttachmentsList () {
+    const {ticket} = this.state;
+    if (!ticket) {
+      return null;
+    }
+    const {attachments, comments} = ticket;
+    const fromComments = (comments || []).reduce((acc, comment) => ([
+      ...acc,
+      ...(comment.attachments || [])
+    ]), []);
+    return [...(attachments || []), ...fromComments]
+      .map(parseAttachment)
+      .filter(Boolean)
+      .filter((attachment) => attachment.link);
+  }
+
+  onSaveNewComment = ({attachments, description}) => {
     this.setState({pending: true}, async () => {
       const {ticketId} = this.props;
       const request = new GitlabIssueComment(ticketId);
       const hide = message.loading(`Creating comment...`, 0);
-      await request.send({body: description});
+      await request.send({
+        attachments,
+        body: description
+      });
       hide();
       if (request.error) {
         message.error(request.error, 5);
@@ -326,6 +346,33 @@ class Ticket extends React.Component {
               }}
             />
           </Dropdown>
+        </div>
+        <div
+          className={
+            classNames(
+              styles.infoBlock,
+              styles.column,
+              'cp-divider',
+              'bottom'
+            )
+          }
+        >
+          <span>Attachments:</span>
+          <div className={styles.allAttachments}>
+            {
+              this.allAttachmentsList.map((attachment) => (
+                <a
+                  key={attachment.link}
+                  style={{marginRight: 5}}
+                  href={attachment.link}
+                  target="_blank"
+                >
+                  <Icon type="paper-clip" style={{marginRight: 5}} />
+                  {attachment.name}
+                </a>
+              ))
+            }
+          </div>
         </div>
       </div>
     );

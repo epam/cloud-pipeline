@@ -22,7 +22,8 @@ import {
   Radio,
   Upload,
   Button,
-  Icon
+  Icon,
+  message
 } from 'antd';
 import Markdown from '../../../markdown';
 import blobFilesToBase64 from '../utilities/blob-files-to-base64';
@@ -106,7 +107,7 @@ export default class CommentEditor extends React.Component {
       : {};
     onSave && onSave({
       description,
-      ...(Object.keys(base64Files).length > 0 && {attachments: base64Files})
+      ...(base64Files.length > 0 && {attachments: base64Files})
     });
     isNewComment && this.clearState();
   };
@@ -123,6 +124,12 @@ export default class CommentEditor extends React.Component {
   };
 
   beforeUpload = (file) => {
+    const {fileList} = this.state;
+    const nameDuplicate = fileList.find(({name}) => name === file.name);
+    if (nameDuplicate) {
+      message.error(`${file.name} - file name should be unique`, 5);
+      return false;
+    }
     this.setState(({fileList}) => ({
       fileList: [...fileList, file]
     }));
@@ -134,7 +141,6 @@ export default class CommentEditor extends React.Component {
     const {
       isNewComment,
       className,
-      uploadEnabled,
       disabled
     } = this.props;
     return (
@@ -205,19 +211,17 @@ export default class CommentEditor extends React.Component {
                   </Button>
                 </div>
               </div>
-              {uploadEnabled ? (
-                <Upload
-                  style={{width: '100%'}}
-                  fileList={fileList}
-                  onRemove={this.onRemoveFile}
-                  beforeUpload={this.beforeUpload}
-                  disabled={disabled}
-                >
-                  <Button style={{borderRadius: '0 0 4px 4px'}}>
-                    <Icon type="upload" /> Click to Upload
-                  </Button>
-                </Upload>
-              ) : (<span style={{height: 28}} />)}
+              <Upload
+                style={{width: '100%'}}
+                fileList={fileList}
+                onRemove={this.onRemoveFile}
+                beforeUpload={this.beforeUpload}
+                disabled={disabled}
+              >
+                <Button style={{borderRadius: '0 0 4px 4px'}}>
+                  <Icon type="upload" /> Upload attachment
+                </Button>
+              </Upload>
             </div>
           ) : (
             <Markdown
