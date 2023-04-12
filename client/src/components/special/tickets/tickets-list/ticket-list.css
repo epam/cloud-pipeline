@@ -64,6 +64,17 @@
   justify-content: flex-end;
 }
 
+.ticket-container .controls .controls-icon {
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: large;
+  font-weight: bold;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .tickets-table {
   position: relative;
   overflow-y: scroll;

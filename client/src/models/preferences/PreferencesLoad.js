@@ -273,6 +273,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get gitlabIssueDefaultFilters () {
+    const value = this.getPreferenceValue('git.gitlab.issue.default.filter');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "git.gitlab.issue.default.filter" preference:', e);
+      }
+    }
+    return {};
+  }
+
+  @computed
   get sharedStoragesSystemDirectory () {
     const value = this.getPreferenceValue('data.sharing.storage.folders.directory');
     if (value && !Number.isNaN(Number(value))) {

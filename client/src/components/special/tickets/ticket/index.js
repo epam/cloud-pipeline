@@ -19,7 +19,15 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {computed} from 'mobx';
 import {observer, inject} from 'mobx-react';
-import {Alert, Button, Icon, message, Spin} from 'antd';
+import {
+  Alert,
+  Button,
+  Icon,
+  message,
+  Spin,
+  Dropdown,
+  Menu
+} from 'antd';
 import moment from 'moment-timezone';
 import CommentCard from '../special/comment-card';
 import CommentEditor from '../special/comment-editor';
@@ -27,6 +35,7 @@ import Label from '../special/label';
 import getAuthor from '../special/utilities/get-author';
 import GitlabIssueLoad from '../../../../models/gitlab-issues/GitlabIssueLoad';
 import GitlabIssueComment from '../../../../models/gitlab-issues/GitlabIssueComment';
+import GitlabIssueUpdate from '../../../../models/gitlab-issues/GitlabIssueUpdate';
 import UserName from '../../UserName';
 import styles from './ticket.css';
 import mainStyles from '../tickets.css';
@@ -103,6 +112,21 @@ class Ticket extends React.Component {
     });
   };
 
+  onSelectMenu = (key) => {
+    const {ticket} = this.state;
+    if (!ticket || !key) {
+      return null;
+    }
+    const filteredLabels = (ticket.labels || [])
+      .filter(label => !this.predefinedLabels.includes(label));
+    filteredLabels.push(key);
+    const updatedTicket = {
+      ...ticket,
+      labels: filteredLabels
+    };
+    this.updateTicket(updatedTicket);
+  };
+
   fetchTicketToken = 0;
 
   fetchTicket = () => new Promise((resolve) => {
@@ -150,6 +174,44 @@ class Ticket extends React.Component {
     }
   });
 
+  updateTicket = (ticket) => {
+    if (!ticket) {
+      return;
+    }
+    this.setState({
+      pending: true
+    }, async () => {
+      const hide = message.loading('Updating ticket...', 0);
+      const request = new GitlabIssueUpdate();
+      try {
+        const payload = {
+          attachments: ticket.attachments,
+          description: ticket.description,
+          iid: ticket.iid,
+          labels: ticket.labels,
+          title: ticket.title
+        };
+        await request.send(payload);
+        if (request.error) {
+          throw new Error(request.error);
+        }
+      } catch (error) {
+        message.error(request.error, 5);
+      } finally {
+        hide();
+        if (request.error) {
+          this.setState({
+            pending: false
+          });
+        } else {
+          this.setState({
+            pending: false
+          }, () => this.fetchTicket());
+        }
+      }
+    });
+  };
+
   scrollToEditor = () => {
     this.editorRef &&
     this.editorRef.scrollIntoView &&
@@ -187,13 +249,34 @@ class Ticket extends React.Component {
 
   renderInfoSection = () => {
     const {
-      ticket
+      ticket,
+      pending
     } = this.state;
     const {
       labels = []
     } = ticket || {};
     const filteredLabels = labels
       .filter((aLabel) => this.predefinedLabels.includes(aLabel));
+    const [currentLabel] = filteredLabels;
+    const menu = (
+      <Menu
+        onClick={({key}) => this.onSelectMenu(key, ticket)}
+        selectedKeys={[]}
+        style={{cursor: 'default', minWidth: '120px'}}
+      >
+        <Menu.ItemGroup title="Select new status">
+          <Menu.Divider />
+          {this.predefinedLabels
+            .filter(label => label !== currentLabel)
+            .map(label => (
+              <Menu.Item key={label} style={{cursor: 'pointer'}}>
+                {label}
+              </Menu.Item>
+            ))
+          }
+        </Menu.ItemGroup>
+      </Menu>
+    );
     return (
       <div className={styles.infoSection}>
         <div className={classNames(
@@ -209,32 +292,41 @@ class Ticket extends React.Component {
             showIcon
           />
         </div>
-        {
-          filteredLabels.length > 0 && (
-            <div
-              className={
-                classNames(
-                  styles.infoBlock,
-                  styles.row,
-                  'cp-divider',
-                  'bottom'
-                )
-              }
-            >
-              <span>Status:</span>
-              <div className={styles.labelsRow}>
-                {
-                  filteredLabels.map((label) => (
-                    <Label
-                      key={label}
-                      label={label}
-                    />
-                  ))
-                }
-              </div>
+        <div
+          className={
+            classNames(
+              styles.infoBlock,
+              styles.row,
+              'cp-divider',
+              'bottom'
+            )
+          }
+        >
+          <span>Status:</span>
+          {currentLabel ? (
+            <div className={styles.labelsRow}>
+              <Label
+                key={currentLabel}
+                label={currentLabel}
+              />
             </div>
-          )
-        }
+          ) : <span>-</span>}
+          <Dropdown
+            overlay={menu}
+            trigger={['click']}
+            disabled={pending}
+          >
+            <Icon
+              type="setting"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginLeft: '5px',
+                cursor: 'pointer'
+              }}
+            />
+          </Dropdown>
+        </div>
       </div>
     );
   }

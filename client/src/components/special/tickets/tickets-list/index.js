@@ -17,7 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, when} from 'mobx';
 import {
   Button,
   Select,
@@ -37,14 +37,14 @@ import getAuthor from '../special/utilities/get-author';
 import UserName from '../../UserName';
 import NewTicketForm from '../special/new-ticket-form';
 import GitlabIssueCreate from '../../../../models/gitlab-issues/GitlabIssueCreate';
+import GitlabIssueUpdate from '../../../../models/gitlab-issues/GitlabIssueUpdate';
 import GitlabIssueDelete from '../../../../models/gitlab-issues/GitlabIssueDelete';
 import styles from './ticket-list.css';
 import mainStyles from '../tickets.css';
 
 const PAGE_SIZE = 20;
-const ENABLE_CONTROLS = false;
 
-@inject('preferences')
+@inject('preferences', 'authenticatedUserInfo')
 @observer
 class TicketsList extends React.Component {
   state = {
@@ -64,13 +64,26 @@ class TicketsList extends React.Component {
   filtersRefreshTimeout;
 
   componentDidMount () {
-    this.reload();
+    when(
+      () => this.props.preferences && this.props.preferences.loaded,
+      () => this.setInitialFilters()
+    );
   }
 
   componentWillUnmount () {
     if (this.filtersRefreshTimeout) {
       clearTimeout(this.filtersRefreshTimeout);
     }
+  }
+
+  @computed
+  get enableControls () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo && authenticatedUserInfo.loaded) {
+      const isAdmin = authenticatedUserInfo.value.admin;
+      return isAdmin;
+    }
+    return false;
   }
 
   @computed
@@ -82,10 +95,30 @@ class TicketsList extends React.Component {
     return [];
   }
 
+  @computed
+  get initialLabels () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return (preferences.gitlabIssueDefaultFilters || {}).labels || [];
+    }
+    return [];
+  }
+
   get filtersTouched () {
     const {filters} = this.state;
     return filters.search || filters.labels.length > 0;
   }
+
+  setInitialFilters = () => {
+    this.setState({
+      filters: {
+        ...this.state.filters,
+        labels: this.initialLabels
+      }
+    }, () => {
+      this.reload();
+    });
+  };
 
   onFiltersChange = (field, eventType) => event => {
     let value;
@@ -154,7 +187,21 @@ class TicketsList extends React.Component {
       };
       const request = new GitlabIssuesLoad(page, PAGE_SIZE);
       try {
-        await request.send(filters);
+        const getLabelsFilterPayload = (labels = []) => {
+          if (!labels.length) {
+            return null;
+          }
+          return {
+            not: true,
+            labels: this.predefinedLabels
+              .filter(label => !labels.includes(label))
+          };
+        };
+        const payload = {
+          search: filters.search,
+          labelsFilter: getLabelsFilterPayload(filters.labels)
+        };
+        await request.send(payload);
         if (request.error) {
           throw new Error(request.error);
         }
@@ -175,12 +222,6 @@ class TicketsList extends React.Component {
 
   onPageChange = (page) => {
     this.setState({page}, () => this.fetchCurrentPage());
-  };
-
-  onSelectMenu = (key, ticket) => {
-    if (key === 'delete') {
-      this.deleteTicketConfirmation(ticket);
-    }
   };
 
   onSelectTicket = (ticket) => {
@@ -276,22 +317,29 @@ class TicketsList extends React.Component {
       filters,
       pending
     } = this.state;
-    const menu = (
-      <Menu
-        onClick={({key}) => this.onSelectMenu(key, ticket)}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        <Menu.Item key="close">
-          Close ticket
-        </Menu.Item>
-        <Menu.Item key="delete">
-          Delete
-        </Menu.Item>
-      </Menu>
-    );
     const getLabel = (labels) => (labels || [])
       .find(label => this.predefinedLabels.includes(label));
+    const currentLabel = getLabel(ticket.labels);
+    const menu = (
+      <Menu
+        onClick={({key}) => this.onSelectNewStatus(key, ticket)}
+        selectedKeys={[]}
+        style={{cursor: 'default', minWidth: '120px'}}
+      >
+        <Menu.ItemGroup title="Select new status">
+          <Menu.Divider />
+          {
+            this.predefinedLabels
+              .filter(label => label !== currentLabel)
+              .map(label => (
+                <Menu.Item key={label} style={{cursor: 'pointer'}}>
+                  {label}
+                </Menu.Item>
+              ))
+          }
+        </Menu.ItemGroup>
+      </Menu>
+    );
     return (
       <div
         key={ticket.iid}
@@ -308,7 +356,7 @@ class TicketsList extends React.Component {
       >
         <Label
           className={styles.status}
-          label={getLabel(ticket.labels)}
+          label={currentLabel}
         />
         <div
           className={styles.title}
@@ -320,6 +368,9 @@ class TicketsList extends React.Component {
             className="cp-text-not-important"
             style={{fontSize: 'smaller'}}
           >
+            <span style={{marginRight: '5px'}}>
+              {`#${ticket.iid}`}
+            </span>
             {'Opened '}
             {displayDate(ticket.created_at, 'D MMM YYYY, HH:mm')}
             {' by '}
@@ -329,9 +380,15 @@ class TicketsList extends React.Component {
             />
           </span>
         </div>
-        <div className={styles.controls}>
+        <div
+          className={styles.controls}
+          onClick={this.enableControls
+            ? (event) => event.stopPropagation()
+            : undefined
+          }
+        >
           {
-            ENABLE_CONTROLS && (
+            this.enableControls && (
               <Dropdown
                 overlay={menu}
                 trigger={['click']}
@@ -340,12 +397,7 @@ class TicketsList extends React.Component {
               >
                 <Icon
                   type="ellipsis"
-                  style={{
-                    cursor: 'pointer',
-                    marginRight: 10,
-                    fontSize: 'large',
-                    fontWeight: 'bold'
-                  }}
+                  className={styles.controlsIcon}
                 />
               </Dropdown>
             )
@@ -440,6 +492,57 @@ class TicketsList extends React.Component {
       message.error(request.error, 5);
     } else {
       this.reload();
+    }
+  };
+
+  updateTicket = (ticket) => {
+    if (!ticket) {
+      return;
+    }
+    this.setState({
+      pending: true
+    }, async () => {
+      const hide = message.loading('Updating ticket...', 0);
+      const request = new GitlabIssueUpdate();
+      try {
+        const payload = {
+          attachments: ticket.attachments,
+          description: ticket.description,
+          iid: ticket.iid,
+          labels: ticket.labels,
+          title: ticket.title
+        };
+        await request.send(payload);
+        if (request.error) {
+          throw new Error(request.error);
+        }
+      } catch (error) {
+        message.error(request.error, 5);
+      } finally {
+        hide();
+        if (request.error) {
+          this.setState({
+            pending: false
+          });
+        } else {
+          this.setState({
+            pending: false
+          }, () => this.reload());
+        }
+      }
+    });
+  };
+
+  onSelectNewStatus = (status, ticket) => {
+    if (this.predefinedLabels.find(label => label === status)) {
+      const ticketLabels = (ticket.labels || [])
+        .filter(label => !this.predefinedLabels.includes(label));
+      ticketLabels.push(status);
+      const updatedTicket = {
+        ...ticket,
+        labels: ticketLabels
+      };
+      this.updateTicket(updatedTicket);
     }
   };
 
