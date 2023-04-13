@@ -34,5 +34,14 @@
     "endpoint_additional": "proxy_set_header Connection 'upgrade'; proxy_set_header Upgrade $http_upgrade;",
     "endpoint_same_tab": "false",
     "ssl_backend": "true"
+  },
+  {
+    "name": "CP_GPU_COUNT",
+    "value": ">0",
+    "endpoint_env": "CP_CAP_GPUSTAT_PORT",
+    "endpoint_default" : "8092",
+    "endpoint_num_env": "CP_CAP_GPUSTAT_ENDPOINT_ID",
+    "endpoint_num_default" : "1000",
+    "friendly_name" : "GPUStat"
   }
 ]

@@ -20,4 +20,4 @@ include 'billing-report-agent'
 include 'cloud-pipeline-webdav-client'
 include 'monitoring-service'
 include 'storage-lifecycle-service'
-
+include 'workflows'
