@@ -1,4 +1,4 @@
-task build(type: Exec, dependsOn: ':fs-browser:fs-browser-client:build') {
+task buildGpuStat(type: Exec) {
     group = 'build'
 
     environment "GPUSTAT_DIST_PATH": "$project.rootDir/workflows/gpustat/dist/dist-folder"

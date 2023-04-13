@@ -94,7 +94,7 @@ ext {
 ext["elasticsearch.version"] = project.ext.versionElasticsearch
 
 def apiDeps = [":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux",
-":pipe-cli:buildWin", ":fs-browser:build", ":workflows:gpustat:build", ":cloud-pipeline-webdav-client:buildWin",
+":pipe-cli:buildWin", ":fs-browser:build", ":workflows:buildGpuStat", ":cloud-pipeline-webdav-client:buildWin",
 ":cloud-pipeline-webdav-client:buildLinux"]
 
 build.mustRunAfter apiDeps
