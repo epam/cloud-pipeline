@@ -1405,7 +1405,7 @@ if [ "$CP_GPUSTAT_ENABLED" == "false" ] && check_installed "nvidia-smi"; then
 
       if [ "$cluster_role" = "master" ]; then
             echo "Starting gpustat server as a background thread. See /var/log/gpustat.log"
-            nohup gpustat_setup > /var/log/gpustat.log 2>&1 &
+            nohup gpustat_setup ${CP_USR_BIN}/gpustat > /var/log/gpustat.log 2>&1 &
       else
             echo "Will not run the gpustat server for a non-master node"
       fi
