@@ -29,6 +29,7 @@ import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
@@ -448,18 +449,19 @@ public class PipelineRunManager {
     private void checkGPUInstance(final PipelineConfiguration configuration, final Long regionId) {
         final String instanceType = configuration.getInstanceType();
         if (StringUtils.hasText(instanceType)) {
-            instanceOfferManager
-                    .findOffer(instanceType, regionId)
-                    .ifPresent(offer -> {
-                        if (offer.getGpu() > 0) {
-                            configuration.setParameters(CommonUtils.mergeMaps(
-                                    configuration.getParameters(),
-                                    Collections.singletonMap(CP_GPU_COUNT,
-                                            new PipeConfValueVO(String.valueOf(offer.getGpu())))));
-                        }
-                    });
+            final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, regionId);
+            if (instance.isPresent()) {
+                final InstanceOffer offer = instance.get();
+                if (offer.getGpu() > 0) {
+                    configuration.setParameters(CommonUtils.mergeMaps(
+                            Collections.singletonMap(CP_GPU_COUNT,
+                                    new PipeConfValueVO(String.valueOf(offer.getGpu()))),
+                            configuration.getParameters()));
+                    return;
+                }
+            }
         }
-        configuration.buildEnvVariables();
+        MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_COUNT);
     }
 
     private AbstractCloudRegion resolveCloudRegion(final PipelineRun parentRun,
