@@ -282,7 +282,7 @@ class PreferencesLoad extends Remote {
         console.warn('Error parsing "git.gitlab.issue.default.filter" preference:', e);
       }
     }
-    return {};
+    return undefined;
   }
 
   @computed

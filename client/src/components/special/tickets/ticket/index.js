@@ -33,6 +33,10 @@ import CommentCard from '../special/comment-card';
 import CommentEditor from '../special/comment-editor';
 import Label from '../special/label';
 import getAuthor from '../special/utilities/get-author';
+import {
+  buildTicketsFiltersQuery,
+  parseTicketsFilters
+} from '../special/utilities/routing';
 import GitlabIssueLoad from '../../../../models/gitlab-issues/GitlabIssueLoad';
 import GitlabIssueComment from '../../../../models/gitlab-issues/GitlabIssueComment';
 import GitlabIssueUpdate from '../../../../models/gitlab-issues/GitlabIssueUpdate';
@@ -43,13 +47,24 @@ import mainStyles from '../tickets.css';
 @inject('preferences')
 @inject((stores, props) => {
   const {
-    params = {}
-  } = props || {};
+    params = {},
+    location = {}
+  } = props;
+  const {
+    page,
+    search,
+    statuses,
+    default: defaultFilters
+  } = parseTicketsFilters(location.search);
   const {
     id: ticketId
   } = params;
   return {
-    ticketId
+    ticketId,
+    page,
+    search,
+    statuses,
+    default: defaultFilters
   };
 })
 @observer
@@ -199,15 +214,13 @@ class Ticket extends React.Component {
         message.error(request.error, 5);
       } finally {
         hide();
-        if (request.error) {
-          this.setState({
-            pending: false
-          });
-        } else {
-          this.setState({
-            pending: false
-          }, () => this.fetchTicket());
-        }
+        this.setState({
+          pending: false
+        }, () => {
+          if (!request.error) {
+            this.fetchTicket();
+          }
+        });
       }
     });
   };
@@ -266,13 +279,14 @@ class Ticket extends React.Component {
       >
         <Menu.ItemGroup title="Select new status">
           <Menu.Divider />
-          {this.predefinedLabels
-            .filter(label => label !== currentLabel)
-            .map(label => (
-              <Menu.Item key={label} style={{cursor: 'pointer'}}>
-                {label}
-              </Menu.Item>
-            ))
+          {
+            this.predefinedLabels
+              .filter(label => label !== currentLabel)
+              .map(label => (
+                <Menu.Item key={label} style={{cursor: 'pointer'}}>
+                  {label}
+                </Menu.Item>
+              ))
           }
         </Menu.ItemGroup>
       </Menu>
@@ -303,28 +317,39 @@ class Ticket extends React.Component {
           }
         >
           <span>Status:</span>
-          {currentLabel ? (
-            <div className={styles.labelsRow}>
-              <Label
-                key={currentLabel}
-                label={currentLabel}
-              />
-            </div>
-          ) : <span>-</span>}
           <Dropdown
             overlay={menu}
             trigger={['click']}
             disabled={pending}
           >
-            <Icon
-              type="setting"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                marginLeft: '5px',
-                cursor: 'pointer'
-              }}
-            />
+            {
+              currentLabel ? (
+                <div className={styles.labelsRow}>
+                  <Label
+                    key={currentLabel}
+                    label={currentLabel}
+                    className={
+                      classNames(
+                        styles.statusIcon,
+                        styles.editable
+                      )
+                    }
+                  />
+                </div>
+              ) : (
+                <span
+                  className={
+                    classNames(
+                      styles.statusIcon,
+                      styles.editable,
+                      styles.empty
+                    )
+                  }
+                >
+                  -
+                </span>
+              )
+            }
           </Dropdown>
         </div>
       </div>
@@ -336,7 +361,11 @@ class Ticket extends React.Component {
       router
     } = this.props;
     if (router) {
-      router.push('/tickets');
+      const query = buildTicketsFiltersQuery(this.props);
+      const url = query && query.length
+        ? `/tickets?${query}`
+        : '/tickets';
+      router.push(url);
     }
   };
 
