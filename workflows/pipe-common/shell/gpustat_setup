@@ -17,6 +17,13 @@
 echo "Setup gpustat"
 echo "-"
 
+_GPUSTAT_HOME="${1:-/usr/cpbin/gpustat}"
+_GPUSTAT_HOME_WEB="$_GPUSTAT_HOME/app"
+if [ ! -d "$_GPUSTAT_HOME_WEB" ]; then
+    echo "[ERROR] gpustat web home directory $_GPUSTAT_HOME_WEB does not exist, probably a corrupted installation. Exiting..."
+    exit 1
+fi
+
 CP_GPUSTAT_PORT="${CP_GPUSTAT_PORT:-8092}"
 CP_GPUSTAT_TIMEOUT="${CP_GPUSTAT_TIMEOUT:-30}"
 CP_GPUSTAT_PID_FILE="${CP_GPUSTAT_PID_FILE:-/var/run/gpustat.pid}"
@@ -47,6 +54,7 @@ while true; do
     fi
 
     echo "[INFO] --> Starting a new instance of gpustat"
+    cd "$_GPUSTAT_HOME_WEB"
     nohup gpustat-web --port "$CP_GPUSTAT_PORT" $_GPUSTAT_HOSTS > /var/log/gpustat.log 2>&1 &
     echo $! > "$CP_GPUSTAT_PID_FILE"
 
