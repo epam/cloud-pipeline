@@ -232,15 +232,15 @@ public class InstanceOfferManager {
                 .collect(toList());
     }
 
+    public Optional<InstanceOffer> findOffer(final String instanceType, final Long regionId) {
+        final InstanceOfferRequestVO requestVO = buildInstanceTypeRequest(instanceType, regionId);
+        return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO))
+                .stream()
+                .findFirst();
+    }
+
     public double getPricePerHourForInstance(final String instanceType, final Long regionId) {
-        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
-        requestVO.setInstanceType(instanceType);
-        requestVO.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
-        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
-        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
-        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
-        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
-        requestVO.setRegionId(regionId);
+        final InstanceOfferRequestVO requestVO = buildInstanceTypeRequest(instanceType, regionId);
         return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO))
                 .stream()
                 .map(InstanceOffer::getPricePerUnit)
@@ -506,5 +506,18 @@ public class InstanceOfferManager {
             return CloudInstancePriceService.TermType.ON_DEMAND.getName();
         }
         return PriceType.spotTermName(provider);
+    }
+
+    private static InstanceOfferRequestVO buildInstanceTypeRequest(final String instanceType,
+                                                                   final Long regionId) {
+        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
+        requestVO.setInstanceType(instanceType);
+        requestVO.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
+        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
+        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
+        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
+        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
+        requestVO.setRegionId(regionId);
+        return requestVO;
     }
 }
