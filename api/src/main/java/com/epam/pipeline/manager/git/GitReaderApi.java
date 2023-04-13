@@ -26,11 +26,14 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommitDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.GET;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+import retrofit2.http.Streaming;
 
 
 public interface GitReaderApi {
@@ -126,5 +129,7 @@ public interface GitReaderApi {
     Call<Result<GitReaderDiffEntry>> getCommitDiff(@Path(PROJECT) String name, @Path(COMMIT) String commit,
                                                    @Body GitReaderLogsPathFilter paths);
 
-
+    @Streaming
+    @GET("git/{path}")
+    Call<ResponseBody> downloadAttachment(@Path("path") String path);
 }

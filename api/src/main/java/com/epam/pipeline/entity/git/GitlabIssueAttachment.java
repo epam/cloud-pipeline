@@ -30,5 +30,5 @@ public class GitlabIssueAttachment {
     private String fileName;
     private String content;
     private String markdown;
-    private String url;
+    private String secret;
 }

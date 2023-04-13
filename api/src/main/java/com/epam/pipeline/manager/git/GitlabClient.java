@@ -87,6 +87,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -708,8 +709,19 @@ public class GitlabClient {
         final List<String> attachments = description.length > 1 ?
                 descriptionList.subList(1, descriptionList.size()) : Collections.emptyList();
         return new ImmutablePair<>(descriptionList.get(0),  attachments.stream()
-                .map(a -> GitlabIssueAttachment.builder().markdown(a).build())
+                .map(GitlabClient::parseAttachment)
                 .collect(Collectors.toList()));
+    }
+
+    private static GitlabIssueAttachment parseAttachment(final String markdown) {
+        final String[] parts = markdown.split(Pattern.quote("](/"));
+        final String fileName = parts[0].replace("[", "");
+        final String secret = parts[1].replace("uploads/", "").replace(")", "");
+        return GitlabIssueAttachment.builder()
+                .fileName(fileName)
+                .secret(secret)
+                .markdown(markdown)
+                .build();
     }
 
     private String formatTextWithAttachments(final String project,

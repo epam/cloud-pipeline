@@ -40,7 +40,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import javax.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -112,6 +114,18 @@ public class GitlabIssueController extends AbstractRestController {
 
     public Result<GitlabIssue> getIssue(@PathVariable(value = ISSUE_ID) final Long issueId) {
         return Result.success(gitlabIssueApiService.getIssue(issueId));
+    }
+
+    @GetMapping(value = "/attachment")
+    @ApiOperation(
+            value = "Downloads Gitlab project attachment.",
+            notes = "Downloads Gitlab project attachment.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    void downloadAttachment(@RequestParam final String fileName,
+                            @RequestParam final String secret,
+                            final HttpServletResponse response) throws IOException {
+        byte[] bytes = gitlabIssueApiService.downloadAttachment(secret, fileName);
+        writeFileToResponse(response, bytes, fileName);
     }
 
     @PostMapping(value = "/{issue_id}/comment")

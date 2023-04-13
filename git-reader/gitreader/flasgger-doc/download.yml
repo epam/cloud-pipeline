@@ -1,0 +1,13 @@
+Downloads file via specified path.
+`repo` - the path to git repo relative to `git_root`.
+---
+parameters:
+ - name: repo
+   in: path
+   type: string
+   required: true
+responses:
+ 200:
+   description: "File content"
+   schema:
+     type: "string"

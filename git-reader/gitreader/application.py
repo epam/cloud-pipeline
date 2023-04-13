@@ -161,6 +161,21 @@ def git_diff_by_commit(repo, commit):
         return jsonify(error(e.__str__()))
 
 
+@app.route('/git/download/<path:repo>', methods=["GET"])
+@auth.login_required
+@swag_from('flasgger-doc/download.yml')
+def git_upload(repo):
+    try:
+        git_root = os.getenv("CP_GITLAB_UPLOADS_ROOT", "/var/opt/gitlab/gitlab-rails/uploads/")
+        full_repo_path = os.path.join(git_root, repo)
+        if not os.path.isdir(full_repo_path):
+            raise FileNotFoundError("Repository with path {} isn't found".format(repo_path))
+        return send_file(full_repo_path, as_attachment=True)
+    except Exception as e:
+        manager.logger.log(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
 def extract_path_masks():
     data = load_data_from_request(request)
     if "paths" in data:
