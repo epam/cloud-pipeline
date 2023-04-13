@@ -66,7 +66,7 @@
                 <KeyValuePair key="user" value="$${ctx:user:-NotAuthorized}" />
                 <KeyValuePair key="log_context" value="$${ctx:log_topic:-security}" />
                 <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
-                <KeyValuePair key="storage_id" value="$${ctx:storage_id}" />
+                <KeyValuePair key="storage_id" value="$${ctx:storage_id:-}" />
             </JsonLayout>
         </RollingFile >
         <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"

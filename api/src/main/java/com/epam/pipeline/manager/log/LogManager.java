@@ -372,6 +372,11 @@ public class LogManager {
                 .user((String) hit.get(USER))
                 .message((String) hit.get(MESSAGE))
                 .severity((String) hit.getOrDefault(SEVERITY, DEFAULT_SEVERITY))
+                .storageId(Optional.ofNullable(hit.get(STORAGE_ID))
+                        .map(Object::toString)
+                        .filter(StringUtils::isNotBlank)
+                        .map(Long::valueOf)
+                        .orElse(null))
                 .build();
     }
 
