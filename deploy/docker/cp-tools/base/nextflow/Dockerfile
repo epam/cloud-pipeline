@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/ubuntu:18.04
+ARG BASE_IMAGE=nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
+FROM ${BASE_IMAGE}
 
 # Common applications
 RUN apt update && \
