@@ -74,3 +74,11 @@
   flex-wrap: wrap;
   margin-left: 10px;
 }
+
+.status-icon.editable {
+  cursor: pointer;
+}
+
+.status-icon.editable:not(.empty):hover {
+  text-decoration: underline;
+}

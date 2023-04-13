@@ -35,12 +35,14 @@ export default function Label ({label = '', style = {}, className}) {
   }
   return (
     <div
-      className={classNames(
-        'cp-bordered',
-        STATUS_COLORS[label.toLowerCase()],
-        styles.label,
-        className
-      )}
+      className={
+        classNames(
+          'cp-bordered',
+          STATUS_COLORS[label.toLowerCase()],
+          styles.label,
+          className
+        )
+      }
       style={style}
     >
       {label}
