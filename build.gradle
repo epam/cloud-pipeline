@@ -78,7 +78,7 @@ task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildD
                           ":elasticsearch-agent:bootJar", ":vm-monitor:bootJar",
                           ":data-transfer-service:bootJar", ":data-transfer-service:bundleWindows",
                           ":data-transfer-service:bundleLinux",
-                          ":data-sharing-service:buildFast", ":fs-browser:build", ":billing-report-agent:bootJar",
+                          ":data-sharing-service:buildFast", ":fs-browser:build", ":workflows:gpustat:build", ":billing-report-agent:bootJar",
                           ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
                           ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
     group = 'build'
@@ -90,7 +90,7 @@ task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":elasticsearch-agent:build", ":vm-monitor:build",
                           ":data-transfer-service:build", ":data-transfer-service:bundleWindows",
                           ":data-transfer-service:bundleLinux",
-                          ":data-sharing-service:buildAll", ":fs-browser:build", ":billing-report-agent:build",
+                          ":data-sharing-service:buildAll", ":fs-browser:build", ":workflows:gpustat:build", ":billing-report-agent:build",
                           ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
                           ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
     group = 'build'

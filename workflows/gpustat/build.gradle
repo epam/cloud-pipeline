@@ -1,0 +1,16 @@
+task build(type: Exec, dependsOn: ':fs-browser:fs-browser-client:build') {
+    group = 'build'
+
+    environment "GPUSTAT_DIST_PATH": "$project.rootDir/workflows/gpustat/dist/dist-folder"
+    environment "GPUSTAT_RUNTIME_TMP_DIR": "/tmp"
+    environment "PYINSTALLER_PATH": "/pyinstaller"
+
+    commandLine "bash", "$project.rootDir/workflows/gpustat/build-linux.sh"
+    doLast {
+        delete("$project.rootDir/api/src/main/resources/static/gpustat.tar.gz")
+        copy {
+            from("$project.rootDir/workflows/gpustat/dist/dist-folder/gpustat.tar.gz")
+            into("$project.rootDir/api/src/main/resources/static/")
+        }
+    }
+}

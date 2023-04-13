@@ -1513,6 +1513,47 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo
 fi
 
+
+# Install gpustat
+if [ "$CP_GPUSTAT_ENABLED" == "false" ] && check_installed "nvidia-smi"; then
+      echo "Setup gpustat"
+      echo "-"
+
+      echo "Installing gpustat"
+      CP_GPUSTAT_NAME=${CP_GPUSTAT_NAME:-gpustat.tar.gz}
+
+      download_file "${DISTRIBUTION_URL}${CP_GPUSTAT_NAME}"
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] Unable to download gpustat"
+            exit 1
+      fi
+
+      rm -rf ${CP_USR_BIN}/gpustat
+      tar -xf "$CP_GPUSTAT_NAME" -C ${CP_USR_BIN}/
+      rm -f "$CP_GPUSTAT_NAME"
+
+      CP_GPUSTAT_BIN=${CP_USR_BIN}/gpustat/cli/cli
+      if [ -f "$CP_GPUSTAT_BIN" ]; then
+            ln -sf $CP_GPUSTAT_BIN $CP_USR_BIN/gpustat
+            ln -sf $CP_GPUSTAT_BIN /usr/bin/gpustat
+      fi
+      CP_GPUSTAT_WEB_BIN=${CP_USR_BIN}/gpustat/app/app
+      if [ -f "$CP_GPUSTAT_WEB_BIN" ]; then
+            ln -sf $CP_GPUSTAT_WEB_BIN $CP_USR_BIN/gpustat-web
+            ln -sf $CP_GPUSTAT_WEB_BIN /usr/bin/gpustat-web
+      fi
+      echo "gpustat installation done" 
+
+      if [ "$cluster_role" = "master" ]; then
+            echo "Starting gpustat server as a background thread. See /var/log/gpustat.log"
+            nohup gpustat_setup > /var/log/gpustat.log 2>&1 &
+      else
+            echo "Will not run the gpustat server for a non-master node"
+      fi
+      echo "------"
+      echo
+fi
+
 ######################################################
 echo "Setting up Gitlab credentials"
 echo "-"
