@@ -70,16 +70,12 @@ chmod +x \$_BUILD_TMP/gpustat-web/dist/app/app
 cd \$_BUILD_TMP
 git clone https://github.com/sidoruka/gpustat
 cd gpustat 
-git checkout b24cf0d56faf8313a2d8ea00c7869462ac247ec1
+git checkout b0aff74661b3f52d60f517369c7160b87f982110
 cat > requirements.txt <<EOF
 nvidia-ml-py>=11.450.129
 psutil==5.6.0
 blessed==1.17.1
 shtab==1.5.7
-EOF
-cat > _version.py <<'EOF'
-version='1.0'
-version_tuple=('1','0')
 EOF
 pip3 install -r requirements.txt
 
