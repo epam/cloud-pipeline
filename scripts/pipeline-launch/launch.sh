@@ -1515,7 +1515,7 @@ fi
 
 
 # Install gpustat
-if [ "$CP_GPUSTAT_ENABLED" == "false" ] && check_installed "nvidia-smi"; then
+if [ "$CP_GPUSTAT_ENABLED" != "false" ] && check_installed "nvidia-smi"; then
       echo "Setup gpustat"
       echo "-"
 
@@ -1528,16 +1528,21 @@ if [ "$CP_GPUSTAT_ENABLED" == "false" ] && check_installed "nvidia-smi"; then
             exit 1
       fi
 
-      rm -rf ${CP_USR_BIN}/gpustat
-      tar -xf "$CP_GPUSTAT_NAME" -C ${CP_USR_BIN}/
+      CP_GPUSTAT_INSTALL_DIR=${CP_GPUSTAT_INSTALL_DIR:-${CP_USR_BIN}/gpustat-dist}
+      rm -rf $CP_GPUSTAT_INSTALL_DIR
+      rm -rf /tmp/gpustat
+      tar -xf "$CP_GPUSTAT_NAME" -C /tmp
       rm -f "$CP_GPUSTAT_NAME"
+      mv /tmp/gpustat $CP_GPUSTAT_INSTALL_DIR
 
-      CP_GPUSTAT_BIN=${CP_USR_BIN}/gpustat/cli/cli
+      rm -f /usr/bin/gpustat
+      rm -f /usr/bin/gpustat-web
+      CP_GPUSTAT_BIN=$CP_GPUSTAT_INSTALL_DIR/cli/cli
       if [ -f "$CP_GPUSTAT_BIN" ]; then
             ln -sf $CP_GPUSTAT_BIN $CP_USR_BIN/gpustat
             ln -sf $CP_GPUSTAT_BIN /usr/bin/gpustat
       fi
-      CP_GPUSTAT_WEB_BIN=${CP_USR_BIN}/gpustat/app/app
+      CP_GPUSTAT_WEB_BIN=$CP_GPUSTAT_INSTALL_DIR/app/app
       if [ -f "$CP_GPUSTAT_WEB_BIN" ]; then
             ln -sf $CP_GPUSTAT_WEB_BIN $CP_USR_BIN/gpustat-web
             ln -sf $CP_GPUSTAT_WEB_BIN /usr/bin/gpustat-web
@@ -1546,7 +1551,7 @@ if [ "$CP_GPUSTAT_ENABLED" == "false" ] && check_installed "nvidia-smi"; then
 
       if [ "$cluster_role" = "master" ]; then
             echo "Starting gpustat server as a background thread. See /var/log/gpustat.log"
-            nohup gpustat_setup ${CP_USR_BIN}/gpustat > /var/log/gpustat.log 2>&1 &
+            nohup gpustat_setup $CP_GPUSTAT_INSTALL_DIR > /var/log/gpustat.log 2>&1 &
       else
             echo "Will not run the gpustat server for a non-master node"
       fi

@@ -17,7 +17,7 @@
 echo "Setup gpustat"
 echo "-"
 
-_GPUSTAT_HOME="${1:-/usr/cpbin/gpustat}"
+_GPUSTAT_HOME="${1:-/usr/cpbin/gpustat-dist}"
 _GPUSTAT_HOME_WEB="$_GPUSTAT_HOME/app"
 if [ ! -d "$_GPUSTAT_HOME_WEB" ]; then
     echo "[ERROR] gpustat web home directory $_GPUSTAT_HOME_WEB does not exist, probably a corrupted installation. Exiting..."
