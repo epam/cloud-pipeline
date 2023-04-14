@@ -17,9 +17,9 @@
 package com.epam.pipeline.manager.cluster.costs;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.utils.RunDurationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
@@ -28,11 +28,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -79,17 +77,7 @@ public class ClusterCostsMonitoringServiceCore {
             return BigDecimal.ZERO;
         }
         return run.getPricePerHour()
-                .multiply(durationInMinutes(run))
+                .multiply(BigDecimal.valueOf(RunDurationUtils.getBillableDuration(run).toMinutes()))
                 .divide(BigDecimal.valueOf(MINUTES_IN_HOUR), DIVIDE_SCALE, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal durationInMinutes(final PipelineRun run) {
-        if (Objects.isNull(run.getStartDate())) {
-            return BigDecimal.ZERO;
-        }
-
-        final Date pipelineEnd = Objects.isNull(run.getEndDate()) ? DateUtils.now() : run.getEndDate();
-        final long runDurationMs = pipelineEnd.getTime() - run.getStartDate().getTime();
-        return new BigDecimal(TimeUnit.MINUTES.convert(runDurationMs, TimeUnit.MILLISECONDS));
     }
 }

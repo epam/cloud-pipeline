@@ -164,7 +164,7 @@ public class AutoscalerServiceImpl implements AutoscalerService {
     private void registerNodeDisks(long runId, List<InstanceDisk> disks) {
         PipelineRun run = runCRUDService.loadRunById(runId);
         String nodeId = run.getInstance().getNodeId();
-        LocalDateTime creationDate = DateUtils.convertDateToLocalDateTime(run.getStartDate());
+        LocalDateTime creationDate = run.getInstanceStartDateTime();
         List<DiskRegistrationRequest> requests = DiskRegistrationRequest.from(disks);
         nodeDiskManager.register(nodeId, creationDate, requests);
     }
