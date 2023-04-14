@@ -835,7 +835,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         SENSITIVE,
         KUBE_SERVICE_ENABLED,
         CLUSTER_PRICE,
-        NODE_POOL_ID;
+        NODE_POOL_ID,
+        NODE_START_DATE;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -903,6 +904,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
             params.addValue(NODE_PLATFORM.name(), instance.map(RunInstance::getNodePlatform).orElse(null));
             params.addValue(NODE_POOL_ID.name(), instance.map(RunInstance::getPoolId).orElse(null));
+            params.addValue(NODE_START_DATE.name(), instance.map(RunInstance::getStartDate).orElse(null));
         }
 
         static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
@@ -985,6 +987,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             instance.setCloudProvider(CloudProvider.valueOf(rs.getString(NODE_CLOUD_PROVIDER.name())));
             instance.setNodePlatform(rs.getString(NODE_PLATFORM.name()));
             instance.setPoolId(rs.getLong(NODE_POOL_ID.name()));
+            Timestamp instanceStart = rs.getTimestamp(NODE_START_DATE.name());
+            if (!rs.wasNull()) {
+                instance.setStartDate(new Date(instanceStart.getTime()));
+            }
 
             boolean spot = rs.getBoolean(IS_SPOT.name());
             if (!rs.wasNull()) {

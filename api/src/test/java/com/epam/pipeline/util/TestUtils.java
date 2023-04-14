@@ -158,6 +158,7 @@ public final class TestUtils {
         instance.setSpot(isSpot);
         instance.setNodeId("1");
         instance.setNodePlatform(TEST_PLATFORM);
+        instance.setStartDate(new Date());
         run.setInstance(instance);
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);

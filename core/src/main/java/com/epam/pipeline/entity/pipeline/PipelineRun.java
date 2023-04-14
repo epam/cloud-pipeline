@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
@@ -252,5 +253,15 @@ public class PipelineRun extends AbstractSecuredEntity {
      */
     public void removeTag(final String key) {
         tags.remove(key);
+    }
+
+    @JsonIgnore
+    public Date getInstanceStartDate() {
+        return Optional.ofNullable(instance).map(RunInstance::getStartDate).orElse(null);
+    }
+
+    @JsonIgnore
+    public LocalDateTime getInstanceStartDateTime() {
+        return Optional.ofNullable(getInstanceStartDate()).map(DateUtils::convertDateToLocalDateTime).orElse(null);
     }
 }

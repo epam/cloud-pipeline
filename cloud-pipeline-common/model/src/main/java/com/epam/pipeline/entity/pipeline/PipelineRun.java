@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -186,5 +188,15 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     public String getTaskName() {
         return StringUtils.isEmpty(pipelineName) ? podId : pipelineName;
+    }
+
+    @JsonIgnore
+    public Date getInstanceStartDate() {
+        return Optional.ofNullable(instance).map(RunInstance::getStartDate).orElse(null);
+    }
+
+    @JsonIgnore
+    public LocalDateTime getInstanceStartDateTime() {
+        return Optional.ofNullable(getInstanceStartDate()).map(DateUtils::convertDateToLocalDateTime).orElse(null);
     }
 }
