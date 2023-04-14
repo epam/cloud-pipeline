@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.JsonFactory;
 import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.common.Strings;
@@ -36,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 public final class TestUtils {
 
@@ -79,11 +81,17 @@ public final class TestUtils {
         return run;
     }
 
-    public static RunInstance createTestInstance(final Long regionId, final String nodeType) {
+    public static RunInstance createTestInstance(final Long regionId, final String nodeType,
+                                                 final LocalDateTime date) {
         final RunInstance instance = new RunInstance();
         instance.setCloudRegionId(regionId);
         instance.setNodeType(nodeType);
+        instance.setStartDate(Optional.ofNullable(date).map(DateUtils::convertLocalDateTimeToDate).orElse(null));
         return instance;
+    }
+
+    public static RunInstance createTestInstance(final Long regionId, final String nodeType) {
+        return createTestInstance(regionId, nodeType, null);
     }
 
     public static AbstractCloudRegion createTestRegion(final Long regionId) {

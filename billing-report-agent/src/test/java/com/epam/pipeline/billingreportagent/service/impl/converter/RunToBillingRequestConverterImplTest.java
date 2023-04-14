@@ -27,20 +27,20 @@ import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.utils.DateUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,7 +53,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings("checkstyle:magicnumber")
@@ -86,10 +87,47 @@ public class RunToBillingRequestConverterImplTest {
     private final RunToBillingRequestConverter converter =
         new RunToBillingRequestConverter(new RunBillingMapper(BILLING_CENTER_KEY));
 
+    @Test
+    public void convertShouldReturnElasticRequests() {
+        final LocalDateTime prevSync = LocalDate.of(2019, 12, 4).atStartOfDay();
+        final LocalDateTime syncStart = LocalDate.of(2019, 12, 5).atStartOfDay();
+
+        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_ID, TOOL_IMAGE, PRICE,
+                TestUtils.createTestInstance(REGION_ID, NODE_TYPE,
+                        prevSync));
+
+        final EntityContainer<PipelineRunWithType> runContainer =
+                EntityContainer.<PipelineRunWithType>builder()
+                        .entity(runEntity(run, Collections.emptyList()))
+                        .owner(testUserWithMetadata)
+                        .region(TestUtils.createTestRegion(REGION_ID))
+                        .build();
+
+        final List<DocWriteRequest> billings =
+                converter.convertEntityToRequests(runContainer, TestUtils.RUN_BILLING_PREFIX, prevSync, syncStart);
+        assertEquals(1, billings.size());
+
+        final DocWriteRequest billing = billings.get(0);
+        final Map<String, Object> requestFieldsMap = ((IndexRequest) billing).sourceAsMap();
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.RUN_BILLING_PREFIX, prevSync);
+        assertEquals(expectedIndex, billing.index());
+        assertEquals(run.getId().intValue(), requestFieldsMap.get("run_id"));
+        assertEquals(ResourceType.COMPUTE.toString(), requestFieldsMap.get("resource_type"));
+        assertEquals(run.getPipelineId().intValue(), requestFieldsMap.get("pipeline"));
+        assertEquals(run.getDockerImage(), requestFieldsMap.get("tool"));
+        assertEquals(run.getInstance().getNodeType(), requestFieldsMap.get("instance_type"));
+        assertEquals(9600, requestFieldsMap.get("cost"));
+        assertEquals(1440, requestFieldsMap.get("usage_minutes"));
+        assertEquals(PRICE.unscaledValue().intValue(), requestFieldsMap.get("run_price"));
+        assertEquals(run.getInstance().getCloudRegionId().intValue(), requestFieldsMap.get("cloudRegionId"));
+        assertEquals(USER_NAME, requestFieldsMap.get("owner"));
+        TestUtils.verifyStringArray(USER_GROUPS, requestFieldsMap.get("groups"));
+    }
 
     @Test
-    public void shouldConvertToBillingsWithOneFinalStatus() {
-        final PipelineRun run = run(status(TaskStatus.STOPPED, LocalDateTime.of(2019, 12, 4, 15, 0)));
+    public void convertShouldReturnBillingsForSingleRunningPeriod() {
+        final PipelineRun run = run(LocalDateTime.of(2019, 12, 4, 14, 55),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2019, 12, 4, 15, 0)));
         run.setStartDate(Date.from(
                 LocalDateTime.of(2019, 12, 4, 10, 0)
                 .atZone(ZoneId.of("Z"))
@@ -103,12 +141,12 @@ public class RunToBillingRequestConverterImplTest {
                 converter.convertRunToBillings(runContainer,
                         LocalDate.of(2019, 12, 4).atStartOfDay(),
                         LocalDate.of(2019, 12, 5).atStartOfDay());
-        Assert.assertEquals(1, billings.size());
+        assertEquals(1, billings.size());
     }
 
     @Test
-    public void convertRunToBillings() {
-        final PipelineRun run = run(
+    public void convertShouldReturnBillingsForMultipleRunningAndPausedPeriods() {
+        final PipelineRun run = run(LocalDateTime.of(2019, 12, 1, 11, 55),
                 status(TaskStatus.RUNNING, LocalDateTime.of(2019, 12, 1, 12, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2019, 12, 1, 13, 0)),
                 status(TaskStatus.RUNNING, LocalDateTime.of(2019, 12, 1, 18, 0)),
@@ -125,26 +163,26 @@ public class RunToBillingRequestConverterImplTest {
             converter.convertRunToBillings(runContainer,
                                            LocalDate.of(2019, 12, 1).atStartOfDay(),
                                            LocalDate.of(2019, 12, 5).atStartOfDay());
-        Assert.assertEquals(4, billings.size());
+        assertEquals(4, billings.size());
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(1200, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
-        Assert.assertEquals(4800, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
-        Assert.assertEquals(6000, reports.get(LocalDate.of(2019, 12, 3)).getCost().longValue());
-        Assert.assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
-        Assert.assertEquals(180, reports.get(LocalDate.of(2019, 12, 1)).getUsageMinutes().longValue());
-        Assert.assertEquals(720, reports.get(LocalDate.of(2019, 12, 2)).getUsageMinutes().longValue());
-        Assert.assertEquals(900, reports.get(LocalDate.of(2019, 12, 3)).getUsageMinutes().longValue());
-        Assert.assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getUsageMinutes().longValue());
-        Assert.assertEquals(540, reports.get(LocalDate.of(2019, 12, 1)).getPausedMinutes().longValue());
-        Assert.assertEquals(720, reports.get(LocalDate.of(2019, 12, 2)).getPausedMinutes().longValue());
-        Assert.assertEquals(540, reports.get(LocalDate.of(2019, 12, 3)).getPausedMinutes().longValue());    
-        Assert.assertEquals(900, reports.get(LocalDate.of(2019, 12, 4)).getPausedMinutes().longValue());    
+        assertEquals(1200, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
+        assertEquals(4800, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
+        assertEquals(6000, reports.get(LocalDate.of(2019, 12, 3)).getCost().longValue());
+        assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
+        assertEquals(180, reports.get(LocalDate.of(2019, 12, 1)).getUsageMinutes().longValue());
+        assertEquals(720, reports.get(LocalDate.of(2019, 12, 2)).getUsageMinutes().longValue());
+        assertEquals(900, reports.get(LocalDate.of(2019, 12, 3)).getUsageMinutes().longValue());
+        assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getUsageMinutes().longValue());
+        assertEquals(540, reports.get(LocalDate.of(2019, 12, 1)).getPausedMinutes().longValue());
+        assertEquals(720, reports.get(LocalDate.of(2019, 12, 2)).getPausedMinutes().longValue());
+        assertEquals(540, reports.get(LocalDate.of(2019, 12, 3)).getPausedMinutes().longValue());    
+        assertEquals(900, reports.get(LocalDate.of(2019, 12, 4)).getPausedMinutes().longValue());    
     }
 
     @Test
-    public void convertRunWithNoStatusesToBilling() {
-        final PipelineRun run = run();
+    public void convertShouldReturnBillingsIfThereAreNoStatuses() {
+        final PipelineRun run = run(LocalDateTime.of(2019, 12, 3, 0, 0));
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
         final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
                 .entity(runEntity(run, Collections.emptyList()))
@@ -154,53 +192,47 @@ public class RunToBillingRequestConverterImplTest {
             converter.convertRunToBillings(runContainer,
                                            LocalDate.of(2019, 12, 4).atStartOfDay(),
                                            LocalDate.of(2019, 12, 5).atStartOfDay());
-        Assert.assertEquals(1, billings.size());
+        assertEquals(1, billings.size());
 
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(9600, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
-        Assert.assertEquals(1440, reports.get(LocalDate.of(2019, 12, 4)).getUsageMinutes().longValue());
-        Assert.assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getPausedMinutes().longValue());
+        assertEquals(9600, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
+        assertEquals(1440, reports.get(LocalDate.of(2019, 12, 4)).getUsageMinutes().longValue());
+        assertEquals(0, reports.get(LocalDate.of(2019, 12, 4)).getPausedMinutes().longValue());
     }
 
     @Test
-    public void testRunConverting() {
-        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_ID, TOOL_IMAGE, PRICE,
-                                                                TestUtils.createTestInstance(REGION_ID, NODE_TYPE));
+    public void convertShouldReturnBillingsForNewFashionedRunForSingleRunningPeriod() {
+        final PipelineRun run = run(LocalDateTime.of(2020, 5, 21, 11, 55),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        run.setPricePerHour(new BigDecimal("0.04"));
+        run.setComputePricePerHour(new BigDecimal("0.02000"));
+        run.setDiskPricePerHour(new BigDecimal("0.00100"));
 
-        final EntityContainer<PipelineRunWithType> runContainer =
-            EntityContainer.<PipelineRunWithType>builder()
-                .entity(runEntity(run, Collections.emptyList()))
-                .owner(testUserWithMetadata)
-                .region(TestUtils.createTestRegion(REGION_ID))
+        final List<NodeDisk> disks = new ArrayList<>();
+        disks.add(disk(20L, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        disks.add(disk(20L, LocalDateTime.of(2020, 5, 21, 12, 0)));
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, disks))
                 .build();
-
-        final LocalDateTime prevSync = LocalDate.of(2019, 12, 4).atStartOfDay();
-        final LocalDateTime syncStart = LocalDate.of(2019, 12, 5).atStartOfDay();
-        final List<DocWriteRequest> billings =
-            converter.convertEntityToRequests(runContainer, TestUtils.RUN_BILLING_PREFIX, prevSync, syncStart);
-        Assert.assertEquals(1, billings.size());
-
-        final DocWriteRequest billing = billings.get(0);
-        final Map<String, Object> requestFieldsMap = ((IndexRequest) billing).sourceAsMap();
-        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.RUN_BILLING_PREFIX, prevSync);
-        Assert.assertEquals(expectedIndex, billing.index());
-        Assert.assertEquals(run.getId().intValue(), requestFieldsMap.get("run_id"));
-        Assert.assertEquals(ResourceType.COMPUTE.toString(), requestFieldsMap.get("resource_type"));
-        Assert.assertEquals(run.getPipelineId().intValue(), requestFieldsMap.get("pipeline"));
-        Assert.assertEquals(run.getDockerImage(), requestFieldsMap.get("tool"));
-        Assert.assertEquals(run.getInstance().getNodeType(), requestFieldsMap.get("instance_type"));
-        Assert.assertEquals(9600, requestFieldsMap.get("cost"));
-        Assert.assertEquals(1440, requestFieldsMap.get("usage_minutes"));
-        Assert.assertEquals(PRICE.unscaledValue().intValue(), requestFieldsMap.get("run_price"));
-        Assert.assertEquals(run.getInstance().getCloudRegionId().intValue(), requestFieldsMap.get("cloudRegionId"));
-        Assert.assertEquals(USER_NAME, requestFieldsMap.get("owner"));
-        TestUtils.verifyStringArray(USER_GROUPS, requestFieldsMap.get("groups"));
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2020, 5, 21).atStartOfDay(),
+                        LocalDate.of(2020, 5, 23).atStartOfDay());
+        assertEquals(2, billings.size());
+        final Map<LocalDate, PipelineRunBillingInfo> reports =
+                billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
+        assertEquals(7200, reports.get(LocalDate.of(2020, 5, 21)).getCost().longValue());
+        assertEquals(14400, reports.get(LocalDate.of(2020, 5, 22)).getCost().longValue());
+        assertEquals(720, reports.get(LocalDate.of(2020, 5, 21)).getUsageMinutes().longValue());
+        assertEquals(1440, reports.get(LocalDate.of(2020, 5, 22)).getUsageMinutes().longValue());
+        assertEquals(0, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
+        assertEquals(0, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
     }
 
     @Test
-    void testConvertNewFashionedRunToBillings() {
-        final PipelineRun run = run(
+    public void convertShouldReturnBillingsForNewFashionedRunForMultipleRunningAndPausedPeriods() {
+        final PipelineRun run = run(LocalDateTime.of(2020, 5, 21, 11, 55),
                 status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 21, 12, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 21, 13, 0)),
                 status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 21, 18, 0)),
@@ -226,29 +258,29 @@ public class RunToBillingRequestConverterImplTest {
                 converter.convertRunToBillings(runContainer,
                         LocalDate.of(2020, 5, 21).atStartOfDay(),
                         LocalDate.of(2020, 5, 26).atStartOfDay());
-        Assert.assertEquals(5, billings.size());
+        assertEquals(5, billings.size());
         final Map<LocalDate, PipelineRunBillingInfo> reports =
                 billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(6300, reports.get(LocalDate.of(2020, 5, 21)).getCost().longValue());
-        Assert.assertEquals(21600, reports.get(LocalDate.of(2020, 5, 22)).getCost().longValue());
-        Assert.assertEquals(24000, reports.get(LocalDate.of(2020, 5, 23)).getCost().longValue());
-        Assert.assertEquals(28200, reports.get(LocalDate.of(2020, 5, 24)).getCost().longValue());
-        Assert.assertEquals(21000, reports.get(LocalDate.of(2020, 5, 25)).getCost().longValue());
-        Assert.assertEquals(240, reports.get(LocalDate.of(2020, 5, 21)).getUsageMinutes().longValue());
-        Assert.assertEquals(720, reports.get(LocalDate.of(2020, 5, 22)).getUsageMinutes().longValue());
-        Assert.assertEquals(1440, reports.get(LocalDate.of(2020, 5, 23)).getUsageMinutes().longValue());
-        Assert.assertEquals(900, reports.get(LocalDate.of(2020, 5, 24)).getUsageMinutes().longValue());
-        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 25)).getUsageMinutes().longValue());
-        Assert.assertEquals(480, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
-        Assert.assertEquals(720, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
-        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 23)).getPausedMinutes().longValue());
-        Assert.assertEquals(540, reports.get(LocalDate.of(2020, 5, 24)).getPausedMinutes().longValue());
-        Assert.assertEquals(900, reports.get(LocalDate.of(2020, 5, 25)).getPausedMinutes().longValue());
+        assertEquals(6300, reports.get(LocalDate.of(2020, 5, 21)).getCost().longValue());
+        assertEquals(21600, reports.get(LocalDate.of(2020, 5, 22)).getCost().longValue());
+        assertEquals(24000, reports.get(LocalDate.of(2020, 5, 23)).getCost().longValue());
+        assertEquals(28200, reports.get(LocalDate.of(2020, 5, 24)).getCost().longValue());
+        assertEquals(21000, reports.get(LocalDate.of(2020, 5, 25)).getCost().longValue());
+        assertEquals(240, reports.get(LocalDate.of(2020, 5, 21)).getUsageMinutes().longValue());
+        assertEquals(720, reports.get(LocalDate.of(2020, 5, 22)).getUsageMinutes().longValue());
+        assertEquals(1440, reports.get(LocalDate.of(2020, 5, 23)).getUsageMinutes().longValue());
+        assertEquals(900, reports.get(LocalDate.of(2020, 5, 24)).getUsageMinutes().longValue());
+        assertEquals(0, reports.get(LocalDate.of(2020, 5, 25)).getUsageMinutes().longValue());
+        assertEquals(480, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
+        assertEquals(720, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
+        assertEquals(0, reports.get(LocalDate.of(2020, 5, 23)).getPausedMinutes().longValue());
+        assertEquals(540, reports.get(LocalDate.of(2020, 5, 24)).getPausedMinutes().longValue());
+        assertEquals(900, reports.get(LocalDate.of(2020, 5, 25)).getPausedMinutes().longValue());
     }
 
     @Test
-    void testConvertOldFashionedPausedRunToBillings() {
-        final PipelineRun run = run(
+    public void convertShouldReturnBillingsForOldFashionedPausedRun() {
+        final PipelineRun run = run(LocalDateTime.of(2020, 5, 21, 11, 55),
                 status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 21, 12, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 21, 13, 0)));
         run.setPricePerHour(new BigDecimal("0.04"));
@@ -265,51 +297,22 @@ public class RunToBillingRequestConverterImplTest {
                 converter.convertRunToBillings(runContainer,
                         LocalDate.of(2020, 5, 21).atStartOfDay(),
                         LocalDate.of(2020, 5, 23).atStartOfDay());
-        Assert.assertEquals(2, billings.size());
+        assertEquals(2, billings.size());
         final Map<LocalDate, PipelineRunBillingInfo> reports =
                 billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(5000, reports.get(LocalDate.of(2020, 5, 21)).getCost().longValue());
-        Assert.assertEquals(9600, reports.get(LocalDate.of(2020, 5, 22)).getCost().longValue());
-        Assert.assertEquals(60, reports.get(LocalDate.of(2020, 5, 21)).getUsageMinutes().longValue());
-        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 22)).getUsageMinutes().longValue());
-        Assert.assertEquals(660, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
-        Assert.assertEquals(1440, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
+        assertEquals(5000, reports.get(LocalDate.of(2020, 5, 21)).getCost().longValue());
+        assertEquals(9600, reports.get(LocalDate.of(2020, 5, 22)).getCost().longValue());
+        assertEquals(60, reports.get(LocalDate.of(2020, 5, 21)).getUsageMinutes().longValue());
+        assertEquals(0, reports.get(LocalDate.of(2020, 5, 22)).getUsageMinutes().longValue());
+        assertEquals(660, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
+        assertEquals(1440, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
     }
 
     @Test
-    void testConvertNewFashionedRunningRunToBillings() {
-        final PipelineRun run = run(status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 21, 12, 0)));
-        run.setPricePerHour(new BigDecimal("0.04"));
-        run.setComputePricePerHour(new BigDecimal("0.02000"));
-        run.setDiskPricePerHour(new BigDecimal("0.00100"));
-
-        final List<NodeDisk> disks = new ArrayList<>();
-        disks.add(disk(20L, LocalDateTime.of(2020, 5, 21, 12, 0)));
-        disks.add(disk(20L, LocalDateTime.of(2020, 5, 21, 12, 0)));
-        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
-                .entity(runEntity(run, disks))
-                .build();
-        final Collection<PipelineRunBillingInfo> billings =
-                converter.convertRunToBillings(runContainer,
-                        LocalDate.of(2020, 5, 21).atStartOfDay(),
-                        LocalDate.of(2020, 5, 23).atStartOfDay());
-        Assert.assertEquals(2, billings.size());
-        final Map<LocalDate, PipelineRunBillingInfo> reports =
-                billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(7200, reports.get(LocalDate.of(2020, 5, 21)).getCost().longValue());
-        Assert.assertEquals(14400, reports.get(LocalDate.of(2020, 5, 22)).getCost().longValue());
-        Assert.assertEquals(720, reports.get(LocalDate.of(2020, 5, 21)).getUsageMinutes().longValue());
-        Assert.assertEquals(1440, reports.get(LocalDate.of(2020, 5, 22)).getUsageMinutes().longValue());
-        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 21)).getPausedMinutes().longValue());
-        Assert.assertEquals(0, reports.get(LocalDate.of(2020, 5, 22)).getPausedMinutes().longValue());
-    }
-
-    @Test
-    public void testAdjustStatusesForStartedRun() {
+    public void testAdjustStatusesForStartedStatusRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)));
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
@@ -321,11 +324,66 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    void testAdjustStatusesForStartedAndStoppedRun() {
+    public void testAdjustStatusesForStartedStatusAndEarlyStartedDateRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 11, 55, 0),
+                LocalDateTime.of(2020, 5, 20, 11, 50, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)));
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 21, 0, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesForStartedStatusAndNoStartedDateRun() {
+        final PipelineRun run = run(
                 NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)));
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 0, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesForNoStatusesAndNoStartedDateRun() {
+        final PipelineRun run = run(
+                NO_DATE);
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 0, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesForNoStatusesAndPreviouslyStoppedDateRun() {
+        final PipelineRun run = run(
+                NO_DATE,
+                LocalDateTime.of(2020, 5, 19, 14, 0, 0));
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 0, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesForStartedStoppedStatusesRun() {
+        final PipelineRun run = run(
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)),
                 status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 14, 0, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
@@ -338,11 +396,26 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesForStartedAndPausedRun() {
+    public void testAdjustStatusesForStartedStatusAndStoppedDateRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 11, 55, 0),
-                NO_DATE,
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                LocalDateTime.of(2020, 5, 20, 14, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)));
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
                 status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 14, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesForStartedPausedStatusesRun() {
+        final PipelineRun run = run(
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 14, 0, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
@@ -356,11 +429,10 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesForStartedAndPausedAndResumedRun() {
+    public void testAdjustStatusesForStartedPausedResumedStatusesRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)),
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 14, 0, 0)),
                 status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 16, 0, 0)));
 
@@ -376,11 +448,10 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesForStartedAndPausedAndStoppedRun() {
+    public void testAdjustStatusesForStartedPausedStoppedStatusesRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)),
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 14, 0, 0)),
                 status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 18, 0, 0)));
 
@@ -395,11 +466,10 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesForPreviouslyStartedAndStoppedRun() {
+    public void testAdjustStatusesForPreviouslyStartedAndStoppedStatusesRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 10, 0, 0)),
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 11, 55, 0)),
                 status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 15, 0, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
@@ -412,11 +482,41 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesForPreviouslyStartedAndPreviouslyPausedRun() {
+    public void testAdjustStatusesForPreviouslyStartedStoppedRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 12, 0, 0)),
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 11, 55, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 19, 13, 0, 0)));
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesForPreviouslyStoppedRun() {
+        final PipelineRun run = run(
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                LocalDateTime.of(2020, 5, 19, 13, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 11, 55, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 19, 13, 0, 0)));
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 0, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesForPreviouslyStartedPausedRun() {
+        final PipelineRun run = run(
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 11, 55, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 19, 20, 0, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
@@ -429,11 +529,10 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesForPreviouslyStartedAndPreviouslyPausedAndResumedRun() {
+    public void testAdjustStatusesForPreviouslyStartedPausedAndResumedRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 12, 0, 0)),
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 11, 55, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 19, 20, 0, 0)),
                 status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 14, 0, 0)));
 
@@ -448,11 +547,10 @@ public class RunToBillingRequestConverterImplTest {
     }
     
     @Test
-    public void testAdjustStatusesForPreviouslyStartedAndPreviouslyPausedAndPreviouslyResumedRun() {
+    public void testAdjustStatusesForPreviouslyStartedPausedResumedRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 12, 0, 0)),
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 11, 55, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 19, 20, 0, 0)),
                 status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 22, 0, 0)));
 
@@ -466,11 +564,10 @@ public class RunToBillingRequestConverterImplTest {
     }
     
     @Test
-    public void testAdjustStatusesForStartedAndIntermediatelyPausedAndIntermediatelyResumedRun() {
+    public void testAdjustStatusesForStartedAndIntermediatelyPausedResumedRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)),
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)),
                 status(TaskStatus.PAUSING, LocalDateTime.of(2020, 5, 20, 12, 55, 0)),
                 status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 13, 0, 0)),
                 status(TaskStatus.RESUMING, LocalDateTime.of(2020, 5, 20, 13, 55, 0)),
@@ -490,25 +587,10 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesForPreviouslyStoppedRun() {
+    public void testAdjustStatusesBoundsSyntheticFirstRunningStatusToRequestedInterval() {
         final PipelineRun run = run(
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 10, 0, 0)),
-                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 19, 12, 0, 0)));
-
-        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
-                LocalDate.of(2020, 5, 20).atStartOfDay(),
-                LocalDate.of(2020, 5, 21).atStartOfDay());
-
-        assertRunsActivityStats(adjustedStatuses,
-                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 0, 0, 0)));
-    }
-    
-    @Test
-    public void testAdjustStatusesUsesSyntheticFirstRunningStatusToRequestedInterval() {
-        final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 12, 0, 0)));
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
+                status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 13, 0, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
@@ -516,33 +598,31 @@ public class RunToBillingRequestConverterImplTest {
 
         assertRunsActivityStats(adjustedStatuses,
                 status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 0, 0, 0)),
-                status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 12, 0, 0)),
+                status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 13, 0, 0)),
                 status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 21, 0, 0, 0)));
     }
-    
+
     @Test
-    public void testAdjustStatusesUsesSyntheticFirstRunningStatusToRunStartTime() {
+    public void testAdjustStatusesBoundsSyntheticFirstRunningStatusToStartedDate() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 11, 0, 0),
-                NO_DATE,
-                status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 12, 0, 0)));
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 13, 0, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
                 LocalDate.of(2020, 5, 21).atStartOfDay());
 
         assertRunsActivityStats(adjustedStatuses,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 0, 0)),
-                status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 12, 0, 0)),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)),
+                status(TaskStatus.PAUSED, LocalDateTime.of(2020, 5, 20, 13, 0, 0)),
                 status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 21, 0, 0, 0)));
     }
-    
+
     @Test
-    public void testAdjustStatusesUsesSyntheticLastStoppedStatusToRequestedInterval() {
+    public void testAdjustStatusesBoundsSyntheticLastStoppedStatusToRequestedInterval() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 11, 55, 0),
-                NO_DATE,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)));
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
@@ -554,11 +634,11 @@ public class RunToBillingRequestConverterImplTest {
     }
     
     @Test
-    public void testAdjustStatusesUsesSyntheticLastStoppedStatusToRunEndTime() {
+    public void testAdjustStatusesBoundsSyntheticLastStoppedStatusToStoppedDate() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 11, 0, 0),
+                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
                 LocalDateTime.of(2020, 5, 20, 16, 0, 0),
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 12, 0, 0)));
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 11, 55, 0)));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
@@ -570,24 +650,8 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesReturnsSingleStoppedStatusesForNotYetPreviouslyStoppedRuns() {
-        final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 10, 0, 0),
-                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 19, 10, 0, 0)),
-                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 19, 12, 0, 0)));
-
-        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
-                LocalDate.of(2020, 5, 20).atStartOfDay(),
-                LocalDate.of(2020, 5, 21).atStartOfDay());
-
-        assertRunsActivityStats(adjustedStatuses,
-                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 0, 0, 0)));
-    }
-
-    @Test
-    public void testAdjustStatusesUsesDefaultStatusesForRequestedInterval() {
-        final PipelineRun run = run();
+    public void testAdjustStatusesForNoStatusesAndPreviouslyStartedRun() {
+        final PipelineRun run = run(LocalDateTime.of(2020, 5, 19, 0, 0));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
@@ -599,10 +663,8 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesUsesDefaultStatusesForRequestedIntervalConsideringRunStartDate() {
-        final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 20, 12, 0, 0),
-                NO_DATE);
+    public void testAdjustStatusesForNoStatusesAndStartedDateRun() {
+        final PipelineRun run = run(LocalDateTime.of(2020, 5, 20, 12, 0, 0));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
@@ -614,22 +676,7 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesUsesDefaultStatusesForRequestedIntervalConsideringRunEndDate() {
-        final PipelineRun run = run(
-                NO_DATE,
-                LocalDateTime.of(2020, 5, 20, 14, 0, 0));
-
-        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
-                LocalDate.of(2020, 5, 20).atStartOfDay(),
-                LocalDate.of(2020, 5, 21).atStartOfDay());
-
-        assertRunsActivityStats(adjustedStatuses,
-                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 0, 0, 0)),
-                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 20, 14, 0, 0)));
-    }
-
-    @Test
-    public void testAdjustStatusesUsesDefaultStatusesForRequestedIntervalConsideringBothRunStartAndEndDate() {
+    public void testAdjustStatusesForNoStatusesAndStartedStoppedDatesRun() {
         final PipelineRun run = run(
                 LocalDateTime.of(2020, 5, 20, 12, 0, 0),
                 LocalDateTime.of(2020, 5, 20, 14, 0, 0));
@@ -644,10 +691,9 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesUsesDefaultStatusesForAlreadyEndedRun() {
+    public void testAdjustStatusesForNoStatusesAndAfterStartedDateRun() {
         final PipelineRun run = run(
-                NO_DATE,
-                LocalDateTime.of(2020, 5, 19, 14, 0, 0));
+                LocalDateTime.of(2020, 5, 21, 12, 0, 0));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
@@ -658,9 +704,8 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesUsesDefaultStatusesForNotYetStartedRun() {
+    public void testAdjustStatusesForNoStatusesAndNoDatesRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 21, 12, 0, 0),
                 NO_DATE);
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
@@ -672,10 +717,23 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesWorksWithoutSyncStartDate() {
+    public void testAdjustStatusesForNoStatusesAndPreviouslyStartedDateRun() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
-                NO_DATE);
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0));
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2020, 5, 20).atStartOfDay(),
+                LocalDate.of(2020, 5, 21).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.RUNNING, LocalDateTime.of(2020, 5, 20, 0, 0, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 21, 0, 0, 0)));
+    }
+
+    @Test
+    public void testAdjustStatusesDoNotFailWithoutSyncStartDate() {
+        final PipelineRun run = run(
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0));
 
         final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
                 NO_DATE,
@@ -687,31 +745,15 @@ public class RunToBillingRequestConverterImplTest {
     }
 
     @Test
-    public void testAdjustStatusesFailsWithoutSyncEndDate() {
+    public void testAdjustStatusesFailWithoutSyncEndDate() {
         final PipelineRun run = run(
-                LocalDateTime.of(2020, 5, 19, 12, 0, 0),
-                NO_DATE);
+                LocalDateTime.of(2020, 5, 19, 12, 0, 0));
 
         assertThrows(IllegalArgumentException.class, () -> converter.adjustStatuses(run,
                 LocalDate.of(2020, 5, 20).atStartOfDay(),
                 NO_DATE));
     }
 
-    @Test
-    public void testAdjustStatusesReturnsInfiniteIntervalForRunWithoutStartDate() {
-        final PipelineRun run = run(
-                NO_DATE,
-                NO_DATE);
-
-        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
-                NO_DATE,
-                LocalDate.of(2020, 5, 21).atStartOfDay());
-
-        assertRunsActivityStats(adjustedStatuses,
-                status(TaskStatus.RUNNING, LocalDateTime.MIN),
-                status(TaskStatus.STOPPED, LocalDateTime.of(2020, 5, 21, 0, 0, 0)));
-    }
-    
     private void assertRunsActivityStats(final List<RunStatus> adjustedStatuses, final RunStatus... statuses) {
         assertThat(adjustedStatuses.size(), is(statuses.length));
         for (int i = 0; i < statuses.length; i++) {
@@ -720,28 +762,28 @@ public class RunToBillingRequestConverterImplTest {
         }
     }
 
-    private PipelineRun run(final RunStatus... statuses) {
-        final PipelineRun run = new PipelineRun();
-        run.setStatus(TaskStatus.RUNNING);
-        run.setId(RUN_ID);
-        run.setRunStatuses(Arrays.asList(statuses));
-        return run;
+    private PipelineRun run(final LocalDateTime start, final RunStatus... statuses) {
+        return run(start, NO_DATE, statuses);
     }
 
     private PipelineRun run(final LocalDateTime start, final LocalDateTime end, final RunStatus... statuses) {
-        final PipelineRun run = run(statuses);
-        run.setStatus(TaskStatus.STOPPED);
-        run.setStartDate(toDate(start));
+        final PipelineRun run = new PipelineRun();
+        run.setId(RUN_ID);
+        run.setStatus(end == null ? TaskStatus.RUNNING : TaskStatus.STOPPED);
+        run.setRunStatuses(Arrays.asList(statuses));
         run.setEndDate(toDate(end));
+        run.setInstance(instance(start));
         return run;
     }
 
+    private RunInstance instance(final LocalDateTime start) {
+        final RunInstance instance = new RunInstance();
+        instance.setStartDate(toDate(start));
+        return instance;
+    }
+
     private Date toDate(final LocalDateTime date) {
-        return Optional.ofNullable(date)
-                .map(it -> it.toInstant(ZoneOffset.UTC))
-                .map(Instant::toEpochMilli)
-                .map(Date::new)
-                .orElse(null);
+        return Optional.ofNullable(date).map(DateUtils::convertLocalDateTimeToDate).orElse(null);
     }
 
     private NodeDisk disk(final long size, final LocalDateTime date) {
