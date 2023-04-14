@@ -1549,7 +1549,7 @@ if [ "$CP_GPUSTAT_ENABLED" != "false" ] && check_installed "nvidia-smi"; then
       fi
       echo "gpustat installation done" 
 
-      if [ "$cluster_role" = "master" ]; then
+      if [ -z "$cluster_role" ] || [ "$cluster_role" = "master" ]; then
             echo "Starting gpustat server as a background thread. See /var/log/gpustat.log"
             nohup gpustat_setup $CP_GPUSTAT_INSTALL_DIR > /var/log/gpustat.log 2>&1 &
       else
