@@ -17,7 +17,7 @@ import os
 import traceback
 
 import flask
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from flask_httpauth import HTTPTokenAuth
 
 from gitreader.src.git_manager import GitManager
@@ -165,12 +165,11 @@ def git_diff_by_commit(repo, commit):
 @auth.login_required
 @swag_from('flasgger-doc/download.yml')
 def git_upload(repo):
+    manager = app.config['gitmanager']
     try:
         git_root = os.getenv("CP_GITLAB_UPLOADS_ROOT", "/var/opt/gitlab/gitlab-rails/uploads/")
-        full_repo_path = os.path.join(git_root, repo)
-        if not os.path.isdir(full_repo_path):
-            raise FileNotFoundError("Repository with path {} isn't found".format(repo_path))
-        return send_file(full_repo_path, as_attachment=True)
+        full_file_path = os.path.join(git_root, repo)
+        return send_file(full_file_path, as_attachment=True)
     except Exception as e:
         manager.logger.log(traceback.format_exc())
         return jsonify(error(e.__str__()))

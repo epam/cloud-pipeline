@@ -535,6 +535,10 @@ public class GitlabClient {
         return execute(gitLabApi.getProjectStorage(makeProjectId(namespace, project)));
     }
 
+    public GitProjectStorage getProjectStorageFullPath(final String project) throws GitClientException {
+        return execute(gitLabApi.getProjectStorage(project));
+    }
+
     private GitProject createRepo(String repoName, String description, String visibility) throws GitClientException {
         GitProjectRequest gitProject = GitProjectRequest.builder()
                 .name(repoName)

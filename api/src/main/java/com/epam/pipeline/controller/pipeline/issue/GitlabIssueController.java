@@ -30,6 +30,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -121,11 +122,10 @@ public class GitlabIssueController extends AbstractRestController {
             value = "Downloads Gitlab project attachment.",
             notes = "Downloads Gitlab project attachment.",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    void downloadAttachment(@RequestParam final String fileName,
-                            @RequestParam final String secret,
+    void downloadAttachment(@RequestParam final String secret,
                             final HttpServletResponse response) throws IOException {
-        byte[] bytes = gitlabIssueApiService.downloadAttachment(secret, fileName);
-        writeFileToResponse(response, bytes, fileName);
+        byte[] bytes = gitlabIssueApiService.downloadAttachment(secret);
+        writeFileToResponse(response, bytes, FilenameUtils.getName(secret));
     }
 
     @PostMapping(value = "/{issue_id}/comment")
