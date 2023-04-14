@@ -839,6 +839,14 @@ class PreferencesLoad extends Remote {
     return value && `${value}`.toLowerCase() === 'true';
   }
 
+  @computed
+  get uiCWLToolGroups () {
+    const value = this.getPreferenceValue('ui.cwl.tool.groups');
+    return (value || 'library')
+      .split(/[\s,;]/)
+      .filter((group) => group.length > 0);
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

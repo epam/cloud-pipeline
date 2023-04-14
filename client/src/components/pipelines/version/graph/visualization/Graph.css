@@ -248,3 +248,15 @@
   width: 100%;
   height: 100%;
 }
+
+.cwl-controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 5px;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
