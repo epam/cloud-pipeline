@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">25m9.77s</div>
+<div class="counter">22m35.46s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,22 +73,12 @@
 <a name="deletingEntities"></a>
 <h3 class="failures">deletingEntities</h3>
 <span class="code">
-<pre>Element should be enabled {By.id: close-edit-user-form}
-Element: '&lt;button class=&quot;ant-btn ant-btn-primary&quot; id=&quot;close-edit-user-form&quot; type=&quot;button&quot;&gt;OK&lt;/button&gt;'
-Actual value: disabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1681073313120.119.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1681073313120.119.html
-Timeout: 150 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+<pre>java.util.NoSuchElementException: Primitive CANCEL is not defined in EditGroupPopup.
+	at com.epam.pipeline.autotests.ao.AccessObject.lambda$get$0(AccessObject.java:82)
+	at java.util.Optional.orElseThrow(Optional.java:290)
+	at com.epam.pipeline.autotests.ao.AccessObject.get(AccessObject.java:81)
 	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:101)
-	at com.epam.pipeline.autotests.ao.SettingsPageAO$UserManagementAO$GroupsTabAO$EditGroupPopup.ok(SettingsPageAO.java:1067)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$UserManagementAO$GroupsTabAO$EditGroupPopup.ok(SettingsPageAO.java:1017)
 	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.setMaskForGroup(RestrictionsOnInstancePriceTypeTest.java:689)
 	at com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest.deletingEntities(RestrictionsOnInstancePriceTypeTest.java:112)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
@@ -120,87 +110,87 @@ Timeout: 150 s.
 </thead>
 <tr>
 <td class="failures">deletingEntities</td>
-<td>2m47.78s</td>
+<td>16.840s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">preparationForValidationOfInstanceTypesRestrictions - EPMCMBIBPC-2637</td>
-<td>1m10.42s</td>
+<td>1m11.08s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfInstanceTypesRestrictionsCreatingObjects - EPMCMBIBPC-2639</td>
-<td>1m11.11s</td>
+<td>1m11.48s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfInstanceTypesRestrictionsExistingObjects - EPMCMBIBPC-2638</td>
-<td>1m1.65s</td>
+<td>1m0.26s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2640</td>
-<td>58.119s</td>
+<td>58.191s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2646</td>
-<td>2m14.86s</td>
+<td>2m13.23s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2644</td>
-<td>1m51.27s</td>
+<td>1m53.07s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfPriceTypesRestrictionsForUserGroup - EPMCMBIBPC-2649</td>
-<td>1m2.84s</td>
+<td>1m1.97s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfPriceTypesRestrictionsHierarchy - EPMCMBIBPC-2652</td>
-<td>2m48.18s</td>
+<td>2m47.08s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfPriceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2650</td>
-<td>1m8.53s</td>
+<td>1m8.93s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfPriceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2648</td>
-<td>1m4.78s</td>
+<td>1m6.38s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfPriceTypesRestrictionsSystemSettings - EPMCMBIBPC-2651</td>
-<td>1m22.83s</td>
+<td>1m21.20s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfToolsInstanceTypesRestrictionsForUserGroup - EPMCMBIBPC-2643</td>
-<td>48.541s</td>
+<td>48.415s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfToolsInstanceTypesRestrictionsHierarchy - EPMCMBIBPC-2647</td>
-<td>2m37.44s</td>
+<td>2m36.67s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfToolsInstanceTypesRestrictionsOverInstanceManagement - EPMCMBIBPC-2642</td>
-<td>1m4.79s</td>
+<td>1m4.21s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfToolsInstanceTypesRestrictionsOverUserManagement - EPMCMBIBPC-2641</td>
-<td>50.850s</td>
+<td>51.020s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validationOfToolsInstanceTypesRestrictionsSystemSettings - EPMCMBIBPC-2645</td>
-<td>1m5.81s</td>
+<td>1m5.42s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -213,7 +203,7 @@ Timeout: 150 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 9, 2023 8:48:34 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 16, 2023 10:43:52 PM</p>
 </div>
 </div>
 </body>
