@@ -25,7 +25,8 @@ import RunTagDatePopover from './run-tag-date-popover';
 const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 const KNOWN_TAGS = [
   'idle',
-  'pressure'
+  'pressure',
+  'sge_in_use'
 ];
 
 const isInstanceLink = (tag) => {
