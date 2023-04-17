@@ -199,7 +199,12 @@ public class LdapBlockedUsersManager {
 
     private LdapSearchResponse queryLdap(final LdapSearchRequest request, final String filter) {
         try {
-            log.debug("Query LDAP with query string: {}", request.getQuery());
+            if (StringUtils.isNotBlank(request.getQuery())) {
+                log.debug("Query LDAP with query string: {}", request.getQuery());
+            }
+            if (StringUtils.isNotBlank(filter)) {
+                log.debug("Query LDAP with filter: {}", filter);
+            }
             final LdapSearchResponse response = ldapManager.search(request, filter);
             log.debug("Received LDAP response {}", response);
             return response;
