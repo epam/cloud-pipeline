@@ -1,11 +1,11 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.external.datastorage.manager.auth;
+package com.epam.pipeline.external.datastorage.manager.resource;
 
-import com.epam.pipeline.external.datastorage.entity.PipelineToken;
-import com.epam.pipeline.rest.Result;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.GET;
-import retrofit2.http.Query;
+import retrofit2.http.Header;
+import retrofit2.http.Path;
 
-public interface PipelineAuthClient {
-    @GET("restapi/proxy/token")
-    Call<Result<PipelineToken>> getToken(@Query("SAMLResponse") String samlToken);
+public interface StaticResourcesClient {
+
+    String AUTHORIZATION = "Authorization";
+
+    @GET("restapi/static-resources/{path}")
+    Call<ResponseBody> getContent(@Path(value = "path", encoded = true) String path,
+                                  @Header(AUTHORIZATION) String token);
 }

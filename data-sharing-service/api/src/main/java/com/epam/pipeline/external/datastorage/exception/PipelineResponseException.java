@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.external.datastorage.entity.credentials;
+package com.epam.pipeline.external.datastorage.exception;
 
-import lombok.Getter;
-import lombok.Setter;
+public class PipelineResponseException extends RuntimeException {
 
-import java.util.List;
+    public PipelineResponseException(String message) {
+        super(message);
+    }
 
-@Getter
-@Setter
-public class S3TemporaryCredentials extends AbstractTemporaryCredentials {
-
-    private String sessionName;
-
-    public S3TemporaryCredentials() { }
-
-    @Override
-    public AbstractTemporaryCredentials generate(List<DataStorageAction> actions) {
-        return this;
+    public PipelineResponseException(Throwable cause) {
+        super(cause);
     }
 }

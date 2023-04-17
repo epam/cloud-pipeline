@@ -1,6 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
- *
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,15 +13,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.external.datastorage.entity.item;
+package com.epam.pipeline.external.datastorage.manager.user;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.rest.Result;
+import retrofit2.Call;
+import retrofit2.http.GET;
+import retrofit2.http.Header;
 
-import java.util.List;
+public interface PipelineUserClient {
+    String AUTHORIZATION = "Authorization";
 
-@Getter
-@Setter
-public class GenerateDownloadUrlVO {
-    private List<String> paths;
+    @GET("restapi/whoami")
+    Call<Result<PipelineUser>> getCurrentUser(@Header(AUTHORIZATION) String token);
 }

@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.external.datastorage.security;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,6 +25,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,23 +76,24 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     }
 
     List<String> readAuthorities(SAMLCredential credential) {
-        if (CollectionUtils.isEmpty(authorities)) {
+        return ListUtils.emptyIfNull(authorities)
+                .stream()
+                .filter(StringUtils::isNotBlank)
+                .map(authName -> getGroupsFromArrayValue(credential, authName))
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    private List<String> getGroupsFromArrayValue(final SAMLCredential credential,
+                                                 final String authName) {
+        final String[] attributeValues = credential.getAttributeAsStringArray(authName);
+        if (ArrayUtils.isEmpty(attributeValues)) {
             return Collections.emptyList();
         }
-        List<String> grantedAuthorities = new ArrayList<>();
-        authorities.stream().forEach(auth -> {
-            if (StringUtils.isEmpty(auth)) {
-                return;
-            }
-            String[] attributeValues = credential.getAttributeAsStringArray(auth);
-            if (attributeValues != null && attributeValues.length > 0) {
-                grantedAuthorities.addAll(
-                    Arrays.stream(attributeValues)
-                        .map(String::toUpperCase)
-                        .collect(Collectors.toList()));
-            }
-        });
-        return grantedAuthorities;
+        return Arrays.stream(attributeValues)
+                .filter(StringUtils::isNotBlank)
+                .map(String::toUpperCase)
+                .collect(Collectors.toList());
     }
 
     Map<String, String> readAttributes(SAMLCredential credential) {

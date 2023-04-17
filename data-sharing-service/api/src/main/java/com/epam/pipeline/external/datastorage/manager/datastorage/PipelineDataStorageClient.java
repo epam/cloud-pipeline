@@ -20,16 +20,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.epam.pipeline.external.datastorage.controller.Result;
-import com.epam.pipeline.external.datastorage.entity.datastorage.DataStorage;
-import com.epam.pipeline.external.datastorage.entity.credentials.AbstractTemporaryCredentials;
-import com.epam.pipeline.external.datastorage.entity.credentials.DataStorageAction;
-import com.epam.pipeline.external.datastorage.entity.item.AbstractDataStorageItem;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageDownloadFileUrl;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageItemContent;
-import com.epam.pipeline.external.datastorage.entity.item.DataStorageListing;
-import com.epam.pipeline.external.datastorage.entity.item.GenerateDownloadUrlVO;
-import com.epam.pipeline.external.datastorage.entity.item.UpdateDataStorageItemVO;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
+import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.rest.Result;
+import com.epam.pipeline.vo.GenerateDownloadUrlVO;
+import com.epam.pipeline.vo.data.storage.UpdateDataStorageItemVO;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
@@ -39,6 +42,7 @@ import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+
 public interface PipelineDataStorageClient {
 
     String PATH = "path";
@@ -47,8 +51,11 @@ public interface PipelineDataStorageClient {
     String SHOW_VERSION = "showVersion";
     String AUTHORIZATION = "Authorization";
 
+    @GET("restapi/datastorage/findByPath")
+    Call<Result<AbstractDataStorage>> getStorage(@Query(ID) String id, @Header(AUTHORIZATION) String token);
+
     @GET("restapi/datastorage/{id}/load")
-    Call<Result<DataStorage>> getStorage(@Path(ID) long id, @Header(AUTHORIZATION) String token);
+    Call<Result<AbstractDataStorage>> getStorage(@Path(ID) long id, @Header(AUTHORIZATION) String token);
 
     @GET("restapi/datastorage/{id}/list")
     Call<Result<List<AbstractDataStorageItem>>> getStorageContent(@Path(ID) long id,
@@ -92,8 +99,8 @@ public interface PipelineDataStorageClient {
                                                      @Header(AUTHORIZATION) String token);
 
     @POST("restapi/datastorage/tempCredentials/")
-    Call<Result<AbstractTemporaryCredentials>> generateCredentials(@Body List<DataStorageAction> operations,
-                                                                   @Header(AUTHORIZATION) String token);
+    Call<Result<TemporaryCredentials>> generateCredentials(@Body List<DataStorageAction> operations,
+                                                           @Header(AUTHORIZATION) String token);
 
     @POST("restapi/datastorage/{id}/list")
     Call<Result<List<AbstractDataStorageItem>>> updateItems(@Path(ID) long id,
@@ -125,4 +132,21 @@ public interface PipelineDataStorageClient {
     Call<Result<DataStorageDownloadFileUrl>> generateUploadUrl(@Path(ID) long id,
                                                                  @Query(PATH) String path,
                                                                  @Header(AUTHORIZATION) String token);
+
+    @POST("restapi/datastorage/{id}/content")
+    Call<Result<DataStorageFile>> createDataStorageFile(@Path(ID) long id,
+                                                        @Query(PATH) String path,
+                                                        @Body String content,
+                                                        @Header(AUTHORIZATION) String token);
+
+    @GET("restapi/datastorage/{id}/download")
+    Call<ResponseBody> downloadFile(@Path(ID) long id,
+                                              @Query(PATH) String path,
+                                              @Query(VERSION) String version,
+                                              @Header(AUTHORIZATION) String token);
+
+    @GET("restapi/datastorage/{id}/type")
+    Call<Result<DataStorageItemType>> getItemType(@Path(ID) Long storageId,
+                                                  @Query(PATH) String path,
+                                                  @Header(AUTHORIZATION) String token);
 }
