@@ -944,30 +944,29 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         pipelineRunDao.createPipelineRun(run);
 
         final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
-        assertNotNull(loadedRun.getInstance().getStartDate());
+        assertNotNull(loadedRun.getInstanceStartDateTime());
     }
 
     @Test
     public void shouldCreatePipelineRunWithoutInstanceStartedDate() {
         final PipelineRun run = buildPipelineRun(testPipeline.getId());
-        run.getInstance().setStartDate(null);
+        run.setInstanceStartDate(null);
         pipelineRunDao.createPipelineRun(run);
 
         final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
-        assertNull(loadedRun.getInstance().getStartDate());
+        assertNull(loadedRun.getInstanceStartDateTime());
     }
 
     @Test
-    public void shouldUpdatePipelineRunInstanceWithInstanceStartedDate() {
+    public void shouldUpdatePipelineRunInstanceStartDateWithInstanceStartedDate() {
         final PipelineRun run = buildPipelineRun(testPipeline.getId());
-        run.getInstance().setStartDate(null);
+        run.setInstanceStartDate(null);
         pipelineRunDao.createPipelineRun(run);
 
-        run.getInstance().setStartDate(run.getStartDate());
-        pipelineRunDao.updateRunInstance(run);
+        pipelineRunDao.updateRunInstanceStartDate(run.getId(), DateUtils.nowUTC());
 
         final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
-        assertNotNull(loadedRun.getInstance().getStartDate());
+        assertNotNull(loadedRun.getInstanceStartDateTime());
     }
 
     @Test
@@ -1133,6 +1132,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setPipelineName(TEST_PIPELINE_NAME);
         run.setVersion("abcdefg");
         run.setStartDate(start);
+        run.setInstanceStartDate(start);
         run.setEndDate(end);
         run.setStatus(TaskStatus.RUNNING);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -1155,7 +1155,6 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         runInstance.setCloudProvider(CloudProvider.AWS);
         runInstance.setCloudRegionId(cloudRegion.getId());
         runInstance.setNodePlatform(TEST_PLATFORM);
-        runInstance.setStartDate(run.getStartDate());
         run.setInstance(runInstance);
     }
 
@@ -1217,6 +1216,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setPipelineId(pipelineId);
         run.setVersion(TEST_REVISION_1);
         run.setStartDate(new Date());
+        run.setInstanceStartDate(run.getStartDate());
         run.setEndDate(new Date());
         run.setStatus(status);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -1234,7 +1234,6 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         instance.setSpot(isSpot);
         instance.setNodeId("1");
         instance.setNodePlatform(TEST_PLATFORM);
-        instance.setStartDate(run.getStartDate());
         run.setInstance(instance);
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);

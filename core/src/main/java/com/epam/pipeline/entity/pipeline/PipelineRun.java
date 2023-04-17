@@ -57,6 +57,7 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     private Long pipelineId;
     private Date startDate;
+    private Date instanceStartDate;
     private String version;
     private Date endDate;
     private TaskStatus status;
@@ -256,12 +257,12 @@ public class PipelineRun extends AbstractSecuredEntity {
     }
 
     @JsonIgnore
-    public Date getInstanceStartDate() {
-        return Optional.ofNullable(instance).map(RunInstance::getStartDate).orElse(null);
+    public LocalDateTime getInstanceStartDateTime() {
+        return Optional.ofNullable(instanceStartDate).map(DateUtils::convertDateToLocalDateTime).orElse(null);
     }
 
     @JsonIgnore
-    public LocalDateTime getInstanceStartDateTime() {
-        return Optional.ofNullable(getInstanceStartDate()).map(DateUtils::convertDateToLocalDateTime).orElse(null);
+    public void setInstanceStartDateTime(final LocalDateTime date) {
+        instanceStartDate = Optional.ofNullable(date).map(DateUtils::convertLocalDateTimeToDate).orElse(null);
     }
 }

@@ -491,9 +491,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
                 RunInstance instance = cloudFacade
                         .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters());
-                instance.setStartDate(DateUtils.now());
-                //save actual instance
+                //save instance ID and IP
                 pipelineRunManager.updateRunInstance(longId, instance);
+                pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
                 autoscalerService.registerDisks(longId, instance);
                 Instant end = Instant.now();
                 removeNodeUpTask(longId);

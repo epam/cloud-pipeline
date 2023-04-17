@@ -141,6 +141,7 @@ public final class TestUtils {
         PipelineRun run = new PipelineRun();
         run.setPipelineId(pipelineId);
         run.setStartDate(new Date());
+        run.setInstanceStartDate(new Date());
         run.setEndDate(new Date());
         run.setStatus(status);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -158,7 +159,6 @@ public final class TestUtils {
         instance.setSpot(isSpot);
         instance.setNodeId("1");
         instance.setNodePlatform(TEST_PLATFORM);
-        instance.setStartDate(new Date());
         run.setInstance(instance);
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);

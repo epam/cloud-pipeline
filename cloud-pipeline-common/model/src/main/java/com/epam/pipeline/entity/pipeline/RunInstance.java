@@ -19,7 +19,6 @@ package com.epam.pipeline.entity.pipeline;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.util.Date;
 import java.util.Objects;
 import java.util.Set;
 
@@ -60,7 +59,6 @@ public class RunInstance {
      */
     private Set<String> prePulledDockerImages;
     private Long poolId;
-    private Date startDate;
 
     @JsonIgnore
     public boolean isEmpty() {

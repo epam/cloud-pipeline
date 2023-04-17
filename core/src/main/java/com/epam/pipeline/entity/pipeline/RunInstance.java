@@ -25,7 +25,6 @@ import lombok.Setter;
 import lombok.ToString;
 import org.springframework.util.StringUtils;
 
-import java.util.Date;
 import java.util.Objects;
 import java.util.Set;
 
@@ -61,7 +60,6 @@ public class RunInstance {
      */
     private Set<String> prePulledDockerImages;
     private Long poolId;
-    private Date startDate;
 
     public RunInstance(final String nodeType,
                        final Integer nodeDisk,

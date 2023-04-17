@@ -454,11 +454,20 @@
                         node_id = :NODE_ID,
                         node_disk = :NODE_DISK,
                         node_ip = :NODE_IP,
-                        node_image =:NODE_IMAGE,
-                        node_name =:NODE_NAME,
-                        is_spot =:IS_SPOT,
-                        node_real_disk =:NODE_REAL_DISK,
-                        node_pool_id = :NODE_POOL_ID,
+                        node_image = :NODE_IMAGE,
+                        node_name = :NODE_NAME,
+                        is_spot = :IS_SPOT,
+                        node_real_disk = :NODE_REAL_DISK,
+                        node_pool_id = :NODE_POOL_ID
+                    WHERE
+                        run_id = :RUN_ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateRunInstanceStartDateQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET
                         node_start_date = :NODE_START_DATE
                     WHERE
                         run_id = :RUN_ID

@@ -184,8 +184,8 @@ public class ReassignHandler {
         final RunInstance reassignedInstance = StringUtils.isBlank(instance.getNodeId()) ?
                 cloudFacade.describeInstance(runId, instance) : instance;
         reassignedInstance.setPoolId(instance.getPoolId());
-        reassignedInstance.setStartDate(DateUtils.now());
         pipelineRunManager.updateRunInstance(runId, reassignedInstance);
+        pipelineRunManager.updateRunInstanceStartDate(runId, DateUtils.nowUTC());
         final List<InstanceDisk> disks = cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(),
                 runId);
         autoscalerService.adjustRunPrices(runId, disks);

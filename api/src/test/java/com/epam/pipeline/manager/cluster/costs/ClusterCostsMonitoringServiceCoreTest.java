@@ -71,12 +71,12 @@ public class ClusterCostsMonitoringServiceCoreTest {
         final PipelineRun worker13 = workerRun(WORKER_ID_13, MASTER_ID_1, PRICE_1); // 3 min stopped
         worker12.setStartDate(buildDate(10));
         worker13.setStartDate(buildDate(10));
-        worker13.getInstance().setStartDate(buildDate(5));
+        worker13.setInstanceStartDate(buildDate(5));
         worker13.setEndDate(buildDate(2));
 
         final PipelineRun worker21 = workerRun(WORKER_ID_21, MASTER_ID_2, PRICE_2); // 2 min running
         worker21.setStartDate(buildDate(10));
-        worker21.getInstance().setStartDate(buildDate(2));
+        worker21.setInstanceStartDate(buildDate(2));
 
         when(pipelineRunCRUDService.loadRunsByParentRuns(any())).thenReturn(new HashMap<Long, List<PipelineRun>>() {
             {

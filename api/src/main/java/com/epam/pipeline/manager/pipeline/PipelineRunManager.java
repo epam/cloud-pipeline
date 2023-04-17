@@ -628,6 +628,11 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public void updateRunInstanceStartDate(Long id, LocalDateTime date) {
+        pipelineRunDao.updateRunInstanceStartDate(id, date);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun updatePipelineStatusIfNotFinalExternal(Long runId, TaskStatus status) {
         return updatePipelineStatusIfNotFinal(runId, status);
     }

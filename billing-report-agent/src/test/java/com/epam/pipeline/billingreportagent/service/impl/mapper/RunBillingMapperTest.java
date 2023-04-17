@@ -115,7 +115,7 @@ public class RunBillingMapperTest {
     public void testRunMapperMap() throws IOException {
         final PipelineRun run =
             TestUtils.createTestPipelineRun(TEST_RUN_ID, TEST_PIPELINE_ID, TEST_TOOL_IMAGE, TEST_PRICE,
-                                            TestUtils.createTestInstance(TEST_REGION_ID, TEST_NODE_TYPE));
+                    DateUtils.nowUTC(), TestUtils.createTestInstance(TEST_REGION_ID, TEST_NODE_TYPE));
         run.setPipelineId(TEST_PIPELINE_ID);
         run.setPipelineName(TEST_PIPELINE_NAME);
         run.setVersion(TEST_PIPELINE_VERSION);

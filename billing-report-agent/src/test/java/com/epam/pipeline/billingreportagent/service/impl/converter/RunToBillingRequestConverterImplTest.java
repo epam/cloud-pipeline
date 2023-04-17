@@ -27,7 +27,6 @@ import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -91,9 +90,8 @@ public class RunToBillingRequestConverterImplTest {
         final LocalDateTime prevSync = LocalDate.of(2019, 12, 4).atStartOfDay();
         final LocalDateTime syncStart = LocalDate.of(2019, 12, 5).atStartOfDay();
 
-        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_ID, TOOL_IMAGE, PRICE,
-                TestUtils.createTestInstance(REGION_ID, NODE_TYPE,
-                        prevSync));
+        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_ID, TOOL_IMAGE, PRICE, prevSync,
+                TestUtils.createTestInstance(REGION_ID, NODE_TYPE));
 
         final EntityContainer<PipelineRunWithType> runContainer =
                 EntityContainer.<PipelineRunWithType>builder()
@@ -770,15 +768,9 @@ public class RunToBillingRequestConverterImplTest {
         run.setId(RUN_ID);
         run.setStatus(end == null ? TaskStatus.RUNNING : TaskStatus.STOPPED);
         run.setRunStatuses(Arrays.asList(statuses));
+        run.setInstanceStartDate(toDate(start));
         run.setEndDate(toDate(end));
-        run.setInstance(instance(start));
         return run;
-    }
-
-    private RunInstance instance(final LocalDateTime start) {
-        final RunInstance instance = new RunInstance();
-        instance.setStartDate(toDate(start));
-        return instance;
     }
 
     private Date toDate(final LocalDateTime date) {
