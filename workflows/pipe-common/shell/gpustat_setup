@@ -52,7 +52,7 @@ while true; do
     _GPUSTAT_HOSTS="$_GPUSTAT_HOSTS_NEW"
     echo "[INFO] A list of hosts has changed, new list: $_GPUSTAT_HOSTS_NEW"
     echo "[INFO] (re)Starting gpustat"
-    if [ -f "$CP_GPUSTAT_PID_FILE" ]; then
+    if [ -f "$CP_GPUSTAT_PID_FILE" ]; thenp
         echo "[INFO] --> gpustat is already running, stopping pid $CP_GPUSTAT_PID_FILE"
         kill $(cat $CP_GPUSTAT_PID_FILE)
     fi
@@ -60,7 +60,7 @@ while true; do
     echo "[INFO] --> Starting a new instance of gpustat"
     cd "$_GPUSTAT_HOME_WEB"
     nohup gpustat-web --port "$CP_GPUSTAT_PORT" \
-                      --interval "$CP_GPUSTAT_REFRESH_INTERVAL" > /var/log/gpustat.log 2>&1 &
+                      --interval "$CP_GPUSTAT_REFRESH_INTERVAL" $_GPUSTAT_HOSTS >> /var/log/gpustat.log 2>&1 &
     echo $! > "$CP_GPUSTAT_PID_FILE"
 
     sleep "$CP_GPUSTAT_TIMEOUT"
