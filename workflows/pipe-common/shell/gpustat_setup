@@ -25,9 +25,13 @@ if [ ! -d "$_GPUSTAT_HOME_WEB" ]; then
 fi
 
 CP_GPUSTAT_PORT="${CP_GPUSTAT_PORT:-8092}"
+CP_GPUSTAT_REFRESH_INTERVAL="${CP_GPUSTAT_REFRESH_INTERVAL:-10}"
 CP_GPUSTAT_TIMEOUT="${CP_GPUSTAT_TIMEOUT:-30}"
 CP_GPUSTAT_PID_FILE="${CP_GPUSTAT_PID_FILE:-/var/run/gpustat.pid}"
+
+# Print the startup summary
 echo "- Port:               $CP_GPUSTAT_PORT"
+echo "- Data refresh(s):    $CP_GPUSTAT_REFRESH_INTERVAL"
 echo "- Recheck timeout(s): $CP_GPUSTAT_TIMEOUT"
 echo "- Pid file:           $CP_GPUSTAT_PID_FILE"
 
@@ -55,7 +59,8 @@ while true; do
 
     echo "[INFO] --> Starting a new instance of gpustat"
     cd "$_GPUSTAT_HOME_WEB"
-    nohup gpustat-web --port "$CP_GPUSTAT_PORT" $_GPUSTAT_HOSTS > /var/log/gpustat.log 2>&1 &
+    nohup gpustat-web --port "$CP_GPUSTAT_PORT" \
+                      --interval "$CP_GPUSTAT_REFRESH_INTERVAL" > /var/log/gpustat.log 2>&1 &
     echo $! > "$CP_GPUSTAT_PID_FILE"
 
     sleep "$CP_GPUSTAT_TIMEOUT"
