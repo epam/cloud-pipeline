@@ -7,7 +7,10 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.Optional;
 
-public class RunDurationUtils {
+public final class RunDurationUtils {
+
+    private RunDurationUtils() {
+    }
 
     public static Duration getOverallDuration(final PipelineRun run) {
         return durationBetween(run.getStartDate(), run.getEndDate());
