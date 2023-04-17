@@ -130,6 +130,6 @@ public interface GitReaderApi {
                                                    @Body GitReaderLogsPathFilter paths);
 
     @Streaming
-    @GET("git/{path}")
-    Call<ResponseBody> downloadAttachment(@Path("path") String path);
+    @GET("git/download/{path}")
+    Call<ResponseBody> downloadAttachment(@Path(value = "path") String path);
 }
