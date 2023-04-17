@@ -52,7 +52,7 @@ while true; do
     _GPUSTAT_HOSTS="$_GPUSTAT_HOSTS_NEW"
     echo "[INFO] A list of hosts has changed, new list: $_GPUSTAT_HOSTS_NEW"
     echo "[INFO] (re)Starting gpustat"
-    if [ -f "$CP_GPUSTAT_PID_FILE" ]; thenp
+    if [ -f "$CP_GPUSTAT_PID_FILE" ]; then
         echo "[INFO] --> gpustat is already running, stopping pid $CP_GPUSTAT_PID_FILE"
         kill $(cat $CP_GPUSTAT_PID_FILE)
     fi
