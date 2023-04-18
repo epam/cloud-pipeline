@@ -297,6 +297,10 @@ public class GitlabClient {
         return execute(gitLabApi.getProject(apiVersion, projectId));
     }
 
+    public GitProject getProject(Long id) throws GitClientException {
+        return execute(gitLabApi.getProject(apiVersion, String.valueOf(id)));
+    }
+
     public void deleteRepository() throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
         execute(gitLabApi.deleteProject(apiVersion, projectId));

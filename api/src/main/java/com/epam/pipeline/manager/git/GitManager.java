@@ -62,6 +62,7 @@ import com.epam.pipeline.utils.GitUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -864,6 +865,9 @@ public class GitManager {
             if (Objects.nonNull(projectStorage)) {
                 return projectStorage.getDiskPath();
             }
+        }
+        if (NumberUtils.isDigits(project)) {
+            return getDefaultGitlabClient().getProject(Long.parseLong(project)).getPath();
         }
         return project;
     }
