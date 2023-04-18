@@ -1098,7 +1098,7 @@ EOF
 function idp_register_app {
     local issuer="$1"
     local cert="$2"
-    local idp_pd="${$CP_IDP_PROFILE_DB:-/opt/idp/pdb/saml-idp-profiles.json}"
+    local idp_pd="${CP_IDP_PROFILE_DB:-/opt/idp/pdb/saml-idp-profiles.json}"
 
     print_info "Creating IdP connection for $issuer with cert $cert"
     idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert --profileDatabase $idp_pd")
@@ -1119,9 +1119,10 @@ function idp_register_user {
     local firstname="$3"
     local lastname="$4"
     local email="$5"
+    local idp_pd="${CP_IDP_PROFILE_DB:-/opt/idp/pdb/saml-idp-profiles.json}"
 
     print_info "Registering IdP user $username"
-    idp_register_user_response=$(execute_deployment_command cp-idp default "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email")
+    idp_register_user_response=$(execute_deployment_command cp-idp default "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email --profileDatabase $idp_pd")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering user $username"
         echo "========"
