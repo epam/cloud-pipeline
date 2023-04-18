@@ -921,6 +921,55 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void shouldCreatePipelineRunWithStartedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(loadedRun.getStartDate());
+    }
+
+    @Test
+    public void shouldCreatePipelineRunWithEndedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(loadedRun.getEndDate());
+    }
+
+    @Test
+    public void shouldCreatePipelineRunWithInstanceStartedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(loadedRun.getInstanceStartDateTime());
+    }
+
+    @Test
+    public void shouldCreatePipelineRunWithoutInstanceStartedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setInstanceStartDate(null);
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNull(loadedRun.getInstanceStartDateTime());
+    }
+
+    @Test
+    public void shouldUpdatePipelineRunInstanceStartDateWithInstanceStartedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setInstanceStartDate(null);
+        pipelineRunDao.createPipelineRun(run);
+
+        pipelineRunDao.updateRunInstanceStartDate(run.getId(), DateUtils.nowUTC());
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(loadedRun.getInstanceStartDateTime());
+    }
+
+    @Test
     public void shouldBatchUpdateRuns() {
         final PipelineRun run1 = buildPipelineRun(testPipeline.getId());
         final PipelineRun run2 = buildPipelineRun(testPipeline.getId());
@@ -1083,6 +1132,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setPipelineName(TEST_PIPELINE_NAME);
         run.setVersion("abcdefg");
         run.setStartDate(start);
+        run.setInstanceStartDate(start);
         run.setEndDate(end);
         run.setStatus(TaskStatus.RUNNING);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -1166,6 +1216,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setPipelineId(pipelineId);
         run.setVersion(TEST_REVISION_1);
         run.setStartDate(new Date());
+        run.setInstanceStartDate(run.getStartDate());
         run.setEndDate(new Date());
         run.setStatus(status);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
