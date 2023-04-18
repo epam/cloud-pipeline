@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
+function arrayBufferToBase64 (buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 export default async function blobFilesToBase64 (files = []) {
   const promises = files.map(file => new Promise((resolve) => {
     try {
       const reader = new FileReader();
-      reader.onloadend = () => resolve({[file.name]: reader.result});
-      reader.readAsDataURL(file);
+      reader.onloadend = () => resolve({[file.name]: arrayBufferToBase64(reader.result)});
+      reader.readAsArrayBuffer(file);
     } catch {
       resolve(null);
     }
