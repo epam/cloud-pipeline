@@ -184,8 +184,25 @@ a.cp-danger:focus,
   color: @application-color;
 }
 
+.cp-tag.accent {
+  border: 1px solid @application-color;
+}
+
+.cp-tag.filled,
+.cp-tag.link:hover {
+  background-color: @application-color;
+  border: 1px solid @application-color;
+  color: @application-background-color;
+}
+
 .cp-tag.disabled {
   color: @application-color-disabled;
+}
+
+.cp-tag.filled.disabled,
+.cp-tag.link.disabled:hover {
+  background-color: @application-color-disabled;
+  border: 1px solid @application-color-disabled;
 }
 
 .cp-tag.warning {
@@ -193,9 +210,23 @@ a.cp-danger:focus,
   color: @color-yellow;
 }
 
+.cp-tag.warning.filled,
+.cp-tag.warning.link:hover {
+  background-color: @color-yellow;
+  border-color: @color-yellow;
+  color: @primary-text-color;
+}
+
 .cp-tag.critical {
   border-color: currentColor;
   color: @color-red;
+}
+
+.cp-tag.critical.filled,
+.cp-tag.critical.link:hover {
+  background-color: @color-red;
+  border-color: @color-red;
+  color: @primary-text-color;
 }
 
 .cp-tag.success {
@@ -203,10 +234,26 @@ a.cp-danger:focus,
   color: @color-green;
 }
 
+.cp-tag.success.filled,
+.cp-tag.success.link:hover {
+  background-color: @color-green;
+  border-color: @color-green;
+  color: @primary-text-color;
+}
+
 .cp-tag.cp-primary,
 .cp-tag.primary {
   border-color: currentColor;
   color: @primary-color;
+}
+
+.cp-tag.primary.filled,
+.cp-tag.cp-primary.filled,
+.cp-tag.primary.link:hover,
+.cp-tag.cp-primary.link:hover {
+  background-color: @primary-color;
+  border-color: @primary-color;
+  color: @primary-text-color;
 }
 
 .cp-versioned-storage {
