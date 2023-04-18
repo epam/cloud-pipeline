@@ -157,7 +157,7 @@ function run_dcv {
   CP_DCV_INIT_SCRIPT="${CP_DCV_INIT_SCRIPT:-/opt/dcv/extras/xfce4launch}"
   if [ "$CP_DCV_INIT_SCRIPT" ]; then
       CP_DCV_INIT_SCRIPT="--init $CP_DCV_INIT_SCRIPT"
-      pipe_log_info "Using \"$CP_DCV_INIT_SCRIPT\" initialization script for a DCV session" "$DCV_INSTALL_TASK"
+      pipe_log_info "Using '$CP_DCV_INIT_SCRIPT' initialization script for a DCV session" "$DCV_INSTALL_TASK"
   fi
   dcv create-session --owner $OWNER --user $OWNER $CP_DCV_INIT_SCRIPT session
 

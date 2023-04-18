@@ -172,7 +172,8 @@ def start(serving_port, desktop_port, template_path):
     executor = _resolve_executor(run_id, api, logger)
 
     logger.info('Scrambling user password...')
-    user_scrambled_pass = _scramble_pass(user_pass)
+    _, template_type = _read_template_file(template_path)
+    user_scrambled_pass = _scramble_pass(user_pass) if template_type == NXS else None
 
     Config.api = api
     Config.executor = executor
