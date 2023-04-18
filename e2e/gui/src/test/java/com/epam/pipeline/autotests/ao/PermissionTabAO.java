@@ -65,7 +65,8 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     public PermissionTabAO addNewUser(String userName) {
         UserAdditionPopupAO userAdditionPopupAO = clickAddNewUser()
                 .typeInField(userName);
-        $(visible(byText("Select user"))).click();
+        $(byXpath(String.format(".//ul[contains(@class, 'ant-select-dropdown-menu') and contains(., '%s')]", userName)))
+                .click();
         return userAdditionPopupAO
             .ok();
     }
