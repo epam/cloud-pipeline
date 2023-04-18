@@ -81,6 +81,7 @@ CP_IDP_CERT_DIR=/opt/idp/pki
 CP_IDP_INTERNAL_HOST=cp-idp.default.svc.cluster.local
 CP_IDP_INTERNAL_PORT=32080
 CP_IDP_EXTERNAL_PORT=32080
+CP_IDP_PROFILE_DB=/opt/idp/pdb/saml-idp-profiles.json
 
 # cp-docker-registry config
 CP_DOCKER_CERT_DIR=/opt/docker-registry/pki
