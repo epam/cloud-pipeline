@@ -1416,7 +1416,7 @@ function api_register_system_jobs_pipeline {
     local sj_pipeline_version=${CP_API_SRV_SYSTEM_JOBS_PIPELINE_VERSION:-v1}
 
     # 0. Verify and update config.json template
-    local sj_pipeline_dir="$OTHER_PACKAGES_PATH/system-jobs"
+    local sj_pipeline_dir="$OTHER_PACKAGES_PATH/system_jobs"
     local sj_pipeline_config_json="$sj_pipeline_dir/config.json"
     if [ ! -f "$sj_pipeline_config_json" ]; then
         print_err "config.json is not found for the system jobs pipeline at ${sj_pipeline_config_json}. Pipeline will not be registered"
