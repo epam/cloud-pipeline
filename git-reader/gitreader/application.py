@@ -161,7 +161,7 @@ def git_diff_by_commit(repo, commit):
         return jsonify(error(e.__str__()))
 
 
-@app.route('/git/download/<path:repo>', methods=["GET"])
+@app.route('/git/download/<path:file_path>', methods=["GET"])
 @auth.login_required
 @swag_from('flasgger-doc/download.yml')
 def git_upload(file_path):

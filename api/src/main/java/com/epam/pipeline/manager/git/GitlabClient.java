@@ -472,7 +472,7 @@ public class GitlabClient {
             throws GitClientException {
         final MultipartBody.Part filePart = MultipartBody.Part.createFormData(
                 "file", name,
-                RequestBody.create(MediaType.parse("multipart/form-data"), content));
+                RequestBody.create(MediaType.parse("multipart/form-data"), Base64.getDecoder().decode(content)));
         return execute(gitLabApi.upload(apiVersion, project, filePart));
     }
 
