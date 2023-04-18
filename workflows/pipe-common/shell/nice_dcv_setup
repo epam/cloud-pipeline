@@ -154,12 +154,15 @@ function run_dcv {
       exit 1
   fi
 
-  CP_DCV_INIT_SCRIPT="${CP_DCV_INIT_SCRIPT:-/opt/dcv/extras/xfce4launch}"
-  if [ "$CP_DCV_INIT_SCRIPT" ]; then
-      CP_DCV_INIT_SCRIPT="--init $CP_DCV_INIT_SCRIPT"
-      pipe_log_info "Using '$CP_DCV_INIT_SCRIPT' initialization script for a DCV session" "$DCV_INSTALL_TASK"
+  # We may want to delay session creation, as the subsequent scripts may want to modify the user's profile
+  # Which won't be possible once the session is created and a process is running on the user's behalf
+  # So we shall set 'CP_DCV_DELAY_SESSION_CREATION=true' and then call 'nice_dcv_create_session' in the 
+  # next execution steps
+  if [ "$CP_DCV_DELAY_SESSION_CREATION" == "true" ]; then
+    pipe_log_warn "DCV session will NOT be created now as the CP_DCV_DELAY_SESSION_CREATION is set to 'true'. Make sure to run 'nice_dcv_create_session' before the user can login." "$DCV_INSTALL_TASK"
+  else
+    nice_dcv_create_session
   fi
-  dcv create-session --owner $OWNER --user $OWNER $CP_DCV_INIT_SCRIPT session
 
   # Serve additional server to provide dcv desktop session file
   if [ -n "${CP_DCV_DESKTOP_PORT}" ]; then
