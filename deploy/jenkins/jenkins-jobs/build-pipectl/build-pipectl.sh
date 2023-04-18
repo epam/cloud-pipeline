@@ -24,6 +24,7 @@ export CP_PIPECTL_DIST="$WORKSPACE/build/$CP_PIPECTL_DIST_FILE_NAME"
 
 bash build.sh -o $CP_PIPECTL_DIST \
               -p $WORKSPACE/cloud-pipeline/workflows/pipe-templates/__SYSTEM/data_loader \
+              -p $WORKSPACE/cloud-pipeline/workflows/pipe-templates/__SYSTEM/system_jobs \
               -p $WORKSPACE/cloud-pipeline/e2e/prerequisites \
               -p $WORKSPACE/cloud-pipeline/workflows/pipe-demo \
               -v $CP_VERSION_SHORT \

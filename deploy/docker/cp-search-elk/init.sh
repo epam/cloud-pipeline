@@ -28,6 +28,7 @@ _HEAP_SIZE="${CP_SEARCH_ELK_HEAP_SIZE:-4g}"
 sed -i "s/Xms1g/Xms$_HEAP_SIZE/g" /usr/share/elasticsearch/config/jvm.options
 sed -i "s/Xmx1g/Xmx$_HEAP_SIZE/g" /usr/share/elasticsearch/config/jvm.options
 
+chown -R elasticsearch:root /usr/share/elasticsearch/data
 ulimit -n ${CP_SEARCH_ELK_ULIMIT:-65536} && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh &
 
 CP_SEARCH_ELK_INIT_ATTEMPTS="${CP_SEARCH_ELK_INIT_ATTEMPTS:-600}"
