@@ -63,7 +63,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO addNewUser(String userName) {
-        if (getTabTable().$(byText(userName)).exists()) {
+        if (getTabTable().should(exist).$(byText(userName)).exists()) {
             return this;
         }
         UserAdditionPopupAO userAdditionPopupAO = clickAddNewUser()
