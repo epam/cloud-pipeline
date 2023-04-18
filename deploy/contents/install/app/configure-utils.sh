@@ -1098,9 +1098,10 @@ EOF
 function idp_register_app {
     local issuer="$1"
     local cert="$2"
-    
+    local idp_pd="${$CP_IDP_PROFILE_DB:-/opt/idp/pdb/saml-idp-profiles.json}"
+
     print_info "Creating IdP connection for $issuer with cert $cert"
-    idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert")
+    idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert --profileDatabase $idp_pd")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering IdP connection for $issuer with cert $cert"
         echo "========"
