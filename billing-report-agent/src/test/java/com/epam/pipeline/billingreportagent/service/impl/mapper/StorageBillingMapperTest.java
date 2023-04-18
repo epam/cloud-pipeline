@@ -61,7 +61,7 @@ public class StorageBillingMapperTest {
     private static final long TEST_USAGE_BYTES = 600;
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
     private static final Date TEST_JAVA_DATE = DateUtils.now();
-    private static final LocalDate TEST_DATE = DateUtils.toLocalDateTime(TEST_JAVA_DATE).toLocalDate();
+    private static final LocalDate TEST_DATE = DateUtils.convertDateToLocalDateTime(TEST_JAVA_DATE).toLocalDate();
     private static final String TEST_STORAGE_NAME = "storage_name";
     private static final String TEST_STORAGE_PATH = "storage_path";
 

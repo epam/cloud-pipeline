@@ -41,6 +41,7 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
+import com.epam.pipeline.utils.RunDurationUtils;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -292,7 +293,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         }
 
         private long overallDurationOf(final PipelineRun run) {
-            return Duration.between(run.getStartDate().toInstant(), DateUtils.now().toInstant()).abs().getSeconds();
+            return RunDurationUtils.getOverallDuration(run).getSeconds();
         }
 
         private List<RunStatus> toSortedStatuses(final List<RunStatus> statuses) {

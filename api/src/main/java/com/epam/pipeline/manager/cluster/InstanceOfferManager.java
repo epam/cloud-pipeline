@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.utils.RunDurationUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -143,7 +144,7 @@ public class InstanceOfferManager {
             long maximumDuration = -1;
             long totalDurations = 0;
             for (PipelineRun run : runs) {
-                long duration = run.getEndDate().getTime() - run.getStartDate().getTime();
+                long duration = RunDurationUtils.getBillableDuration(run).toMillis();
                 if (minimumDuration == -1 || minimumDuration > duration) {
                     minimumDuration = duration;
                 }
@@ -191,8 +192,7 @@ public class InstanceOfferManager {
         price.setPricePerHour(pricePerHour);
 
         if (pipelineRun.getStatus().isFinal()) {
-            long duration = pipelineRun.getEndDate().getTime() - pipelineRun.getStartDate().getTime();
-            price.setTotalPrice(duration / ONE_HOUR * pricePerHour);
+            price.setTotalPrice(RunDurationUtils.getBillableDuration(pipelineRun).toMillis() / ONE_HOUR * pricePerHour);
         } else {
             price.setTotalPrice(0);
         }

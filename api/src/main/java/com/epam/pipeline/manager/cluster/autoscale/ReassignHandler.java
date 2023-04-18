@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceF
 import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilterType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -162,6 +163,7 @@ public class ReassignHandler {
                 cloudFacade.describeInstance(runId, instance) : instance;
         reassignedInstance.setPoolId(instance.getPoolId());
         pipelineRunManager.updateRunInstance(runId, reassignedInstance);
+        pipelineRunManager.updateRunInstanceStartDate(runId, DateUtils.nowUTC());
         final List<InstanceDisk> disks = cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(),
                 runId);
         autoscalerService.adjustRunPrices(runId, disks);

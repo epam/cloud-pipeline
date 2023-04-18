@@ -16,6 +16,7 @@
 package com.epam.pipeline.manager.cluster.costs;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -44,13 +45,13 @@ import static org.mockito.Mockito.when;
 
 public class ClusterCostsMonitoringServiceCoreTest {
     private static final Long MASTER_ID_1 = 1L;
-    private static final Long WORKER_ID_11 = 2L;
-    private static final Long WORKER_ID_12 = 3L;
-    private static final Long MASTER_ID_2 = 4L;
-    private static final Long WORKER_ID_21 = 5L;
+    private static final Long WORKER_ID_11 = 11L;
+    private static final Long WORKER_ID_12 = 12L;
+    private static final Long WORKER_ID_13 = 13L;
+    private static final Long MASTER_ID_2 = 2L;
+    private static final Long WORKER_ID_21 = 21L;
     private static final double PRICE_1 = 1.95;
     private static final double PRICE_2 = 20.25;
-    private static final int WORKER_21_DURATION = 2;
     private static final double EXPECTED_PRICE_1 = 0.0975;
     private static final double EXPECTED_PRICE_2 = 0.675;
 
@@ -65,18 +66,21 @@ public class ClusterCostsMonitoringServiceCoreTest {
         final PipelineRun master2 = masterRun(MASTER_ID_2, 1);
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(master1, master2));
 
-        final PipelineRun worker11 = workerRun(WORKER_ID_11, MASTER_ID_1, PRICE_1); // not start time
-        final PipelineRun worker12 = workerRun(WORKER_ID_12, MASTER_ID_1, PRICE_1); // 3 min duration
-        worker12.setStartDate(buildDate(5));
-        worker12.setEndDate(buildDate(2));
+        final PipelineRun worker11 = workerRun(WORKER_ID_11, MASTER_ID_1, PRICE_1); // no start times
+        final PipelineRun worker12 = workerRun(WORKER_ID_12, MASTER_ID_1, PRICE_1); // no instance start time
+        final PipelineRun worker13 = workerRun(WORKER_ID_13, MASTER_ID_1, PRICE_1); // 3 min stopped
+        worker12.setStartDate(buildDate(10));
+        worker13.setStartDate(buildDate(10));
+        worker13.setInstanceStartDate(buildDate(5));
+        worker13.setEndDate(buildDate(2));
 
-        // started 2 min ago and not completed
-        final PipelineRun worker21 = workerRun(WORKER_ID_21, MASTER_ID_2, PRICE_2);
-        worker21.setStartDate(buildDate(WORKER_21_DURATION));
+        final PipelineRun worker21 = workerRun(WORKER_ID_21, MASTER_ID_2, PRICE_2); // 2 min running
+        worker21.setStartDate(buildDate(10));
+        worker21.setInstanceStartDate(buildDate(2));
 
         when(pipelineRunCRUDService.loadRunsByParentRuns(any())).thenReturn(new HashMap<Long, List<PipelineRun>>() {
             {
-                put(MASTER_ID_1, Arrays.asList(worker11, worker12));
+                put(MASTER_ID_1, Arrays.asList(worker11, worker12, worker13));
                 put(MASTER_ID_2, Collections.singletonList(worker21));
             }
         });
@@ -108,6 +112,7 @@ public class ClusterCostsMonitoringServiceCoreTest {
         pipelineRun.setId(id);
         pipelineRun.setParentRunId(parentRunId);
         pipelineRun.setPricePerHour(BigDecimal.valueOf(price));
+        pipelineRun.setInstance(new RunInstance());
         return pipelineRun;
     }
 
