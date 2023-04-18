@@ -35,6 +35,7 @@ class AbstractCluster(object):
 class SGECluster(AbstractCluster):
     QSTAT_CMD_TEMPLATE = "qstat -j %s"
     QACCT_CMD_TEMPLATE = "qacct -j %s"
+    QDEL_CMD_TEMPLATE = "qdel %s"
 
     def __init__(self):
         self._lock = RLock()
@@ -93,9 +94,19 @@ class SGECluster(AbstractCluster):
         _, _, exit_code = utils.run(qacct_command)
         return exit_code == 0
 
+    def _verify_error_state(self, job_identifier):
+        qstat_command = self.QSTAT_CMD_TEMPLATE % job_identifier
+        qstat_output, _, exit_code = utils.run(qstat_command)
+        error_reason = self._parse_error_reason(qstat_output) if exit_code == 0 else None
+        if error_reason:
+            qdel_command = self.QDEL_CMD_TEMPLATE % job_identifier
+            utils.run(qdel_command)
+            raise RuntimeError("Job is in error state. %s" % error_reason)
+
     def _find_job(self, job_identifier):
         while True:
             sleep(WAITING_DELAY)
+            self._verify_error_state(job_identifier)
             qacct_command = self.QACCT_CMD_TEMPLATE % job_identifier
             qacct_output, _, exit_code = utils.run(qacct_command)
             if exit_code == 0:
@@ -103,7 +114,7 @@ class SGECluster(AbstractCluster):
         job_exit_status = self._parse_job_exit_status(qacct_output)
         if job_exit_status is None:
             raise RuntimeError("Failed to determine job exit code for job '{}'".format(job_identifier))
-        print("Job {} finished with exit code {}.".format(job_identifier, job_exit_status))
+        print("Job {} finished with exit code '{}'.".format(job_identifier, job_exit_status))
         return job_exit_status
 
     @staticmethod
@@ -113,8 +124,15 @@ class SGECluster(AbstractCluster):
         for line in output.splitlines():
             line = line.strip()
             if line.startswith('exit_status'):
-                parts = line.split()
-                if len(parts) != 2:
-                    return None
-                return int(parts[1])
+                return line.strip('exit_status').strip()
+        return None
+
+    @staticmethod
+    def _parse_error_reason(output):
+        if not output:
+            return None
+        for line in output.splitlines():
+            line = line.strip()
+            if line.startswith('error reason'):
+                return line
         return None
