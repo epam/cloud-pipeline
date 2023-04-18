@@ -63,12 +63,15 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO addNewUser(String userName) {
+        if (getTabTable().$(byText(userName)).exists()) {
+            return this;
+        }
         UserAdditionPopupAO userAdditionPopupAO = clickAddNewUser()
                 .typeInField(userName);
-        $(byXpath(String.format(".//ul[contains(@class, 'ant-select-dropdown-menu') and contains(., '%s')]", userName)))
-                .click();
-        return userAdditionPopupAO
-            .ok();
+        $(byXpath(String
+                .format(".//ul[contains(@class, 'ant-select-dropdown-menu') and contains(., '%s')]",
+                        userName))).click();
+        return userAdditionPopupAO.ok();
     }
 
     public PermissionTabAO validateDeleteButtonIsDisplayedOppositeTo(String name) {
@@ -104,6 +107,9 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO addNewGroup(String usersGroup) {
+        if (getTabTable().$(byText(usersGroup)).exists()) {
+            return this;
+        }
         return clickAddNewGroup()
                 .typeInField(usersGroup)
                 .selectGroup(usersGroup)
