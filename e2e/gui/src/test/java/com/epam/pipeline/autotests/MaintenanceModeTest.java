@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.NotificationAO;
+import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -101,6 +102,10 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
 
     @AfterClass(alwaysRun = true)
     public void restorePreferences() {
+        clusterMenu()
+                .switchToHotNodePool()
+                .searchForNodeEntry(poolName)
+                .deleteNode(poolName);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
@@ -114,10 +119,6 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
             runsMenuAO
                     .terminateRun(run2ID, format("pipeline-%s", run2ID));
         }
-        clusterMenu()
-                .switchToHotNodePool()
-                .searchForNodeEntry(poolName)
-                .deleteNode(poolName);
     }
 
     @Test(priority = 1)
@@ -243,8 +244,11 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .setAutoscaledParameter("Scale Step", 1)
                 .selectValue(INSTANCE_TYPE, defaultInstance)
                 .selectValue(CLOUD_REGION, defaultRegion[0])
-                .setValue(DISK, "20")
+                .setValue(DISK, "40")
                 .addDockerImage(registry, group, tool)
+                .selectValue(CONDITION,"Matches all filters (\"and\")")
+                .addFilter("Run owner")
+                .addRunOwnerFilterValue(admin.login)
                 .ok()
                 .waitUntilRunningNodesAppear(poolName, 2);
         launchTool();
@@ -308,7 +312,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setTypeValue(defaultInstance)
-                .setDisk("15")
+                .setDisk("20")
                 .selectValue(PRICE_TYPE, SPOT)
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())

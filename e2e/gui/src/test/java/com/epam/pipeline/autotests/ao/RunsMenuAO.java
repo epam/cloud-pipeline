@@ -22,8 +22,11 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_GROUP;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_REGISTRY;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 import org.openqa.selenium.SearchContext;
@@ -33,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 import static com.codeborne.selenide.CollectionCondition.empty;
@@ -430,17 +434,17 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return Collections.emptyMap();
     }
 
-    public RunsMenuAO filterBy(HeaderColumn header, String ip) {
+    public RunsMenuAO filterBy(HeaderColumn header, String group, String ip) {
         SelenideElement createdHeaderButton = $$("th").findBy(cssClass(header.cssClass));
         createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
         switch (header) {
             case PIPELINE:
-                inputFilterValue(ip);
+                inputFilterValue("Filter pipelines", ip);
                 $(byXpath(format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", ip)))
                         .click();
                 break;
             case DOCKER_IMAGE:
-                inputFilterValue(ip);
+                inputFilterValue("Filter docker images", group);
                 $(byXpath(format(".//span[.='%s']", ip))).parent()
                         .$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
                 break;
@@ -459,9 +463,9 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
-    private void inputFilterValue(String value) {
+    private void inputFilterValue(String placeholder, String value) {
         $(byClassName("un-table-columns__filter-popover-container"))
-                .$$("input").findBy(attribute("placeholder", "Filter"))
+                .$$("input").findBy(attribute("placeholder", placeholder))
                 .setValue(value);
     }
 
