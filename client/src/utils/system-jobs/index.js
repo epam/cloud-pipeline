@@ -71,7 +71,8 @@ class SystemJobs {
     const params = Object.entries(pipelineParameters || {})
       .map(([key, parameter]) => ({
         [key]: {
-          value: parameter.value
+          value: parameter.value,
+          type: parameter.type
         }
       }))
       .reduce((r, c) => ({...r, ...c}), {});
