@@ -219,6 +219,7 @@ public class LaunchLimitMountsTest
                 .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
                                 .enableAllowSensitiveStorage()
+                                .doNotMountStoragesSelect(false)
                                 .performIf(SAVE, enabled, ToolSettings::save)
                 );
         tools()
