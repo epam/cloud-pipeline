@@ -325,6 +325,9 @@ public class SystemPreferences {
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_ISSUE_PROJECT = new StringPreference(
             "git.gitlab.issue.project", null, GIT_GROUP, pass, true);
+
+    public static final BooleanPreference GITLAB_SERVER_FILTERING = new BooleanPreference(
+            "git.gitlab.issue.server.filtering", false, GIT_GROUP, pass);
     public static final ObjectPreference<List<String>> GITLAB_ISSUE_STATUSES = new ObjectPreference<>(
             "git.gitlab.issue.statuses", null, new TypeReference<List<String>>() {}, GIT_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);

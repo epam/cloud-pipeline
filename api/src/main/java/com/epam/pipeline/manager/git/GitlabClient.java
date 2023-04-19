@@ -51,6 +51,7 @@ import lombok.experimental.Wither;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -126,6 +127,8 @@ public class GitlabClient {
     public static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
     public static final String GITKEEP_FILE = ".gitkeep";
     public static final String EMAIL_SEPARATOR = "@";
+    public static final String TOTAL_HEADER = "X-Total";
+    public static final int MAX_PAGE_SIZE = 100;
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -482,14 +485,32 @@ public class GitlabClient {
 
     public PagedResult<List<GitlabIssue>> getIssues(final String project, final List<String> labels,
                                                     final List<String> notLabels, final Integer page,
-                                                    final Integer pageSize, final String search)
+                                                    final Integer pageSize, final String search,
+                                                    final boolean serverFiltering)
             throws GitClientException {
         final String labelStr = CollectionUtils.isEmpty(labels) ? null : String.join(",", labels);
         final String notLabelStr = CollectionUtils.isEmpty(notLabels) ? null : String.join(",", notLabels);
+        if (StringUtils.isNotBlank(notLabelStr) && serverFiltering) {
+            return filterIssues(project, notLabels, page, pageSize, search, labelStr);
+        }
         final Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labelStr,
                 notLabelStr, page, pageSize, search));
-        final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
+        final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get(TOTAL_HEADER)));
         return new PagedResult<>(response.body(), totalPages);
+    }
+
+    public List<GitlabIssue> getAllIssues(final String project, final String labels,
+                                          final String search) {
+        int page = 1;
+        final List<GitlabIssue> result = new ArrayList<>();
+        final Response<List<GitlabIssue>> response =
+                fetchIssuePage(project, labels, search, page, MAX_PAGE_SIZE, result);
+        final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get(TOTAL_HEADER)));
+        while (totalPages >  result.size()) {
+            page++;
+            fetchIssuePage(project, labels, search, page, MAX_PAGE_SIZE, result);
+        }
+        return result;
     }
 
     public GitlabIssue getIssue(final String project, final Long issueId) throws GitClientException {
@@ -750,5 +771,40 @@ public class GitlabClient {
         body.addAll(uploaded);
         body.addAll(uploads);
         return String.join("\n\n!", body);
+    }
+
+    private PagedResult<List<GitlabIssue>> filterIssues(final String project,
+                                                        final List<String> notLabels,
+                                                        final Integer page,
+                                                        final Integer pageSize,
+                                                        final String search,
+                                                        final String labelStr) {
+        final List<GitlabIssue> allIssues = getAllIssues(project, labelStr, search);
+        final List<GitlabIssue> filteredIssues = ListUtils.emptyIfNull(allIssues)
+                .stream()
+                .filter(issue -> ListUtils.emptyIfNull(issue.getLabels())
+                        .stream()
+                        .noneMatch(notLabels::contains))
+                .collect(Collectors.toList());
+        final int pageStart = pageSize * (page - 1);
+        final int size = filteredIssues.size();
+        if (pageStart >= size) {
+            return new PagedResult<>(Collections.emptyList(), size);
+        }
+        return new PagedResult<>(filteredIssues.subList(pageStart, Math.min(size, pageStart + pageSize)), size);
+    }
+
+    private Response<List<GitlabIssue>> fetchIssuePage(final String project,
+                                                       final String labels,
+                                                       final String search,
+                                                       final int page,
+                                                       final int pageSize,
+                                                       final List<GitlabIssue> result) {
+        final Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labels,
+                null, page, pageSize, search));
+        if (Objects.nonNull(response.body())) {
+            result.addAll(response.body());
+        }
+        return response;
     }
 }

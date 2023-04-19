@@ -661,7 +661,7 @@ public class GitManager {
             labels.add(String.format(ON_BEHALF_OF, authorizedUser));
         }
         return getDefaultGitlabClient().getIssues(getProjectForIssues(), labels, notLabels, page, pageSize,
-                filter.getSearch());
+                filter.getSearch(), preferenceManager.getPreference(SystemPreferences.GITLAB_SERVER_FILTERING));
     }
 
     public GitlabIssue getIssue(final Long issueId) throws GitClientException {
