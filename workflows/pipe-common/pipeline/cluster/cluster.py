@@ -115,7 +115,7 @@ class SGECluster(AbstractCluster):
         if job_exit_status is None:
             raise RuntimeError("Failed to determine job exit code for job '{}'".format(job_identifier))
         print("Job {} finished with exit code '{}'.".format(job_identifier, job_exit_status))
-        return job_exit_status
+        return self._parse_job_exit_code(job_exit_status)
 
     @staticmethod
     def _parse_job_exit_status(output):
@@ -126,6 +126,10 @@ class SGECluster(AbstractCluster):
             if line.startswith('exit_status'):
                 return line.strip('exit_status').strip()
         return None
+
+    @staticmethod
+    def _parse_job_exit_code(exit_status):
+        return int(exit_status.split()[0])
 
     @staticmethod
     def _parse_error_reason(output):
