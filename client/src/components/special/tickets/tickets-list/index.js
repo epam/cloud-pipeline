@@ -227,10 +227,12 @@ class TicketsList extends React.Component {
         } else if (statuses && statuses.length > 0) {
           const correctedStatuses = this.predefinedLabels
             .filter((aLabel) => !(statuses || []).includes(aLabel));
-          payload.labelsFilter = {
-            labels: correctedStatuses,
-            not: true
-          };
+          if (correctedStatuses.length > 0) {
+            payload.labelsFilter = {
+              labels: correctedStatuses,
+              not: true
+            };
+          }
           statusesPayload = statuses;
         }
         await request.send(payload);

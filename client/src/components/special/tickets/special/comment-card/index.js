@@ -45,25 +45,16 @@ class CommentCard extends React.Component {
       };
     }
     const {
-      author: systemAuthor = {},
       description,
-      body,
-      type
+      body
     } = comment;
-    let {
-      author = ''
-    } = systemAuthor.name;
     let text = description || body;
-    if (/^issue$/i.test(type)) {
-      author = getAuthor(comment);
-    } else {
-      const authorLabel = text
-        .split('\n')
-        .find(part => part.toLowerCase().includes('on behalf of'));
-      if (authorLabel) {
-        author = authorLabel.split('of').pop().trim();
-        text = text.replace(authorLabel, '');
-      }
+    const author = getAuthor(comment);
+    const authorLabel = text
+      .split('\n')
+      .find(part => part.toLowerCase().includes('on behalf of'));
+    if (authorLabel) {
+      text = text.replace(authorLabel, '');
     }
     return {
       author,
@@ -81,20 +72,20 @@ class CommentCard extends React.Component {
       comment,
       className,
       onSelectMenu,
-      style
+      style,
+      isIssue
     } = this.props;
     if (!comment) {
       return null;
     }
     const {
       attachments: rawAttachments = [],
-      type,
       updated_at: updatedAt,
       created_at: createdAt
     } = comment;
     let date = updatedAt || createdAt;
     let dateDescription = 'commented';
-    if (/^issue$/i.test(type)) {
+    if (isIssue) {
       date = createdAt || updatedAt;
       dateDescription = 'created ticket';
     }
@@ -229,6 +220,7 @@ class CommentCard extends React.Component {
 }
 
 CommentCard.propTypes = {
+  isIssue: PropTypes.bool,
   comment: PropTypes.object,
   className: PropTypes.string,
   onSelectMenu: PropTypes.func,

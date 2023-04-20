@@ -270,6 +270,7 @@ class Ticket extends React.Component {
             <CommentCard
               key={`comment-${comment.iid || comment.id || index}`}
               comment={comment}
+              isIssue={comment === ticket}
               className={classNames(
                 'cp-card-background-color',
                 styles.card
