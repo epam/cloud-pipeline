@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameterType;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -492,6 +493,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                         .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters());
                 //save instance ID and IP
                 pipelineRunManager.updateRunInstance(longId, instance);
+                pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
                 autoscalerService.registerDisks(longId, instance);
                 Instant end = Instant.now();
                 removeNodeUpTask(longId);

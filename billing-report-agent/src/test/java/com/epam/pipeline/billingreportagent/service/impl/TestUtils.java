@@ -68,7 +68,8 @@ public final class TestUtils {
     }
 
     public static PipelineRun createTestPipelineRun(final Long runId, final Long pipelineId, final String tool,
-                                                    final BigDecimal price, final RunInstance instance) {
+                                                    final BigDecimal price, final LocalDateTime date,
+                                                    final RunInstance instance) {
         final PipelineRun run = new PipelineRun();
         run.setId(runId);
         run.setPipelineId(pipelineId);
@@ -76,6 +77,7 @@ public final class TestUtils {
         run.setPricePerHour(price);
         run.setInstance(instance);
         run.setStatus(TaskStatus.RUNNING);
+        run.setInstanceStartDateTime(date);
         return run;
     }
 

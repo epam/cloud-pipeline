@@ -16,12 +16,11 @@
 
 package com.epam.pipeline.mapper;
 
-import java.time.Duration;
 import java.util.Map;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.utils.RunDurationUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public final class PipelineRunMapper {
@@ -64,6 +63,6 @@ public final class PipelineRunMapper {
     }
 
     private static long overallDurationOf(PipelineRun run) {
-        return Duration.between(run.getStartDate().toInstant(), DateUtils.now().toInstant()).abs().getSeconds();
+        return RunDurationUtils.getOverallDuration(run).getSeconds();
     }
 }

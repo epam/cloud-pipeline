@@ -85,7 +85,7 @@ public class RunBillingMapperTest {
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
 
     private static final Date TEST_JAVA_DATE = DateUtils.now();
-    private static final LocalDate TEST_DATE = DateUtils.toLocalDateTime(TEST_JAVA_DATE).toLocalDate();
+    private static final LocalDate TEST_DATE = DateUtils.convertDateToLocalDateTime(TEST_JAVA_DATE).toLocalDate();
     private static final Date TEST_STARTED_DATE = toDate(TEST_DATE.atStartOfDay());
     private static final String TEST_STARTED_DATE_STR = toString(TEST_STARTED_DATE);
     private static final Date TEST_FINISHED_DATE = toDate(TEST_DATE.plusDays(1L).atStartOfDay());
@@ -115,7 +115,7 @@ public class RunBillingMapperTest {
     public void testRunMapperMap() throws IOException {
         final PipelineRun run =
             TestUtils.createTestPipelineRun(TEST_RUN_ID, TEST_PIPELINE_ID, TEST_TOOL_IMAGE, TEST_PRICE,
-                                            TestUtils.createTestInstance(TEST_REGION_ID, TEST_NODE_TYPE));
+                    DateUtils.nowUTC(), TestUtils.createTestInstance(TEST_REGION_ID, TEST_NODE_TYPE));
         run.setPipelineId(TEST_PIPELINE_ID);
         run.setPipelineName(TEST_PIPELINE_NAME);
         run.setVersion(TEST_PIPELINE_VERSION);
