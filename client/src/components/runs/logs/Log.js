@@ -1805,6 +1805,9 @@ class Logs extends localization.LocalizedReactComponent {
       let price;
       if (pricePerHour) {
         const adjustPrice = (value) => {
+          if (value === 0) {
+            return 0;
+          }
           let cents = Math.ceil(value * 100);
           if (cents < 1) {
             cents = 1;

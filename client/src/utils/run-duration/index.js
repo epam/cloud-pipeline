@@ -40,6 +40,8 @@ export {RunHistoryPhase};
  * @property {boolean} wasPaused - if run was ever paused
  * @property {number} totalDuration - total duration (from job submission) in seconds
  * @property {number} totalRunningDuration - total running duration in seconds
+ * @property {number} totalBillableDuration - total billable duration in seconds
+ * @property {number} totalBillableRunningDuration - total billable and running duration in seconds
  * (duration after initialization, including paused intervals)
  * @property {number} totalNonPausedDuration - total non-paused duration in seconds
  * (scheduling stages, running stages)
@@ -120,6 +122,35 @@ function getIntervalsTotalDuration (intervals = []) {
 }
 
 /**
+ * @param {string} fromDate
+ * @param {RunInterval[]} intervals
+ * @param {RunHistoryPhase} phase
+ * @returns {number}
+ */
+function getRunningDuration (fromDate, intervals, ...phase) {
+  if (!fromDate) {
+    return 0;
+  }
+  const date = moment.utc(fromDate);
+  const filtered = (intervals || [])
+    .filter((interval) => phase.includes(interval.phase))
+    .filter((interval) => interval.start >= date || (!interval.end || interval.end > date))
+    .map((interval) => {
+      const {
+        start
+      } = interval;
+      if (start >= date) {
+        return interval;
+      }
+      return {
+        ...interval,
+        start: date
+      };
+    });
+  return getIntervalsTotalDuration(filtered);
+}
+
+/**
  * Gets run duration info (running, paused, paused intervals etc.)
  * @param {RunInfo} run
  * @param {boolean} [analyseSchedulingPhase=false]
@@ -163,6 +194,19 @@ export default function getRunDurationInfo (
     .filter((interval) => interval.phase === RunHistoryPhase.paused);
   const scheduledIntervals = filteredIntervals
     .filter((interval) => interval.phase === RunHistoryPhase.scheduled);
+  const totalBillableDuration = getRunningDuration(
+    run.instanceStartDate,
+    filteredIntervals,
+    RunHistoryPhase.running,
+    RunHistoryPhase.paused,
+    RunHistoryPhase.scheduled
+  );
+  const totalBillableRunningDuration = getRunningDuration(
+    run.instanceStartDate,
+    filteredIntervals,
+    RunHistoryPhase.running,
+    RunHistoryPhase.scheduled
+  );
   const activeDuration = getIntervalsTotalDuration(runningIntervals);
   const pausedDuration = getIntervalsTotalDuration(pausedIntervals);
   const schedulingDuration = getIntervalsTotalDuration(scheduledIntervals);
@@ -184,6 +228,8 @@ export default function getRunDurationInfo (
     runningIntervals,
     scheduledIntervals,
     runningDate,
-    scheduledDate
+    scheduledDate,
+    totalBillableDuration,
+    totalBillableRunningDuration
   };
 }
