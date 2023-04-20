@@ -102,10 +102,6 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
 
     @AfterClass(alwaysRun = true)
     public void restorePreferences() {
-        clusterMenu()
-                .switchToHotNodePool()
-                .searchForNodeEntry(poolName)
-                .deleteNode(poolName);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
@@ -114,6 +110,10 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .switchToSystem()
                 .disableSystemMaintenanceMode()
                 .saveIfNeeded();
+        clusterMenu()
+                .switchToHotNodePool()
+                .searchForNodeEntry(poolName)
+                .deleteNode(poolName);
         final RunsMenuAO runsMenuAO = runsMenu();
         if (runsMenuAO.isActiveRun(run2ID)) {
             runsMenuAO
