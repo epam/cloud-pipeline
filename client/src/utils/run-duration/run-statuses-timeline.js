@@ -32,6 +32,7 @@ import moment from 'moment-timezone';
  * @typedef {object} RunInfo
  * @property {string} [startDate]
  * @property {string} [endDate]
+ * @property {string} [instanceStartDate]
  * @property {string} [status]
  * @property {RunStatusInfo[]} [runStatuses]
  */

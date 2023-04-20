@@ -46,8 +46,8 @@ export default function evaluateRunPrice (
     };
   }
   const {
-    totalDuration,
-    totalNonPausedDuration
+    totalBillableDuration,
+    totalBillableRunningDuration
   } = getRunDurationInfo(
     run,
     analyseSchedulingPhase,
@@ -59,8 +59,8 @@ export default function evaluateRunPrice (
     workersPrice = 0
   } = run;
   const format = (value) => Math.ceil(value * 100.0) / 100.0;
-  const master = computePricePerHour * (totalNonPausedDuration / SECONDS_IN_HOUR) +
-    diskPricePerHour * (totalDuration / SECONDS_IN_HOUR);
+  const master = computePricePerHour * (totalBillableRunningDuration / SECONDS_IN_HOUR) +
+    diskPricePerHour * (totalBillableDuration / SECONDS_IN_HOUR);
   return {
     master: format(master),
     workers: format(workersPrice),
