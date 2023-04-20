@@ -254,7 +254,7 @@ class PipelineAPI:
     GRANT_PERMISSIONS_URL = "/grant"
     PERMISSION_URL = "/permissions"
     REPORT_USERS = "report/users"
-    LOG_FILTER = "log/filter"
+    LOG_GROUP = "log/group"
     BILLING_EXPORT = "billing/export"
 
     # Pipeline API default header
@@ -1341,24 +1341,13 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load usage report \n {}".format(e))
 
-    def log_filter(self, start, end, users):
+    def log_group(self, start, end, users, group_by):
         try:
-            data = {'messageTimestampFrom': start, 'messageTimestampTo': end, 'types': ['audit'],
-                    'users': users, 'pagination': {'pageSize': 20}}
-            result = self._request(endpoint=self.LOG_FILTER, http_method="post", data=data)
-            token = result['token'] if 'token' in result else None
-            log_entries = result['logEntries'] if 'logEntries' in result else []
-            while token:
-                data = {'messageTimestampFrom': start, 'messageTimestampTo': end, 'types': ['audit'],
-                        'users': users, 'pagination': {'pageSize': 20, 'token': token}}
-                result = self._request(endpoint=self.LOG_FILTER, http_method="post", data=data)
-                token = result['token'] if 'token' in result else None
-                log_entries_page = result['logEntries'] if 'logEntries' in result else None
-                if log_entries_page is not None:
-                    log_entries.extend(log_entries_page)
-            return log_entries
+            data = {'filter': {'messageTimestampFrom': start, 'messageTimestampTo': end, 'types': ['audit'],
+                    'users': users}, 'groupBy': group_by}
+            return self._request(endpoint=self.LOG_GROUP, http_method="post", data=data)
         except Exception as e:
-            raise RuntimeError("Failed to load usage report \n {}".format(e))
+            raise RuntimeError("Failed to load logs \n {}".format(e))
 
     def billing_export(self, start, end, owners, types):
         try:

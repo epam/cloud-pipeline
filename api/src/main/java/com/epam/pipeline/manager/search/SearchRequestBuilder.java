@@ -518,7 +518,7 @@ public class SearchRequestBuilder {
         searchSource.aggregation(aggregationBuilder);
     }
 
-    private String buildKeywordName(final String fieldName) {
+    public static String buildKeywordName(final String fieldName) {
         return String.format("%s.keyword", fieldName);
     }
 

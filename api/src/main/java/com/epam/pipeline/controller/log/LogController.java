@@ -18,10 +18,11 @@ package com.epam.pipeline.controller.log;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
-import com.epam.pipeline.acl.log.LogApiService;
+import com.epam.pipeline.entity.log.LogRequest;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -53,6 +55,19 @@ public class LogController extends AbstractRestController {
             })
     public Result<LogPagination> filter(@RequestBody LogFilter logFilter) {
         return Result.success(logApiService.filter(logFilter));
+    }
+
+    @PostMapping(value = "/log/group")
+    @ResponseBody
+    @ApiOperation(
+            value = "Filter and group logs by a field.",
+            notes = "Filter and group logs by a field. Result is aggregated by users.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<Map<String, Map<String, Long>>> group(@RequestBody final LogRequest logRequest) {
+        return Result.success(logApiService.group(logRequest));
     }
 
     @GetMapping(value = "/log/filter")

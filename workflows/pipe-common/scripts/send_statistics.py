@@ -57,33 +57,6 @@ EMAIL_TEMPLATE = '''
 </html>
 '''
 
-STAT_PATTERN = '''
-<p>
-<b>Overall</b>
-</p>
-<p>
-Compute hours: {compute_hours}<br>
-Runs count: {runs_count}<br>
-Usage costs($): {usage_costs}<br>
-Login time(hours): {login_time}<br>
-</p>
-<p>
-<b>Most-used</b>
-</p>
-<p>
-Top 3 instance types:
-{instance_types}
-Top 3 pipelines:
-{pipelines}
-Top 3 tools:
-{tools}
-Top 3 owned buckets (by volume):
-{owned_buckets}
-Top 3 used buckets (by audit based requests):
-{used_buckets}
-</p>
-'''
-
 
 EMAIL_SUBJECT = '[%s]: Platform usage statistics'
 
@@ -113,16 +86,16 @@ class Stat(object):
             top3_str += '<li>{}</li>'.format(t)
         return '<ul>{}</ul>'.format(top3_str)
 
-    def get_object_str(self):
-        return STAT_PATTERN.format(**{'compute_hours': self.compute_hours,
-                                      'runs_count': self.runs_count,
-                                      'usage_costs': self.usage_costs,
-                                      'login_time': self.login_time,
-                                      'instance_types': self.format_top3(self.instance_types),
-                                      'pipelines': self.format_top3(self.pipelines),
-                                      'tools': self.format_top3(self.tools),
-                                      'owned_buckets': self.format_top3(self.owned_buckets),
-                                      'used_buckets': self.format_top3(self.used_buckets)})
+    def get_object_str(self, template):
+        return template.format(**{'compute_hours': self.compute_hours,
+                                  'runs_count': self.runs_count,
+                                  'usage_costs': self.usage_costs,
+                                  'login_time': self.login_time,
+                                  'instance_types': self.format_top3(self.instance_types),
+                                  'pipelines': self.format_top3(self.pipelines),
+                                  'tools': self.format_top3(self.tools),
+                                  'owned_buckets': self.format_top3(self.owned_buckets),
+                                  'used_buckets': self.format_top3(self.used_buckets)})
 
 
 class Notifier(object):
@@ -135,18 +108,18 @@ class Notifier(object):
         self.deploy_name = deploy_name
         self.notify_users = notify_users
 
-    def send_notifications(self):
+    def send_notifications(self, template):
         if not self.notify_users:
             return
         self.api.create_notification(EMAIL_SUBJECT % self.deploy_name,
-                                     self.build_text(),
+                                     self.build_text(template),
                                      self.notify_users[0],
                                      copy_users=self.notify_users[1:] if len(
                                          self.notify_users) > 0 else None,
                                      )
 
-    def build_text(self):
-        stat_str = self.stat.get_object_str()
+    def build_text(self, template):
+        stat_str = self.stat.get_object_str(template)
         return EMAIL_TEMPLATE.format(**{'text': stat_str,
                                         'from': self.start,
                                         'to': self.end,
@@ -172,12 +145,14 @@ def send_statistics():
     logger = LocalLogger(inner=logger)
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--template_path', required=True)
     parser.add_argument('--from_date', required=True)
     parser.add_argument('--to_date', required=True)
     parser.add_argument('--users', nargs='+', help='List of users separated by spaces', required=False)
     parser.add_argument('--roles', nargs='+', help='List of roles separated by spaces', required=False)
     args = parser.parse_args()
 
+    template_path = args.template_path
     from_date = args.from_date
     try:
         datetime.strptime(from_date, DATE_FORMAT)
@@ -215,7 +190,9 @@ def send_statistics():
         if len(users) > 0:
             logger.info('{} User(s) collected({}).'.format(len(users), ','.join(users)))
             logger.info('Collecting and sending statistics...')
-            send_users_stat(api, logger, from_date, to_date, users)
+            with open(template_path, 'r') as file:
+                template = file.read()
+                send_users_stat(api, logger, from_date, to_date, users, template)
         else:
             logger.info('No users found to collect and send statistics.')
     except KeyboardInterrupt:
@@ -228,7 +205,7 @@ def send_statistics():
         raise
 
 
-def send_users_stat(api, logger, from_date, to_date, users):
+def send_users_stat(api, logger, from_date, to_date, users, template):
     pipeline_data = api.billing_export(from_date, to_date, users, ["PIPELINE"])
     pipeline_dict = _read_content(pipeline_data)
 
@@ -244,7 +221,8 @@ def send_users_stat(api, logger, from_date, to_date, users):
     start_date_time = "{} 00:00:00.000".format(from_date)
     end_date_time = "{} 00:00:00.000".format(to_date)
     report_users = api.report_users(start_date_time, end_date_time, users)
-    log_filter = api.log_filter(start_date_time, end_date_time, users)
+    log_group = api.log_group(start_date_time, end_date_time, users, "storageId")
+    storages = api.data_storage_load_all()
 
     for user in users:
         logger.info('User: {}'.format(user))
@@ -266,12 +244,12 @@ def send_users_stat(api, logger, from_date, to_date, users):
         logger.info('Top 3 Tools: {}.'.format(tools))
         owned_buckets = _get_owned_buckets(storage_dict, user)
         logger.info('Top 3 Owned buckets: {}.'.format(owned_buckets))
-        used_buckets = _get_used_buckets(log_filter, user)
+        used_buckets = _get_used_buckets(log_group, storages, user)
         logger.info('Top 3 Used buckets: {}.'.format(used_buckets))
         stat = Stat(compute_hours, runs_count, usage_costs, login_time, instance_types, pipelines, tools,
                     owned_buckets, used_buckets)
         notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), [user])
-        notifier.send_notifications()
+        notifier.send_notifications(template)
 
 
 def _read_content(content, skip_first_row=True):
@@ -313,16 +291,17 @@ def _get_top3_instances(run_dict, user):
     return [pc.get("instance") for pc in instances_sorted[:3]]
 
 
-def _get_used_buckets(log_filter, user):
-    def key_func(k):
-        return str(k['message'].split(' ')[1].split('://')[1].split('/')[0])
-    user_log_filter = [pc for pc in log_filter if pc.get('user') is not None and pc.get('user') == user]
-    log_dict_sorted = sorted(user_log_filter, key=key_func)
-    storages = list()
-    for key, group in itertools.groupby(log_dict_sorted, key_func):
-        storages.append({"storage": key, "count": len(list(group))})
-    storages_sorted = sorted(storages, key=lambda d: int(d['count']), reverse=True)
-    return [pc.get("storage") for pc in storages_sorted[:3]]
+def _get_used_buckets(log_group, storages, user):
+    user_log_group = log_group.get(user)
+    top3_storages = list()
+    if user_log_group is not None:
+        user_log_group_sorted = dict(sorted(user_log_group.items(), key=lambda x: x[1], reverse=True)[:3])
+        top3_storage_ids = user_log_group_sorted.keys()
+        for storage_id in top3_storage_ids:
+            storage_name = [pc.get('name') for pc in storages if pc.get('id') == int(storage_id)]
+            if len(storage_name) > 0:
+                top3_storages.append(storage_name[0])
+    return top3_storages
 
 
 def _get_pipelines(pipeline_dict, user):

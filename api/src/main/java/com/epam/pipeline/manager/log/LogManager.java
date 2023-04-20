@@ -22,9 +22,11 @@ import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.entity.log.LogPaginationRequest;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.log.PageMarker;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.manager.search.SearchRequestBuilder;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
@@ -52,6 +54,7 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,6 +69,7 @@ import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -164,6 +168,43 @@ public class LogManager {
                 .token(getToken(entries, pagination.getPageSize()))
                 .totalHits(hits.totalHits)
                 .build();
+    }
+
+    public Map<String, Map<String, Long>> groupBy(final LogRequest logRequest) {
+        final LogFilter logFilter = Optional.ofNullable(logRequest.getFilter()).orElse(new LogFilter());
+        final SearchSourceBuilder source = new SearchSourceBuilder()
+                .query(constructQueryFilter(logRequest.getFilter()));
+
+        TermsAggregationBuilder groupByUser = AggregationBuilders
+                .terms(USER).field(SearchRequestBuilder.buildKeywordName(USER));
+        TermsAggregationBuilder groupByTerm = AggregationBuilders
+                .terms(logRequest.getGroupBy()).field(SearchRequestBuilder.buildKeywordName(logRequest.getGroupBy()));
+
+        groupByUser.subAggregation(groupByTerm);
+        source.aggregation(groupByUser);
+
+        final SearchRequest request = new SearchRequest()
+                .source(source)
+                .indices(getReadIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
+                .indicesOptions(INDICES_OPTIONS);
+        log.debug("Logs request: {} ", request);
+
+        final SearchResponse response = verifyResponse(executeRequest(request));
+
+        final Terms userAggregation = response.getAggregations().get("user");
+        final List<? extends Terms.Bucket> userBuckets = userAggregation.getBuckets();
+        final Map<String, Map<String, Long>> logGroup = new HashMap<>();
+
+        for (Terms.Bucket userBucket : userBuckets) {
+            final Terms termAggregation = userBucket.getAggregations().get(logRequest.getGroupBy());
+            final List<? extends Terms.Bucket> termBuckets = termAggregation.getBuckets();
+            final Map<String, Long> termGroup = new HashMap<>();
+            for (Terms.Bucket termBucket : termBuckets) {
+                termGroup.put(termBucket.getKeyAsString(), termBucket.getDocCount());
+            }
+            logGroup.put(userBucket.getKeyAsString(), termGroup);
+        }
+        return logGroup;
     }
 
     public LogFilter getFilters() {
