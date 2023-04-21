@@ -1,4 +1,5 @@
 #!/bin/bash
+
 launch_token="/etc/user_data_launched"
 if [[ -f "$launch_token" ]]; then exit 0; fi
 
@@ -227,6 +228,7 @@ if [[ $cloud == *"EC2"* ]]; then
     _CLOUD_INSTANCE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceId | cut -d\" -f4)
     _CLOUD_INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
     _CLOUD_INSTANCE_IMAGE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
+    _CI_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
     _CLOUD_PROVIDER=AWS
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 
@@ -241,6 +243,7 @@ elif [[ $cloud == *"Microsoft"* ]]; then
     _CLOUD_INSTANCE_AZ=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/zone?api-version=2018-10-01&format=text')
     _CLOUD_INSTANCE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text')"
     _CLOUD_INSTANCE_TYPE=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2018-10-01&format=text')
+    _CI_IP=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/ipv4/Ipaddress?api-version=2018-10-01&format=text')
     _KUBE_NODE_NAME=$(echo "$_CLOUD_INSTANCE_ID" | grep -xE "[a-zA-Z0-9\-]{1,256}" &> /dev/null && echo $_CLOUD_INSTANCE_ID || hostname)
 
     _CLOUD_INSTANCE_IMAGE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/publisher?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/product?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/name?api-version=2018-10-01&format=text')"
@@ -254,13 +257,22 @@ elif [[ $cloud == *"Microsoft"* ]]; then
     crontab -l | { cat ; echo -e "* * * * * $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 20 && $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 40 && $CHECK_AZURE_EVENTS_COMMAND" ; } | crontab -
 
 elif [[ $gcloud_header == *"Google"* ]]; then
-    _CLOUD_INSTANCE_AZ=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/zone | grep zones | cut -d/ -f4)
+    _gcp_h='-H Metadata-Flavor:Google -s'
+    _CLOUD_INSTANCE_AZ=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/zone | grep zones | cut -d/ -f4)
     _CLOUD_REGION=${_CLOUD_INSTANCE_AZ}
-    _CLOUD_INSTANCE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/name)
-    _CLOUD_INSTANCE_TYPE=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/machine-type | grep machineTypes | cut -d/ -f4)
-    _CLOUD_INSTANCE_IMAGE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/image | cut -d/ -f5)
+    _CLOUD_INSTANCE_ID=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/name)
+    _CLOUD_INSTANCE_TYPE=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/machine-type | grep machineTypes | cut -d/ -f4)
+    _CLOUD_INSTANCE_IMAGE_ID=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/image | cut -d/ -f5)
+    _CI_IP=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/ip)
     _CLOUD_PROVIDER=GCP
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
+fi
+
+mtu="@mtu@"
+if [ "$mtu" ] && [[ "$mtu" != "@"*"@" ]]; then
+  [ "$_CI_IP" ] && _iname=$(ifconfig | grep -B1 "$_CI_IP" | grep -o "^\w*")
+  [ -z "$_iname" ] && _iname="eth0"
+  ip link set dev $_iname mtu $mtu
 fi
 
 @WELL_KNOWN_HOSTS@
