@@ -252,7 +252,7 @@ public class VMMonitor implements Monitor {
                 .filter(run -> run.getStatus().isFinal() && Objects.nonNull(run.getEndDate()))
                 .ifPresent(run -> {
                     log.debug("VM {} is associated with a finished run {}.", vm.getInstanceId(), run.getId());
-                    final LocalDateTime runEndDate = DateUtils.toLocalDateTime(run.getEndDate());
+                    final LocalDateTime runEndDate = DateUtils.convertDateToLocalDateTime(run.getEndDate());
                     final long minutesAlive = Duration.between(runEndDate,
                                     LocalDateTime.now(Clock.systemUTC()))
                             .getSeconds() / SECONDS_IN_MINUTES;
