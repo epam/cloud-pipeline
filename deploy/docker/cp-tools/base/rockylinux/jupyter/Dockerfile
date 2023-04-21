@@ -1,0 +1,57 @@
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM library/rockylinux:8
+
+# Common dependencies
+RUN yum install -y wget \
+                   bzip2 \
+                   gcc \
+                   zlib-devel \
+                   bzip2-devel \
+                   xz-devel \
+                   make \
+                   ncurses-devel \
+                   unzip \
+                   git \
+                   curl \
+                   cairo \
+                   epel-release \
+                   nfs-utils
+                   python2 && \
+    yum clean all && \
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 -
+
+# Install anaconda
+ENV ANACONDA_HOME=/opt/local/anaconda
+ARG ANACONDA_VERSION="3-py37_4.9.2"
+ARG INSTALL_TEMP="/tmp/"
+ENV PATH=$ANACONDA_HOME/bin:$PATH
+
+ADD anaconda_install.sh anaconda_install_python.sh anaconda_install_r.sh $INSTALL_TEMP/
+RUN mkdir -p $ANACONDA_HOME
+
+RUN chmod +x $INSTALL_TEMP/*.sh && \
+    $INSTALL_TEMP/anaconda_install.sh $ANACONDA_HOME $ANACONDA_VERSION
+
+# Install python packages
+RUN $INSTALL_TEMP/anaconda_install_python.sh $ANACONDA_HOME base
+
+# Install r packages
+RUN $INSTALL_TEMP/anaconda_install_r.sh $ANACONDA_HOME base
+
+RUN rm -f $INSTALL_TEMP/*
+
+COPY	start.sh /start.sh
+RUN     chmod +x /start.sh
