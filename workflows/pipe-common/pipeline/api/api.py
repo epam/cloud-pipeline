@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -254,6 +254,9 @@ class PipelineAPI:
     GRANT_PERMISSIONS_URL = "/grant"
     PERMISSION_URL = "/permissions"
     RUN_TAG = '/run/{id}/tag'
+    REPORT_USERS = "report/users"
+    LOG_GROUP = "log/group"
+    BILLING_EXPORT = "billing/export"
 
     # Pipeline API default header
 
@@ -1392,3 +1395,32 @@ class PipelineAPI:
             return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data=tags)
         except Exception as e:
             raise RuntimeError("Failed to update tags for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+    def report_users(self, start, end, users):
+        try:
+            data = {'from': start, 'to': end, 'users': users, 'interval': 'HOURS'}
+            return self._request(endpoint=self.REPORT_USERS, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load usage report \n {}".format(e))
+
+    def log_group(self, start, end, users, group_by):
+        try:
+            data = {'filter': {'messageTimestampFrom': start, 'messageTimestampTo': end, 'types': ['audit'],
+                               'users': users}, 'groupBy': group_by}
+            return self._request(endpoint=self.LOG_GROUP, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load logs \n {}".format(e))
+
+    def billing_export(self, start, end, owners, types):
+        try:
+            url = '{}/{}'.format(self.api_url, self.BILLING_EXPORT)
+            data = {"types": types, "from": start, "to": end, "filters": {"owner": owners},
+                    "discount": {"computes": 0, "storages": 0}}
+            response = requests.request(method="post", url=url, data=json.dumps(data),
+                                        headers=self.header, verify=False,
+                                        timeout=self.connection_timeout)
+            if response.status_code != 200:
+                raise HTTPError('API responded with http status %s.' % str(response.status_code))
+            return response.content
+        except Exception as e:
+            raise RuntimeError("Failed to load billing export \n {}".format(e))
