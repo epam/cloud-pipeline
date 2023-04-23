@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">5</div>
+<div class="counter">14</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">4m15.33s</div>
+<div class="counter">30.487s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">90%</div>
+<div class="percent">50%</div>
 <p>successful</p>
 </div>
 </td>
@@ -66,34 +66,25 @@
 <li>
 <a href="#tab1">Tests</a>
 </li>
-<li>
-<a href="#tab2">Standard output</a>
-</li>
 </ul>
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="shouldHaveHistoryEntry - EPMCMBIBPC-350"></a>
-<h3 class="failures">shouldHaveHistoryEntry - EPMCMBIBPC-350</h3>
+<a name="shouldCreateFolderInPipeline - EPMCMBIBPC-339"></a>
+<h3 class="failures">shouldCreateFolderInPipeline - EPMCMBIBPC-339</h3>
 <span class="code">
-<pre>Element should have anticon-loading {By.className: log__run-title}
-Element: '&lt;h1 class=&quot;log__run-title&quot;&gt;Run
-#42061
-- pipeline-details-test-4599070765225186776 (draft-a2362f77) - Logs&lt;/h1&gt;'
-Actual value: WORKING
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1681651241843.72.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1681651241843.72.html
-Timeout: 150 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldHave(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.shouldHaveStatus(LogAO.java:103)
-	at com.epam.pipeline.autotests.PipelineDetailsTest.shouldHaveHistoryEntry(PipelineDetailsTest.java:196)
+<pre>ListSizeMismatch : expected: = 3, actual: 0, collection: .ant-table-tbody/tr
+Elements: []
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1682252714710.62.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1682252714710.62.html
+Timeout: 6 s.
+	at com.codeborne.selenide.collections.ListSize.fail(ListSize.java:24)
+	at com.codeborne.selenide.ElementsCollection.waitUntil(ElementsCollection.java:98)
+	at com.codeborne.selenide.ElementsCollection.should(ElementsCollection.java:57)
+	at com.codeborne.selenide.ElementsCollection.shouldHave(ElementsCollection.java:48)
+	at com.codeborne.selenide.ElementsCollection.shouldHaveSize(ElementsCollection.java:33)
+	at com.epam.pipeline.autotests.ao.PipelineCodeTabAO.shouldContainElement(PipelineCodeTabAO.java:144)
+	at com.epam.pipeline.autotests.PipelineDetailsTest.shouldCreateFolderInPipeline(PipelineDetailsTest.java:104)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -122,34 +113,34 @@ Timeout: 150 s.
 </tr>
 </thead>
 <tr>
-<td class="success">documentShouldBeRenamed - EPMCMBIBPC-346</td>
-<td>7.179s</td>
-<td class="success">passed</td>
+<td class="skipped">documentShouldBeRenamed</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">documentTabShouldBeValid - EPMCMBIBPC-345</td>
-<td>3.286s</td>
-<td class="success">passed</td>
+<td class="skipped">documentTabShouldBeValid</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">luigiGraphTabShouldBeValid - EPMCMBIBPC-344</td>
-<td>5.229s</td>
-<td class="success">passed</td>
+<td class="skipped">luigiGraphTabShouldBeValid</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">luigiPipelineTabsShouldBeValid - EPMCMBIBPC-343</td>
-<td>20.840s</td>
+<td>21.678s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">shouldCreateFileInSubfolder - EPMCMBIBPC-340</td>
-<td>8.032s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldCreateFileInSubfolder</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">shouldCreateFolderInPipeline - EPMCMBIBPC-339</td>
-<td>7.689s</td>
-<td class="success">passed</td>
+<td class="failures">shouldCreateFolderInPipeline - EPMCMBIBPC-339</td>
+<td>8.809s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="skipped">shouldCreateStorageRule</td>
@@ -157,9 +148,9 @@ Timeout: 150 s.
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">shouldDeleteDocumentFile - EPMCMBIBPC-348</td>
-<td>5.241s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldDeleteDocumentFile</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="skipped">shouldDeleteStorageRule</td>
@@ -167,19 +158,19 @@ Timeout: 150 s.
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">shouldDownloadCorrectDocumentFile - EPMCMBIBPC-347</td>
-<td>6.211s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldDownloadCorrectDocumentFile</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">shouldHaveEmptyHistory - EPMCMBIBPC-350</td>
-<td>3.293s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldHaveEmptyHistory</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="failures">shouldHaveHistoryEntry - EPMCMBIBPC-350</td>
-<td>3m1.50s</td>
-<td class="failures">failed</td>
+<td class="skipped">shouldHaveHistoryEntry</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="skipped">shouldNotCreateACopyOfRule</td>
@@ -187,9 +178,9 @@ Timeout: 150 s.
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">shouldUploadFile - EPMCMBIBPC-349</td>
-<td>6.831s</td>
-<td class="success">passed</td>
+<td class="skipped">shouldUploadFile</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="skipped">storageRulesTabShouldBeValid</td>
@@ -203,14 +194,6 @@ Timeout: 150 s.
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
-<h2>Standard output</h2>
-<span class="code">
-<pre>Returns latest run with runId 42061 from [42061]
-Returns latest run with runId 42061 from [42061]
-</pre>
-</span>
-</div>
 </div>
 <div id="footer">
 <p>
@@ -219,7 +202,7 @@ Returns latest run with runId 42061 from [42061]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 16, 2023 10:43:52 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 23, 2023 10:54:15 PM</p>
 </div>
 </div>
 </body>
