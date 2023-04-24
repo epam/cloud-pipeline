@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+_REPO_REVISION=$1
+_RESUMED_RUN=$2
+
 echo "Setup FSBrowser"
 echo "-"
 
@@ -25,6 +28,7 @@ if ! jq --version > /dev/null 2>&1; then
 fi
 
 CP_FSBROWSER_PORT="${CP_FSBROWSER_PORT:-8091}"
+CP_FSBROWSER_HOST="${CP_FSBROWSER_HOST:-0.0.0.0}"
 CP_FSBROWSER_WD="${CP_FSBROWSER_WD:-/}"
 CP_FSBROWSER_TMP="${CP_FSBROWSER_TMP:-/tmp}"
 CP_FSBROWSER_BLACK_LIST="${CP_FSBROWSER_BLACK_LIST:-/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc}"
@@ -42,18 +46,84 @@ if [ -z "$CP_FSBROWSER_STORAGE" ]; then
     CP_FSBROWSER_STORAGE="$CP_FSBROWSER_STORAGE/fsbrowser/$RUN_ID"
 fi
 
-if ! fsbrowser -h > /dev/null 2>&1; then
+if [ -z "$CP_FSBROWSER_VS_WD" ]; then
+    CP_FSBROWSER_VS_WD="$(curl -k \
+                                    -s \
+                                    -X GET \
+                                    -H "Authorization: Bearer ${API_TOKEN}" \
+                                    "${API}preferences/git.fsbrowser.workdir" | \
+                                        jq -r '.payload.value//""')"
+    if [ -z "$CP_FSBROWSER_VS_WD" ]; then
+            echo "[ERROR] Working directory for versioned storages is not defined (git.fsbrowser.workdir). FSBrowser will NOT be configured"
+            exit 1
+    fi
+fi
+
+# Expand any env variable in the CP_FSBROWSER_VS_WD path
+CP_FSBROWSER_VS_WD=$(eval echo $CP_FSBROWSER_VS_WD)
+CP_FSBROWSER_VS_WD=${CP_FSBROWSER_VS_WD:-/git-workdir}
+
+mkdir -p ${CP_FSBROWSER_VS_WD}
+
+_SSL_CERT_DIR="${SSL_CERT_DIR:-/etc/ssl/certs/}"
+
+if ! env SSL_CERT_DIR="$_SSL_CERT_DIR" fsbrowser -h > /dev/null 2>&1; then
     echo "[ERROR] Cannot load 'fsbrowser' command"
     exit 1
 fi
 
 echo "Starting FSBrowser:"
-echo "- Port:    $CP_FSBROWSER_PORT"
-echo "- WD:      $CP_FSBROWSER_WD"
-echo "- Storage: $CP_FSBROWSER_STORAGE"
-nohup fsbrowser --host 0.0.0.0 \
+echo "- Port:        $CP_FSBROWSER_PORT"
+echo "- WD:          $CP_FSBROWSER_WD"
+echo "- Git workdir: $CP_FSBROWSER_VS_WD"
+echo "- Storage:     $CP_FSBROWSER_STORAGE"
+env SSL_CERT_DIR="$_SSL_CERT_DIR" nohup fsbrowser --host "$CP_FSBROWSER_HOST" \
                 --port "${CP_FSBROWSER_PORT}" \
                 --working_directory "${CP_FSBROWSER_WD}" \
+                --vs_working_directory "${CP_FSBROWSER_VS_WD}" \
                 --tmp_directory "${CP_FSBROWSER_TMP}" \
                 --exclude "${CP_FSBROWSER_BLACK_LIST}" \
                 --transfer_storage "${CP_FSBROWSER_STORAGE}" > /var/log/fsbrowser.log 2>&1 &
+_fsbfowser_launch_exit_code=$?
+if [ "$_RESUMED_RUN" == true ]; then
+      echo "Skipping pipeline repository clone for a resumed run"
+elif [ $_fsbfowser_launch_exit_code -eq 0 ] && [ -n "$PIPELINE_ID" ]; then
+    timeout 5 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' "$CP_FSBROWSER_HOST" "${CP_FSBROWSER_PORT}"
+    if [ "$?" -ne 0 ]; then
+      echo "Exceeded max retries count for waiting FSBrowser startup"
+      exit 1
+    fi
+    _pipeline_type="$(curl -k \
+                               -s \
+                               -X GET \
+                               -H "Authorization: Bearer ${API_TOKEN}" \
+                               "${API}pipeline/$PIPELINE_ID/load" | \
+                                  jq -r '.payload.pipelineType//""')"
+    if [ "$_pipeline_type" = 'VERSIONED_STORAGE' ]; then
+        task_id="$(curl -k -s -X POST -u root:$SSH_PASS  \
+          "http://localhost:$CP_FSBROWSER_PORT/vs/$PIPELINE_ID/clone?revision=$_REPO_REVISION" | \
+          jq -r '.payload.task//""')"
+        if [ -z "$task_id" ]; then
+          echo "Failed to clone versioned storage $PIPELINE_ID"
+          exit 1
+        fi
+
+        clone_wait_retries="${CP_FSBROWSER_VS_CLONE_WAIT_RETRIES:-50}"
+        clone_status=""
+        while [ $clone_wait_retries -ge 0 ];
+        do
+          clone_status="$(curl -k -s -X GET -u root:$SSH_PASS \
+            "http://localhost:$CP_FSBROWSER_PORT/status/$task_id" | jq -r '.payload.status//""')"
+          if [ "$clone_status" == "success" ]; then
+            break
+          fi
+          clone_wait_retries=$(( $clone_wait_retries - 1 ))
+          sleep 5
+        done
+        if [ "$clone_status" != "success" ]; then
+            echo "Failed to clone versioned storage $PIPELINE_ID"
+          exit 1
+        fi
+        echo "Successfully initialized versioned storage $PIPELINE_NAME"
+    fi
+fi
