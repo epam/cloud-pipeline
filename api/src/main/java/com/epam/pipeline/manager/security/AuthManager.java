@@ -179,6 +179,10 @@ public class AuthManager {
         return new JwtRawToken(jwtTokenGenerator.encodeToken(user.toClaims(), expiration));
     }
 
+    public JwtRawToken issueAdminToken(@Nullable Long expiration) {
+        return new JwtRawToken(jwtTokenGenerator.encodeToken(getAdminContext().toClaims(), expiration));
+    }
+
     /**
      * @return A default UserContext for scheduled operations
      */
@@ -195,6 +199,12 @@ public class AuthManager {
 
     public boolean isServiceUser(@Nullable String user) {
         return StringUtils.equalsIgnoreCase(user, defaultAdmin);
+    }
+
+    private UserContext getAdminContext() {
+        UserContext userContext = new UserContext(defaultAdminId, defaultAdmin);
+        userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ADMIN.getRole()));
+        return userContext;
     }
 
     private Object getPrincipal() {

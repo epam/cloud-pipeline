@@ -36,36 +36,45 @@ import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
-public class GitLabApiBuilder {
+public class ApiBuilder<T> {
 
-    private static final String DATA_FORMAT = "yyyy-MM-dd";
     private static final int TIMEOUT = 30;
 
     private final int connectTimeout;
     private final int readTimeout;
     private final String apiHost;
-    private final String adminToken;
+    private final String token;
+    private Class<T> apiClientClass;
+    private String authHeaderName;
+    private String dateFormat;
 
-    public GitLabApiBuilder(String apiHost, String adminToken) {
+    public ApiBuilder(final Class<T> apiClientClass, final String apiHost,
+                      final String authHeaderName, final String token, final String dateFormat) {
+        this.apiClientClass = apiClientClass;
+        this.authHeaderName = authHeaderName;
+        this.dateFormat = dateFormat;
         this.connectTimeout = TIMEOUT;
         this.readTimeout = TIMEOUT;
         this.apiHost = apiHost;
-        this.adminToken = adminToken;
+        this.token = token;
     }
 
-    public GitLabApi build() {
+    public T build() {
         return new Retrofit.Builder()
                 .baseUrl(normalizeUrl(apiHost))
                 .addConverterFactory(JacksonConverterFactory
                         .create(new JsonMapper()
-                                .setDateFormat(new SimpleDateFormat(DATA_FORMAT))
+                                .setDateFormat(Optional.ofNullable(dateFormat)
+                                        .map(SimpleDateFormat::new)
+                                        .orElse(null))
                                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
-                .client(buildHttpClient(adminToken))
+                .client(buildHttpClient(token))
                 .build()
-                .create(GitLabApi.class);
+                .create(apiClientClass);
     }
 
     private OkHttpClient buildHttpClient(final String token) {
@@ -96,8 +105,8 @@ public class GitLabApiBuilder {
         builder.readTimeout(readTimeout, TimeUnit.SECONDS)
                 .connectTimeout(connectTimeout, TimeUnit.SECONDS)
                 .hostnameVerifier((s, sslSession) -> true);
-        if (token != null) {
-            builder.addInterceptor(new TokenInterceptor(token));
+        if (StringUtils.isNotBlank(token)) {
+            builder.addInterceptor(new TokenInterceptor(authHeaderName, token));
         }
         return builder.build();
     }
@@ -116,8 +125,7 @@ public class GitLabApiBuilder {
     @AllArgsConstructor
     public class TokenInterceptor implements Interceptor {
 
-        private static final String PRIVATE_TOKEN = "PRIVATE-TOKEN";
-
+        private final String headerName;
         private final String userToken;
 
         /**
@@ -128,9 +136,9 @@ public class GitLabApiBuilder {
         @Override
         public Response intercept(final Interceptor.Chain chain) throws IOException {
             final Request original = chain.request();
-            if (StringUtils.isEmpty(original.headers().get(PRIVATE_TOKEN))) {
+            if (StringUtils.isEmpty(original.headers().get(headerName))) {
                 final Request request = original.newBuilder()
-                        .header(PRIVATE_TOKEN, userToken)
+                        .header(headerName, userToken)
                         .build();
                 return chain.proceed(request);
             }

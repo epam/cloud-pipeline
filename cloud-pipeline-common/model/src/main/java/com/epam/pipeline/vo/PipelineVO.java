@@ -33,7 +33,9 @@ public class PipelineVO {
     private Long parentFolderId;
     private String templateId;
     private RepositoryType repositoryType;
+    private String branch;
     private RunVisibilityPolicy visibility;
+    private String configurationPath;
     private String codePath;
     private String docsPath;
 
@@ -47,7 +49,9 @@ public class PipelineVO {
         pipeline.setRepositoryToken(getRepositoryToken());
         pipeline.setTemplateId(getTemplateId());
         pipeline.setRepositoryType(getRepositoryType());
+        pipeline.setBranch(getBranch());
         pipeline.setVisibility(getVisibility());
+        pipeline.setConfigurationPath(getConfigurationPath());
         pipeline.setCodePath(getCodePath());
         pipeline.setDocsPath(getDocsPath());
         return pipeline;

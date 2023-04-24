@@ -35,6 +35,7 @@ public final class MessageConstants {
     public static final String ERROR_PIPELINE_REPO_EXISTS = "error.pipeline.name.exists";
     public static final String ERROR_INVALID_PIPELINE_NAME = "error.pipeline.name.invalid";
     public static final String ERROR_INVALID_PIPELINE_REVISION_NAME = "error.pipeline.revision.name.invalid";
+    public static final String ERROR_REPOSITORY_PATH_DOESNT_EXIST = "error.repository.path.doesnt.exist";
     public static final String ERROR_REPOSITORY_SRC_NOT_FOUND = "error.repository.src.not.found";
     public static final String ERROR_REPOSITORY_DOCS_NOT_FOUND = "error.repository.docs.not.found";
 
@@ -178,6 +179,8 @@ public final class MessageConstants {
     public static final String WARN_INSTANCE_STOPPING = "warn.instance.stopping";
     public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
+    public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
+            "error.image.not.found.for.versioned.storage";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -262,6 +265,11 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_STORAGE_IS_NOT_CONFIGURED = "error.share.storage.not.configured";
     public static final String ERROR_DATASTORAGES_TYPES_NOT_SAME = "error.datastorages.types.not.same";
     public static final String ERROR_DATASTORAGES_NOT_FOUND = "error.datastorages.not.found";
+    public static final String ERROR_DATASTORAGE_CONVERT_TARGET_TYPE_INVALID =
+            "error.datastorage.convert.target.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID =
+            "error.datastorage.convert.source.type.invalid";
+    public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
     public static final String ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME = "error.datastorage.dav.mount.illegal.time";
     public static final String ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED =
             "error.datastorage.dav.mount.quota.exceeded";
@@ -355,12 +363,16 @@ public final class MessageConstants {
     public static final String ERROR_REPOSITORY_FOLDER_NOT_FOUND = "error.repository.folder.not.found";
     public static final String ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS =
             "error.repository.folder.already.exists";
+    public static final String ERROR_REPOSITORY_FILE_ALREADY_EXISTS = "error.repository.file.already.exists";
     public static final String ERROR_REPOSITORY_ROOT_FOLDER_CANNOT_BE_REMOVED =
             "error.repository.root.folder.cannot.be.removed";
     public static final String ERROR_REPOSITORY_FOLDER_CANNOT_BE_REMOVED =
             "error.repository.folder.cannot.be.removed";
     public static final String ERROR_INVALID_PIPELINE_FILE_NAME = "error.pipeline.file.name.invalid";
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
+    public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
+    public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
+    public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
 
     // Instance offers expiration check messages
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING =

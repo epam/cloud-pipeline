@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
@@ -269,6 +270,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected UserNotificationManager userNotificationManager;
+
+    @MockBean
+    protected PipelineRepositoryService pipelineRepositoryService;
 
     @Bean
     public PermissionFactory permissionFactory() {

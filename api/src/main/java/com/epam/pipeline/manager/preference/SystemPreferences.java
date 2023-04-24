@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
+import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
@@ -88,6 +89,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLes
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -167,6 +169,14 @@ public class SystemPreferences {
                                new TypeReference<DataStorageTemplate>() {},
                                DATA_STORAGE_GROUP,
                                isNullOrValidJson(new TypeReference<DataStorageTemplate>() {}));
+    public static final StringPreference VERSION_STORAGE_REPORT_TEMPLATE = new StringPreference(
+            "storage.version.storage.report.template", null, DATA_STORAGE_GROUP, isNullOrValidLocalPath());
+    public static final StringPreference VERSION_STORAGE_BINARY_FILE_EXTS = new StringPreference(
+            "storage.version.storage.report.binary.file.exts",
+            "pdf", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference VERSION_STORAGE_IGNORED_FILES = new StringPreference(
+            "storage.version.storage.ignored.files",
+            ".gitkeep", DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
     public static final IntPreference DATA_STORAGE_DAV_MOUNT_MAX_STORAGES = new IntPreference(
             "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
@@ -216,6 +226,9 @@ public class SystemPreferences {
                     isNullOrGreaterThan(0));
     public static final BooleanPreference STORAGE_ALLOW_SIGNED_URLS =
             new BooleanPreference("storage.allow.signed.urls", true, DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_CONVERT_SOURCE_ACTION =
+            new StringPreference("storage.convert.source.action", DataStorageConvertRequestAction.LEAVE.name(),
+                    DATA_STORAGE_GROUP, (v, ignored) -> DataStorageConvertRequestAction.isValid(v));
     public static final LongPreference STORAGE_LIFECYCLE_PROLONG_DAYS =
             new LongPreference("storage.lifecycle.prolong.days", 7L, DATA_STORAGE_GROUP,
                     isGreaterThan(0), true);
@@ -267,6 +280,8 @@ public class SystemPreferences {
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
+    public static final StringPreference GIT_READER_HOST =
+            new StringPreference("git.reader.service.host", null, GIT_GROUP, pass);
     public static final StringPreference GIT_EXTERNAL_URL =
             new StringPreference("git.external.url", null, GIT_GROUP, pass);
     public static final StringPreference GIT_TOKEN = new StringPreference("git.token", null, GIT_GROUP, null);
@@ -282,8 +297,14 @@ public class SystemPreferences {
             GIT_GROUP, isGreaterThan(0));
     public static final IntPreference GIT_FORK_RETRY_COUNT = new IntPreference("git.fork.retry.count", 5,
             GIT_GROUP, isGreaterThan(0));
+    public static final StringPreference GIT_FSBROWSER_WD =
+            new StringPreference("git.fsbrowser.workdir", "/git-workdir", GIT_GROUP, pass);
+    public static final StringPreference BITBUCKET_USER_NAME =
+            new StringPreference("bitbucket.user.name", null, GIT_GROUP, pass);
     public static final StringPreference GITLAB_API_VERSION = new StringPreference(
             "git.gitlab.api.version", "v3", GIT_GROUP, pass);
+    public static final BooleanPreference GITLAB_HASHED_REPO_SUPPORT = new BooleanPreference(
+            "git.gitlab.hashed.repo.support", false, GIT_GROUP, pass);
     public static final StringPreference GITLAB_DEFAULT_SRC_DIRECTORY = new StringPreference(
             "gitlab.default.src.directory", "src/", GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_DEFAULT_DOC_DIRECTORY = new StringPreference(
@@ -774,7 +795,8 @@ public class SystemPreferences {
     public static final IntPreference SYSTEM_CLUSTER_PRICE_MONITOR_DELAY = new IntPreference(
             "system.cluster.price.monitor.delay", 30000, SYSTEM_GROUP, pass);
     /**
-     * Controls which events will be ommitted from the OOM Logger output (e.g. flannel, iptables and other system services)
+     * Controls which events will be ommitted from the OOM Logger output
+     * (e.g. flannel, iptables and other system services)
      */
     public static final StringPreference SYSTEM_OOM_EXCLUDE_EVENTS = new StringPreference(
             "system.oom.exclude.events", "flanneld|iptables|canal|kube-proxy|calico", SYSTEM_GROUP, pass);

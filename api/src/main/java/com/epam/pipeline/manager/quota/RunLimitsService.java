@@ -95,7 +95,7 @@ public class RunLimitsService {
         return getCurrentUserLaunchLimits(authManager.getCurrentUser(), loadAll);
     }
 
-    private Map<String, Integer> getCurrentUserLaunchLimits(final PipelineUser user, final boolean loadAll ) {
+    private Map<String, Integer> getCurrentUserLaunchLimits(final PipelineUser user, final boolean loadAll) {
 
         final Optional<Integer> userContextualLimit = findUserLimit(user.getId());
         if (requiresSingleLimitOnly(userContextualLimit, loadAll)) {

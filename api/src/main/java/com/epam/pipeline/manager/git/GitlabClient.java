@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,13 @@ import com.epam.pipeline.entity.git.GitGroupRequest;
 import com.epam.pipeline.entity.git.GitHookRequest;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectRequest;
+import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitTokenRequest;
+import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.git.UpdateGitFileRequest;
@@ -39,15 +41,12 @@ import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
-import okhttp3.ResponseBody;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
-import org.springframework.web.client.HttpClientErrorException;
-import retrofit2.Call;
+import org.springframework.web.util.UriUtils;
 import retrofit2.HttpException;
 import retrofit2.Response;
 
@@ -56,7 +55,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,6 +63,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
@@ -73,6 +72,8 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.manager.git.RestApiUtils.execute;
+
 @Wither
 @AllArgsConstructor
 @NoArgsConstructor
@@ -80,6 +81,8 @@ public class GitlabClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitlabClient.class);
 
+    private static final String PRIVATE_TOKEN = "PRIVATE-TOKEN";
+    private static final String DATA_FORMAT = "yyyy-MM-dd";
     private static final String TEMPLATE_DESCRIPTION = "description.txt";
     private static final String README_DEFAULT_CONTENTS = "# Job definition\n\n"
             + "This is an initial job definition `README`\n\n"
@@ -95,12 +98,16 @@ public class GitlabClient {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    private static final String INITIAL_COMMIT = "New pipeline initial commit";
+    private static final String INITIAL_COMMIT = "Initial commit";
     private static final String PUBLIC_VISIBILITY = "public";
     public static final String NEW_LINE = "\n";
     public static final long MAINTAINER = 40L;
     public static final String DOT_CHAR = ".";
     public static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
+    public static final String GITKEEP_FILE = ".gitkeep";
+    public static final String EMAIL_SEPARATOR = "@";
+    public static final String TOTAL_HEADER = "X-Total";
+    public static final int MAX_PAGE_SIZE = 100;
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -228,6 +235,20 @@ public class GitlabClient {
                                 indexingEnabled, hookUrl, visibility);
     }
 
+    public GitProject createEmptyRepository(final String name, final String description,
+                                            final boolean indexingEnabled, final boolean initCommit,
+                                            final String hookUrl,
+                                            final String visibility) throws GitClientException {
+        final GitProject project = createRepo(name, description, visibility);
+        if (indexingEnabled) {
+            addProjectHook(String.valueOf(project.getId()), hookUrl);
+        }
+        if (initCommit) {
+            createFile(project, GITKEEP_FILE, "keep");
+        }
+        return project;
+    }
+
     public boolean projectExists(final String namespace, final String name) throws GitClientException {
         try {
             String projectId = makeProjectId(namespace, GitUtils.convertPipeNameToProject(name));
@@ -246,22 +267,20 @@ public class GitlabClient {
         return getProject(projectName);
     }
 
+    public List<GitlabBranch> getBranches() {
+        String project = GitUtils.convertPipeNameToProject(projectName);
+        String projectId = makeProjectId(namespace, project);
+        return execute(gitLabApi.getBranches(apiVersion, projectId));
+    }
+
     public GitProject getProject(String name) throws GitClientException {
         String project = GitUtils.convertPipeNameToProject(name);
         String projectId = makeProjectId(namespace, project);
         return execute(gitLabApi.getProject(apiVersion, projectId));
     }
 
-    public GitProject createTemplateRepository(Template template, String description,
-                                               boolean indexingEnabled, String hookUrl,
-                                               String visibility) throws GitClientException {
-        Assert.notNull(this.projectName, "Project name cannot be empty");
-        try {
-            String repoName = this.projectName;
-            return createGitProject(template, description, repoName, indexingEnabled, hookUrl, visibility);
-        } catch (HttpClientErrorException e) {
-            throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
-        }
+    public GitProject getProject(Long id) throws GitClientException {
+        return execute(gitLabApi.getProject(apiVersion, String.valueOf(id)));
     }
 
     public void deleteRepository() throws GitClientException {
@@ -291,13 +310,6 @@ public class GitlabClient {
 
     public GitTagEntry createRepositoryRevision(String name, String ref, String message, String releaseDescription)
             throws GitClientException {
-        if (name == null) {
-            throw new GitClientException("Tag name is required");
-        }
-        if (ref == null) {
-            throw new GitClientException("Ref (commit SHA, another tag name, or branch name) is required");
-        }
-
         String projectId = makeProjectId(namespace, projectName);
         return execute(gitLabApi.createRevision(apiVersion, projectId, name, ref, message, releaseDescription));
     }
@@ -318,7 +330,8 @@ public class GitlabClient {
         String projectId = makeProjectId(namespace, projectName);
         String sinceDate = since != null ? DATE_FORMAT.format(since) : null;
         String untilDate = until != null ? DATE_FORMAT.format(until) : null;
-        return execute(gitLabApi.getCommits(apiVersion, projectId, refName, sinceDate, untilDate, null, null, null));
+        return execute(gitLabApi.getCommits(apiVersion, projectId, refName, sinceDate, untilDate,
+                null, null, null));
     }
 
     /**
@@ -346,8 +359,6 @@ public class GitlabClient {
     }
 
     public byte[] getFileContents(String projectId, String path, String revision) throws GitClientException {
-        Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
-        Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
         if (StringUtils.isBlank(projectId)) {
             projectId = makeProjectId(namespace, projectName);
         }
@@ -370,26 +381,12 @@ public class GitlabClient {
      */
     public byte[] getTruncatedFileContents(final String projectId, final String path,
                                            final String revision, final int byteLimit) throws GitClientException {
-        Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
-        Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
         final String currentProjectId = StringUtils.isBlank(projectId)
                                         ? makeProjectId(namespace, projectName)
                                         : projectId;
-
         try {
-            final Call<ResponseBody> filesRawContent = gitLabApi.
-                getFilesRawContent(apiVersion, currentProjectId, encodePath(path), revision);
-            final ResponseBody body = filesRawContent.execute().body();
-            if (body != null) {
-                try(InputStream inputStream = body.byteStream()) {
-                    final int bufferSize = calculateBufferSize(byteLimit, body);
-                    final byte[] receivedContent = new byte[bufferSize];
-                    inputStream.read(receivedContent);
-                    return receivedContent;
-                }
-            } else {
-                return new byte[0];
-            }
+            return RestApiUtils.getFileContent(gitLabApi
+                    .getFilesRawContent(apiVersion, currentProjectId, encodePath(path), revision), byteLimit);
         } catch (IOException e) {
             throw new GitClientException("Error receiving raw file content!", e);
         }
@@ -407,11 +404,12 @@ public class GitlabClient {
     public GitProject updateProjectName(final String currentName, final String newName, final String namespace)
             throws GitClientException {
         final String normalizedNewName = GitUtils.convertPipeNameToProject(newName);
-        return execute(gitLabApi.updateProject(apiVersion, makeProjectId(namespace, GitUtils.convertPipeNameToProject(currentName)),
-                                               GitProjectRequest.builder()
-                                                   .name(normalizedNewName)
-                                                   .path(normalizedNewName)
-                                                   .build()));
+        return execute(gitLabApi.updateProject(apiVersion,
+                makeProjectId(namespace, GitUtils.convertPipeNameToProject(currentName)),
+                GitProjectRequest.builder()
+                        .name(normalizedNewName)
+                        .path(normalizedNewName)
+                        .build()));
     }
 
     public GitGroup createGroup(final String newGroupName) throws GitClientException {
@@ -433,25 +431,44 @@ public class GitlabClient {
                 makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
     }
 
-    private <R> R execute(Call<R> call) throws GitClientException {
-        try {
-            Response<R> response = call.execute();
-            if (response.isSuccessful()) {
-                return response.body();
-            } else {
-                throw new UnexpectedResponseStatusException(HttpStatus.valueOf(response.code()),
-                        response.errorBody() != null ? response.errorBody().string() : "");
+    public Optional<GitlabUser> findUser(final String userName) throws GitClientException {
+        Optional<GitlabUser> gitlabUser = Optional.empty();
+        for (String name : generateGitLabUsernames(userName)) {
+            gitlabUser = Optional.of(execute(gitLabApi.searchUser(apiVersion, name)))
+                    .map(List::stream)
+                    .flatMap(Stream::findFirst);
+            if (gitlabUser.isPresent()) {
+                break;
             }
-        } catch (IOException e) {
-            throw new GitClientException(e.getMessage(), e);
         }
+        return gitlabUser;
     }
 
-    private void createFile(GitProject project, String path, String content) {
+    public GitProjectStorage getProjectStorage(final String project) throws GitClientException {
+        return execute(gitLabApi.getProjectStorage(makeProjectId(namespace, project)));
+    }
+
+    public GitProjectStorage getProjectStorageFullPath(final String project) throws GitClientException {
+        return execute(gitLabApi.getProjectStorage(project));
+    }
+
+    private GitProject createRepo(String repoName, String description, String visibility) throws GitClientException {
+        GitProjectRequest gitProject = GitProjectRequest.builder()
+                .name(repoName)
+                .description(description)
+                .visibility(visibility)
+                .build();
+        return execute(gitLabApi.createProject(apiVersion, gitProject));
+    }
+
+    public GitProject createRepo(final String description, final String visibility) throws GitClientException {
+        return createRepo(projectName, description, visibility);
+    }
+
+    public void createFile(final GitProject project, final String path, final String content, final String branch) {
         try {
-            final Response<GitFile> response = gitLabApi.createFiles(
-                    apiVersion,
-                    project.getId().toString(), path, buildCreateFileRequest(content)).execute();
+            final Response<GitFile> response = gitLabApi.createFiles(apiVersion,
+                    project.getId().toString(), path, buildCreateFileRequest(content, branch)).execute();
             if (!response.isSuccessful()) {
                 throw new HttpException(response);
             }
@@ -460,11 +477,14 @@ public class GitlabClient {
         }
     }
 
-    private UpdateGitFileRequest buildCreateFileRequest(final String content)
-            throws GitClientException {
+    public void createFile(GitProject project, String path, String content) {
+        createFile(project, path, content, null);
+    }
 
+    private UpdateGitFileRequest buildCreateFileRequest(final String content, final String branch)
+            throws GitClientException {
         final UpdateGitFileRequest.UpdateGitFileRequestBuilder requestBuilder = UpdateGitFileRequest.builder()
-                .branch(DEFAULT_BRANCH)
+                .branch(StringUtils.isBlank(branch) ? DEFAULT_BRANCH : branch)
                 .message(INITIAL_COMMIT)
                 .content(content);
 
@@ -514,21 +534,16 @@ public class GitlabClient {
                 adminToken)).getToken();
     }
 
-    private Optional<GitlabUser> findUser(String userName) throws GitClientException {
-        return Optional.of(execute(gitLabApi.searchUser(apiVersion, userName)))
-                .map(List::stream)
-                .flatMap(Stream::findFirst);
+    private List<String> generateGitLabUsernames(final String userName) {
+        // try to split by @ if user name is an email it will crop it by @, if not - it will leave it as is
+        final String trimmed = userName.split(EMAIL_SEPARATOR)[0];
+        return Arrays.asList(trimmed.toUpperCase(), trimmed);
     }
 
-    private GitProject createRepo(String repoName, String description, String visibility) throws GitClientException {
-        GitProjectRequest gitProject = GitProjectRequest.builder().name(repoName).description(description)
-                .visibility(visibility).build();
-        return execute(gitLabApi.createProject(apiVersion, gitProject));
-    }
-
-    private GitRepositoryEntry addProjectHook(String projectId, String hookUrl) throws GitClientException {
+    public GitRepositoryEntry addProjectHook(String projectId, String hookUrl) throws GitClientException {
         return execute(
-                gitLabApi.addProjectHook(apiVersion,
+                gitLabApi.addProjectHook(
+                        apiVersion,
                         projectId,
                         GitHookRequest.builder().hookUrl(hookUrl)
                                 .pushEvents(true).branch(DEFAULT_BRANCH)
@@ -538,10 +553,8 @@ public class GitlabClient {
     private GitProject createGitProject(Template template, String description, String repoName,
                                         boolean indexingEnabled, String hookUrl,
                                         String visibility) throws GitClientException {
-        GitProject project = createRepo(repoName, description, visibility);
-        if (indexingEnabled) {
-            addProjectHook(String.valueOf(project.getId()), hookUrl);
-        }
+        final GitProject project = createEmptyRepository(repoName, description, indexingEnabled,
+                false, hookUrl, visibility);
         uploadFolder(template, repoName, project);
         try {
             boolean fileExists = getFileContents(project.getId().toString(), DEFAULT_README, DEFAULT_BRANCH) != null;
@@ -557,7 +570,7 @@ public class GitlabClient {
     }
 
     private GitLabApi buildGitLabApi(final String gitHost, final String adminToken) {
-        return new GitLabApiBuilder(gitHost, adminToken).build();
+        return new ApiBuilder<>(GitLabApi.class, gitHost, PRIVATE_TOKEN, adminToken, DATA_FORMAT).build();
     }
 
     private void uploadFolder(Template template, String repoName, GitProject project) throws GitClientException {
@@ -595,15 +608,8 @@ public class GitlabClient {
         return path;
     }
 
-    private int calculateBufferSize(final int byteLimit, final ResponseBody body) {
-        final long length = body.contentLength();
-        return (length >= 0 && length <= Integer.MAX_VALUE)
-               ? Math.min((int) length, byteLimit)
-               : byteLimit;
-    }
-
     private String encodePath(final String path) throws UnsupportedEncodingException {
-        return URLEncoder.encode(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
+        return UriUtils.encodePathSegment(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
                                                                                   DOT_CHAR_URL_ENCODING_REPLACEMENT);
     }
 }

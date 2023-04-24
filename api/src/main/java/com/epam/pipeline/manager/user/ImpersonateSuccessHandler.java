@@ -27,7 +27,7 @@ import java.io.IOException;
 
 public class ImpersonateSuccessHandler implements AuthenticationSuccessHandler, ImpersonateRequestHandler {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(ImpersonateSuccessHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ImpersonateSuccessHandler.class);
 
     private final String impersonationStartUrl;
     private final String impersonationStopUrl;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline;
+package com.epam.pipeline.acl.pipeline;
 
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_WRITE;
@@ -24,6 +24,7 @@ import java.util.List;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;

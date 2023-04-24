@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-gitlab-reader: "true"
+  name: cp-gitlab-reader
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: ${CP_GITLAB_READER_INTERNAL_PORT}
+    targetPort: 8080
+    name: cp-gitlab-reader-port-http
+  selector:
+    cloud-pipeline/cp-gitlab-reader: "true"

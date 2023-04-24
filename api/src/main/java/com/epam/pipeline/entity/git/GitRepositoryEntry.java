@@ -16,12 +16,18 @@
 
 package com.epam.pipeline.entity.git;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Represents Gitlab repository browsing request result
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class GitRepositoryEntry {
     private String id;
     private String name;

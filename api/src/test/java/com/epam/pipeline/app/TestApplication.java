@@ -19,6 +19,7 @@ package com.epam.pipeline.app;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
+import com.epam.pipeline.manager.SecuredEntityTransferManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
@@ -36,6 +37,7 @@ import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
@@ -183,6 +185,12 @@ public class TestApplication {
 
     @MockBean
     protected PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
+    @MockBean
+    protected BitbucketMapper bitbucketMapper;
+
+    @MockBean
+    protected SecuredEntityTransferManager securedEntityTransferManager;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

@@ -458,7 +458,8 @@ public class DockerContainerOperationManager {
             validateInstanceState(cloudInstanceState);
             switch (cloudInstanceState) {
                 case STOPPED:
-                    final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(regionId, nodeId);
+                    final CloudInstanceOperationResult startInstanceResult =
+                            cloudFacade.startInstance(regionId, nodeId);
                     if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
                         rollbackRunToPausedState(run, startInstanceResult);
                         return false;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,13 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectMember;
 import com.epam.pipeline.entity.git.GitProjectMemberRequest;
 import com.epam.pipeline.entity.git.GitProjectRequest;
+import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.entity.git.GitTokenRequest;
+import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.git.UpdateGitFileRequest;
@@ -58,6 +60,7 @@ public interface GitLabApi {
     String USER_ID = "user_id";
     String PRIVATE_TOKEN = "PRIVATE-TOKEN";
     String API_VERSION = "api_version";
+    String ISSUE_ID = "issue_id";
 
     /**
      * @param userName The name of the GitLab user
@@ -77,6 +80,16 @@ public interface GitLabApi {
     @GET("api/{api_version}/projects/{project}")
     Call<GitProject> getProject(@Path(API_VERSION) String apiVersion,
                                 @Path(PROJECT) String idOrName);
+
+    /**
+     * Get a list of repository branches from a project, sorted by name alphabetically.
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     */
+    @GET("api/{api_version}/projects/{project}/repository/branches")
+    Call<List<GitlabBranch>> getBranches(@Path(API_VERSION) String apiVersion,
+                                         @Path(PROJECT) String idOrName);
 
     /**
      * create project.
@@ -321,4 +334,13 @@ public interface GitLabApi {
     Call<GitProject> forkProject(@Path(API_VERSION) String apiVersion,
                                  @Path(PROJECT) String project,
                                  @Query("namespace") String namespace);
+
+    /**
+     * Get the path to repository storage for specified project. Available for administrators only.
+     * NOTE: Introduced in GitLab 14.0.
+     *
+     * @param project The ID or URL-encoded path of the project
+     */
+    @GET("api/v4/projects/{project}/storage")
+    Call<GitProjectStorage> getProjectStorage(@Path(PROJECT) String project);
 }

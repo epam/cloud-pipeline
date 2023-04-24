@@ -1,0 +1,59 @@
+Lists files via specified path on the specific ref(default `HEAD`).
+`repo` - the path to git repo relative to `git_root`.
+---
+parameters:
+ - name: repo
+   in: path
+   type: string
+   required: true
+ - name: path
+   in: query
+   type: string
+   required: false
+ - name: page
+   in: query
+   type: integer
+   required: false
+   default: 0
+ - name: page_size
+   in: query
+   type: integer
+   required: false
+   default: 20
+ - name: ref
+   in: query
+   type: string
+   required: false
+   default: HEAD
+definitions:
+ Listing:
+   type: object
+   properties:
+     git_objects:
+       type: array
+       items:
+         $ref: '#/definitions/GitObject'
+     page:
+       type: integer
+     page_size:
+       type: integer
+     max_page:
+       type: integer
+ GitObject:
+   type: object
+   properties:
+       git_id:
+         type: string
+       name:
+         type: string
+       git_type:
+         type: string
+       path:
+         type: string
+       mode:
+         type: string
+responses:
+ 200:
+   description: A listing of objects (files and dirs) with metadata and paging info
+   schema:
+     $ref: '#/definitions/Listing'

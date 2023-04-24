@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
 import os
 import uuid
 import shutil
-from multiprocessing.pool import ThreadPool
 
-from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.api.cloud_pipeline_api_provider import CloudPipelineApiProvider
 from fsbrowser.src.model.file import File
 from fsbrowser.src.model.folder import Folder
 from fsbrowser.src.pattern_utils import PatternMatcher
@@ -26,9 +25,9 @@ from fsbrowser.src.transfer_task import TransferTask, TaskStatus
 
 class FsBrowserManager(object):
 
-    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, tmp, exclude):
-        self.tasks = {}
-        self.pool = ThreadPool(processes=process_count)
+    def __init__(self, working_directory, pool, logger, storage, follow_symlinks, tmp, exclude, tasks):
+        self.tasks = tasks
+        self.pool = pool
         self.working_directory = working_directory
         self.logger = logger
         self.storage_name, self.storage_path = self._parse_transfer_storage_path(storage)
@@ -73,7 +72,7 @@ class FsBrowserManager(object):
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         task.upload_path = path
         self.tasks.update({task_id: task})
-        pipeline_client = CloudPipelineApiProvider(self.logger.log_dir)
+        pipeline_client = CloudPipelineApiProvider()
         storage_id = pipeline_client.load_storage_id_by_name(self.storage_name)
         upload_url = pipeline_client.get_upload_url(storage_id, os.path.join(self.storage_path, task_id, path))
         return task_id, upload_url

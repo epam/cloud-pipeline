@@ -96,6 +96,12 @@ public final class UserCreatorUtils {
         return pipelineUser;
     }
 
+    public static PipelineUser getPipelineUserWithEmail(final String name, final String email) {
+        final PipelineUser user = getPipelineUser(name);
+        user.setAttributes(Collections.singletonMap("email", email));
+        return user;
+    }
+
     public static PipelineUserVO getPipelineUserVO() {
         return new PipelineUserVO();
     }

@@ -19,7 +19,7 @@ package com.epam.pipeline.exception.git;
 /**
  * Created by kite on 21.03.17.
  */
-public class GitClientException extends Exception {
+public class GitClientException extends RuntimeException {
     public GitClientException() {
     }
 

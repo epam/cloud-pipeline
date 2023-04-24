@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.git;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,6 +26,7 @@ import lombok.Setter;
 @Setter
 @Builder
 @AllArgsConstructor
+@EqualsAndHashCode
 public class GitCredentials {
     private String userName;
     private String token;

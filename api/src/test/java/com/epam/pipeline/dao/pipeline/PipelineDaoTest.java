@@ -16,10 +16,10 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class PipelineDaoTest extends AbstractSpringTest {
+public class PipelineDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER = "Test";
     private static final String TEST_NAME = "Test";

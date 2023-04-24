@@ -167,6 +167,10 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Integer.parseInt(pref) > x;
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isNullOrValidLocalPath() {
+        return (pref, dependencies) -> StringUtils.isBlank(pref) || Files.exists(Paths.get(pref)) ;
+    }
+
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(float x) {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) > x;
     }

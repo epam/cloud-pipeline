@@ -1629,7 +1629,8 @@ public class PipelineRunManager {
     private void addRegionsToRestartedRuns(final List<RestartRun> restartedRuns) {
         final Map<Long, PipelineRun> runsById = ListUtils.emptyIfNull(
                         pipelineRunDao.loadRunByIdIn(restartedRuns.stream()
-                                .flatMap(restartRun -> Stream.of(restartRun.getRestartedRunId(), restartRun.getParentRunId()))
+                                .flatMap(restartRun ->
+                                        Stream.of(restartRun.getRestartedRunId(), restartRun.getParentRunId()))
                                 .distinct()
                                 .filter(Objects::nonNull)
                                 .collect(Collectors.toList()))).stream()

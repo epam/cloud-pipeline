@@ -22,6 +22,7 @@ import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
+import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
@@ -130,5 +131,10 @@ public class MappersConfiguration {
     @Bean
     public QuotaMapper quotaMapper() {
         return Mappers.getMapper(QuotaMapper.class);
+    }
+
+    @Bean
+    public BitbucketMapper bitbucketRepositoryMapper() {
+        return Mappers.getMapper(BitbucketMapper.class);
     }
 }

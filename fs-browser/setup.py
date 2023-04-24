@@ -23,7 +23,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'flask==1.1.1',
-        'Flask-HTTPAuth==3.3.0'
+        'Flask-HTTPAuth==3.3.0',
+        'pygit2==1.5.0'
     ],
     entry_points='''
         [console_scripts]

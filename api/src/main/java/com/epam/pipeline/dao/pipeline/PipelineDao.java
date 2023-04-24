@@ -30,6 +30,7 @@ import java.util.Set;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import org.apache.commons.lang3.StringUtils;
@@ -151,8 +152,11 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         OWNER,
         REPOSITORY_TOKEN,
         REPOSITORY_TYPE,
+        PIPELINE_TYPE,
         PIPELINE_LOCKED,
         PARENT_FOLDER_ID,
+        BRANCH,
+        CONFIG,
         VISIBILITY,
         CODE_PATH,
         DOCS_PATH;
@@ -169,8 +173,17 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(CREATED_DATE.name(), pipeline.getCreatedDate());
             params.addValue(OWNER.name(), pipeline.getOwner());
             params.addValue(REPOSITORY_TOKEN.name(), pipeline.getRepositoryToken());
-            params.addValue(REPOSITORY_TYPE.name(), pipeline.getRepositoryType());
+            params.addValue(REPOSITORY_TYPE.name(), Optional.ofNullable(pipeline.getRepositoryType())
+                    .map(RepositoryType::getId)
+                    .orElse(null));
+            params.addValue(PIPELINE_TYPE.name(),
+                    Optional.ofNullable(pipeline.getPipelineType())
+                            .map(PipelineType::getId)
+                            .orElse(PipelineType.PIPELINE.getId())
+            );
+            params.addValue(CONFIG.name(), pipeline.getConfigurationPath());
             params.addValue(PIPELINE_LOCKED.name(), pipeline.isLocked());
+            params.addValue(BRANCH.name(), pipeline.getBranch());
             params.addValue(VISIBILITY.name(), Optional.ofNullable(pipeline.getVisibility())
                     .map(Enum::name)
                     .orElse(null));
@@ -222,8 +235,11 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setOwner(rs.getString(OWNER.name()));
             pipeline.setRepositoryToken(rs.getString(REPOSITORY_TOKEN.name()));
             pipeline.setRepositoryType(RepositoryType.getById(rs.getLong(REPOSITORY_TYPE.name())));
+            pipeline.setPipelineType(PipelineType.getById(rs.getLong(PIPELINE_TYPE.name())));
+            pipeline.setConfigurationPath(rs.getString(CONFIG.name()));
             pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
             pipeline.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
+            pipeline.setBranch(rs.getString(BRANCH.name()));
             pipeline.setVisibility(getRunVisibility(rs.getString(VISIBILITY.name())));
             pipeline.setCodePath(rs.getString(CODE_PATH.name()));
             pipeline.setDocsPath(rs.getString(DOCS_PATH.name()));

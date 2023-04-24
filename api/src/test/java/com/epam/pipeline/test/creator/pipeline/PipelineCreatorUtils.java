@@ -90,19 +90,20 @@ public final class PipelineCreatorUtils {
         return new Pipeline();
     }
 
+    public static Pipeline getPipeline(final long id) {
+        return getPipeline(id, TEST_STRING);
+    }
+
+    public static Pipeline getPipeline(final Long id, final String owner) {
+        return getPipeline(id, owner, ID);
+    }
+
     public static Pipeline getPipeline(final Long id, final String owner, final Long parentId) {
         final Pipeline pipeline = getPipeline();
         pipeline.setId(id);
         pipeline.setOwner(owner);
         pipeline.setParentFolderId(parentId);
         pipeline.setCurrentVersion(getRevision());
-        return pipeline;
-    }
-
-    public static Pipeline getPipeline(final Long id, final String owner) {
-        final Pipeline pipeline = getPipeline();
-        pipeline.setId(id);
-        pipeline.setOwner(owner);
         return pipeline;
     }
 

@@ -242,7 +242,12 @@ dependencies {
     compile group: 'net.javacrumbs.shedlock', name: 'shedlock-spring', version: '3.0.0'
     compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: '3.0.0'
 
+    compile('io.reflectoring.diffparser:diffparser:1.4')
+
     compile 'dnsjava:dnsjava:3.4.3'
+
+    //Template engine
+    compile group: 'org.apache.velocity', name: 'velocity', version: '1.7'
 }
 
 // >>>>> processes profiles

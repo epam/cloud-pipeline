@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -46,6 +47,7 @@ import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -58,6 +60,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -126,6 +129,10 @@ public class FolderManagerTest extends AbstractSpringTest {
     @Mock
     private GitManager gitManagerMock;
 
+    @MockBean
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private PipelineRepositoryService pipelineRepositoryServiceMock;
+
     @Autowired
     private DataStorageManager dataStorageManager;
 
@@ -164,7 +171,8 @@ public class FolderManagerTest extends AbstractSpringTest {
         subFolder = new Folder();
         subFolder.setName(TEST_NAME_1);
         MockitoAnnotations.initMocks(this);
-        when(gitManagerMock.getPipelineRevisions(any(Pipeline.class))).thenReturn(Collections.emptyList());
+        when(pipelineRepositoryServiceMock.getPipelineRevisions(any(RepositoryType.class), any(Pipeline.class)))
+                .thenReturn(Collections.emptyList());
         pipelineManager.setGitManager(gitManagerMock);
     }
 

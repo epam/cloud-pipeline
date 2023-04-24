@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 
 public class ImpersonateFailureHandler implements AuthenticationFailureHandler, ImpersonateRequestHandler {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(ImpersonateFailureHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ImpersonateFailureHandler.class);
     private final String impersonationStartUrl;
     private final String impersonationStopUrl;
 
