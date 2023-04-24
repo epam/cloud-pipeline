@@ -31,8 +31,12 @@
 - [Storage lifecycle management](#storage-lifecycle-management)
 - [Image history](#image-history)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
+- [Data access audit](#data-access-audit)
+- [System Jobs](#system-jobs)
+- [Cluster run usage](#cluster-run-usage)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
+- [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
 
 ***
 
@@ -138,9 +142,10 @@ On all other object storage charts, bars are presented as stacks of _current ver
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_16.png)
 
 Also now, the detailed spendings table for object storages shows the info for spendings/usage in the format `total spendings/usage for all versions` / `spendings/usage for old versions only`:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_21.png)
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_21.png)  
+    Breakdown by versions is shown in the CSV report export as well.
 
-### Spendings for object storages layers
+### Spendings for object storages' archive layers
 
 As object storages supports archiving data into different archive tiers (layers), it is convenient to view spendings separately for each layer.  
 From the current version, the **Object storages** report supports the displaying of the corresponding related information.  
@@ -152,13 +157,38 @@ Object storage layers chart can show the information as storages usage costs - i
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_18.png)
 
 If data in the storage is storing in different tiers (archive types), this can be viewed in a tooltip of other object storages charts - there will be a division of spendings by the used tiers, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_19.png)
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_19.png)  
+Breakdown by archive layers is shown in the CSV report export as well.
 
 User can select one of the object storage layers - by click it on this new chart.  
 In this case, all charts and tables will be updated - only storages, that contain files in the selected layer type, will be shown in forms.  
 Also, shown spendings/data volume will be related only to files in the selected layer, not for the whole storage(s) or other layers.  
 For example, `Glasier IR` was selected:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_20.png)
+
+### Spendings in runs cost layers
+
+From the current version, the **Compute instances** report (and sub-reports - for CPU/GPU) supports the displaying of the runs cost division into layers:
+
+- `Compute` - cost of compute instances used in runs
+- `Disk` - cost of EBS drives connected to runs during their performing
+
+This information is shown on the new **_Cost details_** chart - bar chart with division to these layers. This chart does not contain any information for _previous_ period - only cost of runs' layers in the _current_ period according to selected filters are shown.
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_22.png)
+
+Additionally, information about cost division are shown in details tables under charts **_Instance types_**, **_Pipelines_**, **_Tools_** - as separate columns, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_23.png)
+
+User can select one of the runs cost layers - by click it in the **_Cost details_** chart.  
+In this case:
+
+- summary runs cost chart will be updated - only summary spendings, that correspond to the selected layer (`Compute` or `Disk`), will be shown
+- charts **_Instance types_**, **_Pipelines_**, **_Tools_** will be updated - only spendings, that correspond to the selected layer (`Compute` or `Disk`), will be shown
+- data in tables under charts will not be changed, but the sorting column will be set the same as the selected layer
+
+For example, if the `Compute` layer of the runs cost is selected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_24.png)
 
 ### Displaying different user's attributes in the Billing reports
 
@@ -1019,7 +1049,7 @@ See example [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#r
 Previously, if the **Cloud Pipeline** Platform was being deployed in some private subnet, it could be quite difficult for the admin to expose a network endpoint for some service to use in a Platform. This required manual execution of a number of tasks on the Platform Core instance and, accordingly, might lead to errors.  
 To resolve this, in the current version, the convenient way to manage network routes (creating/removing) from the GUI was implemented.
 
-For that, a new **NAT gateway** subtab was added to the [**System Management**](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-management) section of the System settings.  
+For that, a new **NAT gateway** subtab was added to the [**System Management**](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-management) section of the **System Settings**.  
 The **NAT gateway** subtab allows to configure network routes:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_01.png)
 
@@ -1165,6 +1195,79 @@ During the synchronization, changes are being performed only in the **_destinati
 
 For details and examples see [here](../../installation/management/environments_sync.md).
 
+## Data access audit
+
+In the current version, [System logs](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-logs) were expanded - now, all actions related to any access to the data stored in the object storages are being logged.  
+This includes logging of operations _READ_/_WRITE_/_DELETE_, listing operation is not logged.
+
+For logs of data access events, a new item was added to the "**Type**" filter of the System logs - `audit` type:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_1.png)
+
+By this type, the following data access operations are being logged:
+
+- access to the Object storages data from the Platform GUI
+- access to the Object storages data from the `pipe` CLI
+- access to the mounted Object storages' data - both from GUI and CLI
+
+Examples of logs:  
+![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_2.png)
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_3.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.12._System_logs.md#type-filter).
+
+## System Jobs
+
+Sometimes it's desirable for admin to get some statistics or system information about current Cloud Pipeline deployment state - for example, collect information about all storages that have specific size or list all unattached `EBS` volumes, or set some specific policy to all storages, etc.  
+For such purposes, specific scripts can be written and launched in some way. Number of these "admin" scripts can grow very quickly and it would be convenient to have some solution to create and run such scripts in a system, and also view results (logs) and store them.
+
+In the current version, a new solution was implemeted for "admin" scripts - **System Jobs**.  
+System jobs solution uses the existing Cloud-Pipeline infrastructure, to reduce number of preparation steps to be done to get desire output.  
+
+In a nutshell, the **System Jobs** solution includes the following:
+
+- special prepared system pipeline, that contains system jobs scripts. Admin can add new scripts or edit/delete existing ones. Also, pipeline config contains:  
+    - `Kubernetes` service account to perform `kubectl` commands from such pipeline during the system job run
+    - special assign policy that allows to assign the pipeline to one of the running system node (`MASTER` node, for example). It is convenient as no additional instances (waiting or initializing ones) are required to perform a job
+- special prepared docker image that includes pre-installed packages such as system packages (`curl`, `nano`, `git`, etc.), `kubectl`, `pipe` CLI, Cloud CLI (`AWS`/`Azure`/`GCP`), `LustreFS` client
+- separate **System Jobs** form that displays all available system job scripts, allows to run existing scripts and view results of their performing
+
+Userjourney looks like:
+
+1. Admin creates a new system job script and places it to the specific path inside the special system pipeline (_pipeline and path are defined by System Preferences_), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_1.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_3.png)
+2. Admin opens the **System Jobs** panel from the **System Settings**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_4.png)  
+    Here, there is the whole list of stored system scripts and results of their runs.
+3. To run a script - admin selects any script and launch it:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_5.png)
+4. When admin launches a system job - the system instance (`MASTER` instance, by default) is used for the job performing. At that system instance, the docker-container is launched from the special prepared docker-image for system jobs. In the launched docker-container, the system job script is being performed.
+5. At the **System jobs** form, states of the performing job are shown similar to the pipeline states, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_6.png)
+6. Once the script is performed, the state will be changed to **Success**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_7.png)
+7. By the button **LOG**, the script performing output can be viewed:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_8.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.15._System_jobs.md).
+
+## Cluster run usage
+
+Previously, user can view the state of the cluster run (master and its nested runs) via the **Run logs** page of the cluster master node. But this information was actual only at the specific time moment.  
+It would be convenient to view how the cluster usage has been changing over the whole cluster run duration.  
+This is especially useful information for auto-scaled clusters, as the number of worker nodes in such clusters can vary greatly over time.
+
+In **`v0.17`**, such ability was added. User can view a specific cluster's usage over time - by click the corresponding hyperlink at the **Run logs** page of the cluster's master node:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterUsage_1.png)  
+The chart pop-up will be opened, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterUsage_2.png)
+
+The chart shows a cluster usage - number of all active instances (including the master node) of the current cluster over time.
+
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#cluster-run-usage).
+
 ## AWS: seamless authentication
 
 In some cases, users are faced with the following scenarios:
@@ -1222,6 +1325,30 @@ Example:
 
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_TransferBetweenRegions_1.png)
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_TransferBetweenRegions_2.png)
+
+## AWS: switching of Cloud Regions for launched jobs in case of insufficient capacity
+
+Previously, if user started an `AWS` job and there were not enough instances of specified type to launch that job in a region - it would fail.  
+In the current version, the ability to automatically relaunch such runs in other `AWS` region(s) was implemented.  
+
+For that functionality, a new setting was added to the Cloud Region configuration - "**Run shift policy**":  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_1.png)
+
+If this setting is enabled for some `AWS region 1` and for some `AWS region 2` - then a job launched in the `AWS region 1` will automatically try to be relaunched in the `AWS region 2` in case when there are not enough instances of selected type in the `AWS region 1` (`InsufficientInstanceCapacity` error):
+
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_2.png)
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_3.png)
+
+Original job is being automatically stopped, new job with the same instance type as in the original run but in the `AWS region 2` will be launched.  
+If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".
+
+Feature is not available:
+
+- for spot runs
+- for runs that have any Cloud dependent parameter
+- for worker or cluster runs
+
+More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
 
 ***
 
