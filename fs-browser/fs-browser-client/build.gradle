@@ -25,7 +25,7 @@ task build(type: NpmTask, dependsOn: npmInstall) {
   group = 'build'
   environment = ['CI': 'false']
   doFirst {
-    delete fileTree("$rootDir/fs-browser/fs-browser/static")
+    delete fileTree("$rootDir/fs-browser/fsbrowser/static")
   }
   args = ['run', 'build']
   doLast {
