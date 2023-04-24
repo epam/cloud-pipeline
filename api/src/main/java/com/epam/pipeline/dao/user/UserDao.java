@@ -266,6 +266,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         FIRST_LOGIN_DATE,
         USER_BLOCK_DATE,
         LAST_LOGIN_DATE,
+        EXTERNAL_BLOCK_DATE,
         ONLINE;
 
         private static MapSqlParameterSource getParameterSource(Long userId, Long roleId) {
@@ -288,6 +289,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             params.addValue(FIRST_LOGIN_DATE.name(), user.getFirstLoginDate());
             params.addValue(USER_BLOCK_DATE.name(), user.getBlockDate());
             params.addValue(LAST_LOGIN_DATE.name(), user.getLastLoginDate());
+            params.addValue(EXTERNAL_BLOCK_DATE.name(), user.getExternalBlockDate());
             return params;
         }
 
@@ -371,6 +373,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             user.setFirstLoginDate(DaoHelper.parseTimestamp(rs, FIRST_LOGIN_DATE.name()));
             user.setBlockDate(DaoHelper.parseTimestamp(rs, USER_BLOCK_DATE.name()));
             user.setLastLoginDate(DaoHelper.parseTimestamp(rs, LAST_LOGIN_DATE.name()));
+            user.setExternalBlockDate(DaoHelper.parseTimestamp(rs, EXTERNAL_BLOCK_DATE.name()));
 
             long defaultStorageId = rs.getLong(USER_DEFAULT_STORAGE_ID.name());
             if (!rs.wasNull()) {
