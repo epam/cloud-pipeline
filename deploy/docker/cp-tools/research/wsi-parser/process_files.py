@@ -26,6 +26,7 @@ import traceback
 import urllib
 import xml.etree.ElementTree as ET
 
+from collections import OrderedDict
 from abc import ABCMeta, abstractmethod
 from pipeline.api import PipelineAPI, TaskStatus
 from pipeline.log import Logger
@@ -36,8 +37,9 @@ TAGS_MAPPING_RULE_DELIMITER = ','
 TAGS_MAPPING_KEYS_DELIMITER = '='
 SCHEMA_PREFIX = '{http://www.openmicroscopy.org/Schemas/OME/2016-06}'
 WSI_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('WSI_ACTIVE_PROCESSING_TIMEOUT_MIN', 360))
-DZ_TILES_SIZE = int(os.getenv('WSI_PARSING_DZ_TILES_SIZE', 256))
+ZOOM_TILES_SIZE = int(os.getenv('WSI_PARSING_DZ_TILES_SIZE', 256))
 TAGS_PROCESSING_ONLY = os.getenv('WSI_PARSING_TAGS_ONLY', 'false') == 'true'
+TARGET_FORMAT = os.getenv('WSI_PARSING_TARGET_FORMAT', 'DZ')
 REFR_IND_CAT_ATTR_NAME = os.getenv('WSI_PARSING_REFR_IND_CAT_ATTR_NAME', 'Immersion liquid')
 EXTENDED_FOCUS_CAT_ATTR_NAME = os.getenv('WSI_PARSING_EXTENDED_FOCUS_CAT_ATTR_NAME', 'Extended Focus')
 MAGNIFICATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
@@ -746,6 +748,11 @@ class WsiFileTagProcessor:
         attribute_updates = list()
         pipe_tags = list()
         for attribute_name, values_to_push in tags_to_push.items():
+            if not attribute_name in existing_attributes_dictionary:
+                self.log_processing_info(
+                    '"{}" is not registered as Dictionary in API, this tag will be skipped for processing!'
+                    .format(attribute_name))
+                continue
             if len(values_to_push) > 1:
                 self.log_processing_info('Multiple tags matches occurred for "{}": [{}]'
                                          .format(attribute_name, values_to_push))
@@ -844,6 +851,8 @@ class WsiFileParser:
                                      'label image', 'overview image', 'thumbnail image'}
     _DEEP_ZOOM_CREATION_SCRIPT = os.path.join(os.getenv('WSI_PARSER_HOME', '/opt/local/wsi-parser'),
                                               'create_deepzoom.sh')
+    _OME_TIFF_CREATION_SCRIPT = os.path.join(os.getenv('WSI_PARSER_HOME', '/opt/local/wsi-parser'),
+                                              'create_pyramid_ome_tiff.sh')
 
     def __init__(self, file_path):
         self.file_path = file_path
@@ -897,7 +906,7 @@ class WsiFileParser:
         with open(stat_file_path, 'w') as output_file:
             output_file.write(json.dumps(details, indent=4))
 
-    def update_dz_info_file(self, original_width, original_height):
+    def update_info_file(self, original_width, original_height):
         tiles_dir = self._get_tiles_dir()
         max_zoom = self._max_zoom_level(tiles_dir)
         if max_zoom < 0:
@@ -931,13 +940,13 @@ class WsiFileParser:
             'height': height,
             'minLevel': 0,
             'maxLevel': max_dz_level,
-            'tileWidth': DZ_TILES_SIZE,
-            'tileHeight': DZ_TILES_SIZE,
+            'tileWidth': ZOOM_TILES_SIZE,
+            'tileHeight': ZOOM_TILES_SIZE,
             'bounds': [0, width, 0, height]
         }
         self.log_processing_info(
             'Saving preview settings [width={}; height={}; tiles={}; maxLevel={}] to JSON configuration [{}]'.format(
-                width, height, DZ_TILES_SIZE, max_dz_level, dz_info_file_path))
+                width, height, ZOOM_TILES_SIZE, max_dz_level, dz_info_file_path))
         with open(dz_info_file_path, 'w') as output_file:
             output_file.write(json.dumps(details, indent=4))
 
@@ -947,20 +956,23 @@ class WsiFileParser:
         self.log_processing_info('Following image groups are found: {}'.format(series_mapping.keys()))
         target_group = None
         target_image_details = None
+        target_group_inx = 0
         for group_name in series_mapping.keys():
             if group_name not in self.service_image_groups:
                 target_group = group_name
                 break
+            target_group_inx = target_group_inx + 1
         self.log_processing_info('Target group is: {}'.format(target_group))
         if target_group:
             target_image_details = series_mapping[target_group][0]
-        return target_image_details
+            self.log_processing_info('Target group is: {} {} {}'.format(target_image_details.id, target_image_details.name, target_image_details.refractive_index))
+        return target_group_inx, target_image_details
 
     def group_image_series(self, images):
         base_name = os.path.basename(self.file_path)
         current_group_name = ''
         current_group_details_list = []
-        series_mapping = {}
+        series_mapping = OrderedDict()
         for i in range(0, len(images)):
             image_details = images[i]
             name = image_details.get('Name')
@@ -1018,13 +1030,12 @@ class WsiFileParser:
                 and not WsiParsingUtils.active_processing_exceed_timeout(self.tmp_stat_file_name):
             log_info('This file is processed by another parser, skipping...')
             return 0
-        target_image_details = self.calculate_target_series()
+        target_group_inx, target_image_details = self.calculate_target_series()
         if target_image_details is None or target_image_details.id is None:
             self.log_processing_info('Unable to determine target series, skipping DZ creation... ')
             return 1
         target_series = target_image_details.id
         self.create_tmp_stat_file(target_image_details)
-        self._mkdir(self._get_tiles_dir())
         tags_processing_result = self.try_process_tags(target_image_details)
         if TAGS_PROCESSING_ONLY:
             return tags_processing_result
@@ -1033,22 +1044,38 @@ class WsiFileParser:
                                      .format(target_series))
             self.update_stat_file(target_image_details)
             return 0
-        self.log_processing_info('Series #{} selected for DZ creation [width={}; height={}]'
+        self.log_processing_info('Series #{} selected for conversions [width={}; height={}]'
                                  .format(target_series, target_image_details.width, target_image_details.height))
         if not self._localize_related_files():
             self.log_processing_info('Some errors occurred during copying files from the bucket, exiting...')
             return 1
         local_file_path = os.path.join(self.tmp_local_dir, os.path.basename(self.file_path))
-        conversion_result = os.system('bash "{}" "{}" {} {} "{}" "{}" >> $ANALYSIS_DIR/parser-create-dz-$RUN_ID.log 2>&1'
-                                      .format(self._DEEP_ZOOM_CREATION_SCRIPT,
-                                              local_file_path,
-                                              target_series,
-                                              DZ_TILES_SIZE,
-                                              self._get_tiles_dir(),
-                                              self.tmp_local_dir))
+        if TARGET_FORMAT == "DZ":
+            self.log_processing_info('DZ is configured as conversion format for the file!')
+            self._mkdir(self._get_tiles_dir())
+            conversion_result = os.system('bash "{}" "{}" {} {} "{}" "{}" >> $ANALYSIS_DIR/parser-create-dz-$RUN_ID.log 2>&1'
+                                          .format(self._DEEP_ZOOM_CREATION_SCRIPT,
+                                                  local_file_path,
+                                                  target_series,
+                                                  ZOOM_TILES_SIZE,
+                                                  self._get_tiles_dir(),
+                                                  self.tmp_local_dir))
+        elif TARGET_FORMAT == "OME_TIFF":
+            self.log_processing_info('OME_TIFF is configured as conversion format for the file!')
+            conversion_result = os.system('bash "{}" "{}" {} {} "{}" "{}" >> $ANALYSIS_DIR/parser-create-ome-tiff-$RUN_ID.log 2>&1'
+                                          .format(self._OME_TIFF_CREATION_SCRIPT,
+                                                  local_file_path,
+                                                  target_group_inx,
+                                                  ZOOM_TILES_SIZE,
+                                                  WsiParsingUtils.get_service_directory(self.file_path),
+                                                  self.tmp_local_dir))
+        else:
+            self.log_processing_info('Target format: {} is not supported, exiting...'.format(TARGET_FORMAT))
+            return 1
         if conversion_result == 0:
             self.update_stat_file(target_image_details)
-            self.update_dz_info_file(target_image_details.width, target_image_details.height)
+            if TARGET_FORMAT == "DZ":
+                self.update_info_file(target_image_details.width, target_image_details.height)
             self.log_processing_info('File processing is finished')
         else:
             self.log_processing_info('File processing was not successful')
