@@ -59,7 +59,7 @@ public class LdapBlockedUsersManager {
     private final PreferenceManager preferenceManager;
 
     /**
-     * This method filters out LDAP blocked users from source users list
+     * This method filters out LDAP non-blocked users from source users list
      *
      * @param users source users
      * @return returns LDAP blocked users only
