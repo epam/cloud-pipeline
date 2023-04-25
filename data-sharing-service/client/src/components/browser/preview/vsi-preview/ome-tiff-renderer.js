@@ -27,6 +27,7 @@ import SourceState from '../../../special/hcs-image/utilities/source-state';
 import Channels from '../../../special/hcs-image/hcs-image-controls/channels';
 import ColorMap from '../../../special/hcs-image/hcs-image-controls/color-map';
 import LoadingView from '../../../special/LoadingView';
+import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 import styles from './ome-tiff-renderer.css';
 
 @observer
@@ -122,6 +123,13 @@ class OmeTiffRenderer extends React.Component {
           state.offsets = offsetsJsonPath
             ? (await storage.generateFileUrl(offsetsJsonPath))
             : undefined;
+          auditStorageAccessManager.reportReadAccess(...[{
+            storageId,
+            path: omeTiffPath
+          }, offsetsJsonPath ? {
+            storageId,
+            path: offsetsJsonPath
+          } : undefined].filter(Boolean));
         } catch (error) {
           state.error = error.message;
         } finally {
