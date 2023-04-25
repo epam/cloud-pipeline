@@ -22,6 +22,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,5 +102,11 @@ public final class CommonUtils {
         }
         return StreamSupport.stream(items.spliterator(), false)
                 .collect(Collectors.toList());
+    }
+
+    public static <T> List<T> subtract(final List<T> left, final List<T> right) {
+        final List<T> result = new ArrayList<>(left);
+        result.removeAll(right);
+        return result;
     }
 }

@@ -17,24 +17,18 @@
 <p>Dear user,</p>
 <p>*** This is a system generated email, do not reply to this email ***</p>
 #if( ${CP_DOLLAR}templateParameters["pipelineUsers"] )
-<p>The following users were blocked since they are blocked in LDAP.</p>
+<p>The following users have been blocked in LDAP. In several days these users will be blocked in $CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME as well.</p>
 <table>
     <tr>
         <th>User ID</th>
         <th>Email</th>
-        <th>Storage Name</th>
-        <th>Creation Date</th>
-        <th>Last Login Date</th>
-        <th>Blocked Date</th>
+        <th>LDAP blocked date</th>
     </tr>
     #foreach( ${CP_DOLLAR}user in ${CP_DOLLAR}templateParameters["pipelineUsers"] )
     <tr>
         <td>${CP_DOLLAR}user.name</td>
         #if( ${CP_DOLLAR}user.email )<td>${CP_DOLLAR}user.email</td>#else<td></td>#end
-        #if( ${CP_DOLLAR}user.storage_name )<td>${CP_DOLLAR}user.storage_name</td>#else<td></td>#end
-        ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.registration_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>
-        #if( ${CP_DOLLAR}user.last_login_date ) ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.last_login_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>#else<td></td>#end
-        #if( ${CP_DOLLAR}user.block_date ) ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.block_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>#else<td></td>#end
+        #if( ${CP_DOLLAR}user.external_block_date ) ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.external_block_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>#else<td></td>#end
     </tr>
     #end
 </table>

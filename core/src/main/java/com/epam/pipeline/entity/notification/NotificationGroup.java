@@ -25,5 +25,6 @@ public enum NotificationGroup {
     LONG_STATUS,
     LONG_PAUSED,
     USER,
-    NODE_POOL
+    NODE_POOL,
+    DATASTORAGE_LIFECYCLE
 }

@@ -865,6 +865,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         if (Objects.nonNull(user.getBlockDate())) {
             userArguments.put("block_date", user.getBlockDate());
         }
+        if (Objects.nonNull(user.getExternalBlockDate())) {
+            userArguments.put("external_block_date", user.getExternalBlockDate());
+        }
         return userArguments;
     }
 

@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
@@ -150,6 +151,27 @@ public class UserDaoTest extends AbstractSpringTest {
 
         final Collection<PipelineUser> usersAfterDeletion = userDao.loadAllUsers();
         assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
+    }
+
+    @Test
+    public void testUpdateUserExternalBlockDate() {
+        final PipelineUser user = new PipelineUser();
+        user.setUserName(TEST_USER1);
+        final PipelineUser savedUser = userDao.createUser(user, Collections.singletonList(
+                DefaultRoles.ROLE_USER.getId()));
+
+        final PipelineUser userById = userDao.loadUserById(savedUser.getId());
+        assertNull(userById.getExternalBlockDate());
+
+        savedUser.setExternalBlockDate(DateUtils.nowUTC());
+        userDao.updateUser(savedUser);
+        final PipelineUser loadedUser1 = userDao.loadUserById(savedUser.getId());
+        assertEquals(savedUser.getExternalBlockDate(), loadedUser1.getExternalBlockDate());
+
+        savedUser.setExternalBlockDate(null);
+        userDao.updateUser(savedUser);
+        final PipelineUser loadedUser2 = userDao.loadUserById(savedUser.getId());
+        assertEquals(savedUser.getExternalBlockDate(), loadedUser2.getExternalBlockDate());
     }
 
     private void deleteUserAndHisRoles(final PipelineUser savedUser) {

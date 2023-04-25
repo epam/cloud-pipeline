@@ -1,0 +1,6 @@
+{
+  "keepInformedAdmins": true,
+  "keepInformedOwner": false,
+  "enabled": true,
+  "subject": "Users will be blocked"
+}
