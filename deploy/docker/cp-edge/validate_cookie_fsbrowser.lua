@@ -12,6 +12,10 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
+local function is_empty(s)
+    return s == nil or s == ''
+end
+
 local function is_int(n)
     return tonumber(n) ~= nil
 end
@@ -63,6 +67,10 @@ end
 
 -- Check if request alread contains a cookie "bearer"
 local token = ngx.var.cookie_bearer
+-- If no "bearer" cookie - check in headers
+if token == nil then
+    token = ngx.req.get_headers()['bearer']
+end
 if token then
     -- If cookie present - validate it
     local cert_path = os.getenv("JWT_PUB_KEY")
@@ -127,6 +135,14 @@ if token then
     local trailing_req_uri = ''
     if (uri_parts_len > 0) then
         trailing_req_uri = arr_to_string(uri_parts, '/')
+        -- Do not add a trailing slash to the URIs with parameters
+        if not string.match(trailing_req_uri, '?') then
+            trailing_req_uri = trailing_req_uri .. '/'
+        end
+    end
+    -- Normalize URI if there is no trailing part
+    if is_empty(trailing_req_uri) then
+        trailing_req_uri = '/'
     end
 
     -- Now we need to get the target IP (i.e. Pod IP) and the access token 
