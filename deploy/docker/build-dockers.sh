@@ -242,6 +242,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-billing-srv \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_BILLING_SRV_DIST_NAME"
 
+# GitLab Reader Service
+CP_GITLAB_READER_SRV_DIST_NAME=${CP_GITLAB_READER_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:gitlab-reader-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-gitlab-reader \
+                -t "$CP_GITLAB_READER_SRV_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_GITLAB_READER_SRV_DIST_NAME"
+
 # Tinyproxy
 CP_TP_DIST_NAME=${CP_TP_DIST_NAME:-"$CP_DIST_REPO_NAME:tinyproxy-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-tinyproxy \
