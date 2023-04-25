@@ -75,7 +75,7 @@ class S3Storage {
   }
 
   set prefix (value) {
-    if (value.endsWith('/')) {
+    if (value && value.endsWith('/')) {
       this._prefix = value;
     } else {
       this._prefix = value ? `${value}/` : '';
