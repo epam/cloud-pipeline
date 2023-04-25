@@ -33,6 +33,7 @@ import S3Storage from '../../../../models/s3-upload/s3-storage';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import {API_PATH, SERVER, PUBLIC_URL} from '../../../../config';
+import OmeTiffRenderer from './ome-tiff-renderer';
 import styles from '../preview.css';
 import './girder-mock/index';
 import '../../../../staticStyles/sa-styles.css';
@@ -108,10 +109,32 @@ function readStorageFileJson (storage, path) {
   });
 }
 
-function getTilesFromFolder (storageId, folder) {
+const TilesType = {
+  omeTiff: 'ome.tiff',
+  deepZoom: 'deep zoom'
+};
+
+function getTilesFromFolder (storageId, folder, name) {
   return new Promise((resolve) => {
     getFolderContents(storageId, folder)
       .then(tiles => {
+        const nameRegExp = new RegExp(`^${name}\\.ome\\.tiff$`, 'i');
+        const offsetsRegExp = new RegExp(`^${name}\\.offsets\\.json$`, 'i');
+        const omeTiff = (tiles || [])
+          .find((aFile) => /^file$/i.test(aFile.type) && nameRegExp.test(aFile.name));
+        const omeTiffOffsets = (tiles || [])
+          .find((aFile) => /^file$/i.test(aFile.type) && offsetsRegExp.test(aFile.name));
+        if (omeTiff) {
+          resolve({
+            folder,
+            type: TilesType.omeTiff,
+            info: {
+              path: omeTiff.path,
+              offsets: omeTiffOffsets ? omeTiffOffsets.path : undefined
+            }
+          });
+          return;
+        }
         if (tiles && tiles.length > 0) {
           readStorageFileJson(
             storageId,
@@ -120,7 +143,8 @@ function getTilesFromFolder (storageId, folder) {
             .then(info => {
               resolve({
                 folder,
-                info
+                info,
+                type: TilesType.deepZoom
               });
             });
         } else {
@@ -130,18 +154,18 @@ function getTilesFromFolder (storageId, folder) {
   });
 }
 
-function getTiles (storageId, folders) {
+function getTiles (storageId, folders, name) {
   if (!folders || !folders.length) {
     return Promise.resolve(undefined);
   }
   const [folder, ...restFolders] = folders;
   return new Promise((resolve) => {
-    getTilesFromFolder(storageId, folder)
+    getTilesFromFolder(storageId, folder, name)
       .then((tiles) => {
         if (tiles) {
           return Promise.resolve(tiles);
         } else {
-          return getTiles(storageId, restFolders);
+          return getTiles(storageId, restFolders, name);
         }
       })
       .then(resolve);
@@ -155,10 +179,29 @@ function getTilesInfo (file) {
     return {
       tilesFolders: [
         `${e[1] || ''}.wsiparser/${e[2] || ''}/tiles`,
-        `${filePathWithoutExtension}.tiles`
+        `${filePathWithoutExtension}.tiles`,
+        `${e[1] || ''}.wsiparser/${e[2] || ''}`
       ],
-      folder: filePathWithoutExtension
+      folder: filePathWithoutExtension,
+      name: e[2] || ''
     };
+  }
+  return undefined;
+}
+
+async function getPreviewConfiguration (storageId, file) {
+  try {
+    const info = getTilesInfo(file);
+    if (!info) {
+      return undefined;
+    }
+    const {
+      tilesFolders,
+      name
+    } = info;
+    return await getTiles(storageId, tilesFolders, name);
+  } catch (error) {
+    console.warn(error.message);
   }
   return undefined;
 }
@@ -169,6 +212,7 @@ class VSIPreview extends React.Component {
   state = {
     items: [],
     tiles: false,
+    omeTiff: false,
     preview: undefined,
     active: undefined,
     pending: false,
@@ -343,25 +387,128 @@ class VSIPreview extends React.Component {
   reportPreviewLoaded = () => {
     const {onPreviewLoaded, onHideInfo} = this.props;
     const {
-      tiles
+      tiles,
+      omeTiff
     } = this.state;
     if (onPreviewLoaded) {
       onPreviewLoaded({
-        maximizedAvailable: !!tiles,
+        maximizedAvailable: !!tiles || !!omeTiff,
         requireMaximumSpace: true
       });
     }
     if (onHideInfo) {
-      onHideInfo(!!tiles);
+      onHideInfo(!!tiles || !!omeTiff);
     }
+  };
+
+  fetchOmeTiffData = (info) => {
+    const {
+      path,
+      offsets
+    } = info || {};
+    if (!path) {
+      this.setState({
+        items: [],
+        tiles: false,
+        omeTiff: false,
+        pending: false
+      }, this.reportPreviewLoaded);
+    }
+    this.setState({
+      items: [],
+      tiles: false,
+      omeTiff: {
+        path,
+        offsets
+      },
+      pending: false
+    }, this.reportPreviewLoaded);
+  };
+
+  fetchDeepZoomData = (configuration) => {
+    const {
+      file,
+      storageId,
+      preferences,
+      dataStorageCache
+    } = this.props;
+    const result = {...(configuration || {})};
+    const tagsRequest = dataStorageCache.getTags(storageId, file);
+    tagsRequest
+      .fetch()
+      .then(() => preferences.fetchIfNeededOrWait())
+      .then(() => {
+        let magnification;
+        if (
+          tagsRequest.loaded &&
+          tagsRequest.value &&
+          tagsRequest.value.hasOwnProperty(magnificationTagName)
+        ) {
+          let [, value = ''] = /([\d\\.\\,]+)/
+            .exec(tagsRequest.value[magnificationTagName]) || [];
+          if (value) {
+            magnification = Number(value.replace(/,/g, '.'));
+            if (Number.isNaN(magnification)) {
+              magnification = undefined;
+            }
+          }
+        }
+        if (!result.info) {
+          result.info = {};
+        }
+        result.info.scannedAt = magnification;
+        result.info.maxZoomLevel = magnification
+          ? preferences.vsiPreviewMagnificationMultiplier * magnification
+          : undefined;
+        this.setState({
+          items: [],
+          tiles: result,
+          omeTiff: false,
+          pending: false
+        }, this.reportPreviewLoaded);
+      });
+  };
+
+  fetchSlideShowData = (folder) => {
+    const {
+      storageId,
+      dataStorageCache
+    } = this.props;
+    getFolderContents(storageId, folder)
+      .then(items => {
+        const files = items
+          .filter(item => /^file$/i.test(item.type))
+          .map(item => ({
+            ...item,
+            extension: (item.path || '').split('.').pop()
+          }))
+          .filter(item => /^(png|jpg|jpeg|tiff|gif|svg)$/i.test(item.extension))
+          .map(item => ({
+            ...item,
+            preview: dataStorageCache.getDownloadUrl(
+              storageId,
+              item.path,
+              undefined,
+              true
+            )
+          }));
+        this.setState({
+          items: files,
+          tiles: false,
+          omeTiff: false,
+          pending: false
+        }, () => {
+          this.onChangePreview(items.length > 0 ? items[0].path : undefined);
+          this.reportPreviewLoaded();
+        });
+      });
   };
 
   fetchPreviewItems = () => {
     const {
       file,
       storageId,
-      dataStorageCache,
-      preferences
+      dataStorageCache
     } = this.props;
     if (this.saViewer) {
       this.saViewer = undefined;
@@ -371,6 +518,7 @@ class VSIPreview extends React.Component {
       this.setState({
         items: [],
         tiles: false,
+        omeTiff: false,
         active: undefined,
         preview: undefined,
         pending: false,
@@ -380,84 +528,22 @@ class VSIPreview extends React.Component {
       this.setState({
         items: [],
         tiles: false,
+        omeTiff: false,
         active: undefined,
         preview: undefined,
         pending: true,
         showAttributes: false
       }, () => {
-        const tilesInfo = getTilesInfo(file);
-        if (tilesInfo) {
-          getTiles(storageId, tilesInfo.tilesFolders)
-            .then(tiles => {
-              if (tiles) {
-                const tagsRequest = dataStorageCache.getTags(storageId, file);
-                tagsRequest
-                  .fetch()
-                  .then(() => preferences.fetchIfNeededOrWait())
-                  .then(() => {
-                    let magnification;
-                    if (
-                      tagsRequest.loaded &&
-                      tagsRequest.value &&
-                      tagsRequest.value.hasOwnProperty(magnificationTagName)
-                    ) {
-                      let [, value = ''] = /([\d\\.\\,]+)/
-                        .exec(tagsRequest.value[magnificationTagName]) || [];
-                      if (value) {
-                        magnification = Number(value.replace(/,/g, '.'));
-                        if (Number.isNaN(magnification)) {
-                          magnification = undefined;
-                        }
-                      }
-                    }
-                    if (!tiles.info) {
-                      tiles.info = {};
-                    }
-                    tiles.info.scannedAt = magnification;
-                    tiles.info.maxZoomLevel = magnification
-                      ? preferences.vsiPreviewMagnificationMultiplier * magnification
-                      : undefined;
-                    this.setState({
-                      items: [],
-                      tiles,
-                      pending: false
-                    }, this.reportPreviewLoaded);
-                  });
-              } else {
-                getFolderContents(storageId, tilesInfo.folder)
-                  .then(items => {
-                    const files = items
-                      .filter(item => /^file$/i.test(item.type))
-                      .map(item => ({
-                        ...item,
-                        extension: (item.path || '').split('.').pop()
-                      }))
-                      .filter(item => /^(png|jpg|jpeg|tiff|gif|svg)$/i.test(item.extension))
-                      .map(item => ({
-                        ...item,
-                        preview: dataStorageCache.getDownloadUrl(
-                          storageId,
-                          item.path,
-                          undefined,
-                          true
-                        )
-                      }));
-                    this.setState({
-                      items: files,
-                      tiles: false,
-                      pending: false
-                    }, () => {
-                      this.onChangePreview(items.length > 0 ? items[0].path : undefined);
-                      this.reportPreviewLoaded();
-                    });
-                  });
-              }
-            });
-        } else {
-          this.setState({
-            pending: false
-          }, this.reportPreviewLoaded);
-        }
+        getPreviewConfiguration(storageId, file)
+          .then((configuration) => {
+            if (configuration && configuration.type === TilesType.omeTiff) {
+              this.fetchOmeTiffData(configuration.info);
+            } else if (configuration) {
+              this.fetchDeepZoomData(configuration);
+            } else {
+              this.fetchSlideShowData(configuration.folder);
+            }
+          });
       });
     }
   };
@@ -466,9 +552,10 @@ class VSIPreview extends React.Component {
     const {
       active,
       items = [],
-      tiles
+      tiles,
+      omeTiff
     } = this.state;
-    if (tiles) {
+    if (tiles || omeTiff) {
       return null;
     }
     if (items.length === 0) {
@@ -515,9 +602,10 @@ class VSIPreview extends React.Component {
       preview,
       pending,
       items,
-      tiles
+      tiles,
+      omeTiff
     } = this.state;
-    if (!preview || !items || !items.length || tiles) {
+    if (!preview || !items || !items.length || tiles || omeTiff) {
       return null;
     }
     const {
@@ -938,6 +1026,61 @@ class VSIPreview extends React.Component {
     );
   };
 
+  renderOmeTiff () {
+    const {
+      storageId,
+      fullscreen,
+      fullScreenAvailable,
+      onFullScreenChange,
+      children
+    } = this.props;
+    const {
+      omeTiff
+    } = this.state;
+    if (!omeTiff || !storageId) {
+      return null;
+    }
+    const {
+      path,
+      offsets
+    } = omeTiff;
+    const goFullScreen = () => {
+      if (fullScreenAvailable && onFullScreenChange) {
+        onFullScreenChange(!fullscreen);
+      }
+    };
+    return (
+      <div
+        className={
+          classNames(
+            styles.omeTiffContentPreview,
+            {[styles.fullscreen]: fullscreen}
+          )
+        }
+      >
+        {
+          fullScreenAvailable && !fullscreen && (
+            <Icon
+              type="arrows-alt"
+              onClick={goFullScreen}
+              className={styles.omeTiffPreviewFullscreenButton}
+            />
+          )
+        }
+        <OmeTiffRenderer
+          storageId={storageId}
+          omeTiffPath={path}
+          offsetsJsonPath={offsets}
+          fullScreenAvailable={fullscreen}
+          onChangeFullScreen={goFullScreen}
+          fullscreen={fullscreen}
+        >
+          {children}
+        </OmeTiffRenderer>
+      </div>
+    );
+  }
+
   render () {
     const {
       className
@@ -955,6 +1098,7 @@ class VSIPreview extends React.Component {
         {!pending && this.renderSlides()}
         {!pending && this.renderPreview()}
         {!pending && this.renderTiles()}
+        {!pending && this.renderOmeTiff()}
       </div>
     );
   }
@@ -984,4 +1128,4 @@ VSIPreview.defaultProps = {
 };
 
 export default VSIPreview;
-export {getTiles, getTilesInfo};
+export {getPreviewConfiguration};

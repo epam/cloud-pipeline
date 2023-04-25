@@ -67,7 +67,7 @@ import Metadata from '../../../special/metadata/Metadata';
 import LifeCycleCounter from '../forms/life-cycle-rules/components/life-cycle-counter';
 import RestoreStatusIcon, {STATUS} from '../forms/life-cycle-rules/components/restore-status-icon';
 import PreviewModal from '../../../search/preview/preview-modal';
-import {getTiles, getTilesInfo} from '../../../search/preview/vsi-preview';
+import {getPreviewConfiguration} from '../../../search/preview/vsi-preview';
 import UploadButton from '../../../special/UploadButton';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import EmbeddedMiew from '../../../applications/miew/EmbeddedMiew';
@@ -1332,25 +1332,13 @@ export default class DataStorage extends React.Component {
       return;
     }
     const {storageId} = this.props;
-    const info = getTilesInfo(file.path);
-    if (info) {
-      this.setState({previewPending: true}, () => {
-        getTiles(storageId, info.tilesFolders)
-          .then((tiles) => {
-            if (tiles) {
-              this.setState({
-                previewPending: false,
-                previewAvailable: true
-              });
-            } else {
-              this.setState({
-                previewPending: false,
-                previewAvailable: false
-              });
-            }
-          });
-      });
-    }
+    this.setState({previewPending: true}, () => {
+      getPreviewConfiguration(storageId, file.path)
+        .then((configuration) => this.setState({
+          previewPending: false,
+          previewAvailable: !!configuration
+        }));
+    });
   };
 
   checkHcsPreviewAvailability = (file) => {
@@ -1377,6 +1365,11 @@ export default class DataStorage extends React.Component {
       }
     });
   };
+
+  setDefaultPreview = () => this.setState({
+    previewPending: false,
+    previewAvailable: false
+  });
 
   getRestoredStatus = (item) => {
     const {
@@ -1622,7 +1615,9 @@ export default class DataStorage extends React.Component {
           case 'hcs':
             this.checkHcsPreviewAvailability(item);
             break;
-          default: return false;
+          default:
+            this.setDefaultPreview();
+            break;
         }
       });
     }
