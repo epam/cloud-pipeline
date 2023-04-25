@@ -291,6 +291,13 @@ public class UserManager {
         return userDao.updateUser(user);
     }
 
+    @Transactional
+    public void updateExternalBlockDate(final Long id, final LocalDateTime date) {
+        final PipelineUser user = loadUserById(id);
+        user.setExternalBlockDate(date);
+        userDao.updateUser(user);
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUser(Long id, PipelineUserVO userVO) {
         PipelineUser user = loadUserById(id);
@@ -306,6 +313,7 @@ public class UserManager {
         final PipelineUser user = loadUserById(id);
         user.setBlocked(blockStatus);
         user.setBlockDate(blockStatus ? DateUtils.nowUTC() : null);
+        user.setExternalBlockDate(null);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_BLOCK_STATUS, id, blockStatus));
         return userDao.updateUser(user);
     }

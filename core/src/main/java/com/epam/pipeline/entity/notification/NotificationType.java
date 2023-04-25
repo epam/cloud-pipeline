@@ -68,7 +68,9 @@ public enum NotificationType {
     DATASTORAGE_LIFECYCLE_ACTION(18, -1L, -1L, Collections.emptyList(), true,
             NotificationGroup.DATASTORAGE_LIFECYCLE),
     DATASTORAGE_LIFECYCLE_RESTORE_ACTION(19, -1L, -1L, Collections.emptyList(), true,
-            NotificationGroup.DATASTORAGE_LIFECYCLE);
+            NotificationGroup.DATASTORAGE_LIFECYCLE),
+    LDAP_BLOCKED_POSTPONED_USERS(20, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.USER);
 
     private static final Map<Long, NotificationType> BY_ID;
 

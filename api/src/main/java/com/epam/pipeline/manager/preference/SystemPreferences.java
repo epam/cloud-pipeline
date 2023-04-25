@@ -812,6 +812,8 @@ public class SystemPreferences {
             "system.ldap.user.block.monitor.enable", false, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_DELAY = new IntPreference(
             "system.ldap.user.block.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_GRACE_PERIOD_DAYS = new IntPreference(
+            "system.ldap.user.block.monitor.grace.period.days", 7, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_NODE_POOL_MONITOR_DELAY = new IntPreference(
             "system.node.pool.monitor.delay", 30000, SYSTEM_GROUP, pass);
     /**
