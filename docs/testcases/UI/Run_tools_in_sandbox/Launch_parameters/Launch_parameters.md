@@ -32,6 +32,10 @@
 | [**3064_2**](3064/3064_2.md)              | Optionally hide maintenance configuration for pipeline jobs                                                                |
 | [**3069**](3069.md)                       | Check hiding system capabilities                                                                                           |
 | [**3074**](3074.md)                       | GUI Launch form: disk size disclaimers                                                                                     |
+| [**3122_1**](3122_insufficient_capacity/3122_1.md) | Run jobs in other regions in case of insufficient capacity                                                        |
+| [**3122_2**](3122_insufficient_capacity/3122_2.md) | Restart jobs in other regions shouldn't work for cluster run                                                      |
+| [**3122_3**](3122_insufficient_capacity/3122_3.md) | Restart jobs in other regions shouldn't work for run with cloud dependent parameters                              |
+| [**3122_4**](3122_insufficient_capacity/3122_4.md) | Run jobs in case of insufficient capacity for region without Run shift policy flag                                |
 | [**783**](783.md)                         | Check the configure CPU resource                                                                                           |
 | [**TC-PARAMETERS-1**](TC-PARAMETERS-1.md) | Check the configure allowed instance types                                                                                 |
 | [**TC-PARAMETERS-2**](TC-PARAMETERS-2.md) | Check the configure allowed instance types for docker images                                                               |
