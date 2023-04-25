@@ -92,6 +92,12 @@ public class PipelineUser implements StorageContainer {
 
     private LocalDateTime firstLoginDate;
 
+    private LocalDateTime lastLoginDate;
+
+    private LocalDateTime blockDate;
+
+    private LocalDateTime externalBlockDate;
+
     private Long defaultStorageId;
 
     @Convert(converter = AttributesConverterJson.class)
@@ -111,10 +117,6 @@ public class PipelineUser implements StorageContainer {
 
     @ElementCollection
     private List<RunnerSid> allowedRunners;
-
-    private LocalDateTime lastLoginDate;
-
-    private LocalDateTime blockDate;
 
     @Transient
     private Boolean online;
