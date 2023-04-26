@@ -56,6 +56,12 @@ def _or(left_func, right_func):
     return _func
 
 
+def _and(left_func, right_func):
+    def _func(*args, **kwargs):
+        return left_func(*args, **kwargs) and right_func(*args, **kwargs)
+    return _func
+
+
 class GridEngineParametersGroup:
 
     def as_list(self):
@@ -353,7 +359,7 @@ class GridEngineJobState:
 
 class GridEngineJob:
 
-    def __init__(self, id, root_id, name, user, state, datetime, hosts=None, slots=0, gpus=0, mem=0, pe='local'):
+    def __init__(self, id, root_id, name, user, state, datetime, hosts=None, cpu=0, gpu=0, mem=0, pe='local'):
         self.id = id
         self.root_id = root_id
         self.name = name
@@ -361,10 +367,8 @@ class GridEngineJob:
         self.state = state
         self.datetime = datetime
         self.hosts = hosts if hosts else []
-        # todo: Rename to cpu
-        self.slots = slots
-        # todo: Rename to gpu
-        self.gpus = gpus
+        self.cpu = cpu
+        self.gpu = gpu
         self.mem = mem
         self.pe = pe
 
@@ -439,17 +443,17 @@ class GridEngine:
             job_datetime = self._parse_date(job_list.findtext('JAT_start_time') or job_list.findtext('JB_submission_time'))
             job_hosts = [job_host] if job_host else []
             requested_pe = job_list.find('requested_pe')
-            job_slots = int(requested_pe.text if requested_pe is not None else '1')
             job_pe = requested_pe.get('name') if requested_pe is not None else 'local'
-            hard_requests = job_list.findall('hard_request')
-            job_gpus = 0
+            job_cpu = int(requested_pe.text if requested_pe is not None else '1')
+            job_gpu = 0
             job_mem = 0
+            hard_requests = job_list.findall('hard_request')
             for hard_request in hard_requests:
                 hard_request_name = hard_request.get('name')
                 if hard_request_name == self.gpu_resource_name:
                     job_gpu_request = hard_request.text or '0'
                     try:
-                        job_gpus = int(job_gpu_request)
+                        job_gpu = int(job_gpu_request)
                     except ValueError:
                         Logger.warn('Job #{job_id} by {job_user} has invalid gpu requirement '
                                     'which cannot be parsed: {request}'
@@ -478,8 +482,8 @@ class GridEngine:
                         state=job_state,
                         datetime=job_datetime,
                         hosts=job_hosts,
-                        slots=job_slots,
-                        gpus=job_gpus,
+                        cpu=job_cpu,
+                        gpu=job_gpu,
                         mem=job_mem,
                         pe=job_pe
                     )
@@ -508,17 +512,19 @@ class GridEngine:
         """
         See https://linux.die.net/man/1/sge_types
         """
+        if not mem_request:
+            return 0
         modifiers = {
-            'k': 1000,
-            'm': 1000 ** 2,
-            'g': 1000 ** 3,
-            'K': 1024,
-            'M': 1024 ** 2,
-            'G': 1024 ** 3
+            'k': 1000, 'm': 1000 ** 2, 'g': 1000 ** 3,
+            'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3
         }
-        number = int(mem_request[:-1] or '0')
-        letter = mem_request[-1:] or 'G'
-        size_in_bytes = number * modifiers.get(letter, 0)
+        if mem_request[-1] in modifiers:
+            number = int(mem_request[:-1])
+            modifier = modifiers[mem_request[-1]]
+        else:
+            number = int(mem_request)
+            modifier = 1
+        size_in_bytes = number * modifier
         size_in_gibibytes = int(math.ceil(size_in_bytes / modifiers['G']))
         return size_in_gibibytes
 
@@ -575,13 +581,13 @@ class GridEngine:
             allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
                                                          or self.get_pe_allocation_rule(job.pe)
             if allocation_rule in AllocationRule.fractional_rules():
-                if available_slots >= job.slots:
-                    available_slots -= job.slots
+                if available_slots >= job.cpu:
+                    available_slots -= job.cpu
                 else:
-                    demands.append(FractionalDemand(cpu=job.slots - available_slots, owner=job.user))
+                    demands.append(FractionalDemand(cpu=job.cpu - available_slots, owner=job.user))
                     available_slots = 0
             else:
-                demands.append(IntegralDemand(cpu=job.slots, owner=job.user))
+                demands.append(IntegralDemand(cpu=job.cpu, owner=job.user))
         return demands
 
     def get_host_to_scale_down(self, hosts):
@@ -709,18 +715,18 @@ class GridEngineJobValidator:
         for job in jobs:
             allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
                                                          or self.grid_engine.get_pe_allocation_rule(job.pe)
-            job_demand = IntegralDemand(cpu=job.slots, gpu=job.gpus, memory=job.mem)
+            job_demand = IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem)
             if allocation_rule in AllocationRule.fractional_rules():
                 if job_demand > self.cluster_max_supply:
                     Logger.warn('Invalid job #{job_id} {job_name} by {job_user} requires resources '
                                 'which cannot be satisfied by the cluster: '
-                                '{job_cpus}/{available_cpus} cpus, '
-                                '{job_gpus}/{available_gpus} gpus, '
+                                '{job_cpu}/{available_cpu} cpu, '
+                                '{job_gpu}/{available_gpu} gpu, '
                                 '{job_mem}/{available_mem} mem.'
                                 .format(job_id=job.id, job_name=job.name, job_user=job.user,
-                                        job_cpus=job.slots, available_cpus=self.cluster_max_supply.cpu,
-                                        job_gpus=job.gpus, available_gpus=self.cluster_max_supply.gpu,
-                                        job_mem=job.mem, available_mem=self.cluster_max_supply.memory),
+                                        job_cpu=job.cpu, available_cpu=self.cluster_max_supply.cpu,
+                                        job_gpu=job.gpu, available_gpu=self.cluster_max_supply.gpu,
+                                        job_mem=job.mem, available_mem=self.cluster_max_supply.mem),
                                 crucial=True)
                     invalid_jobs.append(job)
                     continue
@@ -728,13 +734,13 @@ class GridEngineJobValidator:
                 if job_demand > self.instance_max_supply:
                     Logger.warn('Invalid job #{job_id} {job_name} by {job_user} requires resources '
                                 'which cannot be satisfied by the biggest instance in cluster: '
-                                '{job_cpus}/{available_cpus} cpus, '
-                                '{job_gpus}/{available_gpus} gpus, '
+                                '{job_cpu}/{available_cpu} cpu, '
+                                '{job_gpu}/{available_gpu} gpu, '
                                 '{job_mem}/{available_mem} mem.'
                                 .format(job_id=job.id, job_name=job.name, job_user=job.user,
-                                        job_cpus=job.slots, available_cpus=self.instance_max_supply.cpu,
-                                        job_gpus=job.gpus, available_gpus=self.instance_max_supply.gpu,
-                                        job_mem=job.mem, available_mem=self.instance_max_supply.memory),
+                                        job_cpu=job.cpu, available_cpu=self.instance_max_supply.cpu,
+                                        job_gpu=job.gpu, available_gpu=self.instance_max_supply.gpu,
+                                        job_mem=job.mem, available_mem=self.instance_max_supply.mem),
                                 crucial=True)
                     invalid_jobs.append(job)
                     continue
@@ -744,35 +750,29 @@ class GridEngineJobValidator:
 
 class ComputeResource:
 
-    def __init__(self, cpu=0, gpu=0, memory=0, disk=0, owner=None):
+    def __init__(self, cpu=0, gpu=0, mem=0, owner=None):
         """
         Common compute resource.
         """
         self.cpu = cpu
         self.gpu = gpu
-        # todo: Rename to mem
-        self.memory = memory
-        # todo: Remove
-        self.disk = disk
+        self.mem = mem
         self.owner = owner
 
     def add(self, other):
         return self.__class__(cpu=self.cpu + other.cpu,
                               gpu=self.gpu + other.gpu,
-                              memory=self.memory + other.memory,
-                              disk=self.disk + other.disk,
+                              mem=self.mem + other.mem,
                               owner=self.owner or other.owner)
 
     def subtract(self, other):
         return (self.__class__(cpu=max(0, self.cpu - other.cpu),
                                gpu=max(0, self.gpu - other.gpu),
-                               memory=max(0, self.memory - other.memory),
-                               disk=max(0, self.disk - other.disk),
+                               mem=max(0, self.mem - other.mem),
                                owner=self.owner or other.owner),
                 other.__class__(cpu=max(0, other.cpu - self.cpu),
                                 gpu=max(0, other.gpu - self.gpu),
-                                memory=max(0, other.memory - self.memory),
-                                disk=max(0, other.disk - self.disk),
+                                mem=max(0, other.mem - self.mem),
                                 owner=self.owner or other.owner))
 
     def sub(self, other):
@@ -782,20 +782,19 @@ class ComputeResource:
         if isinstance(other, int):
             return self.__class__(cpu=self.cpu * other,
                                   gpu=self.gpu * other,
-                                  memory=self.memory * other,
-                                  disk=self.disk * other,
+                                  mem=self.mem * other,
                                   owner=self.owner)
         else:
             raise ArithmeticError('Compute resource can be multiplied to integer values only')
 
     def gt(self, other):
-        return self.cpu > other.cpu or self.gpu > other.gpu or self.memory > other.memory or self.disk > other.disk
+        return self.cpu > other.cpu or self.gpu > other.gpu or self.mem > other.mem
 
     def eq(self, other):
         return self.__dict__ == other.__dict__
 
     def bool(self):
-        return self.cpu + self.gpu + self.memory + self.disk > 0
+        return self.cpu + self.gpu + self.mem > 0
 
     def __repr__(self):
         return str(self.__dict__)
@@ -806,7 +805,7 @@ class ComputeResource:
     __cmp__ = gt
     __eq__ = eq
     __ne__ = _not(__eq__)
-    __lt__ = _not(gt)
+    __lt__ = _and(_not(gt), _not(eq))
     __gt__ = gt
     __le__ = _or(__lt__, __eq__)
     __ge__ = _or(__gt__, __eq__)
@@ -840,7 +839,7 @@ class ResourceSupply(ComputeResource):
 
     @classmethod
     def of(cls, instance):
-        return ResourceSupply(cpu=instance.cpu, gpu=instance.gpu, memory=instance.memory)
+        return ResourceSupply(cpu=instance.cpu, gpu=instance.gpu, mem=instance.mem)
 
 
 class InstanceDemand:
@@ -861,7 +860,7 @@ class InstanceDemand:
 
 class Instance:
 
-    def __init__(self, name, price_type, cpu, gpu, memory):
+    def __init__(self, name, price_type, cpu, gpu, mem):
         """
         Execution instance.
         """
@@ -869,7 +868,7 @@ class Instance:
         self.price_type = price_type
         self.cpu = cpu
         self.gpu = gpu
-        self.memory = memory
+        self.mem = mem
 
     @staticmethod
     def from_cp_response(instance):
@@ -877,7 +876,7 @@ class Instance:
                         price_type=instance['termType'],
                         cpu=int(instance['vcpu']),
                         gpu=int(instance['gpu']),
-                        memory=int(instance['memory']))
+                        mem=int(instance['memory']))
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -1624,9 +1623,8 @@ class GridEngineAutoscaler:
                     resource_demands = self.grid_engine.get_resource_demands(waiting_jobs)
                     resource_demand = functools.reduce(operator.add, resource_demands)
                     Logger.info('Waiting jobs require: '
-                                '{cpu} cpus, {gpu} gpus, {mem} mem, {disk} disk.'
-                                .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu,
-                                        mem=resource_demand.memory, disk=resource_demand.disk))
+                                '{cpu} cpu, {gpu} gpu, {mem} mem.'
+                                .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu, mem=resource_demand.mem))
                     remaining_additional_hosts = self.max_additional_hosts - len(additional_hosts)
                     self.scale_up(resource_demands, remaining_additional_hosts)
                 else:
@@ -1815,7 +1813,7 @@ class GridEngineInstanceSelector:
 
 class BackwardCompatibleInstanceSelector(GridEngineInstanceSelector):
 
-    def __init__(self, instance_provider, free_cores, batch_size):
+    def __init__(self, instance_provider, reserved_supply, batch_size):
         """
         Backward compatible CPU capacity instance selector.
 
@@ -1823,13 +1821,13 @@ class BackwardCompatibleInstanceSelector(GridEngineInstanceSelector):
         Batch autoscaling uses cpu capacity strategy to select instances.
 
         :param instance_provider: Cloud Pipeline instance provider.
-        :param free_cores: Number of system reserved cpus on each cluster instance.
+        :param reserved_supply: Instance reserved resource supply.
         :param batch_size: Scaling up batch size.
         """
         if batch_size > 1:
-            self.instance_selector = CpuCapacityInstanceSelector(instance_provider, free_cores)
+            self.instance_selector = CpuCapacityInstanceSelector(instance_provider, reserved_supply)
         else:
-            self.instance_selector = NaiveCpuCapacityInstanceSelector(instance_provider, free_cores)
+            self.instance_selector = NaiveCpuCapacityInstanceSelector(instance_provider, reserved_supply)
 
     def select(self, demands):
         return self.instance_selector.select(demands)
@@ -1837,7 +1835,7 @@ class BackwardCompatibleInstanceSelector(GridEngineInstanceSelector):
 
 class NaiveCpuCapacityInstanceSelector(GridEngineInstanceSelector):
 
-    def __init__(self, instance_provider, free_cores):
+    def __init__(self, instance_provider, reserved_supply):
         """
         Naive CPU capacity instance selector.
 
@@ -1846,18 +1844,16 @@ class NaiveCpuCapacityInstanceSelector(GridEngineInstanceSelector):
         Handles resource demands as if they were fractional.
 
         :param instance_provider: Cloud Pipeline instance provider.
-        :param free_cores: Number of system reserved cpus on each cluster instance.
+        :param reserved_supply: Instance reserved resource supply.
         """
         self.instance_provider = instance_provider
-        self.free_cores = free_cores
-        self.instance_selector = CpuCapacityInstanceSelector(instance_provider, free_cores)
+        self.instance_selector = CpuCapacityInstanceSelector(instance_provider, reserved_supply)
 
     def select(self, demands):
         fractional_demands = [demand if isinstance(demand, FractionalDemand)
                               else FractionalDemand(cpu=demand.cpu,
                                                     gpu=demand.gpu,
-                                                    memory=demand.memory,
-                                                    disk=demand.disk,
+                                                    mem=demand.mem,
                                                     owner=demand.owner)
                               for demand in demands]
         return self.instance_selector.select(fractional_demands)
@@ -1865,7 +1861,7 @@ class NaiveCpuCapacityInstanceSelector(GridEngineInstanceSelector):
 
 class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
 
-    def __init__(self, instance_provider, free_cores):
+    def __init__(self, instance_provider, reserved_supply):
         """
         CPU capacity instance selector.
 
@@ -1873,10 +1869,10 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
         If a bigger instance can process more job CPU requirements then it will be selected.
 
         :param instance_provider: Cloud Pipeline instance provider.
-        :param free_cores: Number of system reserved cpus on each cluster instance.
+        :param reserved_supply: Instance reserved resource supply.
         """
         self.instance_provider = instance_provider
-        self.free_cores = free_cores
+        self.reserved_supply = reserved_supply
 
     def select(self, demands):
         instances = self.instance_provider.provide()
@@ -1887,7 +1883,7 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
             best_remaining_demands = None
             best_fulfilled_demands = None
             for instance in instances:
-                supply = ResourceSupply(cpu=instance.cpu - self.free_cores, gpu=instance.gpu, memory=instance.memory)
+                supply = ResourceSupply.of(instance) - self.reserved_supply
                 current_remaining_demands, current_fulfilled_demands = self._apply(remaining_demands, supply)
                 current_fulfilled_demand = functools.reduce(operator.add, current_fulfilled_demands, IntegralDemand())
                 current_capacity = current_fulfilled_demand.cpu
@@ -1900,7 +1896,7 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
             if not best_instance:
                 raise ScalingError('No instances were found which satisfy any of the resource demands.')
             best_instance_owner = self._resolve_owner(best_fulfilled_demands)
-            logging.info('Selecting %s instance using %s/%s cpus for %s user...'
+            logging.info('Selecting %s instance using %s/%s cpu for %s user...'
                          % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
             yield InstanceDemand(best_instance, best_instance_owner)
 
@@ -2373,7 +2369,7 @@ def main():
 
     static_hosts_cpus = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
     static_hosts_number = int(os.getenv('node_count', 0))
-    static_hosts_instance_type = os.environ['instance_size']
+    static_instance_type = os.environ['instance_size']
     autoscaling_hosts_number = int(os.getenv(params.autoscaling.autoscaling_hosts_number.name, 3))
     autoscale_enabled = os.getenv(params.autoscaling.autoscale.name, 'false').strip().lower() == 'true'
 
@@ -2404,9 +2400,9 @@ def main():
     queue_static = os.getenv(params.queue.queue_static.name, 'false').strip().lower() == 'true'
     queue_default = os.getenv(params.queue.queue_default.name, 'false').strip().lower() == 'true'
     hostlist_name = os.getenv(params.queue.hostlist_name.name, '@allhosts')
-    reserved_cpus = int(os.getenv(params.queue.hosts_free_cores.name, 0))
-    master_cpus = int(os.getenv(params.queue.master_cores.name, static_hosts_cpus))
-    effective_master_cpus = master_cpus - reserved_cpus if master_cpus - reserved_cpus > 0 else master_cpus
+    reserved_cpu = int(os.getenv(params.queue.hosts_free_cores.name, 0))
+    master_cpu = int(os.getenv(params.queue.master_cores.name, static_hosts_cpus))
+    effective_master_cpu = master_cpu - reserved_cpu if master_cpu - reserved_cpu > 0 else master_cpu
 
     work_dir = os.getenv(params.autoscaling_advanced.work_dir.name, os.getenv('TMP_DIR', '/tmp'))
     log_dir = os.getenv(params.autoscaling.log_dir.name, os.getenv('LOG_DIR', '/var/log'))
@@ -2431,11 +2427,15 @@ def main():
     clock = Clock()
     cmd_executor = CmdExecutor()
 
+    reserved_supply = ResourceSupply(cpu=reserved_cpu)
+
     worker_recorder = CloudPipelineWorkerRecorder(api=api)
     cloud_instance_provider = CloudPipelineInstanceProvider(pipe=pipe, region_id=instance_region_id,
                                                             price_type=instance_price_type)
-    default_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider, instance_type=instance_type)
-    static_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider, instance_type=instance_type)
+    default_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,
+                                                        instance_type=instance_type)
+    static_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,
+                                                       instance_type=static_instance_type)
 
     descending_instance = default_instance_provider.provide().pop()
     descending_instance_cores = descending_instance.cpu if descending_instance else 0
@@ -2480,26 +2480,25 @@ def main():
     if scale_up_strategy == 'cpu-capacity':
         Logger.info('Selecting instances using cpu capacity strategy...')
         instance_selector = CpuCapacityInstanceSelector(instance_provider=instance_provider,
-                                                        free_cores=reserved_cpus)
+                                                        reserved_supply=reserved_supply)
     elif scale_up_strategy == 'naive-cpu-capacity':
         Logger.info('Selecting instances using fractional cpu capacity strategy...')
         instance_selector = NaiveCpuCapacityInstanceSelector(instance_provider=instance_provider,
-                                                             free_cores=reserved_cpus)
+                                                             reserved_supply=reserved_supply)
     else:
         Logger.info('Selecting instances using default strategy...')
         instance_selector = BackwardCompatibleInstanceSelector(instance_provider=instance_provider,
-                                                               free_cores=reserved_cpus,
+                                                               reserved_supply=reserved_supply,
                                                                batch_size=scale_up_batch_size)
 
     biggest_instance = sorted(instance_provider.provide(), key=lambda instance: instance.cpu).pop()
     static_instance = static_instance_provider.provide().pop()
 
-    reserved_supply = ResourceSupply(cpu=reserved_cpus)
     biggest_instance_supply = ResourceSupply.of(biggest_instance) - reserved_supply
     static_instance_supply = ResourceSupply.of(static_instance) - reserved_supply
-    master_instance_supply = ResourceSupply(cpu=effective_master_cpus,
+    master_instance_supply = ResourceSupply(cpu=effective_master_cpu,
                                             gpu=static_instance_supply.gpu,
-                                            memory=static_instance_supply.memory)
+                                            mem=static_instance_supply.mem)
     cluster_supply = biggest_instance_supply * autoscaling_hosts_number
     if queue_static:
         cluster_supply += master_instance_supply + static_instance_supply * static_hosts_number
@@ -2527,23 +2526,24 @@ def main():
                       tagging_active_timeout=tagging_active_timeout,
                       static_hosts_enabled=queue_static and static_hosts_number)
 
-    Logger.info('Using static workers:\n{}\n{}'
-                .format('- {} {} ({} cpus, {} gpus, {} mem)'
-                        .format(master_host, static_instance.name,
-                                master_instance_supply.cpu,
-                                master_instance_supply.gpu,
-                                master_instance_supply.memory),
-                        '\n'.join('- {} {} ({} cpus, {} gpus, {} mem)'
-                                  .format(host, static_instance.name,
-                                          static_instance_supply.cpu,
-                                          static_instance_supply.gpu,
-                                          static_instance_supply.memory)
-                                  for host in static_host_storage.load_hosts()
-                                  if host != master_host))
-                .strip())
+    if queue_static:
+        Logger.info('Using static workers:\n{}\n{}'
+                    .format('- {} {} ({} cpu, {} gpu, {} mem)'
+                            .format(master_host, static_instance.name,
+                                    master_instance_supply.cpu,
+                                    master_instance_supply.gpu,
+                                    master_instance_supply.mem),
+                            '\n'.join('- {} {} ({} cpu, {} gpu, {} mem)'
+                                      .format(host, static_instance.name,
+                                              static_instance_supply.cpu,
+                                              static_instance_supply.gpu,
+                                              static_instance_supply.mem)
+                                      for host in static_host_storage.load_hosts()
+                                      if host != master_host))
+                    .strip())
     Logger.info('Using autoscaling instance types:\n{}'
-                .format('\n'.join('- {} ({} cpus, {} gpus, {} mem)'
-                                  .format(instance.name, instance.cpu, instance.gpu, instance.memory)
+                .format('\n'.join('- {} ({} cpu, {} gpu, {} mem)'
+                                  .format(instance.name, instance.cpu, instance.gpu, instance.mem)
                                   for instance in instance_provider.provide())))
 
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,

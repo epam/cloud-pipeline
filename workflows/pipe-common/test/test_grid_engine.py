@@ -93,8 +93,8 @@ def test_qstat_parsing():
     assert job_1.name == 'name1'
     assert job_1.user == 'root'
     assert job_1.state == GridEngineJobState.RUNNING
-    assert job_1.slots == 2
-    assert job_1.gpus == 0
+    assert job_1.cpu == 2
+    assert job_1.gpu == 0
     assert job_1.mem == 0
     assert job_1.datetime == datetime(2018, 12, 21,
                                       11, 48, 00)
@@ -103,8 +103,8 @@ def test_qstat_parsing():
     assert job_2.name == 'name2'
     assert job_2.user == 'someUser'
     assert job_2.state == GridEngineJobState.PENDING
-    assert job_2.slots == 3
-    assert job_2.gpus == 4
+    assert job_2.cpu == 3
+    assert job_2.gpu == 4
     assert job_2.mem == 5
     assert job_2.datetime == datetime(2018, 12, 21,
                                       12, 39, 38)

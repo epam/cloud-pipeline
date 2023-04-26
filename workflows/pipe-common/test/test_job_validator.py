@@ -30,8 +30,8 @@ QUEUE = 'main.q'
 HOSTLIST = '@allhosts'
 QUEUE_DEFAULT = True
 
-instance_max_supply = ResourceSupply(cpu=2, gpu=3, memory=4)
-cluster_max_supply = ResourceSupply(cpu=20, gpu=30, memory=40)
+instance_max_supply = ResourceSupply(cpu=2, gpu=3, mem=4)
+cluster_max_supply = ResourceSupply(cpu=20, gpu=30, mem=40)
 
 
 grid_engine = Mock()
@@ -58,9 +58,9 @@ def test_validate_empty_jobs():
 def test_validate_valid_jobs():
     jobs = [
         GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
-                      slots=2, gpus=3, mem=4, pe=LOCAL_PE),
+                      cpu=2, gpu=3, mem=4, pe=LOCAL_PE),
         GridEngineJob(id='2', root_id=2, name='', user='', state='', datetime='',
-                      slots=20, gpus=30, mem=40, pe=MPI_PE),
+                      cpu=20, gpu=30, mem=40, pe=MPI_PE),
     ]
 
     valid_jobs, invalid_jobs = job_validator.validate(jobs)
@@ -72,9 +72,9 @@ def test_validate_valid_jobs():
 def test_validate_invalid_jobs():
     jobs = [
         GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
-                      slots=3, gpus=4, mem=5, pe=LOCAL_PE),
+                      cpu=3, gpu=4, mem=5, pe=LOCAL_PE),
         GridEngineJob(id='2', root_id=2, name='', user='', state='', datetime='',
-                      slots=30, gpus=40, mem=50, pe=MPI_PE),
+                      cpu=30, gpu=40, mem=50, pe=MPI_PE),
     ]
 
     valid_jobs, invalid_jobs = job_validator.validate(jobs)
@@ -86,13 +86,13 @@ def test_validate_invalid_jobs():
 def test_validate_both_valid_invalid_jobs():
     jobs = [
         GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
-                      slots=2, gpus=3, mem=4, pe=LOCAL_PE),
+                      cpu=2, gpu=3, mem=4, pe=LOCAL_PE),
         GridEngineJob(id='2', root_id=2, name='', user='', state='', datetime='',
-                      slots=3, gpus=4, mem=5, pe=LOCAL_PE),
+                      cpu=3, gpu=4, mem=5, pe=LOCAL_PE),
         GridEngineJob(id='3', root_id=3, name='', user='', state='', datetime='',
-                      slots=20, gpus=30, mem=40, pe=MPI_PE),
+                      cpu=20, gpu=30, mem=40, pe=MPI_PE),
         GridEngineJob(id='4', root_id=4, name='', user='', state='', datetime='',
-                      slots=30, gpus=40, mem=50, pe=MPI_PE),
+                      cpu=30, gpu=40, mem=50, pe=MPI_PE),
     ]
 
     valid_jobs, invalid_jobs = job_validator.validate(jobs)
