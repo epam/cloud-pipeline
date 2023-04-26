@@ -15,3 +15,8 @@ This folder contains testcases to check System Management.
 | [**2232_9**](2232-2444_NAT_Gateway/2232_9.md)   | Add new route with several ports and the same Protocol |
 | [**2232_10**](2232-2444_NAT_Gateway/2232_10.md) | Add several route records with the same server name but different ports |
 | [**2444_1**](2232-2444_NAT_Gateway/2444_1.md)   | Add new route with several ports and different Protocols |
+| [**3059_1**](3059-3075_audit_pipe_mount_operation/3059_1.md)   | Data access audit (operations with files) |
+| [**3059_2**](3059-3075_audit_pipe_mount_operation/3059_2.md)   | Data access audit (operations with folders) |
+| [**3059_3**](3059-3075_audit_pipe_mount_operation/3059_3.md)   | UI Data access audit |
+| [**3059_4**](3059-3075_audit_pipe_mount_operation/3059_4.md)   | WebDav data access audit |
+| [**3075**](3059-3075_audit_pipe_mount_operation/3075.md)   | Audit pipe mount operations |
