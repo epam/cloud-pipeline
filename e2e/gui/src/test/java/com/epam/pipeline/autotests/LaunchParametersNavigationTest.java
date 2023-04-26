@@ -39,6 +39,9 @@ public class LaunchParametersNavigationTest extends AbstractAutoRemovingPipeline
     private final static String folder = "folder-" + Utils.randomSuffix();
     private final static String innerFolder = "inner-folder-" + Utils.randomSuffix();
     private final static String innerStorage = "inner-storage-" + Utils.randomSuffix();
+    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
 
     @BeforeClass
     public void initStorage() {
@@ -83,6 +86,7 @@ public class LaunchParametersNavigationTest extends AbstractAutoRemovingPipeline
                 )
                 .sleep(2, SECONDS)
                 .runPipeline()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .clickAddOutputParameter()
                 .setName("parameter")
                 .openPathAdditionDialog()

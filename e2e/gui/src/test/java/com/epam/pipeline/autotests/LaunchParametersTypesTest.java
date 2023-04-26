@@ -36,6 +36,9 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
     private final static String storage = "storage-" + Utils.randomSuffix();
     private final static String storageFolder = "folder-" + Utils.randomSuffix();
     private final static File storageFile = Utils.createTempFile("file-" + Utils.randomSuffix());
+    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
 
     @BeforeClass
     public void initStorage() {
@@ -63,6 +66,7 @@ public class LaunchParametersTypesTest extends AbstractAutoRemovingPipelineRunni
                 )
                 .sleep(2, SECONDS)
                 .runPipeline()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .clickAddOutputParameter()
                 .setName("output_parameter")
                 .openPathAdditionDialog()

@@ -23,6 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 
@@ -212,6 +213,16 @@ public class Profile implements AccessObject<Profile> {
     public Profile selectDockerImage(final Consumer<DockerImageSelection> dockerImage) {
         click(IMAGE);
         dockerImage.accept(new DockerImageSelection(this));
+        return this;
+    }
+
+    public Profile selectDockerImage(String registry, String group, String tool, String version) {
+        click(IMAGE);
+        new DockerImageSelection(this)
+                .selectRegistry(registry)
+                .selectGroup(group)
+                .selectTool(tool, version)
+                .click(OK);
         return this;
     }
 

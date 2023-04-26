@@ -87,6 +87,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .selectDockerImage(registry, group, tool, "latest")
                 .launch(this)
                 .showLog(pipelineRunID = getLastRunId())
                 .waitForCompletion();

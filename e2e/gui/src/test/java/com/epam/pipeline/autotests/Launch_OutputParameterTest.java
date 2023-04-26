@@ -33,6 +33,9 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
 
     private static final String LAUNCH_SCRIPT = "/fileKeeper.sh";
     private static final String STORAGE_FOLDER = "storage_rules_folder";
+    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
 
     private final String storage = "epmcmbi-test-storage-362-" + Utils.randomSuffix();
 
@@ -64,6 +67,7 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
                 getPipelineName());
         new PipelineCodeTabAO(getPipelineName())
             .runPipeline()
+            .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
             .addOutputParameter("output", pathToFile)
             .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);

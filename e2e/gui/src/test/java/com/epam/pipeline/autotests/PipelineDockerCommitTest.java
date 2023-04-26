@@ -37,6 +37,7 @@ public class PipelineDockerCommitTest
 
     private final String registry = C.DEFAULT_REGISTRY;
     private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
     private final String pipelineName = "docker-commit-test-pipeline-" + Utils.randomSuffix();
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "sh");
     private final String toolSelfName = "shell";
@@ -94,6 +95,7 @@ public class PipelineDockerCommitTest
                 .sleep(2, SECONDS)
                 .runPipeline()
                 .setLaunchOptions(diskSize, instanceType, null)
+                .selectDockerImage(registry, defaultGroup, defaultTestingTool, toolVersion)
                 .setPriceType(priceType)
                 .launch(this)
                 .showLog(getLastRunId())

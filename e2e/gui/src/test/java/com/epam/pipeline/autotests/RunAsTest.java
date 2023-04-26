@@ -105,6 +105,7 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .selectDockerImage(registry, group, tool, "latest")
                 .launch();
         runsMenu()
                 .activeRuns()

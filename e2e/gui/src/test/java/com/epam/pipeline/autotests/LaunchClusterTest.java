@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -54,7 +55,9 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String autoScaledSettingForm = "Auto-scaled cluster";
     private final String clusterSettingForm = "Cluster";
     private final String defaultRegistry = C.DEFAULT_REGISTRY;
-    private final String defaultGroup = C.ANOTHER_GROUP;
+    private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
+    private final String testingGroup = C.ANOTHER_GROUP;
     private final String testingTool = C.ANOTHER_TESTING_TOOL_NAME;
     private final String testingNode = C.ANOTHER_INSTANCE;
     private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
@@ -103,6 +106,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .setWorkingNodesCount("2")
@@ -131,6 +135,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
@@ -160,6 +165,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .setWorkingNodesCount("0")
@@ -197,6 +203,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .setPriceType(onDemandPrice)
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:20 sleep 5m && sleep infinity")
                 .enableClusterLaunch()
@@ -224,7 +231,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .click(taskWithName(gridEngineAutoscalingTask))
                 .waitForLog(String.format("Additional worker with host=%s and instance type=%s has been created.",
-                        String.format("pipeline-%s", childRunID2), C.DEFAULT_INSTANCE));
+                        String.format("pipeline-%s", childRunID2), DEFAULT_INSTANCE));
         navigationMenu()
                 .runs()
                 .activeRuns()
@@ -255,6 +262,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable GridEngine")
@@ -304,6 +312,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Slurm")
@@ -342,7 +351,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     @TestCase({"EPMCMBIBPC-3152"})
     public void validationOfApacheSparkCluster() {
         tools()
-                .perform(defaultRegistry, defaultGroup, String.format("%s/%s", defaultGroup, testingTool),
+                .perform(defaultRegistry, testingGroup, String.format("%s/%s", testingGroup, testingTool),
                         ToolTab::runWithCustomSettings)
                 .selectValue(INSTANCE_TYPE, testingNode)
                 .enableClusterLaunch()
@@ -382,6 +391,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
@@ -410,6 +420,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
@@ -458,6 +469,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .getCPU();
         onLaunchPage()
                 .enableClusterLaunch()
@@ -494,8 +506,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .clickOnNestedRunLink()
                 .instanceParameters(instance ->
-                        instance.ensure(TYPE, text(C.DEFAULT_INSTANCE.substring(0, C.DEFAULT_INSTANCE.indexOf("."))))
-                        .ensure(TYPE, not(text(C.DEFAULT_INSTANCE.substring(C.DEFAULT_INSTANCE.indexOf(".")))))
+                        instance.ensure(TYPE, text(DEFAULT_INSTANCE.substring(0, DEFAULT_INSTANCE.indexOf("."))))
+                        .ensure(TYPE, not(text(DEFAULT_INSTANCE.substring(DEFAULT_INSTANCE.indexOf(".")))))
                 )
                 .waitForSshLink()
                 .ssh(shell -> shell
@@ -520,6 +532,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .enableHybridClusterSelect()
@@ -558,6 +571,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
@@ -585,6 +599,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
@@ -612,6 +627,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")

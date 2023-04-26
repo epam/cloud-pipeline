@@ -71,6 +71,9 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     private final String draftPipelineName = "shellpipe-draft-test" + Utils.randomSuffix();
     private final String pipelineFolder = FOLDER_PREFIX + pipelineName;
     private final String pipelineFile = FILE_PREFIX + pipelineName;
+    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
 
     @AfterClass(alwaysRun = true)
     public void deleteDownloaded() {
@@ -183,6 +186,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     public void shouldHaveHistoryEntry() {
         historyTab()
                 .runPipeline()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .launch(this);
 
         navigateToPipelineHistory()

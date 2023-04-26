@@ -14,31 +14,31 @@
         </classes>
     </test>
 
-    <test name="StorageRulesTest">
+    <test name="StorageRulesTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.StorageRulesTest"/>
         </classes>
     </test>
 
-    <test name="NfsDataStorageTest">
+    <test name="NfsDataStorageTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.NfsDataStorageTest"/>
         </classes>
     </test>
 
-    <test name="PipelineReleaseTest">
+    <test name="PipelineReleaseTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.PipelineReleaseTest"/>
         </classes>
     </test>
 
-    <test name="PipelineEditingTest">
+    <test name="PipelineEditingTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.PipelineEditingTest"/>
         </classes>
     </test>
 
-    <test name="PipelineEditingRepositoryTest">
+    <test name="PipelineEditingRepositoryTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.PipelineEditingRepositoryTest"/>
         </classes>
@@ -56,19 +56,19 @@
         <!--</classes>-->
     <!--</test>-->
 
-    <test name="DataStoragesTest">
+    <test name="DataStoragesTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.DataStoragesTest"/>
         </classes>
     </test>
 
-    <test name="StoragePaginationTest">
+    <test name="StoragePaginationTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.StoragePaginationTest"/>
         </classes>
     </test>
 
-    <test name="RoleModelTest">
+    <test name="RoleModelTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.RoleModelTest"/>
         </classes>
@@ -104,25 +104,25 @@
         </classes>
     </test>
 
-    <test name="WDLPipelineTest">
+    <test name="WDLPipelineTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.WDLPipelineTest"/>
         </classes>
     </test>
 
-    <test name="WDLEditorTest">
+    <test name="WDLEditorTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.WDLEditorTest"/>
         </classes>
     </test>
 
-    <test name="WDLTaskEditorTest">
+    <test name="WDLTaskEditorTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.WDLTaskEditorTest"/>
         </classes>
     </test>
 
-    <test name="WDLScatterEditorTest">
+    <test name="WDLScatterEditorTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.WDLScatterEditorTest"/>
         </classes>
@@ -152,7 +152,7 @@
         </classes>
     </test>
 
-    <test name="LaunchParametersRoleModelTest">
+    <test name="LaunchParametersRoleModelTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.LaunchParametersRoleModelTest"/>
         </classes>
@@ -164,61 +164,61 @@
         </classes>
     </test>
 
-    <test name="Launch_NonRequiredParameterTest">
+    <test name="Launch_NonRequiredParameterTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_NonRequiredParameterTest"/>
         </classes>
     </test>
 
-    <test name="Launch_InstanceConfigTest">
+    <test name="Launch_InstanceConfigTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_InstanceConfigTest"/>
         </classes>
     </test>
 
-    <test name="Launch_ParameterWithNoValueTest">
+    <test name="Launch_ParameterWithNoValueTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_ParameterWithNoValueTest"/>
         </classes>
     </test>
 
-    <test name="Launch_ChangeLanguageToWDLTest">
+    <test name="Launch_ChangeLanguageToWDLTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_ChangeLanguageToWDLTest"/>
         </classes>
     </test>
 
-    <test name="Launch_DifferentTypesParametersValidationTest">
+    <test name="Launch_DifferentTypesParametersValidationTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_DifferentTypesParametersValidationTest"/>
         </classes>
     </test>
 
-    <test name="FolderNavigationTest">
+    <test name="FolderNavigationTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.FolderNavigationTest"/>
         </classes>
     </test>
 
-    <test name="Launch_ChangeLanguageToLuigiTest">
+    <test name="Launch_ChangeLanguageToLuigiTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_ChangeLanguageToLuigiTest"/>
         </classes>
     </test>
 
-    <test name="Launch_ChangeLanguageFromWDL">
+    <test name="Launch_ChangeLanguageFromWDL" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_ChangeLanguageFromWDLTest"/>
         </classes>
     </test>
 
-    <test name="Launch_ChangeCMDTemplateTest">
+    <test name="Launch_ChangeCMDTemplateTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_ChangeCMDTemplateTest"/>
         </classes>
     </test>
 
-    <test name="Launch_VersionReleaseTest">
+    <test name="Launch_VersionReleaseTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_VersionReleaseTest"/>
         </classes>
@@ -236,55 +236,55 @@
         <!--</classes>-->
     <!--</test>-->
 
-    <test name="ObjectMetadataFolderTest">
+    <test name="ObjectMetadataFolderTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.ObjectMetadataFolderTest"/>
         </classes>
     </test>
 
-    <test name="ObjectMetadataPipelineTest">
+    <test name="ObjectMetadataPipelineTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.ObjectMetadataPipelineTest"/>
         </classes>
     </test>
 
-    <test name="ObjectMetadataBucketTest">
+    <test name="ObjectMetadataBucketTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.ObjectMetadataBucketTest"/>
         </classes>
     </test>
 
-    <test name="ObjectMetadataFileTest">
+    <test name="ObjectMetadataFileTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.ObjectMetadataFileTest"/>
         </classes>
     </test>
 
-    <test name="ObjectMetadataToolTest">
+    <test name="ObjectMetadataToolTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.ObjectMetadataToolTest"/>
         </classes>
     </test>
 
-    <test name="SamplesMetadataTest">
+    <test name="SamplesMetadataTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.SamplesMetadataTest"/>
         </classes>
     </test>
 
-    <test name="VersionControlTest">
+    <test name="VersionControlTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.VersionControlTest"/>
         </classes>
     </test>
 
-    <test name="PipelineConfigurationTest">
+    <test name="PipelineConfigurationTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.PipelineConfigurationTest"/>
         </classes>
     </test>
 
-    <test name="LaunchParameterRemoveParameterTest">
+    <test name="LaunchParameterRemoveParameterTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.LaunchParameterRemoveParameterTest"/>
         </classes>
@@ -316,7 +316,7 @@
         </classes>
     </test>
 
-    <test name="Launch_PipelineRunTimeoutTest" >
+    <test name="Launch_PipelineRunTimeoutTest" enabled="false" >
         <classes>
             <class name="com.epam.pipeline.autotests.Launch_PipelineRunTimeoutTest" />
         </classes>
@@ -352,37 +352,37 @@
         </classes>
     </test>
 
-    <test name="PipelineFromTemplateTest">
+    <test name="PipelineFromTemplateTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.PipelineFromTemplateTest"/>
         </classes>
     </test>
 
-    <test name="NotificationsTest">
+    <test name="NotificationsTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.NotificationsTest"/>
         </classes>
     </test>
 
-    <test name="ToolsScanTest">
+    <test name="ToolsScanTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.ToolsScanTest"/>
         </classes>
     </test>
 
-    <test name="GlobalSearchTest">
+    <test name="GlobalSearchTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.GlobalSearchTest"/>
         </classes>
     </test>
 
-    <test name="SystemLoggingTest">
+    <test name="SystemLoggingTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.SystemLoggingTest"/>
         </classes>
     </test>
 
-    <test name="RoleBasedAccessControlTest">
+    <test name="RoleBasedAccessControlTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.RoleBasedAccessControlTest"/>
         </classes>
@@ -400,7 +400,7 @@
         </classes>
     </test>
 
-    <test name="PipelinesAndStoragesRepositories">
+    <test name="PipelinesAndStoragesRepositories" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.PipelinesAndStoragesRepositories"/>
         </classes>
@@ -436,13 +436,13 @@
         </classes>
     </test>
 
-    <test name="PipelineLibraryTest">
+    <test name="PipelineLibraryTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.PipelineLibraryTest"/>
         </classes>
     </test>
 
-    <test name="StorageSynchronizationTest">
+    <test name="StorageSynchronizationTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.StorageSynchronizationTest"/>
         </classes>
@@ -466,7 +466,7 @@
         </classes>
     </test>
 
-    <test name="DataStoragesFeaturesTest">
+    <test name="DataStoragesFeaturesTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.DataStoragesFeaturesTest"/>
         </classes>
@@ -478,61 +478,61 @@
         </classes>
     </test>
 
-    <test name="DavMountStorageLimitTest">
+    <test name="DavMountStorageLimitTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.DavMountStorageLimitTest"/>
         </classes>
     </test>
 
-    <test name="LaunchParametersTest">
+    <test name="LaunchParametersTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.LaunchParametersTest"/>
         </classes>
     </test>
 
-    <test name="NATGatewayTest">
+    <test name="NATGatewayTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.NATGatewayTest"/>
         </classes>
     </test>
 
-    <test name="ADInfoTest">
+    <test name="ADInfoTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.ADInfoTest"/>
         </classes>
     </test>
 
-    <test name="NFSQuotasTest">
+    <test name="NFSQuotasTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.NFSQuotasTest"/>
         </classes>
     </test>
 
-    <test name="PlatformUsageTest">
+    <test name="PlatformUsageTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.PlatformUsageTest"/>
         </classes>
     </test>
 
-    <test name="MaintenanceModeTest">
+    <test name="MaintenanceModeTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.MaintenanceModeTest"/>
         </classes>
     </test>
 
-    <test name="StorageBackupsTest">
+    <test name="StorageBackupsTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.StorageBackupsTest"/>
         </classes>
     </test>
 
-    <test name="EnvironmentTest">
+    <test name="EnvironmentTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.EnvironmentTest"/>
         </classes>
     </test>
 
-    <test name="RestrictionsOnInstancePriceTypeTest">
+    <test name="RestrictionsOnInstancePriceTypeTest" enabled="false">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
         </classes>

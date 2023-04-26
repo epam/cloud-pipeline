@@ -64,6 +64,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     private final String pipeline314 = resourceName("epmcmbibpc-314");
     private final String pipeline306 = resourceName("epmcmbibpc-306");
     private final String pipeline312 = resourceName("epmcmbibpc-312");
+    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
 
     @AfterClass(alwaysRun = true)
     public void removePipelines() {
@@ -129,6 +132,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .firstVersion()
             .runPipeline()
             .setLaunchOptions("20", C.DEFAULT_INSTANCE, "")
+            .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
             .launch(this)
             .ensure(tabWithName("Active Runs"), visible, selectedTab)
             .ensure(runWithId(getLastRunId()), visible);

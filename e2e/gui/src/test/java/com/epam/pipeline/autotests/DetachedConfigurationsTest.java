@@ -149,6 +149,7 @@ public class DetachedConfigurationsTest
                     .clickAddStringParameter()
                     .setName(stringParameterName)
                     .close()
+                    .selectDockerImage(defaultRegistry, defaultGroup, testingTool, "latest")
                     .clickAddPathParameter()
                     .setName(pathParameterName)
                     .close()
@@ -161,6 +162,7 @@ public class DetachedConfigurationsTest
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
+                    .selectDockerImage(defaultRegistry, defaultGroup, testingTool, "latest")
                     .sleep(3, SECONDS)
                     .click(SAVE)
                     .waitUntilSaveEnding(pipelineProfile1611);
@@ -174,6 +176,7 @@ public class DetachedConfigurationsTest
                     .addCommonParameter(commonParameter, commonParameterValue)
                     .addInputParameter(inputParameter, inputParameterValue)
                     .addOutputParameter(outputParameter, outputParameterValue)
+                    .selectDockerImage(defaultRegistry, defaultGroup, testingTool, "latest")
                     .sleep(3, SECONDS)
                     .click(SAVE)
                     .waitUntilSaveEnding(pipelineProfile1611);

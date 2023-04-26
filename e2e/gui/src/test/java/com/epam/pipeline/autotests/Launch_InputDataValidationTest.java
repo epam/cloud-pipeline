@@ -55,6 +55,9 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
     private final String inputPath = String.format("%s://%s/%s/%s", PREFIX, storage, inFolder, inFile);
     private final String commonPath = String.format("%s://%s/%s, %s://%s/%s/%s", PREFIX, storage, commonFolder,
             PREFIX, storage, commonFolder2, commonFile3);
+    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
 
     @BeforeClass
     public void createInitialResources() {
@@ -116,6 +119,7 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
                 .clickOnPipeline(getPipelineName())
                 .firstVersion()
                 .runPipeline()
+                .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
                 .launch(this)
                 .sleep(1, SECONDS)
                 .showLog(getRunId())

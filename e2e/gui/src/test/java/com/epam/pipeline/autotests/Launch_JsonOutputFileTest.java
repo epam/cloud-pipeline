@@ -32,6 +32,9 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
     private static final String CONFIG_JSON = "config.json";
     private static final String STORAGE_RULES_FOLDER = "storage_rules_folder";
     private static final String FILE_TO_STORE_NAME = "storage_rules_test.test";
+    private final String defaultRegistry = C.DEFAULT_REGISTRY;
+    private final String defaultGroup = C.DEFAULT_GROUP;
+    private final String defaultTestingTool = C.TESTING_TOOL_NAME;
 
     private final String storage = "epmcmbi-test-storage-360-" + Utils.randomSuffix();
 
@@ -75,6 +78,7 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
             }))
             .saveAndCommitWithMessage("test: Add required output parameter named result")
             .runPipeline()
+            .selectDockerImage(defaultRegistry, defaultGroup, defaultTestingTool, "latest")
             .validateThereIsParameterOfType(parameterName, pathToFile, ParameterType.OUTPUT, true)
             .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);

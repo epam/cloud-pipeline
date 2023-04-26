@@ -164,6 +164,16 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO selectDockerImage(String registry, String group, String tool, String version) {
+        click(IMAGE);
+        new DockerImageSelection(this)
+                .selectRegistry(registry)
+                .selectGroup(group)
+                .selectTool(tool, version)
+                .click(OK);
+        return this;
+    }
+
     public PipelineRunFormAO selectRunCapability(final String optionQualifier) {
         get(RUN_CAPABILITIES).shouldBe(visible).click();
         $(visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
