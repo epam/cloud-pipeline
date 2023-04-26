@@ -47,7 +47,7 @@ owner_param_name = 'owner_param_name'
 region_id = 1
 instance_cores = 4
 polling_timeout = 600
-instance = Instance(name='instance', price_type=price_type, cpu=4, memory=16, gpu=0)
+instance = Instance(name='instance', price_type=price_type, cpu=4, mem=16, gpu=0)
 queue_name = 'main.q'
 hostlist = '@allhosts'
 run_id_queue = Queue()

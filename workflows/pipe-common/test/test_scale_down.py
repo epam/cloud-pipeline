@@ -26,6 +26,7 @@ ADDITIONAL_HOST = 'pipeline-1001'
 
 cmd_executor = Mock()
 grid_engine = Mock()
+grid_engine_validator = Mock()
 host_storage = MemoryHostStorage()
 static_storage = MemoryHostStorage()
 submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
@@ -35,6 +36,7 @@ idle_timeout = 30
 max_additional_hosts = 2
 clock = Clock()
 autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
+                                  job_validator=grid_engine_validator,
                                   cmd_executor=cmd_executor,
                                   scale_up_orchestrator=None,
                                   scale_down_handler=None,
@@ -52,6 +54,7 @@ def setup_function():
     autoscaler.host_storage.clear()
     autoscaler.host_storage.add_host(ADDITIONAL_HOST)
     grid_engine.get_host_to_scale_down = MagicMock(return_value=ADDITIONAL_HOST)
+    grid_engine_validator.validate = MagicMock(side_effect=lambda jobs: (jobs, []))
     host_storage.get_hosts_activity = MagicMock(return_value={
         ADDITIONAL_HOST: submit_datetime + timedelta(seconds=scale_down_timeout) - timedelta(seconds=idle_timeout)
     })
