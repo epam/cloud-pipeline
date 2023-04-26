@@ -143,6 +143,9 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
             name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_DELAY',
             help='Specifies a delay in seconds to temporary avoid unavailable instance types usage.\n'
                  'An instance type is considered unavailable if cloud region lacks such instances at the moment.')
+        self.scale_down_batch_size = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_SCALE_DOWN_BATCH_SIZE',
+            help='Specifies a maximum number of simultaneously scaling down workers.')
         self.scale_down_idle_timeout = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_IDLE_TIMEOUT',
             help='Specifies a timeout in seconds after which an inactive worker is considered idled.\n'
@@ -590,12 +593,6 @@ class GridEngine:
                 demands.append(IntegralDemand(cpu=job.cpu, owner=job.user))
         return demands
 
-    def get_host_to_scale_down(self, hosts):
-        # choose the weakest one (map to number of CPU, sort in reverse order and get from top)
-        # TODO: in the future other resources like RAM and GPU can be count here
-        return sorted([(host, self.get_host_resource(host)) for host in hosts],
-                      cmp=lambda h1, h2: h1[1].cpu - h2[1].cpu, reverse=True).pop()[0]
-
     def _get_available_slots(self):
         available_slots = 0
         output = self.cmd_executor.execute(GridEngine._QHOST)
@@ -610,10 +607,11 @@ class GridEngine:
                     available_slots += max(host_slots - host_used - host_resv, 0)
         return available_slots
 
-    def get_host_resource(self, host):
+    def get_host_supply(self, host):
         for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host):
             if "processors" in line:
-                return ResourceSupply(int(line.strip().split()[1]))
+                return ResourceSupply(cpu=int(line.strip().split()[1]))
+        return ResourceSupply()
 
     def _shutdown_execution_host(self, host, skip_on_failure):
         self._perform_command(
@@ -1246,6 +1244,47 @@ class GridEngineScaleDownHandler:
         self.executor.execute('remove_from_hosts "%s"' % host)
 
 
+class GridEngineScaleDownOrchestrator:
+
+    def __init__(self, scale_down_handler, grid_engine, host_storage, batch_size):
+        """
+        Grid engine scale down orchestrator.
+
+        Handles additional workers batch scaling down.
+        Scales down no more than a configured number of additional workers at once.
+
+        :param scale_down_handler: Scaling down handler.
+        :param grid_engine: Grid engine client.
+        :param host_storage: Additional hosts storage.
+        :param batch_size: Scaling up batch size.
+        """
+        self.scale_down_handler = scale_down_handler
+        self.grid_engine = grid_engine
+        self.host_storage = host_storage
+        self.batch_size = batch_size
+
+    def scale_down(self, inactive_additional_hosts):
+        hosts_to_scale_down = list(itertools.islice(self.select_hosts_to_scale_down(inactive_additional_hosts),
+                                                    self.batch_size))
+        number_of_threads = len(hosts_to_scale_down)
+        number_of_finished_threads = 0
+        Logger.info('Scaling down %s additional workers...' % number_of_threads)
+        for host in hosts_to_scale_down:
+            succeed = self.scale_down_handler.scale_down(host)
+            if succeed:
+                self.host_storage.remove_host(host)
+            number_of_finished_threads += 1
+            if number_of_finished_threads < number_of_threads:
+                Logger.info('Only %s/%s additional workers have been scaled down.'
+                            % (number_of_finished_threads, number_of_threads))
+        Logger.info('All %s/%s additional workers have been scaled down.'
+                    % (number_of_threads, number_of_threads))
+
+    def select_hosts_to_scale_down(self, hosts):
+        for host in sorted(hosts, key=self.grid_engine.get_host_supply, reverse=True):
+            yield host
+
+
 class ThreadSafeHostStorage:
 
     def __init__(self, storage):
@@ -1552,7 +1591,7 @@ class GridEngineWorkerTagsHandler:
 class GridEngineAutoscaler:
 
     def __init__(self, grid_engine, job_validator,
-                 cmd_executor, scale_up_orchestrator, scale_down_handler, host_storage,
+                 cmd_executor, scale_up_orchestrator, scale_down_orchestrator, host_storage,
                  static_host_storage, scale_up_timeout, scale_down_timeout, max_additional_hosts, idle_timeout=30,
                  clock=Clock()):
         """
@@ -1568,7 +1607,7 @@ class GridEngineAutoscaler:
         :param job_validator: Job validator.
         :param cmd_executor: Cmd executor.
         :param scale_up_orchestrator: Scaling up orchestrator.
-        :param scale_down_handler: Scaling down handler.
+        :param scale_down_orchestrator: Scaling down orchestrator.
         :param host_storage: Additional hosts storage.
         :param static_host_storage: Static workers host storage
         :param scale_up_timeout: Maximum number of seconds job could wait in queue
@@ -1583,7 +1622,7 @@ class GridEngineAutoscaler:
         self.job_validator = job_validator
         self.executor = cmd_executor
         self.scale_up_orchestrator = scale_up_orchestrator
-        self.scale_down_handler = scale_down_handler
+        self.scale_down_orchestrator = scale_down_orchestrator
         self.host_storage = host_storage
         self.static_host_storage = static_host_storage
         self.scale_up_timeout = timedelta(seconds=scale_up_timeout)
@@ -1683,12 +1722,7 @@ class GridEngineAutoscaler:
                 inactive_additional_hosts = idle_additional_hosts
         if inactive_additional_hosts:
             Logger.info('Scaling down will be performed.')
-            # TODO: here we always choose weakest host, even if all hosts are inactive and we can drop strongest one firstly
-            # TODO in order to safe some money
-            inactive_additional_host = self.grid_engine.get_host_to_scale_down(inactive_additional_hosts)
-            succeed = self.scale_down(inactive_additional_host)
-            if succeed:
-                self.host_storage.remove_host(inactive_additional_host)
+            self.scale_down(inactive_additional_hosts)
         else:
             Logger.info('There are 0 additional workers to scale down. Scaling down is aborted.')
 
@@ -1700,15 +1734,14 @@ class GridEngineAutoscaler:
                 inactive_hosts.append(host)
         return inactive_hosts
 
-    def scale_down(self, child_host):
+    def scale_down(self, inactive_additional_hosts):
         """
         Scales down an additional worker.
 
-        :param child_host: Host name of an additional worker to be scaled down.
-        :return: True if the worker was scaled down, False otherwise.
+        :param inactive_additional_hosts: Host names to be scaled down.
         """
-        Logger.info('Start grid engine SCALING DOWN for %s host.' % child_host)
-        return self.scale_down_handler.scale_down(child_host)
+        Logger.info('Start grid engine SCALING DOWN for %s hosts.' % len(inactive_additional_hosts))
+        self.scale_down_orchestrator.scale_down(inactive_additional_hosts)
 
 
 class GridEngineWorkerValidator:
@@ -2390,6 +2423,7 @@ def main():
 
     scale_up_strategy = os.getenv(params.autoscaling.scale_up_strategy.name, 'cpu-capacity')
     scale_up_batch_size = int(os.getenv(params.autoscaling.scale_up_batch_size.name, 1))
+    scale_down_batch_size = int(os.getenv(params.autoscaling.scale_down_batch_size.name, 1))
     scale_up_polling_delay = int(os.getenv(params.autoscaling.scale_up_polling_delay.name, 10))
     scale_up_unavailability_delay = int(os.getenv(params.autoscaling.scale_up_unavailability_delay.name, 1800))
 
@@ -2546,6 +2580,10 @@ def main():
                                   .format(instance.name, instance.cpu, instance.gpu, instance.mem)
                                   for instance in instance_provider.provide())))
 
+    worker_tags_handler = GridEngineWorkerTagsHandler(api=api, tagging_active_timeout=tagging_active_timeout,
+                                                      host_storage=host_storage,
+                                                      static_host_storage=static_host_storage, clock=clock,
+                                                      common_utils=common_utils)
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                                 host_storage=host_storage,
                                                 parent_run_id=master_run_id, default_hostfile=default_hostfile,
@@ -2558,11 +2596,8 @@ def main():
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_launch_params=instance_launch_params,
                                                 clock=clock)
-    worker_tags_handler = GridEngineWorkerTagsHandler(api=api, tagging_active_timeout=tagging_active_timeout,
-                                                      host_storage=host_storage,
-                                                      static_host_storage=static_host_storage, clock=clock,
-                                                      common_utils=common_utils)
-    scale_up_orchestrator = GridEngineScaleUpOrchestrator(scale_up_handler=scale_up_handler, grid_engine=grid_engine,
+    scale_up_orchestrator = GridEngineScaleUpOrchestrator(scale_up_handler=scale_up_handler,
+                                                          grid_engine=grid_engine,
                                                           host_storage=host_storage,
                                                           static_host_storage=static_host_storage,
                                                           worker_tags_handler=worker_tags_handler,
@@ -2573,13 +2608,17 @@ def main():
                                                           clock=clock)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile, common_utils=common_utils)
+    scale_down_orchestrator = GridEngineScaleDownOrchestrator(scale_down_handler=scale_down_handler,
+                                                              grid_engine=grid_engine,
+                                                              host_storage=host_storage,
+                                                              batch_size=scale_down_batch_size)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler,
                                                  common_utils=common_utils)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, job_validator=job_validator,
                                       cmd_executor=cmd_executor,
                                       scale_up_orchestrator=scale_up_orchestrator,
-                                      scale_down_handler=scale_down_handler,
+                                      scale_down_orchestrator=scale_down_orchestrator,
                                       host_storage=host_storage, static_host_storage=static_host_storage,
                                       scale_up_timeout=scale_up_timeout,
                                       scale_down_timeout=scale_down_timeout,
