@@ -99,3 +99,45 @@ def test_validate_both_valid_invalid_jobs():
 
     assert valid_jobs == [jobs[0], jobs[2]]
     assert invalid_jobs == [jobs[1], jobs[3]]
+
+
+def test_validate_invalid_cpu_job():
+    jobs = [
+        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+                      cpu=100, gpu=3, mem=4, pe=LOCAL_PE),
+        GridEngineJob(id='3', root_id=3, name='', user='', state='', datetime='',
+                      cpu=100, gpu=30, mem=40, pe=MPI_PE),
+    ]
+
+    valid_jobs, invalid_jobs = job_validator.validate(jobs)
+
+    assert not valid_jobs
+    assert invalid_jobs == jobs
+
+
+def test_validate_invalid_gpu_job():
+    jobs = [
+        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+                      cpu=2, gpu=100, mem=4, pe=LOCAL_PE),
+        GridEngineJob(id='3', root_id=3, name='', user='', state='', datetime='',
+                      cpu=20, gpu=100, mem=40, pe=MPI_PE),
+    ]
+
+    valid_jobs, invalid_jobs = job_validator.validate(jobs)
+
+    assert not valid_jobs
+    assert invalid_jobs == jobs
+
+
+def test_validate_invalid_mem_job():
+    jobs = [
+        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+                      cpu=2, gpu=3, mem=100, pe=LOCAL_PE),
+        GridEngineJob(id='3', root_id=3, name='', user='', state='', datetime='',
+                      cpu=20, gpu=30, mem=100, pe=MPI_PE),
+    ]
+
+    valid_jobs, invalid_jobs = job_validator.validate(jobs)
+
+    assert not valid_jobs
+    assert invalid_jobs == jobs
