@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.log.PageMarker;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.search.SearchRequestBuilder;
+import com.epam.pipeline.manager.search.SearchResultConverter;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
@@ -112,6 +113,8 @@ public class LogManager {
     private final GlobalSearchElasticHelper elasticHelper;
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
+    private final SearchRequestBuilder searchRequestBuilder;
+    private final SearchResultConverter searchResultConverter;
 
     @Value("${log.security.elastic.index.prefix:security_log}")
     private String indexPrefix;
@@ -171,18 +174,14 @@ public class LogManager {
                 .build();
     }
 
-    public Map<String, Map<String, Long>> group(final LogRequest logRequest) {
+    public Map<String, Long> group(final LogRequest logRequest) {
         final LogFilter logFilter = Optional.ofNullable(logRequest.getFilter()).orElse(new LogFilter());
+        final String groupBy = logRequest.getGroupBy();
+        Assert.isTrue(StringUtils.isNotBlank(groupBy), "Group by field not provided.");
+
         final SearchSourceBuilder source = new SearchSourceBuilder()
                 .query(constructQueryFilter(logRequest.getFilter()));
-
-        TermsAggregationBuilder groupByUser = AggregationBuilders
-                .terms(USER).field(SearchRequestBuilder.buildKeywordName(USER));
-        TermsAggregationBuilder groupByTerm = AggregationBuilders
-                .terms(logRequest.getGroupBy()).field(SearchRequestBuilder.buildKeywordName(logRequest.getGroupBy()));
-
-        groupByUser.subAggregation(groupByTerm);
-        source.aggregation(groupByUser);
+        searchRequestBuilder.addTermAggregationToSource(source, groupBy);
 
         final SearchRequest request = new SearchRequest()
                 .source(source)
@@ -192,20 +191,12 @@ public class LogManager {
 
         final SearchResponse response = verifyResponse(executeRequest(request));
 
-        final Terms userAggregation = response.getAggregations().get("user");
-        final List<? extends Terms.Bucket> userBuckets = userAggregation.getBuckets();
-        final Map<String, Map<String, Long>> logGroup = new HashMap<>();
-
-        for (Terms.Bucket userBucket : userBuckets) {
-            final Terms termAggregation = userBucket.getAggregations().get(logRequest.getGroupBy());
-            final List<? extends Terms.Bucket> termBuckets = termAggregation.getBuckets();
-            final Map<String, Long> termGroup = new HashMap<>();
-            for (Terms.Bucket termBucket : termBuckets) {
-                termGroup.put(termBucket.getKeyAsString(), termBucket.getDocCount());
-            }
-            logGroup.put(userBucket.getKeyAsString(), termGroup);
+        final Terms terms = response.getAggregations().get(groupBy);
+        final Map<String, Long> result = new HashMap<>();
+        for (Terms.Bucket termBucket : terms.getBuckets()) {
+            result.put(termBucket.getKeyAsString(), termBucket.getDocCount());
         }
-        return logGroup;
+        return result;
     }
 
     public LogFilter getFilters() {

@@ -657,6 +657,18 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             clausesCount++;
         }
 
+        if (filter.isMasterRun()) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder.append(" r.cluster_COUNT > 0 OR r.parameters like %CP_CAP_AUTOSCALE=true=boolean%");
+            clausesCount++;
+        }
+
+        if (filter.isWorkerRun()) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder.append(" r.parent_id is not null");
+            clausesCount++;
+        }
+
         appendProjectFilter(projectFilter, params, whereBuilder, clausesCount);
         appendAclFilters(filter, params, whereBuilder, clausesCount);
 

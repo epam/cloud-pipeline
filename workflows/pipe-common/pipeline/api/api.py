@@ -1401,21 +1401,30 @@ class PipelineAPI:
             data = {'from': start, 'to': end, 'users': users, 'interval': 'HOURS'}
             return self._request(endpoint=self.REPORT_USERS, http_method="post", data=data)
         except Exception as e:
-            raise RuntimeError("Failed to load usage report \n {}".format(e))
+            raise RuntimeError("Failed to load users report \n {}".format(e))
 
-    def log_group(self, start, end, users, group_by):
+    def log_group(self, filter, group_by):
         try:
-            data = {'filter': {'messageTimestampFrom': start, 'messageTimestampTo': end, 'types': ['audit'],
-                               'users': users}, 'groupBy': group_by}
+            data = {'filter': filter, 'groupBy': group_by}
             return self._request(endpoint=self.LOG_GROUP, http_method="post", data=data)
         except Exception as e:
             raise RuntimeError("Failed to load logs \n {}".format(e))
 
-    def billing_export(self, start, end, owners, types):
+    def filter_runs(self, start, end, user, filter):
+        try:
+            data = {'owners': [user], 'startDateFrom': start, 'endDateTo': end, "page": 1,
+                    "pageSize": self.MAX_PAGE_SIZE}
+            for key, value in filter.items():
+                data[key] = value
+            result = self._request(endpoint=self.FILTER_RUNS, http_method="post", data=data)
+            return result['elements'] if 'elements' in result else []
+        except Exception as e:
+            raise RuntimeError("Failed to load master runs \n {}".format(e))
+
+    def billing_export(self, start, end, filters, types):
         try:
             url = '{}/{}'.format(self.api_url, self.BILLING_EXPORT)
-            data = {"types": types, "from": start, "to": end, "filters": {"owner": owners},
-                    "discount": {"computes": 0, "storages": 0}}
+            data = {"types": types, "from": start, "to": end, "filters": filters, "discount": {"computes": 0, "storages": 0}}
             response = requests.request(method="post", url=url, data=json.dumps(data),
                                         headers=self.header, verify=False,
                                         timeout=self.connection_timeout)

@@ -51,6 +51,8 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
 
     private boolean userModified = true;
     private boolean eagerGrouping = true;
+    private boolean masterRun = false;
+    private boolean workerRun = false;
     private Map<String, String> tags;
 
     //these filters are used for ACL filtering

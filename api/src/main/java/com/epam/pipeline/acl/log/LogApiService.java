@@ -43,7 +43,7 @@ public class LogApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public Map<String, Map<String, Long>> group(final LogRequest logRequest) {
+    public Map<String, Long> group(final LogRequest logRequest) {
         return manager.group(logRequest);
     }
 

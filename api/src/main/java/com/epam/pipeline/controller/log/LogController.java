@@ -74,12 +74,12 @@ public class LogController extends AbstractRestController {
     @ResponseBody
     @ApiOperation(
             value = "Filter and group logs by a field.",
-            notes = "Filter and group logs by a field. Result is aggregated by users.",
+            notes = "Filter and group logs by a field.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<Map<String, Map<String, Long>>> group(@RequestBody final LogRequest logRequest) {
+    public Result<Map<String, Long>> group(@RequestBody final LogRequest logRequest) {
         return Result.success(logApiService.group(logRequest));
     }
 
