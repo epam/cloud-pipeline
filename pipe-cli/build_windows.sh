@@ -60,6 +60,14 @@ docker run -i --rm \
            $CP_PYINSTALL_WIN32_PY2_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 
+_distr_path_ntlmaps="${PIPE_CLI_SOURCES_DIR}/ntlmaps"
+if [ ! -f "$_distr_path_ntlmaps" ]; Then
+    echo "[ERROR] 'ntlmaps' cannot be found at ${_distr_path_ntlmaps}." \
+         "Which means there were errors during compilation, please see any output above." \
+         "Will not proceed with the mount/pipe compilation."
+    exit 1
+fi
+
 rm -f $_BUILD_SCRIPT_NAME
 
 
@@ -168,5 +176,12 @@ docker run -i --rm \
            -e PIPE_COMMIT_HASH=$PIPE_COMMIT_HASH \
            $CP_PYINSTALL_WIN64_DOCKER \
            bash $_BUILD_SCRIPT_NAME
+
+_distr_path_pipe="${PIPE_CLI_WIN_DIST_DIR}/pipe.zip"
+if [ ! -f "$_distr_path_pipe" ]; Then
+    echo "[ERROR] 'pipe.zip' cannot be found at ${_distr_path_pipe}." \
+         "Which means there were errors during compilation, please see any output above."
+    exit 1
+fi
 
 rm -f $_BUILD_SCRIPT_NAME
