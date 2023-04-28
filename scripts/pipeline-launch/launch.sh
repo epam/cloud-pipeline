@@ -1023,7 +1023,7 @@ fi
 export CP_CAP_RECOVERY="${CP_CAP_RECOVERY:-false}"
 export CP_CAP_RECOVERY_MODE_INIT="${CP_CAP_RECOVERY_MODE_INIT:-skip}"
 export CP_CAP_RECOVERY_MODE_EXEC="${CP_CAP_RECOVERY_MODE_EXEC:-stop}"
-export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERING}"
+export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERED}"
 
 ######################################################
 # Configure Hyperthreading
