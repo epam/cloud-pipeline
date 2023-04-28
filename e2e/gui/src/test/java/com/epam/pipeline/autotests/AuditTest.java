@@ -48,13 +48,13 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private String testFolder = format("auditTestsFolder-%s", Utils.randomSuffix());
-    private String storage1 = format("storage1_3059_%s", Utils.randomSuffix());
-    private String storage2 = format("storage2_3059_%s", Utils.randomSuffix());
-    private String storage3 = format("storage3_3059_%s", Utils.randomSuffix());
-    private String storage4 = format("storage4_3059_%s", Utils.randomSuffix());
-    private String storage5 = format("storage5_3059_%s", Utils.randomSuffix());
-    private String storage6 = format("storage6_3059_%s", Utils.randomSuffix());
-    private String storage7 = format("storage7_3059_%s", Utils.randomSuffix());
+    private String storage1 = format("storage1audit%s", Utils.randomSuffix());
+    private String storage2 = format("storage2audit%s", Utils.randomSuffix());
+    private String storage3 = format("storage3audit%s", Utils.randomSuffix());
+    private String storage4 = format("storage4audit%s", Utils.randomSuffix());
+    private String storage5 = format("storage5audit%s", Utils.randomSuffix());
+    private String storage6 = format("storage6audit%s", Utils.randomSuffix());
+    private String storage7 = format("storage7audit%s", Utils.randomSuffix());
     private String folder1 = "folder1";
     private String folder1_new = "folder1_new";
     private String folder2 = "folder2";
@@ -277,7 +277,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("rm destination/%s/%s", storage5, file2),
                 format("cp -rf destination/%s/%s destination/%s/%s", storage4, folder1, storage5, folder1),
                 format("mv -f destination/%s/%s destination/%s/%s", storage4, folder2, storage5, folder2),
-                format("rm -f destination/%s/%s", storage4, folder1)
+                format("rm -fdr destination/%s/%s", storage4, folder1)
         };
         String [] expected_logs = {
                 format("WRITE %s/%s", pathStorage4, file3),
