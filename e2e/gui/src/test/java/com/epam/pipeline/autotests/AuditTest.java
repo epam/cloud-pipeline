@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.FILE_SYSTEM_ACCESS;
 import com.epam.pipeline.autotests.ao.SystemManagementAO.SystemLogsAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -47,9 +48,13 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private String testFolder = format("auditTestsFolder-%s", Utils.randomSuffix());
-    private String storage1 = format("storage1-3059-%s", Utils.randomSuffix());
-    private String storage2 = format("storage2-3059-%s", Utils.randomSuffix());
-    private String storage3 = format("storage3-3059-%s", Utils.randomSuffix());
+    private String storage1 = format("storage1_3059_%s", Utils.randomSuffix());
+    private String storage2 = format("storage2_3059_%s", Utils.randomSuffix());
+    private String storage3 = format("storage3_3059_%s", Utils.randomSuffix());
+    private String storage4 = format("storage4_3059_%s", Utils.randomSuffix());
+    private String storage5 = format("storage5_3059_%s", Utils.randomSuffix());
+    private String storage6 = format("storage6_3059_%s", Utils.randomSuffix());
+    private String storage7 = format("storage7_3059_%s", Utils.randomSuffix());
     private String folder1 = "folder1";
     private String folder1_new = "folder1_new";
     private String folder2 = "folder2";
@@ -64,6 +69,10 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     String pathStorage1 = "";
     String pathStorage2 = "";
     String pathStorage3 = "";
+    String pathStorage4 = "";
+    String pathStorage5 = "";
+    String pathStorage6 = "";
+    String pathStorage7 = "";
 
     @BeforeClass(alwaysRun = true)
     public void createPreferences() {
@@ -76,26 +85,10 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 FolderPermission.allow(WRITE, testFolder),
                 FolderPermission.allow(EXECUTE, testFolder)
         );
-        Stream.of(storage1, storage2)
-                .forEach(stor -> library()
-                        .cd(testFolder)
-                        .createStorage(stor));
-        pathStorage1 = library()
-                .selectStorage(storage1)
-                .createFileWithContent(file1, "file1 content")
-                .createFileWithContent(file2, "file2 content")
-                .createFolder(folder1)
-                .createFolder(folder2)
-                .cd(folder1)
-                .createFileWithContent(inner_file1, "inner_file1 content")
-                .createFileWithContent(inner_file2, "inner_file2 content")
-                .cd("..")
-                .cd(folder2)
-                .createFileWithContent(inner_file3, "inner_file3 content")
-                .createFileWithContent(inner_file4, "inner_file4 content")
-                .cd("..")
-                .getStoragePath();
+        pathStorage1 = createStoragesWithContent(storage1);
         pathStorage2 = library()
+                .cd(testFolder)
+                .createStorage(storage2)
                 .selectStorage(storage2)
                 .getStoragePath();
     }
@@ -214,16 +207,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         String file2_new = newFile.getName();
         logoutIfNeeded();
         loginAs(user);
-        pathStorage3 = library()
-                .cd(testFolder)
-                .createStorage(storage3)
-                .selectStorage(storage3)
-                .createFolder(folder1)
-                .cd(folder1)
-                .createFile(inner_file1)
-                .createFile(inner_file2)
-                .cd("..")
-                .getStoragePath();
+        pathStorage3 = createStoragesWithContent(storage3);
         String [] expected_logs = {
                 format("WRITE %s/%s", pathStorage3, file1),
                 format("WRITE %s/%s", pathStorage3, file2_new),
@@ -266,6 +250,74 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         checkAuditLog(expected_logs);
     }
 
+    @Test
+    @TestCase(value = {"3059_4"})
+    public void webDavDataAccessAudit() {
+        logoutIfNeeded();
+        loginAs(admin);
+        pathStorage4 = createStoragesWithContent(storage4)
+                .replace("s3", "cp");//
+        pathStorage5 = library()
+                .cd(testFolder)
+                .createStorage(storage5)
+                .selectStorage(storage5)
+                .getStoragePath()
+                .replace("s3", "cp");
+        Stream.of(storage4, storage5)
+                .forEach(stor -> library()
+                        .selectStorage(stor)
+                        .showMetadata()
+                        .click(FILE_SYSTEM_ACCESS));
+        String [] commands = {
+                "pipe storage mount -f -m 775 -o allow_other destination",
+                format("echo \"test info\" >> destination/%s/%s", storage4, file3),
+                format("cp destination/%s/%s destination/%s/%s", storage4, file1, storage5, file1),
+                format("cat destination/%s/%s", storage4, file2),
+                format("mv destination/%s/%s destination/%s", storage4, file2, storage5),
+                format("rm destination/%s/%s", storage5, file2),
+                format("cp -rf destination/%s/%s destination/%s/%s", storage4, folder1, storage5, folder1),
+                format("mv -f destination/%s/%s destination/%s/%s", storage4, folder2, storage5, folder2),
+                format("rm -f destination/%s/%s", storage4, folder1)
+        };
+        String [] expected_logs = {
+                format("WRITE %s/%s", pathStorage4, file3),
+                format("READ %s/%s", pathStorage4, file1),
+                format("WRITE %s/%s", pathStorage5, file1),
+                format("READ %s/%s", pathStorage4, file1),
+                format("MOVE %s/%s %s/%s", pathStorage4, file2, pathStorage5, file2),
+                format("DELETE %s/%s", pathStorage5, file2),
+                format("READ %s/%s/%s", pathStorage4, folder1, inner_file1),
+                format("WRITE %s/%s/%s", pathStorage5, folder1, inner_file1),
+                format("READ %s/%s/%s", pathStorage4, folder1, inner_file2),
+                format("WRITE %s/%s/%s", pathStorage5, folder1, inner_file2),
+                format("READ %s/%s/%s", pathStorage4, folder2, inner_file3),
+                format("WRITE %s/%s/%s", pathStorage5, folder2, inner_file3),
+                format("DELETE %s/%s/%s", pathStorage5, folder2, inner_file3),
+                format("READ %s/%s/%s", pathStorage4, folder2, inner_file4),
+                format("WRITE %s/%s/%s", pathStorage5, folder2, inner_file4),
+                format("DELETE %s/%s/%s", pathStorage5, folder2, inner_file4),
+                format("DELETE %s/%s/%s", pathStorage4, folder2, inner_file1),
+                format("DELETE %s/%s/%s", pathStorage4, folder2, inner_file2)
+        };
+        logoutIfNeeded();
+        loginAs(user);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .selectDataStoragesToLimitMounts()
+                .clearSelection()
+                .searchStorage(storage4)
+                .selectStorage(storage4)
+                .searchStorage(storage5)
+                .selectStorage(storage5)
+                .ok()
+                .launch(this);
+        executeCommands(commands);
+        logoutIfNeeded();
+        loginAs(admin);
+        checkAuditLog(expected_logs);
+    }
+
     private void executeCommands(String [] commands) {
         runsMenu()
                 .showLog(getLastRunId())
@@ -291,6 +343,26 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         for (String mess : logs) {
             systemLogsAO.validateRow(mess, user.login, "audit");
         }
+    }
+
+    private String createStoragesWithContent(String storage) {
+        return library()
+                .cd(testFolder)
+                .createStorage(storage)
+                .selectStorage(storage)
+                .createFileWithContent(file1, "file1 content")
+                .createFileWithContent(file2, "file2 content")
+                .createFolder(folder1)
+                .createFolder(folder2)
+                .cd(folder1)
+                .createFileWithContent(inner_file1, "inner_file1 content")
+                .createFileWithContent(inner_file2, "inner_file2 content")
+                .cd("..")
+                .cd(folder2)
+                .createFileWithContent(inner_file3, "inner_file3 content")
+                .createFileWithContent(inner_file4, "inner_file4 content")
+                .cd("..")
+                .getStoragePath();
     }
 
 }
