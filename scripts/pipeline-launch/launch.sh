@@ -108,7 +108,7 @@ function install_pip_package {
      if [ "$_DOWNLOAD_RESULT" -ne 0 ];
         then
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
-            exit "$_DOWNLOAD_RESULT"
+            fail_init "$_DOWNLOAD_RESULT"
         fi
     $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
@@ -116,7 +116,7 @@ function install_pip_package {
     if [ "$_INSTALL_RESULT" -ne 0 ];
     then
         echo "[ERROR] Failed to install ${_DIST_NAME}. Exiting"
-        exit "$_INSTALL_RESULT"
+        fail_init "$_INSTALL_RESULT"
     fi
 
 
@@ -133,7 +133,7 @@ function mount_nfs_if_required {
             if [ "$_SETUP_RESULT" -ne 0 ];
             then
                 echo "[ERROR] Mounting NFS failed. Exiting"
-                exit "$_SETUP_RESULT"
+                fail_init "$_SETUP_RESULT"
             fi
      fi
 
@@ -154,7 +154,7 @@ function setup_nfs_if_required {
           if [ "$_SETUP_RESULT" -ne 0 ];
           then
                 echo "[ERROR] NFS mount failed. Exiting"
-                exit "$_SETUP_RESULT"
+                fail_init "$_SETUP_RESULT"
           fi
           echo "------"
     fi
@@ -298,7 +298,7 @@ function cp_cap_init {
             if [ $_CAP_INIT_SCRIPT_RESULT -ne 0 ];
             then
                   echo "[ERROR] $_CAP_INIT_SCRIPT failed with $_CAP_INIT_SCRIPT_RESULT. Exiting"
-                  exit "$_CAP_INIT_SCRIPT_RESULT"
+                  fail_init "$_CAP_INIT_SCRIPT_RESULT"
             else
                   # Reload env vars, in case they were updated within cap init scripts
                   source "$CP_ENV_FILE_TO_SOURCE"
@@ -905,6 +905,93 @@ function self_terminate_on_cleanup_timeout() {
       fi
 }
 
+function recover_run() {
+    local _EXIT_CODE="$1"
+    local _RECOVERY_MODE="$2"
+
+    echo "Tagging run as recovering..."
+    tag_run "RECOVERING" "true"
+
+    if [ "$_RECOVERY_MODE" == "skip" ]; then
+        echo "Recovering from exit code $_EXIT_CODE by continuing the execution..."
+        return "$_EXIT_CODE"
+    fi
+    if [ "$_RECOVERY_MODE" == "stop" ]; then
+        echo "Recovering from exit code $_EXIT_CODE by stopping the execution..."
+        sleep 10000d
+    fi
+    if [ "$_RECOVERY_MODE" == "fail" ]; then
+        echo "Recovering from exit code $_EXIT_CODE by failing the execution..."
+        exit "$_EXIT_CODE"
+    fi
+}
+
+function recover_init {
+    local _EXIT_CODE="$1"
+    recover_run "$_EXIT_CODE" "$CP_CAP_RECOVERY_MODE_INIT"
+}
+
+function recover_exec {
+    local _EXIT_CODE="$1"
+    recover_run "$_EXIT_CODE" "$CP_CAP_RECOVERY_MODE_EXEC"
+}
+
+function fail_init {
+    local _EXIT_CODE="$1"
+
+    if check_cp_cap CP_CAP_RECOVERY; then
+        recover_init "$_EXIT_CODE"
+    else
+        exit "$_EXIT_CODE"
+    fi
+}
+
+function finish_exec {
+    local _EXIT_CODE="$1"
+
+    if check_cp_cap CP_CAP_RECOVERY && [ "$_EXIT_CODE" != "0" ]; then
+        recover_exec "$_EXIT_CODE"
+    else
+        return "$_EXIT_CODE"
+    fi
+}
+
+function call_api() {
+    local _HTTP_METHOD="$1"
+    local _API_METHOD="$2"
+    local _HTTP_BODY="$3"
+
+    echo "Calling $API$_API_METHOD..." >> "$LOG_DIR/launch.sh.call_api.log"
+    if [[ "$_HTTP_BODY" ]]; then
+        curl -f -s -k --max-time 30 \
+            -X "$_HTTP_METHOD" \
+            --header 'Accept: application/json' \
+            --header 'Authorization: Bearer '"$API_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data "$_HTTP_BODY" \
+            "$API$_API_METHOD" \
+            >>"$LOG_DIR/launch.sh.call_api.log" 2>&1
+    else
+        curl -f -s -k --max-time 30 \
+            -X "$_HTTP_METHOD" \
+            --header 'Accept: application/json' \
+            --header 'Authorization: Bearer '"$API_TOKEN" \
+            --header 'Content-Type: application/json' \
+            "$API$_API_METHOD" \
+            >>"$LOG_DIR/launch.sh.call_api.log" 2>&1
+    fi
+}
+
+function tag_run() {
+    local _KEY="$1"
+    local _VALUE="$2"
+    call_api "POST" "run/$RUN_ID/tag" '{
+        "tags": {
+            "'"$_KEY"'": "'"$_VALUE"'"
+        }
+    }'
+}
+
 ######################################################
 
 
@@ -929,6 +1016,14 @@ else
     SINGLE_RUN=false;
 fi
 
+if check_cp_cap RESUMED_RUN; then
+    export CP_CAP_RECOVERY="true"
+fi
+
+export CP_CAP_RECOVERY="${CP_CAP_RECOVERY:-false}"
+export CP_CAP_RECOVERY_MODE_INIT="${CP_CAP_RECOVERY_MODE_INIT:-skip}"
+export CP_CAP_RECOVERY_MODE_EXEC="${CP_CAP_RECOVERY_MODE_EXEC:-stop}"
+export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERING}"
 
 ######################################################
 # Configure Hyperthreading
@@ -1012,7 +1107,7 @@ then
       if [ "$_CP_UPGRADE_RESULT" -ne 0 ]
       then
             echo "[WARN] Packages upgrade done with exit code $_CP_UPGRADE_RESULT, review any issues above"
-            exit "$_DOWNLOAD_RESULT"
+            fail_init "$_DOWNLOAD_RESULT"
       else
             echo "Packages upgrade done"
       fi
@@ -1054,7 +1149,7 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
             if [ -z "$CP_PYTHON2_PATH" ]
             then
                   echo "[ERROR] python2 environment not found, exiting."
-                  exit 1
+                  fail_init 1
             fi
       fi
 fi
@@ -1389,7 +1484,7 @@ CP_PIPE_COMMON_ENABLED=${CP_PIPE_COMMON_ENABLED:-"true"}
 if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
       if [ -z "$DISTRIBUTION_URL" ]; then
             echo "[ERROR] Distribution URL is not defined. Exiting"
-            exit 1
+            fail_init 1
       else
             cd $COMMON_REPO_DIR
             # Fixed setuptools version to be compatible with the pipe-common package
@@ -1399,7 +1494,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             if [ "$_DOWNLOAD_RESULT" -ne 0 ];
             then
                   echo "[ERROR] Main repository download failed. Exiting"
-                  exit "$_DOWNLOAD_RESULT"
+                  fail_init "$_DOWNLOAD_RESULT"
             fi
             _INSTALL_RESULT=0
             tar xf pipe-common.tar.gz
@@ -1408,7 +1503,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             if [ "$_INSTALL_RESULT" -ne 0 ];
             then
                   echo "[ERROR] Main repository install failed. Exiting"
-                  exit "$_INSTALL_RESULT"
+                  fail_init "$_INSTALL_RESULT"
             fi
             cd -
       fi
@@ -1449,7 +1544,7 @@ if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
 
             if [ $? -ne 0 ]; then
                   echo "[ERROR] 'pipe' CLI download failed. Exiting"
-                  exit 1
+                  fail_init 1
             fi
 
             # Clean any known locations, where previous version of the pipe might reside (E.g. committed by the user)
@@ -1489,7 +1584,7 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       download_file "${DISTRIBUTION_URL}${CP_FSBROWSER_NAME}"
       if [ $? -ne 0 ]; then
             echo "[ERROR] Unable to install FSBrowser"
-            exit 1
+            fail_init 1
       fi
 
       rm -f /bin/fsbrowser
@@ -1525,7 +1620,7 @@ if [ "$CP_GPUSTAT_ENABLED" != "false" ] && check_installed "nvidia-smi"; then
       download_file "${DISTRIBUTION_URL}${CP_GPUSTAT_NAME}"
       if [ $? -ne 0 ]; then
             echo "[ERROR] Unable to download gpustat"
-            exit 1
+            fail_init 1
       fi
 
       CP_GPUSTAT_INSTALL_DIR=${CP_GPUSTAT_INSTALL_DIR:-${CP_USR_BIN}/gpustat-dist}
@@ -1587,7 +1682,7 @@ else
       if [ "$_CLONE_RESULT" -ne 0 ];
       then
             echo "[ERROR] Pipeline repository clone failed. Exiting"
-            exit "$_CLONE_RESULT"
+            fail_init "$_CLONE_RESULT"
       fi
       cd -
 fi
@@ -1687,7 +1782,7 @@ fi
 if [ "$_SETUP_RESULT" -ne 0 ];
 then
     echo "[ERROR] Cluster setup failed. Exiting"
-    exit "$_SETUP_RESULT"
+    fail_init "$_SETUP_RESULT"
 fi
 
 if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
@@ -1763,7 +1858,7 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
 
             if [ $? -ne 0 ]; then
                   echo "Failed to upload input data"
-                  exit 1
+                  fail_init 1
             fi
             echo
 
@@ -1779,7 +1874,7 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
                   if [ "$CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE" == "true" ]; then
                         echo "--> It is requested to continue running on config files based localization failure"
                   else
-                        exit 1
+                        fail_init 1
                   fi
             fi
             echo
@@ -2309,6 +2404,8 @@ else
   bash -c "${SCRIPT}"
   CP_EXEC_RESULT=$?
 fi
+
+finish_exec "$CP_EXEC_RESULT"
 
 echo "------"
 echo
