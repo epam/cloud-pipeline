@@ -28,16 +28,14 @@ IS_RPM_BASED=$?
 # Install DIND dependencies
 ######################################################
 _DIND_DEP_INSTALL_RESULT=0
+OS_ID=$(. /etc/os-release;echo $ID)
 if [ $IS_RPM_BASED -eq 0 ]; then
-    yum install -y -q \
-                btrfs-progs \
-                e2fsprogs \
-                iptables \
-                iproute \
-                xfsprogs \
-                xz \
-                pigz \
-                kmod
+    _PACKAGES_TO_INSTALL="e2fsprogs iptables iproute xfsprogs xz pigz kmod"
+    # Rocky doesn't have btrfs-progs
+    if [ "$OS_ID" != "rocky" ]; then
+        _PACKAGES_TO_INSTALL="${_PACKAGES_TO_INSTALL} btrfs-progs"
+    fi
+    yum install -y -q "$_PACKAGES_TO_INSTALL"
     _DIND_DEP_INSTALL_RESULT=$?
 else
     apt install -y -qq \
@@ -64,7 +62,13 @@ pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
 ######################################################
 
 [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
-export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-18.09.6}"
+
+CP_CAP_DIND_DEFAULT_VERSION=18.09.6
+if [ "$OS_ID" == "rocky" ]; then
+    CP_CAP_DIND_DEFAULT_VERSION=20.10.23
+fi
+
+export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-$CP_CAP_DIND_DEFAULT_VERSION}"
 export CP_CAP_DIND_CHANNEL="${CP_CAP_DIND_CHANNEL:-stable}"
 export CP_CAP_DIND_ARCH="${CP_CAP_DIND_ARCH:-x86_64}"
 
@@ -80,6 +84,8 @@ rm -f docker.tgz
 
 pipe_log_info "Docker installed: ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
 
+
+# TODO fix for Rocky Linux
 nvidia-smi
 REQUIRES_GPU_DIND=$?
 if [ $REQUIRES_GPU_DIND -eq 0 ]; then

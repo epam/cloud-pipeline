@@ -31,15 +31,19 @@ then
     INSTALL_NFS_SMB_CMD="yum install nfs-utils cifs-utils -y -q"
     CHECK_LUSTRE_CMD="rpm -qa | grep lustre-client"
     OS_VERSION_ID=$(. /etc/os-release;echo $VERSION_ID)
+    OS_ID=$(. /etc/os-release;echo $ID)
     if [ "$OS_VERSION_ID" == "6" ]; then
         LUSTRE_VERSION="2.10.8-1"
     elif [ "$OS_VERSION_ID" == "7" ]; then
         LUSTRE_VERSION="2.12.5-1"
     elif [ "$OS_VERSION_ID" == "8" ]; then
         LUSTRE_VERSION="2.10.8-2"
+    elif [ "$OS_VERSION_ID" == "8.7" ] && [ "$OS_ID" == "rocky" ]; then
+        LUSTRE_VERSION="2.12.5-1"
     else
         LUSTRE_VERSION="NA"
     fi
+
     LUSTRE_VERSION="$LUSTRE_VERSION.el$OS_VERSION_ID.x86_64"
     LUSTRE_CLIENT_URL="${GLOBAL_DISTRIBUTION_URL}tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM

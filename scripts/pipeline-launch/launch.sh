@@ -467,7 +467,7 @@ function configure_package_manager {
             # System package manager setup
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/repos"}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-            if [ "$CP_OS" == "centos" ]; then
+            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/yum.repos.d/cuda.repo
@@ -535,8 +535,8 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
       if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
-         [ "$CP_OS" == "centos" ] && \
-         [ "$CP_VER" == "8" ]; then
+         { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; } && \
+         { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
             _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
@@ -2029,7 +2029,7 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ]; then
+    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
       _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
       _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
       _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
