@@ -815,10 +815,9 @@ public class PipelineRunManager {
 
     public PipelineRun loadRunByPrettyUrl(final String url) {
         final PipelineRun run = pipelineRunDao.loadRunByPrettyUrl(url)
-                .orElseThrow(() -> {
-                    throw new IllegalArgumentException(
-                            messageHelper.getMessage(MessageConstants.ERROR_RUN_PRETTY_NOT_FOUND, url));
-                });
+                .orElseThrow(() ->
+                    new IllegalArgumentException(
+                            messageHelper.getMessage(MessageConstants.ERROR_RUN_PRETTY_NOT_FOUND, url)));
         if (permissionManager.isRunSshAllowed(run)) {
             run.setSshPassword(pipelineRunDao.loadSshPassword(run.getId()));
         }
