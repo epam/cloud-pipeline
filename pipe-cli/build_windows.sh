@@ -61,7 +61,7 @@ docker run -i --rm \
            bash $_BUILD_SCRIPT_NAME
 
 _distr_path_ntlmaps="${PIPE_CLI_SOURCES_DIR}/ntlmaps"
-if [ ! -f "$_distr_path_ntlmaps" ]; then
+if [ ! -f "$_distr_path_ntlmaps" ] && [ ! -d "$_distr_path_ntlmaps" ] ; then
     echo "[ERROR] 'ntlmaps' cannot be found at ${_distr_path_ntlmaps}." \
          "Which means there were errors during compilation, please see any output above." \
          "Will not proceed with the mount/pipe compilation."
@@ -178,7 +178,7 @@ docker run -i --rm \
            bash $_BUILD_SCRIPT_NAME
 
 _distr_path_pipe="${PIPE_CLI_WIN_DIST_DIR}/pipe.zip"
-if [ ! -f "$_distr_path_pipe" ]; then
+if [ ! -f "$_distr_path_pipe" ] && [ ! -d "$_distr_path_pipe" ] ; then
     echo "[ERROR] 'pipe.zip' cannot be found at ${_distr_path_pipe}." \
          "Which means there were errors during compilation, please see any output above."
     exit 1
