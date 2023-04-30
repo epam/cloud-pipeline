@@ -760,10 +760,14 @@ public class PipelineRunManager {
     }
 
     public PipelineRun loadRunByPrettyUrl(final String url) {
-        final PipelineRun run = pipelineRunDao.loadRunByPrettyUrl(url)
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setPage(1);
+        filter.setPageSize(1);
+        filter.setPrettyUrl(url);
+        final PipelineRun run = pipelineRunDao.searchPipelineRuns(filter, null).stream().findFirst()
                 .orElseThrow(() ->
-                    new IllegalArgumentException(
-                            messageHelper.getMessage(MessageConstants.ERROR_RUN_PRETTY_NOT_FOUND, url)));
+                        new IllegalArgumentException(
+                                messageHelper.getMessage(MessageConstants.ERROR_RUN_PRETTY_NOT_FOUND, url)));
         if (permissionManager.isRunSshAllowed(run)) {
             run.setSshPassword(pipelineRunDao.loadSshPassword(run.getId()));
         }
