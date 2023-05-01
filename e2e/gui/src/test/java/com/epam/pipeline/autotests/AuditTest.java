@@ -96,6 +96,11 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .selectStorage(storage5)
                 .getStoragePath()
                 .replace("s3", "cp");
+        Stream.of(storage4, storage5)
+                .forEach(stor -> library()
+                        .selectStorage(stor)
+                        .showMetadata()
+                        .click(FILE_SYSTEM_ACCESS));
         logoutIfNeeded();
         loginAs(user);
         tools()
@@ -264,13 +269,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     @Test
     @TestCase(value = {"3059_4"})
     public void webDavDataAccessAudit() {
-        logoutIfNeeded();
-        loginAs(admin);
-        Stream.of(storage4, storage5)
-                .forEach(stor -> library()
-                        .selectStorage(stor)
-                        .showMetadata()
-                        .click(FILE_SYSTEM_ACCESS));
         String [] commands = {
                 "pipe storage mount -f -m 775 -o allow_other destination",
                 format("echo \"test info\" >> destination/%s/%s", storage4, file3),
