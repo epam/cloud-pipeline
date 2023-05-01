@@ -199,6 +199,17 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO waitUntilTextAfterCommandAppears(final String comm, final String runId) {
+        for (int i = 0; i < 10; i++) {
+            sleep(3, SECONDS);
+            if (lastCommandResult(comm).contains(format("pipeline-%s", runId))) {
+                break;
+            }
+            sleep(3, SECONDS);
+        }
+        return this;
+    }
+
     public ShellAO checkVersionsListIsSorted(String command) {
         List<String> vers = versionsCreationData(command);
         assertTrue(Comparators.isInOrder(vers, Comparator.reverseOrder()));
