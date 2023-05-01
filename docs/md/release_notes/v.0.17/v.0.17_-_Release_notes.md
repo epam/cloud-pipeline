@@ -6,8 +6,13 @@
 - [Sending of email notifications enhancements](#sending-of-email-notifications-enhancements)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
-- [Export custom user's attributes](#export-custom-users-attributes)
-- [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
+- [User management enhancements](#user-management-enhancements)
+    - [Export custom user's attributes](#export-custom-users-attributes)
+    - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
+    - [Batch users import](#batch-users-import)
+    - [User states](#user-states)
+    - [Usage report](#usage-report)
+    - [GUI impersonation](#gui-impersonation)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
 - [Sensitive storages](#sensitive-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
@@ -16,7 +21,6 @@
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
-- [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
 - [Updates of Metadata object](#updates-of-metadata-object)
 - [Custom node images](#custom-node-images)
@@ -429,7 +433,9 @@ For example:
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
 
-## Export custom user's attributes
+## User management enhancements
+
+### Export custom user's attributes
 
 Previously, user's metadata attributes couldn't be exported in an automatic way.
 
@@ -445,7 +451,7 @@ Now, before the users export, there is the ability to select which user's metada
 
 For more details about users export see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
 
-## User management and export in read-only mode
+### User management and export in read-only mode
 
 Previously, only admins had access to the users info/metadata.
 In the current version, a new "built-in" role **_ROLE\_USER\_READER_** was added.  
@@ -458,6 +464,130 @@ This role allows:
     - export users list - **including** users' metadata
 
 For more details about user roles see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#roles).
+
+### Batch users import
+
+Previously, **Cloud Pipeline** allowed creating users only one-by-one via the GUI. If a number of users shall be created - it could be quite complicated to perform those operation multiple times.
+
+To address this, a new feature was implemented in the current version - now, admins can import users from a `CSV` file using GUI and CLI.
+
+`CSV` format of the file for the batch import:
+
+``` csv
+UserName,Groups,<AttributeItem1>,<AttributeItem2>,<AttributeItemN>
+<user1>,<group1>,<Value1>,<Value2>,<ValueN>
+<user2>,<group2>|<group3>,<Value3>,<Value4>,<ValueN>
+<user3>,,<Value3>,<Value4>,<ValueN>
+<user4>,<group4>,,,
+```
+
+Where:
+
+- **UserName** - contains the user name
+- **Groups** - contains the "permission" groups, which shall be assigned to the user
+- **`<AttributeItem1>`**, **`<AttributeItem2>`** ... **`<AttributeItemN>`** - set of optional columns, which correspond to the user attributes (they could be existing or new)
+
+The import process takes a number of inputs:
+
+- `CSV` file
+- _Users/Groups/Attributes creation options_, which control if a corresponding object shall be created if not found in the database. If a creation option is not specified - the object creation won't happen:
+    - "`create-user`"
+    - "`create-group`"
+    - "`create-<ATTRIBUTE_ITEM_NAME>`"
+
+#### Import users via GUI
+
+Import users from a `CSV` file via GUI can be performed at the **USER MANAGEMENT** section of the **System Settings**.
+
+1. Click the "**Import users**" button:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_1.png)
+2. Select a `CSV` file for the import. The GUI will show the creation options selection, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_2.png)
+3. After the options are selected, click the **IMPORT** button, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_3.png)
+4. Once the import is done - you can review the import results:  
+    - Users and groups have been created
+    - Users were assigned to the specified groups
+    - Attributes were assigned to the users as well
+
+For more details and examples see [here](../../manual/12_Manage_Settings/12.3._Create_a_new_user.md#users-batch-import).
+
+#### Import users via CLI
+
+Also in the current version, a new `pipe` command was implemented to import users from a `CSV` file via CLI:
+
+``` bash
+pipe users import [OPTIONS] FILE_PATH
+```
+
+Where **FILE_PATH** - defines a path to the `CSV` file with users list
+
+Possible options:
+
+- **`-cu`** / **`--create-user`** - allows the creation of new users
+- **`-cg`** / **`--create-group`** - allows the creation of new groups
+- **`-cm`** / **`--create-metadata` `<KEY>`** - allows the creation of a new metadata with specified key
+
+Results of the command execution are similar to the users import operation via GUI.
+
+For more details and examples see [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#batch-import).
+
+### User states
+
+Previously, admins could monitor Platform usage, for example, by list of **ACTIVE RUNS** or via **CLUSTER STATE** pages.  
+But for some cases, it can be useful to know which users do utilize the Platform in the current moment.
+
+In the current version, the displaying of user states in the "User management" system tab was implemented - now, that state is shown as an circle icon near the user name:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserStates_1.png)
+
+Possible states:
+
+- _Online_ (green circle) - for users who are logged in and use the Platform in the moment
+- _Offline_ (blank white circle) - for users who are not logged in at the moment/do not use the Platform for some time
+
+By hover over the _Offline_ icons - admin can know when the specific user has utilized the Platform the last time, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserStates_2.png)
+
+### Usage report
+
+It is convenient to have the ability to view Platform statistics of users activity.  
+E.g. when creating different schedulers or node pools and info about number of online users can be helpful.
+
+For that, the **Usage report** subtab, showing the Platform's statistics of users activity, was added to the "User Management" system tab.  
+At this subtab, the summary info about total count of Platform users that were online at different time moments during the certain period is displayed in a chart form:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UsageReport_1.png)
+
+User can configure the showing chart by the following ways:
+
+- select the type of period of view - day (_by default_) or month
+- select to display data for a specific day/month from the calendar
+- restrict the displayed data for specific user(s) or user group(s)/role(s) only
+
+For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#usage-report).
+
+### GUI impersonation
+
+While performing administrating, it is common to help users resolve issues, which can't be reproduced from the administrative accounts.  
+This requires to perform operations on the users' behalf.  
+
+To assist with such tasks, **Cloud Pipeline** offers "Impersonation" feature. It allows admins to login as a selected user into the **Cloud Pipeline** GUI and have the same permissions/level of access as the user.
+
+To start the impersonation, admin shall:
+
+- Open the **Users** subtab of the "User Management" section of the system-level settings
+- Load the user profile on whom behalf you are going to impersonate and click the **Impersonate** button in the top-right corner, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Impersonation_1.png)
+- Platform GUI will be reloaded using the selected user:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Impersonation_2.png)
+
+While in the "Impersonation" mode, the following changes happen to the GUI:
+
+- Main menu turns orange, indicating that the impersonation mode is _ON_
+- **Logout** button is being changed to the **Stop impersonation** button
+
+To stop the "Impersonation" mode, user shall click the **Stop impersonation** button.
+
+For more details see [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#gui-impersonation).
 
 ## "All pipelines" and "All storages" repositories
 
@@ -672,73 +802,6 @@ The newly created storage is being set as a "default" storage in the user's prof
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_HomeStorage_03.png)
 
 For more details and examples see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#home-storage-for-each-user).
-
-## Batch users import
-
-Previously, **Cloud Pipeline** allowed creating users only one-by-one via the GUI. If a number of users shall be created - it could be quite complicated to perform those operation multiple times.
-
-To address this, a new feature was implemented in the current version - now, admins can import users from a `CSV` file using GUI and CLI.
-
-`CSV` format of the file for the batch import:
-
-``` csv
-UserName,Groups,<AttributeItem1>,<AttributeItem2>,<AttributeItemN>
-<user1>,<group1>,<Value1>,<Value2>,<ValueN>
-<user2>,<group2>|<group3>,<Value3>,<Value4>,<ValueN>
-<user3>,,<Value3>,<Value4>,<ValueN>
-<user4>,<group4>,,,
-```
-
-Where:
-
-- **UserName** - contains the user name
-- **Groups** - contains the "permission" groups, which shall be assigned to the user
-- **`<AttributeItem1>`**, **`<AttributeItem2>`** ... **`<AttributeItemN>`** - set of optional columns, which correspond to the user attributes (they could be existing or new)
-
-The import process takes a number of inputs:
-
-- `CSV` file
-- _Users/Groups/Attributes creation options_, which control if a corresponding object shall be created if not found in the database. If a creation option is not specified - the object creation won't happen:
-    - "`create-user`"
-    - "`create-group`"
-    - "`create-<ATTRIBUTE_ITEM_NAME>`"
-
-### Import users via GUI
-
-Import users from a `CSV` file via GUI can be performed at the **USER MANAGEMENT** section of the **System Settings**.
-
-1. Click the "**Import users**" button:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_1.png)
-2. Select a `CSV` file for the import. The GUI will show the creation options selection, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_2.png)
-3. After the options are selected, click the **IMPORT** button, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_3.png)
-4. Once the import is done - you can review the import results:  
-    - Users and groups have been created
-    - Users were assigned to the specified groups
-    - Attributes were assigned to the users as well
-
-For more details and examples see [here](../../manual/12_Manage_Settings/12.3._Create_a_new_user.md#users-batch-import).
-
-### Import users via CLI
-
-Also in the current version, a new `pipe` command was implemented to import users from a `CSV` file via CLI:
-
-``` bash
-pipe users import [OPTIONS] FILE_PATH
-```
-
-Where **FILE_PATH** - defines a path to the `CSV` file with users list
-
-Possible options:
-
-- **`-cu`** / **`--create-user`** - allows the creation of new users
-- **`-cg`** / **`--create-group`** - allows the creation of new groups
-- **`-cm`** / **`--create-metadata` `<KEY>`** - allows the creation of a new metadata with specified key
-
-Results of the command execution are similar to the users import operation via GUI.
-
-For more details and examples see [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#batch-import).
 
 ## SSH tunnel to the running compute instance
 
