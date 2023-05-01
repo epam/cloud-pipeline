@@ -66,13 +66,13 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     private String inner_file2 = "inner_file2";
     private String inner_file3 = "inner_file3";
     private String inner_file4 = "inner_file4";
-    String pathStorage1 = "";
-    String pathStorage2 = "";
-    String pathStorage3 = "";
-    String pathStorage4 = "";
-    String pathStorage5 = "";
-    String pathStorage6 = "";
-    String pathStorage7 = "";
+    private String pathStorage1 = "";
+    private String pathStorage2 = "";
+    private String pathStorage3 = "";
+    private String pathStorage4 = "";
+    private String pathStorage5 = "";
+    private String pathStorage6 = "";
+    private String pathStorage7 = "";
 
     @BeforeClass(alwaysRun = true)
     public void createPreferences() {
@@ -91,6 +91,31 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .createStorage(storage2)
                 .selectStorage(storage2)
                 .getStoragePath();
+        pathStorage4 = createStoragesWithContent(storage4)
+                .replace("s3", "cp");//
+        pathStorage5 = library()
+                .cd(testFolder)
+                .createStorage(storage5)
+                .selectStorage(storage5)
+                .getStoragePath()
+                .replace("s3", "cp");
+        logoutIfNeeded();
+        loginAs(user);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .selectDataStoragesToLimitMounts()
+                .clearSelection()
+                .searchStorage(storage1)
+                .selectStorage(storage1)
+                .searchStorage(storage2)
+                .selectStorage(storage2)
+                .searchStorage(storage4)
+                .selectStorage(storage4)
+                .searchStorage(storage5)
+                .selectStorage(storage5)
+                .ok()
+                .launch(this);
     }
 
     @AfterClass(alwaysRun = true)
@@ -122,17 +147,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         };
         logoutIfNeeded();
         loginAs(user);
-        tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .expandTab(ADVANCED_PANEL)
-                .selectDataStoragesToLimitMounts()
-                .clearSelection()
-                .searchStorage(storage1)
-                .selectStorage(storage1)
-                .searchStorage(storage2)
-                .selectStorage(storage2)
-                .ok()
-                .launch(this);
         executeCommands(commands);
         logoutIfNeeded();
         loginAs(admin);
@@ -255,14 +269,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     public void webDavDataAccessAudit() {
         logoutIfNeeded();
         loginAs(admin);
-        pathStorage4 = createStoragesWithContent(storage4)
-                .replace("s3", "cp");//
-        pathStorage5 = library()
-                .cd(testFolder)
-                .createStorage(storage5)
-                .selectStorage(storage5)
-                .getStoragePath()
-                .replace("s3", "cp");
         Stream.of(storage4, storage5)
                 .forEach(stor -> library()
                         .selectStorage(stor)
@@ -277,7 +283,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("rm destination/%s/%s", storage5, file2),
                 format("cp -rf destination/%s/%s destination/%s/%s", storage4, folder1, storage5, folder1),
                 format("mv -f destination/%s/%s destination/%s/%s", storage4, folder2, storage5, folder2),
-                format("rm -fdr destination/%s/%s", storage4, folder1)
+                format("rm -fdr destination/%s/%s -y", storage4, folder1)
         };
         String [] expected_logs = {
                 format("WRITE %s/%s", pathStorage4, file3),
@@ -301,17 +307,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         };
         logoutIfNeeded();
         loginAs(user);
-        tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .expandTab(ADVANCED_PANEL)
-                .selectDataStoragesToLimitMounts()
-                .clearSelection()
-                .searchStorage(storage4)
-                .selectStorage(storage4)
-                .searchStorage(storage5)
-                .selectStorage(storage5)
-                .ok()
-                .launch(this);
         executeCommands(commands);
         logoutIfNeeded();
         loginAs(admin);
