@@ -315,6 +315,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> {
                     shell.waitUntilTextAppears(getLastRunId());
                     for (String comm : commands) {
+                        System.out.println(comm);
                         shell.execute(comm)
                                 .waitUntilTextAfterCommandAppears(comm, getLastRunId());
                     }
