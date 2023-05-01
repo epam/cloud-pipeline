@@ -92,6 +92,8 @@ public class SystemManagementAO extends SettingsPageAO {
                 refresh();
                 attempt ++;
                 filterBy(user);
+                setIncludeServiceAccountEventsOption();
+                filterByType(type);
             }
             return containerLogs().stream()
                 .filter(r -> r.has(matchText(message)) && r.has(text(type)))
