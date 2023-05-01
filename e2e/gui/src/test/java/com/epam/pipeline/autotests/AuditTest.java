@@ -275,7 +275,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("cp destination/%s/%s destination/%s/%s", storage4, file1, storage5, file1),
                 format("cat destination/%s/%s", storage4, file2),
                 format("mv destination/%s/%s destination/%s", storage4, file2, storage5),
-                format("rm destination/%s/%s", storage5, file2),
+                format("rm destination/%s/%s -y", storage5, file2),
                 format("cp -rf destination/%s/%s destination/%s/%s", storage4, folder1, storage5, folder1),
                 format("mv -f destination/%s/%s destination/%s/%s", storage4, folder2, storage5, folder2),
                 format("rm -fdr destination/%s/%s -y", storage4, folder1)
@@ -309,7 +309,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
     }
 
     private void executeCommands(String [] commands) {
-        final int[] i = {1};
         runsMenu()
                 .showLog(getLastRunId())
                 .waitForSshLink()
@@ -318,9 +317,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                     for (String comm : commands) {
                         System.out.println(comm);
                         shell.execute(comm)
-                                .screenshot("comm" + i[0])
                                 .waitUntilTextAfterCommandAppears(comm, getLastRunId());
-                        i[0]++;
                     }
                     shell.close();
                 });
