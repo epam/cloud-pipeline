@@ -275,30 +275,26 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("cp destination/%s/%s destination/%s/%s", storage4, file1, storage5, file1),
                 format("cat destination/%s/%s", storage4, file2),
                 format("mv destination/%s/%s destination/%s", storage4, file2, storage5),
-                format("rm destination/%s/%s -y", storage5, file2),
+                format("rm destination/%s/%s -f", storage5, file2),
                 format("cp -rf destination/%s/%s destination/%s/%s", storage4, folder1, storage5, folder1),
                 format("mv -f destination/%s/%s destination/%s/%s", storage4, folder2, storage5, folder2),
-                format("rm -fdr destination/%s/%s -y", storage4, folder1)
+                format("rm -fdr destination/%s/%s", storage4, folder1)
         };
         String [] expected_logs = {
                 format("WRITE %s/%s", pathStorage4, file3),
                 format("READ %s/%s", pathStorage4, file1),
                 format("WRITE %s/%s", pathStorage5, file1),
-                format("READ %s/%s", pathStorage4, file1),
+                format("READ %s/%s", pathStorage4, file2),
                 format("MOVE %s/%s %s/%s", pathStorage4, file2, pathStorage5, file2),
                 format("DELETE %s/%s", pathStorage5, file2),
                 format("READ %s/%s/%s", pathStorage4, folder1, inner_file1),
                 format("WRITE %s/%s/%s", pathStorage5, folder1, inner_file1),
                 format("READ %s/%s/%s", pathStorage4, folder1, inner_file2),
                 format("WRITE %s/%s/%s", pathStorage5, folder1, inner_file2),
-                format("READ %s/%s/%s", pathStorage4, folder2, inner_file3),
-                format("WRITE %s/%s/%s", pathStorage5, folder2, inner_file3),
-                format("DELETE %s/%s/%s", pathStorage5, folder2, inner_file3),
-                format("READ %s/%s/%s", pathStorage4, folder2, inner_file4),
-                format("WRITE %s/%s/%s", pathStorage5, folder2, inner_file4),
-                format("DELETE %s/%s/%s", pathStorage5, folder2, inner_file4),
-                format("DELETE %s/%s/%s", pathStorage4, folder2, inner_file1),
-                format("DELETE %s/%s/%s", pathStorage4, folder2, inner_file2)
+                format("MOVE %s/%s %s/%s", pathStorage4, folder2, pathStorage5, folder2),
+                format("DELETE %s/%s/%s", pathStorage4, folder1, inner_file1),
+                format("DELETE %s/%s/%s", pathStorage4, folder1, inner_file2),
+                format("DELETE %s/%s", pathStorage5, folder1)
         };
         logoutIfNeeded();
         loginAs(user);
