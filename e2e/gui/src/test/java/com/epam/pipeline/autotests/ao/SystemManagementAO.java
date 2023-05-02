@@ -91,7 +91,7 @@ public class SystemManagementAO extends SettingsPageAO {
                 sleep(3, SECONDS);
                 refresh();
                 attempt ++;
-                filterBy(user);
+                filterByUser(user);
                 setIncludeServiceAccountEventsOption();
                 filterByType(type);
             }
