@@ -19,14 +19,28 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {computed} from 'mobx';
 import {observer, inject} from 'mobx-react';
-import {Alert, Button, Icon, message, Spin} from 'antd';
+import {
+  Alert,
+  Button,
+  Icon,
+  message,
+  Spin,
+  Dropdown,
+  Menu
+} from 'antd';
 import moment from 'moment-timezone';
 import CommentCard from '../special/comment-card';
 import CommentEditor from '../special/comment-editor';
 import Label from '../special/label';
 import getAuthor from '../special/utilities/get-author';
+import parseAttachment from '../special/utilities/parse-attachment';
+import {
+  buildTicketsFiltersQuery,
+  parseTicketsFilters
+} from '../special/utilities/routing';
 import GitlabIssueLoad from '../../../../models/gitlab-issues/GitlabIssueLoad';
 import GitlabIssueComment from '../../../../models/gitlab-issues/GitlabIssueComment';
+import GitlabIssueUpdate from '../../../../models/gitlab-issues/GitlabIssueUpdate';
 import UserName from '../../UserName';
 import styles from './ticket.css';
 import mainStyles from '../tickets.css';
@@ -34,13 +48,24 @@ import mainStyles from '../tickets.css';
 @inject('preferences')
 @inject((stores, props) => {
   const {
-    params = {}
-  } = props || {};
+    params = {},
+    location = {}
+  } = props;
+  const {
+    page,
+    search,
+    statuses,
+    default: defaultFilters
+  } = parseTicketsFilters(location.search);
   const {
     id: ticketId
   } = params;
   return {
-    ticketId
+    ticketId,
+    page,
+    search,
+    statuses,
+    default: defaultFilters
   };
 })
 @observer
@@ -84,12 +109,31 @@ class Ticket extends React.Component {
       .sort((a, b) => moment.utc(a.created_at) - moment.utc(b.created_at));
   }
 
-  onSaveNewComment = ({description}) => {
+  get allAttachmentsList () {
+    const {ticket} = this.state;
+    if (!ticket) {
+      return null;
+    }
+    const {attachments, comments} = ticket;
+    const fromComments = (comments || []).reduce((acc, comment) => ([
+      ...acc,
+      ...(comment.attachments || [])
+    ]), []);
+    return [...(attachments || []), ...fromComments]
+      .map(parseAttachment)
+      .filter(Boolean)
+      .filter((attachment) => attachment.link);
+  }
+
+  onSaveNewComment = ({attachments, description}) => {
     this.setState({pending: true}, async () => {
       const {ticketId} = this.props;
       const request = new GitlabIssueComment(ticketId);
       const hide = message.loading(`Creating comment...`, 0);
-      await request.send({body: description});
+      await request.send({
+        attachments,
+        body: description
+      });
       hide();
       if (request.error) {
         message.error(request.error, 5);
@@ -101,6 +145,21 @@ class Ticket extends React.Component {
         this.scrollToEditor();
       }
     });
+  };
+
+  onSelectMenu = (key) => {
+    const {ticket} = this.state;
+    if (!ticket || !key) {
+      return null;
+    }
+    const filteredLabels = (ticket.labels || [])
+      .filter(label => !this.predefinedLabels.includes(label));
+    filteredLabels.push(key);
+    const updatedTicket = {
+      ...ticket,
+      labels: filteredLabels
+    };
+    this.updateTicket(updatedTicket);
   };
 
   fetchTicketToken = 0;
@@ -150,6 +209,42 @@ class Ticket extends React.Component {
     }
   });
 
+  updateTicket = (ticket) => {
+    if (!ticket) {
+      return;
+    }
+    this.setState({
+      pending: true
+    }, async () => {
+      const hide = message.loading('Updating ticket...', 0);
+      const request = new GitlabIssueUpdate();
+      try {
+        const payload = {
+          attachments: ticket.attachments,
+          description: ticket.description,
+          iid: ticket.iid,
+          labels: ticket.labels,
+          title: ticket.title
+        };
+        await request.send(payload);
+        if (request.error) {
+          throw new Error(request.error);
+        }
+      } catch (error) {
+        message.error(request.error, 5);
+      } finally {
+        hide();
+        this.setState({
+          pending: false
+        }, () => {
+          if (!request.error) {
+            this.fetchTicket();
+          }
+        });
+      }
+    });
+  };
+
   scrollToEditor = () => {
     this.editorRef &&
     this.editorRef.scrollIntoView &&
@@ -175,6 +270,7 @@ class Ticket extends React.Component {
             <CommentCard
               key={`comment-${comment.iid || comment.id || index}`}
               comment={comment}
+              isIssue={comment === ticket}
               className={classNames(
                 'cp-card-background-color',
                 styles.card
@@ -187,13 +283,35 @@ class Ticket extends React.Component {
 
   renderInfoSection = () => {
     const {
-      ticket
+      ticket,
+      pending
     } = this.state;
     const {
       labels = []
     } = ticket || {};
     const filteredLabels = labels
       .filter((aLabel) => this.predefinedLabels.includes(aLabel));
+    const [currentLabel] = filteredLabels;
+    const menu = (
+      <Menu
+        onClick={({key}) => this.onSelectMenu(key, ticket)}
+        selectedKeys={[]}
+        style={{cursor: 'default', minWidth: '120px'}}
+      >
+        <Menu.ItemGroup title="Select new status">
+          <Menu.Divider />
+          {
+            this.predefinedLabels
+              .filter(label => label !== currentLabel)
+              .map(label => (
+                <Menu.Item key={label} style={{cursor: 'pointer'}}>
+                  {label}
+                </Menu.Item>
+              ))
+          }
+        </Menu.ItemGroup>
+      </Menu>
+    );
     return (
       <div className={styles.infoSection}>
         <div className={classNames(
@@ -209,32 +327,79 @@ class Ticket extends React.Component {
             showIcon
           />
         </div>
-        {
-          filteredLabels.length > 0 && (
-            <div
-              className={
-                classNames(
-                  styles.infoBlock,
-                  styles.row,
-                  'cp-divider',
-                  'bottom'
-                )
-              }
-            >
-              <span>Status:</span>
-              <div className={styles.labelsRow}>
-                {
-                  filteredLabels.map((label) => (
-                    <Label
-                      key={label}
-                      label={label}
-                    />
-                  ))
-                }
-              </div>
-            </div>
-          )
-        }
+        <div
+          className={
+            classNames(
+              styles.infoBlock,
+              styles.row,
+              'cp-divider',
+              'bottom'
+            )
+          }
+        >
+          <span>Status:</span>
+          <Dropdown
+            overlay={menu}
+            trigger={['click']}
+            disabled={pending}
+          >
+            {
+              currentLabel ? (
+                <div className={styles.labelsRow}>
+                  <Label
+                    key={currentLabel}
+                    label={currentLabel}
+                    className={
+                      classNames(
+                        styles.statusIcon,
+                        styles.editable
+                      )
+                    }
+                  />
+                </div>
+              ) : (
+                <span
+                  className={
+                    classNames(
+                      styles.statusIcon,
+                      styles.editable,
+                      styles.empty
+                    )
+                  }
+                >
+                  -
+                </span>
+              )
+            }
+          </Dropdown>
+        </div>
+        <div
+          className={
+            classNames(
+              styles.infoBlock,
+              styles.column,
+              'cp-divider',
+              'bottom'
+            )
+          }
+        >
+          <span>Attachments:</span>
+          <div className={styles.allAttachments}>
+            {
+              this.allAttachmentsList.map((attachment) => (
+                <a
+                  key={attachment.link}
+                  style={{marginRight: 5}}
+                  href={attachment.link}
+                  target="_blank"
+                >
+                  <Icon type="paper-clip" style={{marginRight: 5}} />
+                  {attachment.name}
+                </a>
+              ))
+            }
+          </div>
+        </div>
       </div>
     );
   }
@@ -244,7 +409,11 @@ class Ticket extends React.Component {
       router
     } = this.props;
     if (router) {
-      router.push('/tickets');
+      const query = buildTicketsFiltersQuery(this.props);
+      const url = query && query.length
+        ? `/tickets?${query}`
+        : '/tickets';
+      router.push(url);
     }
   };
 

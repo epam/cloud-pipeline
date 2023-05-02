@@ -27,6 +27,7 @@ MASTER_HOST = 'pipeline-1000'
 cmd_executor = Mock()
 grid_engine = Mock()
 host_storage = MemoryHostStorage()
+static_storage = MemoryHostStorage()
 submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
 scale_up_timeout = 30
 scale_down_timeout = 30
@@ -37,6 +38,7 @@ autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
                                   scale_up_orchestrator=None,
                                   scale_down_handler=None,
                                   host_storage=host_storage,
+                                  static_host_storage=static_storage,
                                   scale_up_timeout=scale_up_timeout,
                                   scale_down_timeout=scale_down_timeout,
                                   max_additional_hosts=max_additional_hosts,

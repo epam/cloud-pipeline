@@ -291,6 +291,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 }))
                 .saveAndCommitWithMessage("test: Change configuration using config.json")
                 .onTab(PipelineConfigurationTabAO.class)
+                .tabShouldBeActive(CONFIGURATION_TAB)
                 .ensure(profileWithName(newConf), exist.because("Profile was renamed during file editing."))
                 .ensure(profileWithName("conf"), not(exist).because("Profile was renamed during file editing."))
                 .editConfiguration(newConf, profile ->

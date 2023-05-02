@@ -30,9 +30,11 @@ import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -208,6 +210,16 @@ public class PipelineConfigurationManager {
             configuration.setKubeLabels(defaultConfig.getKubeLabels());
         }
 
+        // TODO: merging parentNodeId together with runAssignPolicy,
+        //  in a future we can delete it if we get rid of parentNodeId in favor of runAssignPolicy
+        configuration.setPodAssignPolicy(mergeAssignPolicy(runVO, defaultConfig));
+
+        if (!StringUtils.isEmpty(runVO.getKubeServiceAccount())) {
+            configuration.setKubeServiceAccount(runVO.getKubeServiceAccount());
+        } else {
+            configuration.setKubeServiceAccount(defaultConfig.getKubeServiceAccount());
+        }
+
         //client always sends actual node-count
         configuration.setNodeCount(runVO.getNodeCount());
 
@@ -230,6 +242,42 @@ public class PipelineConfigurationManager {
         configuration.setSharedWithRoles(defaultConfig.getSharedWithRoles());
         configuration.setTags(runVO.getTags());
         return configuration;
+    }
+
+    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO, final PipelineConfiguration defaultConfig) {
+        final Long useRunId = runVO.getParentNodeId() != null ? runVO.getParentNodeId() : runVO.getUseRunId();
+        final RunAssignPolicy assignPolicy = runVO.getPodAssignPolicy();
+
+        if (useRunId != null && assignPolicy != null) {
+            throw new IllegalArgumentException(
+                    "Both RunAssignPolicy and (parentRunId or useRunId) cannot be specified, " +
+                    "please provide only one of them"
+            );
+        }
+
+        if (assignPolicy != null && assignPolicy.isValid()) {
+            log.debug("RunAssignPolicy is provided and valid, will proceed with it.");
+            return assignPolicy;
+        } else {
+            if (useRunId != null) {
+                final String value = useRunId.toString();
+                log.debug(
+                    String.format("Configuring RunAssignPolicy as: label %s, value: %s.",
+                            KubernetesConstants.RUN_ID_LABEL, value)
+                );
+                return RunAssignPolicy.builder()
+                        .selector(
+                            RunAssignPolicy.PodAssignSelector.builder()
+                                .label(KubernetesConstants.RUN_ID_LABEL)
+                                .value(value).build())
+                        .build();
+            } else {
+                if (defaultConfig.getPodAssignPolicy() != null && defaultConfig.getPodAssignPolicy().isValid()) {
+                    return defaultConfig.getPodAssignPolicy();
+                }
+                return RunAssignPolicy.builder().build();
+            }
+        }
     }
 
     /**
@@ -260,11 +308,20 @@ public class PipelineConfigurationManager {
         configuration.buildEnvVariables();
     }
 
-    public void updateWorkerConfiguration(String parentId, PipelineStart runVO,
-            PipelineConfiguration configuration, boolean isNFS, boolean clearParams) {
-        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_WORKER_ENDPOINTS));
-        final Map<String, PipeConfValueVO> configParameters = MapUtils.isEmpty(configuration.getParameters()) ?
-                new HashMap<>() : configuration.getParameters();
+    public PipelineConfiguration generateMasterConfiguration(final PipelineConfiguration configuration,
+                                                             final boolean isNFS) {
+        final PipelineConfiguration copiedConfiguration = configuration.clone();
+        updateMasterConfiguration(copiedConfiguration, isNFS);
+        return copiedConfiguration;
+    }
+
+    public PipelineConfiguration generateWorkerConfiguration(final String parentId, final PipelineStart runVO,
+                                                             final PipelineConfiguration configuration,
+                                                             final boolean isNFS, final boolean clearParams) {
+        final PipelineConfiguration workerConfiguration = configuration.clone();
+        workerConfiguration.setEraseRunEndpoints(hasBooleanParameter(workerConfiguration, ERASE_WORKER_ENDPOINTS));
+        final Map<String, PipeConfValueVO> configParameters = MapUtils.isEmpty(workerConfiguration.getParameters()) ?
+                new HashMap<>() : workerConfiguration.getParameters();
         final Map<String, PipeConfValueVO> updatedParams = clearParams ? new HashMap<>() : configParameters;
         final List<DefaultSystemParameter> systemParameters = preferenceManager.getPreference(
                 SystemPreferences.LAUNCH_SYSTEM_PARAMETERS);
@@ -283,14 +340,21 @@ public class PipelineConfigurationManager {
         } else {
             updatedParams.remove(NFS_CLUSTER_ROLE);
         }
-        configuration.setParameters(updatedParams);
-        configuration.setClusterRole(WORKER_CLUSTER_ROLE);
-        configuration.setCmdTemplate(StringUtils.hasText(runVO.getWorkerCmd()) ?
+        workerConfiguration.setParameters(updatedParams);
+        workerConfiguration.setClusterRole(WORKER_CLUSTER_ROLE);
+        workerConfiguration.setCmdTemplate(StringUtils.hasText(runVO.getWorkerCmd()) ?
                 runVO.getWorkerCmd() : WORKER_CMD_TEMPLATE);
-        configuration.setPrettyUrl(null);
+        workerConfiguration.setPrettyUrl(null);
         //remove node count parameter for workers
-        configuration.setNodeCount(null);
-        configuration.buildEnvVariables();
+        workerConfiguration.setNodeCount(null);
+        // if podAssignPolicy is a simple policy to assign run pod to dedicated instance, then we need to cleared it
+        // and workers then will be assigned to its own nodes, otherwise keep existing policy to assign workers
+        // as was configured in policy object
+        if (workerConfiguration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL, parentId)) {
+            workerConfiguration.setPodAssignPolicy(null);
+        }
+        workerConfiguration.buildEnvVariables();
+        return workerConfiguration;
     }
 
     public boolean hasNFSParameter(PipelineConfiguration entry) {

@@ -101,6 +101,10 @@ public class GitReaderClient {
         ).getPayload();
     }
 
+    public byte[] downloadAttachment(final String path) throws GitClientException {
+        return RestApiUtils.getFileContent(gitReaderApi.downloadAttachment(path));
+    }
+
     public GitReaderEntryListing<GitReaderObject> getRepositoryTree(final String gitlabRepoPath,
                                                                     final GitReaderLogsPathFilter paths,
                                                                     final String ref, final Long page,

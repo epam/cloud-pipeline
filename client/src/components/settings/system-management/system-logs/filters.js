@@ -121,9 +121,8 @@ class Filters extends React.Component {
             return values;
           };
           return getAttributesValues().join(', ');
-        } else {
-          return user.userName;
         }
+        return user.userName;
       };
       return (users.value || []).map((user) => ({
         ...user,
@@ -310,7 +309,8 @@ class Filters extends React.Component {
             style={commonStyle}
             filterOption={
               (input, option) =>
-                option.props.attributesString.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                (option.props.value || '').toLowerCase().includes(input.toLowerCase()) ||
+                (option.props.attributesString || '').toLowerCase().includes(input.toLowerCase())
             }
             value={users}
             onChange={onFieldChanged('users', true)}

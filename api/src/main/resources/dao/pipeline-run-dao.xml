@@ -73,7 +73,8 @@
                         node_cloud_provider,
                         tags,
                         sensitive,
-                        pipeline_name)
+                        pipeline_name,
+                        node_start_date)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -124,7 +125,8 @@
                         :NODE_CLOUD_PROVIDER,
                         to_jsonb(:TAGS::jsonb),
                         :SENSITIVE,
-                        :PIPELINE_NAME)
+                        :PIPELINE_NAME,
+                        :NODE_START_DATE)
                 ]]>
             </value>
         </property>
@@ -184,6 +186,7 @@
                         r.cluster_price,
                         r.pipeline_name,
                         r.node_pool_id,
+                        r.node_start_date,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -277,7 +280,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -342,7 +346,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -407,7 +412,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -448,11 +454,21 @@
                         node_id = :NODE_ID,
                         node_disk = :NODE_DISK,
                         node_ip = :NODE_IP,
-                        node_image =:NODE_IMAGE,
-                        node_name =:NODE_NAME,
-                        is_spot =:IS_SPOT,
-                        node_real_disk =:NODE_REAL_DISK,
+                        node_image = :NODE_IMAGE,
+                        node_name = :NODE_NAME,
+                        is_spot = :IS_SPOT,
+                        node_real_disk = :NODE_REAL_DISK,
                         node_pool_id = :NODE_POOL_ID
+                    WHERE
+                        run_id = :RUN_ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateRunInstanceStartDateQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET
+                        node_start_date = :NODE_START_DATE
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -509,7 +525,8 @@
                         tags = to_jsonb(:TAGS::jsonb),
                         sensitive = :SENSITIVE,
                         kube_service_enabled = :KUBE_SERVICE_ENABLED,
-                        pipeline_name = :PIPELINE_NAME
+                        pipeline_name = :PIPELINE_NAME,
+                        node_start_date = :NODE_START_DATE
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -615,7 +632,8 @@
                       FALSE as queued,
                       r.pipeline_name,
                       r.cluster_price,
-                      r.node_pool_id
+                      r.node_pool_id,
+                      r.node_start_date
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -681,7 +699,8 @@
                       FALSE as queued,
                       r.pipeline_name,
                       r.cluster_price,
-                      r.node_pool_id
+                      r.node_pool_id,
+                      r.node_start_date
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -746,6 +765,7 @@
                       r.pipeline_name,
                       r.cluster_price,
                       r.node_pool_id,
+                      r.node_start_date,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -811,6 +831,7 @@
                       active_run.pipeline_name,
                       active_run.cluster_price,
                       active_run.node_pool_id,
+                      active_run.node_start_date,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -887,6 +908,7 @@
                       r.sensitive,
                       r.pipeline_name,
                       r.node_pool_id,
+                      r.node_start_date,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -949,6 +971,7 @@
                       active_run.sensitive,
                       active_run.pipeline_name,
                       active_run.node_pool_id,
+                      active_run.node_start_date,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -1024,7 +1047,8 @@
                         r.kube_service_enabled,
                         r.pipeline_name,
                         r.cluster_price,
-                        r.node_pool_id
+                        r.node_pool_id,
+                        r.node_start_date
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1087,7 +1111,8 @@
                         r.kube_service_enabled,
                         r.pipeline_name,
                         r.cluster_price,
-                        r.node_pool_id
+                        r.node_pool_id,
+                        r.node_start_date
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1151,6 +1176,7 @@
                         r.pipeline_name,
                         r.cluster_price,
                         r.node_pool_id,
+                        r.node_start_date,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1240,6 +1266,7 @@
                         runs.kube_service_enabled,
                         runs.cluster_price,
                         runs.node_pool_id,
+                        runs.node_start_date,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1318,7 +1345,8 @@
                             p.kube_service_enabled,
                             p.pipeline_name,
                             p.cluster_price,
-                            p.node_pool_id
+                            p.node_pool_id,
+                            p.node_start_date
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1377,7 +1405,8 @@
                             c.kube_service_enabled,
                             c.pipeline_name,
                             c.cluster_price,
-                            c.node_pool_id
+                            c.node_pool_id,
+                            c.node_start_date
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1434,6 +1463,7 @@
                         runs.kube_service_enabled,
                         runs.cluster_price,
                         runs.node_pool_id,
+                        runs.node_start_date
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1510,11 +1540,17 @@
                         r.pipeline_name,
                         r.cluster_price,
                         r.node_pool_id,
+                        r.node_start_date,
                         (
                             SELECT count(*)
                             FROM pipeline.pipeline_run cr
                             WHERE cr.parent_id = r.run_id
                         ) AS child_runs_count,
+                        (
+                            SELECT count(*)
+                            FROM pipeline.pipeline_run cr
+                            WHERE cr.parent_id = r.run_id AND cr.status = 2
+                        ) AS active_child_runs_count,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
@@ -1669,7 +1705,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1748,7 +1785,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1813,7 +1851,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1878,7 +1917,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -1943,7 +1983,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2018,7 +2059,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2083,7 +2125,8 @@
                         kube_service_enabled,
                         pipeline_name,
                         cluster_price,
-                        node_pool_id
+                        node_pool_id,
+                        node_start_date
                     FROM
                         pipeline.pipeline_run
                     WHERE

@@ -16,7 +16,7 @@ from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 
 from src.model.datastorage_usage_model import StorageUsage
-from src.utilities.audit import StorageDataAccessEntry, DataAccessType
+from src.utilities.audit import DataAccessEvent, DataAccessType
 from src.utilities.datastorage_lifecycle_manager import DataStorageLifecycleManager
 from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
@@ -97,9 +97,9 @@ copies.CopyObjectTask._main = _copy_object_task_main
 
 class StorageItemManager(object):
 
-    def __init__(self, session, audit=None, bucket=None, region_name=None, cross_region=False):
+    def __init__(self, session, events=None, bucket=None, region_name=None, cross_region=False):
         self.session = session
-        self.audit = audit
+        self.events = events
         self.region_name = region_name
         _boto_config = S3BucketOperations.get_proxy_config(cross_region=cross_region)
         self.s3 = session.resource('s3', config=_boto_config,
@@ -168,8 +168,8 @@ class StorageItemManager(object):
 
 class DownloadManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, audit, region_name=None):
-        super(DownloadManager, self).__init__(session, audit=audit, bucket=bucket, region_name=region_name)
+    def __init__(self, session, bucket, events, region_name=None):
+        super(DownloadManager, self).__init__(session, events=events, bucket=bucket, region_name=region_name)
 
     def get_destination_key(self, destination_wrapper, relative_path):
         if destination_wrapper.path.endswith(os.path.sep):
@@ -194,19 +194,19 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
             progress_callback = None
-        self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, source_key, DataAccessType.READ))
+        self.events.put(DataAccessEvent(source_key, DataAccessType.READ, storage=source_wrapper.bucket))
         self.bucket.download_file(source_key, to_string(destination_key),
                                   Callback=progress_callback,
                                   Config=transfer_config)
         if clean:
-            self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, source_key, DataAccessType.DELETE))
+            self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_wrapper.delete_item(source_key)
 
 
 class UploadManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, audit, region_name=None):
-        super(UploadManager, self).__init__(session, audit=audit, bucket=bucket, region_name=region_name)
+    def __init__(self, session, bucket, events, region_name=None):
+        super(UploadManager, self).__init__(session, events=events, bucket=bucket, region_name=region_name)
 
     def get_destination_key(self, destination_wrapper, relative_path):
         return S3BucketOperations.normalize_s3_path(destination_wrapper, relative_path)
@@ -236,7 +236,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
             progress_callback = None
-        self.audit.put(StorageDataAccessEntry(destination_wrapper.bucket, destination_key, DataAccessType.WRITE))
+        self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
         self.bucket.upload_file(to_string(source_key), destination_key,
                                 Callback=progress_callback,
                                 Config=transfer_config,
@@ -250,8 +250,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
 
 class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, audit, region_name=None):
-        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, audit=audit, bucket=bucket,
+    def __init__(self, session, bucket, events, region_name=None):
+        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, events=events, bucket=bucket,
                                                                region_name=region_name)
 
     def get_destination_key(self, destination_wrapper, relative_path):
@@ -281,7 +281,7 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
         file_stream = urlopen(source_key)
-        self.audit.put(StorageDataAccessEntry(destination_wrapper.bucket, destination_key, DataAccessType.WRITE))
+        self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.upload_fileobj(file_stream, destination_key, Callback=ProgressPercentage(relative_path, size),
                                        ExtraArgs=extra_args)
@@ -294,9 +294,9 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
 
 class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager):
 
-    def __init__(self, session, bucket, audit, region_name=None, cross_region=False):
+    def __init__(self, session, bucket, events, region_name=None, cross_region=False):
         self.cross_region = cross_region
-        super(TransferBetweenBucketsManager, self).__init__(session, audit=audit, bucket=bucket,
+        super(TransferBetweenBucketsManager, self).__init__(session, events=events, bucket=bucket,
                                                             region_name=region_name, cross_region=cross_region)
 
     def get_destination_key(self, destination_wrapper, relative_path):
@@ -323,15 +323,15 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         extra_args = {
             'ACL': 'bucket-owner-full-control'
         }
-        self.audit.put_all([StorageDataAccessEntry(source_wrapper.bucket, path, DataAccessType.READ),
-                            StorageDataAccessEntry(destination_wrapper.bucket, destination_key, DataAccessType.WRITE)])
+        self.events.put_all([DataAccessEvent(path, DataAccessType.READ, storage=source_wrapper.bucket),
+                             DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket)])
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.copy(copy_source, destination_key, Callback=ProgressPercentage(relative_path, size),
                              ExtraArgs=extra_args, SourceClient=source_client)
         else:
             self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
         if clean:
-            self.audit.put(StorageDataAccessEntry(source_wrapper.bucket, path, DataAccessType.DELETE))
+            self.events.put(DataAccessEvent(path, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_wrapper.delete_item(path)
         version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
         return TransferResult(source_key=path, destination_key=destination_key, destination_version=version,
@@ -366,8 +366,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 class RestoreManager(StorageItemManager, AbstractRestoreManager):
     VERSION_NOT_EXISTS_ERROR = 'Version "%s" doesn\'t exist.'
 
-    def __init__(self, bucket, session, audit, region_name=None):
-        super(RestoreManager, self).__init__(session, audit=audit, region_name=region_name)
+    def __init__(self, bucket, session, events, region_name=None):
+        super(RestoreManager, self).__init__(session, events=events, region_name=region_name)
         self.bucket = bucket
         self.listing_manager = bucket.get_list_manager(True)
 
@@ -387,7 +387,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         relative_path = self.bucket.path
         self._validate_version(bucket, client, version, file_items)
         try:
-            self.audit.put(StorageDataAccessEntry(self.bucket.bucket, relative_path, DataAccessType.WRITE))
+            self.events.put(DataAccessEvent(relative_path, DataAccessType.WRITE, storage=self.bucket.bucket))
             copied_object = client.copy_object(Bucket=bucket, Key=relative_path,
                                                CopySource=dict(Bucket=bucket, Key=relative_path, VersionId=version))
             client.delete_objects(Bucket=bucket, Delete=dict(Objects=[dict(Key=relative_path, VersionId=version)]))
@@ -507,8 +507,8 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             self._restore_objects(client, bucket, restore_items)
 
     def _restore_objects(self, client, bucket, items):
-        self.audit.put_all([StorageDataAccessEntry(self.bucket.bucket, item['Key'], DataAccessType.WRITE)
-                            for item in items])
+        self.events.put_all([DataAccessEvent(item['Key'], DataAccessType.WRITE, storage=self.bucket.bucket)
+                             for item in items])
         client.delete_objects(Bucket=bucket, Delete=dict(Objects=items))
 
     def _validate_version(self, bucket, client, version, file_items):
@@ -524,8 +524,8 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
 
 class DeleteManager(StorageItemManager, AbstractDeleteManager):
 
-    def __init__(self, bucket, session, audit, region_name=None):
-        super(DeleteManager, self).__init__(session, audit=audit, region_name=region_name)
+    def __init__(self, bucket, session, events, region_name=None):
+        super(DeleteManager, self).__init__(session, events=events, region_name=region_name)
         self.bucket = bucket
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
@@ -540,7 +540,7 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
                 delete_items.append(dict(Key=prefix, VersionId=version))
             else:
                 delete_items.append(dict(Key=prefix))
-            self.audit.put(StorageDataAccessEntry(self.bucket.bucket, prefix, DataAccessType.DELETE))
+            self.events.put(DataAccessEvent(prefix, DataAccessType.DELETE, storage=self.bucket.bucket))
             client.delete_objects(Bucket=bucket, Delete=dict(Objects=delete_items))
             if self.bucket.bucket.policy.versioning_enabled:
                 if version:
@@ -587,8 +587,8 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
     def _delete_objects(self, client, bucket, hard_delete, items):
         if not self.bucket.bucket.policy.versioning_enabled or hard_delete:
             self._delete_all_object_tags(items)
-        self.audit.put_all([StorageDataAccessEntry(self.bucket.bucket, item['Key'], DataAccessType.DELETE)
-                            for item in items])
+        self.events.put_all([DataAccessEvent(item['Key'], DataAccessType.DELETE, storage=self.bucket.bucket)
+                             for item in items])
         client.delete_objects(Bucket=bucket, Delete=dict(Objects=items))
 
     def _delete_all_object_tags(self, items, chunk_size=100):
@@ -1016,14 +1016,14 @@ class S3BucketOperations(object):
                               region_name=source_wrapper.bucket.region)
 
     @classmethod
-    def get_delete_manager(cls, source_wrapper, audit, versioning=False):
+    def get_delete_manager(cls, source_wrapper, events, versioning=False):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'mv', versioning=versioning)
-        return DeleteManager(source_wrapper, session, audit, source_wrapper.bucket.region)
+        return DeleteManager(source_wrapper, session, events, source_wrapper.bucket.region)
 
     @classmethod
-    def get_restore_manager(cls, source_wrapper, audit):
+    def get_restore_manager(cls, source_wrapper, events):
         session = cls.assumed_session(source_wrapper.bucket.identifier, None, 'mv', versioning=True)
-        return RestoreManager(source_wrapper, session, audit, source_wrapper.bucket.region)
+        return RestoreManager(source_wrapper, session, events, source_wrapper.bucket.region)
 
     @classmethod
     def delete_item(cls, storage_wrapper, relative_path, session=None):
@@ -1067,7 +1067,7 @@ class S3BucketOperations(object):
         return Session(botocore_session=s)
 
     @classmethod
-    def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, audit, command):
+    def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, events, command):
         source_id = source_wrapper.bucket.identifier
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(source_id, destination_id, command)
@@ -1075,31 +1075,31 @@ class S3BucketOperations(object):
         source_wrapper.session = session
         destination_bucket = destination_wrapper.bucket.path
         cross_region = destination_wrapper.bucket.region != source_wrapper.bucket.region
-        return TransferBetweenBucketsManager(session, destination_bucket, audit,
+        return TransferBetweenBucketsManager(session, destination_bucket, events,
                                              destination_wrapper.bucket.region, cross_region)
 
     @classmethod
-    def get_download_manager(cls, source_wrapper, destination_wrapper, audit, command):
+    def get_download_manager(cls, source_wrapper, destination_wrapper, events, command):
         source_id = source_wrapper.bucket.identifier
         session = cls.assumed_session(source_id, None, command)
         # replace session to be able to delete source for move
         source_wrapper.session = session
         source_bucket = source_wrapper.bucket.path
-        return DownloadManager(session, source_bucket, audit, source_wrapper.bucket.region)
+        return DownloadManager(session, source_bucket, events, source_wrapper.bucket.region)
 
     @classmethod
-    def get_upload_manager(cls, source_wrapper, destination_wrapper, audit, command):
+    def get_upload_manager(cls, source_wrapper, destination_wrapper, events, command):
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
-        return UploadManager(session, destination_bucket, audit, destination_wrapper.bucket.region)
+        return UploadManager(session, destination_bucket, events, destination_wrapper.bucket.region)
 
     @classmethod
-    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, audit, command):
+    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, events, command):
         destination_id = destination_wrapper.bucket.identifier
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
-        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket, audit, destination_wrapper.bucket.region)
+        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket, events, destination_wrapper.bucket.region)
 
     @classmethod
     def get_full_path(cls, path, param):

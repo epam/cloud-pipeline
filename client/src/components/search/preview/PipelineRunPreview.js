@@ -331,6 +331,9 @@ export default class PipelineRunPreview extends React.Component {
         lineHeight: '20px'
       };
       const adjustPrice = (value) => {
+        if (value === 0) {
+          return 0;
+        }
         let cents = Math.ceil(value * 100);
         if (cents < 1) {
           cents = 1;

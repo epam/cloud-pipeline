@@ -35,6 +35,9 @@ CP_API_SRV_SYSTEM_STORAGE_FRIENDLY_NAME=cloud-pipeline-etc
 CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME=data-transfer-pipeline
 CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_DESCRIPTION="DataTransfer is a system pipeline that is used to automated data transfers from the external sites"
 CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_VERSION="latest"
+CP_API_SRV_SYSTEM_JOBS_PIPELINE_FRIENDLY_NAME=system-jobs-pipeline
+CP_API_SRV_SYSTEM_JOBS_PIPELINE_DESCRIPTION="SystemJobs is a system pipeline that is used to automated run of system actions on a platform"
+CP_API_SRV_SYSTEM_JOBS_PIPELINE_VERSION="latest"
 CP_API_SRV_STATIC_DIR=/opt/api/static
 CP_PREF_LAUNCH_DOCKER_IMAGE=library/centos:7
 CP_PREF_CLUSTER_AUTOSCALE_RATE=20000
@@ -81,6 +84,7 @@ CP_IDP_CERT_DIR=/opt/idp/pki
 CP_IDP_INTERNAL_HOST=cp-idp.default.svc.cluster.local
 CP_IDP_INTERNAL_PORT=32080
 CP_IDP_EXTERNAL_PORT=32080
+CP_IDP_PROFILE_DB=/opt/idp/pdb/saml-idp-profiles.json
 
 # cp-docker-registry config
 CP_DOCKER_CERT_DIR=/opt/docker-registry/pki

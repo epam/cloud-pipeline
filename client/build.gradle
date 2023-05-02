@@ -24,7 +24,7 @@ task buildUI(type: NpmTask) {
       exclude ('launch.sh', 'config.json', '*.tar.gz', 'pipe', 'pipe-el6',
         'pipe-el6.tar.gz','pipe.zip', 'pipe.tar.gz', 'fsbrowser.tar.gz',
         'cloud-data-linux.tar.gz', 'cloud-data-win64.zip', 'fsautoscale.sh',
-        'pipe-osx', 'pipe-osx.tar.gz')
+        'pipe-osx', 'pipe-osx.tar.gz', 'gpustat.tar.gz')
     }
   }
   args = ['run', 'build']

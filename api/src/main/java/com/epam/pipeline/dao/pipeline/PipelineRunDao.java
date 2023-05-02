@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -109,6 +110,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String countFilteredPipelineRunsBaseQuery;
     private String loadPipelineRunsWithPipelineByIdsQuery;
     private String updateRunInstanceQuery;
+    private String updateRunInstanceStartDateQuery;
     private String updatePodIPQuery;
     private String loadRunsGroupingQuery;
     private String loadRunsCountGroupingQuery;
@@ -265,6 +267,14 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     public void updateRunInstance(PipelineRun run) {
         getNamedParameterJdbcTemplate().update(updateRunInstanceQuery, PipelineRunParameters
                 .getParameters(run, getConnection()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateRunInstanceStartDate(final Long id, final LocalDateTime date) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.RUN_ID.name(), id);
+        params.addValue(PipelineRunParameters.NODE_START_DATE.name(), DateUtils.convertLocalDateTimeToDate(date));
+        getNamedParameterJdbcTemplate().update(updateRunInstanceStartDateQuery, params);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -774,6 +784,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         PARAMETERS,
         PARENT_ID,
         CHILD_RUNS_COUNT,
+        ACTIVE_CHILD_RUNS_COUNT,
         STATUS,
         COMMIT_STATUS,
         LAST_CHANGE_COMMIT_TIME,
@@ -834,7 +845,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         SENSITIVE,
         KUBE_SERVICE_ENABLED,
         CLUSTER_PRICE,
-        NODE_POOL_ID;
+        NODE_POOL_ID,
+        NODE_START_DATE;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -845,6 +857,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PIPELINE_ID.name(), run.getPipelineId());
             params.addValue(VERSION.name(), run.getVersion());
             params.addValue(START_DATE.name(), run.getStartDate());
+            params.addValue(NODE_START_DATE.name(), run.getInstanceStartDate());
             params.addValue(END_DATE.name(), run.getEndDate());
             params.addValue(PARAMETERS.name(), run.getParams());
             params.addValue(STATUS.name(), run.getStatus().getId());
@@ -947,6 +960,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
             run.setVersion(rs.getString(VERSION.name()));
             run.setStartDate(new Date(rs.getTimestamp(START_DATE.name()).getTime()));
+            Timestamp instanceStartDate = rs.getTimestamp(NODE_START_DATE.name());
+            if (!rs.wasNull()) {
+                run.setInstanceStartDate(new Date(instanceStartDate.getTime()));
+            }
             run.setParams(rs.getString(PARAMETERS.name()));
             run.setStatus(TaskStatus.getById(rs.getLong(STATUS.name())));
             run.setCommitStatus(CommitStatus.getById(rs.getLong(COMMIT_STATUS.name())));
@@ -1062,6 +1079,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     run.setEnvVars(getEnvVarsRowMapper().mapRow(rs, rowNum));
                 }
                 if (loadChildRunsCount) {
+                    run.setActiveChildRunsCount(rs.getInt(ACTIVE_CHILD_RUNS_COUNT.name()));
                     run.setChildRunsCount(rs.getInt(CHILD_RUNS_COUNT.name()));
                 }
                 return run;
@@ -1238,6 +1256,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setUpdateRunInstanceQuery(String updateRunInstanceQuery) {
         this.updateRunInstanceQuery = updateRunInstanceQuery;
+    }
+
+    @Required
+    public void setUpdateRunInstanceStartDateQuery(String updateRunInstanceStartDateQuery) {
+        this.updateRunInstanceStartDateQuery = updateRunInstanceStartDateQuery;
     }
 
     @Required

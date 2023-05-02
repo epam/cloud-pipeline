@@ -16,5 +16,3 @@ filebeat:
 processors:
   - drop_fields:
       fields: ["log", "offset", "beat", "agent", "log.offset", "esc" ]
-logging.files:
-  name: filebeat-security-log

@@ -15,11 +15,13 @@
 import collections
 import datetime
 import logging
-import pytz
 import socket
-import time
 from abc import abstractmethod, ABCMeta
+from contextlib import closing
 from threading import Thread
+
+import pytz
+import time
 
 try:
     from queue import Queue  # Python 3
@@ -28,12 +30,37 @@ except ImportError:
 
 
 class DataAccessType:
-    READ = 'R'
-    WRITE = 'W'
-    DELETE = 'D'
+    READ = 'READ'
+    WRITE = 'WRITE'
+    DELETE = 'DELETE'
 
-DataAccessEntry = collections.namedtuple('DataAccessEntry', 'path,type')
-StorageDataAccessEntry = collections.namedtuple('StorageDataAccessEntry', 'storage,path,type')
+
+class DataAccessEvent:
+
+    def __init__(self, path, type, storage=None):
+        self._path = path
+        self._type = type
+        self._storage = storage
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
+    def type(self):
+        return self._type
+
+    @property
+    def storage(self):
+        return self._storage
+
+    def __hash__(self):
+        return hash((self._path, self._type, self._storage))
+
+    def __eq__(self, other):
+        return isinstance(other, DataAccessEvent) and \
+            (self._path, self._type, self._storage) \
+            == (other._path, other._type, other._storage)
 
 
 def chunks(l, n):
@@ -221,12 +248,11 @@ class StoragePathAuditConsumer(AuditConsumer):
         self._inner.consume([self._convert(entry) for entry in entries])
 
     def _convert(self, entry):
-        if self._storage:
-            return DataAccessEntry(self._build_path(self._storage.type, self._storage.root, entry.path), entry.type)
-        elif isinstance(entry, StorageDataAccessEntry):
-            return DataAccessEntry(self._build_path(entry.storage.type, entry.storage.root, entry.path), entry.type)
-        else:
+        storage = entry.storage or self._storage
+        if not storage:
             return entry
+        return DataAccessEvent(self._build_path(storage.type, storage.root, entry.path), entry.type,
+                               storage=storage)
 
     def _build_path(self, storage_type, storage_path, item_path):
         return '{}://{}/{}'.format(storage_type.lower(), storage_path, item_path)
@@ -244,49 +270,51 @@ class CloudPipelineAuditConsumer(AuditConsumer):
         self._log_hostname = socket.gethostname()
         self._log_type = 'audit'
         self._log_severity = 'INFO'
-        self._type_mapping = {
-            DataAccessType.READ: 'READ',
-            DataAccessType.WRITE: 'WRITE',
-            DataAccessType.DELETE: 'DELETE'
-        }
 
     def consume(self, entries):
+        with closing(self._ids()) as ids:
+            self._consumer_func(list(self._to_logs(entries, ids)))
+
+    def _ids(self):
+        """
+        Generates unique ids from epoch nanoseconds.
+        """
+        prev_values = set()
+        while True:
+            next_value = self._time_ns()
+            while True:
+                if next_value not in prev_values:
+                    break
+                next_value += 1000
+            prev_values.add(next_value)
+            yield next_value
+
+    def _time_ns(self):
+        return int(time.time() * 10 ** 9)
+
+    def _to_logs(self, entries, ids):
         now = datetime.datetime.now(tz=pytz.utc)
         now_str = now.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        events_ids_gen = self._gen_event_ids()
-        try:
-            self._consumer_func([{
-                'eventId': next(events_ids_gen),
+        for entry in entries:
+            yield {
+                'eventId': next(ids),
                 'messageTimestamp': now_str,
                 'hostname': self._log_hostname,
                 'serviceName': self._log_service,
                 'type': self._log_type,
                 'user': self._log_user,
-                'message': self._convert_type(entry.type) + ' ' + entry.path,
-                'severity': self._log_severity
-            } for entry in entries])
-        finally:
-            events_ids_gen.close()
+                'message': entry.type + ' ' + entry.path,
+                'severity': self._log_severity,
+                'storageId': self._get_storage_id(entry.storage)
+            }
 
-    def _gen_event_ids(self):
-        """
-        Generates unique ids from epoch nanoseconds.
-        """
-        prev_event_ids = set()
-        while True:
-            next_event_id = self._time_ns()
-            while True:
-                if next_event_id not in prev_event_ids:
-                    break
-                next_event_id += 1000
-            prev_event_ids.add(next_event_id)
-            yield next_event_id
-
-    def _time_ns(self):
-        return int(time.time() * 10 ** 9)
-
-    def _convert_type(self, type):
-        return self._type_mapping.get(type, 'ACCESS')
+    def _get_storage_id(self, storage):
+        if not storage:
+            return None
+        if hasattr(storage, 'id'):
+            return storage.id
+        elif hasattr(storage, 'identifier'):
+            return storage.identifier
 
     def flush(self):
         pass

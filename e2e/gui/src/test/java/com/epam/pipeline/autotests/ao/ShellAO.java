@@ -129,6 +129,10 @@ public class ShellAO implements AccessObject<ShellAO> {
                 .replace("\n", "").replace(command, "");
     }
 
+    public String getFirstLine() {
+        return context().getText().substring(0, context().getText().indexOf("\n"));
+    }
+
     public ShellAO assertPageContainsString(String str) {
         context().shouldHave(text(str));
         return this;

@@ -55,6 +55,10 @@ public final class DateUtils {
         return date.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
     }
 
+    public static Date convertLocalDateTimeToDate(final LocalDateTime dateTime) {
+        return new Date(dateTime.toInstant(ZoneOffset.UTC).toEpochMilli());
+    }
+
     public static LocalDateTime convertEpochMillisToLocalDateTime(final long epochMillis) {
         return Instant.ofEpochMilli(epochMillis).atZone(ZoneOffset.UTC).toLocalDateTime();
     }

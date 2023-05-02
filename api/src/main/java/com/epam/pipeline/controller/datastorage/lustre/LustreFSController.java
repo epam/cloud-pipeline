@@ -77,6 +77,19 @@ public class LustreFSController extends AbstractRestController {
         return Result.success(lustreFSApiService.getLustreFS(runId));
     }
 
+    @GetMapping
+    @ApiOperation(
+            value = "Returns lustreFs by id.",
+            notes = "Returns lustreFs by id.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<LustreFS> getLustreFS(@RequestParam final String mountName,
+                                        @RequestParam final Long regionId) {
+        return Result.success(lustreFSApiService.getLustreFS(mountName, regionId));
+    }
+
     @DeleteMapping(value = RUN_ID_PATH)
     @ApiOperation(
             value = "Deletes lustre FS for a run.",

@@ -27,8 +27,11 @@ import {
   Menu,
   Input,
   Spin,
-  Alert, message, Modal
+  Alert,
+  message,
+  Modal
 } from 'antd';
+import measureTextWidth from '../../../../utils/measure-text-width';
 import displayDate from '../../../../utils/displayDate';
 import highlightText from '../../highlightText';
 import Label from '../special/label';
@@ -37,20 +40,42 @@ import getAuthor from '../special/utilities/get-author';
 import UserName from '../../UserName';
 import NewTicketForm from '../special/new-ticket-form';
 import GitlabIssueCreate from '../../../../models/gitlab-issues/GitlabIssueCreate';
+import GitlabIssueUpdate from '../../../../models/gitlab-issues/GitlabIssueUpdate';
 import GitlabIssueDelete from '../../../../models/gitlab-issues/GitlabIssueDelete';
+import {
+  buildTicketsFiltersQuery,
+  parseTicketsFilters,
+  ticketsFiltersAreEqual
+} from '../special/utilities/routing';
 import styles from './ticket-list.css';
 import mainStyles from '../tickets.css';
 
 const PAGE_SIZE = 20;
-const ENABLE_CONTROLS = false;
 
-@inject('preferences')
+@inject('preferences', 'authenticatedUserInfo')
+@inject((stores, props) => {
+  const {
+    location = {}
+  } = props;
+  const {
+    page,
+    search,
+    statuses,
+    default: defaultFilters
+  } = parseTicketsFilters(location.search);
+  return {
+    page,
+    search,
+    statuses,
+    default: defaultFilters
+  };
+})
 @observer
 class TicketsList extends React.Component {
   state = {
     filters: {
       search: '',
-      labels: []
+      statuses: []
     },
     page: 1,
     error: undefined,
@@ -59,18 +84,25 @@ class TicketsList extends React.Component {
     pending: false,
     newTicketModalVisible: false,
     newTicketPending: false
-  }
-
-  filtersRefreshTimeout;
+  };
 
   componentDidMount () {
-    this.reload();
+    this.fetchCurrentPage();
   }
 
-  componentWillUnmount () {
-    if (this.filtersRefreshTimeout) {
-      clearTimeout(this.filtersRefreshTimeout);
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (!ticketsFiltersAreEqual(this.props, prevProps)) {
+      this.fetchCurrentPage();
     }
+  }
+
+  @computed
+  get enableControls () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo && authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
   }
 
   @computed
@@ -84,10 +116,40 @@ class TicketsList extends React.Component {
 
   get filtersTouched () {
     const {filters} = this.state;
-    return filters.search || filters.labels.length > 0;
+    return filters.search || filters.statuses.length > 0;
   }
 
-  onFiltersChange = (field, eventType) => event => {
+  get tableGridTemplate () {
+    const {
+      tickets
+    } = this.state;
+    const labelsOnPage = [...new Set((tickets || []).reduce((acc, cur) => {
+      acc.push(...(cur.labels || []));
+      return acc;
+    }, []))].filter(label => this.predefinedLabels.includes(label));
+    const [longestWidth = 0] = measureTextWidth(labelsOnPage, '13px')
+      .sort((a, b) => b - a);
+    const minWidth = 50;
+    const statusWidth = `${Math.max(minWidth, longestWidth + 10)}px`;
+    return `"status title controls" auto / ${statusWidth} 1fr auto`;
+  }
+
+  submitFilters = () => {
+    const {
+      filters = {}
+    } = this.state;
+    const {
+      search,
+      statuses
+    } = filters;
+    this.changeFilters({
+      page: 1,
+      search,
+      statuses
+    }, false);
+  };
+
+  onFiltersChange = (field, eventType) => (event) => {
     let value;
     switch (eventType) {
       case 'checkbox':
@@ -110,35 +172,28 @@ class TicketsList extends React.Component {
         ...this.state.filters,
         [field]: value
       }
-    }, () => {
-      clearTimeout(this.filtersRefreshTimeout);
-      this.filtersRefreshTimeout = undefined;
-      this.filtersRefreshTimeout = setTimeout(() => {
-        this.setState({
-          page: 1
-        }, () => this.fetchCurrentPage());
-      }, 600);
     });
   };
 
   clearFilters = () => {
-    clearTimeout(this.filtersRefreshTimeout);
-    this.filtersRefreshTimeout = undefined;
-    this.setState({
-      filters: {
-        search: '',
-        labels: []
-      }
-    }, () => this.reload());
+    this.changeFilters({
+      page: 1,
+      search: '',
+      statuses: [],
+      default: false
+    });
   };
 
   fetchCurrentPageToken = 0;
 
   fetchCurrentPage = () => {
     const {
-      page,
-      filters
-    } = this.state;
+      search,
+      statuses,
+      default: defaultFilters,
+      page = 0,
+      preferences
+    } = this.props;
     this.fetchCurrentPageToken += 1;
     const token = this.fetchCurrentPageToken;
     this.setState({
@@ -154,7 +209,33 @@ class TicketsList extends React.Component {
       };
       const request = new GitlabIssuesLoad(page, PAGE_SIZE);
       try {
-        await request.send(filters);
+        await preferences.fetchIfNeededOrWait();
+        const payload = {};
+        if (search && search.length > 0) {
+          payload.search = search;
+        }
+        let statusesPayload = [];
+        if (defaultFilters) {
+          const {
+            not = false,
+            labels: initialLabels = []
+          } = preferences.gitlabIssueDefaultFilters || {};
+          payload.labelsFilter = preferences.gitlabIssueDefaultFilters;
+          statusesPayload = this.predefinedLabels
+            .filter((aLabel) => (not && !initialLabels.includes(aLabel)) ||
+              (!not && initialLabels.includes(aLabel)));
+        } else if (statuses && statuses.length > 0) {
+          const correctedStatuses = this.predefinedLabels
+            .filter((aLabel) => !(statuses || []).includes(aLabel));
+          if (correctedStatuses.length > 0) {
+            payload.labelsFilter = {
+              labels: correctedStatuses,
+              not: true
+            };
+          }
+          statusesPayload = statuses;
+        }
+        await request.send(payload);
         if (request.error) {
           throw new Error(request.error);
         }
@@ -165,6 +246,10 @@ class TicketsList extends React.Component {
         state.tickets = elements;
         state.total = totalCount;
         state.error = undefined;
+        state.filters = {
+          search,
+          statuses: statusesPayload
+        };
       } catch (error) {
         state.error = error.message;
       } finally {
@@ -173,14 +258,43 @@ class TicketsList extends React.Component {
     });
   };
 
-  onPageChange = (page) => {
-    this.setState({page}, () => this.fetchCurrentPage());
+  changeFilters = (filters, reFetchPage = true) => {
+    const {
+      search: currentSearch,
+      default: currentDefaultFilters,
+      statuses: currentStatuses = [],
+      page: currentPage,
+      router
+    } = this.props;
+    const {
+      page = currentPage,
+      search = currentSearch,
+      statuses = currentStatuses,
+      default: defaultFilters = currentDefaultFilters
+    } = filters || {};
+    const filtersPayload = {
+      page,
+      search,
+      default: defaultFilters,
+      statuses
+    };
+    if (
+      router &&
+      typeof router.push === 'function' &&
+      !ticketsFiltersAreEqual(filtersPayload, this.props)
+    ) {
+      const query = buildTicketsFiltersQuery(filtersPayload);
+      const url = query && query.length
+        ? `/tickets?${query}`
+        : '/tickets';
+      router.push(url);
+    } else if (reFetchPage) {
+      this.fetchCurrentPage();
+    }
   };
 
-  onSelectMenu = (key, ticket) => {
-    if (key === 'delete') {
-      this.deleteTicketConfirmation(ticket);
-    }
+  onPageChange = (page) => {
+    this.changeFilters({page});
   };
 
   onSelectTicket = (ticket) => {
@@ -190,11 +304,17 @@ class TicketsList extends React.Component {
     if (!ticket || !router) {
       return;
     }
-    router.push(`/tickets/${ticket.iid}`);
+    const query = buildTicketsFiltersQuery(this.props);
+    const url = query && query.length
+      ? `/tickets/${ticket.iid}?${query}`
+      : `/tickets/${ticket.iid}`;
+    router.push(url);
   };
 
   renderTableHeader = () => {
-    const {filters} = this.state;
+    const {
+      filters
+    } = this.state;
     return (
       <div
         className={
@@ -206,6 +326,7 @@ class TicketsList extends React.Component {
             'cp-card-background-color'
           )
         }
+        style={{grid: this.tableGridTemplate}}
       >
         <b
           className={styles.status}
@@ -249,22 +370,27 @@ class TicketsList extends React.Component {
             onChange={this.onFiltersChange('search', 'input')}
             id="tickets-search-filter"
             className={styles.tableControl}
-            style={{minWidth: '200px'}}
+            style={{width: 200}}
+            onPressEnter={this.submitFilters}
+            onBlur={this.submitFilters}
           />
           <Select
-            onChange={this.onFiltersChange('labels', 'select')}
-            value={filters.labels}
+            onChange={this.onFiltersChange('statuses', 'select')}
+            value={filters.statuses}
             style={{minWidth: '200px'}}
             className={styles.tableControl}
             placeholder="Select ticket status"
             mode="multiple"
             id="tickets-labels-filter"
+            onBlur={this.submitFilters}
           >
-            {this.predefinedLabels.map(label => (
-              <Select.Option key={label}>
-                {label}
-              </Select.Option>
-            ))}
+            {
+              this.predefinedLabels.map(label => (
+                <Select.Option key={label}>
+                  {label}
+                </Select.Option>
+              ))
+            }
           </Select>
         </div>
       </div>
@@ -276,22 +402,29 @@ class TicketsList extends React.Component {
       filters,
       pending
     } = this.state;
-    const menu = (
-      <Menu
-        onClick={({key}) => this.onSelectMenu(key, ticket)}
-        selectedKeys={[]}
-        style={{cursor: 'pointer'}}
-      >
-        <Menu.Item key="close">
-          Close ticket
-        </Menu.Item>
-        <Menu.Item key="delete">
-          Delete
-        </Menu.Item>
-      </Menu>
-    );
     const getLabel = (labels) => (labels || [])
       .find(label => this.predefinedLabels.includes(label));
+    const currentLabel = getLabel(ticket.labels);
+    const menu = (
+      <Menu
+        onClick={({key}) => this.onSelectNewStatus(key, ticket)}
+        selectedKeys={[]}
+        style={{cursor: 'default', minWidth: '120px'}}
+      >
+        <Menu.ItemGroup title="Select new status">
+          <Menu.Divider />
+          {
+            this.predefinedLabels
+              .filter(label => label !== currentLabel)
+              .map(label => (
+                <Menu.Item key={label} style={{cursor: 'pointer'}}>
+                  {label}
+                </Menu.Item>
+              ))
+          }
+        </Menu.ItemGroup>
+      </Menu>
+    );
     return (
       <div
         key={ticket.iid}
@@ -304,11 +437,12 @@ class TicketsList extends React.Component {
             {'cp-table-element-disabled': pending}
           )
         }
+        style={{grid: this.tableGridTemplate}}
         onClick={() => this.onSelectTicket(ticket)}
       >
         <Label
           className={styles.status}
-          label={getLabel(ticket.labels)}
+          label={currentLabel}
         />
         <div
           className={styles.title}
@@ -320,6 +454,9 @@ class TicketsList extends React.Component {
             className="cp-text-not-important"
             style={{fontSize: 'smaller'}}
           >
+            <span style={{marginRight: '5px'}}>
+              {`#${ticket.iid}`}
+            </span>
             {'Opened '}
             {displayDate(ticket.created_at, 'D MMM YYYY, HH:mm')}
             {' by '}
@@ -329,9 +466,15 @@ class TicketsList extends React.Component {
             />
           </span>
         </div>
-        <div className={styles.controls}>
+        <div
+          className={styles.controls}
+          onClick={this.enableControls
+            ? (event) => event.stopPropagation()
+            : undefined
+          }
+        >
           {
-            ENABLE_CONTROLS && (
+            this.enableControls && (
               <Dropdown
                 overlay={menu}
                 trigger={['click']}
@@ -340,12 +483,7 @@ class TicketsList extends React.Component {
               >
                 <Icon
                   type="ellipsis"
-                  style={{
-                    cursor: 'pointer',
-                    marginRight: 10,
-                    fontSize: 'large',
-                    fontWeight: 'bold'
-                  }}
+                  className={styles.controlsIcon}
                 />
               </Dropdown>
             )
@@ -356,9 +494,7 @@ class TicketsList extends React.Component {
   }
 
   reload = () => {
-    this.setState({
-      page: 1
-    }, () => this.fetchCurrentPage());
+    this.changeFilters({page: 1});
   };
 
   openNewTicketModal = () => {
@@ -443,9 +579,59 @@ class TicketsList extends React.Component {
     }
   };
 
+  updateTicket = (ticket) => {
+    if (!ticket) {
+      return;
+    }
+    this.setState({
+      pending: true
+    }, async () => {
+      const hide = message.loading('Updating ticket...', 0);
+      const request = new GitlabIssueUpdate();
+      try {
+        const payload = {
+          attachments: ticket.attachments,
+          description: ticket.description,
+          iid: ticket.iid,
+          labels: ticket.labels,
+          title: ticket.title
+        };
+        await request.send(payload);
+        if (request.error) {
+          throw new Error(request.error);
+        }
+      } catch (error) {
+        message.error(request.error, 5);
+      } finally {
+        hide();
+        if (request.error) {
+          this.setState({
+            pending: false
+          });
+        } else {
+          this.setState({
+            pending: false
+          }, () => this.reload());
+        }
+      }
+    });
+  };
+
+  onSelectNewStatus = (status, ticket) => {
+    if (this.predefinedLabels.find(label => label === status)) {
+      const ticketLabels = (ticket.labels || [])
+        .filter(label => !this.predefinedLabels.includes(label));
+      ticketLabels.push(status);
+      const updatedTicket = {
+        ...ticket,
+        labels: ticketLabels
+      };
+      this.updateTicket(updatedTicket);
+    }
+  };
+
   render () {
     const {
-      page,
       newTicketModalVisible,
       tickets,
       total = 0,
@@ -453,6 +639,9 @@ class TicketsList extends React.Component {
       error,
       newTicketPending
     } = this.state;
+    const {
+      page
+    } = this.props;
     return (
       <div
         className={
@@ -473,6 +662,7 @@ class TicketsList extends React.Component {
           <Button
             onClick={this.reload}
             style={{marginLeft: 5}}
+            disabled={pending}
           >
             Refresh
           </Button>
@@ -488,7 +678,7 @@ class TicketsList extends React.Component {
           error && (
             (
               <Alert
-                message="Error retrieving tickets"
+                message={`Error retrieving tickets: ${error}`}
                 type="error"
               />
             )

@@ -1098,9 +1098,10 @@ EOF
 function idp_register_app {
     local issuer="$1"
     local cert="$2"
-    
+    local idp_pd="${CP_IDP_PROFILE_DB:-/opt/idp/pdb/saml-idp-profiles.json}"
+
     print_info "Creating IdP connection for $issuer with cert $cert"
-    idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert")
+    idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert --profileDatabase $idp_pd")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering IdP connection for $issuer with cert $cert"
         echo "========"
@@ -1118,9 +1119,10 @@ function idp_register_user {
     local firstname="$3"
     local lastname="$4"
     local email="$5"
+    local idp_pd="${CP_IDP_PROFILE_DB:-/opt/idp/pdb/saml-idp-profiles.json}"
 
     print_info "Registering IdP user $username"
-    idp_register_user_response=$(execute_deployment_command cp-idp default "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email")
+    idp_register_user_response=$(execute_deployment_command cp-idp default "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email --profileDatabase $idp_pd")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering user $username"
         echo "========"
@@ -1417,6 +1419,49 @@ function api_register_data_transfer_pipeline {
     api_set_preference "storage.transfer.pipeline.version" "$dt_pipeline_version" "true"
 
     print_ok "Data transfer pipeline $CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME is registered with ID $pipeline_id and tag $dt_pipeline_version"
+}
+
+function api_register_system_jobs_pipeline {
+    local sj_role_grant="${1:-ROLE_ADMIN}"
+    local sj_role_permissions="21"
+    local sj_pipeline_version=${CP_API_SRV_SYSTEM_JOBS_PIPELINE_VERSION:-v1}
+
+    # 0. Verify and update config.json template
+    local sj_pipeline_dir="$OTHER_PACKAGES_PATH/system_jobs"
+    local sj_pipeline_config_json="$sj_pipeline_dir/config.json"
+    if [ ! -f "$sj_pipeline_config_json" ]; then
+        print_err "config.json is not found for the system jobs pipeline at ${sj_pipeline_config_json}. Pipeline will not be registered"
+        return 1
+    fi
+
+    local sj_pipeline_config_json_content="$(envsubst < "$sj_pipeline_config_json")"
+    cat <<< "$sj_pipeline_config_json_content" > "$sj_pipeline_config_json"
+
+    # 1. Register a system jobs pipeline in general
+    api_register_pipeline   "$CP_API_SRV_SYSTEM_FOLDER_NAME" \
+                            "$CP_API_SRV_SYSTEM_JOBS_PIPELINE_FRIENDLY_NAME" \
+                            "$CP_API_SRV_SYSTEM_JOBS_PIPELINE_DESCRIPTION" \
+                            "$sj_pipeline_dir" \
+                            "$sj_role_grant" \
+                            "$sj_role_permissions" \
+                            "$sj_pipeline_version"
+
+    if [ $? -ne 0 ]; then
+        print_err "Error occurred while registering a system jobs pipeline (see any output above). API will not be configured to use system jobs"
+        return 1
+    fi
+
+    # 2. Get system jobs pipeline registered id
+    local pipeline_id="$(api_get_entity_id "$CP_API_SRV_SYSTEM_JOBS_PIPELINE_FRIENDLY_NAME" "pipeline")"
+    if [ $? -ne 0 ] || [ ! "$pipeline_id" ]; then
+        print_err "Unable to determine ID of the data system jobs pipeline. API will not be configured to use data system jobs pipeline"
+        return 1
+    fi
+
+    # 3. Register system jobs pipeline in the preferences
+    api_set_preference "system.jobs.pipeline.id" "$pipeline_id" "true"
+
+    print_ok "System jobs pipeline $CP_API_SRV_SYSTEM_JOBS_PIPELINE_FRIENDLY_NAME is registered with ID $pipeline_id and tag $sj_pipeline_version"
 }
 
 function api_register_email_templates {

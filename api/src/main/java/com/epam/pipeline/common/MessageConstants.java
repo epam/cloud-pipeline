@@ -162,6 +162,7 @@ public final class MessageConstants {
     public static final String ERROR_ACTUAL_CMD_NOT_FOUND = "error.actual.cmd.not.found";
     public static final String ERROR_PIPELINE_RUN_NOT_INITIALIZED = "error.pipeline.run.not.initialized";
     public static final String ERROR_RUN_PRETTY_URL_IN_USE = "error.pipeline.run.pretty.url.in.use";
+    public static final String ERROR_RUN_PRETTY_NOT_FOUND = "error.pipeline.run.pretty.not.found";
     public static final String ERROR_EXCEED_MAX_RESTART_RUN_COUNT = "error.exceed.max.restart.run.count";
     public static final String ERROR_GET_NODE_STAT = "error.get.node.stat";
     public static final String ERROR_CMD_TEMPLATE_NOT_RESOLVED = "error.cmd.template.not.resolved";
@@ -693,6 +694,7 @@ public final class MessageConstants {
 
     //Lustre
     public static final String ERROR_LUSTRE_NOT_FOUND = "error.lustre.not.found.for.run";
+    public static final String ERROR_LUSTRE_MOUNT_NOT_FOUND = "error.lustre.not.found.for.mount";
     public static final String ERROR_LUSTRE_NOT_CREATED = "error.lustre.not.created.for.run";
     public static final String ERROR_LUSTRE_REGION_NOT_SUPPORTED = "error.lustre.region.not.supported";
     public static final String ERROR_LUSTRE_MISSING_CONFIG = "error.lustre.missing.config";
@@ -821,6 +823,11 @@ public final class MessageConstants {
 
     // Launch limits
     public static final String ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED = "error.run.launch.user.limit.exceeded";
+    public static final String ERROR_RUN_ASSIGN_POLICY_MALFORMED = "error.run.assign.policy.malformed";
+    public static final String ERROR_RUN_ASSIGN_POLICY_FORBIDDEN = "error.run.assign.policy.forbidden";
+    public static final String ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN = "error.run.with.service.account.forbidden";
+
+
 
     // Ngs preprocessing
     public static final String ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED =

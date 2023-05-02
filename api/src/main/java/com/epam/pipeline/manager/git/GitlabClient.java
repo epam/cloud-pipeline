@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabIssue;
+import com.epam.pipeline.entity.git.GitlabIssueAttachment;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
 import com.epam.pipeline.entity.git.GitlabIssueRequest;
 import com.epam.pipeline.entity.git.GitlabUpload;
@@ -50,10 +51,12 @@ import lombok.experimental.Wither;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -85,6 +88,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -123,6 +127,8 @@ public class GitlabClient {
     public static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
     public static final String GITKEEP_FILE = ".gitkeep";
     public static final String EMAIL_SEPARATOR = "@";
+    public static final String TOTAL_HEADER = "X-Total";
+    public static final int MAX_PAGE_SIZE = 100;
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -294,6 +300,10 @@ public class GitlabClient {
         return execute(gitLabApi.getProject(apiVersion, projectId));
     }
 
+    public GitProject getProject(Long id) throws GitClientException {
+        return execute(gitLabApi.getProject(apiVersion, String.valueOf(id)));
+    }
+
     public void deleteRepository() throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
         execute(gitLabApi.deleteProject(apiVersion, projectId));
@@ -444,7 +454,7 @@ public class GitlabClient {
 
     public GitlabIssue createIssue(final String project,
                                    final GitlabIssueRequest issue,
-                                   final Map<String, String> attachments) throws GitClientException {
+                                   final List<GitlabIssueAttachment> attachments) throws GitClientException {
         issue.setDescription(formatTextWithAttachments(project,
                 attachments,
                 issue.getDescription()));
@@ -453,7 +463,7 @@ public class GitlabClient {
 
     public GitlabIssue updateIssue(final String project,
                                    final GitlabIssueRequest issue,
-                                   final Map<String, String> attachments) throws GitClientException {
+                                   final List<GitlabIssueAttachment> attachments) throws GitClientException {
         issue.setDescription(formatTextWithAttachments(project,
                 attachments,
                 issue.getDescription()));
@@ -469,24 +479,43 @@ public class GitlabClient {
             throws GitClientException {
         final MultipartBody.Part filePart = MultipartBody.Part.createFormData(
                 "file", name,
-                RequestBody.create(MediaType.parse("multipart/form-data"), content));
+                RequestBody.create(MediaType.parse("multipart/form-data"), Base64.getDecoder().decode(content)));
         return execute(gitLabApi.upload(apiVersion, project, filePart));
     }
 
     public PagedResult<List<GitlabIssue>> getIssues(final String project, final List<String> labels,
-                                                    final Integer page, final Integer pageSize,
-                                                    final String search)
+                                                    final List<String> notLabels, final Integer page,
+                                                    final Integer pageSize, final String search,
+                                                    final boolean serverFiltering)
             throws GitClientException {
         final String labelStr = CollectionUtils.isEmpty(labels) ? null : String.join(",", labels);
+        final String notLabelStr = CollectionUtils.isEmpty(notLabels) ? null : String.join(",", notLabels);
+        if (StringUtils.isNotBlank(notLabelStr) && serverFiltering) {
+            return filterIssues(project, notLabels, page, pageSize, search, labelStr);
+        }
         final Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labelStr,
-                page, pageSize, search));
-        final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get("X-Total")));
+                notLabelStr, page, pageSize, search));
+        final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get(TOTAL_HEADER)));
         return new PagedResult<>(response.body(), totalPages);
+    }
+
+    public List<GitlabIssue> getAllIssues(final String project, final String labels,
+                                          final String search) {
+        int page = 1;
+        final List<GitlabIssue> result = new ArrayList<>();
+        final Response<List<GitlabIssue>> response =
+                fetchIssuePage(project, labels, search, page, MAX_PAGE_SIZE, result);
+        final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get(TOTAL_HEADER)));
+        while (totalPages >  result.size()) {
+            page++;
+            fetchIssuePage(project, labels, search, page, MAX_PAGE_SIZE, result);
+        }
+        return result;
     }
 
     public GitlabIssue getIssue(final String project, final Long issueId) throws GitClientException {
         final GitlabIssue issue = execute(gitLabApi.getIssue(apiVersion, project, issueId));
-        final Pair<String, List<String>> a = extractAttachments(issue.getDescription());
+        final Pair<String, List<GitlabIssueAttachment>> a = extractAttachments(issue.getDescription());
         issue.setDescription(a.getKey());
         issue.setAttachments(a.getValue());
         final List<GitlabIssueComment> comments = getIssueComments(project, issueId);
@@ -498,7 +527,7 @@ public class GitlabClient {
                                                      final Long issueId) throws GitClientException {
         final List<GitlabIssueComment> comments = execute(gitLabApi.getIssueComments(apiVersion, project, issueId));
         comments.forEach(c -> {
-            Pair<String, List<String>> a = extractAttachments(c.getBody());
+            Pair<String, List<GitlabIssueAttachment>> a = extractAttachments(c.getBody());
             c.setBody(a.getKey());
             c.setAttachments(a.getValue());
         });
@@ -529,6 +558,10 @@ public class GitlabClient {
 
     public GitProjectStorage getProjectStorage(final String project) throws GitClientException {
         return execute(gitLabApi.getProjectStorage(makeProjectId(namespace, project)));
+    }
+
+    public GitProjectStorage getProjectStorageFullPath(final String project) throws GitClientException {
+        return execute(gitLabApi.getProjectStorage(project));
     }
 
     private GitProject createRepo(String repoName, String description, String visibility) throws GitClientException {
@@ -699,22 +732,79 @@ public class GitlabClient {
                 .collect(Collectors.toList());
     }
 
-    private static Pair<String, List<String>> extractAttachments(String text) {
+    private static Pair<String, List<GitlabIssueAttachment>> extractAttachments(String text) {
         final String[] description = text.split("!");
         final List<String> descriptionList = Arrays.stream(description).map(String::trim).collect(Collectors.toList());
-        return new ImmutablePair<>(descriptionList.get(0), description.length > 1 ?
-                descriptionList.subList(1, descriptionList.size()) : Collections.emptyList());
+        final List<String> attachments = description.length > 1 ?
+                descriptionList.subList(1, descriptionList.size()) : Collections.emptyList();
+        return new ImmutablePair<>(descriptionList.get(0),  attachments.stream()
+                .map(GitlabClient::parseAttachment)
+                .collect(Collectors.toList()));
     }
+
+    private static GitlabIssueAttachment parseAttachment(final String markdown) {
+        final String[] parts = markdown.split(Pattern.quote("](/"));
+        final String fileName = parts[0].replace("[", "");
+        final String secret = parts[1].replace("uploads/", "").replace(")", "");
+        return GitlabIssueAttachment.builder()
+                .fileName(fileName)
+                .secret(secret)
+                .markdown(markdown)
+                .build();
+    }
+
     private String formatTextWithAttachments(final String project,
-                                             final Map<String, String> attachments,
+                                             final List<GitlabIssueAttachment> attachments,
                                              final String text) {
         if (CollectionUtils.isEmpty(attachments)) {
             return text;
         }
-        final List<String> uploads = uploadAttachments(project, attachments);
+        final List<String> uploaded = attachments.stream()
+                .filter(a -> TextUtils.isBlank(a.getContent())).map(GitlabIssueAttachment::getMarkdown)
+                .collect(Collectors.toList());
+        final Map<String, String> toUpload = attachments.stream()
+                .filter(a -> !TextUtils.isBlank(a.getContent()))
+                .collect(Collectors.toMap(GitlabIssueAttachment::getFileName, GitlabIssueAttachment::getContent));
+        final List<String> uploads = uploadAttachments(project, toUpload);
         final List<String> body = new ArrayList<>();
         body.add(text);
+        body.addAll(uploaded);
         body.addAll(uploads);
         return String.join("\n\n!", body);
+    }
+
+    private PagedResult<List<GitlabIssue>> filterIssues(final String project,
+                                                        final List<String> notLabels,
+                                                        final Integer page,
+                                                        final Integer pageSize,
+                                                        final String search,
+                                                        final String labelStr) {
+        final List<GitlabIssue> allIssues = getAllIssues(project, labelStr, search);
+        final List<GitlabIssue> filteredIssues = ListUtils.emptyIfNull(allIssues)
+                .stream()
+                .filter(issue -> ListUtils.emptyIfNull(issue.getLabels())
+                        .stream()
+                        .noneMatch(notLabels::contains))
+                .collect(Collectors.toList());
+        final int pageStart = pageSize * (page - 1);
+        final int size = filteredIssues.size();
+        if (pageStart >= size) {
+            return new PagedResult<>(Collections.emptyList(), size);
+        }
+        return new PagedResult<>(filteredIssues.subList(pageStart, Math.min(size, pageStart + pageSize)), size);
+    }
+
+    private Response<List<GitlabIssue>> fetchIssuePage(final String project,
+                                                       final String labels,
+                                                       final String search,
+                                                       final int page,
+                                                       final int pageSize,
+                                                       final List<GitlabIssue> result) {
+        final Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labels,
+                null, page, pageSize, search));
+        if (Objects.nonNull(response.body())) {
+            result.addAll(response.body());
+        }
+        return response;
     }
 }

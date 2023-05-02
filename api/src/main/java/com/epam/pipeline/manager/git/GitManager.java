@@ -62,6 +62,7 @@ import com.epam.pipeline.utils.GitUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -613,6 +614,12 @@ public class GitManager {
         ));
     }
 
+    public byte[] downloadAttachment(final String secret) {
+        final String gitlabRepositoryPath = getGitlabRepositoryPath(getProjectForIssues());
+        final String path = Paths.get(gitlabRepositoryPath, secret).toString();
+        return callGitReaderApi(gitReaderClient -> gitReaderClient.downloadAttachment(path));
+    }
+
     public GitlabIssue createIssue(final GitlabIssueVO request) throws GitClientException {
         final String authorizedUser = authManager.getCurrentUser().getUserName();
         final GitlabIssueRequest issue = request.toIssue();
@@ -634,15 +641,27 @@ public class GitManager {
         return getDefaultGitlabClient().deleteIssue(getProjectForIssues(), issueId);
     }
 
-    public PagedResult<List<GitlabIssue>> getIssues(final Integer page,
-                                                    final Integer pageSize,
+    public PagedResult<List<GitlabIssue>> getIssues(final Integer page, final Integer pageSize,
                                                     final GitlabIssueFilter filter) throws GitClientException {
-        final List<String> labels = Optional.ofNullable(filter.getLabels()).orElse(new ArrayList<>());
+        List<String> labels = new ArrayList<>();
+        List<String> notLabels = new ArrayList<>();
+        if (filter.getLabelsFilter() != null) {
+            Assert.notNull(filter.getLabelsFilter().getNot(),
+                    "Gitlab issue filter by labels should contain specified 'not' flag.");
+            Assert.isTrue(CollectionUtils.isNotEmpty(filter.getLabelsFilter().getLabels()),
+                    "Gitlab issue filter by labels should contain labels.");
+            if (filter.getLabelsFilter().getNot()) {
+                notLabels = filter.getLabelsFilter().getLabels();
+            } else {
+                labels = filter.getLabelsFilter().getLabels();
+            }
+        }
         if (!authManager.isAdmin()) {
             final String authorizedUser = authManager.getCurrentUser().getUserName();
             labels.add(String.format(ON_BEHALF_OF, authorizedUser));
         }
-        return getDefaultGitlabClient().getIssues(getProjectForIssues(), labels, page, pageSize, filter.getSearch());
+        return getDefaultGitlabClient().getIssues(getProjectForIssues(), labels, notLabels, page, pageSize,
+                filter.getSearch(), preferenceManager.getPreference(SystemPreferences.GITLAB_SERVER_FILTERING));
     }
 
     public GitlabIssue getIssue(final Long issueId) throws GitClientException {
@@ -836,6 +855,21 @@ public class GitManager {
             }
         }
         return Paths.get(namespace, project + GIT_REPO_EXTENSION).toString();
+    }
+
+    private String getGitlabRepositoryPath(final String project) {
+        final boolean hashedRepositoriesSupported = preferenceManager.getPreference(
+                SystemPreferences.GITLAB_HASHED_REPO_SUPPORT);
+        if (hashedRepositoriesSupported) {
+            final GitProjectStorage projectStorage = getDefaultGitlabClient().getProjectStorageFullPath(project);
+            if (Objects.nonNull(projectStorage)) {
+                return projectStorage.getDiskPath();
+            }
+        }
+        if (NumberUtils.isDigits(project)) {
+            return getDefaultGitlabClient().getProject(Long.parseLong(project)).getPath();
+        }
+        return project;
     }
 
     private String findRepoSrcPath(final Pipeline pipeline) {

@@ -321,5 +321,7 @@ public enum Primitive {
     AUTOSCALED,
     PROTOCOL,
     REINDEX,
+    CONDITION,
+    SHOW_TIMINGS,
     MUTE_EMAIL_NOTIFICATIONS
 }

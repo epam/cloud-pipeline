@@ -256,25 +256,65 @@ export default `
   border: 1px solid @card-border-color;
   color: @application-color;
 }
+@THEME .cp-tag.accent {
+  border: 1px solid @application-color;
+}
+@THEME .cp-tag.filled,
+@THEME .cp-tag.link:hover {
+  background-color: @application-color;
+  border: 1px solid @application-color;
+  color: @application-background-color;
+}
 @THEME .cp-tag.disabled {
   color: @application-color-disabled;
+}
+@THEME .cp-tag.filled.disabled,
+@THEME .cp-tag.link.disabled:hover {
+  background-color: @application-color-disabled;
+  border: 1px solid @application-color-disabled;
 }
 @THEME .cp-tag.warning {
   border-color: currentColor;
   color: @color-yellow;
 }
+@THEME .cp-tag.warning.filled,
+@THEME .cp-tag.warning.link:hover {
+  background-color: @color-yellow;
+  border-color: @color-yellow;
+  color: @primary-text-color;
+}
 @THEME .cp-tag.critical {
   border-color: currentColor;
   color: @color-red;
+}
+@THEME .cp-tag.critical.filled,
+@THEME .cp-tag.critical.link:hover {
+  background-color: @color-red;
+  border-color: @color-red;
+  color: @primary-text-color;
 }
 @THEME .cp-tag.success {
   border-color: currentColor;
   color: @color-green;
 }
+@THEME .cp-tag.success.filled,
+@THEME .cp-tag.success.link:hover {
+  background-color: @color-green;
+  border-color: @color-green;
+  color: @primary-text-color;
+}
 @THEME .cp-tag.cp-primary,
 @THEME .cp-tag.primary {
   border-color: currentColor;
   color: @primary-color;
+}
+@THEME .cp-tag.primary.filled,
+@THEME .cp-tag.cp-primary.filled,
+@THEME .cp-tag.primary.link:hover,
+@THEME .cp-tag.cp-primary.link:hover {
+  background-color: @primary-color;
+  border-color: @primary-color;
+  color: @primary-text-color;
 }
 @THEME .cp-versioned-storage {
   color: @primary-color;

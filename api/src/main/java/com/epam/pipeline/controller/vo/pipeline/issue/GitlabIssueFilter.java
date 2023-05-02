@@ -16,11 +16,11 @@
 
 package com.epam.pipeline.controller.vo.pipeline.issue;
 
+import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import lombok.Data;
-import java.util.List;
 
 @Data
 public class GitlabIssueFilter {
     private String search;
-    private List<String> labels;
+    private GitlabIssueLabelsFilter labelsFilter;
 }

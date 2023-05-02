@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.utils.RunDurationUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -143,7 +144,7 @@ public class InstanceOfferManager {
             long maximumDuration = -1;
             long totalDurations = 0;
             for (PipelineRun run : runs) {
-                long duration = run.getEndDate().getTime() - run.getStartDate().getTime();
+                long duration = RunDurationUtils.getBillableDuration(run).toMillis();
                 if (minimumDuration == -1 || minimumDuration > duration) {
                     minimumDuration = duration;
                 }
@@ -191,8 +192,7 @@ public class InstanceOfferManager {
         price.setPricePerHour(pricePerHour);
 
         if (pipelineRun.getStatus().isFinal()) {
-            long duration = pipelineRun.getEndDate().getTime() - pipelineRun.getStartDate().getTime();
-            price.setTotalPrice(duration / ONE_HOUR * pricePerHour);
+            price.setTotalPrice(RunDurationUtils.getBillableDuration(pipelineRun).toMillis() / ONE_HOUR * pricePerHour);
         } else {
             price.setTotalPrice(0);
         }
@@ -235,15 +235,15 @@ public class InstanceOfferManager {
                 .collect(toList());
     }
 
+    public Optional<InstanceOffer> findOffer(final String instanceType, final Long regionId) {
+        final InstanceOfferRequestVO requestVO = buildInstanceTypeRequest(instanceType, regionId);
+        return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO))
+                .stream()
+                .findFirst();
+    }
+
     public double getPricePerHourForInstance(final String instanceType, final Long regionId) {
-        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
-        requestVO.setInstanceType(instanceType);
-        requestVO.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
-        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
-        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
-        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
-        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
-        requestVO.setRegionId(regionId);
+        final InstanceOfferRequestVO requestVO = buildInstanceTypeRequest(instanceType, regionId);
         return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO))
                 .stream()
                 .map(InstanceOffer::getPricePerUnit)
@@ -496,5 +496,18 @@ public class InstanceOfferManager {
             return CloudInstancePriceService.TermType.ON_DEMAND.getName();
         }
         return PriceType.spotTermName(provider);
+    }
+
+    private static InstanceOfferRequestVO buildInstanceTypeRequest(final String instanceType,
+                                                                   final Long regionId) {
+        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
+        requestVO.setInstanceType(instanceType);
+        requestVO.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
+        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
+        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
+        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
+        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
+        requestVO.setRegionId(regionId);
+        return requestVO;
     }
 }

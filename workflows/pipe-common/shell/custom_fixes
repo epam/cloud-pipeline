@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ -f "/usr/NX/etc/server.cfg" ]; then
-    \cp /usr/NX/etc/server.cfg /usr/NX/etc/server.cfg.cp_bkp
-    sed -i '/DisplayOwner/d' /usr/NX/etc/server.cfg
-    echo "DisplayOwner $OWNER" >> /usr/NX/etc/server.cfg
-    
-    echo "NoMachine DisplayOwner-fix is applied"
+function fix_nomachine_display_owner() {
+    local _cfg_file="$1"
+
+    if [ -f "$_cfg_file" ]; then
+        \cp "$_cfg_file" "${_cfg_file}_bkp"
+        sed -i '/DisplayOwner/d' "$_cfg_file"
+        echo "DisplayOwner $OWNER" >> "$_cfg_file"
+
+        echo "NoMachine DisplayOwner-fix is applied to $_cfg_file"
+    fi
+}
+
+fix_nomachine_display_owner "/usr/NX/etc/server.cfg"
+fix_nomachine_display_owner "/usr/NX/etc/server.cfg.template"
+
+# NoMachine/DCV screensaver fix
+command -v "xset" >/dev/null 2>&1
+IS_XSET_INSTALLED=$?
+
+if [[ "$IS_XSET_INSTALLED" = 0 ]]; then
+    /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
+    IS_RPM_BASED=$?
+
+    [ $IS_RPM_BASED == 0 ] && { rpm -qa | grep screensaver &> /dev/null ; } && yum remove -y "*-screensaver"
+    [ $IS_RPM_BASED != 0 ] && { dpkg -l | grep screensaver &> /dev/null ; } && apt purge -y "*-screensaver"
+    sleep 1; xset s off
+    sleep 1; xset s noblank
+
+    echo "Screensaver-fix is applied"
 fi
+

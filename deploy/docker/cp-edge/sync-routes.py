@@ -342,7 +342,7 @@ def read_system_endpoints():
                 system_endpoints_list = json.load(system_endpoints_file)
                 for endpoint in system_endpoints_list:
                         system_endpoints[endpoint['name']] = {
-                                "value": "true",
+                                "value": endpoint['value'] if 'value' in endpoint else "true",
                                 "endpoint": str(os.environ.get(endpoint['endpoint_env'],
                                                                endpoint['endpoint_default'])),
                                 "endpoint_num":  str(os.environ.get(endpoint['endpoint_num_env'],
@@ -413,6 +413,20 @@ def construct_additional_endpoints_from_run_parameters(run_details):
                 } for e_id, e in custom_endpoint_param_groups.items()
         ]
 
+def match_sys_endpoint_value(param_value, endpoint_value):
+        if not param_value or not endpoint_value:
+                return False
+        if param_value.lower() == endpoint_value.lower():
+                return True
+        # This way we can set envpoint value to boolean expressions, e.g. ">0"
+        if not endpoint_value.isalnum():
+                try:
+                        return eval(param_value + endpoint_value)
+                except:
+                        return False
+        
+        return False
+
 def append_additional_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
                 tool_endpoints = []
@@ -422,7 +436,7 @@ def append_additional_endpoints(tool_endpoints, run_details):
                 # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
                 additional_endpoints_to_configure = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
                                                      if x["name"] in system_endpoints_params
-                                                        and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
+                                                        and match_sys_endpoint_value(x["value"], SYSTEM_ENDPOINTS[x["name"]]["value"])
                                                         and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
                                                         and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
                 additional_endpoint_ports_to_configure = set([e["endpoint"] for e in additional_endpoints_to_configure])
@@ -674,7 +688,7 @@ def load_pods_for_runs_with_endpoints():
                         and pod['spec']['containers'][0]['env']:
                     pipeline_env_parameters = pod['spec']['containers'][0]['env']
                     matched_sys_endpoints = list(filter(lambda env_var: env_var['name'] in SYSTEM_ENDPOINTS.keys()
-                                                                        and env_var['value'] == 'true',
+                                                                        and match_sys_endpoint_value(env_var['value'], SYSTEM_ENDPOINTS[env_var["name"]]["value"]),
                                                         pipeline_env_parameters))
                     if matched_sys_endpoints:
                                 pods_with_endpoints.append(pod)

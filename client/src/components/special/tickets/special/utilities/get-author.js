@@ -17,10 +17,17 @@
 export default function getAuthor (ticket = {}) {
   const {
     labels = [],
-    author
+    author,
+    body
   } = ticket;
-  const authorLabel = (labels || [])
+  let authorLabel = (labels || [])
     .find(label => label.toLowerCase().includes('on behalf of'));
+  if (authorLabel) {
+    return authorLabel.split('of').pop().trim();
+  }
+  authorLabel = (body || '')
+    .split('\n')
+    .find(part => part.toLowerCase().includes('on behalf of'));
   if (authorLabel) {
     return authorLabel.split('of').pop().trim();
   }

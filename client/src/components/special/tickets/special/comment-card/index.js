@@ -26,13 +26,13 @@ import Markdown from '../../../markdown';
 import displayDate from '../../../../../utils/displayDate';
 import getAuthor from '../utilities/get-author';
 import UserName from '../../../UserName';
+import parseAttachment from '../utilities/parse-attachment';
 
-export default class CommentCard extends React.Component {
+class CommentCard extends React.Component {
   static propTypes = {
     comment: PropTypes.object,
     className: PropTypes.string,
     onSelectMenu: PropTypes.func,
-    headerClassName: PropTypes.string,
     style: PropTypes.object
   };
 
@@ -45,25 +45,16 @@ export default class CommentCard extends React.Component {
       };
     }
     const {
-      author: systemAuthor = {},
       description,
-      body,
-      type
+      body
     } = comment;
-    let {
-      author = ''
-    } = systemAuthor.name;
     let text = description || body;
-    if (/^issue$/i.test(type)) {
-      author = getAuthor(comment);
-    } else {
-      const authorLabel = text
-        .split('\n')
-        .find(part => part.toLowerCase().includes('on behalf of'));
-      if (authorLabel) {
-        author = authorLabel.split('of').pop().trim();
-        text = text.replace(authorLabel, '');
-      }
+    const author = getAuthor(comment);
+    const authorLabel = text
+      .split('\n')
+      .find(part => part.toLowerCase().includes('on behalf of'));
+    if (authorLabel) {
+      text = text.replace(authorLabel, '');
     }
     return {
       author,
@@ -80,21 +71,21 @@ export default class CommentCard extends React.Component {
     const {
       comment,
       className,
-      headerClassName,
       onSelectMenu,
-      style
+      style,
+      isIssue
     } = this.props;
     if (!comment) {
       return null;
     }
     const {
-      type,
+      attachments: rawAttachments = [],
       updated_at: updatedAt,
       created_at: createdAt
     } = comment;
     let date = updatedAt || createdAt;
     let dateDescription = 'commented';
-    if (/^issue$/i.test(type)) {
+    if (isIssue) {
       date = createdAt || updatedAt;
       dateDescription = 'created ticket';
     }
@@ -102,6 +93,10 @@ export default class CommentCard extends React.Component {
       author,
       text
     } = this.getCommentInfo();
+    const attachments = rawAttachments
+      .map(parseAttachment)
+      .filter(Boolean)
+      .filter((attachment) => attachment.link);
     const messageMenu = (
       <Menu
         onClick={({key}) => this.onSelectMenu(key, comment)}
@@ -124,18 +119,23 @@ export default class CommentCard extends React.Component {
           borderRadius: '4px',
           style
         }}
-        className={classNames(
-          'cp-panel',
-          className
-        )}
+        className={
+          classNames(
+            'cp-panel-card',
+            className
+          )
+        }
         key={comment.id}
       >
         <div
-          className={classNames(
-            'cp-divider',
-            'bottom',
-            headerClassName
-          )}
+          className={
+            classNames(
+              {
+                'cp-divider': !!text && text.length,
+                'bottom': !!text && text.length
+              }
+            )
+          }
           style={{
             padding: '5px 10px',
             display: 'flex',
@@ -155,22 +155,24 @@ export default class CommentCard extends React.Component {
               {dateDescription} {displayDate(date, 'D MMM YYYY, HH:mm')}
             </span>
           </div>
-          {onSelectMenu ? (
-            <Dropdown
-              overlay={messageMenu}
-              trigger={['click']}
-            >
-              <Icon
-                type="ellipsis"
-                style={{
-                  cursor: 'pointer',
-                  marginRight: 10,
-                  fontSize: 'large',
-                  fontWeight: 'bold'
-                }}
-              />
-            </Dropdown>
-          ) : null}
+          {
+            !!onSelectMenu && (
+              <Dropdown
+                overlay={messageMenu}
+                trigger={['click']}
+              >
+                <Icon
+                  type="ellipsis"
+                  style={{
+                    cursor: 'pointer',
+                    marginRight: 10,
+                    fontSize: 'large',
+                    fontWeight: 'bold'
+                  }}
+                />
+              </Dropdown>
+            )
+          }
         </div>
         <Markdown
           md={text}
@@ -180,7 +182,49 @@ export default class CommentCard extends React.Component {
             padding: '5px 10px'
           }}
         />
+        {
+          attachments.length > 0 && (
+            <div
+              className={
+                classNames(
+                  'cp-divider',
+                  'top'
+                )
+              }
+              style={{
+                padding: '5px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap'
+              }}
+            >
+              {
+                attachments.map((attachment) => (
+                  <a
+                    key={attachment.name}
+                    style={{marginRight: 5}}
+                    href={attachment.link}
+                    target="_blank"
+                  >
+                    <Icon type="paper-clip" style={{marginRight: 5}} />
+                    {attachment.name}
+                  </a>
+                ))
+              }
+            </div>
+          )
+        }
       </div>
     );
   }
 }
+
+CommentCard.propTypes = {
+  isIssue: PropTypes.bool,
+  comment: PropTypes.object,
+  className: PropTypes.string,
+  onSelectMenu: PropTypes.func,
+  style: PropTypes.object
+};
+
+export default CommentCard;

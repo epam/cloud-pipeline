@@ -25,6 +25,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,10 +66,12 @@ public class S3HelperTest {
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final StorageEventCollector events = mock(StorageEventCollector.class);
     private final S3Helper helper = spy(new S3Helper(events, messageHelper));
+    private final S3bucketDataStorage storage = new S3bucketDataStorage();
 
     @Before
     public void setUp() {
         doReturn(amazonS3).when(helper).getDefaultS3Client();
+        storage.setPath(BUCKET);
     }
 
     @Test
@@ -135,7 +138,7 @@ public class S3HelperTest {
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
         assertThrows(e -> e instanceof DataStorageException && e.getMessage().contains(SIZE_EXCEEDS_EXCEPTION_MESSAGE),
-            () -> helper.moveFile(BUCKET, OLD_PATH, NEW_PATH));
+            () -> helper.moveFile(storage, OLD_PATH, NEW_PATH));
     }
 
     @Test
@@ -147,7 +150,7 @@ public class S3HelperTest {
         fileMetadata.setLastModified(new Date());
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
-        helper.moveFile(BUCKET, OLD_PATH, NEW_PATH);
+        helper.moveFile(storage, OLD_PATH, NEW_PATH);
 
         verify(amazonS3).copyObject(argThat(hasSourceAndDestination(OLD_PATH, NEW_PATH)));
         final Map<String, String> pathVersionMap = new HashMap<>();
@@ -162,7 +165,7 @@ public class S3HelperTest {
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
         assertThrows(e -> e instanceof DataStorageException && e.getMessage().contains(SIZE_EXCEEDS_EXCEPTION_MESSAGE),
-            () -> helper.restoreFileVersion(BUCKET, OLD_PATH, VERSION));
+            () -> helper.restoreFileVersion(storage, OLD_PATH, VERSION));
     }
 
     @Test
@@ -170,7 +173,7 @@ public class S3HelperTest {
         final ObjectMetadata fileMetadata = new ObjectMetadata();
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
-        helper.restoreFileVersion(BUCKET, OLD_PATH, VERSION);
+        helper.restoreFileVersion(storage, OLD_PATH, VERSION);
 
         verify(amazonS3).copyObject(argThat(hasSourceAndDestination(OLD_PATH, OLD_PATH)));
         final Map<String, String> pathVersionMap = new HashMap<>();
@@ -193,7 +196,7 @@ public class S3HelperTest {
                 .thenReturn(sourceListing, destinationListing, bucketListing);
 
         assertThrows(e -> e instanceof DataStorageException && e.getMessage().contains(SIZE_EXCEEDS_EXCEPTION_MESSAGE),
-            () -> helper.moveFolder(BUCKET, OLD_PATH, NEW_PATH));
+            () -> helper.moveFolder(storage, OLD_PATH, NEW_PATH));
     }
 
     @Test
@@ -212,7 +215,7 @@ public class S3HelperTest {
 
         assertThrows(
             e -> e instanceof DataStorageException && e.getMessage().contains(ARCHIVE_STORAGE_EXCEPTION_MESSAGE),
-            () -> helper.moveFolder(BUCKET, OLD_PATH, NEW_PATH)
+            () -> helper.moveFolder(storage, OLD_PATH, NEW_PATH)
         );
     }
 
@@ -237,7 +240,7 @@ public class S3HelperTest {
         when(amazonS3.listObjects(any(ListObjectsRequest.class)))
                 .thenReturn(sourceListing, destinationListing, bucketListing);
 
-        helper.moveFolder(BUCKET, OLD_PATH, NEW_PATH);
+        helper.moveFolder(storage, OLD_PATH, NEW_PATH);
 
         verify(amazonS3).copyObject(argThat(hasSourceAndDestination(firstFileOldPath, firstFileNewPath)));
         verify(amazonS3).copyObject(argThat(hasSourceAndDestination(secondFileOldPath, secondFileNewPath)));

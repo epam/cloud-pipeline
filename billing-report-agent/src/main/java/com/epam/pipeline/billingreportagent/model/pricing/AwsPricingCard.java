@@ -30,4 +30,5 @@ public class AwsPricingCard {
     private String publicationDate;
 
     private AwsTerms terms;
+    private Integer throughput;
 }

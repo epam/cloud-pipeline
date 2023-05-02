@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.git;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,5 +39,6 @@ public class GitlabIssueComment {
     @JsonProperty("updated_at")
     private ZonedDateTime updatedAt;
     private GitlabUser author;
-    private List<String> attachments;
+    @JsonIgnoreProperties
+    private List<GitlabIssueAttachment> attachments;
 }

@@ -231,3 +231,20 @@
   font-size: x-small;
   text-align: right;
 }
+
+.cwl-graph {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.cwl-graph-container {
+  width: 100%;
+  height: 100%;
+}
+
+.cwl-graph-container svg,
+.cwl-graph-container div {
+  width: 100%;
+  height: 100%;
+}

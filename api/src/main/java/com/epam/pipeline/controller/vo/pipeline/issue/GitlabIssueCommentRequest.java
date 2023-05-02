@@ -16,16 +16,17 @@
 
 package com.epam.pipeline.controller.vo.pipeline.issue;
 
+import com.epam.pipeline.entity.git.GitlabIssueAttachment;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
 import lombok.Data;
 
-import java.util.Map;
+import java.util.List;
 
 @Data
 public class GitlabIssueCommentRequest {
 
     private String body;
-    private Map<String, String> attachments;
+    private List<GitlabIssueAttachment> attachments;
 
     public GitlabIssueComment toComment() {
         final GitlabIssueComment comment = new GitlabIssueComment();

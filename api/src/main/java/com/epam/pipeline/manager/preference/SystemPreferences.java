@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
+import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -128,6 +129,7 @@ public class SystemPreferences {
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
     private static final String CLOUD_REGION_GROUP = "Cloud region";
+    private static final String SYSTEM_JOBS_GROUP = "System Jobs";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -323,12 +325,18 @@ public class SystemPreferences {
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_ISSUE_PROJECT = new StringPreference(
             "git.gitlab.issue.project", null, GIT_GROUP, pass, true);
+
+    public static final BooleanPreference GITLAB_SERVER_FILTERING = new BooleanPreference(
+            "git.gitlab.issue.server.filtering", false, GIT_GROUP, pass);
     public static final ObjectPreference<List<String>> GITLAB_ISSUE_STATUSES = new ObjectPreference<>(
             "git.gitlab.issue.statuses", null, new TypeReference<List<String>>() {}, GIT_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
     public static final ObjectPreference<List<String>> GITLAB_DEFAULT_LABELS = new ObjectPreference<>(
             "git.gitlab.default.labels", null, new TypeReference<List<String>>() {}, GIT_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final ObjectPreference<GitlabIssueLabelsFilter> GITLAB_ISSUE_DEFAULT_FILTER = new ObjectPreference<>(
+            "git.gitlab.issue.default.filter", null, new TypeReference<GitlabIssueLabelsFilter>() {},
+            GIT_GROUP, isNullOrValidJson(new TypeReference<GitlabIssueLabelsFilter>() {}), true);
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -913,6 +921,8 @@ public class SystemPreferences {
             "system.ldap.user.block.monitor.enable", false, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_DELAY = new IntPreference(
             "system.ldap.user.block.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_GRACE_PERIOD_DAYS = new IntPreference(
+            "system.ldap.user.block.monitor.grace.period.days", 7, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_NODE_POOL_MONITOR_DELAY = new IntPreference(
             "system.node.pool.monitor.delay", 30000, SYSTEM_GROUP, pass);
     /**
@@ -1201,6 +1211,16 @@ public class SystemPreferences {
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+
+    // System Jobs
+    public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(
+            "system.jobs.scripts.location", "src/system-jobs", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final StringPreference SYSTEM_JOBS_OUTPUT_TASK = new StringPreference(
+            "system.jobs.output.pipeline.task", "SystemJob", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final LongPreference SYSTEM_JOBS_PIPELINE = new LongPreference(
+            "system.jobs.pipeline.id", null, SYSTEM_JOBS_GROUP, isNullOrGreaterThan(0), false);
 
     private static final Map<String, AbstractSystemPreference<?>> PREFERENCE_MAP;
 

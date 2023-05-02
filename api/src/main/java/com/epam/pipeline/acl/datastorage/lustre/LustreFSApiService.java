@@ -44,6 +44,11 @@ public class LustreFSApiService {
         return lustreFSManager.getLustreFS(runId);
     }
 
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public LustreFS getLustreFS(final String mountName, final Long regionId) {
+        return lustreFSManager.getLustreFS(mountName, regionId);
+    }
+
     @PreAuthorize(AclExpressions.RUN_ID_EXECUTE)
     public LustreFS deleteLustreFS(final Long runId) {
         return lustreFSManager.deleteLustreFs(runId);

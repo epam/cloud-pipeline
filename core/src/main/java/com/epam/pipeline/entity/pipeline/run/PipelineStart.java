@@ -43,7 +43,9 @@ public class PipelineStart {
     private String configurationName;
     private Integer nodeCount;
     private String workerCmd;
+    // TODO: Should be relatively easy to switch to runAssignPolicy in the feature
     private Long parentRunId;
+    private RunAssignPolicy podAssignPolicy;
     private Boolean isSpot;
     private List<RunSid> runSids;
     private Long cloudRegionId;
@@ -54,6 +56,7 @@ public class PipelineStart {
     private String runAs;
     private List<PipelineStartNotificationRequest> notifications;
     private Map<String, String> kubeLabels;
+    private String kubeServiceAccount;
 
     @JsonDeserialize(using = PipelineConfValuesMapDeserializer.class)
     private Map<String, PipeConfValueVO> params;

@@ -430,7 +430,7 @@ if is_service_requested cp-idp; then
             print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-idp"
             exit 1
         fi
-        create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-pod.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-svc.yaml --svc
         expose_cluster_port "cp-idp" \
                             "${CP_IDP_EXTERNAL_PORT}" \
@@ -938,6 +938,9 @@ if is_service_requested cp-git; then
 
                 print_info "-> Registering DataTransfer pipeline"
                 api_register_data_transfer_pipeline
+
+                print_info "-> Registering System Jobs pipeline"
+                api_register_system_jobs_pipeline
 
                 if [ "$CP_DEPLOY_DEMO" ]; then
                     print_info "-> Registering Demo pipelines"

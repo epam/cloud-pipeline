@@ -120,7 +120,8 @@ class Channel extends React.PureComponent {
       locked,
       loading,
       onVisibilityChanged,
-      onLockedChanged
+      onLockedChanged,
+      allowLockChannel
     } = this.props;
     return (
       <div
@@ -135,14 +136,18 @@ class Channel extends React.PureComponent {
         <div
           className={styles.header}
         >
-          <LockCheckbox
-            disabled={loading}
-            locked={locked}
-            onLockedChanged={onLockedChanged}
-            style={{
-              marginRight: 5
-            }}
-          />
+          {
+            allowLockChannel && (
+              <LockCheckbox
+                disabled={loading}
+                locked={locked}
+                onLockedChanged={onLockedChanged}
+                style={{
+                  marginRight: 5
+                }}
+              />
+            )
+          }
           <Checkbox
             disabled={loading}
             checked={visible}
@@ -173,7 +178,8 @@ class Channel extends React.PureComponent {
 Channel.propTypes = {
   className: PropTypes.string,
   identifier: PropTypes.string,
-  name: PropTypes.string,
+  allowLockChannel: PropTypes.bool,
+  name: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   color: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   domain: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   contrastLimits: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
@@ -185,6 +191,10 @@ Channel.propTypes = {
   style: PropTypes.object,
   visible: PropTypes.bool,
   locked: PropTypes.bool
+};
+
+Channel.defaultProps = {
+  allowLockChannel: true
 };
 
 export default Channel;

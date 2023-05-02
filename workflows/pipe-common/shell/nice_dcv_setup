@@ -116,6 +116,17 @@ primary-selection-paste=true
 EOF
 }
 
+function configure_dcv_extras {
+mkdir -p /opt/dcv/extras
+cat <<EOF >>/opt/dcv/extras/xfce4launch
+#!/bin/bash
+mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
+cp /etc/xdg/xfce4/panel/default.xml ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+startxfce4
+EOF
+chmod +x /opt/dcv/extras/xfce4launch
+}
+
 function run_dcv {
   pipe_log_info "Starting DCV server and waiting for boot up" "$DCV_INSTALL_TASK"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
@@ -143,7 +154,15 @@ function run_dcv {
       exit 1
   fi
 
-  dcv create-session --owner $OWNER --user $OWNER session
+  # We may want to delay session creation, as the subsequent scripts may want to modify the user's profile
+  # Which won't be possible once the session is created and a process is running on the user's behalf
+  # So we shall set 'CP_DCV_DELAY_SESSION_CREATION=true' and then call 'nice_dcv_create_session' in the 
+  # next execution steps
+  if [ "$CP_DCV_DELAY_SESSION_CREATION" == "true" ]; then
+    pipe_log_warn "DCV session will NOT be created now as the CP_DCV_DELAY_SESSION_CREATION is set to 'true'. Make sure to run 'nice_dcv_create_session' before the user can login." "$DCV_INSTALL_TASK"
+  else
+    nice_dcv_create_session
+  fi
 
   # Serve additional server to provide dcv desktop session file
   if [ -n "${CP_DCV_DESKTOP_PORT}" ]; then
@@ -199,7 +218,8 @@ if [ $IS_DCV_INSTALLED -eq 0 ]; then
 else
    install_prerequisites && \
    install_dcv && \
-   configure_dcv
+   configure_dcv && \
+   configure_dcv_extras
 
    if [ $? -ne 0 ]; then
     pipe_log_fail "[ERROR] DCV installation failed. Exiting" "$DCV_INSTALL_TASK"
@@ -209,4 +229,3 @@ fi
 
 run_dcv
 pipe_log_success "[INFO] DCV server is ready." "$DCV_INSTALL_TASK"
-

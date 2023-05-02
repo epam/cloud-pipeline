@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {
   Icon,
@@ -25,6 +26,7 @@ import styles from './hcs-image-controls.css';
 
 function HcsImageChannelsControl (
   {
+    allowLockChannels,
     hcsViewerState
   }
 ) {
@@ -51,15 +53,19 @@ function HcsImageChannelsControl (
           Channels:
           {pending && (<Icon type="loading" style={{marginLeft: 5}} />)}
         </span>
-        <Checkbox
-          onChange={(e) => hcsViewerState.setChannelsLocked(e.target.checked)}
-          checked={allChannelsLocked}
-          indeterminate={
-            lockedChannels.length > 0 && lockedChannels.length < channels.length
-          }
-        >
-          Persist channels state
-        </Checkbox>
+        {
+          allowLockChannels && (
+            <Checkbox
+              onChange={(e) => hcsViewerState.setChannelsLocked(e.target.checked)}
+              checked={allChannelsLocked}
+              indeterminate={
+                lockedChannels.length > 0 && lockedChannels.length < channels.length
+              }
+            >
+              Persist channels state
+            </Checkbox>
+          )
+        }
       </div>
       {
         channels.map(channel => (
@@ -67,6 +73,7 @@ function HcsImageChannelsControl (
             key={channel.identifier}
             identifier={channel.identifier}
             name={channel.name}
+            allowLockChannel={allowLockChannels}
             visible={channel.visible}
             locked={lockedChannels.includes(channel.name)}
             color={channel.color}
@@ -91,5 +98,13 @@ function HcsImageChannelsControl (
     </div>
   );
 }
+
+HcsImageChannelsControl.propTypes = {
+  allowLockChannels: PropTypes.bool
+};
+
+HcsImageChannelsControl.defaultProps = {
+  allowLockChannels: true
+};
 
 export default inject('hcsViewerState')(observer(HcsImageChannelsControl));

@@ -56,6 +56,10 @@ public class GitlabIssueApiService {
         return gitManager.getIssue(issueId);
     }
 
+    public byte[] downloadAttachment(final String secret) {
+        return gitManager.downloadAttachment(secret);
+    }
+
     public GitlabIssueComment addIssueComment(final Long issueId,
                                               final GitlabIssueCommentRequest comment) {
         return gitManager.addIssueComment(issueId, comment);

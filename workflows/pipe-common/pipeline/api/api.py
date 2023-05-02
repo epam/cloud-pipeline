@@ -253,6 +253,7 @@ class PipelineAPI:
     CATEGORICAL_ATTRIBUTE_URL = "/categoricalAttribute"
     GRANT_PERMISSIONS_URL = "/grant"
     PERMISSION_URL = "/permissions"
+    RUN_TAG = '/run/{id}/tag'
 
     # Pipeline API default header
 
@@ -763,6 +764,28 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
+                               "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
+
+    # "preference_level" accepts only "TOOL" value for now. Any other value will throw an error
+    # "resource_id"=-1 is used when you don't need to consider the tool's setting. Only user and group
+    def search_contextual_preference(self, preference_name, preference_level="TOOL", resource_id=-1):
+        try:
+            url = self.api_url + '/contextual/preference'
+            data = {
+                "preferences": [ 
+                    preference_name
+                ],
+                "resource": {
+                    "level": "TOOL",
+                    "resourceId": resource_id
+                }
+            }
+            result = self.execute_request(self.api_url + '/contextual/preference', 
+                                            method='post',
+                                            data=json.dumps(data))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to search contextual preference %s for %s level and resource id %s. "
                                "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
 
     def load_tool_version_settings(self, tool_id, version):
@@ -1364,3 +1387,8 @@ class PipelineAPI:
             raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
                 entity_class, str(entity_id), str(e)))
 
+    def update_pipeline_run_tags(self, run_id, tags):
+        try:
+            return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data=tags)
+        except Exception as e:
+            raise RuntimeError("Failed to update tags for run ID '{}', error: {}".format(str(run_id), str(e)))

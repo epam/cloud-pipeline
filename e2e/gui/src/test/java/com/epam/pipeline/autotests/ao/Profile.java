@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Condition.disabled;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
@@ -184,7 +185,13 @@ public class Profile implements AccessObject<Profile> {
             sleep(3, SECONDS);
             attempt++;
         }
-        ensureDisable(SAVE);
+        attempt = 0;
+        maxAttempts = 10;
+        while (get(SAVE).isEnabled()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
+        }
         return this;
     }
 
