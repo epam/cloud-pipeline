@@ -165,15 +165,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         List<PipelineRun> items = getNamedParameterJdbcTemplate().query(loadRunByIdQuery, params,
                 PipelineRunParameters.getExtendedRowMapper());
         if (!items.isEmpty()) {
-            PipelineRun pipelineRun = items.get(0);
-            List<RunSid> runSids = getJdbcTemplate().query(loadRunSidsQuery,
-                    PipelineRunParameters.getRunSidsRowMapper(), id);
-            pipelineRun.setRunSids(runSids);
-            List<Map<String, String>> envVars = getJdbcTemplate().query(loadEnvVarsQuery,
-                    PipelineRunParameters.getEnvVarsRowMapper(), pipelineRun.getId());
-            pipelineRun.setEnvVars(CollectionUtils.isEmpty(envVars) ? null : envVars.get(0));
-            pipelineRun.setServiceUrl(loadServiceUrlByRunId(id));
-            return pipelineRun;
+            return loadRunFields(items.get(0));
         } else {
             return null;
         }
@@ -446,6 +438,18 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .findFirst();
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public PipelineRun loadRunFields(final PipelineRun pipelineRun) {
+        final List<RunSid> runSids = getJdbcTemplate().query(loadRunSidsQuery,
+                PipelineRunParameters.getRunSidsRowMapper(), pipelineRun.getId());
+        pipelineRun.setRunSids(runSids);
+        final List<Map<String, String>> envVars = getJdbcTemplate().query(loadEnvVarsQuery,
+                PipelineRunParameters.getEnvVarsRowMapper(), pipelineRun.getId());
+        pipelineRun.setEnvVars(CollectionUtils.isEmpty(envVars) ? null : envVars.get(0));
+        pipelineRun.setServiceUrl(loadServiceUrlByRunId(pipelineRun.getId()));
+        return pipelineRun;
+    }
+
     public List<PipelineRun> loadRunsByNodeName(final String nodeName) {
         return addServiceUrls(ListUtils.emptyIfNull(getJdbcTemplate()
                 .query(loadRunsByNodeNameQuery, PipelineRunParameters.getRowMapper(), nodeName)));
@@ -515,7 +519,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         }
         return clausesCount;
     }
-
 
     private String makeFilterCondition(PipelineRunFilterVO filter,
                                        PipelineRunFilterVO.ProjectFilter projectFilter,
