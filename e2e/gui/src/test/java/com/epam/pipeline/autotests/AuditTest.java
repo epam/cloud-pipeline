@@ -294,7 +294,7 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 format("MOVE %s/%s %s/%s", pathStorage4, folder2, pathStorage5, folder2),
                 format("DELETE %s/%s/%s", pathStorage4, folder1, inner_file1),
                 format("DELETE %s/%s/%s", pathStorage4, folder1, inner_file2),
-                format("DELETE %s/%s", pathStorage5, folder1)
+                format("DELETE %s/%s", pathStorage4, folder1)
         };
         logoutIfNeeded();
         loginAs(user);
@@ -311,7 +311,6 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> {
                     shell.waitUntilTextAppears(getLastRunId());
                     for (String comm : commands) {
-                        System.out.println(comm);
                         shell.execute(comm)
                                 .waitUntilTextAfterCommandAppears(comm, getLastRunId());
                     }
