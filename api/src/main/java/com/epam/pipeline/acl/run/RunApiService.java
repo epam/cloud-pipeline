@@ -208,7 +208,7 @@ public class RunApiService {
         return runManager.updatePrettyUrl(runId, url);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR @runPermissionManager.runPermission(#returnObject.id, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR @runPermissionManager.runPermission(returnObject, 'READ')")
     @AclMask
     public PipelineRun getRunByPrettyUrl(final String url) {
         return runManager.loadRunByPrettyUrl(url);
