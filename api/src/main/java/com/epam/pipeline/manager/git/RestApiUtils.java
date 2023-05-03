@@ -25,6 +25,8 @@ import retrofit2.Response;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Objects;
 
 public final class RestApiUtils {
 
@@ -47,6 +49,15 @@ public final class RestApiUtils {
         } catch (IOException e) {
             throw new GitClientException(e.getMessage(), e);
         }
+    }
+
+    public static <T> Response<List<T>> fetchPage(final Call<List<T>> call,
+                                                  final List<T>  results) throws GitClientException {
+        final Response<List<T>> response = getResponse(call);
+        if (Objects.nonNull(response.body())) {
+            results.addAll(response.body());
+        }
+        return response;
     }
 
     public static byte[] getFileContent(final Call<ResponseBody> filesRawContent, final int byteLimit) {

@@ -93,6 +93,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.git.RestApiUtils.execute;
+import static com.epam.pipeline.manager.git.RestApiUtils.fetchPage;
 import static com.epam.pipeline.manager.git.RestApiUtils.getResponse;
 
 @Wither
@@ -241,11 +242,11 @@ public class GitlabClient {
      * @return a list of {@link GitRepositoryEntry}, representing files and folders
      * @throws GitClientException if something goes wrong
      */
-    public List<GitRepositoryEntry> getRepositoryContents(String path,
-                                                          String revision,
-                                                          boolean recursive) throws GitClientException {
-        String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.getRepositoryTree(projectId, path, revision, recursive));
+    public List<GitRepositoryEntry> getRepositoryContents(final String path,
+                                                          final String revision,
+                                                          final boolean recursive) throws GitClientException {
+        final String projectId = makeProjectId(namespace, projectName);
+        return getAllRepositoryContentPages(projectId, path, revision, recursive);
     }
 
     public GitProject createTemplateRepository(Template template, String name, String description,
@@ -800,11 +801,23 @@ public class GitlabClient {
                                                        final int page,
                                                        final int pageSize,
                                                        final List<GitlabIssue> result) {
-        final Response<List<GitlabIssue>> response = getResponse(gitLabApi.getIssues(apiVersion, project, labels,
-                null, page, pageSize, search));
-        if (Objects.nonNull(response.body())) {
-            result.addAll(response.body());
+        return fetchPage(
+                gitLabApi.getIssues(apiVersion, project, labels, null, page, pageSize, search), result);
+    }
+
+    private List<GitRepositoryEntry> getAllRepositoryContentPages(final String projectId,
+                                                                  final String path,
+                                                                  final String revision,
+                                                                  final boolean recursive) {
+        int page = 1;
+        final List<GitRepositoryEntry> result = new ArrayList<>();
+        final Response<List<GitRepositoryEntry>> response = fetchPage(
+                gitLabApi.getRepositoryTree(projectId, path, revision, recursive, MAX_PAGE_SIZE, page), result);
+        final int totalPages = Integer.parseInt(Objects.requireNonNull(response.headers().get(TOTAL_HEADER)));
+        while (totalPages > result.size()) {
+            page++;
+            fetchPage(gitLabApi.getRepositoryTree(projectId, path, revision, recursive, MAX_PAGE_SIZE, page), result);
         }
-        return response;
+        return result;
     }
 }
