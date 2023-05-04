@@ -14,19 +14,17 @@
  *  limitations under the License.
  */
 
-export default {
-  setData: 'set-data',
+import fadeVec4Color from '../../utilities/fade-vec4-color';
+import { vec4FromColor } from '../../utilities/vec4-from-color';
 
-  setSourceInitializing: 'set-source-initializing',
-  setSource: 'set-source',
-  setSourceError: 'set-source-error',
-
-  setImage: 'set-image',
-  setImageViewportLoaded: 'set-image-viewport-loaded',
-  setMesh: 'set-mesh',
-  setOverlayImages: 'set-overlay-images',
-  setAnnotations: 'set-annotations',
-  setSelectedAnnotation: 'set-selected-annotation',
-
-  setError: 'set-error',
-};
+export default function getAnnotationColor(
+  annotation,
+  selectedAnnotation,
+  accessor = ((o) => o.lineColor),
+) {
+  const faded = selectedAnnotation && selectedAnnotation !== annotation.identifier;
+  return fadeVec4Color(
+    vec4FromColor(accessor(annotation) || [220, 220, 220]),
+    faded ? 0.25 : 1.0,
+  );
+}

@@ -49,6 +49,10 @@ function reducer(state, action) {
       return sourceActions.setMesh(state, action);
     case actions.setOverlayImages:
       return sourceActions.setOverlayImages(state, action);
+    case actions.setAnnotations:
+      return sourceActions.setAnnotations(state, action);
+    case actions.setSelectedAnnotation:
+      return sourceActions.setSelectedAnnotation(state, action);
     default:
       return state;
   }

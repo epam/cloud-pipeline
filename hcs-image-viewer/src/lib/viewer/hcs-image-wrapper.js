@@ -23,6 +23,7 @@ import HCSImageViewer from './viewer';
  * @property {function} onStateChange
  * @property {function} onRegisterStateActions
  * @property {function} onViewerStateChanged
+ * @property {function} onProjectionChanged
  * @property {function} onCellClick
  */
 
@@ -37,6 +38,7 @@ export default function wrapper(container, props, callbacks = {}) {
     onStateChange,
     onRegisterStateActions,
     onViewerStateChanged,
+    onProjectionChanged,
     onCellClick,
   } = callbacks;
   ReactDOM.render(
@@ -45,6 +47,7 @@ export default function wrapper(container, props, callbacks = {}) {
         onRegisterStateActions={onRegisterStateActions}
         onStateChange={onStateChange}
         onViewerStateChanged={onViewerStateChanged}
+        onProjectionChanged={onProjectionChanged}
         onCellClick={onCellClick}
         {...props}
       />

@@ -18,6 +18,12 @@ import { DetailView } from '@hms-dbmi/viv';
 import CollageMeshLayer from './collage-mesh/layer';
 import ImageOverlayLayer from './image/layer';
 import { getLayerId } from './get-layer-id';
+import ArrowAnnotationLayer from './annotations/arrow';
+import RectangleAnnotationLayer from './annotations/rectangle';
+import CircleAnnotationLayer from './annotations/circle';
+import PolylineAnnotationLayer from './annotations/polyline';
+import AnnotationBackgroundLayer from './annotations/background';
+import TextAnnotationLayer from './annotations/text';
 
 class DetailViewWithMesh extends DetailView {
   constructor(props) {
@@ -25,15 +31,21 @@ class DetailViewWithMesh extends DetailView {
     const {
       mesh,
       overlayImages = [],
+      annotations = [],
+      selectedAnnotation,
       onCellHover,
       hoveredCell,
       onCellClick,
+      onSelectAnnotation,
     } = props;
     this.onCellHover = onCellHover;
     this.hoveredCell = hoveredCell;
     this.onCellClick = onCellClick;
     this.mesh = mesh;
     this.overlayImages = overlayImages;
+    this.annotations = annotations;
+    this.selectedAnnotation = selectedAnnotation;
+    this.onSelectAnnotation = onSelectAnnotation;
   }
 
   getLayers({ viewStates, props }) {
@@ -84,6 +96,99 @@ class DetailViewWithMesh extends DetailView {
             onHover: this.onCellHover,
             onClick: this.onCellClick,
             hoveredCell: this.hoveredCell,
+          },
+        ),
+      );
+    }
+    const rectangleAnnotations = this.annotations
+      .filter((annotation) => /^rectangle$/i.test(annotation.type));
+    const circleAnnotations = this.annotations
+      .filter((annotation) => /^circle$/i.test(annotation.type));
+    const polylineAnnotations = this.annotations
+      .filter((annotation) => /^polyline$/i.test(annotation.type));
+    const arrowAnnotations = this.annotations
+      .filter((annotation) => /^arrow$/i.test(annotation.type));
+    const textAnnotations = this.annotations
+      .filter((annotation) => /^text$/i.test(annotation.type));
+    if (this.annotations.length > 0) {
+      detailViewLayers.push(
+        new AnnotationBackgroundLayer(
+          {
+            ...this.props,
+            loader,
+            id: `annotations-background-${getLayerId(id)}`,
+            viewState: { ...layerViewState, height, width },
+            onClick: this.onSelectAnnotation,
+          },
+        ),
+      );
+    }
+    if (rectangleAnnotations.length > 0) {
+      detailViewLayers.push(
+        new RectangleAnnotationLayer(
+          {
+            ...this.props,
+            id: `rectangle-annotation-${getLayerId(id)}`,
+            viewState: { ...layerViewState, height, width },
+            annotations: rectangleAnnotations,
+            selectedAnnotation: this.selectedAnnotation,
+            onClick: this.onSelectAnnotation,
+          },
+        ),
+      );
+    }
+    if (circleAnnotations.length > 0) {
+      detailViewLayers.push(
+        new CircleAnnotationLayer(
+          {
+            ...this.props,
+            id: `circle-annotation-${getLayerId(id)}`,
+            viewState: { ...layerViewState, height, width },
+            annotations: circleAnnotations,
+            selectedAnnotation: this.selectedAnnotation,
+            onClick: this.onSelectAnnotation,
+          },
+        ),
+      );
+    }
+    if (polylineAnnotations.length > 0) {
+      detailViewLayers.push(
+        new PolylineAnnotationLayer(
+          {
+            ...this.props,
+            id: `polyline-annotation-${getLayerId(id)}`,
+            viewState: { ...layerViewState, height, width },
+            annotations: polylineAnnotations,
+            selectedAnnotation: this.selectedAnnotation,
+            onClick: this.onSelectAnnotation,
+          },
+        ),
+      );
+    }
+    if (arrowAnnotations.length > 0) {
+      detailViewLayers.push(
+        new ArrowAnnotationLayer(
+          {
+            ...this.props,
+            id: `arrow-annotation-${getLayerId(id)}`,
+            viewState: { ...layerViewState, height, width },
+            annotations: arrowAnnotations,
+            selectedAnnotation: this.selectedAnnotation,
+            onClick: this.onSelectAnnotation,
+          },
+        ),
+      );
+    }
+    if (textAnnotations.length > 0) {
+      detailViewLayers.push(
+        new TextAnnotationLayer(
+          {
+            ...this.props,
+            id: `text-annotation-${getLayerId(id)}`,
+            viewState: { ...layerViewState, height, width },
+            annotations: textAnnotations,
+            selectedAnnotation: this.selectedAnnotation,
+            onClick: this.onSelectAnnotation,
           },
         ),
       );

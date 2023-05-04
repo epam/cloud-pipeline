@@ -46,6 +46,7 @@ class Viewer {
   Events = {
     stateChanged: 'state-changed',
     viewerStateChanged: 'viewer-state-changed',
+    projectionChanged: 'projection-changed',
     onCellClick: 'on-cell-click',
   };
 
@@ -94,6 +95,10 @@ class Viewer {
             this.viewerState = state;
             this.emit(this.Events.viewerStateChanged, state);
           };
+          const onProjectionChanged = (projectionCallback) => {
+            this.projection = projectionCallback;
+            this.emit(this.Events.projectionChanged, projectionCallback);
+          };
           const registerActions = (actions) => {
             this[CALLBACKS] = actions;
             resolve(this);
@@ -115,6 +120,7 @@ class Viewer {
               onStateChange: onStateChanged,
               onRegisterStateActions: registerActions,
               onViewerStateChanged,
+              onProjectionChanged,
               onCellClick,
             },
           );
@@ -245,6 +251,28 @@ class Viewer {
       this.waitForInitialization()
         .then(() => {
           this.getCallback('setOverlayImages')(overlayImages);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
+  setAnnotations(annotations = []) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setAnnotations')(annotations);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
+  setSelectedAnnotation(annotation) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setSelectedAnnotation')(annotation);
           resolve();
         })
         .catch(reject);

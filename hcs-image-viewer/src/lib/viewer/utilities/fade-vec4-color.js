@@ -14,19 +14,12 @@
  *  limitations under the License.
  */
 
-export default {
-  setData: 'set-data',
-
-  setSourceInitializing: 'set-source-initializing',
-  setSource: 'set-source',
-  setSourceError: 'set-source-error',
-
-  setImage: 'set-image',
-  setImageViewportLoaded: 'set-image-viewport-loaded',
-  setMesh: 'set-mesh',
-  setOverlayImages: 'set-overlay-images',
-  setAnnotations: 'set-annotations',
-  setSelectedAnnotation: 'set-selected-annotation',
-
-  setError: 'set-error',
-};
+export default function fadeVec4Color(color, fade = 1.0) {
+  const [
+    r = 255,
+    g = 255,
+    b = 255,
+    a = 255,
+  ] = color || [];
+  return [r, g, b, Math.max(0, Math.min(255, a * fade))];
+}
