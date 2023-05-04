@@ -47,6 +47,7 @@ public class PrerequisitesTest extends AbstractBfxPipelineTest implements Naviga
                     navigationMenu()
                             .settings()
                             .switchToMyProfile()
+                            .validateUserName(user.login)
                             .muteEmailNotificationsSelect(true);
                 });
     }

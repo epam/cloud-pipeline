@@ -1776,6 +1776,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public MyProfileAO muteEmailNotificationsSelect(boolean isSelected) {
+            sleep(1, SECONDS);
             if ((!get(MUTE_EMAIL_NOTIFICATIONS).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                     (get(MUTE_EMAIL_NOTIFICATIONS).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
                 click(MUTE_EMAIL_NOTIFICATIONS);

@@ -1,9 +1,0 @@
-<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
-
-<suite name="UITestsRestorePreferences">
-    <test name="RestorePreferencesTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.RestorePreferencesTest"/>
-        </classes>
-    </test>
-</suite>
