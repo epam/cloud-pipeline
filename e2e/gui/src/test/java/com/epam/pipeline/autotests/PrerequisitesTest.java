@@ -15,15 +15,23 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.visible;
+import com.codeborne.selenide.ElementsCollection;
+import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byText;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.writeTempJsonFile;
 import org.testng.annotations.Test;
+import static com.codeborne.selenide.Selenide.$;
 
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class PrerequisitesTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
+    private static final String uiRunsFiltersJsonInitial = "/uiRunsFiltersInitial.json";
     private static final String uiRunsFiltersJson = "/uiRunsFilters.json";
 
     @Test
@@ -35,6 +43,7 @@ public class PrerequisitesTest extends AbstractBfxPipelineTest implements Naviga
                 .forEach(user -> {
                     logout();
                     loginAs(user);
+                    closeNotificationIfNeeded();
                     navigationMenu()
                             .settings()
                             .switchToMyProfile()
@@ -50,12 +59,26 @@ public class PrerequisitesTest extends AbstractBfxPipelineTest implements Naviga
                 .settings()
                 .switchToPreferences()
                 .getPreference("ui.runs.filters");
-        writeTempJsonFile(uiRunsFiltersJson, json[0]);
+        writeTempJsonFile(uiRunsFiltersJsonInitial, json[0]);
         navigationMenu()
                 .settings()
                 .switchToPreferences()
                 .updateCodeText("ui.runs.filters",
                         readResourceFully(uiRunsFiltersJson), true)
                 .saveIfNeeded();
+    }
+
+    private void closeNotificationIfNeeded() {
+        if ($(byId("notification-center"))
+                .find(byText("hide")).is(visible)) {
+            $(byId("notification-center"))
+                    .find(byText("hide")).click();
+        } else {
+            ElementsCollection list = $(byId("notification-center"))
+                    .findAll(byClassName("cp-notification"))
+                    .filterBy(visible);
+            IntStream.range(0, list.size()).forEach(i ->
+                    list.get(i).$(byId("notification-close-button")).click());
+        }
     }
 }

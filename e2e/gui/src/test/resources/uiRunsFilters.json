@@ -5,22 +5,14 @@
     "filters": {
       "statuses": [
         "RUNNING",
-        "PAUSED"
+        "PAUSED",
+        "PAUSING"
       ],
       "onlyMasterJobs": false
     },
     "autoUpdate": true,
     "showCount": true,
     "showPersonalRuns": true
-  },
-  {
-    "key": "pausing",
-    "filters": {
-      "statuses": [
-        "PAUSING"
-      ]
-    },
-    "autoUpdate": true
   },
   {
     "key": "paused",

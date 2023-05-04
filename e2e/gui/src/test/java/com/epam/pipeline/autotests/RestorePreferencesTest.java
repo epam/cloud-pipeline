@@ -22,7 +22,7 @@ import org.testng.annotations.Test;
 
 public class RestorePreferencesTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
 
-    private static final String uiRunsFiltersJson = "/uiRunsFilters.json";
+    private static final String uiRunsFiltersJsonInitial = "/uiRunsFiltersInitial.json";
 
     @Test
     public void restoreUiRunsFilters() {
@@ -32,7 +32,7 @@ public class RestorePreferencesTest extends AbstractBfxPipelineTest implements N
                 .settings()
                 .switchToPreferences()
                 .updateCodeText("ui.runs.filters",
-                        readResourceFully(uiRunsFiltersJson), true)
+                        readResourceFully(uiRunsFiltersJsonInitial), true)
                 .saveIfNeeded();
     }
 }
