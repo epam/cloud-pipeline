@@ -31,7 +31,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class PrerequisitesTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
-    private static final String uiRunsFiltersJsonInitial = "/uiRunsFiltersInitial.json";
+    private static final String uiRunsFiltersJsonInitial = "uiRunsFiltersInitial.json";
     private static final String uiRunsFiltersJson = "/uiRunsFilters.json";
 
     @Test

@@ -347,7 +347,9 @@ public class Utils {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return path.toFile();
+        File file = path.toFile();
+        file.deleteOnExit();
+        return file;
     }
 
     private static String repeatString(String str, int times) {

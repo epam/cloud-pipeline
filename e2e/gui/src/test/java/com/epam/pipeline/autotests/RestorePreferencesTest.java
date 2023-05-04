@@ -17,22 +17,32 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
-import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
+import com.epam.pipeline.autotests.utils.C;
+import static java.lang.String.format;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class RestorePreferencesTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
 
-    private static final String uiRunsFiltersJsonInitial = "/uiRunsFiltersInitial.json";
+    private static final String uiRunsFiltersJsonInitial = format("%s/uiRunsFiltersInitial.json", C.DOWNLOAD_FOLDER);
 
     @Test
     public void restoreUiRunsFilters() {
         logoutIfNeeded();
         loginAs(admin);
-        navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .updateCodeText("ui.runs.filters",
-                        readResourceFully(uiRunsFiltersJsonInitial), true)
-                .saveIfNeeded();
+        try {
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .updateCodeText("ui.runs.filters",
+                            StringUtils.join(Files.readAllLines(Paths.get(uiRunsFiltersJsonInitial)), "\n"), true)
+                    .saveIfNeeded();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
