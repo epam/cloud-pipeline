@@ -337,6 +337,8 @@ public class SystemPreferences {
     public static final ObjectPreference<GitlabIssueLabelsFilter> GITLAB_ISSUE_DEFAULT_FILTER = new ObjectPreference<>(
             "git.gitlab.issue.default.filter", null, new TypeReference<GitlabIssueLabelsFilter>() {},
             GIT_GROUP, isNullOrValidJson(new TypeReference<GitlabIssueLabelsFilter>() {}), true);
+    public static final LongPreference GIT_DEFAULT_TOKEN_DURATION_DAYS = new LongPreference(
+            "git.default.token.duration.days", 1L, GIT_GROUP, isGreaterThan(0L));
 
     // DOCKER_SECURITY_GROUP
     /**

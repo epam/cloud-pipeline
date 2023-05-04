@@ -103,7 +103,6 @@ public class GitManager {
     private static final String BASE64_ENCODING = "base64";
     public static final String EXCLUDE_MARK = ":!";
 
-    private static final long DEFAULT_TOKEN_DURATION = 1L;
     private static final String EMPTY = "";
     private static final String COMMA = ",";
     private static final String ANY_SUB_PATH = "*";
@@ -182,16 +181,19 @@ public class GitManager {
 
     public GitCredentials getGitCredentials(Long id, boolean useEnvVars, boolean issueToken) {
         Pipeline pipeline = pipelineManager.load(id);
+        final Long defaultTokenDuration = preferenceManager.getPreference(
+                SystemPreferences.GIT_DEFAULT_TOKEN_DURATION_DAYS);
         try {
             return pipelineRepositoryService
-                    .getPipelineCloneCredentials(pipeline, useEnvVars, issueToken, DEFAULT_TOKEN_DURATION);
+                    .getPipelineCloneCredentials(pipeline, useEnvVars, issueToken, defaultTokenDuration);
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
     }
 
     public GitCredentials getGitlabCredentials(Long duration) {
-        Long expiration = Optional.ofNullable(duration).orElse(DEFAULT_TOKEN_DURATION);
+        Long expiration = Optional.ofNullable(duration)
+                .orElse(preferenceManager.getPreference(SystemPreferences.GIT_DEFAULT_TOKEN_DURATION_DAYS));
         try {
             return getDefaultGitlabClient()
                     .withFullUrl(preferenceManager.getPreference(SystemPreferences.GIT_EXTERNAL_URL))
