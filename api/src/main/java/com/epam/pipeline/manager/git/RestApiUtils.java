@@ -52,7 +52,7 @@ public final class RestApiUtils {
     }
 
     public static <T> Response<List<T>> fetchPage(final Call<List<T>> call,
-                                                  final List<T>  results) throws GitClientException {
+                                                  final List<T> results) throws GitClientException {
         final Response<List<T>> response = getResponse(call);
         if (Objects.nonNull(response.body())) {
             results.addAll(response.body());
