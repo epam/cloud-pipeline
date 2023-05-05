@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function check_service_is_ready {
+    health_status=$(curl -s "http://localhost:$PORT/health" | jq -r -e ".online==true")
+    if [ "$health_status" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 DB_CONFIG="$CP_STATPING_HOME/config.yml"
 TEMPLATE_DB_CONFIG="$CP_STATPING_HOME/templates/config_template.yml"
 if [ -f "$TEMPLATE_DB_CONFIG" ]; then
@@ -42,7 +51,19 @@ touch $STATPING_RUNTIME_LOG
 nohup statping --port $PORT $CONFIG_ARG &> $STATPING_RUNTIME_LOG &
 APP_PID="$!"
 
-sleep 5
+echo "Waiting for Statping service readiness..."
+STATPING_INIT_ATTEMPTS="${STATPING_INIT_ATTEMPTS:-24}"
+try_count=0
+while ! check_service_is_ready && [ $try_count -lt $STATPING_INIT_ATTEMPTS ]; do
+    sleep 5
+    try_count=$(( $try_count + 1 ))
+done
+if ! check_service_is_ready; then
+    echo "Failed to start up Statping service. Exiting..."
+    exit 1
+else
+    echo "Statping service is ready"
+fi
 
 STATPING_EMAIL_JSON_TEMPLATE="$CP_STATPING_HOME/templates/email_template.json"
 STATPING_EMAIL_JSON="$CP_STATPING_HOME/email_template.json"
