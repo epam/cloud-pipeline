@@ -1,0 +1,18 @@
+x-httpservice: &httpservice
+  type: http
+  method: GET
+  check_interval: 45
+  timeout: 10
+  expected_status: 200
+  allow_notifications: true
+  notify_after: 2
+  notify_all_changes: true
+  public: true
+  redirect: true
+
+services:
+
+  - name: Cloud Pipeline
+    domain: ${CP_API}app/info
+    headers: Accept=application/json,Authorization=Bearer ${CP_API_TOKEN}
+    <<: *httpservice

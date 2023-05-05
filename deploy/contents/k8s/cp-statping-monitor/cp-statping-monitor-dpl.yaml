@@ -1,0 +1,40 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-statping-monitor
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-statping-monitor: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-statping-monitor: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-statping-monitor
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:statping-service-$CP_VERSION
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 8080
+          command: ["/init"]
+          envFrom:
+            - configMapRef:
+                name: cp-config-statping
+          volumeMounts:
+            - mountPath: /opt/statping/logs
+              name: statping-monitor-logs
+            - mountPath: /opt/statping/templates
+              name: statping-monitor-templates
+      volumes:
+        - name: statping-monitor-logs
+          hostPath:
+            path: /opt/statping/logs
+        - name: statping-monitor-templates
+          hostPath:
+            path: /opt/statping/templates

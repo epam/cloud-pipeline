@@ -1,0 +1,12 @@
+connection: sqlite
+host: localhost
+user: admin
+password: admin
+database: root
+port: 3306
+api_secret: ${CP_STATPING_API_SECRET}
+location: ${CP_STATPING_DIR}
+sample_data: false
+name: Statping Cloud Pipeline
+description: This status page shows the status of available Cloud Pipeline services
+domain: ${CP_STATPING_DOMAIN}
