@@ -559,14 +559,17 @@ class S3Mounter(StorageMounter):
             persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
             debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
             logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
+            merged_options = '-o allow_other'
+            if debug_libfuse:
+                merged_options = merged_options + ',debug'
+            if mount_options:
+                merged_options = merged_options + ',' + mount_options.lstrip('-o').strip()
             if logging_level:
                 params['logging_level'] = logging_level
             return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
                     + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
-                    + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
-                    + (mount_options if mount_options else '')
-                    ).format(**params)
+                    + merged_options).format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
