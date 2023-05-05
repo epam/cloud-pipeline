@@ -552,6 +552,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
           <Modal
             visible={!!label}
             title="Add text annotation"
+            onCancel={this.onCancelTextAnnotation}
             footer={(
               <div
                 className={styles.textAnnotationModalFooter}
