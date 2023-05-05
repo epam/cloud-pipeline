@@ -185,6 +185,7 @@ class PipelineAPI:
     GET_RUN_URL = '/run/{}'
     GET_TASK_URL = '/run/{}/task?taskName={}'
     FILTER_RUNS = 'run/filter'
+    RUN_COUNT = 'run/count'
     TERMINATE_RUN = 'run/{}/terminate'
     DATA_STORAGE_URL = "/datastorage"
     DATA_STORAGE_LOAD_ALL_URL = "datastorage/loadAll"
@@ -1410,16 +1411,39 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load logs \n {}".format(e))
 
-    def filter_runs(self, start, end, user, filter):
+    def filter_runs(self, start, end, user, filter, page, page_size):
         try:
-            data = {'owners': [user], 'startDateFrom': start, 'endDateTo': end, "page": 1,
-                    "pageSize": self.MAX_PAGE_SIZE}
-            for key, value in filter.items():
-                data[key] = value
+            data = {'owners': [user], 'startDateFrom': start, 'endDateTo': end, "page": page, "pageSize": page_size}
+            if filter is not None:
+                for key, value in filter.items():
+                    data[key] = value
             result = self._request(endpoint=self.FILTER_RUNS, http_method="post", data=data)
-            return result['elements'] if 'elements' in result else []
+            elements = result['elements'] if 'elements' in result else []
+            total_count = result['totalCount'] if 'totalCount' in result else 0
+            return elements, total_count
         except Exception as e:
             raise RuntimeError("Failed to load master runs \n {}".format(e))
+
+    def filter_runs_all(self, start, end, user, filter):
+        total_count = 0
+        page = 0
+        page_size = 100
+        result = []
+        while page == 0 or page * page_size < total_count:
+            page += 1
+            elements, total_count = self.filter_runs(start, end, user, filter, page, page_size)
+            result.extend(elements)
+        return result
+
+    def run_count(self, start, end, user, filter):
+        try:
+            data = {'owners': [user], 'startDateFrom': start, 'endDateTo': end}
+            if filter is not None:
+                for key, value in filter.items():
+                    data[key] = value
+            return self._request(endpoint=self.RUN_COUNT, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load runs count \n {}".format(e))
 
     def billing_export(self, start, end, filters, types):
         try:

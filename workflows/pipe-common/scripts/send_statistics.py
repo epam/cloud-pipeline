@@ -302,7 +302,7 @@ def _get_storage_usage(api, from_date_time, to_date_time, user, usage):
 def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities):
     capabilities_dict = {}
     for c in capabilities:
-        runs = api.filter_runs(from_date, to_date, user, {'partialParameters': CAPABILITY_TEMPLATE.format(c)})
+        runs = api.filter_runs_all(from_date, to_date, user, {'partialParameters': CAPABILITY_TEMPLATE.format(c)})
         if len(runs) > 0:
             total_time = 0
             for r in runs:
@@ -314,7 +314,7 @@ def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities):
 
 
 def _get_cluster_compute_hours(api, from_date, to_date, user):
-    runs = api.filter_runs(from_date, to_date, user, {'master': True})
+    runs = api.filter_runs_all(from_date, to_date, user, {'master': True})
     total_time = 0
     for r in runs:
         start_date = datetime.strptime(r.get('startDate'), DATE_TIME_FORMAT)
@@ -324,8 +324,7 @@ def _get_cluster_compute_hours(api, from_date, to_date, user):
 
 
 def _get_worker_nodes_count(api, from_date, to_date, user):
-    runs = api.filter_runs(from_date, to_date, user, {'worker': True})
-    return len(runs)
+    return api.run_count(from_date, to_date, user, {'worker': True})
 
 
 def _get_capabilities(api):

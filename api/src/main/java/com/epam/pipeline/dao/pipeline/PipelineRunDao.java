@@ -659,7 +659,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
         if (filter.isMasterRun()) {
             appendAnd(whereBuilder, clausesCount);
-            whereBuilder.append(" r.cluster_COUNT > 0 OR r.parameters like %CP_CAP_AUTOSCALE=true=boolean%");
+            whereBuilder.append(" r.node_count > 0 OR r.parameters like %CP_CAP_AUTOSCALE=true=boolean%");
             clausesCount++;
         }
 
