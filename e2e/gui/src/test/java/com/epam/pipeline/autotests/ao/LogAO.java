@@ -67,7 +67,8 @@ public class LogAO implements AccessObject<LogAO> {
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
             entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
             entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a")),
-            entry(SHOW_TIMINGS, $(byClassName("log__timing-btn")))
+            entry(SHOW_TIMINGS, $(byClassName("log__timing-btn"))),
+            entry(MAINTENANCE, context().$(byClassName("log__run-schedule")).$(byText("Configure")))
     );
 
     public LogAO waitForCompletion() {
@@ -307,6 +308,11 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO validateShareLink(final String link) {
         get(SHARE_WITH).shouldHave(text(link));
         return this;
+    }
+
+    public ConfigureMaintenancePopupAO maintenanceConfigure() {
+        click(MAINTENANCE);
+        return new ConfigureMaintenancePopupAO(this);
     }
 
     public LogAO validateException(final String exception) {
@@ -668,5 +674,38 @@ public class LogAO implements AccessObject<LogAO> {
         public Map<Primitive, SelenideElement> elements() {
             return elements;
         }
+    }
+
+    public static class ConfigureMaintenancePopupAO  extends PopupAO<ConfigureMaintenancePopupAO, LogAO> {
+
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(ADD_NEW_RULE, $(button("Add rule"))),
+                entry(TYPE, context().findAll(byClassName("ant-select-sm")).get(0)),
+                entry(PERIOD, context().findAll(byClassName("ant-select-sm")).get(1))
+        );
+
+        public ConfigureMaintenancePopupAO(LogAO parentAO) {
+            super(parentAO);
+        }
+
+        public LogAO.ConfigureMaintenancePopupAO addRule() {
+            click(ADD_NEW_RULE);
+            return this;
+        }
+
+        public LogAO.ConfigureMaintenancePopupAO typeIsDisables(boolean isDisabled) {
+            if (isDisabled) {
+                get(TYPE).has(cssClass("ant-select-disabled"));
+            } else {
+                get(TYPE).has(cssClass("ant-select-enabled"));
+            }
+            return this;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
+
     }
 }

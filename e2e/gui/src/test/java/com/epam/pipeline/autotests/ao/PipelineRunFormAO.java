@@ -82,7 +82,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button"))),
             entry(CONFIGURE_DNS, context().find(byTitle("Internal DNS name")).parent()
                     .closest(".launch-pipeline-form__form-item-row")
-                    .find(byClassName("hosted-app-configuration__configure")))
+                    .find(byClassName("hosted-app-configuration__configure"))),
+            entry(MAINTENANCE, context().$(byId("launch-pipeline-advanced-panel")).$(byClassName("runScheduling")).$(byText("Configure")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -206,6 +207,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     public ConfigureClusterPopupAO enableClusterLaunch() {
         click(LAUNCH_CLUSTER);
         return new ConfigureClusterPopupAO(this);
+    }
+
+    public ConfigureMaintenancePopupAO maintenanceConfigure() {
+        click(MAINTENANCE);
+        return new ConfigureMaintenancePopupAO(this);
     }
 
     public PipelineRunFormAO addOutputParameter(String name, String value) {
@@ -646,5 +652,38 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             }
             return this;
         }
+    }
+
+    public static class ConfigureMaintenancePopupAO  extends PopupAO<ConfigureMaintenancePopupAO, PipelineRunFormAO> {
+
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(ADD_NEW_RULE, $(button("Add rule"))),
+                entry(TYPE, context().findAll(byClassName("ant-select-sm")).get(0)),
+                entry(PERIOD, context().findAll(byClassName("ant-select-sm")).get(1))
+        );
+
+        public ConfigureMaintenancePopupAO(PipelineRunFormAO parentAO) {
+            super(parentAO);
+        }
+
+        public ConfigureMaintenancePopupAO addRule() {
+            click(ADD_NEW_RULE);
+            return this;
+        }
+
+        public ConfigureMaintenancePopupAO typeIsDisables(boolean isDisabled) {
+            if (isDisabled) {
+                get(TYPE).has(cssClass("ant-select-disabled"));
+            } else {
+                get(TYPE).has(cssClass("ant-select-enabled"));
+            }
+            return this;
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
+
     }
 }

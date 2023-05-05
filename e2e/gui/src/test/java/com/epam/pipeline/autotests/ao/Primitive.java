@@ -322,5 +322,7 @@ public enum Primitive {
     PROTOCOL,
     REINDEX,
     CONDITION,
-    SHOW_TIMINGS
+    SHOW_TIMINGS,
+    MAINTENANCE,
+    PERIOD
 }
