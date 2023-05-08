@@ -45,14 +45,8 @@ function load_run(run_id, auth_key) {
 
 function load_runs(pretty_url_path, auth_key) {
     return call_api(
-        '/run/filter',
-         auth_key,
-        'POST',
-        {
-            'page': 1,
-            'pageSize': 1,
-            'prettyUrl': pretty_url_path
-        }
+        `/run/prettyUrl?url=${pretty_url_path}`,
+         auth_key
     );
 }
 
@@ -83,9 +77,9 @@ function get_run_details(run_id, auth_key) {
 }
 
 function get_run_details_by_pretty_url_path(pretty_url_path, auth_key) {
-    const payload = load_runs(pretty_url_path, auth_key);
-    if (payload && payload.elements && payload.elements.length && payload.elements[0]) {
-        return extract_run_details(payload.elements[0]);
+    const run = load_runs(pretty_url_path, auth_key);
+    if (run && run.prettyUrl !== undefined) {
+        return extract_run_details(run);
     }
     return null;
 }
