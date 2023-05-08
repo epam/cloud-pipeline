@@ -76,6 +76,7 @@ public class PipelineLauncher {
     @Getter
     public enum LaunchScriptParams {
         LINUX_LAUNCH_SCRIPT_URL_PARAM("linuxLaunchScriptUrl"),
+        INIT_LINUX_SCRIPT_URL_PARAM("linuxInitScriptUrl"),
         WINDOWS_LAUNCH_SCRIPT_URL_PARAM("windowsLaunchScriptUrl"),
         GIT_CLONE_URL_PARAM("gitCloneUrl"),
         GIT_REVISION_NAME_PARAM("gitRevisionName"),
@@ -105,6 +106,9 @@ public class PipelineLauncher {
 
     @Value("${launch.script.url.linux}")
     private String linuxLaunchScriptUrl;
+
+    @Value("${init.script.url.linux}")
+    private String linuxInitScriptUrl;
 
     @Value("${launch.script.url.windows}")
     private String windowsLaunchScriptUrl;
@@ -169,6 +173,7 @@ public class PipelineLauncher {
                     effectiveLaunchCommand,
                     new HashMap<String, String>() {{
                         put(LaunchScriptParams.LINUX_LAUNCH_SCRIPT_URL_PARAM.getValue(), linuxLaunchScriptUrl);
+                        put(LaunchScriptParams.INIT_LINUX_SCRIPT_URL_PARAM.getValue(), linuxInitScriptUrl);
                         put(LaunchScriptParams.WINDOWS_LAUNCH_SCRIPT_URL_PARAM.getValue(), windowsLaunchScriptUrl);
                         put(LaunchScriptParams.GIT_CLONE_URL_PARAM.getValue(), gitCloneUrl);
                         put(LaunchScriptParams.GIT_REVISION_NAME_PARAM.getValue(), run.getRevisionName());
