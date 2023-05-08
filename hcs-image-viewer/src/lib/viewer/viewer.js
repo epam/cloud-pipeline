@@ -81,6 +81,7 @@ function HCSImageViewer(
     defaultZoomBackOff = 0,
     overview,
     onCellClick,
+    onEditAnnotation,
   },
 ) {
   const {
@@ -260,6 +261,7 @@ function HCSImageViewer(
             lensSelection={useLens && lensEnabled ? lensChannel : undefined}
             lensEnabled={useLens && lensEnabled}
             onCellClick={onCellClick}
+            onEditAnnotation={onEditAnnotation}
             onViewStateChange={onViewStateChange}
             deckProps={deckProps}
           />
@@ -283,6 +285,7 @@ HCSImageViewer.propTypes = {
   // eslint-disable-next-line react/forbid-prop-types
   overview: PropTypes.object,
   onCellClick: PropTypes.func,
+  onEditAnnotation: PropTypes.func,
 };
 
 HCSImageViewer.defaultProps = {
@@ -297,6 +300,7 @@ HCSImageViewer.defaultProps = {
   defaultZoomBackOff: 0,
   overview: undefined,
   onCellClick: undefined,
+  onEditAnnotation: undefined,
 };
 
 export default HCSImageViewer;

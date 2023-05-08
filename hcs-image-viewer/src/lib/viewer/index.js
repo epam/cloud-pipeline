@@ -48,6 +48,7 @@ class Viewer {
     viewerStateChanged: 'viewer-state-changed',
     projectionChanged: 'projection-changed',
     onCellClick: 'on-cell-click',
+    onEditAnnotation: 'on-edit-annotation',
   };
 
   initializationPromise;
@@ -106,6 +107,9 @@ class Viewer {
           const onCellClick = (cell) => {
             this.emit(this.Events.onCellClick, cell);
           };
+          const onEditAnnotation = (annotation) => {
+            this.emit(this.Events.onEditAnnotation, annotation);
+          };
           wrapper(
             container,
             {
@@ -122,6 +126,7 @@ class Viewer {
               onViewerStateChanged,
               onProjectionChanged,
               onCellClick,
+              onEditAnnotation,
             },
           );
         })

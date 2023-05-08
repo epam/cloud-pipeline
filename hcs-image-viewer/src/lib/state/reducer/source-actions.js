@@ -134,7 +134,13 @@ export function setOverlayImages(state, action) {
 
 export function setAnnotations(state, action) {
   const { annotations = [] } = action;
-  return { ...state, annotations, selectedAnnotation: undefined };
+  const { selectedAnnotation } = state;
+  const selected = annotations.find((annotation) => annotation.identifier === selectedAnnotation);
+  return {
+    ...state,
+    annotations,
+    selectedAnnotation: selected ?  selected.identifier : undefined,
+  };
 }
 
 export function setSelectedAnnotation(state, action) {

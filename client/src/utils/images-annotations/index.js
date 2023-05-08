@@ -44,6 +44,9 @@ class ImagesAnnotations extends HCSBaseState {
    * @type {UserAnnotations[]}
    */
   @observable usersAnnotations = [];
+  @observable actions = [];
+  @observable position = 0;
+  listeners = [];
   /**
    * @param {ImagesAnnotationsOptions} options
    */
@@ -59,11 +62,39 @@ class ImagesAnnotations extends HCSBaseState {
     this.dispose = autorun(() => this.updateViewer(this.annotations));
   }
 
+  addEventListener (event, listener) {
+    this.removeEventListener(event, listener);
+    this.listeners.push({
+      event,
+      listener
+    });
+  }
+
+  removeEventListener (event, listener) {
+    this.listeners = this.listeners.filter((o) => o.event === event && o.listener === listener);
+  }
+
+  onAnnotationChanged (listener) {
+    this.addEventListener('annotation-changed', listener);
+  }
+
+  removeOnAnnotationChanged (listener) {
+    this.removeEventListener('annotation-changed', listener);
+  }
+
+  emitEvent (event, payload) {
+    this.listeners
+      .filter((o) => o.event === event && typeof o.listener === 'function')
+      .map((o) => o.listener)
+      .forEach((listener) => listener(payload));
+  }
+
   destroy () {
     if (typeof this.dispose === 'function') {
       this.dispose();
     }
     (this.usersAnnotations || []).forEach((annotation) => annotation.destroy());
+    this.listeners = [];
   }
 
   /**
@@ -148,25 +179,27 @@ class ImagesAnnotations extends HCSBaseState {
         const annotationFiles = contents
           .filter((item) => /\.json$/i.test(item.name) && /^file$/i.test(item.type))
           .map((item) => item.path);
+        const {
+          id,
+          userName
+        } = whoAmI.value || {};
         /**
          * @type {UserAnnotations[]}
          */
         const usersAnnotations = annotationFiles.map((path) => new UserAnnotations({
           storage: this.storage,
           path,
-          onUpdate: () => this.updateViewer()
+          onUpdate: () => this.updateViewer(),
+          currentUser: userName
         }));
-        const {
-          id,
-          userName
-        } = whoAmI.value || {};
         if (!usersAnnotations.find((annotations) => annotations.userName === userName)) {
           usersAnnotations.push(new UserAnnotations({
             storage: this.storage,
             path: `${this.root}/${id}.json`,
             userName,
             autoFetch: false,
-            onUpdate: () => this.updateViewer()
+            onUpdate: () => this.updateViewer(),
+            currentUser: userName
           }));
         }
         commit({usersAnnotations});
@@ -186,8 +219,105 @@ class ImagesAnnotations extends HCSBaseState {
     }
   }
 
+  viewerOnEditAnnotation (viewer, annotation) {
+    if (annotation) {
+      const before = this.getAnnotationByIdentifier(annotation.identifier);
+      (this.createOrUpdateAnnotation)(annotation, {save: true});
+      this.emitEvent('annotation-changed', {before, after: annotation});
+    }
+  }
+
+  /**
+   * @typedef {Object} EditAnnotationOptions
+   * @property {boolean} [save=false]
+   * @property {string} [userName]
+   */
+
+  /**
+   * @param {string} [userName]
+   * @returns {UserAnnotations}
+   */
+  async findUserAnnotations (userName) {
+    let owner = userName;
+    if (!owner) {
+      await whoAmI.fetchIfNeededOrWait();
+      if (whoAmI.loaded) {
+        owner = whoAmI.value.userName;
+      }
+    }
+    return this.usersAnnotations
+      .find((a) => a.userName === owner);
+  }
+
+  getAnnotationByIdentifier (identifier) {
+    return this.annotations.find((annotation) => annotation.identifier === identifier);
+  }
+
+  getUserAnnotationsByAnnotationIdentifier (identifier) {
+    return this.usersAnnotations
+      .find((userAnnotations) => userAnnotations.annotations
+        .some((annotation) => annotation.identifier === identifier));
+  }
+
+  /**
+   * @param {UserAnnotation} annotation
+   * @param {EditAnnotationOptions} [options]
+   * @return {string}
+   */
+  async createOrUpdateAnnotation (annotation, options = {}) {
+    const {
+      save = false,
+      userName
+    } = options;
+    /**
+     * @type {UserAnnotations|undefined}
+     */
+    let userAnnotations;
+    if (annotation.identifier) {
+      userAnnotations = this.getUserAnnotationsByAnnotationIdentifier(annotation.identifier);
+    }
+    if (!userAnnotations) {
+      userAnnotations = await this.findUserAnnotations(userName);
+    }
+    if (userAnnotations) {
+      return userAnnotations.createOrUpdateAnnotation(annotation, {save});
+    }
+    return undefined;
+  }
+
+  /**
+   * @param {UserAnnotation} annotation
+   * @param {EditAnnotationOptions} [options]
+   */
+  async removeAnnotation (annotation, options = {}) {
+    const {
+      save = false,
+      userName
+    } = options;
+    const userAnnotations = await this.findUserAnnotations(userName);
+    if (userAnnotations) {
+      userAnnotations.removeAnnotation(annotation, {save});
+    }
+  }
+
+  async save (reFetch = true) {
+    const modifiedUsersAnnotations = this.usersAnnotations
+      .filter((userAnnotations) => userAnnotations.modified);
+    await Promise.all(
+      modifiedUsersAnnotations.map((userAnnotations) => userAnnotations.save(reFetch))
+    );
+  }
+
   attachToViewer (viewer) {
+    this.detachFromViewer();
     super.attachToViewer(viewer);
+    this.viewerOnEditAnnotationCallback = this.viewerOnEditAnnotation.bind(this);
+    if (viewer) {
+      viewer.addEventListener(
+        viewer.Events.onEditAnnotation,
+        this.viewerOnEditAnnotationCallback
+      );
+    }
     this.updateViewer();
     this.updateProjection(viewer ? viewer.projection : undefined);
   }
@@ -195,6 +325,12 @@ class ImagesAnnotations extends HCSBaseState {
   detachFromViewer () {
     if (this.viewer) {
       this.viewer.setAnnotations([]);
+      if (this.viewerOnEditAnnotationCallback) {
+        this.viewer.removeEventListener(
+          this.viewer.Events.onEditAnnotation,
+          this.viewerOnEditAnnotationCallback
+        );
+      }
     }
     super.detachFromViewer();
   }

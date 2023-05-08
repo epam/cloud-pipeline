@@ -87,6 +87,7 @@ PolylineAnnotationLayer.defaultProps = {
     compare: true,
   },
   onClick: { type: 'function', value: (() => {}), compare: true },
+  onEdit: { type: 'function', value: (() => {}), compare: true },
 };
 
 export default PolylineAnnotationLayer;

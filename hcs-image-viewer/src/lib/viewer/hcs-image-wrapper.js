@@ -40,6 +40,7 @@ export default function wrapper(container, props, callbacks = {}) {
     onViewerStateChanged,
     onProjectionChanged,
     onCellClick,
+    onEditAnnotation,
   } = callbacks;
   ReactDOM.render(
     (
@@ -49,6 +50,7 @@ export default function wrapper(container, props, callbacks = {}) {
         onViewerStateChanged={onViewerStateChanged}
         onProjectionChanged={onProjectionChanged}
         onCellClick={onCellClick}
+        onEditAnnotation={onEditAnnotation}
         {...props}
       />
     ),

@@ -36,6 +36,7 @@ class DetailViewWithMesh extends DetailView {
       onCellHover,
       hoveredCell,
       onCellClick,
+      onEditAnnotation,
       onSelectAnnotation,
     } = props;
     this.onCellHover = onCellHover;
@@ -46,6 +47,7 @@ class DetailViewWithMesh extends DetailView {
     this.annotations = annotations;
     this.selectedAnnotation = selectedAnnotation;
     this.onSelectAnnotation = onSelectAnnotation;
+    this.onEditAnnotation = onEditAnnotation;
   }
 
   getLayers({ viewStates, props }) {
@@ -119,6 +121,7 @@ class DetailViewWithMesh extends DetailView {
             id: `annotations-background-${getLayerId(id)}`,
             viewState: { ...layerViewState, height, width },
             onClick: this.onSelectAnnotation,
+            onEdit: this.onEditAnnotation,
           },
         ),
       );
@@ -133,6 +136,7 @@ class DetailViewWithMesh extends DetailView {
             annotations: rectangleAnnotations,
             selectedAnnotation: this.selectedAnnotation,
             onClick: this.onSelectAnnotation,
+            onEdit: this.onEditAnnotation,
           },
         ),
       );
@@ -147,6 +151,7 @@ class DetailViewWithMesh extends DetailView {
             annotations: circleAnnotations,
             selectedAnnotation: this.selectedAnnotation,
             onClick: this.onSelectAnnotation,
+            onEdit: this.onEditAnnotation,
           },
         ),
       );
@@ -161,6 +166,7 @@ class DetailViewWithMesh extends DetailView {
             annotations: polylineAnnotations,
             selectedAnnotation: this.selectedAnnotation,
             onClick: this.onSelectAnnotation,
+            onEdit: this.onEditAnnotation,
           },
         ),
       );
@@ -175,6 +181,7 @@ class DetailViewWithMesh extends DetailView {
             annotations: arrowAnnotations,
             selectedAnnotation: this.selectedAnnotation,
             onClick: this.onSelectAnnotation,
+            onEdit: this.onEditAnnotation,
           },
         ),
       );
@@ -189,6 +196,7 @@ class DetailViewWithMesh extends DetailView {
             annotations: textAnnotations,
             selectedAnnotation: this.selectedAnnotation,
             onClick: this.onSelectAnnotation,
+            onEdit: this.onEditAnnotation,
           },
         ),
       );

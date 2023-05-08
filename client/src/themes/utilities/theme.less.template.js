@@ -2065,6 +2065,9 @@ export default `
 @THEME .ant-tooltip-inner .cp-run-nested-run-link:visited {
   color: @application-color-tooltip;
 }
+@THEME .tooltip-text {
+  color: @application-color-tooltip;
+}
 @THEME .cp-wdl-task[data-type=VisualStep] rect,
 @THEME .cp-wdl-task[data-type=VisualGroup] rect,
 @THEME .cp-wdl-task[data-type=VisualWorkflow] rect {

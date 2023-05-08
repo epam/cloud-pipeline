@@ -23,6 +23,7 @@ import {action, autorun, observable} from 'mobx';
  * @property {string} [userName]
  * @property {boolean} [autoFetch=true]
  * @property {function} [onUpdate]
+ * @property {string} [currentUser]
  */
 
 /**
@@ -44,6 +45,8 @@ import {action, autorun, observable} from 'mobx';
  * @property {string} [lineColor]
  * @property {[AnnotationPoint, AnnotationPoint]} points
  * @property {AnnotationLabel} [label]
+ * @property {boolean} [selectable]
+ * @property {boolean} [editable]
  */
 
 /**
@@ -54,6 +57,8 @@ import {action, autorun, observable} from 'mobx';
  * @property {string} [lineColor]
  * @property {number} [lineWidth]
  * @property {AnnotationPoint[]} points
+ * @property {boolean} [selectable]
+ * @property {boolean} [editable]
  */
 
 /**
@@ -65,6 +70,8 @@ import {action, autorun, observable} from 'mobx';
  * @property {number} [rotation]
  * @property {string} [lineColor]
  * @property {number} [lineWidth]
+ * @property {boolean} [selectable]
+ * @property {boolean} [editable]
  */
 
 /**
@@ -74,6 +81,8 @@ import {action, autorun, observable} from 'mobx';
  * @property {number} radius
  * @property {string} [lineColor]
  * @property {number} [lineWidth]
+ * @property {boolean} [selectable]
+ * @property {boolean} [editable]
  */
 
 /**
@@ -81,6 +90,8 @@ import {action, autorun, observable} from 'mobx';
  * @property {string} type
  * @property {AnnotationPoint} center
  * @property {AnnotationLabel} label
+ * @property {boolean} [selectable]
+ * @property {boolean} [editable]
  */
 
 /**
@@ -94,23 +105,32 @@ import {action, autorun, observable} from 'mobx';
  */
 
 /**
+ * @param {string} identifier
+ * @returns {number}
+ */
+function parseIdentifier (identifier) {
+  return Number((identifier || '').split('/').pop());
+}
+
+function getNextIdentifier (annotations = []) {
+  const identifiers = annotations
+    .map((annotation) => parseIdentifier(annotation.identifier))
+    .filter((n) => !Number.isNaN(n));
+  return Math.max(0, ...identifiers) + 1;
+}
+
+/**
  * @param {string} userName
  * @param {UserAnnotation[]} annotations
  * @returns {string}
  */
-function getNextIdentifier (userName, annotations = []) {
-  /**
-   * @param {string} identifier
-   * @returns {number}
-   */
-  function parseIdentifier (identifier) {
-    return Number((identifier || '').split('/').pop());
-  }
-  const identifiers = annotations
-    .map((annotation) => parseIdentifier(annotation.identifier))
-    .filter((n) => !Number.isNaN(n));
-  const next = Math.max(0, ...identifiers) + 1;
+function findNextIdentifier (userName, annotations = []) {
+  const next = getNextIdentifier(annotations);
   return `${userName}/${next}`;
+}
+
+function generateIdentifier (userName, nextIdentifier) {
+  return `${userName}/${nextIdentifier}`;
 }
 
 class UserAnnotations {
@@ -124,7 +144,10 @@ class UserAnnotations {
    * @type {string}
    */
   @observable userName;
+  @observable currentUser;
   @observable visible = true;
+  @observable modified = false;
+  nextIdentifier = 1;
   /**
    * @param {UserAnnotationsOptions} options
    */
@@ -134,11 +157,13 @@ class UserAnnotations {
       path,
       autoFetch = true,
       userName,
+      currentUser,
       onUpdate
     } = options;
     this.path = path;
     this.storage = storage;
     this.userName = userName;
+    this.currentUser = currentUser;
     this.onUpdate = onUpdate;
     if (autoFetch) {
       (this.fetch)();
@@ -178,12 +203,16 @@ class UserAnnotations {
         annotations.forEach((annotation) => {
           corrected.push({
             ...annotation,
-            identifier: annotation.identifier || getNextIdentifier(userName, corrected)
+            identifier: annotation.identifier || findNextIdentifier(userName, corrected),
+            selectable: this.currentUser && userName === this.currentUser,
+            editable: this.currentUser && userName === this.currentUser
           });
         });
+        this.nextIdentifier = Math.max(this.nextIdentifier || 1, getNextIdentifier(corrected));
         this.annotations = corrected;
         this.userName = userName;
         this.error = error;
+        this.modified = false;
         this._fetchPromise = undefined;
       }
       return Promise.resolve();
@@ -232,37 +261,63 @@ class UserAnnotations {
     return this.annotations.findIndex((annotation) => annotation.identifier === identifier);
   }
 
+  /**
+   * @param {UserAnnotation} annotation
+   * @param {{save: boolean}} [options]
+   * @returns {string|*}
+   */
+
   @action
-  createOrUpdateAnnotation (annotation, save = false) {
+  createOrUpdateAnnotation (annotation, options = {}) {
+    const {
+      save = false
+    } = options;
     if (!annotation) {
       return;
     }
     if (!annotation.identifier) {
-      annotation.identifier = getNextIdentifier(this.userName, this.annotations);
+      annotation.identifier = generateIdentifier(this.userName, this.nextIdentifier || 1);
+      this.nextIdentifier = (this.nextIdentifier || 0) + 1;
     }
-    const currentIndex = this.getAnnotationIndexByIdentifier(annotation.identifier);
+    /**
+     * @type {UserAnnotation}
+     */
+    const annotationCorrected = {
+      ...annotation,
+      selectable: true,
+      editable: true
+    };
+    const currentIndex = this.getAnnotationIndexByIdentifier(annotationCorrected.identifier);
     if (currentIndex >= 0) {
       this.annotations.splice(
         currentIndex,
         1,
-        annotation
+        annotationCorrected
       );
     } else {
-      this.annotations.push(annotation);
+      this.annotations.push(annotationCorrected);
     }
+    this.modified = true;
     if (save) {
       (this.save)();
     }
-    return annotation.identifier;
+    return annotationCorrected.identifier;
   }
 
+  /**
+   * @param {UserAnnotation} annotation
+   * @param {{save: boolean}} options
+   */
   @action
-  removeAnnotation (annotation, save = false) {
+  removeAnnotation (annotation, options = {}) {
+    const {
+      save = false
+    } = options;
     if (!annotation || !annotation.identifier) {
       return;
     }
-    console.log('removing annotation', annotation.identifier, annotation.type);
     this.annotations = this.annotations.filter((a) => a.identifier !== annotation.identifier);
+    this.modified = true;
     if (save) {
       (this.save)();
     }
@@ -276,9 +331,17 @@ class UserAnnotations {
     if (!this.path) {
       throw new Error('Annotations file path is not defined');
     }
+    const mapAnnotation = (annotation) => {
+      const {
+        selectable,
+        editable,
+        ...data
+      } = annotation;
+      return data;
+    };
     const payload = JSON.stringify({
       name: this.userName,
-      elements: this.annotations
+      elements: this.annotations.map(mapAnnotation)
     });
     this.pending = true;
     await this.storage.writeFile(this.path, payload);
@@ -287,6 +350,7 @@ class UserAnnotations {
     } else {
       this.pending = false;
     }
+    this.modified = false;
   }
 }
 

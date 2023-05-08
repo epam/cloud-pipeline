@@ -19,6 +19,8 @@ import { TextLayer } from '@deck.gl/layers';
 import getAnnotationColor from './get-annotation-color';
 import BaseAnnotationLayer from './base';
 
+const DEFAULT_FONT_SIZE = 16;
+
 const TextAnnotationLayer = class extends BaseAnnotationLayer {
   renderLayers() {
     const {
@@ -39,7 +41,7 @@ const TextAnnotationLayer = class extends BaseAnnotationLayer {
         label.pixels ? this.unproject(label.center) : label.center,
       ),
       getText: (label) => (label.label ? label.label.value : undefined),
-      getSize: (label) => (label.label ? label.label.fontSize : 16),
+      getSize: (label) => (label.label ? label.label.fontSize : 0) || DEFAULT_FONT_SIZE,
       getColor: (label) => getAnnotationColor(
         label,
         selectedAnnotation,
@@ -101,6 +103,7 @@ TextAnnotationLayer.defaultProps = {
     compare: true,
   },
   onClick: { type: 'function', value: (() => {}), compare: true },
+  onEdit: { type: 'function', value: (() => {}), compare: true },
 };
 
 export default TextAnnotationLayer;

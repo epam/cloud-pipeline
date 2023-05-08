@@ -34,8 +34,7 @@ const ArrowAnnotationLayer = class extends BaseAnnotationLayer {
       const [x = 0, y = 0] = point;
       return [x, y];
     };
-    const layer = new PathLayer({
-      id: `arrows-${id}`,
+    const layerConfiguration = {
       coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
       data: this.visibleAnnotations,
       getPath: (arrow) => {
@@ -82,9 +81,26 @@ const ArrowAnnotationLayer = class extends BaseAnnotationLayer {
         ];
         return [start, p, p2, end, p1, p].map(mapPoint);
       },
+    };
+    const layer = new PathLayer({
+      id: `arrows-${id}`,
+      ...layerConfiguration,
       getWidth: () => 2,
       widthUnits: 'pixels',
       getColor: (arrow) => getAnnotationColor(arrow, selectedAnnotation),
+      filled: false,
+      stroked: true,
+      pickable: false,
+      updateTriggers: {
+        getColor: [selectedAnnotation],
+      },
+    });
+    const selectableLayer = new PathLayer({
+      id: `arrows-selectable-${id}`,
+      ...layerConfiguration,
+      getWidth: () => 6,
+      widthUnits: 'pixels',
+      getColor: () => [0, 0, 0, 0],
       filled: false,
       stroked: true,
       pickable: true,
@@ -92,7 +108,7 @@ const ArrowAnnotationLayer = class extends BaseAnnotationLayer {
         getColor: [selectedAnnotation],
       },
     });
-    return [layer];
+    return [layer, selectableLayer];
   }
 };
 
