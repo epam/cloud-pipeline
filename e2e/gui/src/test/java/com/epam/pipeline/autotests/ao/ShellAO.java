@@ -111,7 +111,7 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO assertResultsCount(String command, String runID, int expectedCount) {
         String results = lastCommandResult(command)
-                .replace(format("root@pipeline-%s:/runs/pipeline-%s#", runID, runID), "");
+                .replace(format("[root@pipeline-%s ~]#", runID), "");
         assertEquals(results.split("\\s+").length, expectedCount);
         return this;
     }
