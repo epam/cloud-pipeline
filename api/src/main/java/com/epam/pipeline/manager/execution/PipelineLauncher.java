@@ -164,7 +164,7 @@ public class PipelineLauncher {
                         : preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX),
                     configuration.getDockerImage()
             );
-            Assert.notNull(effectiveLaunchCommand, "Fail to evaluate Linux launch command.");
+            Assert.notNull(effectiveLaunchCommand, "Fail to evaluate pod launch command.");
             rootPodCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
                     effectiveLaunchCommand,
                     new HashMap<String, String>() {{
