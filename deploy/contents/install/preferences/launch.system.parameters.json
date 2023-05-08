@@ -556,5 +556,12 @@
         "description": "Specifies if run pod should be run with host network capability",
         "defaultValue": "false",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_RECOVERY",
+        "type": "boolean",
+        "description": "Enables recovery support for a current run",
+        "defaultValue": "true",
+        "passToWorkers": false
     }
 ]
