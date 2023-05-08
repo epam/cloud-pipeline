@@ -45,6 +45,7 @@ import styles from '../UserManagementForm.css';
 import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
 import {QuotasDisclaimerComponent} from './quota-info';
+import MarkedToBeBlockedInfo from './marked-to-be-blocked-info';
 
 const PAGE_SIZE = 20;
 
@@ -61,6 +62,7 @@ function usersFilter (criteria) {
 const USERS_FILTERS = {
   all: 'all',
   blocked: 'blocked',
+  markedToBeBlocked: 'marked-to-be-blocked',
   online: 'online',
   quota: 'quota'
 };
@@ -210,6 +212,9 @@ export default class UsersManagement extends React.Component {
           case USERS_FILTERS.blocked: {
             return user.blocked;
           }
+          case USERS_FILTERS.markedToBeBlocked: {
+            return !!user.externalBlockDate;
+          }
           case USERS_FILTERS.online: {
             return user.online;
           }
@@ -283,20 +288,26 @@ export default class UsersManagement extends React.Component {
             key={USERS_FILTERS.all}
             value={USERS_FILTERS.all}
           >
-            Show all users
+            All
           </Select.Option>
           <Select.Option
             key={USERS_FILTERS.blocked}
             value={USERS_FILTERS.blocked}
           >
-            Show blocked users
+            Blocked
+          </Select.Option>
+          <Select.Option
+            key={USERS_FILTERS.markedToBeBlocked}
+            value={USERS_FILTERS.markedToBeBlocked}
+          >
+            Marked to be blocked
           </Select.Option>
           { this.isAdmin && (
             <Select.Option
               key={USERS_FILTERS.online}
               value={USERS_FILTERS.online}
             >
-              Show online users
+              Online
             </Select.Option>)
           }
           { this.isAdmin && (
@@ -304,7 +315,7 @@ export default class UsersManagement extends React.Component {
               key={USERS_FILTERS.quota}
               value={USERS_FILTERS.quota}
             >
-              Show exceeded spending quotas
+              Exceeded quotas
             </Select.Option>)
           }
         </Select>
@@ -413,6 +424,7 @@ export default class UsersManagement extends React.Component {
         className: styles.userNameColumn,
         render: (name, user) => {
           let blockedSpan;
+          let blockInfo;
           const offlineInfo = (
             <div
               style={{
@@ -444,6 +456,18 @@ export default class UsersManagement extends React.Component {
               >
                 - blocked
               </span>
+            );
+          }
+          if (user.externalBlockDate) {
+            blockInfo = (
+              <MarkedToBeBlockedInfo
+                className="cp-error"
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 'smaller'
+                }}
+                externalBlockDate={user.externalBlockDate}
+              />
             );
           }
           const userStatus = this.isAdmin
@@ -493,10 +517,18 @@ export default class UsersManagement extends React.Component {
                     quotas={user.activeQuotas || []}
                   />
                 </Row>
+                {
+                  blockInfo && (
+                    <Row>
+                      {blockInfo}
+                    </Row>
+                  )
+                }
               </Row>
             );
-          } else {
-            return (
+          }
+          return (
+            <Row type="flex" style={{flexDirection: 'column'}}>
               <Row>
                 <span className={styles.lineBreak}>
                   {userStatus}
@@ -506,8 +538,15 @@ export default class UsersManagement extends React.Component {
                   </span>
                 </span>
               </Row>
-            );
-          }
+              {
+                blockInfo && (
+                  <Row>
+                    {blockInfo}
+                  </Row>
+                )
+              }
+            </Row>
+          );
         }
       },
       {
