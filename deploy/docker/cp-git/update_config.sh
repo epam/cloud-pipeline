@@ -113,6 +113,68 @@ $SMTP_SETTINGS_PASS
 $SMTP_SETTINGS_AUTH_TYPE"
 fi
 
+
+#######################
+# LFS/ObjStore settings
+#######################
+
+if [ "$CP_CLOUD_PLATFORM" == "aws" ]; then
+    if [ -z "$CP_GITLAB_OBJ_STORE_STORAGE_KEY_ID" ] && [ -f "$CP_CLOUD_CREDENTIALS_LOCATION" ]; then
+      CP_GITLAB_OBJ_STORE_STORAGE_KEY_NAME="$(echo $(cat $CP_CLOUD_CREDENTIALS_LOCATION | grep aws_access_key_id | cut -d'=' -f2))"
+    fi
+    if [ -z "$CP_GITLAB_OBJ_STORE_KEY_SECRET" ] && [ -f "$CP_CLOUD_CREDENTIALS_LOCATION" ]; then
+      CP_GITLAB_OBJ_STORE_KEY_SECRET="$(echo $(cat $CP_CLOUD_CREDENTIALS_LOCATION | grep aws_secret_access_key | cut -d'=' -f2))"
+    fi
+    if [ -z "$CP_GITLAB_OBJ_STORE_STORAGE_KEY_ID" ] || [ -z "$CP_GITLAB_OBJ_STORE_KEY_SECRET" ]; then
+      echo "[INFO] object_store: Access keys are NOT set, instance profile will be used"
+      LFS_SETTINGS_CREDENTIALS="'use_iam_profile' => true"
+    else
+      echo "[INFO] object_store: Access keys are provided"
+      LFS_SETTINGS_CREDENTIALS="'aws_access_key_id' => '${CP_GITLAB_OBJ_STORE_STORAGE_KEY_ID}',
+'aws_secret_access_key' => '${CP_GITLAB_OBJ_STORE_KEY_SECRET}'"
+    fi
+else
+  export CP_GITLAB_OBJ_STORE_ENABLED=false
+  echo "[WARN] object_store: Object store is supported for the AWS only. It won't be configured"
+fi
+
+CP_GITLAB_OBJ_STORE_LFS_BUCKET="${CP_GITLAB_OBJ_STORE_LFS_BUCKET:-$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}"
+if [ -z "$CP_GITLAB_OBJ_STORE_LFS_BUCKET" ]; then
+  export CP_GITLAB_OBJ_STORE_ENABLED=false
+  echo "[WARN] object_store: Object store bucket name for lfs is not defined. Shall be set via CP_GITLAB_OBJ_STORE_LFS_BUCKET"
+else
+  echo "[WARN] object_store: Object store bucket name for lfs is set to $CP_GITLAB_OBJ_STORE_LFS_BUCKET"
+fi
+
+CP_GITLAB_OBJ_STORE_REGION=${CP_GITLAB_OBJ_STORE_REGION:-$CP_CLOUD_REGION_ID}
+if [ -z "$CP_GITLAB_OBJ_STORE_REGION" ]; then
+  export CP_GITLAB_OBJ_STORE_ENABLED=false
+  echo "[WARN] object_store: Object store bucket region is not not defined. Shall be set via CP_GITLAB_OBJ_STORE_REGION"
+else
+  echo "[WARN] object_store: Object store bucket region is set to $CP_GITLAB_OBJ_STORE_REGION"
+fi
+
+if [ "$CP_GITLAB_OBJ_STORE_ENABLED" == "true" ]; then
+  LFS_SETTINGS="gitlab_rails['object_store']['enabled'] = ${CP_GITLAB_OBJ_STORE_ENABLED:-true}
+gitlab_rails['object_store']['proxy_download'] = ${CP_GITLAB_OBJ_STORE_PROXY_DOWNLOAD:-false}
+gitlab_rails['object_store']['connection'] = {
+  'provider' => 'AWS',
+  'region' => 'us-east-1',
+  ${LFS_SETTINGS_CREDENTIALS}
+}
+gitlab_rails['object_store']['objects']['lfs']['enabled'] = true
+gitlab_rails['object_store']['objects']['lfs']['bucket'] = '${CP_GITLAB_OBJ_STORE_LFS_BUCKET}'
+gitlab_rails['object_store']['objects']['artifacts']['enabled'] = false
+gitlab_rails['object_store']['objects']['packages']['enabled'] = false
+gitlab_rails['object_store']['objects']['external_diffs']['enabled'] = false
+gitlab_rails['object_store']['objects']['uploads']['enabled'] = false
+gitlab_rails['object_store']['objects']['dependency_proxy']['enabled'] = false
+gitlab_rails['object_store']['objects']['terraform_state']['enabled'] = false
+gitlab_rails['object_store']['objects']['pages']['enabled'] = false"
+fi
+
+#######################
+
 cat > /etc/gitlab/gitlab.rb <<-EOF
 
 ${GIT_PROXIES}
@@ -163,6 +225,7 @@ gitlab_rails['omniauth_providers'] = [
 ]
 
 ${SMTP_SETTINGS}
+${LFS_SETTINGS}
 EOF
 
 # Start the gitlab runner
