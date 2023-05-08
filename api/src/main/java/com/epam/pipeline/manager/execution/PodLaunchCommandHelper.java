@@ -29,8 +29,8 @@ public final class PodLaunchCommandHelper {
         final Pair<ImageSpecificLaunchCommandTemplate, List<ImageSpecificLaunchCommandTemplate>>
                 commandsByImageWithDefault =
                 filtered(
-                        ListUtils.emptyIfNull(commandsByImage),
-                        (e) -> !e.getImage().equals(STAR_SIGN) && !e.getImage().equals(ALL_KEY_WORK)
+                    ListUtils.emptyIfNull(commandsByImage),
+                    (e) -> !e.getImage().equals(STAR_SIGN) && !e.getImage().equals(ALL_KEY_WORK)
                 );
         final Optional<ImageSpecificLaunchCommandTemplate> matchedCommandOp =
                 commandsByImageWithDefault.getValue().stream().filter(imageAndCommand -> {

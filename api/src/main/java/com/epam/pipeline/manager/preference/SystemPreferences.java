@@ -565,10 +565,12 @@ public class SystemPreferences {
                     ImageSpecificLaunchCommandTemplate.builder()
                         .image("*")
                         .command("set -o pipefail; "
-                            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q " +
-                                "-O - '$linuxLaunchScriptUrl'\"; }; "
-                            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; "
-                            + "eval $LAUNCH_CMD | bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
+                            + "command -v wget >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"wget --no-check-certificate -q -O - '$linuxLaunchScriptUrl'\"; }; "
+                            + "command -v curl >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; "
+                            + "eval $LAUNCH_CMD " +
+                                "| bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
                         ).build()
                 ),
                 new TypeReference<List<ImageSpecificLaunchCommandTemplate>>() {},
