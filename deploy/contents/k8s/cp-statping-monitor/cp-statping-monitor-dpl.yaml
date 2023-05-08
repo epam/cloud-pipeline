@@ -31,6 +31,11 @@ spec:
               name: statping-monitor-logs
             - mountPath: /opt/statping/templates
               name: statping-monitor-templates
+            - mountPath: /opt/statping/pki
+              name: statping-pki
+            - mountPath: /opt/common/pki
+              name: common-pki
+              readOnly: true
       volumes:
         - name: statping-monitor-logs
           hostPath:
@@ -38,3 +43,9 @@ spec:
         - name: statping-monitor-templates
           hostPath:
             path: /opt/statping/templates
+        - name: statping-pki
+          hostPath:
+            path: /opt/statping/pki
+        - name: common-pki
+          hostPath:
+            path: /opt/common/pki

@@ -56,6 +56,9 @@ spec:
             - mountPath: /opt/idp/pki
               name: idp-pki
               readOnly: true
+            - mountPath: /opt/statping/pki
+              name: statping-pki
+              readOnly: true
             - mountPath: /opt/edge/pki
               name: edge-pki
               readOnly: true
@@ -88,6 +91,9 @@ spec:
         - name: idp-pki
           hostPath:
             path: /opt/idp/pki/
+        - name: statping-pki
+          hostPath:
+            path: /opt/statping/pki/
         - name: edge-pki
           hostPath:
             path: /opt/edge/pki
