@@ -569,7 +569,8 @@ public class SystemPreferences {
                                 "-O - '$linuxLaunchScriptUrl'\"; }; "
                             + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; "
                             + "eval $LAUNCH_CMD | bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
-                        ).build()),
+                        ).build()
+                ),
                 new TypeReference<List<ImageSpecificLaunchCommandTemplate>>() {},
                 LAUNCH_GROUP, isValidMapOfLaunchCommands);
     public static final ObjectPreference<List<ImageSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_WINDOWS =
