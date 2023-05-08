@@ -488,6 +488,19 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('system.jobs.scripts.location') || 'src/system-jobs';
   }
 
+  @computed
+  get systemLdapUserBlockMonitorGracePeriodDays () {
+    const value = this.getPreferenceValue('system.ldap.user.block.monitor.grace.period.days');
+    if (
+      value !== undefined &&
+      value !== null &&
+      !Number.isNaN(Number(value))
+    ) {
+      return Number(value);
+    }
+    return 7;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
