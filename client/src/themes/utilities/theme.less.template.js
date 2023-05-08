@@ -180,6 +180,20 @@ export default `
 @THEME .cp-divider.right {
   border-right: 1px solid @panel-border-color;
 }
+@THEME .cp-divider.top.dashed,
+@THEME .cp-divider.horizontal.dashed {
+  border-top: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.bottom.dashed {
+  border-bottom: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.left.dashed,
+@THEME .cp-divider.vertical.dashed {
+  border-left: 1px dashed @panel-border-color;
+}
+@THEME .cp-divider.right.dashed {
+  border-right: 1px dashed @panel-border-color;
+}
 @THEME .cp-divider.horizontal {
   width: 100%;
   height: 1px;
@@ -196,6 +210,9 @@ export default `
 @THEME .cp-primary {
   color: @primary-color;
 }
+@THEME .cp-primary.border {
+  border-color: @primary-color;
+}
 @THEME .cp-disabled {
   color: @application-color-disabled;
 }
@@ -205,8 +222,14 @@ export default `
 @THEME .cp-warning {
   color: @color-yellow;
 }
+@THEME .cp-warning.border {
+  border-color: @color-yellow;
+}
 @THEME .cp-success {
   color: @color-green;
+}
+@THEME .cp-success.border {
+  border-color: @color-green;
 }
 @THEME .cp-error,
 @THEME .cp-danger {
@@ -233,25 +256,72 @@ export default `
   border: 1px solid @card-border-color;
   color: @application-color;
 }
+@THEME .cp-tag.accent {
+  border: 1px solid @application-color;
+}
+@THEME .cp-tag.filled,
+@THEME .cp-tag.link:hover,
+@THEME .cp-tag.hovered {
+  background-color: @application-color;
+  border: 1px solid @application-color;
+  color: @application-background-color;
+}
 @THEME .cp-tag.disabled {
   color: @application-color-disabled;
+}
+@THEME .cp-tag.filled.disabled,
+@THEME .cp-tag.link.disabled:hover,
+@THEME .cp-tag.disabled.hovered {
+  background-color: @application-color-disabled;
+  border: 1px solid @application-color-disabled;
 }
 @THEME .cp-tag.warning {
   border-color: currentColor;
   color: @color-yellow;
 }
+@THEME .cp-tag.warning.filled,
+@THEME .cp-tag.warning.link:hover,
+@THEME .cp-tag.warning.hovered {
+  background-color: @color-yellow;
+  border-color: @color-yellow;
+  color: @primary-text-color;
+}
 @THEME .cp-tag.critical {
   border-color: currentColor;
   color: @color-red;
+}
+@THEME .cp-tag.critical.filled,
+@THEME .cp-tag.critical.link:hover,
+@THEME .cp-tag.critical.hovered {
+  background-color: @color-red;
+  border-color: @color-red;
+  color: @primary-text-color;
 }
 @THEME .cp-tag.success {
   border-color: currentColor;
   color: @color-green;
 }
+@THEME .cp-tag.success.filled,
+@THEME .cp-tag.success.link:hover,
+@THEME .cp-tag.success.hovered {
+  background-color: @color-green;
+  border-color: @color-green;
+  color: @primary-text-color;
+}
 @THEME .cp-tag.cp-primary,
 @THEME .cp-tag.primary {
   border-color: currentColor;
   color: @primary-color;
+}
+@THEME .cp-tag.primary.filled,
+@THEME .cp-tag.cp-primary.filled,
+@THEME .cp-tag.primary.link:hover,
+@THEME .cp-tag.primary.hovered,
+@THEME .cp-tag.cp-primary.link:hover,
+@THEME .cp-tag.cp-primary.hovered {
+  background-color: @primary-color;
+  border-color: @primary-color;
+  color: @primary-text-color;
 }
 @THEME .cp-versioned-storage {
   color: @primary-color;
@@ -540,6 +610,14 @@ export default `
 @THEME .ant-tabs.cp-tabs-no-padding.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   padding: 0;
 }
+@THEME .ant-tabs-tab-prev,
+@THEME .ant-tabs-tab-next {
+  color: @application-color;
+}
+@THEME .ant-tabs-tab-btn-disabled,
+@THEME .ant-tabs-tab-btn-disabled:hover {
+  color: @application-color-disabled;
+}
 @THEME .cp-tabs-no-content.ant-tabs.ant-tabs-card .ant-tabs-bar + .ant-tabs-content {
   border-bottom: 0;
 }
@@ -644,6 +722,16 @@ export default `
   color: @application-color;
   background-color: @panel-background-color;
   border-color: @input-border;
+}
+@THEME .cp-button.primary {
+  background: @primary-color;
+  color: @primary-text-color;
+  border-color: @primary-color;
+}
+@THEME .cp-button.primary:hover {
+  color: @primary-text-color;
+  background-color: @primary-hover-color;
+  border-color: @primary-hover-color;
 }
 @THEME .ant-btn-clicked::after {
   border: 0 solid @primary-color;
@@ -853,6 +941,13 @@ export default `
   cursor: default;
   background-color: @card-background-color;
   color: @application-color-disabled;
+}
+@THEME .cp-table-element-dimmed {
+  background-color: @card-background-color;
+  color: @application-color-disabled;
+}
+@THEME .cp-table-element-dimmed:hover {
+  background-color: @table-element-hover-background-color;
 }
 @THEME .ant-table-row-expand-icon {
   border-color: @table-border-color;

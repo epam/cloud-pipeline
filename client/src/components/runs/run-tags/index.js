@@ -17,6 +17,7 @@
 import React from 'react';
 import {Popover, Row} from 'antd';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {Link} from 'react-router';
 import styles from './run-tags.css';
 import moment from 'moment-timezone';
@@ -25,7 +26,9 @@ import RunTagDatePopover from './run-tag-date-popover';
 const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 const KNOWN_TAGS = [
   'idle',
-  'pressure'
+  'pressure',
+  'sge_in_use',
+  'recovered'
 ];
 
 const isInstanceLink = (tag) => {
@@ -77,14 +80,25 @@ function Tag (
   if (`${value}` === 'true') {
     display = tag;
   }
+  const isLink = instance && instance.nodeName && isInstanceLink(tag);
   const element = (
     <span
-      className={[
-        styles.runTag,
-        styles[(tag || '').toLowerCase()],
-        theme ? styles[`${theme}Theme`] : undefined,
-        className
-      ].filter(Boolean).join(' ')}
+      className={
+        classNames(
+          styles.runTag,
+          className,
+          'cp-tag',
+          'accent',
+          {
+            warning: /^idle$/i.test(tag),
+            critical: /^(pressure|recovered)$/i.test(tag),
+            hovered: /^recovered$/i.test(tag),
+            primary: /^sge_in_use$/i.test(tag),
+            filled: /^black$/i.test(theme),
+            link: isLink
+          }
+        )
+      }
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onClick={onClick}
@@ -93,7 +107,7 @@ function Tag (
       {(display || '').toUpperCase()}
     </span>
   );
-  if (instance && instance.nodeName && isInstanceLink(tag)) {
+  if (isLink) {
     const instanceLink = `/cluster/${instance.nodeName}/monitor`;
     return (
       <Link
