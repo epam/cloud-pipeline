@@ -1,6 +1,6 @@
 package com.epam.pipeline.manager.execution;
 
-import com.epam.pipeline.entity.execution.LaunchCommandTemplateForImagePattern;
+import com.epam.pipeline.entity.execution.ImageSpecificLaunchCommandTemplate;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -24,18 +24,18 @@ public class PodLaunchCommandHelperTest {
     public static final String EVALUATED_LAUNCH_COMMAND_TEMPLATE_WITH_ADDITIONAL_VARS = "command template with: "
             + EVALUATED + " and additional $ENV_VAR";
 
-    private static final List<LaunchCommandTemplateForImagePattern> COMMAND_TEMPLATES = Arrays.asList(
-        LaunchCommandTemplateForImagePattern.builder().image("*").command(COMMAND_FOR_ALL_IMAGES).build(),
-        LaunchCommandTemplateForImagePattern.builder().image("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build(),
-        LaunchCommandTemplateForImagePattern.builder().image("centos*")
+    private static final List<ImageSpecificLaunchCommandTemplate> COMMAND_TEMPLATES = Arrays.asList(
+        ImageSpecificLaunchCommandTemplate.builder().image("*").command(COMMAND_FOR_ALL_IMAGES).build(),
+        ImageSpecificLaunchCommandTemplate.builder().image("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build(),
+        ImageSpecificLaunchCommandTemplate.builder().image("centos*")
                 .command(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES).build()
     );
 
-    private static final List<LaunchCommandTemplateForImagePattern> COMMAND_TEMPLATES_WRONG_ORDER = Arrays.asList(
-        LaunchCommandTemplateForImagePattern.builder().image("*").command(COMMAND_FOR_ALL_IMAGES).build(),
-        LaunchCommandTemplateForImagePattern.builder().image("centos*")
+    private static final List<ImageSpecificLaunchCommandTemplate> COMMAND_TEMPLATES_WRONG_ORDER = Arrays.asList(
+        ImageSpecificLaunchCommandTemplate.builder().image("*").command(COMMAND_FOR_ALL_IMAGES).build(),
+        ImageSpecificLaunchCommandTemplate.builder().image("centos*")
                 .command(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES).build(),
-        LaunchCommandTemplateForImagePattern.builder().image("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build()
+        ImageSpecificLaunchCommandTemplate.builder().image("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build()
     );
 
     @Test

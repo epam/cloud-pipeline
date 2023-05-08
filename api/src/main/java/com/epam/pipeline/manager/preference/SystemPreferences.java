@@ -31,7 +31,7 @@ import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
-import com.epam.pipeline.entity.execution.LaunchCommandTemplateForImagePattern;
+import com.epam.pipeline.entity.execution.ImageSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
@@ -67,7 +67,6 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPrefe
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -559,11 +558,11 @@ public class SystemPreferences {
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
                                                             "sleep infinity", LAUNCH_GROUP, pass);
-    public static final ObjectPreference<List<LaunchCommandTemplateForImagePattern>> LAUNCH_POD_CMD_TEMPLATE_LINUX =
+    public static final ObjectPreference<List<ImageSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_LINUX =
             new ObjectPreference<>(
                 "launch.pod.cmd.template.linux",
                 Collections.singletonList(
-                    LaunchCommandTemplateForImagePattern.builder()
+                    ImageSpecificLaunchCommandTemplate.builder()
                         .image("*")
                         .command("set -o pipefail; "
                             + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q " +
@@ -571,13 +570,13 @@ public class SystemPreferences {
                             + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; "
                             + "eval $LAUNCH_CMD | bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
                         ).build()),
-                new TypeReference<List<LaunchCommandTemplateForImagePattern>>() {},
+                new TypeReference<List<ImageSpecificLaunchCommandTemplate>>() {},
                 LAUNCH_GROUP, isValidMapOfLaunchCommands);
-    public static final ObjectPreference<List<LaunchCommandTemplateForImagePattern>> LAUNCH_POD_CMD_TEMPLATE_WINDOWS =
+    public static final ObjectPreference<List<ImageSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_WINDOWS =
         new ObjectPreference<>(
             "launch.pod.cmd.template.windows",
             Collections.singletonList(
-                LaunchCommandTemplateForImagePattern.builder()
+                ImageSpecificLaunchCommandTemplate.builder()
                     .image("*")
                     .command("Add-Type @\"\n" +
                         "using System.Net;\n" +
@@ -600,7 +599,7 @@ public class SystemPreferences {
                         "python .\\launch.py"
                     ).build()
         ),
-        new TypeReference<List<LaunchCommandTemplateForImagePattern>>() {},
+        new TypeReference<List<ImageSpecificLaunchCommandTemplate>>() {},
         LAUNCH_GROUP, isValidMapOfLaunchCommands);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
         "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));

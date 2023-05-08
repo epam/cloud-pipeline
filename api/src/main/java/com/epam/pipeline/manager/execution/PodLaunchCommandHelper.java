@@ -1,6 +1,6 @@
 package com.epam.pipeline.manager.execution;
 
-import com.epam.pipeline.entity.execution.LaunchCommandTemplateForImagePattern;
+import com.epam.pipeline.entity.execution.ImageSpecificLaunchCommandTemplate;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.velocity.VelocityContext;
@@ -24,15 +24,15 @@ public final class PodLaunchCommandHelper {
 
     private PodLaunchCommandHelper() {}
 
-    static String pickLaunchCommandTemplate(final List<LaunchCommandTemplateForImagePattern> commandsByImage,
+    static String pickLaunchCommandTemplate(final List<ImageSpecificLaunchCommandTemplate> commandsByImage,
                                             final String dockerImage) {
-        final Pair<LaunchCommandTemplateForImagePattern, List<LaunchCommandTemplateForImagePattern>>
+        final Pair<ImageSpecificLaunchCommandTemplate, List<ImageSpecificLaunchCommandTemplate>>
                 commandsByImageWithDefault =
                 filtered(
                         ListUtils.emptyIfNull(commandsByImage),
                         (e) -> !e.getImage().equals(STAR_SIGN) && !e.getImage().equals(ALL_KEY_WORK)
                 );
-        final Optional<LaunchCommandTemplateForImagePattern> matchedCommandOp =
+        final Optional<ImageSpecificLaunchCommandTemplate> matchedCommandOp =
                 commandsByImageWithDefault.getValue().stream().filter(imageAndCommand -> {
                     final String preparedImageRegexp = imageAndCommand.getImage().equals(ALL_KEY_WORK)
                             ? ALL_IMAGE_REGEXP
@@ -42,7 +42,7 @@ public final class PodLaunchCommandHelper {
                     return dockerImage.matches(preparedImageRegexp);
                 }).findFirst();
         String effectiveLaunchCommand = Optional.ofNullable(commandsByImageWithDefault.getKey())
-                .map(LaunchCommandTemplateForImagePattern::getCommand).orElse(null);
+                .map(ImageSpecificLaunchCommandTemplate::getCommand).orElse(null);
         if (matchedCommandOp.isPresent()) {
             LOGGER.debug("Matched launch command by image: {} will be used.", matchedCommandOp.get().getImage());
             effectiveLaunchCommand = matchedCommandOp.get().getCommand();
@@ -65,12 +65,12 @@ public final class PodLaunchCommandHelper {
         return commandWriter.toString();
     }
 
-    private static Pair<LaunchCommandTemplateForImagePattern, List<LaunchCommandTemplateForImagePattern>> filtered(
-            final List<LaunchCommandTemplateForImagePattern> list,
-            final Predicate<LaunchCommandTemplateForImagePattern> filter) {
-        LaunchCommandTemplateForImagePattern filteredOut = null;
-        final List<LaunchCommandTemplateForImagePattern> filtered = new ArrayList<>();
-        for (LaunchCommandTemplateForImagePattern template : list) {
+    private static Pair<ImageSpecificLaunchCommandTemplate, List<ImageSpecificLaunchCommandTemplate>> filtered(
+            final List<ImageSpecificLaunchCommandTemplate> list,
+            final Predicate<ImageSpecificLaunchCommandTemplate> filter) {
+        ImageSpecificLaunchCommandTemplate filteredOut = null;
+        final List<ImageSpecificLaunchCommandTemplate> filtered = new ArrayList<>();
+        for (ImageSpecificLaunchCommandTemplate template : list) {
             if (!filter.test(template)) {
                 filteredOut = template;
             } else {
