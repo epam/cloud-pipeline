@@ -18,7 +18,7 @@ public class AuditClient {
 
     public void put(final DataAccessEvent entry) {
         ThreadContext.put(KEY_STORAGE_ID, Optional.ofNullable(entry.getStorage().getId())
-                .map(id -> toString())
+                .map(Object::toString)
                 .orElse(null));
         log.info("{} {}://{}/{}", entry.getType(), type.getId().toLowerCase(), entry.getStorage().getRoot(),
                 entry.getPath());
