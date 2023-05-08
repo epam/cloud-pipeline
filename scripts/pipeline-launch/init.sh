@@ -1,44 +1,10 @@
 #!/bin/bash
-echo "Running init-launch.sh. Instance will be launched under /usr/sbin/init process."
+echo "Running init-launch.sh."
 
 CP_LAUNCH_SH_URL=$1
 CP_GIT_CLONE_URL=$2
 PIPELINE_VERSION=$3
 CP_CMD=$4
-
-_CP_STARTUP_LOG_FILE=/var/log/cp_startup.log
-_CP_STARTUP_SERVICE_FILE=/etc/systemd/system/cp-startup.service
-cat > $_CP_STARTUP_SERVICE_FILE << EOF
-[Unit]
-Description=Cloud-Pipeline startup script.
-
-[Service]
-Type=simple
-ExecStart=/opt/cp_startup.sh
-StandardOutput=append:$_CP_STARTUP_LOG_FILE
-StandardError=append:$_CP_STARTUP_LOG_FILE
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-if [ "$?" -eq 0 ]; then
-    echo "Service $_CP_STARTUP_SERVICE_FILE file created."
-else
-    echo "There was a problem with creating service $_CP_STARTUP_SERVICE_FILE."
-    exit 1
-fi
-
-rm -rf /etc/systemd/system/multi-user.target.wants/sshd.service && \
-    chmod 644 /etc/systemd/system/cp-startup.service && \
-    ln -s /etc/systemd/system/cp-startup.service /etc/systemd/system/multi-user.target.wants/cp-startup.service
-
-if [ "$?" -eq 0 ]; then
-    echo "Service $_CP_STARTUP_SERVICE_FILE configured."
-else
-    echo "There was a problem with configuring service $_CP_STARTUP_SERVICE_FILE."
-    exit 1
-fi
 
 _CP_STARTUP_BASH_FILE=/opt/cp_startup.sh
 cat > $_CP_STARTUP_BASH_FILE << EOF
@@ -79,6 +45,50 @@ else
     exit 1
 fi
 
-touch $_CP_STARTUP_LOG_FILE && tail -f $_CP_STARTUP_LOG_FILE &
-echo "Running /usr/sbin/init..."
-exec /usr/sbin/init
+
+if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
+    echo "Instance will be launched under /usr/sbin/init process"
+
+    _CP_STARTUP_LOG_FILE=/var/log/cp_startup.log
+    _CP_STARTUP_SERVICE_FILE=/etc/systemd/system/cp-startup.service
+    cat > $_CP_STARTUP_SERVICE_FILE << EOF
+[Unit]
+Description=Cloud-Pipeline startup script.
+
+[Service]
+Type=simple
+ExecStart=/opt/cp_startup.sh
+StandardOutput=append:$_CP_STARTUP_LOG_FILE
+StandardError=append:$_CP_STARTUP_LOG_FILE
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    if [ "$?" -eq 0 ]; then
+        echo "Service $_CP_STARTUP_SERVICE_FILE file created."
+    else
+        echo "There was a problem with creating service $_CP_STARTUP_SERVICE_FILE."
+        exit 1
+    fi
+
+    rm -rf /etc/systemd/system/multi-user.target.wants/sshd.service && \
+        chmod 644 /etc/systemd/system/cp-startup.service && \
+        ln -s /etc/systemd/system/cp-startup.service /etc/systemd/system/multi-user.target.wants/cp-startup.service
+
+    if [ "$?" -eq 0 ]; then
+        echo "Service $_CP_STARTUP_SERVICE_FILE configured."
+    else
+        echo "There was a problem with configuring service $_CP_STARTUP_SERVICE_FILE."
+        exit 1
+    fi
+
+    touch $_CP_STARTUP_LOG_FILE && tail -f $_CP_STARTUP_LOG_FILE &
+
+    echo "Running /usr/sbin/init ..."
+    exec /usr/sbin/init
+else
+    echo "CP_CAP_SYSTEMD_CONTAINER is not configured. Instance will be launched without init process."
+    echo "Running $_CP_STARTUP_BASH_FILE ..."
+    bash $_CP_STARTUP_BASH_FILE
+fi
