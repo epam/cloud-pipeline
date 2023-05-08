@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">31m45.36s</div>
+<div class="counter">34m18.81s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">75%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,61 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="customCapabilitiesForToolDockerImageOS - 2323_1"></a>
+<h3 class="failures">customCapabilitiesForToolDockerImageOS - 2323_1</h3>
+<span class="code">
+<pre>Element should have attribute aria-disabled=true {By.xpath: ancestor::li[1]}
+Element: '&lt;li aria-disabled=&quot;false&quot; aria-selected=&quot;false&quot; class=&quot;rc-menu-item&quot; role=&quot;menuitem&quot; title=&quot;Custom test capability 2&quot; value=&quot;0&quot;&gt;testCapability2&lt;/li&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1683469680051.61.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1683469680051.61.html
+Timeout: 150 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldHave(Unknown Source)
+	at com.epam.pipeline.autotests.ao.ToolSettings.checkCustomCapability(ToolSettings.java:284)
+	at com.epam.pipeline.autotests.ToolsParametersTest.lambda$customCapabilitiesForToolDockerImageOS$3(ToolsParametersTest.java:224)
+	at com.epam.pipeline.autotests.ao.ToolGroup.tool(ToolGroup.java:61)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$null$3(ToolsPage.java:111)
+	at com.epam.pipeline.autotests.ao.Registry.group(Registry.java:55)
+	at com.epam.pipeline.autotests.ao.ToolsPage.lambda$perform$4(ToolsPage.java:110)
+	at com.epam.pipeline.autotests.ao.ToolsPage.registry(ToolsPage.java:133)
+	at com.epam.pipeline.autotests.ao.ToolsPage.perform(ToolsPage.java:109)
+	at com.epam.pipeline.autotests.ToolsParametersTest.customCapabilitiesForToolDockerImageOS(ToolsParametersTest.java:217)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -78,45 +126,45 @@
 </tr>
 </thead>
 <tr>
-<td class="success">customCapabilitiesForAllToolDockerImageOS - 2323_3</td>
-<td>23.201s</td>
-<td class="success">passed</td>
+<td class="skipped">customCapabilitiesForAllToolDockerImageOS</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">customCapabilitiesForPipelineAndDetachConfigurationDockerImageOS - 2323_2</td>
-<td>56.382s</td>
-<td class="success">passed</td>
+<td class="skipped">customCapabilitiesForPipelineAndDetachConfigurationDockerImageOS</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">customCapabilitiesForToolDockerImageOS - 2323_1</td>
-<td>4m59.16s</td>
-<td class="success">passed</td>
+<td class="failures">customCapabilitiesForToolDockerImageOS - 2323_1</td>
+<td>7m28.47s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">customCapabilitiesImplementation - 2234</td>
-<td>10m3.92s</td>
+<td>10m56.55s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">customCapabilitiesWithConfiguredJobParameters - 2295</td>
-<td>59.561s</td>
+<td>59.014s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">runToolThatHaveNoNginxEndpoint - EPMCMBIBPC-502</td>
-<td>14m23.14s</td>
+<td>14m54.78s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 42604 from [42604]
-Returns latest run with runId 42604 from [42604]
-Returns latest run with runId 42605 from [42604, 42605]
-Returns latest run with runId 42605 from [42604, 42605]
-Returns latest run with runId 42606 from [42604, 42605, 42606]
+<pre>Returns latest run with runId 43283 from [43283]
+Returns latest run with runId 43283 from [43283]
+Returns latest run with runId 43284 from [43283, 43284]
+Returns latest run with runId 43284 from [43283, 43284]
+Returns latest run with runId 43285 from [43283, 43284, 43285]
 </pre>
 </span>
 </div>
@@ -128,7 +176,7 @@ Returns latest run with runId 42606 from [42604, 42605, 42606]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Apr 23, 2023 10:54:15 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 8, 2023 12:20:05 AM</p>
 </div>
 </div>
 </body>
