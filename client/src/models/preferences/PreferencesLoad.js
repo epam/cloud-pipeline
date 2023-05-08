@@ -18,6 +18,7 @@ import Remote from '../basic/Remote';
 import {computed} from 'mobx';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
+// eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
 export const RUN_CAPABILITIES = {
@@ -452,6 +453,19 @@ class PreferencesLoad extends Remote {
   get uiRunsClusterDetailsShowActiveOnly () {
     const value = this.getPreferenceValue('ui.runs.cluster.details.show.active.only');
     return (value || '').toLowerCase() !== 'false';
+  }
+
+  @computed
+  get systemLdapUserBlockMonitorGracePeriodDays () {
+    const value = this.getPreferenceValue('system.ldap.user.block.monitor.grace.period.days');
+    if (
+      value !== undefined &&
+      value !== null &&
+      !Number.isNaN(Number(value))
+    ) {
+      return Number(value);
+    }
+    return 7;
   }
 
   toolScanningEnabledForRegistry (registry) {
