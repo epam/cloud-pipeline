@@ -15,6 +15,7 @@
     - [GUI impersonation](#gui-impersonation)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
 - [Sensitive storages](#sensitive-storages)
+- [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
@@ -637,6 +638,87 @@ Files from the sensitive storages can't be viewed **_outside_** the sensitive ru
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_5.png)
 
 For more details and restrictions that are imposed by using of sensitive storages see [here](../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md).
+
+## Versioned storages
+
+In some cases, users want to have a full-fledged system of the revision control of their stored data - to view revisions, history of changes, diffs between revisions.  
+So far, for separate storages types (e.g. `AWS` s3 buckets), there is the ability to enable the versioning option. But it is not enough. Such versioning allows to manage the versions of the certain file, not the revisions of the full storage, which revision can contain changes of several files or folders.  
+For the needs of full version control of the storing data, there was implemented a special storage type - **Versioned storage**.
+
+These storages are GitLab repositories under the hood, all changes performed in their data are versioned. Users can view the history of changes, diffs, etc.  
+
+Versioned storages are created via the special menu:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_01.png)
+
+The view of the versioned storage is similar to regular data storage with some differences:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_02.png)
+
+For each file/folder in the storage, additional info is displayed:
+
+- _Revision_ - latest revision (SHA-1 hash of the latest commit) touched that file/folder
+- _Date changed_ - date and time of the latest commit touched that file/folder
+- _Author_ - user name who performed the latest commit touched that file/folder
+- _Message_ - message of the latest commit touched that file/folder
+
+Moreover, there are extra controls for this storage type:
+
+- **RUN** button - allows to run the tool with cloning of the opened versioned storage into the instance
+- **Generate report** button - allows to configure and then download the report of the storage usage (commit history, diffs, etc.) as the Microsoft Word document (`docx` format)
+- **Show history** button - allows to open the panel with commit history info of the current versioned storage or selected folder
+
+Each change in a such storage - is a commit by the fact, therefore each change has its related comment message - explicit or automatic created:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_03.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_04.png)
+
+One of the important advantages of versioned storages in condition with regular object storages - ability to view commit history and all changes that were performed with the data in details.  
+Users can view the commit history of the file in the versioned storage - i.e. history of all commits that touched this file, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_05.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_06.png)
+
+Using the commit history of the file, users can:
+
+- revert the content of the file to the selected commit
+- view/download revert version of the file corresponding to the specific commit
+- view diffs between the content of the specific file in the selected commit and in the previous commit, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_07.png)
+
+Besides that, users can view the commit history of the folder or the whole versioned storage - i.e. history of all changes touched files inside that folder or its subfolders, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_08.png)  
+Using the commit history of the folder, users can view diffs between the content of the specific folder in the selected commit and in the previous commit.
+
+Versioned storages can be also mounted during the runs, data can be used for the computations and results can be comitted back to such storages - with all the benefits of a version control system.
+
+For that, new management controls were added to the menu of the active runs:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_09.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_10.png)
+
+Via this controls, users can:
+
+- clone the versioned storage(s) to the existing running instance
+- check differences between cloned and current changed versions of the versioned storage
+- save (commit) changes performed in the cloned version of the storage during the run
+- checkout revision of the cloned storage in the run
+- resolve conflicts appeared during the save or checkout operation
+
+The main scenario of using versioned storage during the run looks like:
+
+- user clones selected versioned storage to the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_11.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_12.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_13.png)
+- cloned versioned storages are available inside the run by the path `/versioned-data/<storage_name>/`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_14.png)
+- user works with the data, performed changes can be viewed at any moment, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_15.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_16.png)
+- user saves performed changes (i.e. creates a new commit):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_17.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_18.png)
+- saved changes become available in the origin versioned storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_19.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_20.png)
+
+For more details about versioned storages and operations with them see [here](../../manual/08_Manage_Data_Storage/8.13._Versioned_storages.md#813-versioned-storages).
 
 ## Updates of "Limit mounts" for object storages
 
