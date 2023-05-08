@@ -26,6 +26,7 @@ from src.utilities.platform_utilities import is_windows
 from src.version import __bundle_info__
 
 import click
+import psutil
 
 from src.api.preferenceapi import PreferenceAPI
 from src.config import Config, is_frozen
@@ -142,6 +143,7 @@ class SourceMount(AbstractMount):
 
 
 class Mount(object):
+    PIPE_FUSE_FS_TYPES = ['fuse']
 
     def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
                        log_file=None, log_level=None, threading=False, mode=700, timeout=1000, show_archive=False):
@@ -169,16 +171,16 @@ class Mount(object):
         mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, custom_options, web_dav_url, mode,
                                                log_level=log_level, threading=threading, show_archive=show_archive)
         python_path = mount.get_python_path()
-        self.run(config, mount_cmd, python_path=python_path, log_file=log_file, mount_timeout=timeout)
+        self.run(config, mount_cmd, mountpoint, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 
     def mount_storage(self, mount, config, mountpoint, options, custom_options, bucket, mode,
                       log_file=None, log_level=None, threading=False, timeout=1000, show_archive=False):
         mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, custom_options, bucket, mode,
                                                 log_level=log_level, threading=threading, show_archive=show_archive)
         python_path = mount.get_python_path()
-        self.run(config, mount_cmd, python_path=python_path, log_file=log_file, mount_timeout=timeout)
+        self.run(config, mount_cmd, mountpoint, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 
-    def run(self, config, mount_cmd, mount_timeout=5*MS_IN_SEC, python_path=None, log_file=None):
+    def run(self, config, mount_cmd, mountpoint, mount_timeout=5*MS_IN_SEC, python_path=None, log_file=None):
         output_file = log_file if log_file else os.devnull
         with open(output_file, 'w') as output:
             mount_environment = os.environ.copy()
@@ -194,8 +196,42 @@ class Mount(object):
                                               stdout=output,
                                               stderr=subprocess.STDOUT,
                                               env=mount_environment)
+            self._wait_mount_point(mount_timeout, mount_aps_proc, mountpoint)
+
+    def _wait_mount_point(self, mount_timeout, mount_aps_proc, mountpoint):
+        max_init_try = os.environ.get('CP_MOUNT_MAX_INIT_TRY', 100)
+        for iteration in range(1, max_init_try):
             time.sleep(mount_timeout / MS_IN_SEC)
-            if mount_aps_proc.poll() is not None:
-                click.echo('Failed to mount storages. Mount command exited with return code: %d'
-                           % mount_aps_proc.returncode, err=True)
-                sys.exit(1)
+            self._check_mount_proc_is_alive(mount_aps_proc)
+            if os.path.ismount(mountpoint):
+                self._validate_fs_type(mountpoint)
+                return
+        click.echo('Failed to mount storages: timeout expired.', err=True)
+        sys.exit(1)
+        # TODO: shall we kill proc here?
+
+    def _validate_fs_type(self, mountpoint):
+        if str(mountpoint).endswith(os.path.sep):
+            mountpoint = mountpoint[:-1]
+        mountpoint = os.path.realpath(mountpoint)
+        fs_type = self._get_fs_type(mountpoint)
+        if fs_type.lower() in self.PIPE_FUSE_FS_TYPES:
+            return
+        click.echo('Failed to mount storages: unexpected FS type: {}; expected types: {}.', fs_type,
+                   ','.join(self.PIPE_FUSE_FS_TYPES), err=True)
+        sys.exit(1)
+
+    @staticmethod
+    def _get_fs_type(mountpoint):
+        for partition in psutil.disk_partitions(all=True):
+            if mountpoint == partition.mountpoint:
+                return partition.fstype
+        click.echo('Failed to mount storages: failed to determine FS type.', err=True)
+        sys.exit(1)
+
+    @staticmethod
+    def _check_mount_proc_is_alive(mount_aps_proc):
+        if mount_aps_proc.poll() is not None:
+            click.echo('Failed to mount storages. Mount command exited with return code: %d'
+                       % mount_aps_proc.returncode, err=True)
+            sys.exit(1)
