@@ -1,9 +1,9 @@
-connection: sqlite
-host: localhost
-user: admin
-password: admin
-database: root
-port: 3306
+connection: ${CP_STATPING_DATABASE_TYPE}
+host: ${CP_STATPING_DATABASE_HOST}
+user: ${CP_STATPING_DATABASE_USERNAME}
+password: ${CP_STATPING_DATABASE_PASSWORD}
+database: ${CP_STATPING_DATABASE_DATABASE}
+port: ${CP_STATPING_DATABASE_PORT}
 api_secret: ${CP_STATPING_API_SECRET}
 location: ${CP_STATPING_DIR}
 sample_data: false

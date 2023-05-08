@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
@@ -26,7 +26,15 @@ function check_service_is_ready {
 DB_CONFIG="$CP_STATPING_HOME/config.yml"
 TEMPLATE_DB_CONFIG="$CP_STATPING_HOME/templates/config_template.yml"
 if [ -f "$TEMPLATE_DB_CONFIG" ]; then
-    STATPING_DB_CONF="$(envsubst '${CP_STATPING_API_SECRET} ${CP_STATPING_DIR} ${CP_STATPING_DOMAIN}' < $TEMPLATE_DB_CONFIG)"
+    export CP_STATPING_DATABASE_TYPE="${CP_STATPING_DATABASE_TYPE:-sqlite}"
+    export CP_STATPING_DATABASE_HOST="${CP_STATPING_DATABASE_HOST:-localhost}"
+    export CP_STATPING_DATABASE_PORT="${CP_STATPING_DATABASE_PORT:-3306}"
+    export CP_STATPING_DATABASE_USERNAME="${CP_STATPING_DATABASE_USERNAME:-admin}"
+    export CP_STATPING_DATABASE_PASSWORD="${CP_STATPING_DATABASE_PASSWORD:-admin}"
+    export CP_STATPING_DATABASE_DATABASE="${CP_STATPING_DATABASE_DATABASE:-statpingdb}"
+    export CP_STATPING_API_SECRET="${CP_STATPING_API_SECRET:-apisecretcanbeset}"
+    export CP_STATPING_DIR="${CP_STATPING_DIR:-/opt/statping}"
+    STATPING_DB_CONF="$(envsubst '${CP_STATPING_DATABASE_TYPE} ${CP_STATPING_DATABASE_HOST} ${CP_STATPING_DATABASE_PORT} ${CP_STATPING_DATABASE_USERNAME} ${CP_STATPING_DATABASE_PASSWORD} ${CP_STATPING_DATABASE_DATABASE} ${CP_STATPING_API_SECRET} ${CP_STATPING_DIR} ${CP_STATPING_DOMAIN}' < $TEMPLATE_DB_CONFIG)"
     echo "$STATPING_DB_CONF" > $DB_CONFIG
 
     CONFIG_ARG="--config $DB_CONFIG"
@@ -72,7 +80,7 @@ if [ -f "$STATPING_EMAIL_JSON_TEMPLATE" ]; then
       echo "$STATPING_EMAIL_JSON_CONTENT" > $STATPING_EMAIL_JSON
       curl --location -g localhost:$PORT/api/notifier/email \
             --header 'Content-Type: application/json' \
-            --header 'Authorization: Bearer '"$STATPING_API_SECRET"  \
+            --header 'Authorization: Bearer '"$CP_STATPING_API_SECRET"  \
             --data @$STATPING_EMAIL_JSON
 fi
 STATPING_TELEGRAM_JSON_TEMPLATE="$CP_STATPING_HOME/templates/telegram_template.json"
@@ -82,7 +90,7 @@ if [ -f "$STATPING_TELEGRAM_JSON_TEMPLATE" ]; then
       echo "$STATPING_TELEGRAM_JSON_CONTENT" > $STATPING_TELEGRAM_JSON
       curl --location -g localhost:$PORT/api/notifier/telegram \
               --header 'Content-Type: application/json' \
-              --header 'Authorization: Bearer '"$STATPING_API_SECRET"  \
+              --header 'Authorization: Bearer '"$CP_STATPING_API_SECRET"  \
               --data @$STATPING_TELEGRAM_JSON
 fi
 
