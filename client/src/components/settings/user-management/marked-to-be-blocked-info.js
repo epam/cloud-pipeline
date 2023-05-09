@@ -35,22 +35,22 @@ function MarkedToBeBlockedInfo (
   const markedDate = moment.utc(externalBlockDate);
   const gracePeriodDays = preferences.loaded
     ? preferences.systemLdapUserBlockMonitorGracePeriodDays
-    : undefined;
+    : 0;
   const infos = [
     (
       <div
         key="marked"
       >
-        User was marked to be blocked on <b>{displayDate(externalBlockDate, 'D MMMM YYYY')}</b>
+        User was marked on <b>{displayDate(externalBlockDate, 'D MMMM YYYY')}</b>
       </div>
     )
   ];
-  if (gracePeriodDays > 0 && markedDate && markedDate.isValid()) {
+  if (markedDate && markedDate.isValid()) {
     infos.push((
       <div
         key="grace-period"
       >
-        Grace period is <b>{gracePeriodDays} days</b>
+        Grace period is <b>{gracePeriodDays} day{gracePeriodDays === 1 ? '' : 's'}</b>
       </div>
     ));
     const blockedDay = moment(markedDate).add(gracePeriodDays, 'day');
@@ -61,23 +61,24 @@ function MarkedToBeBlockedInfo (
         User will be blocked on <b>{displayDate(blockedDay, 'D MMMM YYYY')}</b>
       </div>
     ));
-  }
-  return (
-    <Popover
-      content={(
-        <div>
-          {infos}
-        </div>
-      )}
-    >
-      <span
-        className={className}
-        style={style}
+    return (
+      <Popover
+        content={(
+          <div>
+            {infos}
+          </div>
+        )}
       >
-        User was marked to be blocked on <b>{displayDate(externalBlockDate, 'D MMMM YYYY')}</b>
-      </span>
-    </Popover>
-  );
+        <span
+          className={className}
+          style={style}
+        >
+          User will be blocked on <b>{displayDate(blockedDay, 'D MMMM YYYY')}</b>
+        </span>
+      </Popover>
+    );
+  }
+  return null;
 }
 
 MarkedToBeBlockedInfo.propTypes = {
