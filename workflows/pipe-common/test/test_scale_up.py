@@ -26,6 +26,7 @@ MASTER_HOST = 'pipeline-1000'
 
 cmd_executor = Mock()
 grid_engine = Mock()
+grid_engine_validator = Mock()
 host_storage = MemoryHostStorage()
 static_storage = MemoryHostStorage()
 submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
@@ -34,6 +35,7 @@ scale_down_timeout = 30
 max_additional_hosts = 2
 clock = Clock()
 autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
+                                  job_validator=grid_engine_validator,
                                   cmd_executor=cmd_executor,
                                   scale_up_orchestrator=None,
                                   scale_down_handler=None,
@@ -56,6 +58,7 @@ def setup_function():
     autoscaler.scale_up = MagicMock(side_effect=add_host)
     autoscaler._scale_down = MagicMock()
     autoscaler.host_storage.clear()
+    grid_engine_validator.validate = MagicMock(side_effect=lambda jobs: (jobs, []))
 
 
 def test_scale_up_if_some_of_the_jobs_are_in_queue_for_more_than_scale_up_timeout():

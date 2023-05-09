@@ -36,18 +36,11 @@ worker_recorder = CloudPipelineWorkerRecorder(api=api, capacity=capacity)
 
 def setup_function():
     worker_recorder.clear()
-    api.load_run = MagicMock(return_value={
-        'podId': run_name,
-        'startDate': started_str,
-        'endDate': stopped_str,
-        'instance': {
-            'nodeType': instance_type
-        }
-    })
 
 
 def test_record():
-    api.load_task = MagicMock(return_value=[])
+    api.load_run = MagicMock(return_value=_sufficient_capacity_run())
+
     worker_recorder.record(run_id)
 
     records = worker_recorder.get()
@@ -60,8 +53,8 @@ def test_record():
     assert record.stopped == stopped
 
 
-def test_record_sufficient_instance_type_without_logs():
-    api.load_task = MagicMock(return_value=[])
+def test_record_sufficient_instance_type():
+    api.load_run = MagicMock(return_value=_sufficient_capacity_run())
 
     worker_recorder.record(run_id)
 
@@ -71,22 +64,8 @@ def test_record_sufficient_instance_type_without_logs():
     assert not record.has_insufficient_instance_capacity
 
 
-def test_record_sufficient_instance_type_with_logs():
-    api.load_task = MagicMock(return_value=[
-        {'status': 'FAILURE', 'logText': '...'}])
-
-    worker_recorder.record(run_id)
-
-    records = worker_recorder.get()
-    assert len(records) == 1
-    record = records[0]
-    assert not record.has_insufficient_instance_capacity
-
-
-def test_record_insufficient_instance_type_with_logs():
-    api.load_task = MagicMock(return_value=[
-        {'status': 'FAILURE', 'logText': '...'},
-        {'status': 'FAILURE', 'logText': 'InsufficientInstanceCapacity'}])
+def test_record_insufficient_instance_type():
+    api.load_run = MagicMock(return_value=_insufficient_capacity_run())
 
     worker_recorder.record(run_id)
 
@@ -97,12 +76,28 @@ def test_record_insufficient_instance_type_with_logs():
 
 
 def test_record_multiple_workers():
-    api.load_task = MagicMock(return_value=[
-        {'status': 'FAILURE', 'logText': '...'},
-        {'status': 'FAILURE', 'logText': 'InsufficientInstanceCapacity'}])
+    api.load_run = MagicMock(return_value=_insufficient_capacity_run())
 
     for _ in range(0, capacity * 2):
         worker_recorder.record(run_id)
 
     records = worker_recorder.get()
     assert len(records) == capacity
+
+
+def _insufficient_capacity_run():
+    run = _sufficient_capacity_run()
+    run['status'] = 'FAILURE'
+    run['stateReasonMessage'] = 'Insufficient instance capacity.'
+    return run
+
+
+def _sufficient_capacity_run():
+    return {
+        'podId': run_name,
+        'startDate': started_str,
+        'endDate': stopped_str,
+        'instance': {
+            'nodeType': instance_type
+        }
+    }

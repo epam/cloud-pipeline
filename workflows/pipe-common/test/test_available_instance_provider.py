@@ -35,9 +35,9 @@ clock = Mock()
 instance_provider = AvailableInstanceProvider(inner=inner_instance_provider, worker_recorder=worker_recorder,
                                               unavailability_delay=unavailability_delay, clock=clock)
 
-instance_2cpu = Instance(name='m5.large', price_type=price_type, cpu=2, memory=8, gpu=0)
-instance_4cpu = Instance(name='m5.xlarge', price_type=price_type, cpu=4, memory=16, gpu=0)
-instance_8cpu = Instance(name='m5.2xlarge', price_type=price_type, cpu=8, memory=32, gpu=0)
+instance_2cpu = Instance(name='m5.large', price_type=price_type, cpu=2, mem=8, gpu=0)
+instance_4cpu = Instance(name='m5.xlarge', price_type=price_type, cpu=4, mem=16, gpu=0)
+instance_8cpu = Instance(name='m5.2xlarge', price_type=price_type, cpu=8, mem=32, gpu=0)
 
 
 def setup_function():

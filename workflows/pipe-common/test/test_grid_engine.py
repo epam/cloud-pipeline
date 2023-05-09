@@ -22,15 +22,12 @@ from utils import assert_first_argument_contained, assert_first_argument_not_con
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
-MAX_CLUSTER_CORES = 6
-MAX_INSTANCE_CORES = 2
 QUEUE = 'main.q'
 HOSTLIST = '@allhosts'
 QUEUE_DEFAULT = True
 
 executor = Mock()
 grid_engine = GridEngine(cmd_executor=executor,
-                         max_instance_cores=MAX_INSTANCE_CORES, max_cluster_cores=MAX_CLUSTER_CORES,
                          queue=QUEUE, hostlist=HOSTLIST, queue_default=QUEUE_DEFAULT)
 
 
@@ -47,7 +44,7 @@ def test_qstat_parsing():
       <qtype>BIP</qtype>
       <slots_used>2</slots_used>
       <slots_resv>0</slots_resv>
-      <slots_total>2</slots_total>
+      <slots_total>4</slots_total>
       <load_avg>1.00000</load_avg>
       <arch>lx-amd64</arch>
       <job_list state="running">
@@ -74,9 +71,11 @@ def test_qstat_parsing():
       <JB_owner>someUser</JB_owner>
       <state>qw</state>
       <JB_submission_time>2018-12-21T12:39:38</JB_submission_time>
-      <slots>2</slots>
+      <slots>3</slots>
       <full_job_name>sleep</full_job_name>
-      <requested_pe name="local">2</requested_pe>
+      <requested_pe name="local">3</requested_pe>
+      <hard_request name="gpus" resource_contribution="0.000000">4</hard_request>
+      <hard_request name="ram" resource_contribution="0.000000">5G</hard_request>
       <hard_req_queue>main.q</hard_req_queue>
       <binding>NONE</binding>
     </job_list>
@@ -94,6 +93,9 @@ def test_qstat_parsing():
     assert job_1.name == 'name1'
     assert job_1.user == 'root'
     assert job_1.state == GridEngineJobState.RUNNING
+    assert job_1.cpu == 2
+    assert job_1.gpu == 0
+    assert job_1.mem == 0
     assert job_1.datetime == datetime(2018, 12, 21,
                                       11, 48, 00)
     assert 'pipeline-38415' in job_1.hosts
@@ -101,6 +103,9 @@ def test_qstat_parsing():
     assert job_2.name == 'name2'
     assert job_2.user == 'someUser'
     assert job_2.state == GridEngineJobState.PENDING
+    assert job_2.cpu == 3
+    assert job_2.gpu == 4
+    assert job_2.mem == 5
     assert job_2.datetime == datetime(2018, 12, 21,
                                       12, 39, 38)
     assert len(job_2.hosts) == 0
