@@ -39,7 +39,7 @@ autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
                                   job_validator=grid_engine_validator,
                                   cmd_executor=cmd_executor,
                                   scale_up_orchestrator=None,
-                                  scale_down_handler=None,
+                                  scale_down_orchestrator=None,
                                   host_storage=host_storage,
                                   static_host_storage=static_storage,
                                   scale_up_timeout=scale_up_timeout,
@@ -50,14 +50,20 @@ autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
 
 
 def setup_function():
-    autoscaler.scale_down = MagicMock()
+    def remove_hosts(hosts):
+        host_storage.remove_host(hosts[0])
+
+    autoscaler.scale_down = MagicMock(side_effect=remove_hosts)
     autoscaler.host_storage.clear()
     autoscaler.host_storage.add_host(ADDITIONAL_HOST)
-    grid_engine.get_host_to_scale_down = MagicMock(return_value=ADDITIONAL_HOST)
     grid_engine_validator.validate = MagicMock(side_effect=lambda jobs: (jobs, []))
-    host_storage.get_hosts_activity = MagicMock(return_value={
-        ADDITIONAL_HOST: submit_datetime + timedelta(seconds=scale_down_timeout) - timedelta(seconds=idle_timeout)
-    })
+
+    def get_hosts_activity(hosts):
+        return {host: submit_datetime
+                      + timedelta(seconds=scale_down_timeout)
+                      - timedelta(seconds=idle_timeout)
+                for host in hosts}
+    host_storage.get_hosts_activity = MagicMock(side_effect=get_hosts_activity)
 
 
 def test_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout():
@@ -77,7 +83,7 @@ def test_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout():
 
     autoscaler.scale()
 
-    autoscaler.scale_down.assert_called_with(ADDITIONAL_HOST)
+    autoscaler.scale_down.assert_called_with([ADDITIONAL_HOST])
 
 
 def test_not_scale_down_if_all_jobs_are_running_for_less_than_scale_down_timeout():
@@ -139,11 +145,10 @@ def test_that_scale_down_only_stops_inactive_additional_hosts():
         autoscaler.host_storage.add_host(inactive_host)
 
     for i in range(0, len(inactive_hosts) * 2):
-        grid_engine.get_host_to_scale_down = MagicMock(return_value=inactive_hosts[i % 2])
         autoscaler.scale()
 
-    for inactive_host in inactive_hosts:
-        autoscaler.scale_down.assert_any_call(inactive_host)
+    autoscaler.scale_down.assert_any_call(inactive_hosts)
+    autoscaler.scale_down.assert_any_call(inactive_hosts[1:])
 
     hosts = autoscaler.host_storage.load_hosts()
     assert len(hosts) == 1
@@ -168,12 +173,11 @@ def test_that_deadlock_can_be_resolved():
     for inactive_host in inactive_hosts:
         autoscaler.host_storage.add_host(inactive_host)
 
-    grid_engine.get_host_to_scale_down = MagicMock(return_value='inactive-host-1')
     autoscaler.scale()
 
     hosts = autoscaler.host_storage.load_hosts()
     assert len(hosts) == 2
-    assert 'inactive-host-1' not in hosts
+    assert ADDITIONAL_HOST not in hosts
 
 
 def test_scale_down_if_there_are_no_pending_and_running_jobs_for_more_than_scale_down_timeout():
@@ -203,7 +207,7 @@ def test_scale_down_if_there_are_no_pending_and_running_jobs_for_more_than_scale
 
     autoscaler.scale()
 
-    autoscaler.scale_down.assert_called_with(ADDITIONAL_HOST)
+    autoscaler.scale_down.assert_called_with([ADDITIONAL_HOST])
     assert len(autoscaler.host_storage.load_hosts()) == 0
 
 
