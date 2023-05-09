@@ -229,6 +229,8 @@ export default class Navigation extends React.Component {
           }
           window.location = url;
         });
+    } else if (typeof navigationItem.action === 'function') {
+      navigationItem.action(this.props);
     } else if (navigationItem.isLink && typeof navigationItem.path === 'string') {
       this.props.router.push(navigationItem.path);
     }
