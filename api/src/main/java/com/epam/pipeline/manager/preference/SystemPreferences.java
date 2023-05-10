@@ -753,6 +753,8 @@ public class SystemPreferences {
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
     public static final BooleanPreference UI_RUNS_CLUSTER_DETAILS_SHOW_ACTIVE_ONLY = new BooleanPreference(
             "ui.runs.cluster.details.show.active.only", true, UI_GROUP, pass);
+    public static final BooleanPreference UI_PERSONAL_TOOL_WARNING_ENABLED = new BooleanPreference(
+            "ui.personal.tools.launch.warning.enabled", false, UI_GROUP, pass, true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
