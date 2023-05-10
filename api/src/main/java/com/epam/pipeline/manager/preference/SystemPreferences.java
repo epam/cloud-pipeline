@@ -679,6 +679,10 @@ public class SystemPreferences {
             "ui.runs.cluster.details.show.active.only", true, UI_GROUP, pass);
     public static final BooleanPreference UI_PERSONAL_TOOL_WARNING_ENABLED = new BooleanPreference(
             "ui.personal.tools.launch.warning.enabled", false, UI_GROUP, pass, true);
+    public static final ObjectPreference<List<Object>> UI_PERSONAL_TOOL_RESTRICTIONS = new ObjectPreference<>(
+            "ui.personal.tools.permissions.restrictions",
+            Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
