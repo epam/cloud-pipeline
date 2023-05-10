@@ -63,7 +63,8 @@ import RunCapabilities, {
   checkRequiredCapabilitiesErrors
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 import ToolLayersCheckWarning from './check/tool-layers/warning';
-import DiskSizeWarning from "./warnings/disk-size-warning";
+import DiskSizeWarning from './warnings/disk-size-warning';
+import PersonalToolWarning from './warnings/personal-tool-warning';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -397,6 +398,7 @@ function runFn (
             }
             preferences={stores.preferences}
             dockerRegistries={stores.dockerRegistries}
+            usersInfo={stores.usersInfo}
             skipCheck={skipCheck}
             dockerImage={payload.dockerImage}
             authenticatedUserInfo={authenticatedUserInfo}
@@ -531,6 +533,7 @@ export class RunConfirmation extends React.Component {
     skipCheck: PropTypes.bool,
     dockerImage: PropTypes.string,
     dockerRegistries: PropTypes.object,
+    usersInfo: PropTypes.object,
     runCapabilities: PropTypes.array,
     onChangeRunCapabilities: PropTypes.func,
     showRunCapabilities: PropTypes.bool
@@ -1129,6 +1132,17 @@ export class RunConfirmation extends React.Component {
           toolId={this.props.dockerImage}
           showIcon
         />
+        <Provider
+          preferences={this.props.preferences}
+          dockerRegistries={this.props.dockerRegistries}
+          usersInfo={this.props.usersInfo}
+        >
+          <PersonalToolWarning
+            docker={this.props.dockerImage}
+            style={{margin: 2}}
+            showIcon
+          />
+        </Provider>
       </div>
     );
   }
@@ -1171,6 +1185,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
     dockerRegistries: PropTypes.object,
+    usersInfo: PropTypes.object,
     runInfo: PropTypes.shape({
       name: PropTypes.string,
       alias: PropTypes.string,
@@ -1342,6 +1357,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             skipCheck={this.props.skipCheck}
             dockerImage={this.props.dockerImage}
             dockerRegistries={this.props.dockerRegistries}
+            usersInfo={this.props.usersInfo}
           />
         </Row>
         {

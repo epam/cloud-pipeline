@@ -44,7 +44,7 @@ const DTS_ENVIRONMENT = 'DTS';
 @submitsRun
 @runPipelineActions
 @roleModel.authenticationInfo
-@inject('pipelines', 'preferences', 'dockerRegistries')
+@inject('awsRegions', 'pipelines', 'preferences', 'dockerRegistries', 'usersInfo')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
   return {
