@@ -15,8 +15,9 @@
  */
 
 import Remote from '../basic/Remote';
-import {computed} from 'mobx';
+import {computed, isObservableArray} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
+import roleModel from '../../utils/roleModel';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
@@ -753,6 +754,83 @@ class PreferencesLoad extends Remote {
       return Number(value);
     }
     return 7;
+  }
+
+  /**
+   * @returns {{role: string, disabledMask: number, defaultMask: number}[]}
+   */
+  @computed
+  get uiPersonalToolsPermissionsRestrictions () {
+    const value = this.getPreferenceValue('ui.personal.tools.permissions.restrictions');
+    const defaultValue = [{
+      role: 'ALL',
+      disable: 'WRITE'
+    }];
+    let restrictions = defaultValue;
+    if (value && value.length) {
+      try {
+        restrictions = JSON.parse(value);
+        if (!Array.isArray(restrictions) && !isObservableArray(restrictions)) {
+          restrictions = defaultValue;
+          throw new Error('wrong format (should be array)');
+        }
+      } catch (e) {
+        // eslint-disable-next-line max-len
+        console.warn('Error parsing "ui.personal.tools.permissions.restrictions" preference:', e.message);
+      }
+    }
+    const parseRule = (rule) => {
+      const {
+        role = 'ALL',
+        disable = ''
+      } = rule;
+      return role
+        .split(/[,;\s]/g)
+        .filter((aRole) => aRole.length > 0)
+        .map((aRole) => ({
+          role: aRole,
+          disable
+        }));
+    };
+    const rules = restrictions
+      .reduce((result, rule) => ([
+        ...result,
+        ...parseRule(rule)
+      ]), [])
+      .filter(Boolean);
+    return rules.map((rule) => {
+      const {
+        role,
+        disable = ''
+      } = rule;
+      const masks = disable.split(/[,;\s]/g).filter((mask) => mask.length);
+      const disableRead = masks.some((aMask) => /^read$/i.test(aMask));
+      const disableWrite = masks.some((aMask) => /^write$/i.test(aMask));
+      const disableExecute = masks.some((aMask) => /^execute$/i.test(aMask));
+      return {
+        role,
+        disabled: masks,
+        disableRead,
+        disableWrite,
+        disableExecute,
+        enabledMask: roleModel.buildPermissionsMask(
+          !disableRead,
+          !disableRead,
+          !disableWrite,
+          !disableWrite,
+          !disableExecute,
+          !disableExecute
+        ),
+        defaultMask: roleModel.buildPermissionsMask(
+          0,
+          disableRead,
+          0,
+          disableWrite,
+          0,
+          disableExecute
+        )
+      };
+    });
   }
 
   toolScanningEnabledForRegistry (registry) {

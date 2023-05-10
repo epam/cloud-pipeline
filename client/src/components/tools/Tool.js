@@ -209,6 +209,22 @@ export default class Tool extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get toolGroup () {
+    const {tool} = this.props;
+    const {dockerRegistry} = this;
+    if (dockerRegistry && tool && tool.loaded) {
+      const {
+        toolGroupId
+      } = tool.value;
+      const {
+        groups = []
+      } = dockerRegistry;
+      return groups.find((aGroup) => aGroup.id === toolGroupId);
+    }
+    return undefined;
+  }
+
+  @computed
   get toolImage () {
     if (this.props.tool.loaded) {
       return `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
@@ -236,6 +252,17 @@ export default class Tool extends localization.LocalizedReactComponent {
       }
     }
     return false;
+  }
+
+  @computed
+  get permissionsRestrictions () {
+    const {
+      preferences
+    } = this.props;
+    if (preferences.loaded) {
+      return preferences.uiPersonalToolsPermissionsRestrictions;
+    }
+    return [];
   }
 
   fetchVersions = async () => {
@@ -2051,6 +2078,24 @@ export default class Tool extends localization.LocalizedReactComponent {
         </Card>
       );
     }
+    const {
+      toolGroup
+    } = this;
+    const isPersonal = toolGroup &&
+      toolGroup.privateGroup &&
+      roleModel.isOwner(toolGroup);
+    const isAdmin = this.isAdmin();
+    const restrictions = isPersonal && !isAdmin
+      ? this.permissionsRestrictions
+      : [];
+    const defaultMask = restrictions.map((rule) => ({
+      role: rule.role,
+      mask: rule.defaultMask
+    }));
+    const enabledMask = restrictions.map((rule) => ({
+      role: rule.role,
+      mask: rule.enabledMask
+    }));
     return (
       <Card
         className={
@@ -2113,7 +2158,10 @@ export default class Tool extends localization.LocalizedReactComponent {
           visible={this.state.permissionsFormVisible}>
           <PermissionsForm
             objectIdentifier={this.props.toolId}
-            objectType="TOOL" />
+            objectType="TOOL"
+            defaultMask={defaultMask}
+            enabledMask={enabledMask}
+          />
         </Modal>
       </Card>
     );
