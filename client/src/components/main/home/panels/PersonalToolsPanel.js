@@ -76,7 +76,8 @@ const findGroupByName = (groups, name) => {
   'dockerRegistries',
   'preferences',
   'authenticatedUserInfo',
-  'hiddenObjects'
+  'hiddenObjects',
+  'usersInfo'
 )
 @HiddenObjects.injectToolsFilters
 @runPipelineActions
@@ -904,6 +905,7 @@ export default class PersonalToolsPanel extends React.Component {
                 showRunCapabilities={this.state.runToolInfo.runCapabilitiesError}
                 onChangeRunCapabilities={this.onChangeRunCapabilities}
                 dockerRegistries={this.props.dockerRegistries}
+                usersInfo={this.props.usersInfo}
               />
           }
           {

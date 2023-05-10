@@ -98,7 +98,7 @@ const DEFAULT_FILE_SIZE_KB = 50;
 @runPipelineActions
 @HiddenObjects.injectToolsFilters
 @HiddenObjects.checkTools(props => props?.params?.id)
-@inject('awsRegions', 'dockerRegistries', 'preferences')
+@inject('awsRegions', 'dockerRegistries', 'preferences', 'usersInfo')
 @inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {params}) => {
   return {
     allowedInstanceTypesCache: allowedInstanceTypes,

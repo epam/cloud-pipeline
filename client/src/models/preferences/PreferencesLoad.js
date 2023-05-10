@@ -833,6 +833,12 @@ class PreferencesLoad extends Remote {
     });
   }
 
+  @computed
+  get uiPersonalToolsLaunchWarningEnabled () {
+    const value = this.getPreferenceValue('ui.personal.tools.launch.warning.enabled');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
