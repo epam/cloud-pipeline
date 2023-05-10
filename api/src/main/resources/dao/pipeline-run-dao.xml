@@ -1423,7 +1423,7 @@
                         runs.kube_service_enabled,
                         runs.cluster_price,
                         runs.node_pool_id,
-                        runs.node_start_date
+                        runs.node_start_date,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log init_tasks
