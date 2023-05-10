@@ -12,18 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
+FROM rockylinux:8.7
 
 ARG VERSION=v0.90.80
 
-RUN apt-get update && \
-    apt-get install -y \
+# Install common dependencies
+RUN yum update -y && \
+    yum install -y \
             tzdata \
             curl \
             jq \
-            iputils-ping \
+            iputils \
             gettext \
-            ruby-sass
+            make
+
+# Install additional dependencies for Ruby
+RUN dnf --enablerepo=powertools install -y autogen \
+                                           libyaml-devel \
+                                           libffi-devel \
+                                           redhat-rpm-config \
+                                           autoconf \
+                                           automake \
+                                           libtool
+
+# Install Ruby 2.7
+RUN yum install -y @ruby:2.7 \
+                    ruby-devel
+
+# Install Ruby libraries
+RUN gem install bundler \
+                sass
 
 ENV IS_DOCKER=true
 ENV STATPING_DIR=/opt/statping
@@ -45,8 +63,6 @@ RUN MACHINE_ARCH="$(uname -m)" && \
 
 WORKDIR $STATPING_DIR
 EXPOSE $PORT
-
-HEALTHCHECK --interval=60s --timeout=10s --retries=3 CMD curl -s "http://localhost:$PORT/health" | jq -r -e ".online==true"
 
 ADD init /init
 RUN chmod +x /init
