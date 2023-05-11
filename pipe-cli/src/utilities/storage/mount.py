@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import platform
 import shutil
 import stat
 import subprocess
@@ -143,7 +144,7 @@ class SourceMount(AbstractMount):
 
 
 class Mount(object):
-    PIPE_FUSE_FS_TYPES = ['fuse']
+    PIPE_FUSE_FS_NAME = 'PIPE_FUSE'
 
     def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
                        log_file=None, log_level=None, threading=False, mode=700, timeout=1000, show_archive=False):
@@ -204,29 +205,43 @@ class Mount(object):
             time.sleep(mount_timeout / MS_IN_SEC)
             self._check_mount_proc_is_alive(mount_aps_proc)
             if os.path.ismount(mountpoint):
-                self._validate_fs_type(mountpoint)
+                self._validate_fs_name(mountpoint)
                 return
         click.echo('Failed to mount storages: timeout expired.', err=True)
         sys.exit(1)
         # TODO: shall we kill proc here?
 
-    def _validate_fs_type(self, mountpoint):
+    def _validate_fs_name(self, mountpoint):
         if str(mountpoint).endswith(os.path.sep):
             mountpoint = mountpoint[:-1]
         mountpoint = os.path.realpath(mountpoint)
-        fs_type = self._get_fs_type(mountpoint)
-        if fs_type.lower() in self.PIPE_FUSE_FS_TYPES:
+        fs_name = self._get_fs_name(mountpoint)
+        if fs_name == self.PIPE_FUSE_FS_NAME:
             return
-        click.echo('Failed to mount storages: unexpected FS type: {}; expected types: {}.', fs_type,
-                   ','.join(self.PIPE_FUSE_FS_TYPES), err=True)
+        click.echo('Failed to mount storages: unexpected FS name: {}; expected: {}.', fs_name, self.PIPE_FUSE_FS_NAME,
+                   err=True)
         sys.exit(1)
 
     @staticmethod
-    def _get_fs_type(mountpoint):
+    def _get_fs_name_linux(mountpoint):
         for partition in psutil.disk_partitions(all=True):
             if mountpoint == partition.mountpoint:
-                return partition.fstype
-        click.echo('Failed to mount storages: failed to determine FS type.', err=True)
+                return partition.device
+
+    @staticmethod
+    def _get_fs_name_windows(mountpoint):
+        if not str(mountpoint).endswith(os.path.sep):
+            mountpoint = mountpoint + os.path.sep
+        import win32api
+        volume_info = win32api.GetVolumeInformation(mountpoint)
+        return volume_info[4] if volume_info and len(volume_info) == 5 else None
+
+    def _get_fs_name(self, mountpoint):
+        fs_name = self._get_fs_name_windows(mountpoint) if platform.system() == 'Windows' else \
+            self._get_fs_name_linux(mountpoint)
+        if fs_name:
+            return fs_name
+        click.echo('Failed to mount storages: failed to determine FS name.', err=True)
         sys.exit(1)
 
     @staticmethod
