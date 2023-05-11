@@ -19,12 +19,14 @@ package com.epam.pipeline.acl.log;
 import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.manager.log.LogManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
@@ -38,6 +40,11 @@ public class LogApiService {
     @PreAuthorize(ADMIN_ONLY)
     public LogPagination filter(final LogFilter logFilter) {
         return manager.filter(logFilter);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public Map<String, Long> group(final LogRequest logRequest) {
+        return manager.group(logRequest);
     }
 
     @PreAuthorize(ADMIN_ONLY)
