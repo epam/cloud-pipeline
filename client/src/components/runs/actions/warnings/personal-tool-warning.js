@@ -27,7 +27,7 @@ function isPersonalGroup (group) {
     name = '',
     owner: ownerName = ''
   } = group || {};
-  const owner = (ownerName.split('@')[0] || '')
+  const owner = (ownerName || '')
     .replace(/[^a-zA-Z0-9-]/g, '-')
     .toLowerCase();
   return name.toLowerCase() === owner;
