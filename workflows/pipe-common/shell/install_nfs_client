@@ -30,21 +30,19 @@ then
     CHECK_NFS_SMB_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils"
     INSTALL_NFS_SMB_CMD="yum install nfs-utils cifs-utils -y -q"
     CHECK_LUSTRE_CMD="rpm -qa | grep lustre-client"
-    OS_VERSION_ID=$(. /etc/os-release;echo $VERSION_ID)
-    OS_ID=$(. /etc/os-release;echo $ID)
-    if [ "$OS_VERSION_ID" == "6" ]; then
+    if [ "$CP_VER" == "6" ]; then
         LUSTRE_VERSION="2.10.8-1"
-    elif [ "$OS_VERSION_ID" == "7" ]; then
+    elif [ "$CP_VER" == "7" ]; then
         LUSTRE_VERSION="2.12.5-1"
-    elif [ "$OS_VERSION_ID" == "8" ]; then
+    elif [ "$CP_VER" == "8" ]; then
         LUSTRE_VERSION="2.10.8-2"
-    elif [ "$OS_VERSION_ID" == "8.7" ] && [ "$OS_ID" == "rocky" ]; then
+    elif [ "$CP_VER" == "8.7" ] && [ "$CP_OS" == "rocky" ]; then
         LUSTRE_VERSION="2.12.5-1"
     else
         LUSTRE_VERSION="NA"
     fi
 
-    LUSTRE_VERSION="$LUSTRE_VERSION.el$OS_VERSION_ID.x86_64"
+    LUSTRE_VERSION="$LUSTRE_VERSION.el$CP_VER.x86_64"
     LUSTRE_CLIENT_URL="${GLOBAL_DISTRIBUTION_URL}tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
       yum install -y -q wget yum-utils &&
@@ -60,7 +58,7 @@ else
     CHECK_NFS_SMB_CMD="dpkg -l | grep nfs-common && dpkg -l | grep cifs-utils"
     INSTALL_NFS_SMB_CMD='apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils -y -qq'
     CHECK_LUSTRE_CMD="dpkg -l | grep lustre-client"
-    LUSTRE_VERSION=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
+    LUSTRE_VERSION="$CP_OS-$CP_VER_MAJOR"
     LUSTRE_CLIENT_URL="${GLOBAL_DISTRIBUTION_URL}tools/lustre/client/deb/lustre-client-$LUSTRE_VERSION.tar.gz"
     if ! command -v depmod &> /dev/null; then
         apt-get install -y -qq kmod

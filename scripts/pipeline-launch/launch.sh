@@ -421,6 +421,7 @@ function run_pre_common_commands {
 function define_distro_name_and_version {
       # Get the distro name and version
       CP_OS=
+      CP_OS_FAMILY=
       CP_VER=
       if [ -f /etc/os-release ]; then
             # freedesktop.org and systemd
@@ -445,8 +446,25 @@ function define_distro_name_and_version {
             CP_OS=$(uname -s)
             CP_VER=$(uname -r)
       fi
+
+      case $CP_OS in
+          ubuntu | debian)
+            CP_OS_FAMILY=debian
+            ;;
+          centos | rocky | fedora | ol | amzn)
+            CP_OS_FAMILY=rhel
+            ;;
+          *)
+            CP_OS_FAMILY=linux
+            ;;
+      esac
+
       export CP_OS
+      export CP_OS_FAMILY
       export CP_VER
+      export CP_VER_MAJOR="${CP_VER%%.*}"
+
+
 }
 
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure

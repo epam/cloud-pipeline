@@ -28,11 +28,10 @@ IS_RPM_BASED=$?
 # Install DIND dependencies
 ######################################################
 _DIND_DEP_INSTALL_RESULT=0
-OS_ID=$(. /etc/os-release;echo $ID)
 if [ $IS_RPM_BASED -eq 0 ]; then
     _PACKAGES_TO_INSTALL="e2fsprogs iptables iproute xfsprogs xz pigz kmod"
     # Rocky doesn't have btrfs-progs
-    if [ "$OS_ID" != "rocky" ]; then
+    if [ "$CP_OS" != "rocky" ]; then
         _PACKAGES_TO_INSTALL="${_PACKAGES_TO_INSTALL} btrfs-progs"
     fi
     yum install -y -q "$_PACKAGES_TO_INSTALL"
@@ -64,7 +63,7 @@ pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
 [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
 
 CP_CAP_DIND_DEFAULT_VERSION=18.09.6
-if [ "$OS_ID" == "rocky" ]; then
+if [ "$CP_OS" == "rocky" ]; then
     CP_CAP_DIND_DEFAULT_VERSION=20.10.23
 fi
 
@@ -90,7 +89,7 @@ nvidia-smi
 REQUIRES_GPU_DIND=$?
 if [ $REQUIRES_GPU_DIND -eq 0 ]; then
     pipe_log_info "Active CUDA environment detected, try to install NVIDIA Docker" "$DIND_SETUP_TASK"
-    distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+    distribution="${CP_OS}${CP_VER}"
     if [ $IS_RPM_BASED -eq 0 ]; then
         export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-2.0.0-3.docker18.09.6}"
 
@@ -101,9 +100,6 @@ if [ $REQUIRES_GPU_DIND -eq 0 ]; then
         find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
     else
         export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-2.0.0+docker18.09.6-3}"
-        os=$(. /etc/os-release;echo $ID)
-        os_release=$(. /etc/os-release;echo $VERSION_CODENAME)
-        sources_list=/etc/apt/sources.list
         curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
         curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list \
         | tee /etc/apt/sources.list.d/nvidia-docker.list
