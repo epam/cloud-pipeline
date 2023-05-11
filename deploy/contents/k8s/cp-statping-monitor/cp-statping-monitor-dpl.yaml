@@ -27,9 +27,11 @@ spec:
             - configMapRef:
                 name: cp-config-statping
           readinessProbe:
-            httpGet:
-              path: /health
-              port: 8080
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -s http://localhost:8080/health | jq -r -e ".online==true"
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 3

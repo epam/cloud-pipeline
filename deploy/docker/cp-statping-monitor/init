@@ -94,5 +94,15 @@ if [ -f "$STATPING_TELEGRAM_JSON_TEMPLATE" ]; then
               --data @$STATPING_TELEGRAM_JSON
 fi
 
+function sig_handler {
+    echo "Got SIGTERM, stopping PID $APP_PID and exiting"
+    if [ $APP_PID -ne 0 ]; then
+        kill -SIGTERM "$APP_PID"
+        wait "$APP_PID"
+    fi
+    exit 143
+}
+
+trap 'kill $! ; sig_handler' SIGTERM
 tail -F $STATPING_RUNTIME_LOG &
 wait "$!"
