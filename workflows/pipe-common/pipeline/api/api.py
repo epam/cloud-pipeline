@@ -185,6 +185,7 @@ class PipelineAPI:
     GET_RUN_URL = '/run/{}'
     GET_TASK_URL = '/run/{}/task?taskName={}'
     FILTER_RUNS = 'run/filter'
+    RUN_COUNT = 'run/count'
     TERMINATE_RUN = 'run/{}/terminate'
     DATA_STORAGE_URL = "/datastorage"
     DATA_STORAGE_LOAD_ALL_URL = "datastorage/loadAll"
@@ -252,6 +253,9 @@ class PipelineAPI:
     GRANT_PERMISSIONS_URL = "/grant"
     PERMISSION_URL = "/permissions"
     RUN_TAG = '/run/{id}/tag'
+    REPORT_USERS = "report/users"
+    LOG_GROUP = "log/group"
+    BILLING_EXPORT = "billing/export"
 
     # Pipeline API default header
 
@@ -1328,3 +1332,64 @@ class PipelineAPI:
             return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data=tags)
         except Exception as e:
             raise RuntimeError("Failed to update tags for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+    def report_users(self, start, end, users):
+        try:
+            data = {'from': start, 'to': end, 'users': users, 'interval': 'HOURS'}
+            return self._request(endpoint=self.REPORT_USERS, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load users report \n {}".format(e))
+
+    def log_group(self, filter, group_by):
+        try:
+            data = {'filter': filter, 'groupBy': group_by}
+            return self._request(endpoint=self.LOG_GROUP, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load logs \n {}".format(e))
+
+    def filter_runs(self, start, end, user, filter, page, page_size):
+        try:
+            data = {'owners': [user], 'startDateFrom': start, 'endDateTo': end, "page": page, "pageSize": page_size}
+            if filter is not None:
+                for key, value in filter.items():
+                    data[key] = value
+            result = self._request(endpoint=self.FILTER_RUNS, http_method="post", data=data)
+            elements = result['elements'] if 'elements' in result else []
+            total_count = result['totalCount'] if 'totalCount' in result else 0
+            return elements, total_count
+        except Exception as e:
+            raise RuntimeError("Failed to load master runs \n {}".format(e))
+
+    def filter_runs_all(self, start, end, user, filter):
+        total_count = 0
+        page = 0
+        page_size = 100
+        result = []
+        while page == 0 or page * page_size < total_count:
+            page += 1
+            elements, total_count = self.filter_runs(start, end, user, filter, page, page_size)
+            result.extend(elements)
+        return result
+
+    def run_count(self, start, end, user, filter):
+        try:
+            data = {'owners': [user], 'startDateFrom': start, 'endDateTo': end}
+            if filter is not None:
+                for key, value in filter.items():
+                    data[key] = value
+            return self._request(endpoint=self.RUN_COUNT, http_method="post", data=data)
+        except Exception as e:
+            raise RuntimeError("Failed to load runs count \n {}".format(e))
+
+    def billing_export(self, start, end, filters, types):
+        try:
+            url = '{}/{}'.format(self.api_url, self.BILLING_EXPORT)
+            data = {"types": types, "from": start, "to": end, "filters": filters, "discount": {"computes": 0, "storages": 0}}
+            response = requests.request(method="post", url=url, data=json.dumps(data),
+                                        headers=self.header, verify=False,
+                                        timeout=self.connection_timeout)
+            if response.status_code != 200:
+                raise HTTPError('API responded with http status %s.' % str(response.status_code))
+            return response.content
+        except Exception as e:
+            raise RuntimeError("Failed to load billing export \n {}".format(e))

@@ -77,6 +77,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private static final String POSTGRE_TYPE_BIGINT = "BIGINT";
     private static final int STRING_BUFFER_SIZE = 70;
     private static final String LIST_PARAMETER = "list";
+    private static final int CLAUSE_LENGTH = 200;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -560,7 +561,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             return "";
         }
 
-        StringBuilder whereBuilder = new StringBuilder();
+        StringBuilder whereBuilder = new StringBuilder(CLAUSE_LENGTH);
         int clausesCount = firstCondition ? 0 : 1;
         if (firstCondition) {
             whereBuilder.append(" WHERE ");
@@ -680,6 +681,18 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     .map(entry -> String.format(keyValuePattern, entry.getKey(), entry.getValue()))
                     .collect(Collectors.joining(AND));
             whereBuilder.append(tagsFilterConditions);
+        }
+
+        if (filter.isMasterRun()) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder.append(" r.node_count > 0 OR r.parameters like %CP_CAP_AUTOSCALE=true=boolean%");
+            clausesCount++;
+        }
+
+        if (filter.isWorkerRun()) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder.append(" r.parent_id is not null");
+            clausesCount++;
         }
 
         appendProjectFilter(projectFilter, params, whereBuilder, clausesCount);

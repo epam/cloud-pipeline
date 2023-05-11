@@ -965,6 +965,8 @@ public class SystemPreferences {
 
     public static final StringPreference SEARCH_ELASTIC_DENIED_GROUPS_FIELD = new StringPreference(
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
+            20, SEARCH_GROUP, pass);
     public static final BooleanPreference SEARCH_HIDE_DELETED = new BooleanPreference(
             "search.elastic.hide.deleted", true, SEARCH_GROUP, pass);
 

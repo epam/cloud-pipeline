@@ -235,4 +235,15 @@ public class SearchRequestBuilder {
                         .orElseThrow(() -> new SearchException("Missing index name for type: " + type)))
                 .toArray(String[]::new);
     }
+
+    public void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
+        final TermsAggregationBuilder aggregationBuilder = AggregationBuilders.terms(facet)
+                .size(preferenceManager.getPreference(SystemPreferences.SEARCH_AGGS_MAX_COUNT))
+                .field(buildKeywordName(facet));
+        searchSource.aggregation(aggregationBuilder);
+    }
+
+    private static String buildKeywordName(final String fieldName) {
+        return String.format("%s.keyword", fieldName);
+    }
 }
