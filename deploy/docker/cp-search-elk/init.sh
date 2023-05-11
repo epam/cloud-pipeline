@@ -233,7 +233,13 @@ INDEX="{
   }
 }"
 
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
+status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:9200/${CP_SECURITY_LOGS_ELASTIC_PREFIX})
+if [[ "$status_code" == 404 ]] ; then
+  echo "Creating security log index"
+  curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E -d "$INDEX"
+else
+  echo "Security log index already exists"
+fi
 
 EDGE_PIPELINE="{
 
