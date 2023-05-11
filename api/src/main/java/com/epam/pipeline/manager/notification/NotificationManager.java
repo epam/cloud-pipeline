@@ -47,10 +47,12 @@ import java.util.stream.Stream;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationGroup;
 import com.epam.pipeline.entity.notification.NotificationMessage;
+import com.epam.pipeline.entity.notification.NotificationParameter;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import com.epam.pipeline.entity.notification.NotificationType;
+import com.epam.pipeline.entity.notification.NotificationEntityClass;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -58,6 +60,8 @@ import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.Sid;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.mapper.IssueMapper;
+import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -87,7 +91,6 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.PipelineRunMapper;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 @Service
 @Slf4j
@@ -130,13 +133,16 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     /**
      * Internal method for creating notification message that selecting appropriate email template from db,
      * serialize PipelineRun to key-value object and save it to notification_queue table.
-     * @param run
+     *
+     * @param run Target run.
      * @param duration Running duration of a run in seconds.
+     * @param type Notification type, either long initialization or long running
      * @param settings defines, if a long initialization or long running message template should be used
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyLongRunningTask(final PipelineRun run, final Long duration, final NotificationSettings settings) {
+    public void notifyLongRunningTask(final PipelineRun run, final Long duration,
+                                      final NotificationType type, final NotificationSettings settings) {
         log.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
 
         final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
@@ -150,23 +156,24 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return;
         }
 
-        final NotificationMessage notificationMessage = new NotificationMessage();
+        final NotificationMessage message = new NotificationMessage();
 
-        if (settings.isKeepInformedOwner()) {
-            PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
-            notificationMessage.setToUserId(pipelineOwner.getId());
-        }
-
-        notificationMessage.setCopyUserIds(getCCUsers(settings));
-
-        notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        if (notificationMessage.getTemplate() == null) {
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        if (message.getTemplate() == null) {
             log.error(messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_NOT_FOUND,
                     settings.getTemplateId()));
         }
 
-        notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold(), duration));
-        saveNotification(notificationMessage);
+        message.setTemplateParameters(buildParams(type, run, duration, settings.getThreshold()));
+
+        if (settings.isKeepInformedOwner()) {
+            PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
+            message.setToUserId(pipelineOwner.getId());
+        }
+
+        message.setCopyUserIds(getCCUsers(settings));
+
+        saveNotification(message);
     }
 
     /**
@@ -178,22 +185,21 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIssue(final Issue issue, final AbstractSecuredEntity entity, final String htmlText) {
-        final NotificationSettings newIssueSettings = settingsManager.load(NotificationType.NEW_ISSUE);
-        if (newIssueSettings == null || !newIssueSettings.isEnabled()) {
-            log.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
-                            "new issue"));
+        final NotificationType type = NotificationType.NEW_ISSUE;
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED, "new issue"));
             return;
         }
 
+        final Issue copyWithHtml = issue.toBuilder().text(htmlText).build();
+
         final NotificationMessage message = new NotificationMessage();
-        message.setTemplate(new NotificationTemplate(newIssueSettings.getTemplateId()));
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, copyWithHtml));
         message.setCopyUserIds(getMentionedUsers(issue.getText()));
 
-        final Issue copyWithHtml = issue.toBuilder().text(htmlText).build();
-        message.setTemplateParameters(jsonMapper.convertValue(copyWithHtml,
-                                                              new TypeReference<Map<String, Object>>() {}));
-
-        if (newIssueSettings.isKeepInformedOwner()) {
+        if (settings.isKeepInformedOwner()) {
             PipelineUser owner = userManager.loadUserByName(entity.getOwner());
             message.setToUserId(owner.getId());
         }
@@ -204,16 +210,18 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIssueComment(final IssueComment comment, final Issue issue, final String htmlText) {
-        final NotificationSettings newIssueCommentSettings = settingsManager
-                .load(NotificationType.NEW_ISSUE_COMMENT);
-        if (newIssueCommentSettings == null || !newIssueCommentSettings.isEnabled()) {
-            log.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
-                    "new issue"));
+        final NotificationType type = NotificationType.NEW_ISSUE_COMMENT;
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED, "new issue"));
             return;
         }
 
+        final IssueComment copyWithHtml = comment.toBuilder().text(htmlText).build();
+
         final NotificationMessage message = new NotificationMessage();
-        message.setTemplate(new NotificationTemplate(newIssueCommentSettings.getTemplateId()));
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, issue, copyWithHtml));
 
         final AbstractSecuredEntity entity = entityManager.load(issue.getEntity().getEntityClass(),
                                                           issue.getEntity().getEntityId());
@@ -227,7 +235,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         message.setCopyUserIds(ccUserIds);
 
-        if (newIssueCommentSettings.isKeepInformedOwner()) {
+        if (settings.isKeepInformedOwner()) {
             PipelineUser author = referencedUsers.stream()
                 .filter(u -> u.getUserName().equals(issue.getAuthor()))
                 .findFirst()
@@ -235,43 +243,37 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             message.setToUserId(author.getId());
         }
 
-        final IssueComment copyWithHtml = comment.toBuilder().text(htmlText).build();
-
-        final Map<String, Object> commentParams = jsonMapper.convertValue(copyWithHtml,
-                                                                    new TypeReference<Map<String, Object>>() {});
-        commentParams.put("issue", jsonMapper.convertValue(issue, new TypeReference<Map<String, Object>>() {}));
-        message.setTemplateParameters(commentParams);
-
         saveNotification(message);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyRunStatusChanged(final PipelineRun pipelineRun) {
-        contextualNotificationManager.notifyRunStatusChanged(pipelineRun);
+    public void notifyRunStatusChanged(final PipelineRun run) {
+        final NotificationType type = NotificationType.PIPELINE_RUN_STATUS;
+        contextualNotificationManager.notifyRunStatusChanged(run);
 
-        final NotificationSettings runStatusSettings = settingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
-        if (runStatusSettings == null || !runStatusSettings.isEnabled()) {
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
             log.info("No template configured for pipeline run status changes notifications or it was disabled!");
             return;
         }
 
-        final List<TaskStatus> runStatusesToReport = ListUtils.emptyIfNull(runStatusSettings.getStatusesToInform());
-        if (!CollectionUtils.isEmpty(runStatusesToReport) && !runStatusesToReport.contains(pipelineRun.getStatus())) {
+        final List<TaskStatus> runStatusesToReport = ListUtils.emptyIfNull(settings.getStatusesToInform());
+        if (!CollectionUtils.isEmpty(runStatusesToReport) && !runStatusesToReport.contains(run.getStatus())) {
             log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION,
-                    pipelineRun.getStatus(),
+                    run.getStatus(),
                     runStatusesToReport.stream().map(TaskStatus::name).collect(Collectors.joining(", "))));
             return;
         }
 
         final NotificationMessage message = new NotificationMessage();
-        message.setTemplate(new NotificationTemplate(runStatusSettings.getTemplateId()));
-        message.setTemplateParameters(PipelineRunMapper.map(pipelineRun));
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, run));
 
-        message.setCopyUserIds(getCCUsers(runStatusSettings));
+        message.setCopyUserIds(getCCUsers(settings));
 
-        if (runStatusSettings.isKeepInformedOwner()) {
-            PipelineUser pipelineOwner = userManager.loadUserByName(pipelineRun.getOwner());
+        if (settings.isKeepInformedOwner()) {
+            PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
             message.setToUserId(pipelineOwner.getId());
         }
 
@@ -282,28 +284,28 @@ public class NotificationManager implements NotificationService { // TODO: rewri
      * Issues a notification of an idle Pipeline Run for multiple runs.
      *
      * @param pipelineCpuRatePairs a list of pairs of PipelineRun and Double cpu usage rate value
-     * @param notificationType a type of notification to be issued. Supported types are IDLE_RUN, IDLE_RUN_PAUSED,
+     * @param type a type of notification to be issued. Supported types are IDLE_RUN, IDLE_RUN_PAUSED,
      *                         IDLE_RUN_STOPPED
      * @throws IllegalArgumentException if notificationType is not from IDLE_RUN group
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIdleRuns(final List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
-                               final NotificationType notificationType) {
+                               final NotificationType type) {
         if (CollectionUtils.isEmpty(pipelineCpuRatePairs)) {
             return;
         }
 
-        Assert.isTrue(NotificationGroup.IDLE_RUN == notificationType.getGroup(),
+        Assert.isTrue(NotificationGroup.IDLE_RUN == type.getGroup(),
                       "Only IDLE_RUN group notification types are allowed");
 
-        final NotificationSettings idleRunSettings = settingsManager.load(notificationType);
-        if (idleRunSettings == null || !idleRunSettings.isEnabled()) {
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
             log.info("No template configured for idle pipeline run notifications or it was disabled!");
             return;
         }
 
-        final List<Long> ccUserIds = getCCUsers(idleRunSettings);
+        final List<Long> ccUserIds = getCCUsers(settings);
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineCpuRatePairs);
 
         final double idleCpuLevel = preferenceManager.getPreference(
@@ -313,40 +315,58 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final Map<String, NotificationFilter> runParametersFilters = parseRunExcludeParams();
 
         final List<Pair<PipelineRun, Double>> filtered = pipelineCpuRatePairs.stream()
-                .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), notificationType, idleRunSettings))
+                .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), type, settings))
                 .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
                 .filter(pair -> !matchExcludeRunParameters(pair.getLeft(), runParametersFilters))
                 .collect(Collectors.toList());
         final List<NotificationMessage> messages = filtered.stream()
-                .map(pair -> buildMessageForIdleRun(idleRunSettings, ccUserIds, pipelineOwners, idleCpuLevel, pair))
+                .map(pair -> buildMessageForIdleRun(settings, ccUserIds, pipelineOwners, pair.getLeft(),
+                        pair.getRight(), idleCpuLevel, type))
                 .collect(Collectors.toList());
         saveNotifications(messages);
 
-        if (NotificationType.IDLE_RUN.equals(notificationType)) {
+        if (NotificationType.IDLE_RUN.equals(type)) {
             final List<Long> runIds = filtered.stream()
                     .map(pair -> pair.getLeft().getId()).collect(Collectors.toList());
             monitoringNotificationDao.updateNotificationTimestamp(runIds, NotificationType.IDLE_RUN);
         }
     }
 
+    private NotificationMessage buildMessageForIdleRun(final NotificationSettings idleRunSettings,
+                                                       final List<Long> ccUserIds,
+                                                       final Map<String, PipelineUser> pipelineOwners,
+                                                       final PipelineRun run,
+                                                       final double cpuRate,
+                                                       final double idleCpuLevel,
+                                                       final NotificationType type) {
+        log.debug("Sending idle run notification for run '{}'.", run.getId());
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, run, cpuRate, idleCpuLevel));
+        if (idleRunSettings.isKeepInformedOwner()) {
+            message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
+        }
+        message.setCopyUserIds(ccUserIds);
+        return message;
+    }
+
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyHighResourceConsumingRuns(
-            final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics,
-            final NotificationType notificationType) {
-        if (CollectionUtils.isEmpty(pipelinesMetrics)) {
+    public void notifyHighResourceConsumingRuns(final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> metrics,
+                                                final NotificationType type) {
+        if (CollectionUtils.isEmpty(metrics)) {
             log.debug("No pipelines are high loaded, notifications won't be sent!");
             return;
         }
 
-        final NotificationSettings notificationSettings = settingsManager.load(notificationType);
-        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
             log.info("No template configured for high consuming pipeline run notifications or it was disabled!");
             return;
         }
 
-        final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> filtered = pipelinesMetrics.stream()
-                .filter(run -> shouldNotify(run.getLeft().getId(), notificationSettings))
+        final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> filtered = metrics.stream()
+                .filter(run -> shouldNotify(run.getLeft().getId(), settings))
                 .collect(Collectors.toList());
 
         log.debug("High resource consuming notifications for pipelines: " +
@@ -354,40 +374,38 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                         .map(p -> p.getLeft().getId().toString())
                         .collect(Collectors.joining(",")) + " will be sent!");
 
-        final List<Long> ccUserIds = getCCUsers(notificationSettings);
+        final List<Long> ccUserIds = getCCUsers(settings);
 
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(filtered);
 
         final double memThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT);
         final double diskThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT);
 
-        final List<NotificationMessage> messages = filtered.stream().map(pair -> {
-            NotificationMessage message = new NotificationMessage();
-            message.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-            message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft()));
-            message.getTemplateParameters().put("memoryThreshold", memThreshold);
-            message.getTemplateParameters().put("memoryRate",
-                    pair.getRight().getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
-            message.getTemplateParameters().put("diskThreshold", diskThreshold);
-            message.getTemplateParameters().put("diskRate", pair.getRight()
-                    .getOrDefault(ELKUsageMetric.FS, 0.0) * PERCENT);
-            if (notificationSettings.isKeepInformedOwner()) {
-                message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
-            }
-            message.setCopyUserIds(ccUserIds);
-            return message;
-        }).collect(Collectors.toList());
+        final List<NotificationMessage> messages = filtered.stream()
+                .map(pair -> {
+                    final NotificationMessage message = new NotificationMessage();
+                    message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+                    message.setTemplateParameters(buildParams(type, pair.getLeft(), pair.getRight(),
+                            memThreshold, diskThreshold));
+                    if (settings.isKeepInformedOwner()) {
+                        message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+                    }
+                    message.setCopyUserIds(ccUserIds);
+                    return message;
+                })
+                .collect(Collectors.toList());
 
         final List<Long> runIds = filtered.stream()
                 .map(pm -> pm.getLeft().getId()).collect(Collectors.toList());
         saveNotifications(messages);
-        monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
+        monitoringNotificationDao.updateNotificationTimestamp(runIds, type);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyStuckInStatusRuns(final List<PipelineRun> runs) {
-        final NotificationSettings settings = settingsManager.load(NotificationType.LONG_STATUS);
+        final NotificationType type = NotificationType.LONG_STATUS;
+        final NotificationSettings settings = settingsManager.load(type);
 
         if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
             log.info("No template configured for stuck status notifications or it was disabled!");
@@ -404,15 +422,15 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .forEach(run -> {
                     log.debug("Sending stuck status {} notification for run {}.",
                             run.getStatus(), run.getId());
-                    final NotificationMessage notificationMessage = new NotificationMessage();
+                    final NotificationMessage message = new NotificationMessage();
+                    message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+                    message.setTemplateParameters(buildParams(type, run, settings.getThreshold()));
                     if (settings.isKeepInformedOwner()) {
                         PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
-                        notificationMessage.setToUserId(pipelineOwner.getId());
+                        message.setToUserId(pipelineOwner.getId());
                     }
-                    notificationMessage.setCopyUserIds(getCCUsers(settings));
-                    notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-                    notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
-                    saveNotification(notificationMessage);
+                    message.setCopyUserIds(getCCUsers(settings));
+                    saveNotification(message);
                 });
     }
 
@@ -461,9 +479,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                               final NFSQuotaNotificationEntry exceededQuota,
                                               final List<NFSQuotaNotificationRecipient> recipients,
                                               final LocalDateTime activationTime) {
-        final NotificationSettings notificationSettings =
-            settingsManager.load(NotificationType.STORAGE_QUOTA_EXCEEDING);
-        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+        final NotificationType type = NotificationType.STORAGE_QUOTA_EXCEEDING;
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
             log.info("No template configured for storage quotas notifications or it was disabled!");
             return;
         }
@@ -475,31 +493,33 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return;
         }
 
-        final NotificationMessage quotaNotificationMessage = new NotificationMessage();
-        quotaNotificationMessage.setCopyUserIds(ccUserIds);
-        quotaNotificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-        quotaNotificationMessage.setTemplateParameters(
-            buildQuotasPlaceholdersDict(storage, exceededQuota, newStatus, activationTime));
-        saveNotification(quotaNotificationMessage);
+        final NotificationMessage message = new NotificationMessage();
+        message.setCopyUserIds(ccUserIds);
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, storage, exceededQuota, newStatus, activationTime));
+        saveNotification(message);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyOnBillingQuotaExceeding(final AppliedQuota appliedQuota) {
-        Optional.ofNullable(getNotificationSettings(NotificationType.BILLING_QUOTA_EXCEEDING))
-                .ifPresent(settings -> {
-                    log.info("Sending notification for billing quota {}", appliedQuota.getQuota());
-                    final List<Long> ccUserIds = mapRecipientsToUserIds(appliedQuota.getQuota().getRecipients());
-                    if (CollectionUtils.isEmpty(ccUserIds)) {
-                        log.info("Resolved list of users is empty, skipping notification creation...");
-                        return;
-                    }
-                    final NotificationMessage message = new NotificationMessage();
-                    message.setCopyUserIds(ccUserIds);
-                    message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-                    message.setTemplateParameters(buildBillingQuotaParams(appliedQuota));
-                    saveNotification(message);
-                });
+        final NotificationType type = NotificationType.BILLING_QUOTA_EXCEEDING;
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
+            log.info("No template configured for {} notification or it was disabled!", type);
+            return;
+        }
+        log.info("Sending notification for billing quota {}", appliedQuota.getQuota());
+        final List<Long> ccUserIds = mapRecipientsToUserIds(appliedQuota.getQuota().getRecipients());
+        if (CollectionUtils.isEmpty(ccUserIds)) {
+            log.info("Resolved list of users is empty, skipping notification creation...");
+            return;
+        }
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, appliedQuota));
+        message.setCopyUserIds(ccUserIds);
+        saveNotification(message);
     }
 
     @Override
@@ -509,13 +529,13 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             log.debug("No users found for '{}' notification", type.name());
             return;
         }
-        final NotificationSettings notificationSettings = settingsManager.load(type);
-        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
             log.info("No template configured for '{}' users notifications or it was disabled!", type.name());
             return;
         }
 
-        final List<Long> ccUserIds = getCCUsers(notificationSettings);
+        final List<Long> ccUserIds = getCCUsers(settings);
 
         final List<Long> storageIdsToLoad = ListUtils.emptyIfNull(pipelineUsers).stream()
                 .map(PipelineUser::getDefaultStorageId)
@@ -526,11 +546,11 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 dataStorageManager.getDatastoragesByIds(storageIdsToLoad)).stream()
                 .collect(Collectors.toMap(AbstractDataStorage::getId, AbstractDataStorage::getName));
 
-        final NotificationMessage notificationMessage = new NotificationMessage();
-        notificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-        notificationMessage.setTemplateParameters(buildUsersTemplateArguments(pipelineUsers, userStorages));
-        notificationMessage.setCopyUserIds(ccUserIds);
-        saveNotification(notificationMessage);
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, pipelineUsers, userStorages));
+        message.setCopyUserIds(ccUserIds);
+        saveNotification(message);
     }
 
     @Override
@@ -540,15 +560,15 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             log.debug("No full node pools found to notify");
             return;
         }
-        final NotificationSettings notificationSettings =
-                settingsManager.load(NotificationType.FULL_NODE_POOL);
-        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+        final NotificationType type = NotificationType.FULL_NODE_POOL;
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
             log.info("No template configured for node pool notifications or it was disabled!");
             return;
         }
 
         final List<NodePool> filteredPools = nodePools.stream()
-                .filter(pool -> shouldNotify(pool.getId(), notificationSettings))
+                .filter(pool -> shouldNotify(pool.getId(), settings))
                 .collect(Collectors.toList());
 
         if (CollectionUtils.isEmpty(filteredPools)) {
@@ -561,12 +581,23 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .map(String::valueOf)
                 .collect(Collectors.joining(",")));
 
-        final List<Long> ccUserIds = getCCUsers(notificationSettings);
-        final NotificationMessage message = buildMessageForFullNodePool(filteredPools, notificationSettings, ccUserIds);
+        final List<Long> ccUserIds = getCCUsers(settings);
+        final NotificationMessage message = buildMessageForFullNodePool(filteredPools, settings, ccUserIds, type);
         saveNotification(message);
         monitoringNotificationDao.updateNotificationTimestamp(filteredPools.stream()
                 .map(NodePool::getId)
-                .collect(Collectors.toList()), NotificationType.FULL_NODE_POOL);
+                .collect(Collectors.toList()), type);
+    }
+
+    private NotificationMessage buildMessageForFullNodePool(final List<NodePool> nodePools,
+                                                            final NotificationSettings settings,
+                                                            final List<Long> recipients,
+                                                            final NotificationType type) {
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, nodePools));
+        message.setCopyUserIds(recipients);
+        return message;
     }
 
     /**
@@ -629,22 +660,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .map(PipelineUser::getId)
                 .distinct()
                 .collect(Collectors.toList());
-    }
-
-    private Map<String, Object> buildQuotasPlaceholdersDict(final NFSDataStorage storage,
-                                                            final NFSQuotaNotificationEntry quota,
-                                                            final NFSStorageMountStatus newStatus,
-                                                            final LocalDateTime activationTime) {
-        final Map<String, Object> templateParameters = new HashMap<>();
-        templateParameters.put("storageId", storage.getId());
-        templateParameters.put("storageName", storage.getName());
-        templateParameters.put("threshold", NFSQuotaNotificationEntry.NO_ACTIVE_QUOTAS_NOTIFICATION.equals(quota)
-                ? "no_active_quotas"
-                : quota.toThreshold());
-        templateParameters.put("previousMountStatus", storage.getMountStatus());
-        templateParameters.put("newMountStatus", newStatus);
-        templateParameters.put("activationTime", activationTime);
-        return templateParameters;
     }
 
     private boolean isRunStuckInStatus(final NotificationSettings settings,
@@ -752,23 +767,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         return user;
     }
 
-    private NotificationMessage buildMessageForLongPausedRun(final PipelineRun run, final List<Long> ccUsers,
-                                                             final NotificationSettings settings,
-                                                             final Map<String, PipelineUser> pipelineOwners) {
-        log.debug("Sending long paused run notification for run {}.", run.getId());
-        final NotificationMessage message = new NotificationMessage();
-        if (settings.isKeepInformedOwner()) {
-            message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
-        }
-        message.setCopyUserIds(ccUsers);
-        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
-        return message;
-    }
-
     private List<PipelineRun> createNotificationsForLongPausedRuns(final List<PipelineRun> pausedRuns,
-                                                                   final NotificationType notificationType) {
-        final NotificationSettings settings = settingsManager.load(notificationType);
+                                                                   final NotificationType type) {
+        final NotificationSettings settings = settingsManager.load(type);
 
         if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
             log.info("No template configured for long paused status notifications or it was disabled!");
@@ -778,7 +779,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final LocalDateTime now = DateUtils.nowUTC();
         final Long threshold = settings.getThreshold();
         if (threshold == null || threshold <= 0) {
-            log.debug("Threshold is not specified for notification type '{}'", notificationType.name());
+            log.debug("Threshold is not specified for notification type '{}'", type.name());
             return Collections.emptyList();
         }
 
@@ -794,10 +795,25 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .collect(Collectors.toList());
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwnersFromRuns(filtered);
         final List<NotificationMessage> messages = filtered.stream()
-                .map(run -> buildMessageForLongPausedRun(run, ccUsers, settings, pipelineOwners))
+                .map(run -> buildMessageForLongPausedRun(run, ccUsers, settings, pipelineOwners, type))
                 .collect(Collectors.toList());
         saveNotifications(messages);
         return filtered;
+    }
+
+    private NotificationMessage buildMessageForLongPausedRun(final PipelineRun run, final List<Long> ccUsers,
+                                                             final NotificationSettings settings,
+                                                             final Map<String, PipelineUser> pipelineOwners,
+                                                             final NotificationType type) {
+        log.debug("Sending long paused run notification for run {}.", run.getId());
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(buildParams(type, run, settings.getThreshold()));
+        if (settings.isKeepInformedOwner()) {
+            message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
+        }
+        message.setCopyUserIds(ccUsers);
+        return message;
     }
 
     private boolean noneMatchExcludedInstanceType(final PipelineRun run, final String instanceTypesToExclude) {
@@ -818,64 +834,12 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .noneMatch(pattern -> matcher.match(pattern, nodeType));
     }
 
-    private NotificationMessage buildMessageForIdleRun(final NotificationSettings idleRunSettings,
-                                                       final List<Long> ccUserIds,
-                                                       final Map<String, PipelineUser> pipelineOwners,
-                                                       final double idleCpuLevel,
-                                                       final Pair<PipelineRun, Double> pair) {
-        log.debug("Sending idle run notification for run '{}'.", pair.getLeft().getId());
-        final NotificationMessage message = new NotificationMessage();
-        message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-        message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft()));
-        message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
-        message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
-        if (idleRunSettings.isKeepInformedOwner()) {
-            message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
-        }
-        message.setCopyUserIds(ccUserIds);
-        return message;
-    }
-
     private boolean shouldNotifyIdleRun(final Long runId, final NotificationType notificationType,
                                         final NotificationSettings notificationSettings) {
         if (!NotificationType.IDLE_RUN.equals(notificationType)) {
             return true;
         }
         return shouldNotify(runId, notificationSettings);
-    }
-
-    private Map<String, Object> buildUsersTemplateArguments(final List<PipelineUser> pipelineUsers,
-                                                            final Map<Long, String> userStorages) {
-        final Map<String, Object> templateArguments = new HashMap<>();
-
-        if (!CollectionUtils.isEmpty(pipelineUsers)) {
-            templateArguments.put("pipelineUsers", pipelineUsers.stream()
-                    .map(user -> buildUserTemplateArguments(user, userStorages))
-                    .collect(Collectors.toList()));
-        }
-
-        return templateArguments;
-    }
-
-    private Map<String, Object> buildUserTemplateArguments(final PipelineUser user,
-                                                           final Map<Long, String> userStorages) {
-        final Map<String, Object> userArguments = new HashMap<>();
-        userArguments.put("name", user.getUserName());
-        userArguments.put("email", user.getEmail());
-        if (Objects.nonNull(user.getDefaultStorageId())) {
-            userArguments.put("storage_name", userStorages.get(user.getDefaultStorageId()));
-        }
-        userArguments.put("registration_date", user.getRegistrationDate());
-        if (Objects.nonNull(user.getLastLoginDate())) {
-            userArguments.put("last_login_date", user.getLastLoginDate());
-        }
-        if (Objects.nonNull(user.getBlockDate())) {
-            userArguments.put("block_date", user.getBlockDate());
-        }
-        if (Objects.nonNull(user.getExternalBlockDate())) {
-            userArguments.put("external_block_date", user.getExternalBlockDate());
-        }
-        return userArguments;
     }
 
     private Map<String, NotificationFilter> parseRunExcludeParams() {
@@ -911,52 +875,171 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
     }
 
-    private NotificationMessage buildMessageForFullNodePool(final List<NodePool> nodePools,
-                                                            final NotificationSettings settings,
-                                                            final List<Long> recipients) {
-        final NotificationMessage notificationMessage = new NotificationMessage();
-        notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        notificationMessage.setTemplateParameters(buildNodePoolsTemplate(nodePools));
-        notificationMessage.setCopyUserIds(recipients);
-        return notificationMessage;
+    private Map<String, Object> buildParams(final NotificationType type, final PipelineRun run) {
+        final Map<String, Object> parameters = buildCommonParams(type, run);
+        parameters.putAll(PipelineRunMapper.map(run));
+        return parameters;
     }
 
-    private Map<String, Object> buildNodePoolsTemplate(final List<NodePool> nodePools) {
-        return Collections.singletonMap("pools", nodePools.stream()
-                .map(this::buildNodePoolTemplate)
-                .collect(Collectors.toList()));
+    private Map<String, Object> buildParams(final NotificationType type, final PipelineRun run, final Long duration,
+                                            final Long threshold) {
+        final Map<String, Object> parameters = buildCommonParams(type, run);
+        parameters.putAll(PipelineRunMapper.map(run, threshold, duration));
+        return parameters;
     }
 
-    private Map<String, Object> buildNodePoolTemplate(final NodePool nodePool) {
-        return jsonMapper.convertValue(nodePool, new TypeReference<Map<String, Object>>() {});
+    private Map<String, Object> buildParams(final NotificationType type, final PipelineRun run,
+                                            final Long threshold) {
+        final Map<String, Object> parameters = buildCommonParams(type, run);
+        parameters.putAll(PipelineRunMapper.map(run, threshold));
+        return parameters;
     }
 
-    private Map<String, Object> buildBillingQuotaParams(final AppliedQuota appliedQuota) {
+    private Map<String, Object> buildParams(final NotificationType type, final Issue issue) {
+        final Map<String, Object> parameters = buildCommonParams(type, issue);
+        parameters.putAll(IssueMapper.map(issue, jsonMapper));
+        return parameters;
+    }
+
+    private Map<String, Object> buildParams(final NotificationType type, final Issue issue,
+                                            final IssueComment comment) {
+        final Map<String, Object> parameters = buildCommonParams(type, issue);
+        parameters.putAll(IssueMapper.map(comment, jsonMapper));
+        parameters.put("issue", IssueMapper.map(issue, jsonMapper));
+        return parameters;
+    }
+
+    private Map<String, Object> buildParams(final NotificationType type, final PipelineRun run,
+                                            final double cpuRate, final double idleCpuLevel) {
+        final Map<String, Object> parameters = buildCommonParams(type, run);
+        parameters.putAll(PipelineRunMapper.map(run));
+        parameters.put("idleCpuLevel", idleCpuLevel);
+        parameters.put("cpuRate", cpuRate * PERCENT);
+        return parameters;
+    }
+
+    private Map<String, Object> buildParams(final NotificationType type,
+                                            final PipelineRun run,
+                                            final Map<ELKUsageMetric, Double> metrics,
+                                            final double memThreshold,
+                                            final double diskThreshold) {
+        final Map<String, Object> parameters = buildCommonParams(type, run);
+        parameters.putAll(PipelineRunMapper.map(run));
+        parameters.put("memoryThreshold", memThreshold);
+        parameters.put("memoryRate", metrics.getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
+        parameters.put("diskThreshold", diskThreshold);
+        parameters.put("diskRate", metrics.getOrDefault(ELKUsageMetric.FS, 0.0) * PERCENT);
+        return parameters;
+    }
+
+    private Map<String, Object> buildParams(final NotificationType type, final NFSDataStorage storage,
+                                            final NFSQuotaNotificationEntry quota,
+                                            final NFSStorageMountStatus newStatus,
+                                            final LocalDateTime activationTime) {
+        final Map<String, Object> parameters = buildCommonParams(type, storage);
+        parameters.put("storageId", storage.getId());
+        parameters.put("storageName", storage.getName());
+        parameters.put("threshold", NFSQuotaNotificationEntry.NO_ACTIVE_QUOTAS_NOTIFICATION.equals(quota)
+                ? "no_active_quotas"
+                : quota.toThreshold());
+        parameters.put("previousMountStatus", storage.getMountStatus());
+        parameters.put("newMountStatus", newStatus);
+        parameters.put("activationTime", activationTime);
+        return parameters;
+    }
+
+    private Map<String, Object> buildParams(final NotificationType type, final AppliedQuota appliedQuota) {
         final Quota quota = appliedQuota.getQuota();
         final QuotaAction action = appliedQuota.getAction();
-        final Map<String, Object> templateParameters = new HashMap<>();
-        templateParameters.put("expense", appliedQuota.getExpense());
-        templateParameters.put("from", appliedQuota.getFrom());
-        templateParameters.put("to", appliedQuota.getTo());
-        templateParameters.put("group", quota.getQuotaGroup());
-        templateParameters.put("quota", quota.getValue());
-        templateParameters.put("type", quota.getType());
-        templateParameters.put("subject", quota.getSubject());
-        templateParameters.put("actions", action.getActions()
-                .stream()
-                .map(Enum::name)
-                .collect(Collectors.joining(",")));
-        templateParameters.put("threshold", action.getThreshold());
-        return templateParameters;
+        final Map<String, Object> parameters = buildCommonParams(type, appliedQuota);
+        parameters.put("expense", appliedQuota.getExpense());
+        parameters.put("from", appliedQuota.getFrom());
+        parameters.put("to", appliedQuota.getTo());
+        parameters.put("group", quota.getQuotaGroup());
+        parameters.put("quota", quota.getValue());
+        parameters.put("type", quota.getType());
+        parameters.put("subject", quota.getSubject());
+        parameters.put("actions", action.getActions().stream().map(Enum::name).collect(Collectors.joining(",")));
+        parameters.put("threshold", action.getThreshold());
+        return parameters;
     }
 
-    private NotificationSettings getNotificationSettings(final NotificationType type) {
-        final NotificationSettings settings =
-                settingsManager.load(type);
-        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
-            log.info("No template configured for {} notification or it was disabled!", type);
-            return null;
+    private Map<String, Object> buildParams(final NotificationType type, final List<PipelineUser> users,
+                                            final Map<Long, String> userStorages) {
+        final Map<String, Object> parameters = buildCommonParams(type);
+        if (!CollectionUtils.isEmpty(users)) {
+            parameters.put("pipelineUsers", users.stream()
+                    .map(user -> buildUserTemplateParameters(user, userStorages))
+                    .collect(Collectors.toList()));
         }
-        return settings;
+        return parameters;
+    }
+
+    private Map<String, Object> buildUserTemplateParameters(final PipelineUser user,
+                                                            final Map<Long, String> userStorages) {
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put("name", user.getUserName());
+        parameters.put("email", user.getEmail());
+        if (Objects.nonNull(user.getDefaultStorageId())) {
+            parameters.put("storage_name", userStorages.get(user.getDefaultStorageId()));
+        }
+        parameters.put("registration_date", user.getRegistrationDate());
+        if (Objects.nonNull(user.getLastLoginDate())) {
+            parameters.put("last_login_date", user.getLastLoginDate());
+        }
+        if (Objects.nonNull(user.getBlockDate())) {
+            parameters.put("block_date", user.getBlockDate());
+        }
+        if (Objects.nonNull(user.getExternalBlockDate())) {
+            parameters.put("external_block_date", user.getExternalBlockDate());
+        }
+        return parameters;
+    }
+
+    private Map<String, Object> buildParams(final NotificationType type, final List<NodePool> pools) {
+        final Map<String, Object> parameters = buildCommonParams(type, pools.stream().map(NodePool::getId)
+                        .collect(Collectors.toList()), NotificationEntityClass.NODE_POOL);
+        parameters.put("pools", pools.stream()
+                .map(pool -> NodePoolMapper.map(pool, jsonMapper))
+                .collect(Collectors.toList()));
+        return parameters;
+    }
+
+    private Map<String, Object> buildCommonParams(final NotificationType type, final PipelineRun run) {
+        return buildCommonParams(type, run.getId(), NotificationEntityClass.RUN);
+    }
+
+    private Map<String, Object> buildCommonParams(final NotificationType type, final AbstractDataStorage storage) {
+        return buildCommonParams(type, storage.getId(), NotificationEntityClass.STORAGE);
+    }
+
+    private Map<String, Object> buildCommonParams(final NotificationType type, final Issue issue) {
+        return buildCommonParams(type, issue.getId(), NotificationEntityClass.ISSUE);
+    }
+
+    private Map<String, Object> buildCommonParams(final NotificationType type, final AppliedQuota appliedQuota) {
+        return buildCommonParams(type, appliedQuota.getId(), NotificationEntityClass.QUOTA);
+    }
+
+    private Map<String, Object> buildCommonParams(final NotificationType type, final Long entityId,
+                                                  final NotificationEntityClass entityClass) {
+        final Map<String, Object> parameters = buildCommonParams(type);
+        parameters.put(NotificationParameter.LINKED_ENTITY_ID.getName(), entityId);
+        parameters.put(NotificationParameter.LINKED_ENTITY_CLASS.getName(), entityClass);
+        return parameters;
+    }
+
+    private Map<String, Object> buildCommonParams(final NotificationType type, final List<Long> entityIds,
+                                                  final NotificationEntityClass entityClass) {
+        final Map<String, Object> parameters = buildCommonParams(type);
+        parameters.put(NotificationParameter.LINKED_ENTITY_ID.getName(), entityIds.stream().findFirst().orElse(null));
+        parameters.put(NotificationParameter.LINKED_ENTITY_CLASS.getName(), entityClass);
+        return parameters;
+    }
+
+    private Map<String, Object> buildCommonParams(final NotificationType type) {
+        final Map<String, Object> parameters = new HashMap<>();
+        parameters.put(NotificationParameter.NOTIFICATION_TYPE.getName(), type);
+        return parameters;
     }
 }

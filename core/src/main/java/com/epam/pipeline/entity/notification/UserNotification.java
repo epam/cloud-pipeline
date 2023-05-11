@@ -21,6 +21,8 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -46,4 +48,16 @@ public class UserNotification {
     private Boolean isRead;
     @Column(name = "read_date")
     private LocalDateTime readDate;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", insertable = false, updatable = false)
+    private NotificationType type;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "entity_class", insertable = false, updatable = false)
+    private NotificationEntityClass entityClass;
+    @Column(name = "entity_id")
+    private Long entityId;
+    @Column(name = "storage_path")
+    private String storagePath;
+    @Column(name = "storage_rule_id")
+    private Long storageRuleId;
 }

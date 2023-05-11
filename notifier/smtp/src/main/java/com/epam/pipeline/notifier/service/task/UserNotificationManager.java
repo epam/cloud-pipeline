@@ -17,13 +17,17 @@
 package com.epam.pipeline.notifier.service.task;
 
 import com.epam.pipeline.entity.notification.NotificationMessage;
+import com.epam.pipeline.entity.notification.NotificationParameter;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.notification.UserNotification;
+import com.epam.pipeline.entity.notification.NotificationEntityClass;
 import com.epam.pipeline.notifier.entity.message.MessageText;
 import com.epam.pipeline.notifier.repository.UserNotificationRepository;
 import com.epam.pipeline.notifier.service.TemplateService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -32,7 +36,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,19 +67,56 @@ public class UserNotificationManager implements NotificationManager {
             userIds.add(message.getToUserId());
         }
         userIds.addAll(ListUtils.emptyIfNull(message.getCopyUserIds()));
-        final List<UserNotification> results = new ArrayList<>();
-        SetUtils.emptyIfNull(userIds).forEach(userId -> results.add(buildNotification(userId, messageText)));
-        return results;
+        return SetUtils.emptyIfNull(userIds).stream()
+                .map(userId -> buildNotification(userId, messageText, message.getTemplateParameters()))
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private static UserNotification buildNotification(final Long userId,
-                                                      final MessageText messageText) {
-        final UserNotification userNotification = new UserNotification();
-        userNotification.setUserId(userId);
-        userNotification.setSubject(messageText.getSubject());
-        userNotification.setText(messageText.getBody());
-        userNotification.setCreatedDate(LocalDateTime.now());
-        userNotification.setIsRead(false);
-        return userNotification;
+                                                      final MessageText text,
+                                                      final Map<String, Object> parameters) {
+        final UserNotification notification = new UserNotification();
+        notification.setUserId(userId);
+        notification.setSubject(text.getSubject());
+        notification.setText(text.getBody());
+        notification.setCreatedDate(LocalDateTime.now());
+        notification.setIsRead(false);
+        notification.setType(findString(parameters, NotificationParameter.NOTIFICATION_TYPE)
+                .map(NotificationType::valueOf)
+                .orElse(null));
+        notification.setEntityClass(findString(parameters, NotificationParameter.LINKED_ENTITY_CLASS)
+                .map(NotificationEntityClass::valueOf)
+                .orElse(null));
+        notification.setEntityId(getLong(parameters, NotificationParameter.LINKED_ENTITY_ID));
+        notification.setStorageRuleId(getLong(parameters, NotificationParameter.LINKED_STORAGE_RULE_ID));
+        notification.setStoragePath(getString(parameters, NotificationParameter.LINKED_STORAGE_PATH));
+        return notification;
+    }
+
+    private static String getString(final Map<String, Object> parameters, final NotificationParameter parameter) {
+        return findString(parameters, parameter).orElse(null);
+    }
+
+    private static Optional<String> findString(final Map<String, Object> parameters,
+                                               final NotificationParameter parameter) {
+        return Optional.of(parameter)
+                .map(NotificationParameter::getName)
+                .map(parameters::get)
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .filter(StringUtils::isNotBlank);
+    }
+
+    private static Long getLong(final Map<String, Object> parameters, final NotificationParameter parameter) {
+        return findLong(parameters, parameter).orElse(null);
+    }
+
+    private static Optional<Long> findLong(final Map<String, Object> parameters,
+                                           final NotificationParameter parameter) {
+        return Optional.of(parameter)
+                .map(NotificationParameter::getName)
+                .map(parameters::get)
+                .filter(Long.class::isInstance)
+                .map(Long.class::cast);
     }
 }

@@ -272,7 +272,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                 if (duration >= threshold) {
                     Date lastNotificationDate = run.getLastNotificationTime();
                     if (checkNeedOfNotificationResend(lastNotificationDate, resendDelay)) {
-                        notificationManager.notifyLongRunningTask(run, duration, settings);
+                        notificationManager.notifyLongRunningTask(run, duration, type, settings);
 
                         run.setLastNotificationTime(DateUtils.now());
                         pipelineRunManager.updatePipelineRunLastNotification(run);
