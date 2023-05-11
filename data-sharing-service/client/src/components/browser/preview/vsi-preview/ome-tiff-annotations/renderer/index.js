@@ -26,9 +26,12 @@ import {
 } from 'mobx-react';
 import {
   Button,
-  Icon, Input, Modal
+  Icon,
+  Input,
+  Modal
 } from 'antd';
 import ColorPicker from '../../../../../special/color-picker';
+import AnnotationsTooltip from './annotations-tooltip';
 import styles from './ome-tiff-annotations-renderer.css';
 
 const MODES = {
@@ -42,6 +45,7 @@ const MODES = {
 
 const ACTIONS = {
   add: 'add',
+  edit: 'edit',
   remove: 'remove'
 };
 
@@ -54,30 +58,72 @@ class OMETiffAnnotationsRenderer extends React.Component {
     actions: [],
     annotations: [],
     position: 0,
+    actionsPending: false,
     label: undefined
   };
 
   container;
 
+  componentDidMount () {
+    this.initializeListeners();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.annotations !== this.props.annotations) {
+      this.initializeListeners(prevProps);
+    }
+  }
+
   componentWillUnmount () {
     this.removeListeners();
+    this.removeMouseListeners();
     this.container = undefined;
   }
 
+  initializeListeners = (prevProps) => {
+    this.removeListeners(prevProps);
+    const {annotations} = this.props;
+    if (annotations) {
+      annotations.onAnnotationChanged(this.onAnnotationChanged);
+    }
+  };
+
+  removeListeners = (props = this.props) => {
+    const {annotations} = props;
+    if (annotations) {
+      annotations.removeOnAnnotationChanged(this.onAnnotationChanged);
+    }
+  };
+
   @computed
-  get removableAnnotation () {
+  get selectedAnnotation () {
     const {
       annotations,
       hcsSourceState
     } = this.props;
     if (
       annotations &&
-      annotations.myAnnotations &&
       hcsSourceState
     ) {
-      return annotations.myAnnotations.getAnnotationByIdentifier(hcsSourceState.selectedAnnotation);
+      return annotations.getAnnotationByIdentifier(hcsSourceState.selectedAnnotation);
     }
     return undefined;
+  }
+
+  get currentColor () {
+    const {
+      color
+    } = this.state;
+    const {selectedAnnotation} = this;
+    if (selectedAnnotation) {
+      switch (selectedAnnotation.type) {
+        case 'text':
+          return (selectedAnnotation.label ? selectedAnnotation.label.color : undefined) || color;
+        default:
+          return selectedAnnotation.lineColor || color;
+      }
+    }
+    return color;
   }
 
   insertAction = (action) => {
@@ -94,8 +140,20 @@ class OMETiffAnnotationsRenderer extends React.Component {
     });
   };
 
-  initializeListeners = () => {
-    this.removeListeners();
+  onAnnotationChanged = (payload) => {
+    const {
+      before,
+      after: annotation
+    } = payload;
+    this.insertAction({
+      type: ACTIONS.edit,
+      annotation,
+      before
+    });
+  };
+
+  initializeMouseListeners = () => {
+    this.removeMouseListeners();
     if (!this.container) {
       return;
     }
@@ -106,7 +164,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
         annotations
       } = this.props;
       const points = eventData ? (eventData.points || []).filter(Boolean) : [];
-      if (annotations && points.length > 1) {
+      if (annotations && annotations.myAnnotations && points.length > 1) {
         const first = points[0];
         const last = points[points.length - 1];
         let updated;
@@ -171,7 +229,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
         }
         if (updated) {
           updated.identifier = annotationId;
-          annotationId = annotations.myAnnotations.createOrUpdateAnnotation(updated, false);
+          annotationId = annotations.myAnnotations.createOrUpdateAnnotation(updated, {save: false});
         }
       }
     };
@@ -230,26 +288,27 @@ class OMETiffAnnotationsRenderer extends React.Component {
         const {
           annotations
         } = this.props;
-        if (annotations && annotations.myAnnotations) {
-          const annotation = annotations.myAnnotations.getAnnotationByIdentifier(annotationId);
+        if (annotations) {
+          const annotation = annotations.getAnnotationByIdentifier(annotationId);
           if (annotation) {
             this.insertAction({
               annotation,
               type: ACTIONS.add
             });
           }
-          (annotations.myAnnotations.save)(false);
+          (annotations.save)(false);
         }
       }
       eventData = undefined;
       annotationId = undefined;
+      this.setState({mode: MODES.disabled});
     };
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.onMouseUp);
     this.container.addEventListener('mousedown', this.onMouseDown);
   };
 
-  removeListeners = () => {
+  removeMouseListeners = () => {
     if (this.onMouseMove) {
       window.removeEventListener('mousemove', this.onMouseMove);
     }
@@ -263,7 +322,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
 
   onInitializeContainer = (ref) => {
     this.container = ref;
-    this.initializeListeners();
+    this.initializeMouseListeners();
   };
 
   onChangeMode = (mode) => this.setState({
@@ -279,7 +338,37 @@ class OMETiffAnnotationsRenderer extends React.Component {
     }
   };
 
-  onChangeColor = (color) => this.setState({color});
+  onChangeColor = (color) => {
+    this.setState({color}, () => {
+      const {selectedAnnotation} = this;
+      const {annotations} = this.props;
+      if (annotations && selectedAnnotation && selectedAnnotation.editable) {
+        const before = {
+          ...selectedAnnotation
+        };
+        const after = {
+          ...selectedAnnotation
+        };
+        switch (after.type) {
+          case 'text':
+            after.label = {
+              ...(after.label || {}),
+              color
+            };
+            break;
+          default:
+            after.lineColor = color;
+            break;
+        }
+        annotations.createOrUpdateAnnotation(after, {save: true});
+        this.insertAction({
+          type: ACTIONS.edit,
+          annotation: after,
+          before
+        });
+      }
+    });
+  }
 
   undo = (event) => {
     if (event) {
@@ -293,29 +382,34 @@ class OMETiffAnnotationsRenderer extends React.Component {
     const {
       annotations
     } = this.props;
-    if (annotations && annotations.myAnnotations && position > 0) {
+    if (annotations && position > 0) {
       this.setState({
-        position: position - 1
-      }, () => {
+        position: position - 1,
+        actionsPending: true
+      }, async () => {
         const action = actions[position - 1];
         if (action && action.annotation) {
           switch (action.type) {
             case ACTIONS.add:
-              annotations.myAnnotations.removeAnnotation(action.annotation, false);
+              await annotations.removeAnnotation(action.annotation, {save: false});
               break;
             case ACTIONS.remove:
-              action.annotation.identifier = annotations.myAnnotations
-                .createOrUpdateAnnotation(action.annotation, false);
+              action.annotation.identifier = await annotations
+                .createOrUpdateAnnotation(action.annotation, {save: false});
+              break;
+            case ACTIONS.edit:
+              action.annotation.identifier = await annotations
+                .createOrUpdateAnnotation(action.before, {save: false});
               break;
           }
-          (annotations.myAnnotations.save)(false);
-          this.setState({actions});
+          await annotations.save(false);
+          this.setState({actions, actionsPending: false});
         }
       });
     }
   };
 
-  redo = (event) => {
+  redo = async (event) => {
     if (event) {
       event.stopPropagation();
       event.preventDefault();
@@ -327,43 +421,48 @@ class OMETiffAnnotationsRenderer extends React.Component {
     const {
       annotations
     } = this.props;
-    if (annotations && annotations.myAnnotations && position < actions.length) {
+    if (annotations && position < actions.length) {
       this.setState({
-        position: position + 1
-      }, () => {
+        position: position + 1,
+        actionsPending: true
+      }, async () => {
         const action = actions[position];
         if (action && action.annotation) {
           switch (action.type) {
             case ACTIONS.remove:
-              annotations.myAnnotations.removeAnnotation(action.annotation, false);
+              await annotations.removeAnnotation(action.annotation, {save: false});
               break;
             case ACTIONS.add:
-              action.annotation.identifier = annotations.myAnnotations
-                .createOrUpdateAnnotation(action.annotation, false);
+            case ACTIONS.edit:
+              action.annotation.identifier = await annotations
+                .createOrUpdateAnnotation(action.annotation, {save: false});
               break;
           }
-          (annotations.myAnnotations.save)(false);
-          this.setState({actions});
+          await annotations.save(false);
+          this.setState({actions, actionsPending: false});
         }
       });
     }
   };
 
-  removeSelected = () => {
-    const selected = this.removableAnnotation;
+  removeSelected = async () => {
+    const selected = this.selectedAnnotation;
     const {
       annotations
     } = this.props;
     if (
       annotations &&
-      annotations.myAnnotations &&
       selected
     ) {
-      annotations.myAnnotations.removeAnnotation(selected, false);
-      (annotations.myAnnotations.save)(false);
-      this.insertAction({
-        annotation: selected,
-        type: ACTIONS.remove
+      this.setState({
+        actionsPending: true
+      }, async () => {
+        await annotations.removeAnnotation(selected, {save: true});
+        this.insertAction({
+          annotation: selected,
+          type: ACTIONS.remove
+        });
+        this.setState({actionsPending: false});
       });
     }
   };
@@ -408,9 +507,13 @@ class OMETiffAnnotationsRenderer extends React.Component {
           color
         }
       };
-      annotation.identifier = annotations.myAnnotations.createOrUpdateAnnotation(annotation, true);
+      annotation.identifier = annotations.myAnnotations.createOrUpdateAnnotation(
+        annotation,
+        {save: true}
+      );
       this.setState({
-        label: undefined
+        label: undefined,
+        mode: MODES.disabled
       }, () => this.insertAction({
         annotation,
         type: ACTIONS.add
@@ -425,9 +528,9 @@ class OMETiffAnnotationsRenderer extends React.Component {
     } = this.props;
     const {
       mode: current,
-      color,
       actions,
       position,
+      actionsPending,
       label
     } = this.state;
     const toggleModeCallback = (mode) => (event) => {
@@ -462,6 +565,7 @@ class OMETiffAnnotationsRenderer extends React.Component {
           onMouseDown={stopPropagation}
           onClick={stopPropagation}
         >
+          <AnnotationsTooltip />
           <Button
             size="small"
             className={styles.action}
@@ -510,18 +614,16 @@ class OMETiffAnnotationsRenderer extends React.Component {
             A
           </Button>
           {
-            current !== MODES.disabled && (
-              <ColorPicker
-                color={color}
-                onChange={this.onChangeColor}
-                hex
-                ignoreAlpha
-              />
-            )
+            <ColorPicker
+              color={this.currentColor}
+              onChange={this.onChangeColor}
+              hex
+              ignoreAlpha
+            />
           }
           <Button
             className={styles.action}
-            disabled={position === 0}
+            disabled={position === 0 || actionsPending}
             onClick={this.undo}
             size="small"
             style={{marginLeft: 10}}
@@ -530,14 +632,14 @@ class OMETiffAnnotationsRenderer extends React.Component {
           </Button>
           <Button
             className={styles.action}
-            disabled={position >= actions.length}
+            disabled={position >= actions.length || actionsPending}
             onClick={this.redo}
             size="small"
           >
             Redo
           </Button>
           {
-            this.removableAnnotation && (
+            this.selectedAnnotation && this.selectedAnnotation.editable && (
               <Button
                 size="small"
                 className={styles.action}
