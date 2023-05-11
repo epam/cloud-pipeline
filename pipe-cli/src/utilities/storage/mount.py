@@ -190,6 +190,7 @@ class Mount(object):
             mount_environment = os.environ.copy()
             mount_environment['API'] = config.api
             mount_environment['API_TOKEN'] = config.get_token()
+            mount_environment['CP_PIPE_FUSE_FS_NAME'] = self.PIPE_FUSE_FS_NAME
             if python_path:
                 mount_environment['PYTHONPATH'] = python_path
             if config.proxy:

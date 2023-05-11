@@ -82,7 +82,6 @@ _debug_logging_level = 'DEBUG'
 _info_logging_level = 'INFO'
 _xattrs_operations = ['setxattr', 'getxattr', 'listxattr', 'removexattr']
 _xattrs_include_prefix = 'user'
-_fs_name = 'PIPE_FUSE'
 
 
 def start(mountpoint, webdav, bucket,
@@ -110,6 +109,7 @@ def start(mountpoint, webdav, bucket,
                                                read_ahead_size_multiplier))
     audit_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_TTL', audit_buffer_ttl))
     audit_buffer_size = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_SIZE', audit_buffer_size))
+    fs_name = os.getenv('CP_PIPE_FUSE_FS_NAME', 'PIPE_FUSE')
     bucket_type = None
     bucket_path = None
     daemons = []
@@ -228,7 +228,7 @@ def start(mountpoint, webdav, bucket,
     enable_additional_operations()
     ro = client.is_read_only() or mount_options.get('ro', False)
     mount_options.pop('ro', None)
-    FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, fsname=_fs_name, **mount_options)
+    FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, fsname=fs_name, **mount_options)
 
 
 def get_audit_client(client, pipe, storage, audit_buffer_ttl, audit_buffer_size):
