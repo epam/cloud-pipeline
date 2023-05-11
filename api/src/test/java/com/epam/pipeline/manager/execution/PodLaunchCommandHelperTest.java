@@ -1,6 +1,7 @@
 package com.epam.pipeline.manager.execution;
 
-import com.epam.pipeline.entity.execution.ImageSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,46 +24,56 @@ public class PodLaunchCommandHelperTest {
             + VALUE + " and additional $ENV_VAR";
     public static final String EVALUATED_LAUNCH_COMMAND_TEMPLATE_WITH_ADDITIONAL_VARS = "command template with: "
             + EVALUATED + " and additional $ENV_VAR";
+    public static final String CENTOS_OS = "centos";
+    public static final String UBUNTU_OS = "ubuntu";
 
-    private static final List<ImageSpecificLaunchCommandTemplate> COMMAND_TEMPLATES = Arrays.asList(
-        ImageSpecificLaunchCommandTemplate.builder().image("*").command(COMMAND_FOR_ALL_IMAGES).build(),
-        ImageSpecificLaunchCommandTemplate.builder().image("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build(),
-        ImageSpecificLaunchCommandTemplate.builder().image("centos*")
+    private static final List<OSSpecificLaunchCommandTemplate> COMMAND_TEMPLATES = Arrays.asList(
+        OSSpecificLaunchCommandTemplate.builder().os("*").command(COMMAND_FOR_ALL_IMAGES).build(),
+        OSSpecificLaunchCommandTemplate.builder().os("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build(),
+        OSSpecificLaunchCommandTemplate.builder().os(CENTOS_OS)
                 .command(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES).build()
     );
 
-    private static final List<ImageSpecificLaunchCommandTemplate> COMMAND_TEMPLATES_WRONG_ORDER = Arrays.asList(
-        ImageSpecificLaunchCommandTemplate.builder().image("*").command(COMMAND_FOR_ALL_IMAGES).build(),
-        ImageSpecificLaunchCommandTemplate.builder().image("centos*")
+    private static final List<OSSpecificLaunchCommandTemplate> COMMAND_TEMPLATES_WRONG_ORDER = Arrays.asList(
+        OSSpecificLaunchCommandTemplate.builder().os("*").command(COMMAND_FOR_ALL_IMAGES).build(),
+        OSSpecificLaunchCommandTemplate.builder().os(CENTOS_OS)
                 .command(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES).build(),
-        ImageSpecificLaunchCommandTemplate.builder().image("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build()
+        OSSpecificLaunchCommandTemplate.builder().os("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build()
     );
 
     @Test
     public void shouldPickDefaultLaunchCommandTemplateTest() {
-        final String ubuntuLaunchCommand = PodLaunchCommandHelper
-                .pickLaunchCommandTemplate(COMMAND_TEMPLATES, "registry:5000/library/ubuntu:18.04");
+        final String ubuntuLaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
+                        COMMAND_TEMPLATES,
+                        ToolOSVersion.builder().distribution(UBUNTU_OS).version("18.04").build()
+        );
         Assert.assertEquals(COMMAND_FOR_ALL_IMAGES, ubuntuLaunchCommand);
     }
 
     @Test
     public void shouldPickTheMostAccurateLaunchCommandTemplateTest() {
-        final String centos7LaunchCommand = PodLaunchCommandHelper
-                .pickLaunchCommandTemplate(COMMAND_TEMPLATES, "registry:5000/library/centos:7");
+        final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
+                COMMAND_TEMPLATES,
+                ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build()
+        );
         Assert.assertEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
     }
 
     @Test
     public void shouldPickCentosCommonLaunchCommandTemplateTest() {
-        final String centos8LaunchCommand = PodLaunchCommandHelper
-                .pickLaunchCommandTemplate(COMMAND_TEMPLATES, "registry:5000/library/centos:8");
+        final String centos8LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
+                COMMAND_TEMPLATES,
+                ToolOSVersion.builder().distribution(CENTOS_OS).version("8").build()
+        );
         Assert.assertEquals(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES, centos8LaunchCommand);
     }
 
     @Test
     public void willPickTheWrongLaunchCommandTemplateBecauseOfWrongOrderOfCommandsInPreferenceTest() {
-        final String centos7LaunchCommand = PodLaunchCommandHelper
-                .pickLaunchCommandTemplate(COMMAND_TEMPLATES_WRONG_ORDER, "registry:5000/library/centos:7");
+        final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
+                COMMAND_TEMPLATES_WRONG_ORDER,
+                ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build()
+        );
         Assert.assertNotEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
         Assert.assertEquals(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES, centos7LaunchCommand);
     }

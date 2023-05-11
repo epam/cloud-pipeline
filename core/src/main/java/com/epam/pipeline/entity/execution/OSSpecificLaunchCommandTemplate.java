@@ -5,17 +5,17 @@ import lombok.Value;
 
 @Builder
 @Value
-public class ImageSpecificLaunchCommandTemplate {
+public class OSSpecificLaunchCommandTemplate {
 
     /**
-     * Image pattern to match to decide if the launch command should be picked for the run.
-     * e.g. centos*, library/centos:7, etc
+     * Comma separated list of OS version patterns to match to decide if the launch command should be picked
+     * for the run.
+     * e.g. 'centos,ubuntu:18' or 'centos:7', etc.
      * */
-    String image;
+    String os;
 
     /**
      * Launch command that would be executed as a pid 1 for a pod if the image matched.
-     * e.g. centos*, library/centos:7, etc
      * */
     String command;
 }

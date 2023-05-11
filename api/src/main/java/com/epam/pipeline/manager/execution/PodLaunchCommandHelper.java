@@ -1,6 +1,7 @@
 package com.epam.pipeline.manager.execution;
 
-import com.epam.pipeline.entity.execution.ImageSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.velocity.VelocityContext;
@@ -9,47 +10,45 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public final class PodLaunchCommandHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineLauncher.class);
     private static final String ALL_KEY_WORK = "all";
-    private static final String ALL_IMAGE_REGEXP = ".*";
-    private static final String DOT = ".";
-    private static final String ESCAPED_DOT = "\\.";
     private static final String STAR_SIGN = "*";
     public static final String LAUNCH_COMMAND_TAG = "launch_command";
 
     private PodLaunchCommandHelper() {}
 
-    static String pickLaunchCommandTemplate(final List<ImageSpecificLaunchCommandTemplate> commandsByImage,
-                                            final String dockerImage) {
-        final Pair<ImageSpecificLaunchCommandTemplate, List<ImageSpecificLaunchCommandTemplate>>
+    static String pickLaunchCommandTemplate(final List<OSSpecificLaunchCommandTemplate> commandsByImage,
+                                            final ToolOSVersion osVersion) {
+        final Pair<OSSpecificLaunchCommandTemplate, List<OSSpecificLaunchCommandTemplate>>
                 commandsByImageWithDefault =
                 filtered(
                     ListUtils.emptyIfNull(commandsByImage),
-                    (e) -> !e.getImage().equals(STAR_SIGN) && !e.getImage().equals(ALL_KEY_WORK)
+                    (e) -> !e.getOs().equals(STAR_SIGN) && !e.getOs().equals(ALL_KEY_WORK)
                 );
-        final Optional<ImageSpecificLaunchCommandTemplate> matchedCommandOp =
-                commandsByImageWithDefault.getValue().stream().filter(imageAndCommand -> {
-                    final String preparedImageRegexp = imageAndCommand.getImage().equals(ALL_KEY_WORK)
-                            ? ALL_IMAGE_REGEXP
-                            : ALL_IMAGE_REGEXP + imageAndCommand.getImage()
-                            .replace(DOT, ESCAPED_DOT)
-                            .replace(STAR_SIGN, ALL_IMAGE_REGEXP);
-                    return dockerImage.matches(preparedImageRegexp);
-                }).findFirst();
         String effectiveLaunchCommand = Optional.ofNullable(commandsByImageWithDefault.getKey())
-                .map(ImageSpecificLaunchCommandTemplate::getCommand).orElse(null);
-        if (matchedCommandOp.isPresent()) {
-            LOGGER.debug("Matched launch command by image: {} will be used.", matchedCommandOp.get().getImage());
-            effectiveLaunchCommand = matchedCommandOp.get().getCommand();
-        } else {
-            LOGGER.debug(
-                    "No matching launch command was found for image {}. " +
-                            "Default one will be used.", dockerImage);
+                .map(OSSpecificLaunchCommandTemplate::getCommand).orElse(null);
+        if (osVersion != null) {
+            final Optional<OSSpecificLaunchCommandTemplate> matchedCommandOp =
+                    commandsByImageWithDefault.getValue().stream()
+                            .filter(imageAndCommand ->
+                                    osVersion.isMatched(imageAndCommand.getOs())).findFirst();
+            if (matchedCommandOp.isPresent()) {
+                LOGGER.debug("Matched launch command by image: {} will be used.",
+                        matchedCommandOp.get().getOs());
+                effectiveLaunchCommand = matchedCommandOp.get().getCommand();
+            } else {
+                LOGGER.debug(
+                        "No matching launch command was found for image {}. " +
+                                "Default one will be used.", osVersion);
+            }
         }
         return effectiveLaunchCommand;
     }
@@ -65,12 +64,12 @@ public final class PodLaunchCommandHelper {
         return commandWriter.toString();
     }
 
-    private static Pair<ImageSpecificLaunchCommandTemplate, List<ImageSpecificLaunchCommandTemplate>> filtered(
-            final List<ImageSpecificLaunchCommandTemplate> list,
-            final Predicate<ImageSpecificLaunchCommandTemplate> filter) {
-        ImageSpecificLaunchCommandTemplate filteredOut = null;
-        final List<ImageSpecificLaunchCommandTemplate> filtered = new ArrayList<>();
-        for (ImageSpecificLaunchCommandTemplate template : list) {
+    private static Pair<OSSpecificLaunchCommandTemplate, List<OSSpecificLaunchCommandTemplate>> filtered(
+            final List<OSSpecificLaunchCommandTemplate> list,
+            final Predicate<OSSpecificLaunchCommandTemplate> filter) {
+        OSSpecificLaunchCommandTemplate filteredOut = null;
+        final List<OSSpecificLaunchCommandTemplate> filtered = new ArrayList<>();
+        for (OSSpecificLaunchCommandTemplate template : list) {
             if (!filter.test(template)) {
                 filteredOut = template;
             } else {

@@ -31,7 +31,7 @@ import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
-import com.epam.pipeline.entity.execution.ImageSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
@@ -558,12 +558,12 @@ public class SystemPreferences {
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
                                                             "sleep infinity", LAUNCH_GROUP, pass);
-    public static final ObjectPreference<List<ImageSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_LINUX =
+    public static final ObjectPreference<List<OSSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_LINUX =
             new ObjectPreference<>(
                 "launch.pod.cmd.template.linux",
                 Collections.singletonList(
-                    ImageSpecificLaunchCommandTemplate.builder()
-                        .image("*")
+                    OSSpecificLaunchCommandTemplate.builder()
+                        .os("*")
                         .command("set -o pipefail; "
                             + "command -v wget >/dev/null 2>&1 && " +
                                 "{ LAUNCH_CMD=\"wget --no-check-certificate -q -O - '$linuxLaunchScriptUrl'\"; }; "
@@ -573,37 +573,28 @@ public class SystemPreferences {
                                 "| bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
                         ).build()
                 ),
-                new TypeReference<List<ImageSpecificLaunchCommandTemplate>>() {},
+                new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {},
                 LAUNCH_GROUP, isValidMapOfLaunchCommands);
-    public static final ObjectPreference<List<ImageSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_WINDOWS =
-        new ObjectPreference<>(
-            "launch.pod.cmd.template.windows",
-            Collections.singletonList(
-                ImageSpecificLaunchCommandTemplate.builder()
-                    .image("*")
-                    .command("Add-Type @\"\n" +
-                        "using System.Net;\n" +
-                        "using System.Security.Cryptography.X509Certificates;\n" +
-                        "public class TrustAllCertsPolicy : ICertificatePolicy {\n" +
-                        "    public bool CheckValidationResult(\n" +
-                        "        ServicePoint srvPoint, X509Certificate certificate,\n" +
-                        "        WebRequest request, int certificateProblem) {\n" +
-                        "            return true;\n" +
-                        "        }\n" +
-                        " }\n" +
-                        "\"@\n" +
-                        "[System.Net.ServicePointManager]::CertificatePolicy " +
-                            "= New-Object TrustAllCertsPolicy\n" +
-                        "Invoke-WebRequest $windowsLaunchScriptUrl -Outfile .\\launch.py\n" +
-                        "@\"\n" +
-                        "$pipelineCommand\n" +
-                        "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
-                        "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
-                        "python .\\launch.py"
-                    ).build()
-        ),
-        new TypeReference<List<ImageSpecificLaunchCommandTemplate>>() {},
-        LAUNCH_GROUP, isValidMapOfLaunchCommands);
+    public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_WINDOWS = new StringPreference(
+            "launch.pod.cmd.template.windows", "Add-Type @\"\n" +
+            "using System.Net;\n" +
+            "using System.Security.Cryptography.X509Certificates;\n" +
+            "public class TrustAllCertsPolicy : ICertificatePolicy {\n" +
+            "    public bool CheckValidationResult(\n" +
+            "        ServicePoint srvPoint, X509Certificate certificate,\n" +
+            "        WebRequest request, int certificateProblem) {\n" +
+            "            return true;\n" +
+            "        }\n" +
+            " }\n" +
+            "\"@\n" +
+            "[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy\n" +
+            "Invoke-WebRequest %s -Outfile .\\launch.py\n" +
+            "@\"\n" +
+            "%s\n" +
+            "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
+            "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
+            "python .\\launch.py",
+            LAUNCH_GROUP, isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
         "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(

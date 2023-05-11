@@ -25,7 +25,7 @@ import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
-import com.epam.pipeline.entity.execution.ImageSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
@@ -286,11 +286,11 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isValidMapOfLaunchCommands =
         isNotBlank.and(
-            isNullOrValidJson(new TypeReference<List<ImageSpecificLaunchCommandTemplate>>() {})
+            isNullOrValidJson(new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {})
                 .and((pref, dependencies) -> {
-                    final List<ImageSpecificLaunchCommandTemplate> commandsByImage =
-                        JsonMapper.parseData(pref, new TypeReference<List<ImageSpecificLaunchCommandTemplate>>() {});
-                    if (commandsByImage.stream().noneMatch(c -> c.getImage().equals("*") || c.getImage().equals("all"))) {
+                    final List<OSSpecificLaunchCommandTemplate> commandsByImage =
+                        JsonMapper.parseData(pref, new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {});
+                    if (commandsByImage.stream().noneMatch(c -> c.getOs().equals("*") || c.getOs().equals("all"))) {
                         throw new IllegalArgumentException(
                                 "List of commands doesn't contain default entry with key: '*' or 'all'"
                         );
