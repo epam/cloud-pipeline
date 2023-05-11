@@ -32,6 +32,9 @@ import psutil
 from src.api.preferenceapi import PreferenceAPI
 from src.config import Config, is_frozen
 
+if platform.system() == 'Windows':
+    import win32api
+
 MS_IN_SEC = 1000
 
 
@@ -208,12 +211,11 @@ class Mount(object):
                 self._validate_fs_name(mountpoint)
                 return
         click.echo('Failed to mount storages: timeout expired.', err=True)
+        if mount_aps_proc.poll() is None:
+            mount_aps_proc.terminate()
         sys.exit(1)
-        # TODO: shall we kill proc here?
 
     def _validate_fs_name(self, mountpoint):
-        if str(mountpoint).endswith(os.path.sep):
-            mountpoint = mountpoint[:-1]
         mountpoint = os.path.realpath(mountpoint)
         fs_name = self._get_fs_name(mountpoint)
         if fs_name == self.PIPE_FUSE_FS_NAME:
@@ -224,15 +226,17 @@ class Mount(object):
 
     @staticmethod
     def _get_fs_name_linux(mountpoint):
+        if str(mountpoint).endswith(os.path.sep):
+            mountpoint = mountpoint[:-1]
         for partition in psutil.disk_partitions(all=True):
             if mountpoint == partition.mountpoint:
                 return partition.device
+        return None
 
     @staticmethod
     def _get_fs_name_windows(mountpoint):
         if not str(mountpoint).endswith(os.path.sep):
             mountpoint = mountpoint + os.path.sep
-        import win32api
         volume_info = win32api.GetVolumeInformation(mountpoint)
         return volume_info[4] if volume_info and len(volume_info) == 5 else None
 
