@@ -76,6 +76,13 @@ _NODE_GPUS_COUNT="${_NODE_GPUS_COUNT:-0}"
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}
 pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
+if (( _NODE_GPUS_COUNT > 0 )) && check_cp_cap "CP_CAP_SGE_GPU_EXCLUSIVE_MODE"; then
+    nvidia-smi -e 0
+    nvidia-smi -c 3
+    nvidia-smi -pm 1
+    pipe_log_info "GPUs are set to exclusive mode via CP_CAP_SGE_GPU_EXCLUSIVE_MODE" "$_SGE_RESOURCES_SETUP_TASK"
+fi
+
 _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / (1024 * 1024)) "G"}')
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM:-ram}
 pipe_log_info "$_NODE_RAM_COUNT RAM found" "$_SGE_RESOURCES_SETUP_TASK"
