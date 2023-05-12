@@ -80,6 +80,7 @@
                         JOIN pipeline.tool t ON t.link = tl.id
                         WHERE t.id = :ENTITY_ID
                         AND m.entity_class = :ENTITY_CLASS
+                        AND m.entity_class = 'TOOL'
                     )
                 ]]>
             </value>
@@ -114,6 +115,7 @@
                         JOIN pipeline.tool tl ON tl.id = m.entity_id
                         JOIN pipeline.tool t ON t.link = tl.id
                         WHERE (t.id, m.entity_class) in (@ENTITIES@)
+                        AND m.entity_class = 'TOOL'
                     )
                 ]]>
             </value>
@@ -145,6 +147,7 @@
                         JOIN pipeline.tool tl ON tl.id = m.entity_id
                         JOIN pipeline.tool t ON t.link = tl.id
                         WHERE (t.id, m.entity_class) IN (@ENTITIES@)
+                        AND m.entity_class = 'TOOL'
                         GROUP BY t.id, m.entity_class, m.data
                     )
                 ]]>
