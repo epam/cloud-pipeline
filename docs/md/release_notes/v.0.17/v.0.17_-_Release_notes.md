@@ -7,6 +7,7 @@
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
 - [User management enhancements](#user-management-enhancements)
+    - [Allowed instance count](#allowed-instance-count)
     - [Export custom user's attributes](#export-custom-users-attributes)
     - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
     - [Batch users import](#batch-users-import)
@@ -435,6 +436,34 @@ For example:
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
 
 ## User management enhancements
+
+### Allowed instance count
+
+Sometimes users' scripts may spawn hundreds of machines without a real need.  
+This could lead to different bugs on the Platform.
+
+To prevent such situation, a new setting - **Allowed instance max count** - was added to the user's options. It allows to restrict the number of instances a user can run at the same time:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_1.png)
+
+Behavior is configured by the following way: for example, if this setting for the user is specified to 5 - they can launch only 5 jobs at a maximum. This includes worker nodes of the clusters.  
+
+If the user tries to launch a job, but it exceeds a current limit (e.g. limit is 5 and user starts a new instance which is going to be a 6th job), GUI will warn the user before submitting a job:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_2.png)  
+And if the user confirms a run operation - it will be rejected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_3.png)  
+
+Even if the user will try to start a new job via `pipe` CLI - it will be rejected as well, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_4.png)
+
+Such restrictions could be set not only for a user, but on another levels too (in descending order of priority):  
+
+- **User-level** - i.e. specified for a user. This overrides any other limit for a particular user. See details [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#allowed-instance-count).
+- **User group level** - i.e. specified for a group/role. Count of jobs of each member of the group/role is summed and compared to this parameter. If a number of jobs exceeds a limit - the job submission is rejected. This level is configured via the **Allowed instance max count** setting for a group/role. See details [here](../../manual/12_Manage_Settings/12.6._Edit_a_group_role.md#allowed-instance-count).
+- globally via the system preference **`launch.max.runs.user.global`** - it can be used to set a global default restriction for all the users. I.e. if it set to 5, each Platform user can launch 5 jobs at a maximum.
+
+Additionally, a new command was added to `pipe` CLI that allows to show the count of instances running by the user at the moment, and also all possible restrictions to the allowed count of instances to launch - `pipe users instances`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_5.png)  
+See details [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#instances-usage).
 
 ### Export custom user's attributes
 
