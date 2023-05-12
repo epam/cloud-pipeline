@@ -3,11 +3,8 @@ package com.epam.pipeline.manager.notification;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dto.notification.ContextualNotification;
 import com.epam.pipeline.entity.notification.NotificationMessage;
-import com.epam.pipeline.entity.notification.NotificationParameter;
 import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.notification.NotificationEntityClass;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.mapper.PipelineRunMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -15,9 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -27,6 +22,7 @@ import java.util.stream.Collectors;
 public class ContextualNotificationManager implements NotificationService {
 
     private final ContextualNotificationSettingsManager contextualNotificationSettingsManager;
+    private final NotificationParameterManager notificationParameterManager;
     private final MonitoringNotificationDao monitoringNotificationDao;
 
     @Override
@@ -48,7 +44,7 @@ public class ContextualNotificationManager implements NotificationService {
         final NotificationMessage message = new NotificationMessage();
         message.setSubject(notification.getSubject());
         message.setBody(notification.getBody());
-        message.setTemplateParameters(templateParameters(run));
+        message.setTemplateParameters(notificationParameterManager.build(notification.getType(), run));
         message.setToUserId(recipient(notification).orElse(null));
         message.setCopyUserIds(copyRecipients(notification));
         return message;
@@ -63,14 +59,6 @@ public class ContextualNotificationManager implements NotificationService {
         return ListUtils.emptyIfNull(notification.getRecipients()).stream()
                 .skip(1)
                 .collect(Collectors.toList());
-    }
-
-    private Map<String, Object> templateParameters(final PipelineRun run) {
-        final Map<String, Object> parameters = new HashMap<>(PipelineRunMapper.map(run));
-        parameters.put(NotificationParameter.NOTIFICATION_TYPE.getName(), NotificationType.PIPELINE_RUN_STATUS);
-        parameters.put(NotificationParameter.LINKED_ENTITY_ID.getName(), run.getId());
-        parameters.put(NotificationParameter.LINKED_ENTITY_CLASS.getName(), NotificationEntityClass.RUN);
-        return parameters;
     }
 
     private NotificationMessage log(final NotificationMessage message, final PipelineRun run) {

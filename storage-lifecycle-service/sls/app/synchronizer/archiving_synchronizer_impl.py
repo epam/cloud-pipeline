@@ -386,11 +386,13 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 "dateOfAction": date_of_action,
                 "prolongDays": notification_properties["prolong_days"],
                 "isDateNotExpired": not is_date_expired,
-                "linkedEntityId": storage.id,
-                "linkedEntityClass": "STORAGE",
-                "linkedStoragePath": notification_properties["path"],
-                "linkedStorageRuleId": rule.rule_id,
                 "notificationType": "DATASTORAGE_LIFECYCLE_ACTION",
+                "notificationEntities": [{
+                    "entityId": storage.id,
+                    "entityClass": "STORAGE",
+                    "storagePath": notification_properties["path"],
+                    "storageRuleId": rule.rule_id,
+                }],
             }
 
             return rule.notification.subject, rule.notification.body, _to_user, cc_users, notification_parameters

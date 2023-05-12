@@ -208,10 +208,12 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                        "pathType": action.path_type,
                        "actionId": action.action_id,
                        "restoredTill": action.restored_till.strftime("%Y-%m-%d %H:%M:%S"),
-                       "linkedEntityId": storage.id,
-                       "linkedEntityClass": "STORAGE",
-                       "linkedStoragePath": action.path,
                        "notificationType": "DATASTORAGE_LIFECYCLE_RESTORE_ACTION",
+                       "notificationEntities": [{
+                           "entityId": storage.id,
+                           "entityClass": "STORAGE",
+                           "storagePath": action.path,
+                       }],
                    }
 
         subject, body, to_user, copy_users, parameters = _prepare_message()

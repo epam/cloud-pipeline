@@ -17,8 +17,6 @@
 package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.dto.quota.Quota;
-import com.epam.pipeline.dto.quota.QuotaAction;
 import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
@@ -33,7 +31,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,12 +44,10 @@ import java.util.stream.Stream;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationGroup;
 import com.epam.pipeline.entity.notification.NotificationMessage;
-import com.epam.pipeline.entity.notification.NotificationParameter;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.notification.NotificationEntityClass;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -60,8 +55,6 @@ import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.Sid;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.mapper.IssueMapper;
-import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -76,7 +69,6 @@ import org.springframework.util.CollectionUtils;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.issue.Issue;
@@ -89,13 +81,12 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.mapper.PipelineRunMapper;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 
 @Service
 @Slf4j
 public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
-    private static final double PERCENT = 100.0;
+
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
 
     @Autowired
@@ -111,6 +102,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     private NotificationSettingsManager settingsManager;
 
     @Autowired
+    private NotificationParameterManager parameterManager;
+
+    @Autowired
     private ContextualNotificationManager contextualNotificationManager;
 
     @Autowired
@@ -118,9 +112,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Autowired
     private EntityManager entityManager;
-
-    @Autowired
-    private JsonMapper jsonMapper;
 
     @Autowired
     private PreferenceManager preferenceManager;
@@ -164,7 +155,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                     settings.getTemplateId()));
         }
 
-        message.setTemplateParameters(buildParams(type, run, duration, settings.getThreshold()));
+        message.setTemplateParameters(parameterManager.build(type, run, duration, settings.getThreshold()));
 
         if (settings.isKeepInformedOwner()) {
             PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
@@ -196,7 +187,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, copyWithHtml));
+        message.setTemplateParameters(parameterManager.build(type, copyWithHtml));
         message.setCopyUserIds(getMentionedUsers(issue.getText()));
 
         if (settings.isKeepInformedOwner()) {
@@ -221,7 +212,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, issue, copyWithHtml));
+        message.setTemplateParameters(parameterManager.build(type, issue, copyWithHtml));
 
         final AbstractSecuredEntity entity = entityManager.load(issue.getEntity().getEntityClass(),
                                                           issue.getEntity().getEntityId());
@@ -268,7 +259,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, run));
+        message.setTemplateParameters(parameterManager.build(type, run));
 
         message.setCopyUserIds(getCCUsers(settings));
 
@@ -342,7 +333,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         log.debug("Sending idle run notification for run '{}'.", run.getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, run, cpuRate, idleCpuLevel));
+        message.setTemplateParameters(parameterManager.build(type, run, cpuRate, idleCpuLevel));
         if (idleRunSettings.isKeepInformedOwner()) {
             message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
         }
@@ -385,7 +376,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .map(pair -> {
                     final NotificationMessage message = new NotificationMessage();
                     message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-                    message.setTemplateParameters(buildParams(type, pair.getLeft(), pair.getRight(),
+                    message.setTemplateParameters(parameterManager.build(type, pair.getLeft(), pair.getRight(),
                             memThreshold, diskThreshold));
                     if (settings.isKeepInformedOwner()) {
                         message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
@@ -424,7 +415,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                             run.getStatus(), run.getId());
                     final NotificationMessage message = new NotificationMessage();
                     message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-                    message.setTemplateParameters(buildParams(type, run, settings.getThreshold()));
+                    message.setTemplateParameters(parameterManager.build(type, run, settings.getThreshold()));
                     if (settings.isKeepInformedOwner()) {
                         PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
                         message.setToUserId(pipelineOwner.getId());
@@ -496,7 +487,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final NotificationMessage message = new NotificationMessage();
         message.setCopyUserIds(ccUserIds);
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, storage, exceededQuota, newStatus, activationTime));
+        message.setTemplateParameters(parameterManager.build(type, storage, exceededQuota, newStatus, activationTime));
         saveNotification(message);
     }
 
@@ -517,7 +508,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, appliedQuota));
+        message.setTemplateParameters(parameterManager.build(type, appliedQuota));
         message.setCopyUserIds(ccUserIds);
         saveNotification(message);
     }
@@ -548,7 +539,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, pipelineUsers, userStorages));
+        message.setTemplateParameters(parameterManager.build(type, pipelineUsers, userStorages));
         message.setCopyUserIds(ccUserIds);
         saveNotification(message);
     }
@@ -595,7 +586,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                                             final NotificationType type) {
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, nodePools));
+        message.setTemplateParameters(parameterManager.build(type, nodePools));
         message.setCopyUserIds(recipients);
         return message;
     }
@@ -808,7 +799,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         log.debug("Sending long paused run notification for run {}.", run.getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(buildParams(type, run, settings.getThreshold()));
+        message.setTemplateParameters(parameterManager.build(type, run, settings.getThreshold()));
         if (settings.isKeepInformedOwner()) {
             message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
         }
@@ -873,173 +864,5 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             default:
                 return false;
         }
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final PipelineRun run) {
-        final Map<String, Object> parameters = buildCommonParams(type, run);
-        parameters.putAll(PipelineRunMapper.map(run));
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final PipelineRun run, final Long duration,
-                                            final Long threshold) {
-        final Map<String, Object> parameters = buildCommonParams(type, run);
-        parameters.putAll(PipelineRunMapper.map(run, threshold, duration));
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final PipelineRun run,
-                                            final Long threshold) {
-        final Map<String, Object> parameters = buildCommonParams(type, run);
-        parameters.putAll(PipelineRunMapper.map(run, threshold));
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final Issue issue) {
-        final Map<String, Object> parameters = buildCommonParams(type, issue);
-        parameters.putAll(IssueMapper.map(issue, jsonMapper));
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final Issue issue,
-                                            final IssueComment comment) {
-        final Map<String, Object> parameters = buildCommonParams(type, issue);
-        parameters.putAll(IssueMapper.map(comment, jsonMapper));
-        parameters.put("issue", IssueMapper.map(issue, jsonMapper));
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final PipelineRun run,
-                                            final double cpuRate, final double idleCpuLevel) {
-        final Map<String, Object> parameters = buildCommonParams(type, run);
-        parameters.putAll(PipelineRunMapper.map(run));
-        parameters.put("idleCpuLevel", idleCpuLevel);
-        parameters.put("cpuRate", cpuRate * PERCENT);
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type,
-                                            final PipelineRun run,
-                                            final Map<ELKUsageMetric, Double> metrics,
-                                            final double memThreshold,
-                                            final double diskThreshold) {
-        final Map<String, Object> parameters = buildCommonParams(type, run);
-        parameters.putAll(PipelineRunMapper.map(run));
-        parameters.put("memoryThreshold", memThreshold);
-        parameters.put("memoryRate", metrics.getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
-        parameters.put("diskThreshold", diskThreshold);
-        parameters.put("diskRate", metrics.getOrDefault(ELKUsageMetric.FS, 0.0) * PERCENT);
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final NFSDataStorage storage,
-                                            final NFSQuotaNotificationEntry quota,
-                                            final NFSStorageMountStatus newStatus,
-                                            final LocalDateTime activationTime) {
-        final Map<String, Object> parameters = buildCommonParams(type, storage);
-        parameters.put("storageId", storage.getId());
-        parameters.put("storageName", storage.getName());
-        parameters.put("threshold", NFSQuotaNotificationEntry.NO_ACTIVE_QUOTAS_NOTIFICATION.equals(quota)
-                ? "no_active_quotas"
-                : quota.toThreshold());
-        parameters.put("previousMountStatus", storage.getMountStatus());
-        parameters.put("newMountStatus", newStatus);
-        parameters.put("activationTime", activationTime);
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final AppliedQuota appliedQuota) {
-        final Quota quota = appliedQuota.getQuota();
-        final QuotaAction action = appliedQuota.getAction();
-        final Map<String, Object> parameters = buildCommonParams(type, appliedQuota);
-        parameters.put("expense", appliedQuota.getExpense());
-        parameters.put("from", appliedQuota.getFrom());
-        parameters.put("to", appliedQuota.getTo());
-        parameters.put("group", quota.getQuotaGroup());
-        parameters.put("quota", quota.getValue());
-        parameters.put("type", quota.getType());
-        parameters.put("subject", quota.getSubject());
-        parameters.put("actions", action.getActions().stream().map(Enum::name).collect(Collectors.joining(",")));
-        parameters.put("threshold", action.getThreshold());
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final List<PipelineUser> users,
-                                            final Map<Long, String> userStorages) {
-        final Map<String, Object> parameters = buildCommonParams(type);
-        if (!CollectionUtils.isEmpty(users)) {
-            parameters.put("pipelineUsers", users.stream()
-                    .map(user -> buildUserTemplateParameters(user, userStorages))
-                    .collect(Collectors.toList()));
-        }
-        return parameters;
-    }
-
-    private Map<String, Object> buildUserTemplateParameters(final PipelineUser user,
-                                                            final Map<Long, String> userStorages) {
-        final Map<String, Object> parameters = new HashMap<>();
-        parameters.put("name", user.getUserName());
-        parameters.put("email", user.getEmail());
-        if (Objects.nonNull(user.getDefaultStorageId())) {
-            parameters.put("storage_name", userStorages.get(user.getDefaultStorageId()));
-        }
-        parameters.put("registration_date", user.getRegistrationDate());
-        if (Objects.nonNull(user.getLastLoginDate())) {
-            parameters.put("last_login_date", user.getLastLoginDate());
-        }
-        if (Objects.nonNull(user.getBlockDate())) {
-            parameters.put("block_date", user.getBlockDate());
-        }
-        if (Objects.nonNull(user.getExternalBlockDate())) {
-            parameters.put("external_block_date", user.getExternalBlockDate());
-        }
-        return parameters;
-    }
-
-    private Map<String, Object> buildParams(final NotificationType type, final List<NodePool> pools) {
-        final Map<String, Object> parameters = buildCommonParams(type, pools.stream().map(NodePool::getId)
-                        .collect(Collectors.toList()), NotificationEntityClass.NODE_POOL);
-        parameters.put("pools", pools.stream()
-                .map(pool -> NodePoolMapper.map(pool, jsonMapper))
-                .collect(Collectors.toList()));
-        return parameters;
-    }
-
-    private Map<String, Object> buildCommonParams(final NotificationType type, final PipelineRun run) {
-        return buildCommonParams(type, run.getId(), NotificationEntityClass.RUN);
-    }
-
-    private Map<String, Object> buildCommonParams(final NotificationType type, final AbstractDataStorage storage) {
-        return buildCommonParams(type, storage.getId(), NotificationEntityClass.STORAGE);
-    }
-
-    private Map<String, Object> buildCommonParams(final NotificationType type, final Issue issue) {
-        return buildCommonParams(type, issue.getId(), NotificationEntityClass.ISSUE);
-    }
-
-    private Map<String, Object> buildCommonParams(final NotificationType type, final AppliedQuota appliedQuota) {
-        return buildCommonParams(type, appliedQuota.getId(), NotificationEntityClass.QUOTA);
-    }
-
-    private Map<String, Object> buildCommonParams(final NotificationType type, final Long entityId,
-                                                  final NotificationEntityClass entityClass) {
-        final Map<String, Object> parameters = buildCommonParams(type);
-        parameters.put(NotificationParameter.LINKED_ENTITY_ID.getName(), entityId);
-        parameters.put(NotificationParameter.LINKED_ENTITY_CLASS.getName(), entityClass);
-        return parameters;
-    }
-
-    private Map<String, Object> buildCommonParams(final NotificationType type, final List<Long> entityIds,
-                                                  final NotificationEntityClass entityClass) {
-        final Map<String, Object> parameters = buildCommonParams(type);
-        parameters.put(NotificationParameter.LINKED_ENTITY_ID.getName(), entityIds.stream().findFirst().orElse(null));
-        parameters.put(NotificationParameter.LINKED_ENTITY_CLASS.getName(), entityClass);
-        return parameters;
-    }
-
-    private Map<String, Object> buildCommonParams(final NotificationType type) {
-        final Map<String, Object> parameters = new HashMap<>();
-        parameters.put(NotificationParameter.NOTIFICATION_TYPE.getName(), type);
-        return parameters;
     }
 }

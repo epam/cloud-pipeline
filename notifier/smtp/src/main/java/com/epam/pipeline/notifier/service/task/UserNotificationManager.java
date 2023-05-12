@@ -20,20 +20,22 @@ import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationParameter;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.notification.UserNotification;
-import com.epam.pipeline.entity.notification.NotificationEntityClass;
+import com.epam.pipeline.entity.notification.UserNotificationEntity;
 import com.epam.pipeline.notifier.entity.message.MessageText;
 import com.epam.pipeline.notifier.repository.UserNotificationRepository;
 import com.epam.pipeline.notifier.service.TemplateService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,11 +47,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserNotificationManager implements NotificationManager {
 
+//    todo: Use conditional on property
     @Value(value = "${notification.enable.ui}")
     private boolean isEnabled;
 
     private final UserNotificationRepository notificationRepository;
     private final TemplateService templateService;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     @Transactional
@@ -68,55 +72,41 @@ public class UserNotificationManager implements NotificationManager {
         }
         userIds.addAll(ListUtils.emptyIfNull(message.getCopyUserIds()));
         return SetUtils.emptyIfNull(userIds).stream()
-                .map(userId -> buildNotification(userId, messageText, message.getTemplateParameters()))
+                .map(userId -> toNotification(userId, messageText, message.getTemplateParameters()))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private static UserNotification buildNotification(final Long userId,
-                                                      final MessageText text,
-                                                      final Map<String, Object> parameters) {
+    private UserNotification toNotification(final Long userId,
+                                            final MessageText text,
+                                            final Map<String, Object> parameters) {
         final UserNotification notification = new UserNotification();
         notification.setUserId(userId);
         notification.setSubject(text.getSubject());
         notification.setText(text.getBody());
         notification.setCreatedDate(LocalDateTime.now());
         notification.setIsRead(false);
-        notification.setType(findString(parameters, NotificationParameter.NOTIFICATION_TYPE)
-                .map(NotificationType::valueOf)
-                .orElse(null));
-        notification.setEntityClass(findString(parameters, NotificationParameter.LINKED_ENTITY_CLASS)
-                .map(NotificationEntityClass::valueOf)
-                .orElse(null));
-        notification.setEntityId(getLong(parameters, NotificationParameter.LINKED_ENTITY_ID));
-        notification.setStorageRuleId(getLong(parameters, NotificationParameter.LINKED_STORAGE_RULE_ID));
-        notification.setStoragePath(getString(parameters, NotificationParameter.LINKED_STORAGE_PATH));
+        notification.setType(toNotificationType(parameters));
+        notification.setEntities(toNotificationEntities(parameters));
         return notification;
     }
 
-    private static String getString(final Map<String, Object> parameters, final NotificationParameter parameter) {
-        return findString(parameters, parameter).orElse(null);
+    private NotificationType toNotificationType(final Map<String, Object> parameters) {
+        return Optional.ofNullable(parameters.get(NotificationParameter.TYPE.getKey()))
+                .map(this::toNotificationType)
+                .orElse(null);
     }
 
-    private static Optional<String> findString(final Map<String, Object> parameters,
-                                               final NotificationParameter parameter) {
-        return Optional.of(parameter)
-                .map(NotificationParameter::getName)
-                .map(parameters::get)
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
-                .filter(StringUtils::isNotBlank);
+    private NotificationType toNotificationType(final Object object) {
+        return mapper.convertValue(object, NotificationType.class);
     }
 
-    private static Long getLong(final Map<String, Object> parameters, final NotificationParameter parameter) {
-        return findLong(parameters, parameter).orElse(null);
+    private List<UserNotificationEntity> toNotificationEntities(final Map<String, Object> parameters) {
+        return Optional.ofNullable(parameters.get(NotificationParameter.ENTITIES.getKey()))
+                .map(this::toNotificationEntities)
+                .orElseGet(Collections::emptyList);
     }
 
-    private static Optional<Long> findLong(final Map<String, Object> parameters,
-                                           final NotificationParameter parameter) {
-        return Optional.of(parameter)
-                .map(NotificationParameter::getName)
-                .map(parameters::get)
-                .filter(Long.class::isInstance)
-                .map(Long.class::cast);
+    private List<UserNotificationEntity> toNotificationEntities(final Object object) {
+        return mapper.convertValue(object, new TypeReference<List<UserNotificationEntity>>() {});
     }
 }
