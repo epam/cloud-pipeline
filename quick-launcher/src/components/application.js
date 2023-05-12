@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useState } from 're
 import LoadingIndicator from './shared/loading-indicator';
 import {ApplicationsContext, UserContext} from './use-applications';
 import {SettingsContext} from './use-settings';
-import Timer from './timer';
+import Timer, { useTimer } from './timer';
 import launchApplication from '../models/launch-application';
 import stopApplication from '../models/stop';
 import stopRun from '../models/cloud-pipeline-api/stop-run';
@@ -12,6 +12,7 @@ import processString from '../models/process-string';
 import {StopRunsError} from '../models/find-user-run';
 import { getApplicationTypeSettings } from "../models/folder-application-types";
 import useApplicationIcon from "./utilities/use-application-icon";
+import Markdown from './shared/markdown';
 import './components.css';
 
 function stopJobs (runs = []) {
@@ -229,6 +230,16 @@ export default function Application ({id: applicationId, name: appName, launchOp
   }, [stopJobs, stopRunsError, reLaunch, setStopping]);
   const settings = useContext(SettingsContext);
   useStopLaunch(applicationId, user?.userName);
+  const seconds = useTimer(settings?.showTimer && !launchError && runId && !url);
+  const {
+    redirectText = {}
+  } = settings || {};
+  const {
+    withTime,
+    immediate
+  } = redirectText;
+  let redirectTemplate = seconds > 0 ? (withTime || immediate) : immediate;
+  redirectTemplate = (redirectTemplate || '').replace('{SECONDS}', seconds);
   if (!application) {
     return (
       <div className="content error">
@@ -246,13 +257,16 @@ export default function Application ({id: applicationId, name: appName, launchOp
     <Timer
       className="timer"
       enabled={settings?.showTimer && !launchError && runId}
+      seconds={seconds}
     />
   );
   if (url) {
     content = (
-      <div className="content">
-        <LoadingIndicator style={{marginRight: 5, width: 15, height: 15}} />
-        <span>Opening {appName || application.name}...</span>
+      <div className="redirect-container">
+        <Markdown>
+          {redirectTemplate}
+        </Markdown>
+        <LoadingIndicator style={{fill: 'currentColor'}} />
       </div>
     );
   } else if (error) {

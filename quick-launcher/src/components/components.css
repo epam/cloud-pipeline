@@ -417,3 +417,19 @@
 .app-folder .folder-app-star.favourite:hover > svg {
   fill: rgba(255, 162, 0, 0.75);
 }
+
+.redirect-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: white;
+  z-index: 103;
+  margin: 0!important;
+  color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}

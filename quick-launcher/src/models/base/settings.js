@@ -185,7 +185,11 @@ const defaultSettings = {
   persistSessionStateParameterName: 'CP_CAP_PERSIST_SESSION_STATE',
   customToolEndpointsEnabled: true, // true / false / { [ports]: {[count]: number, [from]: number, [to]: number} }
   endpointName: undefined,
-  disablePublishingApps: false
+  disablePublishingApps: false,
+  redirectText: {
+    withTime: undefined,
+    immediate: undefined
+  },
 };
 
 function parseUrl(url, verbose = false) {

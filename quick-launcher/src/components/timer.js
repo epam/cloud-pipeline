@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 
-export default function Timer ({className, enabled}) {
+export function useTimer(enabled) {
   const [seconds, setSeconds] = useState(0);
   useEffect(() => {
     if (enabled) {
@@ -12,6 +12,10 @@ export default function Timer ({className, enabled}) {
     }
     return () => {};
   }, [enabled, setSeconds]);
+  return seconds;
+}
+
+export default function Timer ({className, enabled, seconds}) {
   if (enabled) {
     return (
       <div className={className}>
