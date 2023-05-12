@@ -193,6 +193,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get groupsUIPreferences () {
+    const value = this.getPreferenceValue('misc.groups.ui.preferences');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "misc.groups.ui.preferences" preference:', e);
+      }
+    }
+    return {};
+  }
+
+  @computed
   get launchCapabilities () {
     const value = this.getPreferenceValue('launch.capabilities');
     if (value) {

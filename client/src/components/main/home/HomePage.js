@@ -20,7 +20,7 @@ import GridLayout from 'react-grid-layout';
 import classNames from 'classnames';
 import HomePagePanel from './HomePagePanel';
 import ConfigureHomePage from './ConfigureHomePage';
-import {GridStyles, Layout} from './layout';
+import {AsyncLayout, GridStyles, userLayout} from './layout';
 import {Button, Icon, Row} from 'antd';
 import PipelineRunFilter from '../../../models/pipelines/PipelineRunSingleFilter';
 import PipelineRunServices from '../../../models/pipelines/PipelineRunServices';
@@ -46,6 +46,8 @@ const ContinuousFetchIdentifiers = {
 
 @roleModel.authenticationInfo
 @inject('myIssues', 'preferences')
+@userLayout
+@AsyncLayout.use
 @inject((stores, parameters) => {
   const myRunsSubFilter = {};
   if (parameters.authenticatedUserInfo.loaded) {
@@ -115,7 +117,7 @@ export default class HomePage extends React.Component {
   };
 
   onLayoutChanged = (layout, update = false) => {
-    Layout.setPanelsLayout(layout, false);
+    this.props.layout.setPanelsLayout(layout, false);
     if (update) {
       this.forceUpdate();
     }
@@ -143,7 +145,7 @@ export default class HomePage extends React.Component {
     if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
       return <LoadingView />;
     }
-    const panelsLayout = Layout.getPanelsLayout();
+    const panelsLayout = this.props.layout.getPanelsLayout();
     return (
       <div
         ref={this.initializeContainer}
@@ -294,29 +296,6 @@ export default class HomePage extends React.Component {
     }, 250);
   };
 
-  checkContainerSizeChanged = () => {
-    this.checkContainerSizeChangedFrame = requestAnimationFrame(() => {
-      const {
-        container,
-        containerWidth,
-        containerHeight
-      } = this.state;
-      if (
-        container &&
-        (
-          (container.clientWidth && container.clientWidth !== containerWidth) ||
-          (container.clientHeight && container.clientHeight !== containerHeight)
-        )
-      ) {
-        this.setState({
-          containerWidth: container.clientWidth,
-          containerHeight: container.clientHeight
-        });
-      }
-      this.checkContainerSizeChanged();
-    });
-  };
-
   componentDidMount () {
     const initializeContinuousFetch = (id, call) => {
       const {
@@ -348,13 +327,11 @@ export default class HomePage extends React.Component {
       this.refreshIssues.bind(this)
     );
     window.addEventListener('resize', this.onWindowResized);
-    this.checkContainerSizeChanged();
   }
 
   componentWillUnmount () {
     Object.values(this.stopInterval || {}).forEach((stop) => stop());
     localStorage.setItem('LAST_VISITED', moment.utc().format('YYYY-MM-DD HH:mm:ss'));
     window.removeEventListener('resize', this.onWindowResized);
-    cancelAnimationFrame(this.checkContainerSizeChangedFrame);
   }
 }

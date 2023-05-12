@@ -60,7 +60,7 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
   dataStorages
 })
 @roleModel.authenticationInfo
-@inject('displayInfo', 'preferences')
+@inject('uiNavigation', 'preferences')
 @inject(({pipelinesLibrary, pipelines, folders, configurations, dataStorages}, {location}) => {
   let path = location.pathname;
   if (path.startsWith('/')) {
@@ -501,7 +501,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   }
 
   render () {
-    if (this.props.displayInfo.libraryCollapsed) {
+    if (!this.props.uiNavigation.libraryExpanded) {
       return (
         <PipelinesLibraryContent
           location={this.props.path}

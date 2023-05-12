@@ -25,15 +25,34 @@ const PIPELINES_KEY = 'pipelines';
 const PROJECTS_KEY = 'projects';
 const USER_COSTS_KEY = 'my costs';
 
-export default {
-  activities: ACTIVITIES_KEY,
-  data: DATA_KEY,
-  notifications: NOTIFICATIONS_KEY,
-  personalTools: PERSONAL_TOOLS_KEY,
-  pipelines: PIPELINES_KEY,
-  projects: PROJECTS_KEY,
-  recentlyCompletedRuns: RECENTLY_COMPLETED_RUNS_KEY,
-  runs: ACTIVE_RUNS_KEY,
-  services: SERVICES_KEY,
-  userCosts: USER_COSTS_KEY
+const panels = {
+  activities: 'activities',
+  data: 'data',
+  notifications: 'notifications',
+  personalTools: 'tools',
+  pipelines: 'pipelines',
+  projects: 'projects',
+  recentlyCompletedRuns: 'completed',
+  runs: 'active',
+  services: 'services',
+  userCosts: 'userCosts'
 };
+
+const keysMapper = {
+  [ACTIVITIES_KEY]: panels.activities,
+  [DATA_KEY]: panels.data,
+  [NOTIFICATIONS_KEY]: panels.notifications,
+  [PERSONAL_TOOLS_KEY]: panels.personalTools,
+  [PIPELINES_KEY]: panels.pipelines,
+  [PROJECTS_KEY]: panels.projects,
+  [RECENTLY_COMPLETED_RUNS_KEY]: panels.recentlyCompletedRuns,
+  [ACTIVE_RUNS_KEY]: panels.runs,
+  [SERVICES_KEY]: panels.services,
+  [USER_COSTS_KEY]: panels.userCosts
+};
+
+export function mapPanelIdentifier (identifier) {
+  return keysMapper[identifier] || identifier;
+}
+
+export default panels;

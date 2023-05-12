@@ -58,6 +58,7 @@ import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
 import multiZoneManager from '../../utils/multizone';
+import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
 import CurrentUserAttributes, {
@@ -90,6 +91,8 @@ const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 const allConfigurations = new AllConfigurations();
+
+const uiNavigation = new UINavigation(authenticatedUserInfo, preferences);
 
 const vsActions = new VsActionsAvailable(pipelines);
 
@@ -163,6 +166,7 @@ const Root = () =>
       cloudCredentialProfiles,
       [HiddenObjects.injectionName]: hiddenObjects,
       multiZoneManager,
+      uiNavigation,
       vsActions,
       themes,
       applicationInfo,
