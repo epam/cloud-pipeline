@@ -40,6 +40,7 @@
 - [Data access audit](#data-access-audit)
 - [System Jobs](#system-jobs)
 - [Cluster run usage](#cluster-run-usage)
+- [Cluster run estimation price](#cluster-run-estimation-price)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
@@ -1441,6 +1442,29 @@ The chart pop-up will be opened, e.g.:
 The chart shows a cluster usage - number of all active instances (including the master node) of the current cluster over time.
 
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#cluster-run-usage).
+
+## Cluster run estimation price
+
+Previously, **Cloud Pipeline** allowed to view a price estimation for the single instance jobs.  
+But the clusters did not provide such information (summary). Users could see a price only for a master node.
+
+Now, **Cloud Pipeline** offers a cost estimation, when any compute instances are running:
+
+- **Standalone instance** - reports it's own cost:
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_1.png)
+    - Run's list:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_2.png)
+- **Static cluster** - reports the full cluster cost (summary for a master node and all workers), since it is started:  
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_3.png)
+    - Run's list - master node's cost is reported in the brackets as well:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_4.png)
+- **Autoscaled cluster** - reports the costs, based on the workers lifetime (summary for a master node and all workers). As the workers may be created and terminated all the time - there costs are computed only for the _RUNNING_ state:  
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_5.png)
+    - Run's list - master node's cost is reported in the brackets as well:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_6.png)
 
 ## AWS: seamless authentication
 
