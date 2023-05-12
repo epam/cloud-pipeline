@@ -87,7 +87,7 @@ function PersonalToolWarning (
                     userName={group.owner}
                     style={{margin: '0 5px', fontWeight: 'bold'}}
                   />
-                  ({group.owner}) for support in case of any trouble.
+                  for support in case of any trouble.
                 </div>
               </div>
             )}
