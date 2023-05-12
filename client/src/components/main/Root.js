@@ -56,6 +56,7 @@ import {Search} from '../../models/search';
 import * as billing from '../../models/billing';
 import {cloudCredentialProfiles} from '../../models/cloudCredentials';
 import HiddenObjects from '../../utils/hidden-objects';
+import UINavigation from '../../utils/ui-navigation';
 import impersonation from '../../models/user/impersonation';
 import CurrentUserAttributes, {
   CURRENT_USER_ATTRIBUTES_STORE
@@ -87,6 +88,8 @@ const systemDictionaries = new SystemDictionariesLoadAll();
 const userMetadataKeys = new GetMetadataKeys('PIPELINE_USER');
 
 const allConfigurations = new AllConfigurations();
+
+const uiNavigation = new UINavigation(authenticatedUserInfo, preferences);
 
 const currentUserAttributes = new CurrentUserAttributes(
   authenticatedUserInfo,
@@ -154,6 +157,7 @@ const Root = () =>
       userMetadataKeys,
       cloudCredentialProfiles,
       [HiddenObjects.injectionName]: hiddenObjects,
+      uiNavigation,
       themes,
       multiZoneManager,
       applicationInfo

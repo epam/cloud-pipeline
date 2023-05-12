@@ -20,59 +20,22 @@ import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {computed} from 'mobx';
 import SupportMenuItem from './SupportMenuItem';
-import roleModel from '../../../../utils/roleModel';
 import styles from './SupportMenu.css';
-
-function parseSupportTemplate (preferences, user) {
-  if (preferences && preferences.loaded && user && user.loaded) {
-    const template = preferences.getPreferenceValue('ui.support.template');
-    if (template) {
-      try {
-        const parsed = JSON.parse(template);
-        if (typeof parsed === 'object') {
-          const {
-            roles = [],
-            groups: adGroups = []
-          } = user.value;
-          const groups = roles
-            .map(r => r.name)
-            .concat(...adGroups);
-          const keys = Object.keys(parsed);
-          const groupKey = keys.find(key => groups.includes(key));
-          if (groupKey) {
-            return parsed[groupKey];
-          } else {
-            return parsed._default;
-          }
-        } else if (typeof parsed === 'string') {
-          return parsed;
-        } else {
-          return undefined;
-        }
-      } catch (_) {
-        if (typeof template === 'string') {
-          return template;
-        }
-      }
-    }
-  }
-  return undefined;
-}
 
 const DEFAULT_MENU_ITEM = {
   icon: 'customer-service',
   entryName: 'defaultMenuItem'
 };
 
-@inject('preferences')
-@roleModel.authenticationInfo
+@inject('uiNavigation')
 @observer
 class SupportMenu extends React.Component {
   static propTypes = {
     containerClassName: PropTypes.string,
     itemClassName: PropTypes.string,
     containerStyle: PropTypes.object,
-    itemStyle: PropTypes.object
+    itemStyle: PropTypes.object,
+    router: PropTypes.object
   };
 
   state = {
@@ -81,43 +44,53 @@ class SupportMenu extends React.Component {
 
   @computed
   get template () {
-    const {preferences, authenticatedUserInfo} = this.props;
-    const supportTemplate = parseSupportTemplate(preferences, authenticatedUserInfo);
+    const {uiNavigation} = this.props;
+    const {supportTemplate} = uiNavigation || {};
     let template = [];
-    if (
-      typeof supportTemplate === 'object' &&
-      supportTemplate !== null
-    ) {
-      template = Object.entries(supportTemplate)
-        .map(([entryName, entryValue]) => {
-          if (typeof entryValue === 'string') {
-            return {
-              entryName,
-              icon: DEFAULT_MENU_ITEM.icon,
-              content: entryValue
-            };
-          } else if (typeof entryValue === 'object') {
-            const {
-              icon = DEFAULT_MENU_ITEM.icon,
-              content
-            } = entryValue;
-            return {
-              entryName,
-              icon,
-              content
-            };
-          }
-          return undefined;
-        })
-        .filter(Boolean)
-        .filter(o => o.content);
-    } else if (typeof supportTemplate === 'string') {
-      template = [{
-        entryName: DEFAULT_MENU_ITEM.entryName,
-        icon: DEFAULT_MENU_ITEM.icon,
-        content: supportTemplate
-      }]
-        .filter(o => o.content);
+    if (uiNavigation && uiNavigation.loaded) {
+      if (
+        typeof supportTemplate === 'object' &&
+        supportTemplate !== null
+      ) {
+        template = Object.entries(supportTemplate)
+          .map(([entryName, entryValue]) => {
+            if (typeof entryValue === 'string') {
+              return {
+                entryName,
+                icon: DEFAULT_MENU_ITEM.icon,
+                content: entryValue
+              };
+            } else if (typeof entryValue === 'object') {
+              const {
+                icon = DEFAULT_MENU_ITEM.icon,
+                content,
+                url,
+                target,
+                action,
+                hint = entryName
+              } = entryValue;
+              return {
+                entryName,
+                icon,
+                content,
+                url,
+                target,
+                action,
+                hint
+              };
+            }
+            return undefined;
+          })
+          .filter(Boolean)
+          .filter(o => o.content || o.url || o.action);
+      } else if (typeof supportTemplate === 'string') {
+        template = [{
+          entryName: DEFAULT_MENU_ITEM.entryName,
+          icon: DEFAULT_MENU_ITEM.icon,
+          content: uiNavigation.supportTemplate
+        }]
+          .filter(o => o.content || o.url || o.action);
+      }
     }
     return template;
   }
@@ -126,24 +99,39 @@ class SupportMenu extends React.Component {
     this.setState({supportModalVisible: visible ? entryName : null});
   };
 
-  renderMenuItem = ({content, icon, entryName}) => {
+  renderMenuItem = (menuItem) => {
+    const {
+      content,
+      icon,
+      entryName,
+      action,
+      url,
+      target,
+      hint
+    } = menuItem || {};
     const {
       itemClassName,
       itemStyle
     } = this.props;
     const {supportModalVisible} = this.state;
-    if (!content || !icon) {
+    if ((!content && !url && !action) || !icon) {
       return null;
     }
     return (
       <div key={entryName}>
         <SupportMenuItem
           className={itemClassName}
+          entryName={entryName}
           style={itemStyle}
           visible={supportModalVisible === entryName}
           onVisibilityChanged={this.handleSupportModalVisible(entryName)}
           content={content}
           icon={icon}
+          action={action}
+          target={target}
+          url={url}
+          hint={hint}
+          router={this.props.router}
         />
       </div>
     );
@@ -165,7 +153,7 @@ class SupportMenu extends React.Component {
           containerClassName
         )}
       >
-        {this.template.map(menuItem => this.renderMenuItem(menuItem))}
+        {this.template.map(this.renderMenuItem)}
       </div>
     );
   }
