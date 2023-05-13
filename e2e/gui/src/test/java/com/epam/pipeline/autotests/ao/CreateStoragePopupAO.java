@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.ao.Primitive.ENABLE_SHARING;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 
@@ -56,7 +57,9 @@ public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePo
                     .parent().find(byClassName("ant-checkbox"))),
             entry(MOUNT_POINT, $(byId("mountPoint"))),
             entry(MOUNT_OPTIONS, $(byId("mountOptions"))),
-            entry(ALLOW_MOUNT, $(byValue("All available docker images")))
+            entry(ALLOW_MOUNT, $(byValue("All available docker images"))),
+            entry(ENABLE_SHARING, context().find(byText("Enable sharing"))
+                    .parent().find(byClassName("ant-checkbox")))
     );
 
     public CreateStoragePopupAO() {
@@ -82,6 +85,10 @@ public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePo
 
     public CreateStoragePopupAO clickSensitiveStorageCheckbox() {
         return click(SENSITIVE_STORAGE);
+    }
+
+    public CreateStoragePopupAO clickEnableSharingStorageCheckbox() {
+        return click(ENABLE_SHARING);
     }
 
     public CreateStoragePopupAO clickEnableVersioningCheckbox() {

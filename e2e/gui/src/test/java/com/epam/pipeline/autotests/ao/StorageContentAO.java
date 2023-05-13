@@ -81,7 +81,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(PREV_PAGE, context().find(byId("prev-page-button"))),
             entry(NEXT_PAGE, context().find(byId("next-page-button"))),
             entry(GENERATE_URL, context().find(byId("bulk-url-button"))),
-            entry(HIDE_METADATA, context().find(byId("hide-metadata-button")))
+            entry(HIDE_METADATA, context().find(byId("hide-metadata-button"))),
+            entry(SHARE, context().find(byId("share-storage-button")))
     );
 
     public static By browserItem(final String name) {
@@ -521,6 +522,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                         .getText()
                 )
                 .orElseThrow(() -> new NoSuchElementException(format("%s file was not found.", filename)));
+    }
+
+    public String getSharedStorageLink() {
+        click(SHARE);
+        return context().find(byText("Share storage link")).parent()
+                .find(byXpath("following-sibling::div//textarea")).getText();
     }
 
     public class FileAO extends ElementAO<FileAO> {

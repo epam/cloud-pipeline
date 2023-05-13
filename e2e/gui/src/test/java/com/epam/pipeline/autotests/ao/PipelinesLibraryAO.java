@@ -191,6 +191,14 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
                 .checkStorageCreation(storageName);
     }
 
+    public PipelinesLibraryAO createSharingStorage(String storageName) {
+        return clickOnCreateStorageButton()
+                .setStoragePath(storageName)
+                .clickEnableSharingStorageCheckbox()
+                .ok()
+                .checkStorageCreation(storageName);
+    }
+
     public CreateStoragePopupAO clickOnCreateStorageButton() {
         resetMouse().click(CREATE).click(CREATE_STORAGE);
         return new CreateStoragePopupAO();

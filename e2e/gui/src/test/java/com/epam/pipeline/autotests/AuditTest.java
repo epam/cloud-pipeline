@@ -29,7 +29,9 @@ import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -82,42 +84,48 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
                 FolderPermission.allow(WRITE, testFolder),
                 FolderPermission.allow(EXECUTE, testFolder)
         );
-        pathStorage1 = createStoragesWithContent(storage1);
-        pathStorage2 = library()
-                .cd(testFolder)
-                .createStorage(storage2)
-                .selectStorage(storage2)
-                .getStoragePath();
-        pathStorage4 = createStoragesWithContent(storage4)
-                .replace("s3", "cp");//
-        pathStorage5 = library()
-                .cd(testFolder)
-                .createStorage(storage5)
-                .selectStorage(storage5)
-                .getStoragePath()
-                .replace("s3", "cp");
-        Stream.of(storage4, storage5)
-                .forEach(stor -> library()
-                        .selectStorage(stor)
-                        .showMetadata()
-                        .click(FILE_SYSTEM_ACCESS));
-        logoutIfNeeded();
-        loginAs(user);
-        tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .expandTab(ADVANCED_PANEL)
-                .selectDataStoragesToLimitMounts()
-                .clearSelection()
-                .searchStorage(storage1)
-                .selectStorage(storage1)
-                .searchStorage(storage2)
-                .selectStorage(storage2)
-                .searchStorage(storage4)
-                .selectStorage(storage4)
-                .searchStorage(storage5)
-                .selectStorage(storage5)
-                .ok()
-                .launch(this);
+//        library()
+//                .cd(testFolder)
+//                .createStorage(storage1);
+//        pathStorage1 = addStorageContent(storage1);
+//        pathStorage2 = library()
+//                .cd(testFolder)
+//                .createStorage(storage2)
+//                .selectStorage(storage2)
+//                .getStoragePath();
+//        library()
+//                .cd(testFolder)
+//                .createStorage(storage4);
+//        pathStorage4 = addStorageContent(storage4)
+//                .replace("s3", "cp");//
+//        pathStorage5 = library()
+//                .cd(testFolder)
+//                .createStorage(storage5)
+//                .selectStorage(storage5)
+//                .getStoragePath()
+//                .replace("s3", "cp");
+//        Stream.of(storage4, storage5)
+//                .forEach(stor -> library()
+//                        .selectStorage(stor)
+//                        .showMetadata()
+//                        .click(FILE_SYSTEM_ACCESS));
+//        logoutIfNeeded();
+//        loginAs(user);
+//        tools()
+//                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+//                .expandTab(ADVANCED_PANEL)
+//                .selectDataStoragesToLimitMounts()
+//                .clearSelection()
+//                .searchStorage(storage1)
+//                .selectStorage(storage1)
+//                .searchStorage(storage2)
+//                .selectStorage(storage2)
+//                .searchStorage(storage4)
+//                .selectStorage(storage4)
+//                .searchStorage(storage5)
+//                .selectStorage(storage5)
+//                .ok()
+//                .launch(this);
     }
 
     @AfterClass(alwaysRun = true)
@@ -223,7 +231,10 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         String file2_new = newFile.getName();
         logoutIfNeeded();
         loginAs(user);
-        pathStorage3 = createStoragesWithContent(storage3);
+        library()
+                .cd(testFolder)
+                .createStorage(storage3);
+        pathStorage3 = addStorageContent(storage3);
         String [] expected_logs = {
                 format("WRITE %s/%s", pathStorage3, file1),
                 format("WRITE %s/%s", pathStorage3, file2_new),
@@ -304,6 +315,44 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         checkAuditLog(expected_logs);
     }
 
+    @Test
+    @TestCase(value = {"3059_5"})
+    public void auditOfSharingStorageDataAccess() {
+        String [] expected_logs = {
+                format("WRITE %s/%s", pathStorage4, file3),
+                format("READ %s/%s", pathStorage4, file1),
+                format("WRITE %s/%s", pathStorage5, file1),
+                format("READ %s/%s", pathStorage4, file2),
+                format("MOVE %s/%s %s/%s", pathStorage4, file2, pathStorage5, file2),
+                format("DELETE %s/%s", pathStorage5, file2),
+                format("READ %s/%s/%s", pathStorage4, folder1, inner_file1),
+                format("WRITE %s/%s/%s", pathStorage5, folder1, inner_file1),
+                format("READ %s/%s/%s", pathStorage4, folder1, inner_file2),
+                format("WRITE %s/%s/%s", pathStorage5, folder1, inner_file2),
+                format("MOVE %s/%s %s/%s", pathStorage4, folder2, pathStorage5, folder2),
+                format("DELETE %s/%s/%s", pathStorage4, folder1, inner_file1),
+                format("DELETE %s/%s/%s", pathStorage4, folder1, inner_file2),
+                format("DELETE %s/%s", pathStorage4, folder1)
+        };
+        logoutIfNeeded();
+        loginAs(admin);
+        library()
+                .cd(testFolder)
+                .createSharingStorage(storage6);
+        pathStorage6 = addStorageContent(storage6);
+        String sharedStorageLink = library()
+                .cd(testFolder)
+                .selectStorage(storage6)
+                .getSharedStorageLink();
+        logout();
+        loginAs(user);
+        sleep(120, SECONDS);
+        open(sharedStorageLink);
+        logoutIfNeeded();
+        loginAs(admin);
+        checkAuditLog(expected_logs);
+    }
+
     private void executeCommands(String [] commands) {
         runsMenu()
                 .showLog(getLastRunId())
@@ -331,10 +380,8 @@ public class AuditTest extends AbstractSeveralPipelineRunningTest
         }
     }
 
-    private String createStoragesWithContent(String storage) {
+    private String addStorageContent(String storage) {
         return library()
-                .cd(testFolder)
-                .createStorage(storage)
                 .selectStorage(storage)
                 .createFileWithContent(file1, "file1 content")
                 .createFileWithContent(file2, "file2 content")
