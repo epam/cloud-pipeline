@@ -82,6 +82,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     public PermissionTabAO permissions() {
+        get(TOOL_SETTINGS).waitUntil(visible, DEFAULT_TIMEOUT);
         hover(TOOL_SETTINGS).click(PERMISSIONS);
         return new PermissionTabAO(() -> $(byClassName("ant-modal-close-x")).shouldBe(visible).click());
     }
