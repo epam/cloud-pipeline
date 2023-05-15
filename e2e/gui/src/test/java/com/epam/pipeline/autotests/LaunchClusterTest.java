@@ -63,6 +63,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String onDemandPrice = ON_DEMAND;
     private final String mastersConfigPrice = "Master's config";
     private final String sleepCommand = "sleep";
+    private final String errorMessage = "The following jobs cannot be satisfied with " +
+            "the requested resources and therefore will be killed: #1";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -431,8 +433,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
                 .click(taskWithName(gridEngineAutoscalingTask))
-                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
-                        "requested resources and therefore they will be rejected: 1 (150 cpu)"))
+                .ensure(log(), containsMessages(errorMessage))
                 .ssh(shell -> shell
                         .execute("qsub -b y -pe local 50 sleep 5m")
                         .sleep(20, SECONDS)
@@ -545,8 +546,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
                 .click(taskWithName(gridEngineAutoscalingTask))
-                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
-                        "requested resources and therefore they will be rejected: 1 (50 cpu)"));
+                .ensure(log(), containsMessages(errorMessage));
     }
 
     @Test

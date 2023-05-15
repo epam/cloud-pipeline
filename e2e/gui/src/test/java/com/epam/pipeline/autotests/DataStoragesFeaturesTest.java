@@ -168,6 +168,7 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
     @TestCase(value = {"2354_2"})
     public void checkDisableMountingStorageForPipelineAndDetachedConfiguration() {
         try {
+            loginAs(admin);
             library()
                     .selectStorage(storageMount2)
                     .clickEditStorageButton()
