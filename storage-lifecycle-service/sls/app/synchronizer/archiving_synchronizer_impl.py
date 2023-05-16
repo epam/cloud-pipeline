@@ -385,7 +385,14 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 "storageClass": notification_properties["storage_class"],
                 "dateOfAction": date_of_action,
                 "prolongDays": notification_properties["prolong_days"],
-                "isDateNotExpired": not is_date_expired
+                "isDateNotExpired": not is_date_expired,
+                "notificationType": "DATASTORAGE_LIFECYCLE_ACTION",
+                "notificationResources": [{
+                    "entityId": storage.id,
+                    "entityClass": "STORAGE",
+                    "storagePath": notification_properties["path"],
+                    "storageRuleId": rule.rule_id,
+                }],
             }
 
             return rule.notification.subject, rule.notification.body, _to_user, cc_users, notification_parameters

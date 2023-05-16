@@ -17,62 +17,92 @@
 package com.epam.pipeline.notifier.service.task;
 
 import com.epam.pipeline.entity.notification.NotificationMessage;
+import com.epam.pipeline.entity.notification.NotificationParameter;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.notification.UserNotification;
+import com.epam.pipeline.entity.notification.UserNotificationResource;
 import com.epam.pipeline.notifier.entity.message.MessageText;
 import com.epam.pipeline.notifier.repository.UserNotificationRepository;
 import com.epam.pipeline.notifier.service.TemplateService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "notification.enable.ui", havingValue = "true")
 public class UserNotificationManager implements NotificationManager {
-
-    @Value(value = "${notification.enable.ui}")
-    private boolean isEnabled;
 
     private final UserNotificationRepository notificationRepository;
     private final TemplateService templateService;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     @Transactional
     public void notifySubscribers(final NotificationMessage message) {
-        if (!isEnabled) {
-            return;
-        }
-        notificationRepository.save(toUserNotifications(message));
+        notificationRepository.save(toNotifications(message));
     }
 
-    private List<UserNotification> toUserNotifications(final NotificationMessage message) {
+    private List<UserNotification> toNotifications(final NotificationMessage message) {
         final MessageText messageText = templateService.buildMessageText(message);
         final Set<Long> userIds = new HashSet<>();
         if (message.getToUserId() != null) {
             userIds.add(message.getToUserId());
         }
         userIds.addAll(ListUtils.emptyIfNull(message.getCopyUserIds()));
-        final List<UserNotification> results = new ArrayList<>();
-        SetUtils.emptyIfNull(userIds).forEach(userId -> results.add(buildNotification(userId, messageText)));
-        return results;
+        return SetUtils.emptyIfNull(userIds).stream()
+                .map(userId -> toNotification(userId, messageText, message.getTemplateParameters()))
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private static UserNotification buildNotification(final Long userId,
-                                                      final MessageText messageText) {
-        final UserNotification userNotification = new UserNotification();
-        userNotification.setUserId(userId);
-        userNotification.setSubject(messageText.getSubject());
-        userNotification.setText(messageText.getBody());
-        userNotification.setCreatedDate(LocalDateTime.now());
-        userNotification.setIsRead(false);
-        return userNotification;
+    private UserNotification toNotification(final Long userId,
+                                            final MessageText text,
+                                            final Map<String, Object> parameters) {
+        final UserNotification notification = new UserNotification();
+        notification.setUserId(userId);
+        notification.setSubject(text.getSubject());
+        notification.setText(text.getBody());
+        notification.setCreatedDate(LocalDateTime.now());
+        notification.setIsRead(false);
+        notification.setType(toNotificationType(parameters));
+        notification.setResources(toNotificationResources(parameters).stream()
+                .peek(resource -> resource.setNotification(notification))
+                .collect(Collectors.toList()));
+        return notification;
+    }
+
+    private NotificationType toNotificationType(final Map<String, Object> parameters) {
+        return Optional.ofNullable(parameters.get(NotificationParameter.TYPE.getKey()))
+                .map(this::toNotificationType)
+                .orElse(null);
+    }
+
+    private NotificationType toNotificationType(final Object object) {
+        return mapper.convertValue(object, NotificationType.class);
+    }
+
+    private List<UserNotificationResource> toNotificationResources(final Map<String, Object> parameters) {
+        return Optional.ofNullable(parameters.get(NotificationParameter.RESOURCES.getKey()))
+                .map(this::toNotificationResources)
+                .orElseGet(Collections::emptyList);
+    }
+
+    private List<UserNotificationResource> toNotificationResources(final Object object) {
+        return mapper.convertValue(object, new TypeReference<List<UserNotificationResource>>() {});
     }
 }
