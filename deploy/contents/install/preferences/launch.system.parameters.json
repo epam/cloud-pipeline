@@ -355,10 +355,10 @@
         "passToWorkers": true
     },
     {
-        "name": "CP_PIPE_FUSE_TIMEOUT",
+        "name": "CP_PIPE_FUSE_MOUNT_DELAY",
         "type": "int",
         "description": "Allows to specify the pipe fuse timeout",
-        "defaultValue": "500",
+        "defaultValue": "10000",
         "passToWorkers": false
     },
     {

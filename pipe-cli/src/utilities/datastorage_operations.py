@@ -543,7 +543,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
-                      custom_options=None, quiet=False, threading=False, mode=700, timeout=1000, show_archive=False):
+                      custom_options=None, quiet=False, threading=False, mode=700, timeout=10000, show_archive=False):
         if not file and not bucket:
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
