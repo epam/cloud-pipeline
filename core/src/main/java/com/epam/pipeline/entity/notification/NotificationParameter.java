@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum NotificationParameter {
 
     TYPE("notificationType"),
-    ENTITIES("notificationEntities");
+    RESOURCES("notificationResources");
 
     private final String key;
 }

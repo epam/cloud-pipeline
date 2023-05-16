@@ -31,7 +31,6 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
@@ -62,7 +61,6 @@ public class UserNotification {
     private Boolean isRead;
     @Column(name = "read_date")
     private LocalDateTime readDate;
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-    @JoinColumn(name = "notification_id")
-    private List<UserNotificationEntity> entities;
+    @OneToMany(mappedBy = "notification", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<UserNotificationResource> resources;
 }

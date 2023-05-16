@@ -27,6 +27,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,7 @@ import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -50,14 +52,12 @@ public class UserNotificationManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public UserNotification save(final UserNotification notification) {
-        setUp(notification);
-        return userNotificationRepository.save(notification);
+        return userNotificationRepository.save(toEntity(notification));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void save(final List<UserNotification> notifications) {
-        notifications.forEach(this::setUp);
-        userNotificationRepository.save(notifications);
+        userNotificationRepository.save(toEntity(notifications));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -83,7 +83,7 @@ public class UserNotificationManager {
         final Page<UserNotification> notifications = isRead == null ?
                 userNotificationRepository.findByUserIdOrderByCreatedDateDesc(userId, pageable) :
                 userNotificationRepository.findByUserIdAndIsReadOrderByCreatedDateDesc(userId, isRead, pageable);
-        return new PagedResult<>(notifications.getContent(), (int) notifications.getTotalElements());
+        return new PagedResult<>(toDto(notifications.getContent()), (int) notifications.getTotalElements());
     }
 
     public PagedResult<List<UserNotification>> findMy(final Boolean isRead, final int pageNum, final int pageSize) {
@@ -102,11 +102,26 @@ public class UserNotificationManager {
         cleanUp(LocalDateTime.now().minusDays(expPeriod));
     }
 
-    private void setUp(final UserNotification notification) {
+    private List<UserNotification> toEntity(final List<UserNotification> notifications) {
+        return ListUtils.emptyIfNull(notifications).stream().map(this::toEntity).collect(Collectors.toList());
+    }
+
+    private UserNotification toEntity(final UserNotification notification) {
         if (notification.getId() == null) {
             notification.setCreatedDate(LocalDateTime.now());
             notification.setIsRead(false);
         }
+        ListUtils.emptyIfNull(notification.getResources()).forEach(resource -> resource.setNotification(notification));
+        return notification;
+    }
+
+    private List<UserNotification> toDto(final List<UserNotification> notifications) {
+        return ListUtils.emptyIfNull(notifications).stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    private UserNotification toDto(final UserNotification notification) {
+        ListUtils.emptyIfNull(notification.getResources()).forEach(resource -> resource.setNotification(null));
+        return notification;
     }
 
     private Long getPipelineUserId() {

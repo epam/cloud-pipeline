@@ -14,7 +14,7 @@ import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.notification.NotificationEntityClass;
 import com.epam.pipeline.entity.notification.NotificationParameter;
 import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.notification.UserNotificationEntity;
+import com.epam.pipeline.entity.notification.UserNotificationResource;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.mapper.IssueMapper;
@@ -176,18 +176,19 @@ public class NotificationParameterManager {
     private Map<String, Object> buildEntities(final NotificationEntityClass entityClass,
                                               final List<Long> entityIds) {
         final Map<String, Object> parameters = new HashMap<>();
-        parameters.put(NotificationParameter.ENTITIES.getKey(), entityIds.stream()
-                .map(entityId -> toEntity(entityClass, entityId))
+        parameters.put(NotificationParameter.RESOURCES.getKey(), entityIds.stream()
+                .map(entityId -> toResource(entityClass, entityId))
                 .map(this::toString)
                 .collect(Collectors.toList()));
         return parameters;
     }
 
-    private static UserNotificationEntity toEntity(final NotificationEntityClass entityClass, final Long entityId) {
-        return new UserNotificationEntity(null, entityClass, entityId, null, null);
+    private UserNotificationResource toResource(final NotificationEntityClass entityClass,
+                                                       final Long entityId) {
+        return new UserNotificationResource(null, null, entityClass, entityId, null, null);
     }
 
-    private Map<String, Object> toString(final UserNotificationEntity entity) {
+    private Map<String, Object> toString(final UserNotificationResource entity) {
         return MapUtils.emptyIfNull(jsonMapper.convertValue(entity, new TypeReference<Map<String, Object>>() {}));
     }
 }

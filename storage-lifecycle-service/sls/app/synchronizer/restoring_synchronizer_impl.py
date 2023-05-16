@@ -209,7 +209,7 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                        "actionId": action.action_id,
                        "restoredTill": action.restored_till.strftime("%Y-%m-%d %H:%M:%S"),
                        "notificationType": "DATASTORAGE_LIFECYCLE_RESTORE_ACTION",
-                       "notificationEntities": [{
+                       "notificationResources": [{
                            "entityId": storage.id,
                            "entityClass": "STORAGE",
                            "storagePath": action.path,

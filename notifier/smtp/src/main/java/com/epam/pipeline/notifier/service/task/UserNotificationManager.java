@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationParameter;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.notification.UserNotification;
-import com.epam.pipeline.entity.notification.UserNotificationEntity;
+import com.epam.pipeline.entity.notification.UserNotificationResource;
 import com.epam.pipeline.notifier.entity.message.MessageText;
 import com.epam.pipeline.notifier.repository.UserNotificationRepository;
 import com.epam.pipeline.notifier.service.TemplateService;
@@ -29,8 +29,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
@@ -45,11 +45,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "notification.enable.ui", havingValue = "true")
 public class UserNotificationManager implements NotificationManager {
-
-//    todo: Use conditional on property
-    @Value(value = "${notification.enable.ui}")
-    private boolean isEnabled;
 
     private final UserNotificationRepository notificationRepository;
     private final TemplateService templateService;
@@ -58,13 +55,10 @@ public class UserNotificationManager implements NotificationManager {
     @Override
     @Transactional
     public void notifySubscribers(final NotificationMessage message) {
-        if (!isEnabled) {
-            return;
-        }
-        notificationRepository.save(toUserNotifications(message));
+        notificationRepository.save(toNotifications(message));
     }
 
-    private List<UserNotification> toUserNotifications(final NotificationMessage message) {
+    private List<UserNotification> toNotifications(final NotificationMessage message) {
         final MessageText messageText = templateService.buildMessageText(message);
         final Set<Long> userIds = new HashSet<>();
         if (message.getToUserId() != null) {
@@ -86,7 +80,9 @@ public class UserNotificationManager implements NotificationManager {
         notification.setCreatedDate(LocalDateTime.now());
         notification.setIsRead(false);
         notification.setType(toNotificationType(parameters));
-        notification.setEntities(toNotificationEntities(parameters));
+        notification.setResources(toNotificationResources(parameters).stream()
+                .peek(resource -> resource.setNotification(notification))
+                .collect(Collectors.toList()));
         return notification;
     }
 
@@ -100,13 +96,13 @@ public class UserNotificationManager implements NotificationManager {
         return mapper.convertValue(object, NotificationType.class);
     }
 
-    private List<UserNotificationEntity> toNotificationEntities(final Map<String, Object> parameters) {
-        return Optional.ofNullable(parameters.get(NotificationParameter.ENTITIES.getKey()))
-                .map(this::toNotificationEntities)
+    private List<UserNotificationResource> toNotificationResources(final Map<String, Object> parameters) {
+        return Optional.ofNullable(parameters.get(NotificationParameter.RESOURCES.getKey()))
+                .map(this::toNotificationResources)
                 .orElseGet(Collections::emptyList);
     }
 
-    private List<UserNotificationEntity> toNotificationEntities(final Object object) {
-        return mapper.convertValue(object, new TypeReference<List<UserNotificationEntity>>() {});
+    private List<UserNotificationResource> toNotificationResources(final Object object) {
+        return mapper.convertValue(object, new TypeReference<List<UserNotificationResource>>() {});
     }
 }

@@ -379,7 +379,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                     message.setTemplateParameters(parameterManager.build(type, pair.getLeft(), pair.getRight(),
                             memThreshold, diskThreshold));
                     if (settings.isKeepInformedOwner()) {
-                        message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+                        message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser())
+                                .getId());
                     }
                     message.setCopyUserIds(ccUserIds);
                     return message;

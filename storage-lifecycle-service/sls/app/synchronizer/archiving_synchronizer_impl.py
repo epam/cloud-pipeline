@@ -387,7 +387,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 "prolongDays": notification_properties["prolong_days"],
                 "isDateNotExpired": not is_date_expired,
                 "notificationType": "DATASTORAGE_LIFECYCLE_ACTION",
-                "notificationEntities": [{
+                "notificationResources": [{
                     "entityId": storage.id,
                     "entityClass": "STORAGE",
                     "storagePath": notification_properties["path"],
