@@ -61,9 +61,10 @@ const PLATFORM_SPECIFIC_CAPABILITIES = {
 };
 
 const CAPABILITIES_OS_FILTERS = {
-  [RUN_CAPABILITIES.systemD]: ['centos*'],
+  [RUN_CAPABILITIES.systemD]: ['centos*', 'rocky*'],
   [RUN_CAPABILITIES.dcv]: [
     'centos 7*',
+    'rocky*',
     'ubuntu 18.04',
     'ubuntu 20.04'
   ]
