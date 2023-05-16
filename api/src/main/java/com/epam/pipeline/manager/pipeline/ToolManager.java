@@ -70,7 +70,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -233,6 +232,12 @@ public class ToolManager implements SecuredEntityManager {
     @Override
     public Tool load(Long id) {
         return toolDao.loadTool(id);
+    }
+
+    public Tool loadExisting(final Long id) {
+        final Tool tool = toolDao.loadTool(id);
+        validateToolNotNull(tool, id);
+        return tool;
     }
 
     @Override
@@ -776,22 +781,10 @@ public class ToolManager implements SecuredEntityManager {
 
     public boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
         final String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
-
         if (StringUtils.isEmpty(allowedOSes) || toolOSVersion == null) {
             return true;
         }
-
-        return Arrays.stream(allowedOSes.split(",")).anyMatch(os -> {
-            String[] distroVersion = os.split(":");
-            // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
-            if (!distroVersion[0].equalsIgnoreCase(toolOSVersion.getDistribution())) {
-                return false;
-            }
-            // return false only if version of allowed exists (e.g. centos:6)
-            // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
-            return distroVersion.length != 2 || toolOSVersion.getVersion().toLowerCase()
-                    .startsWith(distroVersion[1].toLowerCase());
-        });
+        return toolOSVersion.isMatched(allowedOSes);
     }
 
     /**

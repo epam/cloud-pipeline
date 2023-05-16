@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
@@ -80,6 +81,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLes
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
 /**
@@ -393,6 +395,23 @@ public class SystemPreferences {
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
                                                             "sleep infinity", LAUNCH_GROUP, pass);
+    public static final ObjectPreference<List<OSSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_LINUX =
+            new ObjectPreference<>(
+                "launch.pod.cmd.template.linux",
+                Collections.singletonList(
+                    OSSpecificLaunchCommandTemplate.builder()
+                        .os("*")
+                        .command("set -o pipefail; "
+                            + "command -v wget >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"wget --no-check-certificate -q -O - '$linuxLaunchScriptUrl'\"; }; "
+                            + "command -v curl >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; "
+                            + "eval $LAUNCH_CMD " +
+                                "| bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
+                        ).build()
+                ),
+                new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {},
+                LAUNCH_GROUP, isValidMapOfLaunchCommands);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
         "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
