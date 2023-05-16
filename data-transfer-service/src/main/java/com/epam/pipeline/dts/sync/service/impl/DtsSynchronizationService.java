@@ -81,6 +81,7 @@ public class DtsSynchronizationService {
     private final String defaultCronExpression;
     private final String syncToken;
     private final CloudPipelineAPIClient apiClient;
+    private final IlluminaValidator illuminaValidator;
 
     @Autowired
     public DtsSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
@@ -92,7 +93,8 @@ public class DtsSynchronizationService {
                                      final PreferenceService preferenceService,
                                      final ShutdownService shutdownService,
                                      final DtsRuleExpanderService dtsRuleExpander,
-                                     final CloudPipelineAPIClient apiClient) {
+                                     final CloudPipelineAPIClient apiClient,
+                                     final IlluminaValidator illuminaValidator) {
         this.apiClient = apiClient;
         this.pipeCredentials = new PipelineCredentials(pipeApiUrl, pipeApiToken);
         this.taskRepository = taskRepository;
@@ -102,6 +104,7 @@ public class DtsSynchronizationService {
         this.activeSyncRules = new ConcurrentHashMap<>();
         this.activeTransferTasks = new ConcurrentHashMap<>();
         this.dtsRuleExpander = dtsRuleExpander;
+        this.illuminaValidator = illuminaValidator;
         this.syncToken = syncToken;
         this.defaultCronExpression = Optional.of(defaultCronExpression)
             .filter(CronSequenceGenerator::isValidExpression)
@@ -254,6 +257,9 @@ public class DtsSynchronizationService {
                             rule.getSource(), rule.getDestination());
                     return null;
                 }
+                if (!runAdditionalChecks(rule)) {
+                    return null;
+                }
                 return trySubmitTransferTask(buildTransferSource(rule), transferDestination,
                         rule.getDeleteSource());
             })
@@ -263,6 +269,13 @@ public class DtsSynchronizationService {
                 return submittedTask;
             })
             .orElse(null);
+    }
+
+    private boolean runAdditionalChecks(final AutonomousSyncRule key) {
+        if (Boolean.TRUE.equals(key.getCheckIllumina())) {
+            return illuminaValidator.validateIlluminaFolder(key.getSource());
+        }
+        return true;
     }
 
     private TransferTask trySubmitTransferTask(final StorageItem transferSource,

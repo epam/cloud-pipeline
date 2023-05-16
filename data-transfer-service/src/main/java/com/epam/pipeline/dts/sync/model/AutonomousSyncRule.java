@@ -35,6 +35,7 @@ public class AutonomousSyncRule {
     private Boolean deleteSource;
     private List<TransferTrigger> transferTriggers;
     private Boolean checkSyncToken;
+    private Boolean checkIllumina;
     private AutonomousSyncRule parentRule;
 
     public AutonomousSyncRule(final String source,
