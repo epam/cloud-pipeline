@@ -31,5 +31,5 @@ public interface LogClient {
 
     @POST("restapi/log")
     Call<Result<Boolean>> save(@Header(AUTHORIZATION) String token,
-                               @Body final List<LogEntry> logEntries);
+                               @Body List<LogEntry> logEntries);
 }
