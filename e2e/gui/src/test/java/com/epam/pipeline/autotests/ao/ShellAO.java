@@ -161,9 +161,14 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO waitUntilTextAppears(final String runId) {
+        waitUntilTextAppears("pipeline", runId);
+        return this;
+    }
+
+    public ShellAO waitUntilTextAppears(final String pipeName, final String runId) {
         for (int i = 0; i < 2; i++) {
             sleep(10, SECONDS);
-            if ($(withText(format("pipeline-%s", runId))).exists()) {
+            if ($(withText(format("%s-%s", pipeName.toLowerCase(), runId))).exists()) {
                 break;
             }
             sleep(1, MINUTES);
