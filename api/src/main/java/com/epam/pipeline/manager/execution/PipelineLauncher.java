@@ -27,9 +27,12 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
+import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -39,6 +42,7 @@ import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import lombok.Getter;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -72,6 +76,21 @@ public class PipelineLauncher {
     private static final String ENV_DELIMITER = ",";
     private static final String CP_POD_PULL_POLICY = "CP_POD_PULL_POLICY";
 
+    @Getter
+    public enum LinuxLaunchScriptParams {
+        LINUX_LAUNCH_SCRIPT_URL_PARAM("linuxLaunchScriptUrl"),
+        INIT_LINUX_SCRIPT_URL_PARAM("linuxInitScriptUrl"),
+        GIT_CLONE_URL_PARAM("gitCloneUrl"),
+        GIT_REVISION_NAME_PARAM("gitRevisionName"),
+        PIPELINE_COMMAND_PARAM("pipelineCommand");
+
+        private final String value;
+
+        LinuxLaunchScriptParams(String value) {
+            this.value = value;
+        }
+    }
+
     @Autowired
     private PipelineExecutor executor;
 
@@ -84,11 +103,17 @@ public class PipelineLauncher {
     @Autowired
     private UserManager userManager;
 
+    @Autowired
+    private ToolScanInfoManager toolScanInfoManager;
+
     @Value("${kube.namespace}")
     private String kubeNamespace;
 
     @Value("${launch.script.url.linux}")
     private String linuxLaunchScriptUrl;
+
+    @Value("${init.script.url.linux}")
+    private String linuxInitScriptUrl;
 
     @Value("${launch.script.url.windows}")
     private String windowsLaunchScriptUrl;
@@ -144,14 +169,28 @@ public class PipelineLauncher {
         } else {
             if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
                 rootPodCommand = String.format(
-                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS), 
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS),
                         windowsLaunchScriptUrl, pipelineCommand);
             } else {
-                rootPodCommand = String.format(
-                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX), 
-                        linuxLaunchScriptUrl, linuxLaunchScriptUrl, gitCloneUrl,
-                        run.getRevisionName(), pipelineCommand);
+                final ToolOSVersion toolOSVersion = toolScanInfoManager
+                        .loadToolVersionScanInfoByImageName(configuration.getDockerImage())
+                        .map(ToolVersionScanResult::getToolOSVersion).orElse(null);
+                final String effectiveLaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX),
+                        toolOSVersion
+                );
+                Assert.notNull(effectiveLaunchCommand, "Fail to evaluate pod launch command.");
+                rootPodCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
+                        effectiveLaunchCommand,
+                        new HashMap<String, String>() {{
+                            put(LinuxLaunchScriptParams.LINUX_LAUNCH_SCRIPT_URL_PARAM.getValue(), linuxLaunchScriptUrl);
+                            put(LinuxLaunchScriptParams.INIT_LINUX_SCRIPT_URL_PARAM.getValue(), linuxInitScriptUrl);
+                            put(LinuxLaunchScriptParams.GIT_CLONE_URL_PARAM.getValue(), gitCloneUrl);
+                            put(LinuxLaunchScriptParams.GIT_REVISION_NAME_PARAM.getValue(), run.getRevisionName());
+                            put(LinuxLaunchScriptParams.PIPELINE_COMMAND_PARAM.getValue(), pipelineCommand);
+                        }});
             }
+
         }
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars, endpoints, pipelineId,
@@ -160,6 +199,7 @@ public class PipelineLauncher {
                 configuration.getKubeServiceAccount());
         return pipelineCommand;
     }
+
 
     void validateLaunchConfiguration(final PipelineConfiguration configuration) {
         final PipelineUser user = authManager.getCurrentUser();

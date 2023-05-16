@@ -2109,31 +2109,36 @@ echo "-"
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
     [ "$CP_OS" == "centos" ]; then
-      _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
-      _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
-      _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
-      for i in *; do \
-        [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; \
-      done); \
-      rm -f /lib/systemd/system/multi-user.target.wants/*;\
-      rm -f /etc/systemd/system/*.wants/*;\
-      rm -f /lib/systemd/system/local-fs.target.wants/*; \
-      rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
-      rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
-      rm -f /lib/systemd/system/basic.target.wants/*;\
-      rm -f /lib/systemd/system/anaconda.target.wants/*;'
+        _SYSTEMCTL_STATUS=$(systemctl &> /dev/null; $?)
+        if [ "$_SYSTEMCTL_STATUS" -eq 0 ]; then
+            echo "Systemd already active, skipping installation"
+        else
+            _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
+            _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
+            _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
+            for i in *; do \
+              [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; \
+            done); \
+            rm -f /lib/systemd/system/multi-user.target.wants/*;\
+            rm -f /etc/systemd/system/*.wants/*;\
+            rm -f /lib/systemd/system/local-fs.target.wants/*; \
+            rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+            rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+            rm -f /lib/systemd/system/basic.target.wants/*;\
+            rm -f /lib/systemd/system/anaconda.target.wants/*;'
 
-      echo $_CONTAINER_DOCKER_ENV_EXPORTING >> /etc/cp_env.sh
-      eval "$_CONTAINER_DOCKER_ENV_EXPORTING"
-      echo $_IGNORING_CHROOT_ENV_EXPORTING >> /etc/cp_env.sh
-      eval "$_IGNORING_CHROOT_ENV_EXPORTING"
-      eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
-      /usr/lib/systemd/systemd --system &
-      
-      # This directory does not exist by default
-      # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
-      # See: https://serverfault.com/a/925694
-      mkdir /run/systemd/system
+            echo $_CONTAINER_DOCKER_ENV_EXPORTING >> /etc/cp_env.sh
+            eval "$_CONTAINER_DOCKER_ENV_EXPORTING"
+            echo $_IGNORING_CHROOT_ENV_EXPORTING >> /etc/cp_env.sh
+            eval "$_IGNORING_CHROOT_ENV_EXPORTING"
+            eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
+            /usr/lib/systemd/systemd --system &
+
+            # This directory does not exist by default
+            # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
+            # See: https://serverfault.com/a/925694
+            mkdir /run/systemd/system
+        fi
 else
     echo "Systemd is not requested, skipping installation"
 fi

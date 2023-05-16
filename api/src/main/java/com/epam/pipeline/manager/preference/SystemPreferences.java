@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
@@ -96,6 +97,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
 /**
@@ -556,12 +558,23 @@ public class SystemPreferences {
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
                                                             "sleep infinity", LAUNCH_GROUP, pass);
-    public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_LINUX = new StringPreference(
-            "launch.pod.cmd.template.linux", "set -o pipefail; "
-            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
-            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
-            + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'",
-            LAUNCH_GROUP, isNotBlank);
+    public static final ObjectPreference<List<OSSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_LINUX =
+            new ObjectPreference<>(
+                "launch.pod.cmd.template.linux",
+                Collections.singletonList(
+                    OSSpecificLaunchCommandTemplate.builder()
+                        .os("*")
+                        .command("set -o pipefail; "
+                            + "command -v wget >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"wget --no-check-certificate -q -O - '$linuxLaunchScriptUrl'\"; }; "
+                            + "command -v curl >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; "
+                            + "eval $LAUNCH_CMD " +
+                                "| bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
+                        ).build()
+                ),
+                new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {},
+                LAUNCH_GROUP, isValidMapOfLaunchCommands);
     public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_WINDOWS = new StringPreference(
             "launch.pod.cmd.template.windows", "Add-Type @\"\n" +
             "using System.Net;\n" +
