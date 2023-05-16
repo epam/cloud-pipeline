@@ -129,6 +129,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToMyProfile()
                 .validateUserName(user.login);
         ShellAO.open(sshLink)
+                .waitUntilTextAppears(getLastRunId())
                 .execute("ls -la")
                 .assertOutputDoesNotContain("ls -la");
         open(C.ROOT_ADDRESS);

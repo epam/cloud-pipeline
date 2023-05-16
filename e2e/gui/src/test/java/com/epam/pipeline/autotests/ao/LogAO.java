@@ -451,7 +451,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public static By log() {
-        return byClassName("ReactVirtualized__List");
+        return byClassName("log__logs");
     }
 
     public LogAO logContainsMessage(Set<String> logMess, final String message) {

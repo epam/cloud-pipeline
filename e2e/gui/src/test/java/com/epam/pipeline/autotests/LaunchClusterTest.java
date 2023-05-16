@@ -331,6 +331,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .click(taskWithName("SLURMMasterSetupWorkers"))
                 .ensure(log(), containsMessages("All SLURM hosts are connected"))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
                         .execute("sinfo")
                         .assertOutputContains("main.q*", "idle", String.format("%s-[%s-%s]",
                                 getPipelineName().toLowerCase(), getRunId(), childRunID))
@@ -422,6 +423,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
                         .execute("qsub -b y -pe local 150 sleep 5m")
                         .assertOutputContains("Your job 1 (\"sleep\") has been submitted")
                         .sleep(20, SECONDS)
@@ -435,6 +437,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .click(taskWithName(gridEngineAutoscalingTask))
                 .ensure(log(), containsMessages(errorMessage))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
                         .execute("qsub -b y -pe local 50 sleep 5m")
                         .sleep(20, SECONDS)
                         .execute("qstat")
@@ -475,6 +478,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_HYBRID", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
                                 getPipelineName().toLowerCase(), getRunId()))
@@ -500,6 +504,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 )
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
                                 getPipelineName().toLowerCase(), getRunId()), String.format("pipeline-%s",
@@ -535,6 +540,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
                         .execute("qsub -b y -pe local 50 sleep 5m")
                         .assertOutputContains("Your job 1 (\"sleep\") has been submitted")
                         .sleep(20, SECONDS)

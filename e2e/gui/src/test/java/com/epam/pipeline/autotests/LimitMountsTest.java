@@ -139,6 +139,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                         "Run is launched with mount limits (None) Only 0 storages will be mounted",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls -l cloud-data/")
                         .assertOutputContains("total 0")
                         .close());
@@ -182,6 +183,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .ensure(log(), containsMessages("Only 1 storages will be mounted"))
                 .ensure(log(), containsMessages(mountStorageMessage(storage3)))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage3.toLowerCase())
                         .close());

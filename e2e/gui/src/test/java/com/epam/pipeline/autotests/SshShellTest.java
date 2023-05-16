@@ -56,7 +56,9 @@ public class SshShellTest extends AbstractSinglePipelineRunningTest implements T
     @Test(dependsOnMethods = {"checkSshLink"})
     @TestCase({"EPMCMBIBPC-585"})
     public void checkShellFunctionality() {
-        shell().execute("cd /home")
+        shell()
+                .waitUntilTextAppears(getRunId())
+                .execute("cd /home")
                 .execute("mkdir test")
                 .execute("ls")
                 .assertOutputContains("test");

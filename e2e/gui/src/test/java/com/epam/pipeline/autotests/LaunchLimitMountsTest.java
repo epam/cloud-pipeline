@@ -169,6 +169,7 @@ public class LaunchLimitMountsTest
                 .ensure(log(), containsMessages(format("Run is launched with mount limits (%s) Only 1 storages will be mounted", storageID)))
                 .ensure(log(), containsMessages(mountStorageMessage(storage1)))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(testRunID)
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
                         .assertPageDoesNotContain(storage2.toLowerCase())
@@ -206,6 +207,7 @@ public class LaunchLimitMountsTest
                 .logContainsMessage(logMess, mountStorageMessage(storage1))
                 .logContainsMessage(logMess, mountStorageMessage(storage2))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
                         .assertOutputContains(storage2.toLowerCase())
@@ -283,6 +285,7 @@ public class LaunchLimitMountsTest
                 .ensure(log(), containsMessages(mountStorageMessage(storage1)))
                 .ensure(log(), containsMessages(mountStorageMessage(storageSensitive)))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
                         .assertOutputContains(storageSensitive.toLowerCase())
@@ -378,6 +381,7 @@ public class LaunchLimitMountsTest
                         "Run is launched with mount limits (None) Only 0 storages will be mounted",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls -l cloud-data/")
                         .assertOutputContains("total 0")
                         .close());

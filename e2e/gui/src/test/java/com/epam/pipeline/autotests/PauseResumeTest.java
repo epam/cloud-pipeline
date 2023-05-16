@@ -113,7 +113,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell.execute(
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(getLastRunId())
+                                                .execute(
                                                 String.format("echo '%s' > %s", testFileContent, testFileName)))
                                 )
                                 .waitForPauseButton()

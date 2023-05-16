@@ -217,6 +217,7 @@ public class RunToolsInSandBoxTest
                 .ensure(configurationParameter("CP_CAP_DIND_CONTAINER", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("docker --version")
                         .assertOutputContains("Docker version", ", build ")
                         .execute(format("docker pull %s", testDockerImage))
@@ -244,6 +245,7 @@ public class RunToolsInSandBoxTest
                 .ensure(configurationParameter("CP_CAP_SINGULARITY", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("singularity help version")
                         .assertOutputContains("Show the version for Singularity")
                         .execute(format("singularity build %s.sif library://%s", testDockerImage, testDockerImage))

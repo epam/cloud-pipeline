@@ -187,11 +187,12 @@ public class DockerCommitTest
                 )
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
-                                .ssh(shell ->
-                                        shell.execute("cd /")
-                                                .execute("head " + testFileName)
-                                                .assertOutputContains(testFileContent)
-                                                .close()
+                                .ssh(shell -> shell
+                                         .waitUntilTextAppears(getLastRunId())
+                                         .execute("cd /")
+                                         .execute("head " + testFileName)
+                                         .assertOutputContains(testFileContent)
+                                         .close()
                                 )
                 );
 
@@ -312,10 +313,11 @@ public class DockerCommitTest
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
-                                        .ssh(shell ->
-                                                shell.execute("cd /")
-                                                        .execute("head " + testFileName)
-                                                        .assertOutputContains(testFileContent)))
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(getLastRunId())
+                                                .execute("cd /")
+                                                .execute("head " + testFileName)
+                                                .assertOutputContains(testFileContent)))
                 );
 
         runsMenu()
