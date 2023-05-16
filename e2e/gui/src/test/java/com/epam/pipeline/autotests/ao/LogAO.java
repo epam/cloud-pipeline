@@ -110,16 +110,16 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public Stream<String> logMessages() {
-        $(byClassName("log__logs-table")).shouldBe(visible);
-        Utils.scrollElementToPosition(".log__logs-table", 0);
+        $(byClassName("log__logs")).shouldBe(visible);
+        Utils.scrollElementToPosition(".log__logs", 0);
         Set<String> lines = new LinkedHashSet<>();
         boolean keepScrolling = true;
         int offset = 0;
         while (keepScrolling) {
-            ElementsCollection messages = $(byClassName("log__logs-table")).findAll(byClassName("log__log-row"));
+            ElementsCollection messages = $(byClassName("log__logs")).findAll(byClassName("un-task-logs__console-line"));
             keepScrolling = lines.addAll(messages.texts());
             offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
-            Utils.scrollElementToPosition(".log__logs-table", offset);
+            Utils.scrollElementToPosition(".log__logs", offset);
         }
         return lines.stream();
     }
@@ -477,7 +477,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By logMessage(final String text) {
         Objects.requireNonNull(text);
-        final String messageClass = "log__log-row";
+        final String messageClass = "un-task-logs__console-line";
         final By messageQualifier = byXpath(format(
                 "//*[contains(concat(' ', @class, ' '), ' %s ') and .//*[contains(., \"%s\")]]",
                 messageClass, text
@@ -497,7 +497,7 @@ public class LogAO implements AccessObject<LogAO> {
         Objects.requireNonNull(text);
         return new Condition(format("contains message {%s}", text)) {
 
-            private static final String container = ".log__logs-table";
+            private static final String container = ".log__logs";
             private final By message = logMessage(text);
 
             @Override
@@ -509,7 +509,7 @@ public class LogAO implements AccessObject<LogAO> {
                     int offset = 0;
                     Utils.scrollElementToPosition(container, 0);
                     while (!seen && keepScrolling) {
-                        final ElementsCollection messages = $(container).findAll(byClassName("log__log-row"));
+                        final ElementsCollection messages = $(container).findAll(byClassName("un-task-logs__console-line"));
                         seen = $(message).is(visible);
                         keepScrolling = lines.addAll(messages.texts());
                         offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
