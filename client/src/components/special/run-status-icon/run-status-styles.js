@@ -23,6 +23,7 @@ export default {
   [Statuses.pausing]: `cp-runs-table-icon-blue ${styles.blink}`,
   [Statuses.pulling]: 'cp-runs-table-icon-blue',
   [Statuses.queued]: 'cp-runs-table-icon-blue',
+  [Statuses.nodePending]: 'cp-runs-table-icon-yellow',
   [Statuses.resuming]: `cp-runs-table-icon-blue ${styles.blink}`,
   [Statuses.running]: 'cp-runs-table-icon-blue',
   [Statuses.scheduled]: 'cp-runs-table-icon-blue',
