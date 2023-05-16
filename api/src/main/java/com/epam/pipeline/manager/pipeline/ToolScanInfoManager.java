@@ -25,8 +25,8 @@ import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.MapUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -41,12 +41,14 @@ import java.util.stream.Collectors;
  * Class returns aggregated scan info without detailed vulnerability or dependency data
  */
 @Service
-@RequiredArgsConstructor
 public class ToolScanInfoManager {
 
-    private final ToolManager toolManager;
-    private final ToolVersionManager toolVersionManager;
-    private final ToolVulnerabilityDao toolVulnerabilityDao;
+    @Autowired
+    private ToolManager toolManager;
+    @Autowired
+    private ToolVersionManager toolVersionManager;
+    @Autowired
+    private ToolVulnerabilityDao toolVulnerabilityDao;
 
     public ToolDescription loadToolInfo(final Long toolId) {
         final Tool tool = toolManager.loadExisting(toolId);
