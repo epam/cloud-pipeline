@@ -177,6 +177,7 @@ public class PipelineLauncher {
                         put(LinuxLaunchScriptParams.GIT_REVISION_NAME_PARAM.getValue(), run.getRevisionName());
                         put(LinuxLaunchScriptParams.PIPELINE_COMMAND_PARAM.getValue(), pipelineCommand);
                     }});
+
         }
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars,
