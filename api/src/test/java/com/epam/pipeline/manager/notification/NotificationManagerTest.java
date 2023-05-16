@@ -340,7 +340,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         NotificationSettings settings = notificationSettingsDao.loadNotificationSettings(1L);
         settings.setKeepInformedAdmins(false);
         notificationSettingsDao.updateNotificationSettings(settings);
-        notificationManager.notifyLongRunningTask(longRunnging, LONG_RUNNING_DURATION.getStandardSeconds(), settings);
+        notificationManager.notifyLongRunningTask(longRunnging, LONG_RUNNING_DURATION.getStandardSeconds(),
+                LONG_RUNNING, settings);
 
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
@@ -351,7 +352,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         settings.setKeepInformedAdmins(false);
         settings.setInformedUserIds(Collections.singletonList(userDao.loadUserByName("admin").getId()));
         notificationSettingsDao.updateNotificationSettings(settings);
-        notificationManager.notifyLongRunningTask(longRunnging, LONG_RUNNING_DURATION.getStandardSeconds(), settings);
+        notificationManager.notifyLongRunningTask(longRunnging, LONG_RUNNING_DURATION.getStandardSeconds(),
+                LONG_RUNNING, settings);
         messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertTrue(messages.get(messages.size() - 1).getCopyUserIds().contains(admin.getId()));
     }

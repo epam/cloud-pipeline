@@ -39,7 +39,8 @@ import java.util.Map;
 
 public interface NotificationService {
 
-    default void notifyLongRunningTask(PipelineRun run, Long duration, NotificationSettings settings) {
+    default void notifyLongRunningTask(PipelineRun run, Long duration, final NotificationType type,
+                                       NotificationSettings settings) {
 
     }
 

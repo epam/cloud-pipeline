@@ -35,8 +35,9 @@ public class ContextualNotificationManagerTest {
     private final ContextualNotificationSettingsManager contextualNotificationSettingsManager =
             mock(ContextualNotificationSettingsManager.class);
     private final MonitoringNotificationDao monitoringNotificationDao = mock(MonitoringNotificationDao.class);
+    private final NotificationParameterManager notificationParameterManager = mock(NotificationParameterManager.class);
     private final ContextualNotificationManager manager = new ContextualNotificationManager(
-            contextualNotificationSettingsManager, monitoringNotificationDao);
+            contextualNotificationSettingsManager, notificationParameterManager, monitoringNotificationDao);
 
     @Test
     public void notifyRunStatusChangedShouldNotCreateNotificationMessageIfThereIsNoNotification() {
