@@ -144,7 +144,7 @@ public class DtsSynchronizationService {
     private AutonomousSyncRule mapToRuleWithoutCron(final AutonomousSyncRule rule) {
         return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null,
                 rule.getDeleteSource(), ListUtils.emptyIfNull(rule.getTransferTriggers()),
-                rule.getCheckSyncToken());
+                rule.getCheckSyncToken(), rule.getCheckIllumina());
     }
 
     private AutonomousSyncCronDetails mapRuleToCronDetails(final AutonomousSyncRule newRule) {
