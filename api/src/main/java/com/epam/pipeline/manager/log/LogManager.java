@@ -68,10 +68,12 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -190,8 +192,11 @@ public class LogManager {
 
         final SearchResponse response = verifyResponse(executeRequest(request));
 
-        final Terms terms = response.getAggregations().get(groupBy);
         final Map<String, Long> result = new HashMap<>();
+        if (Objects.isNull(response.getAggregations())) {
+            return result;
+        }
+        final Terms terms = response.getAggregations().get(groupBy);
         for (Terms.Bucket termBucket : terms.getBuckets()) {
             result.put(termBucket.getKeyAsString(), termBucket.getDocCount());
         }
@@ -300,7 +305,7 @@ public class LogManager {
         final LocalDate actualFrom = from.minus(FILEBEAT_TRANSITION_PERIOD);
         final LocalDate actualTo = to.plus(FILEBEAT_TRANSITION_PERIOD);
         return Stream.iterate(actualFrom, date -> date.plusDays(1))
-                .limit(Period.between(actualFrom, actualTo).getDays() + 1)
+                .limit(ChronoUnit.DAYS.between(actualFrom, actualTo) + 1)
                 .map(date -> date.format(ELASTIC_DATE_FORMATTER))
                 .map(dateString -> getIndexName(indexPrefix, dateString, ES_WILDCARD))
                 .toArray(String[]::new);
