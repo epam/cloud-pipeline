@@ -126,7 +126,7 @@ public class NotificationParameterManager {
         final Quota quota = appliedQuota.getQuota();
         final QuotaAction action = appliedQuota.getAction();
         final Map<String, Object> parameters = build(type);
-        parameters.putAll(buildEntities(NotificationEntityClass.QUOTA, appliedQuota.getId()));
+        parameters.putAll(buildEntities(NotificationEntityClass.QUOTA, quota.getId()));
         parameters.put("expense", appliedQuota.getExpense());
         parameters.put("from", appliedQuota.getFrom());
         parameters.put("to", appliedQuota.getTo());
