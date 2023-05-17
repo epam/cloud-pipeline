@@ -40,35 +40,7 @@ COST = 'Cost ($)'
 DURATION_HOURS = 'Duration (hours)'
 ROUND = 4
 
-EMAIL_TEMPLATE = '''
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <style>
-        table,
-        td {{
-            border: 1px solid black;
-            border-collapse: collapse;
-            padding: 5px;
-        }}
-    </style>
-</head>
-
-<body>
-<p>Dear user,</p>
-<p>*** This is a system generated email, do not reply to this email ***</p>
-<p>Please find usage statistics for period {from} - {to}. </p>
-<p>
-{text}
-</p>
-<p>Best regards,</p>
-<p>{deploy_name} Platform</p>
-</body>
-
-</html>
-'''
+EMAIL_TEMPLATE = '{text}'
 
 
 EMAIL_SUBJECT = '[%s]: Platform usage statistics'
