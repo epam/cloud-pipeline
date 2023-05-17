@@ -51,7 +51,7 @@ public class IlluminaValidator {
                 final String lane = tileId[0];
                 final String name = tileId[1];
                 tiles.putIfAbsent(lane, new ArrayList<>());
-                tiles.get(lane).add(name);
+                tiles.get(lane).add(tile.getTextContent());
                 surfaces.add(Integer.parseInt(name.substring(0, 1)));
             }
 
@@ -60,7 +60,7 @@ public class IlluminaValidator {
             log.info("[{}] Surfaces list: {}", runFolder, surfaces);
             log.info("[{}] Tiles count:", runFolder);
             tiles.forEach((lane, tile) -> {
-                log.info("[{}] Lane {}: {}:", runFolder, lane, tile.size());
+                log.info("[{}] Lane {}: {}", runFolder, lane, tile.size());
             });
 
             if (!checkFilterFiles(runFolder, tiles)) {
