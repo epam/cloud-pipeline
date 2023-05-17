@@ -17,7 +17,7 @@
 package com.epam.pipeline.acl.notification;
 
 import com.epam.pipeline.controller.PagedResult;
-import com.epam.pipeline.entity.notification.UserNotification;
+import com.epam.pipeline.dto.notification.UserNotification;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;

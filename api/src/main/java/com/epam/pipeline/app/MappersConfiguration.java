@@ -24,6 +24,7 @@ import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
+import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -116,6 +117,11 @@ public class MappersConfiguration {
     @Bean
     public ContextualNotificationMapper contextualNotificationMapper() {
         return Mappers.getMapper(ContextualNotificationMapper.class);
+    }
+
+    @Bean
+    public UserNotificationMapper userNotificationMapper() {
+        return Mappers.getMapper(UserNotificationMapper.class);
     }
 
     @Bean

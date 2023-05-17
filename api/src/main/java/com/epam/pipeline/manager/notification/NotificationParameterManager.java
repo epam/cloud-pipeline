@@ -14,7 +14,7 @@ import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.notification.NotificationEntityClass;
 import com.epam.pipeline.entity.notification.NotificationParameter;
 import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.notification.UserNotificationResource;
+import com.epam.pipeline.entity.notification.UserNotificationResourceEntity;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.mapper.IssueMapper;
@@ -183,12 +183,12 @@ public class NotificationParameterManager {
         return parameters;
     }
 
-    private UserNotificationResource toResource(final NotificationEntityClass entityClass,
-                                                       final Long entityId) {
-        return new UserNotificationResource(null, null, entityClass, entityId, null, null);
+    private UserNotificationResourceEntity toResource(final NotificationEntityClass entityClass,
+                                                      final Long entityId) {
+        return new UserNotificationResourceEntity(null, null, entityClass, entityId, null, null);
     }
 
-    private Map<String, Object> toString(final UserNotificationResource entity) {
+    private Map<String, Object> toString(final UserNotificationResourceEntity entity) {
         return MapUtils.emptyIfNull(jsonMapper.convertValue(entity, new TypeReference<Map<String, Object>>() {}));
     }
 }

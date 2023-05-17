@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.notifier.repository;
 
-import com.epam.pipeline.entity.notification.UserNotification;
+import com.epam.pipeline.entity.notification.UserNotificationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserNotificationRepository extends JpaRepository<UserNotification, Long> {
+public interface UserNotificationRepository extends JpaRepository<UserNotificationEntity, Long> {
 }

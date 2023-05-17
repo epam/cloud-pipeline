@@ -43,7 +43,7 @@ import java.util.List;
 @Table(name = "user_notification", schema = "pipeline")
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserNotification {
+public class UserNotificationEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -62,5 +62,5 @@ public class UserNotification {
     @Column(name = "read_date")
     private LocalDateTime readDate;
     @OneToMany(mappedBy = "notification", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<UserNotificationResource> resources;
+    private List<UserNotificationResourceEntity> resources;
 }

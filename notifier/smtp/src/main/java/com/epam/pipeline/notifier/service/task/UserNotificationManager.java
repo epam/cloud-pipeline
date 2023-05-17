@@ -19,8 +19,8 @@ package com.epam.pipeline.notifier.service.task;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationParameter;
 import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.notification.UserNotification;
-import com.epam.pipeline.entity.notification.UserNotificationResource;
+import com.epam.pipeline.entity.notification.UserNotificationEntity;
+import com.epam.pipeline.entity.notification.UserNotificationResourceEntity;
 import com.epam.pipeline.notifier.entity.message.MessageText;
 import com.epam.pipeline.notifier.repository.UserNotificationRepository;
 import com.epam.pipeline.notifier.service.TemplateService;
@@ -58,7 +58,7 @@ public class UserNotificationManager implements NotificationManager {
         notificationRepository.save(toNotifications(message));
     }
 
-    private List<UserNotification> toNotifications(final NotificationMessage message) {
+    private List<UserNotificationEntity> toNotifications(final NotificationMessage message) {
         final MessageText messageText = templateService.buildMessageText(message);
         final Set<Long> userIds = new HashSet<>();
         if (message.getToUserId() != null) {
@@ -70,10 +70,10 @@ public class UserNotificationManager implements NotificationManager {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private UserNotification toNotification(final Long userId,
-                                            final MessageText text,
-                                            final Map<String, Object> parameters) {
-        final UserNotification notification = new UserNotification();
+    private UserNotificationEntity toNotification(final Long userId,
+                                                  final MessageText text,
+                                                  final Map<String, Object> parameters) {
+        final UserNotificationEntity notification = new UserNotificationEntity();
         notification.setUserId(userId);
         notification.setSubject(text.getSubject());
         notification.setText(text.getBody());
@@ -96,13 +96,13 @@ public class UserNotificationManager implements NotificationManager {
         return mapper.convertValue(object, NotificationType.class);
     }
 
-    private List<UserNotificationResource> toNotificationResources(final Map<String, Object> parameters) {
+    private List<UserNotificationResourceEntity> toNotificationResources(final Map<String, Object> parameters) {
         return Optional.ofNullable(parameters.get(NotificationParameter.RESOURCES.getKey()))
                 .map(this::toNotificationResources)
                 .orElseGet(Collections::emptyList);
     }
 
-    private List<UserNotificationResource> toNotificationResources(final Object object) {
-        return mapper.convertValue(object, new TypeReference<List<UserNotificationResource>>() {});
+    private List<UserNotificationResourceEntity> toNotificationResources(final Object object) {
+        return mapper.convertValue(object, new TypeReference<List<UserNotificationResourceEntity>>() {});
     }
 }
