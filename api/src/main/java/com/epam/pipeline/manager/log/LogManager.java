@@ -65,6 +65,7 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -269,7 +270,7 @@ public class LogManager {
         final LocalDate actualFrom = from.minus(FILEBEAT_TRANSITION_PERIOD);
         final LocalDate actualTo = to.plus(FILEBEAT_TRANSITION_PERIOD);
         return Stream.iterate(actualFrom, date -> date.plusDays(1))
-                .limit(Period.between(actualFrom, actualTo).getDays() + 1)
+                .limit(ChronoUnit.DAYS.between(actualFrom, actualTo) + 1)
                 .map(date -> date.format(ELASTIC_DATE_FORMATTER))
                 .map(dateString -> getIndexName(indexPrefix, dateString, ES_WILDCARD))
                 .toArray(String[]::new);
