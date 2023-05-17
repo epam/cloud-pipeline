@@ -2,8 +2,8 @@ package com.epam.pipeline.repository.notification;
 
 import com.epam.pipeline.entity.notification.NotificationEntityClass;
 import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.notification.UserNotification;
-import com.epam.pipeline.entity.notification.UserNotificationResource;
+import com.epam.pipeline.entity.notification.UserNotificationEntity;
+import com.epam.pipeline.entity.notification.UserNotificationResourceEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
 import org.junit.Test;
@@ -44,11 +44,11 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
 
     @Test
     public void upsertShouldCreateNotification() {
-        final UserNotification saved = notificationRepository.save(new UserNotification(null,
+        final UserNotificationEntity saved = notificationRepository.save(new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, null));
 
         flush();
-        final UserNotification loaded = notificationRepository.findOne(saved.getId());
+        final UserNotificationEntity loaded = notificationRepository.findOne(saved.getId());
         assertNotNull(loaded);
         assertNotNull(loaded.getId());
         assertNotification(loaded);
@@ -56,46 +56,46 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
 
     @Test
     public void upsertShouldCreateNotificationIfNotificationTypeIsEmpty() {
-        final UserNotification saved = notificationRepository.save(new UserNotification(null,
+        final UserNotificationEntity saved = notificationRepository.save(new UserNotificationEntity(null,
                 null, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, null));
 
         flush();
-        final UserNotification loaded = notificationRepository.findOne(saved.getId());
+        final UserNotificationEntity loaded = notificationRepository.findOne(saved.getId());
         assertNotNull(loaded);
         assertNotNull(loaded.getId());
     }
 
     @Test
     public void upsertShouldCreateNotificationWithResources() {
-        final UserNotificationResource resource = new UserNotificationResource(null,
+        final UserNotificationResourceEntity resource = new UserNotificationResourceEntity(null,
                 null, ENTITY_CLASS, ENTITY_ID, STORAGE_PATH, STORAGE_RULE_ID);
-        final UserNotification notification = new UserNotification(null,
+        final UserNotificationEntity notification = new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, Collections.singletonList(resource));
         resource.setNotification(notification);
 
-        final UserNotification saved = notificationRepository.save(notification);
+        final UserNotificationEntity saved = notificationRepository.save(notification);
 
         flush();
-        final UserNotification loaded = notificationRepository.findOne(saved.getId());
+        final UserNotificationEntity loaded = notificationRepository.findOne(saved.getId());
         assertThat(loaded.getResources().size(), is(1));
         assertResource(loaded.getResources().get(0));
     }
 
     @Test
     public void findByUserIdAndIsReadOrderByCreatedDateDescShouldReturnNotificationWithResources() {
-        final UserNotificationResource resource = new UserNotificationResource(null,
+        final UserNotificationResourceEntity resource = new UserNotificationResourceEntity(null,
                 null, ENTITY_CLASS, ENTITY_ID, STORAGE_PATH, STORAGE_RULE_ID);
-        final UserNotification notification = new UserNotification(null,
+        final UserNotificationEntity notification = new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, Collections.singletonList(resource));
         resource.setNotification(notification);
         notificationRepository.save(notification);
         flush();
 
-        final Page<UserNotification> page = notificationRepository.findByUserIdAndIsReadOrderByCreatedDateDesc(USER_ID,
-                IS_READ, PAGEABLE);
+        final Page<UserNotificationEntity> page = notificationRepository.findByUserIdAndIsReadOrderByCreatedDateDesc(
+                USER_ID, IS_READ, PAGEABLE);
 
         assertThat(page.getTotalElements(), is(1L));
-        final UserNotification loaded = page.getContent().get(0);
+        final UserNotificationEntity loaded = page.getContent().get(0);
         assertNotification(loaded);
         assertThat(loaded.getResources().size(), is(1));
         assertResource(loaded.getResources().get(0));
@@ -103,19 +103,19 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
 
     @Test
     public void findByUserIdOrderByCreatedDateDescShouldReturnNotificationWithResources() {
-        final UserNotificationResource resource = new UserNotificationResource(null,
+        final UserNotificationResourceEntity resource = new UserNotificationResourceEntity(null,
                 null, ENTITY_CLASS, ENTITY_ID, STORAGE_PATH, STORAGE_RULE_ID);
-        final UserNotification notification = new UserNotification(null,
+        final UserNotificationEntity notification = new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, Collections.singletonList(resource));
         resource.setNotification(notification);
         notificationRepository.save(notification);
         flush();
 
-        final Page<UserNotification> page = notificationRepository.findByUserIdOrderByCreatedDateDesc(USER_ID,
+        final Page<UserNotificationEntity> page = notificationRepository.findByUserIdOrderByCreatedDateDesc(USER_ID,
                 PAGEABLE);
 
         assertThat(page.getTotalElements(), is(1L));
-        final UserNotification loaded = page.getContent().get(0);
+        final UserNotificationEntity loaded = page.getContent().get(0);
         assertNotification(loaded);
         assertThat(loaded.getResources().size(), is(1));
         assertResource(loaded.getResources().get(0));
@@ -123,7 +123,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
 
     @Test
     public void deleteShouldDeleteNotification() {
-        final UserNotification saved = notificationRepository.save(new UserNotification(null,
+        final UserNotificationEntity saved = notificationRepository.save(new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, null));
 
         notificationRepository.delete(saved.getId());
@@ -134,12 +134,12 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
 
     @Test
     public void deleteShouldDeleteNotificationWithResources() {
-        final UserNotificationResource resource = new UserNotificationResource(null,
+        final UserNotificationResourceEntity resource = new UserNotificationResourceEntity(null,
                 null, ENTITY_CLASS, ENTITY_ID, STORAGE_PATH, STORAGE_RULE_ID);
-        final UserNotification notification = new UserNotification(null,
+        final UserNotificationEntity notification = new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, Collections.singletonList(resource));
         resource.setNotification(notification);
-        final UserNotification saved = notificationRepository.save(notification);
+        final UserNotificationEntity saved = notificationRepository.save(notification);
 
         notificationRepository.delete(saved.getId());
 
@@ -149,12 +149,12 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
 
     @Test
     public void deleteByUserIdShouldDeleteNotificationWithResources() {
-        final UserNotificationResource resource = new UserNotificationResource(null,
+        final UserNotificationResourceEntity resource = new UserNotificationResourceEntity(null,
                 null, ENTITY_CLASS, ENTITY_ID, STORAGE_PATH, STORAGE_RULE_ID);
-        final UserNotification notification = new UserNotification(null,
+        final UserNotificationEntity notification = new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, Collections.singletonList(resource));
         resource.setNotification(notification);
-        final UserNotification saved = notificationRepository.save(notification);
+        final UserNotificationEntity saved = notificationRepository.save(notification);
 
         notificationRepository.deleteByUserId(USER_ID);
 
@@ -164,12 +164,12 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
 
     @Test
     public void deleteByCreatedDateLessThanShouldDeleteNotificationWithResources() {
-        final UserNotificationResource resource = new UserNotificationResource(null,
+        final UserNotificationResourceEntity resource = new UserNotificationResourceEntity(null,
                 null, ENTITY_CLASS, ENTITY_ID, STORAGE_PATH, STORAGE_RULE_ID);
-        final UserNotification notification = new UserNotification(null,
+        final UserNotificationEntity notification = new UserNotificationEntity(null,
                 TYPE, USER_ID, SUBJECT, TEXT, CREATED, IS_READ, READ, Collections.singletonList(resource));
         resource.setNotification(notification);
-        final UserNotification saved = notificationRepository.save(notification);
+        final UserNotificationEntity saved = notificationRepository.save(notification);
 
         notificationRepository.deleteByCreatedDateLessThan(CREATED.plusDays(1));
 
@@ -182,7 +182,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
         entityManager.clear();
     }
 
-    private void assertNotification(final UserNotification notification) {
+    private void assertNotification(final UserNotificationEntity notification) {
         assertThat(notification.getType(), is(TYPE));
         assertThat(notification.getUserId(), is(USER_ID));
         assertThat(notification.getSubject(), is(SUBJECT));
@@ -192,7 +192,7 @@ public class UserNotificationRepositoryTest extends AbstractJpaTest {
         assertThat(notification.getReadDate(), is(READ));
     }
 
-    private void assertResource(final UserNotificationResource resource) {
+    private void assertResource(final UserNotificationResourceEntity resource) {
         assertThat(resource.getEntityClass(), is(ENTITY_CLASS));
         assertThat(resource.getEntityId(), is(ENTITY_ID));
         assertThat(resource.getStoragePath(), is(STORAGE_PATH));

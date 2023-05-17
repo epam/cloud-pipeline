@@ -20,7 +20,7 @@ import com.epam.pipeline.acl.notification.UserNotificationApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.entity.notification.UserNotification;
+import com.epam.pipeline.dto.notification.UserNotification;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -54,8 +54,8 @@ public class UserNotificationController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
     )
-    public Result<UserNotification> create(@RequestBody final UserNotification userNotification) {
-        return Result.success(notificationApiService.save(userNotification));
+    public Result<UserNotification> create(@RequestBody final UserNotification notification) {
+        return Result.success(notificationApiService.save(notification));
     }
 
     @PutMapping("/message/readAll")

@@ -24,14 +24,14 @@ import javax.persistence.Table;
 @Table(name = "user_notification_resource", schema = "pipeline")
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserNotificationResource {
+public class UserNotificationResourceEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
     @JoinColumn(name = "notification_id", referencedColumnName = "id")
-    private UserNotification notification;
+    private UserNotificationEntity notification;
     @Enumerated(EnumType.STRING)
     @Column(name = "entity_class")
     private NotificationEntityClass entityClass;
