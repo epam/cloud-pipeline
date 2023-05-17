@@ -387,7 +387,7 @@ def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities):
 
 
 def _get_cluster_compute_secs(api, from_date, to_date, user):
-    runs = api.filter_runs_all(from_date, to_date, user, {'master': True})
+    runs = api.filter_runs_all(from_date, to_date, user, {'masterRun': True})
     total_time = 0
     for r in runs:
         start_date = datetime.strptime(r.get('startDate'), DATE_TIME_FORMAT)
@@ -397,7 +397,7 @@ def _get_cluster_compute_secs(api, from_date, to_date, user):
 
 
 def _get_worker_nodes_count(api, from_date, to_date, user):
-    return api.run_count(from_date, to_date, user, {'worker': True})
+    return api.run_count(from_date, to_date, user, {'workerRun': True})
 
 
 def _get_capabilities(api):
