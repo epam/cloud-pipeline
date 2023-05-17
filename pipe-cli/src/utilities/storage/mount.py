@@ -205,7 +205,7 @@ class Mount(object):
             self._wait_mount_point(mount_timeout, mount_aps_proc, mountpoint)
 
     def _wait_mount_point(self, mount_timeout, mount_aps_proc, mountpoint):
-        pooling_delay = os.environ.get('CP_PIPE_FUSE_MOUNT_DELAY', 500)
+        pooling_delay = int(os.environ.get('CP_PIPE_FUSE_MOUNT_DELAY', 500))
         max_init_try = int(mount_timeout / pooling_delay) or 1
         pooling_delay = float(pooling_delay) / MS_IN_SEC
         for iteration in range(0, max_init_try):
