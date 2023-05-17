@@ -331,6 +331,8 @@ public class SystemPreferences {
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
+    public static final LongPreference GIT_DEFAULT_TOKEN_DURATION_DAYS = new LongPreference(
+            "git.default.token.duration.days", 1L, GIT_GROUP, isGreaterThan(0L));
 
     // DOCKER_SECURITY_GROUP
     /**
