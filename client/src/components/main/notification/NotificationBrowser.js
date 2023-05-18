@@ -33,6 +33,7 @@ import NotificationsRequest from '../../../models/notifications/CurrentUserNotif
 import ReadAllUserNotifications from '../../../models/notifications/ReadAllUserNotifications';
 import displayDate from '../../../utils/displayDate';
 import PreviewNotification from './PreviewNotification';
+import NotificationActions from './notification-actions';
 import styles from './NotificationBrowser.css';
 
 const PAGE_SIZE = 20;
@@ -54,7 +55,7 @@ function dateSorter (a, b) {
   }
 };
 
-@inject('userNotifications')
+@inject('userNotifications', 'router')
 @observer
 export default class NotificationBrowser extends React.Component {
   state = {
@@ -214,6 +215,11 @@ export default class NotificationBrowser extends React.Component {
         )}>
           Read date
         </div>
+        <div className={classNames(
+          styles.notificationCell,
+          styles.notificationActions,
+          styles.header
+        )} />
       </div>
     );
   };
@@ -287,6 +293,18 @@ export default class NotificationBrowser extends React.Component {
                     styles.notificationReadDate
                   )}>
                     {displayDate(notification.readDate, 'YYYY-MM-DD HH:mm:ss')}
+                  </div>
+                  <div
+                    className={classNames(
+                      styles.notificationCell,
+                      styles.notificationActions
+                    )}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <NotificationActions
+                      notification={notification}
+                      router={this.props.router}
+                    />
                   </div>
                 </div>
               ))
