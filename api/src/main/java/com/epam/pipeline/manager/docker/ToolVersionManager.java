@@ -158,6 +158,10 @@ public class ToolVersionManager {
         return toolVersionDao.loadToolWithSettings(toolId);
     }
 
+    public List<ToolVersion> loadAllToolVersionSettings() {
+        return toolVersionDao.loadAllLatestToolVersions();
+    }
+
     private void validateToolExistsAndCanBeModified(final Long toolId) {
         final Tool tool = toolManager.load(toolId);
         validateToolNotNull(tool, toolId);
