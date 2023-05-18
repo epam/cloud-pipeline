@@ -23,7 +23,7 @@ from mock import MagicMock, Mock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'scripts'))
 
 import mount_storage
-from mount_storage import AzureMounter, MountStorageTask, StorageMounter, MOUNT_THREADS_ENV
+from mount_storage import AzureMounter, GCPMounter, MountStorageTask, S3Mounter, StorageMounter, MOUNT_THREADS_ENV
 
 MOUNT_ROOT = '/cloud-data'
 TASK_NAME = 'MountDataStorages'
@@ -396,3 +396,26 @@ def test_run_fails_with_failed_storages_in_parallel(task, logger, monkeypatch):
                  {'/cloud-data/b': raise_runtime_error})
     logger.fail.assert_called_once_with('The following data storages have not been mounted: /cloud-data/b',
                                         task_name=TASK_NAME)
+
+
+def pipe_fuse_mounter(mounter_class):
+    mnt = mounter_class(None, storage('bucket', None), None, None)
+    mnt.storage.path = 'bucket'
+    mnt._get_credentials = lambda s: ('key', 'secret', 'region', 'token') if mounter_class is S3Mounter \
+        else (None, 'region')
+    return mnt
+
+
+@pytest.mark.parametrize('mounter_class', [S3Mounter, GCPMounter])
+@pytest.mark.parametrize('envs,expected', [({}, 10000),
+                                           ({'CP_PIPE_FUSE_MOUNT_TIMEOUT': '3000'}, '3000'),
+                                           ({'CP_PIPE_FUSE_TIMEOUT': '500'}, 10000)])
+def test_pipe_fuse_mount_timeout(monkeypatch, mounter_class, envs, expected):
+    monkeypatch.delenv('CP_PIPE_FUSE_MOUNT_TIMEOUT', raising=False)
+    monkeypatch.delenv('CP_PIPE_FUSE_TIMEOUT', raising=False)
+    for name, value in envs.items():
+        monkeypatch.setenv(name, value)
+    mnt = pipe_fuse_mounter(mounter_class)
+    params = mnt.build_mount_params('/cloud-data/bucket')
+    assert params['mount_timeout'] == expected
+    assert ' -w {} '.format(expected) in mnt.build_mount_command(params)
