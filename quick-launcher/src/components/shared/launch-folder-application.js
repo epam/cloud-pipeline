@@ -18,7 +18,8 @@ export default function LaunchFolderApplication (
     fullDescription,
     url,
     storage,
-    info = {}
+    info = {},
+    deprecated
   } = application || {};
   const settings = useSettings();
   const {icon} = useApplicationIcon(storage, iconFile ? iconFile.path : undefined);
@@ -63,6 +64,15 @@ export default function LaunchFolderApplication (
           className={classNames('launch-folder-application-title', 'launch-folder-application-row')}
         >
           {name}
+          {
+            deprecated && (
+              <span
+                className="version-deprecated"
+              >
+                DEPRECATED
+              </span>
+            )
+          }
         </div>
         {
           description && (

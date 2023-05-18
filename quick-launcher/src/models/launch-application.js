@@ -22,6 +22,7 @@ import applicationAvailable from "./folder-applications/application-available";
 import performPreRunChecks from './pre-run-checks';
 import {getPortParameters} from './utilities/ports';
 import { getApplicationTypeSettings } from "./folder-application-types";
+import { getCapabilitiesParameters } from "../components/utilities/run-capabilities";
 
 function pollRun(run, resolve, reject, initialPoll = false, appSettings) {
   const {id, status, initialized, serviceUrl} = run || {};
@@ -379,6 +380,15 @@ async function launchTool(application, user, options) {
         value: options.persistSessionState,
         type: 'boolean'
       };
+      // ----
+      // User-defined capabilities
+      if (options?.capabilities && options?.capabilities.length > 0) {
+        console.log('Specifying user-defined capabilities:', (options?.capabilities || []).join(', '));
+        payload.parameters = attachParameters(
+          payload.parameters,
+          getCapabilitiesParameters(options?.capabilities),
+        );
+      }
       // ----
       if (joinedLaunchOptions.instance_size) {
         console.log(`${joinedLaunchOptions.instance_size} instance will be used`);

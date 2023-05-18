@@ -1,32 +1,38 @@
 import {useCallback, useEffect, useState} from 'react';
 
-const KEY = 'FOLDER_APPLICATIONS_FAVOURITES';
+const FOLDER_APPLICATIONS = 'FOLDER_APPLICATIONS_FAVOURITES';
+const DOCKER_APPLICATIONS = 'DOCKER_APPLICATIONS_FAVOURITES';
 
-export default function useFavouriteApplications () {
+export {
+  FOLDER_APPLICATIONS,
+  DOCKER_APPLICATIONS
+};
+
+export default function useFavouriteApplications (key, property = 'id') {
   const [favourites, setFavourites] = useState([]);
   useEffect(() => {
     try {
-      const storageValue = JSON.parse(localStorage.getItem(KEY))
+      const storageValue = JSON.parse(localStorage.getItem(key))
       if (Array.isArray(storageValue)) {
         setFavourites(storageValue);
       }
     } catch (_) {}
   }, [setFavourites]);
   const updateFavourites = useCallback((o) => {
-    localStorage.setItem(KEY, JSON.stringify(o || []));
+    localStorage.setItem(key, JSON.stringify(o || []));
     setFavourites(o || []);
   }, [setFavourites]);
   const isFavourite = useCallback((application) => {
-    return !!application && !!favourites.find(p => application.path === p);
-  }, [favourites]);
+    return !!application && !!favourites.find(p => `${application[property]}` === `${p}`);
+  }, [favourites, property]);
   const onFavouriteChange = useCallback((application, favourite) => {
     if (application) {
       updateFavourites([
-        ...favourites.filter(o => o !== application.path),
-        ...(favourite ? [application.path] : [])
+        ...favourites.filter(o => `${o}` !== `${application[property]}`),
+        ...(favourite ? [application[property]] : [])
       ]);
     }
-  }, [favourites, updateFavourites]);
+  }, [favourites, updateFavourites, property]);
   const toggleFavourite = useCallback((application) => {
     onFavouriteChange(application, !isFavourite(application));
   }, [onFavouriteChange, isFavourite]);

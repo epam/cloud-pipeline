@@ -10,7 +10,7 @@ import EditFolderApplication from './edit-folder-application';
 import PickUpFolderApplicationModal from './components/shared/pick-up-folder-application-modal';
 import Modal from './components/shared/modal';
 import filterAppFn from './components/utilities/filter-applications-fn';
-import useFavouriteApplications from './components/utilities/use-favourite-applications';
+import useFavouriteApplications, {FOLDER_APPLICATIONS} from './components/utilities/use-favourite-applications';
 import LaunchFolderApplication from './components/shared/launch-folder-application';
 import Help from './components/shared/help';
 import {
@@ -24,6 +24,13 @@ import applicationAvailable from "./models/folder-applications/application-avail
 function FolderApp ({location}) {
   const settings = useSettings();
   const sessions = useSessions(settings);
+  const [showDeprecated, setShowDeprecated] = useState(false);
+  const onChangeShowDeprecated = useCallback((event) => {
+    setShowDeprecated(event.target.checked);
+  }, [setShowDeprecated]);
+  const onToggleDeprecated = useCallback(() => {
+    setShowDeprecated((current) => !current);
+  }, [setShowDeprecated]);
   const {
     authenticatedUser,
     pending: authenticating,
@@ -78,9 +85,13 @@ function FolderApp ({location}) {
     isFavourite,
     toggleFavourite,
     sorter
-  } = useFavouriteApplications();
+  } = useFavouriteApplications(
+    FOLDER_APPLICATIONS,
+    'path'
+  );
   let applicationsContent;
   let editApplicationContent;
+  const hasDeprecated = availableApplications.some((app) => app.deprecated);
   if (authenticating || pending) {
     applicationsContent = (
       <div className="content loading">
@@ -120,39 +131,60 @@ function FolderApp ({location}) {
     )
   } else {
     const filtered = availableApplications
+      .filter((app) => showDeprecated || !app.deprecated || isFavourite(app))
       .filter(filterAppFn(filter))
       .filter((app) => filterAppType === undefined || app.appType === filterAppType);
-    const groups = [...new Set(filtered.map(o => o.appType))];
+    const renderApps = (latest) => {
+      return filtered
+        .filter(anApp => !!anApp.latest === !!latest)
+        .sort(sorter)
+        .map((application) => (
+          <FolderApplicationCard
+            key={application.id}
+            application={application}
+            onEdit={
+              applicationIsEditable(application) && !settings?.disablePublishingApps
+                ? setApplication
+                : undefined
+            }
+            isFavourite={isFavourite(application)}
+            onFavouriteClick={toggleFavourite}
+            onClick={setLaunchApplication}
+          />
+        ))
+    };
     applicationsContent = (
       <div>
-        {
-          groups.map(aGroup => (
-            <div
-              key={aGroup || 'default'}
-              className={classNames('apps', 'folder-apps')}
-            >
+        <div
+          className={
+            classNames(
+              'apps',
+              'folder-apps',
               {
-                filtered
-                  .filter(anApp => anApp.appType === aGroup)
-                  .sort(sorter)
-                  .map((application) => (
-                    <FolderApplicationCard
-                      key={application.id}
-                      application={application}
-                      onEdit={
-                        applicationIsEditable(application) && !settings?.disablePublishingApps
-                          ? setApplication
-                          : undefined
-                      }
-                      isFavourite={isFavourite(application)}
-                      onFavouriteClick={toggleFavourite}
-                      onClick={setLaunchApplication}
-                    />
-                  ))
+                'with-latest': availableApplications.some((a) => a.latest)
               }
-            </div>
-          ))
-        }
+            )
+          }
+        >
+          {
+            renderApps(true)
+          }
+        </div>
+        <div
+          className={
+            classNames(
+              'apps',
+              'folder-apps',
+              {
+                'with-latest': availableApplications.some((a) => a.latest)
+              }
+            )
+          }
+        >
+          {
+            renderApps(false)
+          }
+        </div>
       </div>
     );
   }
@@ -191,10 +223,26 @@ function FolderApp ({location}) {
                   }
                 >
                   <input
+                    className="input"
                     value={filter || ''}
                     onChange={onChangeFilter}
                     placeholder="Filter applications"
                   />
+                  {
+                    hasDeprecated && (
+                      <div
+                        className="deprecated-checkbox"
+                        onClick={onToggleDeprecated}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={showDeprecated}
+                          onChange={onChangeShowDeprecated}
+                        />
+                        Show deprecated
+                      </div>
+                    )
+                  }
                 </div>
               )
             }

@@ -19,6 +19,12 @@
   overflow: auto;
 }
 
+.launch-folder-application-info .version-deprecated {
+  margin-left: 5px;
+  font-size: x-small;
+  color: #e44d4d;
+}
+
 .launch-folder-application-launch-a {
   float: right;
 }

@@ -59,6 +59,12 @@ async function fetchApplications (options) {
   };
 }
 
+function sortLatest (a, b) {
+  const aLatest = a.latest ? 1 : 0;
+  const bLatest = b.latest ? 1 : 0;
+  return bLatest - aLatest;
+}
+
 const reducer = (state, action) => {
   switch (action.type) {
     case 'init':
@@ -76,7 +82,7 @@ const reducer = (state, action) => {
     case 'apps':
       return {
         ...state,
-        applications: action.applications || [],
+        applications: (action.applications || []).sort(sortLatest),
         user: action.user,
         error: undefined,
         pending: false

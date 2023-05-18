@@ -5,12 +5,16 @@ import ApplicationSettings from './shared/application-settings';
 import './components.css';
 import {launchOptionsContainSensitiveMounts} from "../models/pre-run-checks/check-sensitive-storages";
 import {useSettings} from './use-settings';
+import Star from "./shared/star";
 
 export default function ApplicationCard(
   {
     application,
     onClick,
-    options
+    options,
+    onFavouriteClick,
+    displayFavourite = true,
+    isFavourite
   }
 ) {
   const settings = useSettings();
@@ -26,9 +30,25 @@ export default function ApplicationCard(
   const onLaunch = useCallback(() => {
     onClick && onClick(appendDefault(extendedOptions));
   }, [extendedOptions, appendDefault]);
+  const onFavouriteClickCallback = useCallback((e) => {
+    if (onFavouriteClick) {
+      e.stopPropagation();
+      e.preventDefault();
+      onFavouriteClick(application);
+    }
+  }, [application, onFavouriteClick]);
   return (
     <div
-      className={classNames('app', {dark: settings?.darkMode, sensitive})}
+      className={
+        classNames(
+          'app',
+          {
+            dark: settings?.darkMode,
+            sensitive,
+            latest: application.latest
+          }
+        )
+      }
       onClick={onLaunch}
     >
       {
@@ -90,6 +110,29 @@ export default function ApplicationCard(
         onDependencyChange={onDependencyChange}
         extendedOptions={extendedOptions}
       />
+      {
+        (application.deprecated) && (
+          <span className="deprecated">
+            DEPRECATED
+          </span>
+        )
+      }
+      {
+        displayFavourite && (
+          <Star
+            className={
+              classNames(
+                'app-action',
+                'app-star',
+                {
+                  'favourite': isFavourite
+                }
+              )
+            }
+            onClick={onFavouriteClickCallback}
+          />
+        )
+      }
     </div>
   );
 }

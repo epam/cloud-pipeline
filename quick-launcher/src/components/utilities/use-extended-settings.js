@@ -4,6 +4,7 @@ import fetchMountsForPlaceholders from '../../models/parse-limit-mounts-placehol
 import fetchPlaceholderTagsDependencies from '../../models/cloud-pipeline-api/fetch-tag-dependencies';
 import getAvailableDataStorages from '../../models/cloud-pipeline-api/data-storage-available';
 import { displayPorts, parsePorts, portsStringValidation } from '../../models/utilities/ports';
+import { CAPABILITIES } from './run-capabilities';
 
 const ExtendedSettingsContext = React.createContext({});
 export {ExtendedSettingsContext};
@@ -164,6 +165,38 @@ export default function useExtendedSettings () {
         itemName: storage => storage.name,
         itemValue: storage => storage.id,
         availableForApp: app => app && app.allowSensitive
+      });
+    }
+    if (CAPABILITIES.length > 0) {
+      appendDivider({
+        key: 'capabilities-divider',
+        type: 'divider',
+      });
+      extendedSettings.push({
+        key: 'capabilities',
+        title: 'Capabilities',
+        type: 'multi-selection',
+        values: CAPABILITIES,
+        required: false,
+        optionsField: 'capabilities',
+        itemSubOptions: () => [],
+        valueHasSubOptions: () => false,
+        valuePresentation(values = []) {
+          const itemName = this.itemName;
+          if (!values || !values.length) {
+            return 'none';
+          }
+          if (values.length < 3) {
+            const itemValue = this.itemValue;
+            return (this.values || [])
+              .filter(i => values.includes(itemValue(i)))
+              .map((item) => itemName(item))
+              .join(', ');
+          }
+          return `${values.length} capabilit${values.length !== 1 ? 'ies' : 'y'}`;
+        },
+        itemName: capability => capability.name,
+        itemValue: capability => capability.id,
       });
     }
     appendDivider({

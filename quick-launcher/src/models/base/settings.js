@@ -151,7 +151,7 @@ const defaultSettings = {
   sessionInfoStorage: undefined,
   sessionInfoPath: undefined,
   userStoragesAttribute: undefined,
-  applicationsMode: 'folder', //one of "docker", "folder",
+  applicationsMode: 'docker', //one of "docker", "folder",
   // applicationsSourceMode: 'docker', //one of "docker", "folder", "folder+docker"
   serviceUser: "PIPE_ADMIN",
   folderApplicationLaunchLinkFormat: '/[user]/[version]/[app]',
@@ -190,6 +190,8 @@ const defaultSettings = {
     withTime: undefined,
     immediate: undefined
   },
+  deprecatedTag: 'deprecated',
+  latestTag: 'latest'
 };
 
 function parseUrl(url, verbose = false) {

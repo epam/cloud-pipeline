@@ -30,7 +30,9 @@ export default function FolderApplicationCard(
     url,
     storage,
     info = {},
-    appType
+    appType,
+    latest,
+    deprecated
   } = application || {};
   const gatewayParseError = info.__gatewaySpecError__;
   const {icon} = useApplicationIcon(storage, iconFile ? iconFile.path : undefined);
@@ -88,7 +90,8 @@ export default function FolderApplicationCard(
               dark: settings?.darkMode,
               published,
               disabled: disabled || !!gatewayParseError,
-              error: !!gatewayParseError
+              error: !!gatewayParseError,
+              latest
             },
             className
           )
@@ -181,6 +184,13 @@ export default function FolderApplicationCard(
             <div className="application-type">
               {appType}
             </div>
+          )
+        }
+        {
+          deprecated && (
+            <span className="deprecated">
+              DEPRECATED
+            </span>
           )
         }
       </div>

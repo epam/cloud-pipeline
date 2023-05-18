@@ -69,6 +69,14 @@
   justify-content: center;
 }
 
+.apps.with-latest .app:not(.latest) {
+  width: 20vw;
+  min-width: 200px;
+  min-height: 90px;
+  font-size: 10pt;
+  padding: 10px;
+}
+
 .app.disabled {
   cursor: not-allowed;
 }
@@ -101,6 +109,12 @@
   margin: 10px 0;
 }
 
+.apps.with-latest .app:not(.latest) .header {
+  font-size: 16pt;
+  height: 28px;
+  margin: 5px 0;
+}
+
 .app .header .name {
   color: #ccc;
   white-space: nowrap;
@@ -110,11 +124,13 @@
 
 .app.app-folder {
   padding: 10px;
-}
-
-.app.app-folder {
   min-height: 100px;
   height: unset;
+}
+
+.apps.with-latest .app.app-folder:not(.latest) {
+  min-height: 75px;
+  padding: 10px 5px;
 }
 
 .app.app-folder.error {
@@ -147,6 +163,12 @@
   margin: 0 10px 0 0;
   max-height: 100px;
   border-radius: 5px;
+}
+
+.apps.with-latest .app.app-folder:not(.latest) .layout .icon {
+  margin: 0 10px 0 0;
+  max-height: 60px;
+  border-radius: 2px;
 }
 
 .app.error .layout {
@@ -185,6 +207,18 @@
   text-transform: uppercase;
 }
 
+.app.app-folder .deprecated {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 4px;
+  font-size: x-small;
+  color: #e44d4d;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 0 5px 0 5px;
+  text-transform: uppercase;
+}
+
 .app .version {
   margin-left: 5px;
   font-size: 12pt;
@@ -192,6 +226,23 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+}
+
+.apps.with-latest .app:not(.latest) .version {
+  font-size: 10pt;
+  margin-top: 8px;
+}
+
+.app .deprecated {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 4px;
+  font-size: x-small;
+  color: #e44d4d;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 0 5px 0 5px;
+  text-transform: uppercase;
 }
 
 .app:hover {
@@ -210,6 +261,10 @@
 .app .app-description {
   font-size: 11pt;
   color: #ddd;
+}
+
+.apps.with-latest .app:not(.latest) .app-description {
+  font-size: 8pt;
 }
 
 .app.app-folder .app-description {
@@ -279,6 +334,13 @@
   font-size: 14pt;
   margin-top: 10px;
   color: #aaa;
+  margin-left: 5px;
+}
+
+.app-info .header .version-deprecated {
+  font-size: 12pt;
+  margin-top: 12px;
+  color: #e44d4d;
   margin-left: 5px;
 }
 
@@ -382,6 +444,31 @@
   cursor: pointer;
 }
 
+.app .app-action {
+  color: #999;
+  display: block;
+  cursor: pointer;
+}
+
+.app .app-action.app-star {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+}
+
+.app .app-action:hover {
+  color: #ddd;
+}
+
+.app .app-action svg {
+  stroke: currentColor;
+}
+
+.app .app-action.exclamation {
+  color: #c24949;
+  cursor: pointer;
+}
+
 .app-folder .folder-app-gear {
   fill: currentColor;
   display: flex;
@@ -393,28 +480,34 @@
   text-decoration: underline;
 }
 
-.app-folder .folder-app-star > svg {
+.app-folder .folder-app-star > svg,
+.app .app-star > svg {
   stroke: currentColor;
   fill: rgba(255, 255, 255, 0.15);
 }
 
-.app-folder .folder-app-star:hover {
+.app-folder .folder-app-star:hover,
+.app .app-star:hover {
   color: #ccc;
 }
 
-.app-folder .folder-app-star.favourite {
+.app-folder .folder-app-star.favourite,
+.app .app-star.favourite {
   color: goldenrod;
 }
 
-.app-folder .folder-app-star.favourite:hover {
+.app-folder .folder-app-star.favourite:hover,
+.app .app-star.favourite:hover {
   color: gold;
 }
 
-.app-folder .folder-app-star.favourite > svg {
+.app-folder .folder-app-star.favourite > svg,
+.app .app-star.favourite > svg {
   fill: rgba(255, 162, 0, 0.5);
 }
 
-.app-folder .folder-app-star.favourite:hover > svg {
+.app-folder .folder-app-star.favourite:hover > svg,
+.app .app-star.favourite:hover > svg {
   fill: rgba(255, 162, 0, 0.75);
 }
 

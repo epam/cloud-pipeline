@@ -111,7 +111,23 @@ async function fetchTools(opts = {}) {
     }).filter(Boolean);
     tagsRequest.push(...folderTags);
   }
-  const ids = await fetchToolsByTags(tagsRequest)
+  const ids = await fetchToolsByTags(tagsRequest);
+  const versionsInfoTags = [];
+  if (settings.latestTag) {
+    versionsInfoTags.push({
+      key: settings.latestTag,
+      value: 'true',
+      latest: true
+    });
+  }
+  if (settings.deprecatedTag) {
+    versionsInfoTags.push({
+      key: settings.deprecatedTag,
+      value: 'true',
+      deprecated: true
+    });
+  }
+  const toolVersionsInfo = await fetchToolsByTags(versionsInfoTags);
   const allTools = await getTools();
 
   function matchTool (toolIdConfig, allTools = []) {
@@ -122,6 +138,9 @@ async function fetchTools(opts = {}) {
     if (!id) {
       return [];
     }
+    const versionsInfo = toolVersionsInfo
+      .filter((o) => Number(o.id) === Number(id));
+    const merged = versionsInfo.reduce((r, c) => ({...r, ...c}), {});
     const app = allTools
       .filter(tool => !tool.link)
       .find(tool => Number(tool.id) === Number(id));
@@ -130,7 +149,8 @@ async function fetchTools(opts = {}) {
     }
     return {
       ...app,
-      ...rest
+      ...rest,
+      ...merged
     };
   }
   const tools = ids.map(id => matchTool(id, allTools)).filter(Boolean);
@@ -141,6 +161,7 @@ async function fetchTools(opts = {}) {
       .map(tool => Number(tool.id))
   );
   const images = await getToolsImages([...uniqueTools]);
+  console.log('images', images);
   return {
     applications: tools.map(mapApplicationToolImage(images)),
     userInfo

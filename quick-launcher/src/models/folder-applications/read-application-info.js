@@ -56,6 +56,8 @@ export default function readApplicationInfo (application, user, settings, appTyp
               : undefined,
             iconFile: application.icon,
             info: applicationInfo,
+            latest: applicationInfo.latest,
+            deprecated: applicationInfo.deprecated,
             readOnlyAttributes: Object.keys(applicationInfoFromPath || {})
               .concat(['source', 'path', 'user']),
             pathInfo,

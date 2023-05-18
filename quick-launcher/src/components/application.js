@@ -379,6 +379,15 @@ export default function Application ({id: applicationId, name: appName, launchOp
         }
         <span className="name">{appName || application.name}</span>
         <span className="version">{application.version}</span>
+        {
+          application.deprecated && (
+            <span
+              className="version-deprecated"
+            >
+              DEPRECATED
+            </span>
+          )
+        }
       </div>
       {content}
       {timer}

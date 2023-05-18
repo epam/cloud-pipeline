@@ -414,7 +414,7 @@
   padding: 0 10px;
 }
 
-.filter-applications input {
+.filter-applications input.input {
   line-height: 24px;
   height: 24px;
   font-size: 16px;
@@ -427,13 +427,22 @@
   border-radius: 5px;
 }
 
-.filter-applications input::placeholder {
+.filter-applications input.input::placeholder {
   color: rgba(255, 255, 255, 0.75);
   font-size: smaller;
 }
 
-.filter-applications.dark input::placeholder {
+.filter-applications.dark input.input::placeholder {
   color: rgba(255, 255, 255, 0.25);
+}
+
+.deprecated-checkbox {
+  line-height: 1;
+  color: #ccc;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  margin: 0 5px;
 }
 
 .help {
