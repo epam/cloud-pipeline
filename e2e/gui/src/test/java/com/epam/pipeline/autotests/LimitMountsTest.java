@@ -162,7 +162,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .perform(registry, group, testTool, tool ->
                         tool
                                 .settings()
-                                .sleep(1, SECONDS)
                                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                                 .runWithCustomSettings()
                 )
