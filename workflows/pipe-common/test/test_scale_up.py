@@ -27,6 +27,7 @@ MASTER_HOST = 'pipeline-1000'
 cmd_executor = Mock()
 grid_engine = Mock()
 grid_engine_validator = Mock()
+demand_selector = Mock()
 host_storage = MemoryHostStorage()
 static_storage = MemoryHostStorage()
 submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
@@ -36,6 +37,7 @@ max_additional_hosts = 2
 clock = Clock()
 autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
                                   job_validator=grid_engine_validator,
+                                  demand_selector=demand_selector,
                                   cmd_executor=cmd_executor,
                                   scale_up_orchestrator=None,
                                   scale_down_orchestrator=None,
@@ -83,7 +85,7 @@ def test_scale_up_if_some_of_the_jobs_are_in_queue_for_more_than_scale_up_timeou
     ]
     demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
-    grid_engine.get_resource_demands = MagicMock(return_value=demands)
+    demand_selector.select = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
     autoscaler.scale()
@@ -113,7 +115,7 @@ def test_not_scale_up_if_none_of_the_jobs_are_in_queue_for_more_than_scale_up_ti
     ]
     demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
-    grid_engine.get_resource_demands = MagicMock(return_value=demands)
+    demand_selector.select = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout - 1))
 
     autoscaler.scale()
@@ -143,7 +145,7 @@ def test_that_scale_up_will_not_launch_more_additional_workers_than_limit():
     ]
     demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
-    grid_engine.get_resource_demands = MagicMock(return_value=demands)
+    demand_selector.select = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
     for _ in range(0, max_additional_hosts * 2):
@@ -175,7 +177,7 @@ def test_that_scale_up_will_try_to_scale_down_smallest_host_if_additional_worker
     ]
     demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
-    grid_engine.get_resource_demands = MagicMock(return_value=demands)
+    demand_selector.select = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
     for _ in range(0, max_additional_hosts * 2):
@@ -247,7 +249,7 @@ def test_scale_up_if_some_of_the_array_jobs_are_in_queue_for_more_than_scale_up_
     ]
     demands = 7 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
-    grid_engine.get_resource_demands = MagicMock(return_value=demands)
+    demand_selector.select = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
     autoscaler.scale()
@@ -317,7 +319,7 @@ def test_not_scale_up_if_none_of_the_array_jobs_are_in_queue_for_more_than_scale
     ]
     demands = 7 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
-    grid_engine.get_resource_demands = MagicMock(return_value=demands)
+    demand_selector.select = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout - 1))
 
     autoscaler.scale()
@@ -349,7 +351,7 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
         autoscaler.host_storage.add_host(str(run_id))
     demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
-    grid_engine.get_resource_demands = MagicMock(return_value=demands)
+    demand_selector.select = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
     autoscaler.scale()
@@ -421,7 +423,7 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
         autoscaler.host_storage.add_host(str(run_id))
     demands = 7 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
-    grid_engine.get_resource_demands = MagicMock(return_value=demands)
+    demand_selector.select = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
 
     autoscaler.scale()

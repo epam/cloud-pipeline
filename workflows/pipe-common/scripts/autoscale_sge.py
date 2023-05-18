@@ -541,36 +541,18 @@ class GridEngine:
         self._remove_host_from_administrative_hosts(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
-    def get_resource_demands(self, expired_jobs):
-        demands = []
-        available_slots = self._get_available_slots()
-        allocation_rules = {}
-        for job in sorted(expired_jobs, key=lambda job: job.root_id):
-            allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
-                                                         or self.get_pe_allocation_rule(job.pe)
-            if allocation_rule in AllocationRule.fractional_rules():
-                if available_slots >= job.cpu:
-                    available_slots -= job.cpu
-                else:
-                    demands.append(FractionalDemand(cpu=job.cpu - available_slots, owner=job.user))
-                    available_slots = 0
-            else:
-                demands.append(IntegralDemand(cpu=job.cpu, owner=job.user))
-        return demands
-
-    def _get_available_slots(self):
-        available_slots = 0
+    def get_host_supplies(self):
         output = self.cmd_executor.execute(GridEngine._QHOST)
         root = ElementTree.fromstring(output)
         for host in root.findall('host'):
             for queue in host.findall('queue[@name=\'%s\']' % self.queue):
+                host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                if any(host_state in self._BAD_HOST_STATES for host_state in host_states):
+                    continue
+                host_slots = int(queue.find('queuevalue[@name=\'slots\']').text or '0')
                 host_used = int(queue.find('queuevalue[@name=\'slots_used\']').text or '0')
                 host_resv = int(queue.find('queuevalue[@name=\'slots_resv\']').text or '0')
-                host_slots = int(queue.find('queuevalue[@name=\'slots\']').text or '0')
-                host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
-                if all(host_state not in self._BAD_HOST_STATES for host_state in host_states):
-                    available_slots += max(host_slots - host_used - host_resv, 0)
-        return available_slots
+                yield ResourceSupply(cpu=host_slots) - ResourceSupply(cpu=host_used + host_resv)
 
     def get_host_supply(self, host):
         for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host):
@@ -663,6 +645,27 @@ class GridEngine:
         """
         job_ids = [str(job.id) for job in jobs]
         self.cmd_executor.execute((GridEngine._FORCE_KILL_JOBS if force else GridEngine._KILL_JOBS) % ' '.join(job_ids))
+
+
+class GridEngineDemandSelector:
+
+    def __init__(self, grid_engine):
+        self.grid_engine = grid_engine
+
+    def select(self, jobs):
+        remaining_supply = functools.reduce(operator.add, self.grid_engine.get_host_supplies(), ResourceSupply())
+        allocation_rules = {}
+        for job in sorted(jobs, key=lambda job: job.root_id):
+            allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
+                                                         or self.grid_engine.get_pe_allocation_rule(job.pe)
+            if allocation_rule in AllocationRule.fractional_rules():
+                remaining_demand = FractionalDemand(cpu=job.cpu, owner=job.user)
+                remaining_demand, remaining_supply = remaining_demand.subtract(remaining_supply)
+                if not remaining_demand:
+                    remaining_demand += FractionalDemand(cpu=1)
+            else:
+                remaining_demand = IntegralDemand(cpu=job.cpu, owner=job.user)
+            yield remaining_demand
 
 
 class GridEngineJobValidator:
@@ -903,6 +906,9 @@ class GridEngineScaleUpOrchestrator:
     def scale_up(self, resource_demands, max_batch_size):
         instance_demands = list(itertools.islice(self.instance_selector.select(resource_demands),
                                                  min(self.batch_size, max_batch_size)))
+        if not instance_demands:
+            Logger.info('There are no instance demands. Scaling up is aborted.')
+            return
         number_of_threads = len(instance_demands)
         Logger.info('Scaling up %s additional workers...' % number_of_threads)
         threads = []
@@ -1555,7 +1561,7 @@ class GridEngineWorkerTagsHandler:
 
 class GridEngineAutoscaler:
 
-    def __init__(self, grid_engine, job_validator,
+    def __init__(self, grid_engine, job_validator, demand_selector,
                  cmd_executor, scale_up_orchestrator, scale_down_orchestrator, host_storage,
                  static_host_storage, scale_up_timeout, scale_down_timeout, max_additional_hosts, idle_timeout=30,
                  clock=Clock()):
@@ -1570,6 +1576,7 @@ class GridEngineAutoscaler:
 
         :param grid_engine: Grid engine.
         :param job_validator: Job validator.
+        :param demand_selector: Demand selector.
         :param cmd_executor: Cmd executor.
         :param scale_up_orchestrator: Scaling up orchestrator.
         :param scale_down_orchestrator: Scaling down orchestrator.
@@ -1584,6 +1591,7 @@ class GridEngineAutoscaler:
         :param idle_timeout: Maximum number of seconds a host could wait for a new job before getting scaled-down.
         """
         self.grid_engine = grid_engine
+        self.demand_selector = demand_selector
         self.job_validator = job_validator
         self.executor = cmd_executor
         self.scale_up_orchestrator = scale_up_orchestrator
@@ -1624,8 +1632,8 @@ class GridEngineAutoscaler:
                 if len(additional_hosts) < self.max_additional_hosts:
                     Logger.info('There are %s/%s additional workers. Scaling up will be performed.' %
                                 (len(additional_hosts), self.max_additional_hosts))
-                    resource_demands = self.grid_engine.get_resource_demands(waiting_jobs)
-                    resource_demand = functools.reduce(operator.add, resource_demands)
+                    resource_demands = list(self.demand_selector.select(waiting_jobs))
+                    resource_demand = functools.reduce(operator.add, resource_demands, IntegralDemand())
                     Logger.info('Waiting jobs require: '
                                 '{cpu} cpu, {gpu} gpu, {mem} mem.'
                                 .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu, mem=resource_demand.mem))
@@ -1892,7 +1900,8 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
                     best_fulfilled_demands = current_fulfilled_demands
             remaining_demands = best_remaining_demands
             if not best_instance:
-                raise ScalingError('No instances were found which satisfy any of the resource demands.')
+                Logger.info('There are no available instance types.')
+                break
             best_instance_owner = self._resolve_owner(best_fulfilled_demands)
             Logger.info('Selecting %s instance using %s/%s cpu for %s user...'
                         % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
@@ -2540,6 +2549,7 @@ def main():
     job_validator = GridEngineJobValidator(grid_engine=grid_engine,
                                            instance_max_supply=biggest_instance_supply,
                                            cluster_max_supply=cluster_supply)
+    demand_selector = GridEngineDemandSelector(grid_engine=grid_engine)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
                                          storage_file=os.path.join(work_dir, '.autoscaler.%s.storage' % queue_name),
                                          clock=clock)
@@ -2614,6 +2624,7 @@ def main():
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler,
                                                  common_utils=common_utils)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, job_validator=job_validator,
+                                      demand_selector=demand_selector,
                                       cmd_executor=cmd_executor,
                                       scale_up_orchestrator=scale_up_orchestrator,
                                       scale_down_orchestrator=scale_down_orchestrator,
