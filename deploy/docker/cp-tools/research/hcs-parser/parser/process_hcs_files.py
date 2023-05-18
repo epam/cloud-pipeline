@@ -38,10 +38,9 @@ def try_process_hcs(hcs_root):
     try:
         log_run_info('Starting processing of folder {} with image preview {}'
                      .format(hcs_root.root_path, hcs_root.hcs_img_path))
-        #parser = HcsFileParser(hcs_root.root_path, hcs_root.hcs_img_path)
-        #processing_result = parser.process_file()
-        #return processing_result
-        return 0
+        parser = HcsFileParser(hcs_root.root_path, hcs_root.hcs_img_path)
+        processing_result = parser.process_file()
+        return processing_result
     except Exception as e:
         log_run_info('An error occurred during [{}] parsing: {}'.format(hcs_root.root_path, str(e)))
         print(traceback.format_exc())
