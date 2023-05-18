@@ -232,8 +232,10 @@ export default function Application ({id: applicationId, name: appName, launchOp
   useStopLaunch(applicationId, user?.userName);
   const seconds = useTimer(settings?.showTimer && !launchError && runId && !url);
   const {
-    redirectText = {}
+    redirectText = {},
+    redirectStyle = 'default'
   } = settings || {};
+  const showWhiteScreen = /^white$/i.test(redirectStyle);
   const {
     withTime,
     immediate
@@ -260,13 +262,31 @@ export default function Application ({id: applicationId, name: appName, launchOp
       seconds={seconds}
     />
   );
-  if (url) {
+  if (url && showWhiteScreen) {
     content = (
       <div className="redirect-container">
         <Markdown>
           {redirectTemplate}
         </Markdown>
         <LoadingIndicator style={{fill: 'currentColor'}} />
+      </div>
+    );
+  } else if (url) {
+    content = (
+      <div
+        className="content"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: '1',
+          maxWidth: '75vw'
+        }}
+      >
+        <LoadingIndicator style={{marginRight: 5, width: 15, height: 15}} />
+        <Markdown className="no-padding-markdown">
+          {redirectTemplate || `Opening ${appName || application.name}...`}
+        </Markdown>
       </div>
     );
   } else if (error) {

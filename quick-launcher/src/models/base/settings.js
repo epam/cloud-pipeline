@@ -187,9 +187,10 @@ const defaultSettings = {
   endpointName: undefined,
   disablePublishingApps: false,
   redirectText: {
-    withTime: undefined,
-    immediate: undefined
+    withTime: 'Magellan node has been fully initialized in {SECONDS} seconds. Please wait for the application to load.',
+    immediate: 'Magellan node has been fully initialized. Please wait for the application to load.'
   },
+  redirectStyle: 'default', // 'white' / 'default'
   deprecatedTag: 'deprecated',
   latestTag: 'latest'
 };
