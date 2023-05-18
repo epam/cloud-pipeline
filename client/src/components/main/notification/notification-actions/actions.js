@@ -20,6 +20,8 @@ import StopPipeline from '../../../../models/pipelines/StopPipeline';
 import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import TerminatePipeline from '../../../../models/pipelines/TerminatePipeline';
+import DataStorageLifeCycleRulesPostpone
+from '../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesPostpone';
 import {canPauseRun, canStopRun} from '../../../runs/actions';
 import RunStatuses from '../../../special/run-status-icon/run-statuses';
 
@@ -101,8 +103,20 @@ const ACTIONS = {
   },
   postponeLifecycleRule: {
     key: 'Postpone',
-    actionFn: ({notification, router}) => {
-      router && router.push(`/${notification.storagePath}`);
+    actionFn: async ({notification = {}, callback}) => {
+      const details = (notification.resources || [])[0] || {};
+      const hide = message.loading('Postpone...', -1);
+      const request = new DataStorageLifeCycleRulesPostpone({
+        datastorageId: details.entityId,
+        ruleId: details.storageRuleId,
+        path: details.storagePath
+      });
+      await request.fetch();
+      if (request.error) {
+        message.error(request.error);
+      }
+      hide();
+      callback && callback();
     },
     available: () => true
   },
