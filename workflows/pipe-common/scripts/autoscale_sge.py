@@ -33,7 +33,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from pipeline import PipelineAPI, Logger as CloudPipelineLogger
+from pipeline import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
 
 try:
     from queue import Queue, Empty as QueueEmptyError
@@ -261,57 +261,22 @@ class APIError(ServerError):
 
 
 class Logger:
-    task = None
-    cmd = None
-    verbose = None
+
+    inner = None
 
     @staticmethod
-    def init(task=None, log_file=None, verbose=False):
-        if not task or not log_file:
-            raise LoggingError('Arguments \'task\' and \'log_file\' should be specified.')
-        Logger.task = task
-        Logger.verbose = verbose
-
-        make_dirs(os.path.dirname(log_file))
-
-        logging_level = logging.INFO
-        logging_formatter = logging.Formatter('%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
-
-        logging.getLogger().setLevel(logging_level)
-
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(logging_level)
-        console_handler.setFormatter(logging_formatter)
-        logging.getLogger().addHandler(console_handler)
-
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging_level)
-        file_handler.setFormatter(logging_formatter)
-        logging.getLogger().addHandler(file_handler)
+    def info(message, crucial=False):
+        if crucial:
+            Logger.inner.info(message)
+        else:
+            Logger.inner.debug(message)
 
     @staticmethod
-    def info(message, crucial=False, *args, **kwargs):
-        logging.info(message, *args, **kwargs)
-        if not Logger.cmd and (crucial or Logger.verbose):
-            CloudPipelineLogger.info(message, task_name=Logger.task, omit_console=True)
-
-    @staticmethod
-    def warn(message, crucial=False, *args, **kwargs):
-        logging.warning(message, *args, **kwargs)
-        if not Logger.cmd and (crucial or Logger.verbose):
-            CloudPipelineLogger.warn(message, task_name=Logger.task, omit_console=True)
-
-    @staticmethod
-    def success(message, crucial=True, *args, **kwargs):
-        logging.info(message, *args, **kwargs)
-        if not Logger.cmd and (crucial or Logger.verbose):
-            CloudPipelineLogger.success(message, task_name=Logger.task, omit_console=True)
-
-    @staticmethod
-    def fail(message, crucial=True, *args, **kwargs):
-        logging.error(message, *args, **kwargs)
-        if not Logger.cmd and (crucial or Logger.verbose):
-            CloudPipelineLogger.fail(message, task_name=Logger.task, omit_console=True)
+    def warn(message, crucial=False):
+        if crucial:
+            Logger.inner.warning(message)
+        else:
+            Logger.inner.debug(message)
 
 
 class CmdExecutor:
@@ -1929,8 +1894,8 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
             if not best_instance:
                 raise ScalingError('No instances were found which satisfy any of the resource demands.')
             best_instance_owner = self._resolve_owner(best_fulfilled_demands)
-            logging.info('Selecting %s instance using %s/%s cpu for %s user...'
-                         % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
+            Logger.info('Selecting %s instance using %s/%s cpu for %s user...'
+                        % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
             yield InstanceDemand(best_instance, best_instance_owner)
 
     def _apply(self, demands, supply):
@@ -2439,22 +2404,55 @@ def main():
     effective_master_cpu = master_cpu - reserved_cpu if master_cpu - reserved_cpu > 0 else master_cpu
 
     work_dir = os.getenv(params.autoscaling_advanced.work_dir.name, os.getenv('TMP_DIR', '/tmp'))
-    log_dir = os.getenv(params.autoscaling.log_dir.name, os.getenv('LOG_DIR', '/var/log'))
-    log_task = os.getenv(params.autoscaling_advanced.log_task.name, 'GridEngineAutoscaling-%s' % queue_name_short)
-    log_verbose = os.getenv(params.autoscaling.log_verbose.name, 'false').strip().lower() == 'true'
+    logging_dir = os.getenv(params.autoscaling.log_dir.name, os.getenv('LOG_DIR', '/var/log'))
+    logging_verbose = os.getenv(params.autoscaling.log_verbose.name, 'false').strip().lower() == 'true'
+    logging_level_root = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_ROOT', default='WARNING')
+    logging_level_run = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_RUN', default='DEBUG' if logging_verbose else 'INFO')
+    logging_level_file = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_FILE', default='DEBUG')
+    logging_level_console = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_CONSOLE', default='INFO')
+    logging_format = os.getenv('CP_CAP_AUTOSCALE_LOGGING_FORMAT',
+                               default='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
+    logging_task = os.getenv(params.autoscaling_advanced.log_task.name, 'GridEngineAutoscaling-%s' % queue_name_short)
+    logging_file = os.path.join(logging_dir, '.autoscaler.%s.log' % queue_name)
+    logging_dir_pipe = os.path.join(logging_dir, '.autoscaler.%s.pipe.log' % queue_name)
 
-    Logger.init(log_file=os.path.join(log_dir, '.autoscaler.%s.log' % queue_name),
-                task=log_task, verbose=log_verbose)
+    # TODO: Git rid of CloudPipelineAPI usage
+    pipe = PipelineAPI(api_url=pipeline_api, log_dir=logging_dir_pipe)
+    api = CloudPipelineAPI(pipe=pipe)
+
+    make_dirs(os.path.dirname(logging_file))
+    logging_formatter = logging.Formatter(logging_format)
+
+    logging_logger_root = logging.getLogger()
+    logging_logger_root.setLevel(logging_level_root)
+
+    logging_logger = logging.getLogger(name=logging_task)
+    logging_logger.setLevel(logging.DEBUG)
+
+    if not logging_logger.handlers:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging_level_console)
+        console_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(console_handler)
+
+        file_handler = logging.FileHandler(logging_file)
+        file_handler.setLevel(logging_level_file)
+        file_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(file_handler)
+
+    logger = RunLogger(api=pipe, run_id=master_run_id)
+    logger = TaskLogger(task=logging_task, inner=logger)
+    logger = LevelLogger(level=logging_level_run, inner=logger)
+    logger = LocalLogger(logger=logging_logger, inner=logger)
+
+    # todo: Get rid of Logger usage in favor of logger
+    Logger.inner = logger
 
     Logger.info('Initiating grid engine autoscaling...')
 
     if not autoscale_enabled:
         Logger.info('Using non autoscaling mode...')
         autoscaling_hosts_number = 0
-
-    # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
-    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(log_dir, '.autoscaler.%s.pipe.log' % queue_name))
-    api = CloudPipelineAPI(pipe=pipe)
 
     instance_launch_params = fetch_instance_launch_params(api, master_run_id, queue_name, hostlist_name)
 
