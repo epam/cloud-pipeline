@@ -761,6 +761,7 @@ public class RoleModelTest
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
                                 .deleteIfPresent(userGroup)
+                                .sleep(2, SECONDS)
                                 .addNewGroup(userGroup)
                                 .closeAll()
                 );
