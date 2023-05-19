@@ -42,6 +42,7 @@ class GridEngineProfileError(RuntimeError):
 class ManagementTask:
     CREATE = 'CREATE'
     CONFIGURE = 'CONFIGURE'
+    RESTART = 'RESTART'
     LIST = 'LIST'
 
 
@@ -102,13 +103,8 @@ def manage(task, profile_name=None):
             _configure_profile(profile, editor, logger)
             _create_queue(profile, logger)
             _restart_autoscaler(profile, autoscaling_script_path, logger)
-        elif task == ManagementTask.LIST:
-            logger.info('Initiating grid engine profiles listing...')
-            profiles = _collect_profiles(cap_scripts_dir, queue_profile_regexp, logger)
-            for profile in profiles:
-                logger.info('Grid engine profile has been found: {}'.format(profile.name))
-        else:
-            logger.info('Initiating grid engine profiles configuration...')
+        elif task == ManagementTask.CONFIGURE:
+            logger.info('Initiating grid engine profile configuration...')
             editor = _find_editor(logger)
             profile = _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger)
             if not profile:
@@ -117,6 +113,18 @@ def manage(task, profile_name=None):
             modified_profile = _configure_profile(profile, editor, logger)
             if modified_profile:
                 _restart_autoscaler(modified_profile, autoscaling_script_path, logger)
+        elif task == ManagementTask.RESTART:
+            logger.info('Initiating grid engine profile restart...')
+            profile = _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger)
+            if not profile:
+                logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
+                raise GridEngineProfileError()
+            _restart_autoscaler(profile, autoscaling_script_path, logger)
+        elif task == ManagementTask.LIST:
+            logger.info('Initiating grid engine profiles listing...')
+            profiles = _collect_profiles(cap_scripts_dir, queue_profile_regexp, logger)
+            for profile in profiles:
+                logger.info('Grid engine profile has been found: {}'.format(profile.name))
     except KeyboardInterrupt:
         logger.warning('Interrupted.')
     except GridEngineProfileError:
@@ -276,7 +284,11 @@ def cli():
 
         sge configure queue.q
 
-    III. List all existing grid engine profiles
+    III. Restart an existing grid engine profile
+
+        sge restart queue.q
+
+    IV. List all existing grid engine profiles
 
         sge list
 
@@ -320,6 +332,23 @@ def configure(name):
 
     """
     manage(task=ManagementTask.CONFIGURE, profile_name=name)
+
+
+@cli.command()
+@click.argument('name', required=True, type=str)
+def restart(name):
+    """
+    Restarts profiles.
+
+    Depending on the value of CP_CAP_AUTOSCALE parameter (true/false)
+    the corresponding queue's autoscaler may be restarted.
+
+    Examples:
+
+        sge restart queue.q
+
+    """
+    manage(task=ManagementTask.RESTART, profile_name=name)
 
 
 @cli.command(name='list')
