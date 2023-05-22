@@ -119,14 +119,15 @@ public class ToolApiService {
         return toolManager.loadToolDefaultCommand(id, tag);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public void forceScanTool(String registry, String image, String version, final Boolean rescan) {
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR +
+            "@grantPermissionManager.toolPermission(#registry, #image, 'OWNER')")
+    public void forceScanTool(final String registry, final String image, final String version, final Boolean rescan) {
         toolScanScheduler.forceScheduleScanTool(registry, image, version, rescan);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public void clearToolScan(final String registry, final String tool, final String version) {
-        toolManager.clearToolScan(registry, tool, version);
+    public void clearToolScan(final String registry, final String image, final String version) {
+        toolManager.clearToolScan(registry, image, version);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY +
