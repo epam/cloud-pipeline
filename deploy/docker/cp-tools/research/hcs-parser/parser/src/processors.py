@@ -40,6 +40,8 @@ PLANE_COORDINATES_DELIMITER = os.getenv('HCS_PARSING_PLANE_COORDINATES_DELIMITER
 HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
 HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
+MEASUREMENT_INDEX_FILE_FORCE_COPY_TO_PARSER_DIR = os.getenv('HCS_PARSING_INDEX_FILE_FORCE_COPY_TO_PARSER_DIR', 'false')
+LOCALIZE_USE_PIPE = os.getenv('HCS_PARSING_LOCALIZE_USE_PIPE', 'false')
 
 HCS_EVAL_DIR_NAME = os.getenv('HCS_EVAL_DIR_NAME', 'eval')
 EVAL_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_EVAL_ONLY')
@@ -260,7 +262,8 @@ class HcsFileParser:
         if HCS_INDEX_FILE_NAME != HCS_OME_COMPATIBLE_INDEX_FILE_NAME:
             compatible_index_path = os.path.join(self.hcs_img_service_dir, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
             shutil.copy(hcs_index_file_path, compatible_index_path)
-            hcs_index_file_path = compatible_index_path
+            if MEASUREMENT_INDEX_FILE_FORCE_COPY_TO_PARSER_DIR == "true":
+                hcs_index_file_path = compatible_index_path
         self.generate_bioformats_ome_xml(hcs_index_file_path, self.ome_xml_info_file_path)
 
     def build_parsing_details(self):
@@ -331,8 +334,12 @@ class HcsFileParser:
         hcs_root_cloud_path = HcsParsingUtils.extract_cloud_path(self.hcs_root_dir)
         local_tmp_dir_trailing = get_path_with_trailing_delimiter(self.tmp_local_dir)
         self._processing_logger.log_info('Localizing data files...')
-        localization_result = os.system('pipe storage cp -f -r "{}" "{}"'.format(hcs_root_cloud_path,
-                                                                                 local_tmp_dir_trailing))
+        if LOCALIZE_USE_PIPE == "true":
+            localization_result = os.system('pipe storage cp -f -r "{}" "{}"'.format(hcs_root_cloud_path,
+                                                                                     local_tmp_dir_trailing))
+        else:
+            localization_result = os.system('aws s3 sync "{}" "{}"'.format(hcs_root_cloud_path,
+                                                                                     local_tmp_dir_trailing))
         return localization_result == 0
 
     def process_file(self):
@@ -387,9 +394,14 @@ class HcsFileParser:
                     return 1
                 self.write_dict_to_file(os.path.join(local_preview_dir, sequence_id, 'wells_map.json'),
                                         self.build_wells_map(sequence_id, wells_grid_mapping, wells_tags))
-            cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
-                                              .format(local_preview_dir,
-                                                      HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
+            if LOCALIZE_USE_PIPE == "true":
+                cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
+                                                  .format(local_preview_dir,
+                                                          HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
+            else:
+                cloud_transfer_result = os.system('aws s3 sync "{}" "{}"'
+                                                  .format(local_preview_dir,
+                                                          HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
             if cloud_transfer_result != 0:
                 self._processing_logger.log_info('Results transfer was not successful...')
                 return 1
@@ -616,10 +628,16 @@ class HcsFileParser:
                 .parse_evaluations()
             eval_results_path = os.path.join(local_eval_folder, HCS_EVAL_DIR_NAME)
             if os.path.exists(eval_results_path) and os.listdir(eval_results_path):
-                cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
-                                                  .format(eval_results_path,
-                                                          HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
-                                                          + '/' + HCS_EVAL_DIR_NAME + '/'))
+                if LOCALIZE_USE_PIPE == "true":
+                    cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
+                                                      .format(eval_results_path,
+                                                              HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
+                                                              + '/' + HCS_EVAL_DIR_NAME + '/'))
+                else:
+                    cloud_transfer_result = os.system('aws s3 sync "{}" "{}"'
+                                                      .format(eval_results_path,
+                                                              HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
+                                                              + '/' + HCS_EVAL_DIR_NAME + '/'))
                 if cloud_transfer_result != 0:
                     self._processing_logger.log_info('Evaluations transfer was not successful.')
         except Exception as e:
