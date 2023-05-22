@@ -59,7 +59,7 @@ ARG BIOFORMATS_TO_RAW_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.
 ARG RAW_TO_OMETIFF_VERSION=0.3.0
 ARG RAW_TO_OMETIFF_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION.zip"
 
-ARG BFTOOLS_VERSION=6.8.0
+ARG BFTOOLS_VERSION=6.13.0
 ARG BFTOOLS_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bftools/bftools-cli-$BFTOOLS_VERSION.zip"
 
 ENV HCS_TOOLS_HOME="/opt/local/hcs-tools"
