@@ -158,7 +158,7 @@ public class ToolVersionManager {
         return toolVersionDao.loadToolWithSettings(toolId);
     }
 
-    public List<ToolVersion> loadAllToolVersionSettings() {
+    public List<ToolVersion> loadAllLatestToolVersionSettings() {
         return toolVersionDao.loadAllLatestToolVersions();
     }
 
