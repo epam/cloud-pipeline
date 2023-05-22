@@ -157,7 +157,7 @@
                   LEFT JOIN pipeline.tool tl ON t.link = tl.id
                   LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
                   LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
-                  LEFT JOIN pipeline.tool_version_scan tvs ON (tl.id = tvs.tool_id AND tvs.version = 'latest')
+                  LEFT JOIN pipeline.tool_version_scan tvs ON (t.id = tvs.tool_id AND tvs.version = 'latest')
                   ORDER BY
                       dr.id
                 ]]>

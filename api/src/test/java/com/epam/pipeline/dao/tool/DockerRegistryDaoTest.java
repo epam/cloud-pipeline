@@ -21,6 +21,8 @@ import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.ToolScanStatus;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -66,6 +69,9 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
     private static final String TOOL_GROUP_NAME = "library";
     private static final String TOOL_GROUP_DESCRIPTION = "test description";
     private static final String REGISTRY_CERT = "cert";
+    private static final String TEST_OS = "ubuntu";
+    private static final String TEST_OS_VERSION = "20.04";
+    private static final String LATEST_VERSION = "latest";
 
     @Autowired
     private DockerRegistryDao registryDao;
@@ -75,6 +81,9 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
     @Autowired
     private ToolGroupDao toolGroupDao;
+
+    @Autowired
+    private ToolVulnerabilityDao toolVulnerabilityDao;
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -197,6 +206,26 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         final List<DockerRegistry> loadedRegistries = registryDao.loadAllRegistriesContent();
 
         assertRegistryGroups(loadedRegistries, expectedRegistries);
+    }
+
+    @Test
+    @Transactional
+    public void loadAllRegistriesContentWithOsVersion() {
+        final List<DockerRegistry> expectedRegistries = initTestHierarchy();
+        final ToolOSVersion expectedOsVersion = ToolOSVersion.builder()
+                .version(TEST_OS_VERSION)
+                .distribution(TEST_OS).build();
+        expectedRegistries.stream()
+                .flatMap(registry -> registry.getGroups().stream())
+                .flatMap(group -> group.getTools().stream())
+                .forEach(tool -> toolVulnerabilityDao.insertToolVersionScan(tool.getId(), LATEST_VERSION,
+                        expectedOsVersion, TEST_USER, TEST_USER, ToolScanStatus.COMPLETED, new Date(),
+                        Collections.emptyMap(), TEST_USER, 1));
+
+        final List<DockerRegistry> loadedRegistries = registryDao.loadAllRegistriesContent();
+
+        assertRegistryGroups(loadedRegistries, expectedRegistries);
+        assertToolOsVersions(loadedRegistries, expectedOsVersion);
     }
 
     @Test
@@ -392,6 +421,18 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
             final List<ToolGroup> expectedGroups = expectedRegistry.getGroups();
             assertGroups(actualGroups, expectedGroups);
         }
+    }
+
+    private void assertToolOsVersions(final List<DockerRegistry> actualRegistries,
+                                      final ToolOSVersion expectedOsVersion) {
+        actualRegistries.stream()
+                .flatMap(registry -> registry.getGroups().stream())
+                .flatMap(group -> group.getTools().stream())
+                .map(Tool::getToolOSVersion)
+                .forEach(actualOsVersion -> {
+                    assertThat(actualOsVersion.getVersion(), is(expectedOsVersion.getVersion()));
+                    assertThat(actualOsVersion.getDistribution(), is(actualOsVersion.getDistribution()));
+                });
     }
 
     private void assertGroups(final List<ToolGroup> actualGroups, final List<ToolGroup> expectedGroups) {

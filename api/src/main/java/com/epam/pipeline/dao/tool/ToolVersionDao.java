@@ -123,7 +123,8 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<ToolVersion> loadAllLatestToolVersions() {
-        return getJdbcTemplate().query(loadAllLatestToolVersionsQuery, ToolVersionParameters.getRowMapperWithSettings());
+        return getJdbcTemplate().query(loadAllLatestToolVersionsQuery,
+                ToolVersionParameters.getRowMapperWithSettings());
     }
 
     enum ToolVersionParameters {
