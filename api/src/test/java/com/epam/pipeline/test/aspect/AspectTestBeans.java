@@ -70,6 +70,7 @@ import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
@@ -485,4 +486,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected StorageEventCollector events;
+
+    @MockBean
+    protected CloudFacade cloudFacade;
 }

@@ -55,6 +55,8 @@ public class Tool extends AbstractSecuredEntity {
     private Long iconId;
     private boolean allowSensitive = false;
     private boolean allowCommit = true;
+    private ToolOSVersion toolOSVersion;
+    private boolean gpuEnabled = false;
 
     public void setIconId(Long iconId) {
         this.iconId = iconId;

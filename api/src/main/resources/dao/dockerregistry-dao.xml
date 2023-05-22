@@ -147,7 +147,9 @@
                       t.owner as tool_owner,
                       COALESCE(tl.allow_sensitive, t.allow_sensitive) as tool_allow_sensitive,
                       COALESCE(tl.allow_commit, t.allow_commit) as tool_allow_commit,
-                      COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id
+                      COALESCE(tl.icon_id, t.icon_id) AS tool_icon_id,
+                      tvs.os_name as tool_os_name,
+                      tvs.os_version as tool_os_version
                   FROM
                       pipeline.docker_registry dr
                   LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
@@ -155,6 +157,7 @@
                   LEFT JOIN pipeline.tool tl ON t.link = tl.id
                   LEFT JOIN pipeline.tool_version tv ON (t.id = tv.tool_id AND tv.version = 'latest')
                   LEFT JOIN pipeline.tool_version tlv ON (tl.id = tlv.tool_id AND tlv.version = 'latest')
+                  LEFT JOIN pipeline.tool_version_scan tvs ON (t.id = tvs.tool_id AND tvs.version = 'latest')
                   ORDER BY
                       dr.id
                 ]]>
