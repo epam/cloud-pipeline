@@ -123,7 +123,7 @@ public final class DockerCreatorUtils {
     }
 
     public static Tool getTool() {
-        return getTool(null, null);
+        return getTool((Long) null, null);
     }
 
     public static ToolSymlinkRequest getToolSymlinkRequest() {
@@ -161,6 +161,14 @@ public final class DockerCreatorUtils {
         dockerRegistry.setUserName(TEST_STRING);
         dockerRegistry.setCaCert(TEST_STRING);
         return dockerRegistry;
+    }
+
+    public static DockerRegistry getDockerRegistry(final Long id, final String path,
+                                                   final String owner, final String externalUrl) {
+        final DockerRegistry registry = getDockerRegistry(id, owner);
+        registry.setPath(path);
+        registry.setExternalUrl(externalUrl);
+        return registry;
     }
 
     public static DockerRegistryVO getDockerRegistryVO() {
@@ -212,12 +220,17 @@ public final class DockerCreatorUtils {
         return getTool(ID, owner);
     }
 
-    public static ToolGroup getToolGroup(final Long id, final String owner) {
+    public static ToolGroup getToolGroup(final Long id, final String name, final Long registryId, final String owner) {
         final ToolGroup toolGroup = new ToolGroup();
         toolGroup.setId(id);
-        toolGroup.setRegistryId(id);
+        toolGroup.setName(name);
+        toolGroup.setRegistryId(registryId);
         toolGroup.setOwner(owner);
         return toolGroup;
+    }
+
+    public static ToolGroup getToolGroup(final Long id, final String owner) {
+        return getToolGroup(id, null, id, owner);
     }
 
     public static ToolGroup getToolGroup(final String owner) {
@@ -233,6 +246,27 @@ public final class DockerCreatorUtils {
         tool.setImage(TEST_STRING);
         tool.setToolGroupId(id);
         tool.setRegistry(TEST_STRING);
+        return tool;
+    }
+
+    public static Tool getTool(final ToolGroup toolGroup, final String image,
+                               final DockerRegistry dockerRegistry, final String owner) {
+        final Tool tool = new Tool();
+        tool.setToolGroup(toolGroup.getName());
+        tool.setToolGroupId(toolGroup.getId());
+        tool.setImage(image);
+        tool.setCpu(TEST_STRING);
+        tool.setRam(TEST_STRING);
+        tool.setRegistry(dockerRegistry.getPath());
+        tool.setRegistryId(dockerRegistry.getId());
+        tool.setOwner(owner);
+        return tool;
+    }
+
+    public static Tool getTool(final String image, final String defaultCommand) {
+        final Tool tool = getTool(TEST_STRING);
+        tool.setImage(image);
+        tool.setDefaultCommand(defaultCommand);
         return tool;
     }
 

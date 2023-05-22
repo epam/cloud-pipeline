@@ -78,6 +78,7 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
     private Tool symlink;
     private ToolVersion toolVersion1;
     private ToolVersion toolVersion2;
+    private ConfigurationEntry configurationEntry;
 
     @Before
     public void setUp() {
@@ -122,7 +123,7 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
         symlink.setLink(tool.getId());
         toolDao.createTool(symlink);
 
-        ConfigurationEntry configurationEntry = new ConfigurationEntry();
+        configurationEntry = new ConfigurationEntry();
         configurationEntry.setName(ConfigurationEntry.DEFAULT);
         toolVersion1 = ToolVersion
                 .builder()
@@ -295,6 +296,29 @@ public class ToolVersionDaoTest extends AbstractSpringTest {
         final List<ToolVersion> actualVersions = toolVersionDao.loadToolWithSettings(symlink.getId());
 
         assertVersionsWithSettings(actualVersions, expectedVersions);
+    }
+
+    @Test
+    @Transactional
+    public void testLoadAllToolWithSettings() {
+        final List<ToolVersion> versions = Arrays.asList(toolVersion1, toolVersion2);
+        versions.forEach(toolVersionDao::createToolVersionWithSettings);
+
+        final List<ToolVersion> actualVersions = toolVersionDao.loadAllLatestToolVersions();
+
+        final ToolVersion symlinkVersion = ToolVersion
+                .builder()
+                .id(toolVersion1.getId())
+                .digest(TEST_DIGEST)
+                .size(TEST_SIZE)
+                .version(TEST_VERSION)
+                .modificationDate(TEST_LAST_MODIFIED_DATE)
+                .toolId(symlink.getId())
+                .settings(Collections.singletonList(configurationEntry))
+                .build();
+        final List<ToolVersion> expected = Arrays.asList(toolVersion1, symlinkVersion);
+
+        assertVersionsWithSettings(actualVersions, expected);
     }
 
     private void assertVersions(final List<ToolVersion> actualVersions, final List<ToolVersion> expectedVersions) {
