@@ -51,6 +51,7 @@ RUN mkdir -p "$ANACONDA_HOME" && \
                    ImageMagick \
                    java-1.8.0-openjdk-devel && \
     pip3 install $CP_PIP_EXTRA_ARGS -I -q generate-tiff-offsets==0.1.7 && \
+    pip3 install $CP_PIP_EXTRA_ARGS -I -q awscli
     conda deactivate
 
 ARG BIOFORMATS_TO_RAW_VERSION=0.4.0
