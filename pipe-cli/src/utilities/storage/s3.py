@@ -725,7 +725,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 for version in page['Versions']:
                     name = self.get_file_name(version, prefix, recursive)
                     restore_status = None
-                    if version['StorageClass'] != 'STANDARD':
+                    if version['StorageClass'] != 'STANDARD' and version['StorageClass'] != 'INTELLIGENT_TIERING':
                         restore_status, versions_restored = lifecycle_manager.find_lifecycle_status(name)
                         version_not_restored = restore_status and not version['IsLatest'] and not versions_restored
                         if not show_archive:
@@ -779,7 +779,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 for file in page['Contents']:
                     name = self.get_file_name(file, prefix, recursive)
                     lifecycle_status = None
-                    if file['StorageClass'] != 'STANDARD':
+                    if file['StorageClass'] != 'STANDARD' and file['StorageClass'] != 'INTELLIGENT_TIERING':
                         lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
                         if not show_archive and not lifecycle_status:
                             continue
