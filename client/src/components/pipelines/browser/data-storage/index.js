@@ -102,8 +102,17 @@ import DownloadFileButton from './components/download-file-button';
 import styles from '../Browser.css';
 
 const STORAGE_CLASSES = {
-  standard: 'STANDARD'
+  standard: 'STANDARD',
+  intelligentTiering: 'INTELLIGENT_TIERING'
 };
+
+const standardClasses = [
+  STORAGE_CLASSES.standard,
+  STORAGE_CLASSES.intelligentTiering
+];
+
+const isStandardClass = (storageClass) =>
+  standardClasses.includes((storageClass || '').toUpperCase());
 
 @roleModel.authenticationInfo
 @inject(
@@ -373,7 +382,7 @@ export default class DataStorage extends React.Component {
     const {selectedItems} = this.state;
     return (selectedItems || [])
       .filter(item => (
-        (item.labels && item.labels.StorageClass !== STORAGE_CLASSES.standard) ||
+        (item.labels && !isStandardClass(item.labels.StorageClass)) ||
         item.type === 'Folder'
       ));
   }
@@ -489,7 +498,7 @@ export default class DataStorage extends React.Component {
       for (let version in versions) {
         if (versions.hasOwnProperty(version)) {
           const archived = versions[version].labels &&
-            versions[version].labels['StorageClass'] !== STORAGE_CLASSES.standard;
+            !isStandardClass(versions[version].labels['StorageClass']);
           const versionRestored = restoreStatus.restoreVersions &&
             restoreStatus.status === STATUS.SUCCEEDED;
           const latest = versions[version].version === item.version;
@@ -530,7 +539,7 @@ export default class DataStorage extends React.Component {
     };
     items.push(...elements.map(i => {
       const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
-      const archived = i.labels && i.labels['StorageClass'] !== STORAGE_CLASSES.standard;
+      const archived = i.labels && !isStandardClass(i.labels['StorageClass']);
       return {
         key: `${i.type}_${i.path}`,
         ...i,
@@ -2598,4 +2607,4 @@ export default class DataStorage extends React.Component {
   };
 }
 
-export {STORAGE_CLASSES};
+export {STORAGE_CLASSES, isStandardClass};
