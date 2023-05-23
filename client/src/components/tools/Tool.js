@@ -1083,7 +1083,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             }
             {
               !/^windows$/i.test(version.platform) &&
-              this.isAdmin() &&
+              (
+                this.isAdmin() || roleModel.isOwner(this.props.tool.value)
+              ) &&
               !this.link &&
               this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
               (
