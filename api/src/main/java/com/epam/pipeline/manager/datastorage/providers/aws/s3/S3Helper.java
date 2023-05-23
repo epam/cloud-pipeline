@@ -143,6 +143,8 @@ public class S3Helper {
     private static final String FOLDER_GLOB_SUFFIX = "/**";
     private static final String EMPTY_STRING = "";
     public static final String STANDARD_STORAGE_CLASS = "STANDARD";
+    public static final String INTELLIGENT_TIERING_STORAGE_CLASS = "INTELLIGENT_TIERING";
+
     public static final String STORAGE_CLASS = "StorageClass";
 
     private final StorageEventCollector events;
@@ -677,7 +679,8 @@ public class S3Helper {
                             oldPath, objectPath, COPYING_FILE_SIZE_LIMIT));
                 }
                 final String itemStorageClass = s3ObjectSummary.getStorageClass();
-                if(!STANDARD_STORAGE_CLASS.equals(itemStorageClass)) {
+                if(!STANDARD_STORAGE_CLASS.equals(itemStorageClass)
+                        && !INTELLIGENT_TIERING_STORAGE_CLASS.equals(itemStorageClass)) {
                     throw new DataStorageException(String.format("Moving folder '%s' was aborted because " +
                                     "some of its files '%s' located in %s storage class",
                             oldPath, objectPath, itemStorageClass));
@@ -1336,6 +1339,7 @@ public class S3Helper {
 
     private boolean isArchived(final DataStorageFile item) {
         final String storageClass = MapUtils.emptyIfNull(item.getLabels()).get(STORAGE_CLASS);
-        return !StringUtils.isNullOrEmpty(storageClass) && !STANDARD_STORAGE_CLASS.equals(storageClass);
+        return !StringUtils.isNullOrEmpty(storageClass) && !STANDARD_STORAGE_CLASS.equals(storageClass)
+                && !INTELLIGENT_TIERING_STORAGE_CLASS.equals(storageClass);
     }
 }
