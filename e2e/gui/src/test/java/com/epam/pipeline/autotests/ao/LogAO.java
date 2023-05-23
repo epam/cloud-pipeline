@@ -110,16 +110,16 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public Stream<String> logMessages() {
-        $(byClassName("log__logs")).shouldBe(visible);
-        Utils.scrollElementToPosition(".log__logs", 0);
+        $(byClassName("cp-console-output")).shouldBe(visible);
+        Utils.scrollElementToPosition(".cp-console-output", 0);
         Set<String> lines = new LinkedHashSet<>();
         boolean keepScrolling = true;
         int offset = 0;
         while (keepScrolling) {
-            ElementsCollection messages = $(byClassName("log__logs")).findAll(byClassName("un-task-logs__console-line"));
+            ElementsCollection messages = $(byClassName("cp-console-output")).findAll(byClassName("un-task-logs__console-line"));
             keepScrolling = lines.addAll(messages.texts());
             offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
-            Utils.scrollElementToPosition(".log__logs", offset);
+            Utils.scrollElementToPosition(".cp-console-output", offset);
         }
         return lines.stream();
     }
@@ -451,7 +451,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public static By log() {
-        return byClassName("log__logs");
+        return byClassName("cp-console-output");
     }
 
     public LogAO logContainsMessage(Set<String> logMess, final String message) {
@@ -497,7 +497,7 @@ public class LogAO implements AccessObject<LogAO> {
         Objects.requireNonNull(text);
         return new Condition(format("contains message {%s}", text)) {
 
-            private static final String container = ".log__logs";
+            private static final String container = ".cp-console-output";
             private final By message = logMessage(text);
 
             @Override

@@ -80,6 +80,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
         cleanToolLimitMounts();
         cleanUserLimitMounts();
         logout();
+        loginAs(user);
     }
 
     @AfterClass(alwaysRun = true)
@@ -99,7 +100,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
     @Test
     @TestCase(value = {"2210_1"})
     public void validateSelectDataStoragesToLimitMountsForm() {
-        loginAs(user);
         navigationMenu()
                 .settings()
                 .switchToMyProfile()
@@ -178,6 +178,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
                 .click(taskWithName(mountDataStoragesTask))
+                .sleep(5, SECONDS)
                 .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
                 .ensure(log(), containsMessages("Only 1 storages will be mounted"))
                 .ensure(log(), containsMessages(mountStorageMessage(storage3)))
