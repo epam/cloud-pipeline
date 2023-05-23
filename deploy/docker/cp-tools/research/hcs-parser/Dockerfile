@@ -24,8 +24,8 @@ RUN yum install -y curl \
                    openssh-server \
                    wget \
                    unzip \
-                   python && \
-                   python-devel && \
+                   python \
+                   python-devel \
                    gcc && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install pillow==9.2.0 tifffile==2019.7.26.2 numpy==1.16.6 imagecodecs-lite==2019.12.3 pandas==0.24.2 openpyxl==2.6.4
@@ -51,7 +51,7 @@ RUN mkdir -p "$ANACONDA_HOME" && \
                    ImageMagick \
                    java-1.8.0-openjdk-devel && \
     pip3 install $CP_PIP_EXTRA_ARGS -I -q generate-tiff-offsets==0.1.7 && \
-    pip3 install $CP_PIP_EXTRA_ARGS -I -q awscli
+    pip3 install $CP_PIP_EXTRA_ARGS -I -q awscli && \
     conda deactivate
 
 ARG BIOFORMATS_TO_RAW_VERSION=0.4.0

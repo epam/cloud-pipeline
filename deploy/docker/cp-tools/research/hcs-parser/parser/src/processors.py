@@ -42,6 +42,8 @@ HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
 MEASUREMENT_INDEX_FILE_FORCE_COPY_TO_PARSER_DIR = os.getenv('HCS_PARSING_INDEX_FILE_FORCE_COPY_TO_PARSER_DIR', 'false')
 LOCALIZE_USE_PIPE = os.getenv('HCS_PARSING_LOCALIZE_USE_PIPE', 'false')
+PERFORM_IMAGE_INTEGRITY_CHECK = os.getenv('HCS_PARSING_LOCALIZE_USE_PIPE', 'true').lower() == "true"
+
 
 HCS_EVAL_DIR_NAME = os.getenv('HCS_EVAL_DIR_NAME', 'eval')
 EVAL_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_EVAL_ONLY')
@@ -361,6 +363,8 @@ class HcsFileParser:
             return 2
         self.create_tmp_stat_file()
         hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_PATH
+        if PERFORM_IMAGE_INTEGRITY_CHECK and not self._validate_hcs_files_integrity(hcs_index_file_path):
+           return 1
         time_series_details = self._extract_time_series_details(hcs_index_file_path)
         self.generate_ome_xml_info_file()
         xml_info_tree = ET.parse(self.ome_xml_info_file_path).getroot()
@@ -952,3 +956,18 @@ class HcsFileParser:
                     entry.find(hcs_schema_prefix + 'ImageResolutionY').text = \
                         str(float(resolution_y) * y_scaling).upper()
         return channel_dimensions
+
+    def _validate_hcs_files_integrity(self, hcs_index_file_path):
+        hcs_xml_info_tree = ET.parse(hcs_index_file_path).getroot()
+        hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_tree)
+        images_list = hcs_xml_info_tree.find(hcs_schema_prefix + 'Images')
+        for image in images_list.findall(hcs_schema_prefix + 'Image'):
+            image_path = image.find(hcs_schema_prefix + 'URL').text
+            fill_image_path = os.path.join(self.hcs_root_dir, HCS_IMAGE_DIR_NAME, image_path)
+            if not os.path.exists(fill_image_path):
+                self._processing_logger.log_info(
+                    '{} file contains file with path {} but it cannot be found in path: {}! Failing...'
+                    .format(hcs_index_file_path, image_path, fill_image_path))
+                return False
+        self._processing_logger.log_info('Files integrity check successfully passed. All images files exists.')
+        return True
