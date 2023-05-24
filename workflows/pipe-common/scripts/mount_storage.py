@@ -537,9 +537,15 @@ class S3Mounter(StorageMounter):
                 'logging_file': logging_file
                 }
 
+    def remove_prefix(self, text, prefix):
+        if text.startswith(prefix):
+            return text[len(prefix):]
+        return text
+
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            mount_options = os.getenv('CP_PIPE_FUSE_MOUNT_OPTIONS')
+            pipe_mount_options = os.getenv('CP_PIPE_FUSE_MOUNT_OPTIONS')
+            mount_options = os.getenv('CP_PIPE_FUSE_OPTIONS')
             persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
             debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
             logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
@@ -547,13 +553,14 @@ class S3Mounter(StorageMounter):
             if debug_libfuse:
                 merged_options = merged_options + ',debug'
             if mount_options:
-                merged_options = merged_options + ',' + mount_options.lstrip('-o').strip()
+                merged_options = merged_options + ',' + self.remove_prefix(mount_options.strip(), '-o').strip()
             if logging_level:
                 params['logging_level'] = logging_level
             return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
                     + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
-                    + merged_options).format(**params)
+                    + merged_options + ' '
+                    + (pipe_mount_options if pipe_mount_options else '')).format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
