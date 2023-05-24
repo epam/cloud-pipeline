@@ -36,7 +36,6 @@ api = Mock()
 host_storage = MemoryHostStorage()
 instance_helper = Mock()
 parent_run_id = 'parent_run_id'
-default_hostfile = 'default_hostfile'
 instance_disk = 'instance_disk'
 instance_type = 'instance_type'
 instance_image = 'instance_image'
@@ -53,7 +52,6 @@ hostlist = '@allhosts'
 run_id_queue = Queue()
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                             host_storage=host_storage, parent_run_id=parent_run_id,
-                                            default_hostfile=default_hostfile,
                                             instance_disk=instance_disk, instance_image=instance_image,
                                             cmd_template=cmd_template, price_type=price_type,
                                             region_id=region_id, queue=queue_name, hostlist=hostlist,
