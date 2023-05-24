@@ -36,7 +36,7 @@ scale_down_handler = Mock()
 common_utils = Mock()
 worker_validator = GridEngineWorkerValidator(cmd_executor=executor, api=api, host_storage=host_storage,
                                              grid_engine=grid_engine, scale_down_handler=scale_down_handler,
-                                             common_utils=common_utils)
+                                             common_utils=common_utils, dry_run=False)
 
 
 def setup_function():

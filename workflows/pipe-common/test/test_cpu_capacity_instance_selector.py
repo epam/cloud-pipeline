@@ -42,6 +42,11 @@ all_instances = [instance_2cpu, instance_4cpu,
                  instance_64cpu, instance_96cpu]
 
 test_cases = [
+    ['2cpu job using no instances',
+     [],
+     [IntegralDemand(cpu=2, owner=owner)],
+     []],
+
     ['2cpu job using 2cpu instances',
      [instance_2cpu],
      [IntegralDemand(cpu=2, owner=owner)],
