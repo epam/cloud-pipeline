@@ -192,7 +192,7 @@ export default class SystemNotification extends React.Component {
           }}>
             <PreviewNotification
               text={this.props.notification.body}
-              sanitize={this.props.notification.type === NOTIFICATION_TYPE.message}
+              sanitize
             />
           </Row>
           <Row type="flex" justify="end">

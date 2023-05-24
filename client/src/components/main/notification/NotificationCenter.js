@@ -496,6 +496,7 @@ export default class NotificationCenter extends React.Component {
                     ? this.openPreviewNotification
                     : undefined
                   }
+                  router={this.props.router}
                 />
               );
             })
