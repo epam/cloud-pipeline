@@ -45,6 +45,10 @@ public class S3FileSyncConfiguration {
     private Boolean includeVersions;
     @Value("${sync.s3-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
+    @Value("${sync.s3-file.storage.exclude.metadata.key:Billing status}")
+    private String storageExcludeKey;
+    @Value("${sync.s3-file.storage.exclude.metadata.value:Exclude}")
+    private String storageExcludeValue;
 
     @Value("${sync.s3-file.enable.logging:false}")
     private Boolean enableLogging;
@@ -62,8 +66,9 @@ public class S3FileSyncConfiguration {
             final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
         final ObjectStorageIndexImpl index = new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 s3FileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.S3, includeVersions,
-                SearchDocumentType.S3_FILE);
+                indexSettingsPath, bulkInsertSize, DataStorageType.S3, SearchDocumentType.S3_FILE,
+                includeVersions,
+                storageExcludeKey, storageExcludeValue);
         if (enableLogging) {
             index.setEnableLogging(true);
         }
