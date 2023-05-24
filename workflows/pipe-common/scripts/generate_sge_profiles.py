@@ -43,10 +43,14 @@ def generate_sge_profiles():
     default_queue_disabled = os.getenv('CP_CAP_SGE_DISABLE_DEFAULT_QUEUE', 'false').lower() == 'true'
 
     logging_formatter = logging.Formatter(logging_format)
-    logging_logger = logging.getLogger()
-    if not logging_logger.handlers:
-        logging_logger.setLevel(logging_level_local)
 
+    logging_logger_root = logging.getLogger()
+    logging_logger_root.setLevel(logging.WARNING)
+
+    logging_logger = logging.getLogger(name=logging_task)
+    logging_logger.setLevel(logging_level_local)
+
+    if not logging_logger.handlers:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging_level_console)
         console_handler.setFormatter(logging_formatter)
@@ -61,7 +65,7 @@ def generate_sge_profiles():
     logger = RunLogger(api=api, run_id=run_id)
     logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level, inner=logger)
-    logger = LocalLogger(inner=logger)
+    logger = LocalLogger(logger=logging_logger, inner=logger)
 
     params = GridEngineParameters()
     profiles = _generate_profiles(default_queue_disabled, logger)
