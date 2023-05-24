@@ -32,10 +32,12 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreStatus;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
+import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.Getter;
@@ -95,6 +97,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final SearchDocumentType documentType;
     private final String tagDelimiter;
     private final boolean includeVersions;
+    private final String storageExcludeKey;
+    private final String storageExcludeValue;
 
     private Set<Long> storageIds;
     private Set<Long> skipStorageIds;
@@ -105,15 +109,27 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started {} files synchronization", getStorageType());
         fileMapper.updateSearchMasks(cloudPipelineAPIClient, log);
+        final Set<Long> excludeStorageIds = loadExcludedStorageIds();
         final List<AbstractDataStorage> allStorages = cloudPipelineAPIClient.loadAllDataStorages();
         allStorages
                 .stream()
+                .filter(dataStorage -> CollectionUtils.isEmpty(excludeStorageIds)
+                        || !excludeStorageIds.contains(dataStorage.getId()))
                 .filter(dataStorage -> CollectionUtils.isEmpty(skipStorageIds)
                         || !skipStorageIds.contains(dataStorage.getId()))
-                .filter(dataStorage -> CollectionUtils.isEmpty(storageIds) || storageIds.contains(dataStorage.getId()))
+                .filter(dataStorage -> CollectionUtils.isEmpty(storageIds)
+                        || storageIds.contains(dataStorage.getId()))
                 .filter(dataStorage -> dataStorage.getType() == getStorageType())
                 .filter(dataStorage -> isNotSharedOrChild(dataStorage, allStorages))
                 .forEach(this::indexStorage);
+    }
+
+    private Set<Long> loadExcludedStorageIds() {
+        return ListUtils.emptyIfNull(cloudPipelineAPIClient.searchEntriesByMetadata(AclClass.DATA_STORAGE,
+                        storageExcludeKey, storageExcludeValue))
+                .stream()
+                .map(EntityVO::getEntityId)
+                .collect(Collectors.toSet());
     }
 
     @Override
