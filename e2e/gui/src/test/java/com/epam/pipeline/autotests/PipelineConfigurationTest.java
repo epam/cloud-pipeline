@@ -156,7 +156,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .launch(this)
             .showLog(getLastRunId())
             .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
-            .click(taskWithName("InitializeNode"))
+            .clickTaskWithName("InitializeNode")
             .ensure(logMessage("- IsSpot: False"), visible);
     }
 

@@ -134,7 +134,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .ensure(configurationParameter(cpCapLimitMounts, "None"), exist)
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
+                .clickTaskWithName(mountDataStoragesTask)
                 .ensure(log(), containsMessages(
                         "Run is launched with mount limits (None) Only 0 storages will be mounted",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
@@ -177,7 +177,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
+                .clickTaskWithName(mountDataStoragesTask)
                 .sleep(5, SECONDS)
                 .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
                 .ensure(log(), containsMessages("Only 1 storages will be mounted"))

@@ -70,7 +70,7 @@ public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunnin
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion()
-                .click(taskWithName("Task"))
+                .clickTaskWithName("Task")
                 .ensure(logMessage(expectedMessage), visible)
                 .ensure(STATUS, SUCCESS.reached);
 

@@ -431,7 +431,9 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO clickTaskWithName(final String name) {
-        return click(taskWithName(name)).sleep(2, SECONDS);
+        return click(taskWithName(name))
+               .ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"),
+                       exist);
     }
 
     public static By parameterWithName(final String name, final String value) {

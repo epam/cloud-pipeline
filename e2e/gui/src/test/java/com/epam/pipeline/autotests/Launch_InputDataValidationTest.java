@@ -120,7 +120,7 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
                 .sleep(1, SECONDS)
                 .showLog(getRunId())
                 .waitForCompletion()
-                .click(taskWithName("Task1"))
+                .clickTaskWithName("Task1")
                 .ensure(logMessage("Running shell pipeline"), visible)
                 .ensure(STATUS, SUCCESS.reached);
         runsMenu()

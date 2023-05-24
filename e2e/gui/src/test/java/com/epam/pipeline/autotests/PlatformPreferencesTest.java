@@ -180,7 +180,7 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
                 .showLog(getRunId())
                 .waitForSshLink()
                 .waitForTask(INITIALIZE_NODE)
-                .click(taskWithName(INITIALIZE_NODE))
+                .clickTaskWithName(INITIALIZE_NODE)
                 .logMessages()
                 .collect(toSet());
         checkClusterAwsEBSvolumeTypeInLog(logMess);

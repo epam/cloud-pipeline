@@ -85,7 +85,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .instanceParameters(instance ->
                         instance.ensure(NODE_IMAGE, text(testAmi)))
                 .waitForCompletion()
-                .click(taskWithName("InitializeNode"))
+                .clickTaskWithName("InitializeNode")
                 .ensure(STATUS, SUCCESS.reached)
                 .logMessages()
                 .collect(toSet());

@@ -155,7 +155,7 @@ public class ToolsParametersTest
                 .ensure(configurationParameter(format(capabilityParam, CUSTOM_CAPABILITY_1), "true"), exist)
                 .ensure(configurationParameter(format(capabilityParam, CUSTOM_CAPABILITY_2), "true"), exist)
                 .waitForSshLink()
-                .click(taskWithName("Console"))
+                .clickTaskWithName("Console")
                 .waitForLog("start.sh")
                 .ensure(log(), matchText(format(logMessage, CUSTOM_CAPABILITY_1)))
                 .ensure(log(), matchText(format(logMessage, CUSTOM_CAPABILITY_2)))

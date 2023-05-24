@@ -246,7 +246,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .pause(nameWithoutGroup(tool))
                                 .assertPausingFinishedSuccessfully()
                                 .ensure(taskWithName(pauseTask), visible)
-                                .click(taskWithName(pauseTask))
+                                .clickTaskWithName(pauseTask)
                                 .waitForLog("Docker service was successfully stopped")
                                 .ensure(log(), matchText("Temporary container was successfully committed"))
                                 .ensure(log(), matchText("Docker container logs were successfully retrieved."))

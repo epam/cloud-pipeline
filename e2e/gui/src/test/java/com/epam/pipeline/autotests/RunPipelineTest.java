@@ -189,9 +189,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         final String[] mountDataTexts = prepareExpectedLogMessages(mountStorageTaskName, getLastRunId(),
                 "expectedRunLogMountDataStoragesTask.txt").toArray(String[]::new);
         Set<String> mountMessages = onRunPage()
-                .click(taskWithName("Task1"))
+                .clickTaskWithName("Task1")
                 .ensure(log(), containsMessage("Running python pipeline"))
-                .click(taskWithName(mountStorageTaskName))
+                .clickTaskWithName(mountStorageTaskName)
                 .ensure(STATUS, SUCCESS.reached)
                 .logMessages()
                 .collect(toSet());
@@ -199,7 +199,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
                 .map(String::trim)
                 .forEach(t -> onRunPage().logContainsMessage(mountMessages, t));
         Set<String> pipelineLog = onRunPage()
-                .click(taskWithName(pipeline100))
+                .clickTaskWithName(pipeline100)
                 .logMessages()
                 .collect(toSet());
         Arrays.stream(texts)
