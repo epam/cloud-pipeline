@@ -173,35 +173,103 @@ class CloudPipelineLogger:
         pass
 
 
-class LocalLogger(CloudPipelineLogger):
+class PrintLogger(CloudPipelineLogger):
+
+    _DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+    _DATE_WITH_MILLISECONDS = '%s.%03d'
 
     def __init__(self, inner=None):
         self._inner = inner
 
     def info(self, message, task=None, trace=False):
-        logging.info(message, exc_info=trace)
+        self._log(message=message, level='INFO', trace=trace)
         if self._inner:
             self._inner.info(message, task=task, trace=trace)
 
     def debug(self, message, task=None, trace=False):
-        logging.debug(message, exc_info=trace)
+        self._log(message=message, level='DEBUG', trace=trace)
         if self._inner:
             self._inner.debug(message, task=task, trace=trace)
 
     def warning(self, message, task=None, trace=False):
-        logging.warning(message, exc_info=trace)
+        self._log(message=message, level='WARNING', trace=trace)
         if self._inner:
             self._inner.warning(message, task=task, trace=trace)
 
     def success(self, message, task=None, trace=False):
-        logging.info(message, exc_info=trace)
+        self._log(message=message, level='INFO', trace=trace)
         if self._inner:
             self._inner.success(message, task=task, trace=trace)
 
     def error(self, message, task=None, trace=False):
-        logging.error(message, exc_info=trace)
+        self._log(message=message, level='ERROR', trace=trace)
         if self._inner:
             self._inner.error(message, task=task, trace=trace)
+
+    def _log(self, message, level, trace):
+        now_utc = datetime.datetime.utcnow()
+        formatted_dt = self._DATE_WITH_MILLISECONDS % (now_utc.strftime(self._DATE_FORMAT), now_utc.microsecond / 1000)
+        if trace:
+            stacktrace = traceback.format_exc()
+            message += ' ' + stacktrace
+        print(formatted_dt + ' [' + level + '] ' + message)
+
+
+class LocalLogger(CloudPipelineLogger):
+
+    def __init__(self, logger=None, inner=None):
+        self._logger = logger or logging
+        self._inner = inner
+
+    def info(self, message, task=None, trace=False):
+        self._logger.info(message, exc_info=trace)
+        if self._inner:
+            self._inner.info(message, task=task, trace=trace)
+
+    def debug(self, message, task=None, trace=False):
+        self._logger.debug(message, exc_info=trace)
+        if self._inner:
+            self._inner.debug(message, task=task, trace=trace)
+
+    def warning(self, message, task=None, trace=False):
+        self._logger.warning(message, exc_info=trace)
+        if self._inner:
+            self._inner.warning(message, task=task, trace=trace)
+
+    def success(self, message, task=None, trace=False):
+        self._logger.info(message, exc_info=trace)
+        if self._inner:
+            self._inner.success(message, task=task, trace=trace)
+
+    def error(self, message, task=None, trace=False):
+        self._logger.error(message, exc_info=trace)
+        if self._inner:
+            self._inner.error(message, task=task, trace=trace)
+
+
+class ExplicitLogger(CloudPipelineLogger):
+
+    def __init__(self, level, inner):
+        self._inner = inner
+        self._level = level.strip().lower()
+
+    def info(self, message, task=None, trace=False):
+        self._log(message=message, task=task, trace=trace)
+
+    def debug(self, message, task=None, trace=False):
+        self._log(message=message, task=task, trace=trace)
+
+    def warning(self, message, task=None, trace=False):
+        self._log(message=message, task=task, trace=trace)
+
+    def success(self, message, task=None, trace=False):
+        self._log(message=message, task=task, trace=trace)
+
+    def error(self, message, task=None, trace=False):
+        self._log(message=message, task=task, trace=trace)
+
+    def _log(self, message, task, trace):
+        getattr(self._inner, self._level)(message, task=task, trace=trace)
 
 
 class LevelLogger(CloudPipelineLogger):
