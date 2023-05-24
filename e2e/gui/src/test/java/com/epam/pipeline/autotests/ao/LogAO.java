@@ -430,6 +430,10 @@ public class LogAO implements AccessObject<LogAO> {
         return Combiners.confine(taskQualifier, taskList(), format("task with name %s", name));
     }
 
+    public LogAO clickTaskWithName(final String name) {
+        return click(taskWithName(name)).sleep(2, SECONDS);
+    }
+
     public static By parameterWithName(final String name, final String value) {
         Objects.requireNonNull(name);
         return byXpath(format(
