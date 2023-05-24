@@ -43,6 +43,12 @@ public class GSFileSyncConfiguration {
     @Value("${sync.gs-file.bulk.insert.size:1000}")
     private Integer bulkInsertSize;
 
+    @Value("${sync.gs-file.storage.exclude.metadata.key:Billing status}")
+    private String storageExcludeKey;
+
+    @Value("${sync.gs-file.storage.exclude.metadata.value:Exclude}")
+    private String storageExcludeValue;
+
     @Bean
     public ObjectStorageFileManager gsFileManager() {
         return new GsBucketFileManager();
@@ -56,8 +62,9 @@ public class GSFileSyncConfiguration {
             final @Qualifier("gsFileManager") ObjectStorageFileManager gsFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 gsFileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.GS, false,
-                SearchDocumentType.GS_FILE);
+                indexSettingsPath, bulkInsertSize, DataStorageType.GS, SearchDocumentType.GS_FILE,
+                false,
+                storageExcludeKey, storageExcludeValue);
     }
 
 }

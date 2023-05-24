@@ -47,6 +47,12 @@ public class AzureFileSyncConfiguration {
     @Value("${sync.az-blob.index.name}")
     private String indexName;
 
+    @Value("${sync.az-file.storage.exclude.metadata.key:Billing status}")
+    private String storageExcludeKey;
+
+    @Value("${sync.az-file.storage.exclude.metadata.value:Exclude}")
+    private String storageExcludeValue;
+
     @Bean
     public ObjectStorageFileManager azFileManager() {
         return new AzureBlobManager();
@@ -60,7 +66,8 @@ public class AzureFileSyncConfiguration {
             final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
                 azFileManager, indexPrefix + indexName,
-                indexSettingsPath, bulkInsertSize, DataStorageType.AZ, false,
-                SearchDocumentType.AZ_BLOB_FILE);
+                indexSettingsPath, bulkInsertSize, DataStorageType.AZ, SearchDocumentType.AZ_BLOB_FILE,
+                false,
+                storageExcludeKey, storageExcludeValue);
     }
 }
