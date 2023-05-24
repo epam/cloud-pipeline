@@ -30,7 +30,7 @@ import com.epam.pipeline.manager.search.SearchRequestBuilder;
 import com.epam.pipeline.manager.search.SearchResultConverter;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
-import com.epam.pipeline.utils.ESUtils;
+import com.epam.pipeline.utils.ElasticsearchUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -159,7 +159,7 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = ESUtils.verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
         final SearchHits hits = response.getHits();
 
         final List<LogEntry> entries = Arrays.stream(hits.getHits())
@@ -189,7 +189,7 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = ESUtils.verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
 
         final Map<String, Long> result = new HashMap<>();
         if (Objects.isNull(response.getAggregations())) {
@@ -217,7 +217,7 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = ESUtils.verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
         response.getAggregations()
                 .asList()
                 .stream()

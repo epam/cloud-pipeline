@@ -25,10 +25,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * The utility class for common Elasticsearch connected methods
+ */
 @Slf4j
-public final class ESUtils {
+public final class ElasticsearchUtils {
 
-    private ESUtils() {
+    private ElasticsearchUtils() {
         // no-op
     }
 

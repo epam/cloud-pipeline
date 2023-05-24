@@ -19,7 +19,7 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.exception.PipelineException;
-import com.epam.pipeline.utils.ESUtils;
+import com.epam.pipeline.utils.ElasticsearchUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -226,7 +226,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval) {
         final SearchRequest request = buildStatsRequest(nodeName, from, to, interval);
-        return parseStatsResponse(ESUtils.verifyResponse(executeRequest(request)));
+        return parseStatsResponse(ElasticsearchUtils.verifyResponse(executeRequest(request)));
     }
 
     protected SearchSourceBuilder statsQuery(final String nodeName, final String type,
