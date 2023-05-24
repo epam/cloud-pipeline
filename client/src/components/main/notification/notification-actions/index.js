@@ -185,6 +185,7 @@ class NotificationActions extends React.Component {
             router: this.props.router,
             callback: this.hideMenu
           });
+          this.hideMenu();
         }}
       >
         {this.actions.length > 0 ? (
