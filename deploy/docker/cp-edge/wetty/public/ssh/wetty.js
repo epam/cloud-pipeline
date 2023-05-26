@@ -32,19 +32,21 @@ var generalPreferences = {
 };
 var themes = {
     light: Object.assign(
-      generalPreferences, {
-        "background-color": "#fafafa",
-        "foreground-color": "#333333",
-        "cursor-color": "rgba(50, 50, 50, 0.5)",
-        "color-palette-overrides": { 51: 'rgb(0, 140, 140)'}
-    }),
+      {
+          "background-color": "#fafafa",
+          "foreground-color": "#333333",
+          "cursor-color": "rgba(50, 50, 50, 0.5)",
+          "color-palette-overrides": { 51: 'rgb(0, 140, 140)'}
+      },
+      generalPreferences),
     default: Object.assign(
-      generalPreferences, {
+      {
         "background-color": "rgb(16, 16, 16)",
         "foreground-color": "rgb(240, 240, 240)",
         "cursor-color": "rgba(255, 0, 0, 0.5)",
         "color-palette-overrides": null
-    })
+      },
+      generalPreferences)
 };
 
 function initializeTermThemes() {
