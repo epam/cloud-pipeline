@@ -177,9 +177,9 @@ class HcsImage extends React.PureComponent {
     const sequence = this.selectedSequence;
     const well = this.selectedWell;
     return sequence &&
-      sequence.overviewOmeTiff &&
-      sequence.overviewOffsetsJson &&
       well &&
+      well.overviewOmeTiffFileName &&
+      well.overviewOffsetsJsonFileName &&
       well.wellImageId;
   }
 
@@ -362,21 +362,25 @@ class HcsImage extends React.PureComponent {
     const fields = this.selectedWellFields;
     if (
       sequence &&
-      sequence.omeTiff &&
       well &&
       fields.length > 0
     ) {
-      let url = sequence.omeTiff;
-      let offsetsJsonUrl = sequence.offsetsJson;
+      let url = well.omeTiffFileName;
+      let offsetsJsonUrl = well.offsetsJsonFileName;
       let {id} = fields[0];
       if (this.showEntireWell) {
-        url = sequence.overviewOmeTiff;
-        offsetsJsonUrl = sequence.overviewOffsetsJson;
+        url = well.overviewOmeTiffFileName;
+        offsetsJsonUrl = well.overviewOffsetsJsonFileName;
         id = well.wellImageId;
       }
       if (this.hcsImageViewer) {
-        sequence.reportReadAccess(this.showEntireWell);
-        this.hcsImageViewer.setData(url, offsetsJsonUrl)
+        sequence.hcsURLsManager
+          .setActiveURL(url, offsetsJsonUrl)
+          .then(() => sequence.reportReadAccess())
+          .then(() => this.hcsImageViewer.setData(
+            sequence.hcsURLsManager.omeTiffURL,
+            sequence.hcsURLsManager.offsetsJsonURL
+          ))
           .then(() => {
             if (this.hcsImageViewer) {
               const imagePayload = {
@@ -697,6 +701,7 @@ class HcsImage extends React.PureComponent {
     if (
       sequenceInfo &&
       !sequenceInfo.error &&
+      !sequenceInfo.hcsURLsManager.error &&
       selectedWell
     ) {
       return (
