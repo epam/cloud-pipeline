@@ -133,7 +133,7 @@ public class PipelineConfigurationManager {
             mergeParametersFromTool(configuration, tool);
         }
 
-        getParametersFromNetworkConfig(runVO.getInstanceType(), runVO.getCloudRegionId())
+        getParametersFromNetworkConfig(configuration.getInstanceType(), runVO.getCloudRegionId())
                 .forEach((key, parameter) -> {
                     if(!configuration.getParameters().containsKey(key)) {
                         configuration.getParameters().put(key, parameter);
