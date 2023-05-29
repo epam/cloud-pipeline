@@ -411,7 +411,7 @@ public class PipelineConfigurationManager {
         final CloudRegionsConfiguration cloudRegionsConfiguration = preferenceManager.getPreference(
                 SystemPreferences.CLUSTER_NETWORKS_CONFIG);
 
-        if (cloudRegionsConfiguration == null) {
+        if (cloudRegionsConfiguration == null || !StringUtils.hasText(instanceType)) {
             return Collections.emptyMap();
         }
 
