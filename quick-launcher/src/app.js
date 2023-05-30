@@ -109,7 +109,7 @@ function App({launch, location}) {
   }
   const appName = launch && launchUser && app ? `${launchUser}/${app}` : undefined;
   let applicationsContent;
-  const hasDeprecated = applications.some((anApp) => anApp.deprecated);
+  const hasDeprecated = applications.some((anApp) => (anApp.deprecated || anApp.readOnly));
   const {
     isFavourite,
     toggleFavourite,
@@ -161,7 +161,7 @@ function App({launch, location}) {
     )
   } else if (!launch) {
     const filtered = sorted
-      .filter((anApp) => showDeprecated || !anApp.deprecated || isFavourite(anApp));
+      .filter((anApp) => showDeprecated || (!anApp.deprecated && !anApp.readOnly) || isFavourite(anApp));
     const renderApps = (latest) => filtered
       .filter((anApp) => !!latest === !!anApp.latest)
       .map((anApp) => (
@@ -258,7 +258,7 @@ function App({launch, location}) {
                     checked={showDeprecated}
                     onChange={onChangeShowDeprecated}
                   />
-                  Show deprecated
+                  Show deprecated / read only
                 </div>
               </div>
               {

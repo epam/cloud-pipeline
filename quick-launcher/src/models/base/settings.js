@@ -192,7 +192,8 @@ const defaultSettings = {
   },
   redirectStyle: 'default', // 'white' / 'default'
   deprecatedTag: 'deprecated',
-  latestTag: 'latest'
+  latestTag: 'latest',
+  readOnlyTag: 'readonly'
 };
 
 function parseUrl(url, verbose = false) {

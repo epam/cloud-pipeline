@@ -133,6 +133,14 @@
   padding: 10px 5px;
 }
 
+.app:not(.app-folder).disabled {
+  background-color: rgba(0, 0, 0, 0.15)!important;
+}
+
+.app:not(.app-folder).dark.disabled {
+  background-color: rgba(0, 0, 0, 0.3)!important;
+}
+
 .app.app-folder.error {
   background-color: rgba(0, 0, 0, 0.05)!important;
 }

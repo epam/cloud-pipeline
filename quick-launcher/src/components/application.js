@@ -400,7 +400,7 @@ export default function Application ({id: applicationId, name: appName, launchOp
         <span className="name">{appName || application.name}</span>
         <span className="version">{application.version}</span>
         {
-          application.deprecated && (
+          (application.deprecated || application.readOnly) && (
             <span
               className="version-deprecated"
             >

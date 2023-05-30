@@ -32,12 +32,13 @@ export default function FolderApplicationCard(
     info = {},
     appType,
     latest,
-    deprecated
+    deprecated,
+    readOnly
   } = application || {};
   const gatewayParseError = info.__gatewaySpecError__;
   const {icon} = useApplicationIcon(storage, iconFile ? iconFile.path : undefined);
   const onClickCallback = useCallback((e) => {
-    if (gatewayParseError) {
+    if (gatewayParseError || readOnly) {
       return;
     }
     if (onClick) {
@@ -45,7 +46,7 @@ export default function FolderApplicationCard(
       e.preventDefault();
       onClick(application);
     }
-  }, [application, onClick, gatewayParseError]);
+  }, [application, onClick, gatewayParseError, readOnly]);
   const onEditCallback = useCallback((e) => {
     if (onEdit) {
       e.stopPropagation();
@@ -89,8 +90,8 @@ export default function FolderApplicationCard(
             {
               dark: settings?.darkMode,
               published,
-              disabled: disabled || !!gatewayParseError,
-              error: !!gatewayParseError,
+              disabled: disabled || !!gatewayParseError || readOnly,
+              error: !!gatewayParseError || readOnly,
               latest
             },
             className
@@ -187,9 +188,11 @@ export default function FolderApplicationCard(
           )
         }
         {
-          deprecated && (
+          (deprecated || readOnly) && (
             <span className="deprecated">
-              DEPRECATED
+              {
+                readOnly ? 'READ ONLY' : 'DEPRECATED'
+              }
             </span>
           )
         }

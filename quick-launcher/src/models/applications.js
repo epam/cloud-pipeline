@@ -127,6 +127,13 @@ async function fetchTools(opts = {}) {
       deprecated: true
     });
   }
+  if (settings.readOnlyTag) {
+    versionsInfoTags.push({
+      key: settings.readOnlyTag,
+      value: 'true',
+      readOnly: true
+    });
+  }
   const toolVersionsInfo = await fetchToolsByTags(versionsInfoTags);
   const allTools = await getTools();
 

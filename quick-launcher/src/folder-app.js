@@ -91,7 +91,7 @@ function FolderApp ({location}) {
   );
   let applicationsContent;
   let editApplicationContent;
-  const hasDeprecated = availableApplications.some((app) => app.deprecated);
+  const hasDeprecated = availableApplications.some((app) => app.deprecated || app.readOnly);
   if (authenticating || pending) {
     applicationsContent = (
       <div className="content loading">
@@ -131,7 +131,7 @@ function FolderApp ({location}) {
     )
   } else {
     const filtered = availableApplications
-      .filter((app) => showDeprecated || !app.deprecated || isFavourite(app))
+      .filter((app) => showDeprecated || (!app.deprecated && !app.readOnly) || isFavourite(app))
       .filter(filterAppFn(filter))
       .filter((app) => filterAppType === undefined || app.appType === filterAppType);
     const renderApps = (latest) => {
@@ -239,7 +239,7 @@ function FolderApp ({location}) {
                           checked={showDeprecated}
                           onChange={onChangeShowDeprecated}
                         />
-                        Show deprecated
+                        Show deprecated / read only
                       </div>
                     )
                   }

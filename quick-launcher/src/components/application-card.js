@@ -26,10 +26,15 @@ export default function ApplicationCard(
     onDependencyChange,
     options: extendedOptions,
   } = useAppExtendedSettings(application);
+  const {
+    readOnly
+  } = application || {};
   const sensitive = launchOptionsContainSensitiveMounts(extendedOptions);
   const onLaunch = useCallback(() => {
-    onClick && onClick(appendDefault(extendedOptions));
-  }, [extendedOptions, appendDefault]);
+    if (!readOnly) {
+      onClick && onClick(appendDefault(extendedOptions));
+    }
+  }, [extendedOptions, appendDefault, readOnly]);
   const onFavouriteClickCallback = useCallback((e) => {
     if (onFavouriteClick) {
       e.stopPropagation();
@@ -45,7 +50,8 @@ export default function ApplicationCard(
           {
             dark: settings?.darkMode,
             sensitive,
-            latest: application.latest
+            latest: application.latest,
+            disabled: application.readOnly
           }
         )
       }
@@ -111,9 +117,11 @@ export default function ApplicationCard(
         extendedOptions={extendedOptions}
       />
       {
-        (application.deprecated) && (
+        (application.deprecated || application.readOnly) && (
           <span className="deprecated">
-            DEPRECATED
+            {
+              application.readOnly ? 'READ ONLY' : 'DEPRECATED'
+            }
           </span>
         )
       }

@@ -58,6 +58,7 @@ export default function readApplicationInfo (application, user, settings, appTyp
             info: applicationInfo,
             latest: applicationInfo.latest,
             deprecated: applicationInfo.deprecated,
+            readOnly: applicationInfo.readOnly,
             readOnlyAttributes: Object.keys(applicationInfoFromPath || {})
               .concat(['source', 'path', 'user']),
             pathInfo,
