@@ -122,9 +122,12 @@ class NotificationActions extends React.Component {
 
   get showActionsControl () {
     const {type} = this.notificationDetails;
-    return type && type !== NOTIFICATION_TYPES.INACTIVE_USERS &&
+    return type &&
+      type !== NOTIFICATION_TYPES.INACTIVE_USERS &&
       type !== NOTIFICATION_TYPES.LDAP_BLOCKED_POSTPONED_USERS &&
-      type !== NOTIFICATION_TYPES.LDAP_BLOCKED_USERS;
+      type !== NOTIFICATION_TYPES.LDAP_BLOCKED_USERS &&
+      type !== NOTIFICATION_TYPES.NEW_ISSUE &&
+      type !== NOTIFICATION_TYPES.NEW_ISSUE_COMMENT;
   }
 
   fetchEntityInfo = () => {
