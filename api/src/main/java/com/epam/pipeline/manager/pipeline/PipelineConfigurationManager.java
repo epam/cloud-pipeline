@@ -133,7 +133,7 @@ public class PipelineConfigurationManager {
             mergeParametersFromTool(configuration, tool);
         }
 
-        getParametersFromNetworkConfig(runVO.getInstanceType(), runVO.getCloudRegionId())
+        getParametersFromNetworkConfig(configuration.getInstanceType(), runVO.getCloudRegionId())
                 .forEach((key, parameter) -> {
                     if(!configuration.getParameters().containsKey(key)) {
                         configuration.getParameters().put(key, parameter);
@@ -418,7 +418,7 @@ public class PipelineConfigurationManager {
         final CloudRegionsConfiguration cloudRegionsConfiguration = preferenceManager.getPreference(
                 SystemPreferences.CLUSTER_NETWORKS_CONFIG);
 
-        if (cloudRegionsConfiguration == null) {
+        if (cloudRegionsConfiguration == null || !StringUtils.hasText(instanceType)) {
             return Collections.emptyMap();
         }
 
