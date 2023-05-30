@@ -41,6 +41,9 @@ class NotificationActions extends React.Component {
   entityInfoRequest;
 
   groupedActions = {
+    [NOTIFICATION_TYPES.BILLING_QUOTA_EXCEEDING]: [
+      ACTIONS.viewBilling
+    ],
     [NOTIFICATION_TYPES.IDLE_RUN]: [
       ACTIONS.viewRun,
       ACTIONS.pauseRun,
@@ -59,7 +62,7 @@ class NotificationActions extends React.Component {
     ],
     [NOTIFICATION_TYPES.LONG_INIT]: [
       ACTIONS.viewRun,
-      ACTIONS.terminateRun
+      ACTIONS.stopRun
     ],
     [NOTIFICATION_TYPES.LONG_PAUSED]: [
       ACTIONS.viewRun,
@@ -119,9 +122,12 @@ class NotificationActions extends React.Component {
 
   get showActionsControl () {
     const {type} = this.notificationDetails;
-    return type && type !== NOTIFICATION_TYPES.INACTIVE_USERS &&
+    return type &&
+      type !== NOTIFICATION_TYPES.INACTIVE_USERS &&
       type !== NOTIFICATION_TYPES.LDAP_BLOCKED_POSTPONED_USERS &&
-      type !== NOTIFICATION_TYPES.LDAP_BLOCKED_USERS;
+      type !== NOTIFICATION_TYPES.LDAP_BLOCKED_USERS &&
+      type !== NOTIFICATION_TYPES.NEW_ISSUE &&
+      type !== NOTIFICATION_TYPES.NEW_ISSUE_COMMENT;
   }
 
   fetchEntityInfo = () => {
