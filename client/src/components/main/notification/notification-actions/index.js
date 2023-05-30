@@ -41,6 +41,9 @@ class NotificationActions extends React.Component {
   entityInfoRequest;
 
   groupedActions = {
+    [NOTIFICATION_TYPES.BILLING_QUOTA_EXCEEDING]: [
+      ACTIONS.viewBilling
+    ],
     [NOTIFICATION_TYPES.IDLE_RUN]: [
       ACTIONS.viewRun,
       ACTIONS.pauseRun,
@@ -59,7 +62,7 @@ class NotificationActions extends React.Component {
     ],
     [NOTIFICATION_TYPES.LONG_INIT]: [
       ACTIONS.viewRun,
-      ACTIONS.terminateRun
+      ACTIONS.stopRun
     ],
     [NOTIFICATION_TYPES.LONG_PAUSED]: [
       ACTIONS.viewRun,
