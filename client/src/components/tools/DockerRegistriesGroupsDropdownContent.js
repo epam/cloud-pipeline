@@ -24,10 +24,10 @@ import styles from './Tools.css';
 
 @observer
 export default class DockerRegistriesGroupsDropdownContent extends React.Component {
-
   static propTypes = {
     isVisible: PropTypes.bool,
-    onCancel: PropTypes.func
+    onCancel: PropTypes.func,
+    filter: PropTypes.object
   };
 
   state = {
@@ -60,13 +60,14 @@ export default class DockerRegistriesGroupsDropdownContent extends React.Compone
         />
         <DockerRegistryGroupsList
           groups={this.props.groups}
+          filter={this.props.filter}
           currentGroup={this.props.currentGroup}
-          onNavigate={(id) => {
+          onNavigate={(id, filter) => {
             this.setState({
               groupSearch: null
             }, () => {
               this.props.onNavigate &&
-              this.props.onNavigate(id);
+              this.props.onNavigate(id, filter);
             });
           }}
           groupSearch={this.state.groupSearch}
@@ -82,5 +83,4 @@ export default class DockerRegistriesGroupsDropdownContent extends React.Compone
       });
     }
   }
-
 }

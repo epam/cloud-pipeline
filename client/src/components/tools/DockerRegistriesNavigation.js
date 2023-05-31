@@ -20,11 +20,11 @@ import {observer} from 'mobx-react';
 import {Button, Dropdown, Icon, Input, Row} from 'antd';
 import registryName from './registryName';
 import DockerRegistriesGroupsDropdownContent from './DockerRegistriesGroupsDropdownContent';
+import {GROUP_NAMES, FILTER_TYPES} from './DockerRegistriesGroupsList';
 import styles from './Tools.css';
 
 @observer
 export default class DockerRegistriesNavigation extends React.Component {
-
   state = {
     groupSearch: null,
     groupsDropDownVisible: false
@@ -88,17 +88,28 @@ export default class DockerRegistriesNavigation extends React.Component {
   };
 
   renderGroupSelector = () => {
-    if (this.props.currentGroup) {
+    let group = this.props.currentGroup;
+    if (this.props.filter) {
+      group = {
+        name: this.props.filter.value || this.props.filter.filterBy
+      };
+    }
+    if (group) {
       const getGroupName = (group) => {
+        if (this.props.filter) {
+          return this.props.filter.filterBy === FILTER_TYPES.os
+            ? (this.props.filter.value || '').toLowerCase()
+            : (GROUP_NAMES[this.props.filter.filterBy] || {}).name;
+        }
         if (group.privateGroup) {
-          return 'personal';
+          return 'My tools';
         }
         return group.name;
       };
       const groups = this.props.groups.filter(
-        g => this.props.currentGroup.privateGroup
+        g => group.privateGroup
           ? !g.privateGroup
-          : g.id !== this.props.currentGroup.id
+          : g.id !== group.id
       ).sort((groupA, groupB) => {
         if (groupA.privateGroup && !groupB.privateGroup) {
           return -1;
@@ -120,8 +131,9 @@ export default class DockerRegistriesNavigation extends React.Component {
             id="current-group-button"
             className="single-group"
             size="small"
-            style={{border: 'none', fontWeight: 'bold'}}>
-            {getGroupName(this.props.currentGroup)}
+            style={{border: 'none', fontWeight: 'bold'}}
+          >
+            {getGroupName(group)}
           </Button>
         );
       }
@@ -139,6 +151,7 @@ export default class DockerRegistriesNavigation extends React.Component {
           overlay={
             <DockerRegistriesGroupsDropdownContent
               groups={groups}
+              filter={this.props.filter}
               isVisible={this.state.groupsDropDownVisible}
               currentGroup={this.props.currentGroup}
               onNavigate={(id) => {
@@ -175,7 +188,9 @@ export default class DockerRegistriesNavigation extends React.Component {
         size="small"
         style={{flex: 1, marginLeft: 10}}
         value={this.props.searchString}
-        onChange={e => this.props.onSearch && this.props.onSearch(e.target.value)} />
+        onChange={e => this.props.onSearch && this.props.onSearch(e.target.value)}
+        placeholder="Global search"
+      />
     );
   };
 
@@ -199,7 +214,6 @@ export default class DockerRegistriesNavigation extends React.Component {
       );
     }
   }
-
 }
 
 DockerRegistriesNavigation.propTypes = {
@@ -209,5 +223,6 @@ DockerRegistriesNavigation.propTypes = {
   groups: PropTypes.array,
   currentGroup: PropTypes.object,
   onNavigate: PropTypes.func,
-  onSearch: PropTypes.func
+  onSearch: PropTypes.func,
+  filter: PropTypes.object
 };

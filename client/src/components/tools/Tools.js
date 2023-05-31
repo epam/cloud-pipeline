@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,15 @@
 import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import {
+  Alert,
+  Row,
+  Button,
+  Card,
+  Icon,
+  Col,
+  message
+} from 'antd';
 import {Link} from 'react-router';
 import classNames from 'classnames';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';
@@ -32,11 +41,12 @@ import {
   ISSUES_PANEL_KEY
 } from '../special/splitPanel/SplitPanel';
 import Issues from '../special/issues/Issues';
-import {Alert, Row, Button, Card, Icon, Col} from 'antd';
 import roleModel from '../../utils/roleModel';
-import styles from './Tools.css';
 import ToolsGroupListWithIssues from '../../models/tools/ToolsGroupListWithIssues';
+import PipelineRunFilter from '../../models/pipelines/PipelineRunSingleFilter';
 import HiddenObjects from '../../utils/hidden-objects';
+import {FILTER_TYPES} from './DockerRegistriesGroupsList';
+import styles from './Tools.css';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -45,8 +55,24 @@ const findGroupByName = (groups, name) => {
   return groups.filter(findGroupByNameSelector(name))[0];
 };
 
+const TOP_USED_AMOUNT = 5;
+
+function isPersonalGroup (group) {
+  const {
+    name = '',
+    owner: ownerName = ''
+  } = group || {};
+  const owner = (ownerName || '')
+    .replace(/[^a-zA-Z0-9-]/g, '-')
+    .toLowerCase();
+  return name.toLowerCase() === owner;
+}
+
+// плейсхолдер в инпуте
+// Плагшки + комменты
+
 @roleModel.authenticationInfo
-@inject('dockerRegistries')
+@inject('dockerRegistries', 'authenticatedUserInfo')
 @HiddenObjects.injectToolsFilters
 @inject((stores, {params}) => {
   return {
@@ -56,7 +82,6 @@ const findGroupByName = (groups, name) => {
 })
 @observer
 export default class ToolsNew extends React.Component {
-
   state = {
     metadata: false,
     redirected: false,
@@ -69,10 +94,27 @@ export default class ToolsNew extends React.Component {
 
   @observable
   _toolsWithIssues;
+  @observable
+  _completedRunsRequest;
 
   @computed
   get isPrivate () {
-    return this.props.groupId === 'personal' || (this.currentGroup && this.currentGroup.privateGroup);
+    return this.props.groupId === 'personal' ||
+    (this.currentGroup && this.currentGroup.privateGroup);
+  }
+
+  @computed
+  get filter () {
+    const {groupId} = this.props;
+    if (typeof groupId === 'string' && groupId.length > 0 && isNaN(groupId)) {
+      const [filterBy, value] = decodeURIComponent(groupId).split('_');
+      return {
+        filter: groupId,
+        filterBy,
+        value
+      };
+    }
+    return null;
   }
 
   @computed
@@ -93,7 +135,10 @@ export default class ToolsNew extends React.Component {
   get groups () {
     if (this.currentRegistry) {
       const groups = (this.currentRegistry.groups || []).map(g => g);
-      if (this.currentRegistry.privateGroupAllowed && groups.filter(g => g.privateGroup).length === 0) {
+      if (
+        this.currentRegistry.privateGroupAllowed &&
+        groups.filter(g => g.privateGroup).length === 0
+      ) {
         return [
           {
             id: 'personal',
@@ -115,9 +160,70 @@ export default class ToolsNew extends React.Component {
   }
 
   @computed
+  get completedRuns () {
+    if (this._completedRunsRequest && this._completedRunsRequest.loaded) {
+      return this._completedRunsRequest.value.map(run => run);
+    }
+    return null;
+  }
+
+  @computed
+  get allTools () {
+    return (this.groups || [])
+      .reduce((acc, current) => {
+        acc.push(...(current.tools || []));
+        return acc;
+      }, []);
+  }
+
+  @computed
   get currentGroup () {
-    return this.groups.filter(
-      g => `${g.id}` === `${this.props.groupId}` || (g.privateGroup && this.props.groupId === 'personal')
+    if (this.filter) {
+      let tools;
+      if (this.filter.filterBy === FILTER_TYPES.top) {
+        if (this.completedRuns) {
+          const imagesCount = this.completedRuns
+            .map(run => {
+              const [, g, iv] = run.dockerImage.split('/');
+              const [i] = iv.split(':');
+              return `${g}/${i}`;
+            })
+            .reduce((acc, image) => {
+              acc[image] = (acc[image] || 0) + 1;
+              return acc;
+            }, {});
+          tools = Object.entries(imagesCount)
+            .sort(([aImage, aCount], [bImage, bCount]) => aCount - bCount)
+            .slice(0, TOP_USED_AMOUNT)
+            .map(([image]) => this.allTools.find(tool => tool.image === image))
+            .filter(Boolean);
+        } else {
+          tools = [];
+        }
+      } else if (this.filter.filterBy === FILTER_TYPES.personal) {
+        tools = this.groups
+          .filter(group => isPersonalGroup(group))
+          .reduce((acc, group) => [...acc, ...group.tools], []);
+      } else {
+        tools = this.allTools
+          .filter(tool => {
+            if (this.filter.filterBy === FILTER_TYPES.os) {
+              return tool.toolOSVersion &&
+              tool.toolOSVersion.distribution === this.filter.value;
+            }
+            if (this.filter.filterBy === FILTER_TYPES.gpu) {
+              return tool.gpuEnabled === true;
+            }
+            return false;
+          });
+      }
+      return {
+        name: this.filter.filterBy,
+        tools
+      };
+    }
+    return this.groups.filter(g => `${g.id}` === `${this.props.groupId}` ||
+      (g.privateGroup && this.props.groupId === 'personal')
     )[0];
   }
 
@@ -148,7 +254,9 @@ export default class ToolsNew extends React.Component {
           t.image.toLowerCase().indexOf(this.state.search.toLowerCase()) >= 0 ||
           (
             t.labels &&
-            t.labels.filter(l => l.toLowerCase().indexOf(this.state.search.toLowerCase()) >= 0).length > 0
+            t.labels.filter(l => l
+              .toLowerCase()
+              .indexOf(this.state.search.toLowerCase()) >= 0).length > 0
           )
         )
         .map(checkIssues);
@@ -176,6 +284,34 @@ export default class ToolsNew extends React.Component {
             })));
     }
     return tools;
+  }
+
+  fetchCompletedRuns = async () => {
+    const {authenticatedUserInfo} = this.props;
+    const myRunsSubFilter = {};
+    if (authenticatedUserInfo.loaded) {
+      myRunsSubFilter.owners = [authenticatedUserInfo.value.userName];
+    }
+    const request = new PipelineRunFilter({
+      page: 1,
+      pageSize: 50,
+      userModified: false,
+      statuses: [
+        'SUCCESS',
+        'FAILURE',
+        'RUNNING',
+        'STOPPED',
+        'PAUSING',
+        'PAUSED',
+        'RESUMING'
+      ],
+      ...myRunsSubFilter
+    });
+    await request.filter();
+    if (request.error) {
+      message.error(request.error, 5);
+    }
+    this._completedRunsRequest = request;
   }
 
   refresh = async () => {
@@ -297,7 +433,13 @@ export default class ToolsNew extends React.Component {
 
   renderHeader = () => {
     return (
-      <Row id="tools-header" type="flex" justify="space-between" align="middle" style={{marginBottom: 5}}>
+      <Row
+        id="tools-header"
+        type="flex"
+        justify="space-between"
+        align="middle"
+        style={{marginBottom: 5}}
+      >
         <Col type="flex" style={{flex: 1}} className={styles.itemHeader}>
           <DockerRegistriesNavigation
             onNavigate={this.navigate}
@@ -306,7 +448,9 @@ export default class ToolsNew extends React.Component {
             currentGroup={this.currentGroup}
             currentRegistry={this.currentRegistry}
             registries={this.registries}
-            groups={this.groups} />
+            groups={this.groups}
+            filter={this.filter}
+          />
         </Col>
         <Col type="flex" className={styles.currentFolderActions}>
           {
@@ -360,8 +504,8 @@ export default class ToolsNew extends React.Component {
       );
       return (
         <span>
-            You can explore {link} repository
-          </span>
+          You can explore {link} repository
+        </span>
       );
     }
     return null;
@@ -446,7 +590,17 @@ export default class ToolsNew extends React.Component {
       content = <LoadingView />;
     } else if (this.isPrivate && this.currentGroup && this.currentGroup.missing) {
       content = this.renderCreatePrivateToolBody();
-    } else if (this.currentGroup && (this.currentGroup.tools || []).length === 0) {
+    } else if (
+      this.currentGroup &&
+      (this.currentGroup.tools || []).length === 0 &&
+      (
+        this.filter &&
+        this._completedRunsRequest &&
+        this.filter.filterBy === FILTER_TYPES.top
+          ? this._completedRunsRequest.loaded
+          : true
+      )
+    ) {
       const noToolsMessage = () => {
         const defaultGroupLink = this.defaultGroupLinkMessage();
         if (this.isPrivate && defaultGroupLink) {
@@ -461,6 +615,13 @@ export default class ToolsNew extends React.Component {
         type="info"
         message={noToolsMessage()} />;
       isError = true;
+    } else if (
+      this.filter &&
+      this.filter.filterBy === FILTER_TYPES.top &&
+      this._completedRunsRequest &&
+      !this._completedRunsRequest.loaded
+    ) {
+      content = <LoadingView />;
     } else {
       content = <ToolsTable
         style={{flex: 1}}
@@ -503,7 +664,8 @@ export default class ToolsNew extends React.Component {
         }
         return groupName;
       };
-      const rolesGroups = (authenticatedUserInfo.value.roles || []).map(r => performGroupName(r.name));
+      const rolesGroups = (authenticatedUserInfo.value.roles || [])
+        .map(r => performGroupName(r.name));
       const candidates = [...adGroups, ...rolesGroups];
       for (let i = 0; i < candidates.length; i++) {
         const group = findGroupByName(groups, candidates[i]);
@@ -526,7 +688,8 @@ export default class ToolsNew extends React.Component {
       this.props.dockerRegistries.loaded &&
       (!this.currentRegistry || !this.currentGroup)) {
       if (!this.currentRegistry) {
-        let registryToRedirect = this.props.registryId || (this.registries[0] ? this.registries[0].id : undefined);
+        let registryToRedirect = this.props.registryId ||
+          (this.registries[0] ? this.registries[0].id : undefined);
         const [registry] = this.registries.filter(r => `${r.id}` === `${registryToRedirect}`);
         if (registry) {
           const groupToRedirect = this.getDefaultGroup(
@@ -566,6 +729,13 @@ export default class ToolsNew extends React.Component {
 
   componentDidMount () {
     this.redirectIfNeeded();
+    if (
+      this.filter &&
+      this.filter.filterBy === FILTER_TYPES.top &&
+      !this._completedRunsRequest
+    ) {
+      this.fetchCompletedRuns();
+    }
   }
 
   componentDidUpdate (prevProps) {
@@ -581,6 +751,13 @@ export default class ToolsNew extends React.Component {
     }
     if (this.props.groupId !== nextProps.groupId) {
       this.reloadIssues(nextProps);
+    }
+    if (
+      this.filter &&
+      this.filter.filterBy === FILTER_TYPES.top &&
+      !this._completedRunsRequest
+    ) {
+      this.fetchCompletedRuns();
     }
   }
 

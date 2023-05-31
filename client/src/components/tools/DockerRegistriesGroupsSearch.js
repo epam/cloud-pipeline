@@ -21,7 +21,6 @@ import PropTypes from 'prop-types';
 
 @observer
 export default class DockerRegistriesGroupsSearch extends React.Component {
-
   static propTypes = {
     groupSearch: PropTypes.string,
     onGroupSearch: PropTypes.func,
@@ -46,9 +45,9 @@ export default class DockerRegistriesGroupsSearch extends React.Component {
           onChange={this.onGroupSearch}
           style={{width: '100%'}}
           size="small"
+          placeholder="Search tool groups"
         />
       </div>
     );
   }
-
 }
