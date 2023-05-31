@@ -485,6 +485,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get uiToolsFilters () {
+    const value = this.getPreferenceValue('ui.tools.filters');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.tools.filters" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
   get systemJobsPipelineId () {
     const value = this.getPreferenceValue('system.jobs.pipeline.id');
     if (value && !Number.isNaN(Number(value))) {
