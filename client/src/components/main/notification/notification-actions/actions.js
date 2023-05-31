@@ -26,6 +26,25 @@ import {canPauseRun, canStopRun} from '../../../runs/actions';
 import RunStatuses from '../../../special/run-status-icon/run-statuses';
 
 const ACTIONS = {
+  viewNodeMonitor: {
+    key: 'View node monitor',
+    actionFn: ({entity, router}) => {
+      const {
+        instance,
+        startDate,
+        endDate
+      } = entity;
+      const parts = [
+        startDate && `from=${encodeURIComponent(startDate)}`,
+        endDate && `to=${encodeURIComponent(endDate)}`
+      ].filter(Boolean);
+      const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+      router && router.push(`/cluster/${instance.nodeName}/monitor${query}`);
+    },
+    available: (entity) => entity &&
+      entity.instance &&
+      entity.instance.nodeName
+  },
   viewRun: {
     key: 'View run',
     actionFn: ({entity, router}) => {

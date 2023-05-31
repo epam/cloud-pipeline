@@ -58,7 +58,8 @@ class NotificationActions extends React.Component {
       ACTIONS.viewRun
     ],
     [NOTIFICATION_TYPES.HIGH_CONSUMED_RESOURCES]: [
-      ACTIONS.viewRun
+      ACTIONS.viewRun,
+      ACTIONS.viewNodeMonitor
     ],
     [NOTIFICATION_TYPES.LONG_INIT]: [
       ACTIONS.viewRun,
