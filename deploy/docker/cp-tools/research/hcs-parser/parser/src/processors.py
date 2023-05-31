@@ -844,8 +844,8 @@ class HcsFileParser:
             y_coord = image.find(hcs_schema_prefix + 'PositionY').text
             x_coord = image.find(hcs_schema_prefix + 'PositionX').text
             channel_width, channel_height = self.find_channel_dimensions(channel_dimensions, channel_id)
-            resize_width = str(channel_width / well_grid_details.get_width())
-            resize_height = str(channel_height / well_grid_details.get_height())
+            resize_width = str(math.floor(channel_width / well_grid_details.get_width()))
+            resize_height = str(math.floor(channel_height / well_grid_details.get_height()))
             exit_code = os.system('convert "{}" -resize {}x{} "{}"'
                                   .format(src_file, resize_width, resize_height, resized_file))
             x_coords = well_grid_missing_values[channel_id][well_id][y_coord]
