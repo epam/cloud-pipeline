@@ -28,11 +28,10 @@ RUN_ID = '12345'
 
 cmd_executor = Mock()
 grid_engine = Mock()
-default_hostfile = 'default_hostfile'
 instance_cores = 4
 common_utils = Mock()
 scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
-                                                default_hostfile=default_hostfile, common_utils=common_utils)
+                                                common_utils=common_utils)
 
 
 def setup_function():
