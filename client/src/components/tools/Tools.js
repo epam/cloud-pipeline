@@ -68,9 +68,6 @@ function isPersonalGroup (group) {
   return name.toLowerCase() === owner;
 }
 
-// плейсхолдер в инпуте
-// Плагшки + комменты
-
 @roleModel.authenticationInfo
 @inject('dockerRegistries', 'authenticatedUserInfo')
 @HiddenObjects.injectToolsFilters
