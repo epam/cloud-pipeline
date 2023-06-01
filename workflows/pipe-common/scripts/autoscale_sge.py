@@ -33,14 +33,14 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from pipeline import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
+from pipeline import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger, PrintLogger
 
 try:
     from queue import Queue, Empty as QueueEmptyError
 except ImportError:
     from Queue import Queue, Empty as QueueEmptyError
 
-GridEngineParameter = namedtuple('GridEngineParameter', 'name,help')
+
 KubernetesPod = namedtuple('KubernetesPod', 'ip,name')
 
 
@@ -80,48 +80,123 @@ class GridEngineParametersGroup:
             yield attr
 
 
+class ValidationError(RuntimeError):
+    pass
+
+
+class GridEngineParameter:
+
+    def __init__(self, name, type, default, help):
+        self.name = name
+        self.type = type
+        self.default = default
+        self.help = help
+
+    def get(self):
+        return self.type.extract(self)
+
+
+class GridEngineParameterType:
+
+    def extract(self, parameter):
+        pass
+
+
+class BooleanParameterType(GridEngineParameterType):
+
+    def extract(self, parameter):
+        value = os.getenv(parameter.name)
+        if value is None:
+            if parameter.default is None:
+                return None
+            value = str(parameter.default)
+        value_formatted = value.strip().lower()
+        if value_formatted in ['true', 'yes', 'on']:
+            return True
+        if value_formatted in ['false', 'no', 'off']:
+            return False
+        raise ValidationError('Boolean parameter {name} has invalid value {value}. '
+                              'Please specify true/false/yes/no/on/off. \n\n'
+                              '{name}\n{help}'
+                              .format(name=parameter.name, value=value, help=parameter.help))
+
+
+class IntegerParameterType(GridEngineParameterType):
+
+    def extract(self, parameter):
+        value = os.getenv(parameter.name)
+        if value is None:
+            if parameter.default is None:
+                return None
+            value = str(parameter.default)
+        value_formatted = value.strip().lower()
+        try:
+            return int(value_formatted)
+        except ValueError:
+            raise ValidationError('Integer parameter {name} has invalid value {value}. '
+                                  'Please specify an integer number. \n\n'
+                                  '{name}\n{help}'
+                                  .format(name=parameter.name, value=value, help=parameter.help))
+
+
+class StringParameterType(GridEngineParameterType):
+
+    def extract(self, parameter):
+        value = os.getenv(parameter.name)
+        if value is None:
+            if parameter.default is None:
+                return None
+            value = str(parameter.default)
+        return value
+
+
+PARAM_BOOL = BooleanParameterType()
+PARAM_INT = IntegerParameterType()
+PARAM_STR = StringParameterType()
+
+
 class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
 
     def __init__(self):
         self.autoscale = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE',
+            name='CP_CAP_AUTOSCALE', type=PARAM_BOOL, default=False,
             help='Enables autoscaling.')
         self.autoscaling_hosts_number = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_WORKERS',
+            name='CP_CAP_AUTOSCALE_WORKERS', type=PARAM_INT, default=3,
             help='Specifies a maximum number of autoscaling workers.')
         self.instance_type = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_INSTANCE_TYPE',
+            name='CP_CAP_AUTOSCALE_INSTANCE_TYPE', type=PARAM_STR, default=os.environ['instance_size'],
             help='Specifies worker instance type.')
         self.instance_disk = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_INSTANCE_DISK',
+            name='CP_CAP_AUTOSCALE_INSTANCE_DISK', type=PARAM_INT, default=os.environ['instance_disk'],
             help='Specifies worker disk size.')
         self.instance_image = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_INSTANCE_IMAGE',
+            name='CP_CAP_AUTOSCALE_INSTANCE_IMAGE', type=PARAM_STR, default=os.environ['docker_image'],
             help='Specifies worker docker image.')
         self.price_type = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_PRICE_TYPE',
+            name='CP_CAP_AUTOSCALE_PRICE_TYPE', type=PARAM_STR, default=os.environ['price_type'],
             help='Specifies worker price type.')
         self.cmd_template = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_CMD_TEMPLATE',
+            name='CP_CAP_AUTOSCALE_CMD_TEMPLATE', type=PARAM_STR, default='sleep infinity',
             help='Specifies worker cmd template.')
         self.hybrid_autoscale = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_HYBRID',
+            name='CP_CAP_AUTOSCALE_HYBRID', type=PARAM_BOOL, default=False,
             help='Enables hybrid autoscaling.')
         self.hybrid_instance_family = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_HYBRID_FAMILY',
+            name='CP_CAP_AUTOSCALE_HYBRID_FAMILY', type=PARAM_STR, default=None,
             help='Specifies hybrid worker instance type family.')
         self.hybrid_instance_cores = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE',
+            name='CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', type=PARAM_INT, default=0,
             help='Specifies a maximum number of CPUs available on hybrid autoscaling workers.\n'
-                 'If specified only instance types which have less or equal number of CPUs will be used.')
+                 'If specified, only instance types which have less or equal number of CPUs will be used.')
         self.descending_autoscale = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_DESCENDING',
+            name='CP_CAP_AUTOSCALE_DESCENDING', type=PARAM_BOOL, default=True,
             help='Enables descending autoscaling.\n'
                  'As long as default instance type is available then autoscaling works as non hybrid.\n'
                  'If target instance type is temporary unavailable then autoscaling works as hybrid\n'
                  'using only smaller instance types from the same instance family.')
         self.scale_up_strategy = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_SCALE_UP_STRATEGY',
+            name='CP_CAP_AUTOSCALE_SCALE_UP_STRATEGY', type=PARAM_STR, default='cpu-capacity',
             help='Specifies autoscaling strategy.\n'
                  'Allowed values:\n'
                  '    cpu-capacity (default):\n'
@@ -134,27 +209,27 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
                  '        then has the same effect as cpu-capacity strategy\n'
                  '        else has the same effect as naive-cpu-capacity.')
         self.scale_up_batch_size = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_SCALE_UP_BATCH_SIZE',
+            name='CP_CAP_AUTOSCALE_SCALE_UP_BATCH_SIZE', type=PARAM_INT, default=1,
             help='Specifies a maximum number of simultaneously scaling up workers.')
         self.scale_up_polling_delay = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY',
+            name='CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', type=PARAM_INT, default=10,
             help='Specifies a status polling delay in seconds for workers scaling up.')
         self.scale_up_unavailability_delay = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_DELAY',
+            name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_DELAY', type=PARAM_INT, default=30 * 60,
             help='Specifies a delay in seconds to temporary avoid unavailable instance types usage.\n'
                  'An instance type is considered unavailable if cloud region lacks such instances at the moment.')
         self.scale_down_batch_size = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_SCALE_DOWN_BATCH_SIZE',
+            name='CP_CAP_AUTOSCALE_SCALE_DOWN_BATCH_SIZE', type=PARAM_INT, default=1,
             help='Specifies a maximum number of simultaneously scaling down workers.')
         self.scale_down_idle_timeout = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_IDLE_TIMEOUT',
+            name='CP_CAP_AUTOSCALE_IDLE_TIMEOUT', type=PARAM_INT, default=30,
             help='Specifies a timeout in seconds after which an inactive worker is considered idled.\n'
                  'If an autoscaling worker is idle then it is scaled down.')
         self.log_dir = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_LOGDIR',
+            name='CP_CAP_AUTOSCALE_LOGDIR', type=PARAM_STR, default=os.getenv('LOG_DIR', '/var/log'),
             help='Specifies logging directory.')
         self.log_verbose = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_VERBOSE',
+            name='CP_CAP_AUTOSCALE_VERBOSE', type=PARAM_BOOL, default=False,
             help='Enables verbose logging.')
 
 
@@ -162,46 +237,75 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
 
     def __init__(self):
         self.instance_cloud_provider = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_CLOUD_PROVIDER',
+            name='CP_CAP_AUTOSCALE_CLOUD_PROVIDER', type=PARAM_STR, default=os.environ['CLOUD_PROVIDER'],
             help='Specifies worker cloud provider.\n'
                  'Allowed values: AWS, GCP and AZURE.')
         self.instance_region_id = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_CLOUD_REGION_ID',
+            name='CP_CAP_AUTOSCALE_CLOUD_REGION_ID', type=PARAM_STR, default=os.environ['CLOUD_REGION_ID'],
             help='Specifies cloud region id.')
+        self.static_instance_type = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_STATIC_INSTANCE_TYPE', type=PARAM_STR, default=os.environ['instance_size'],
+            help='Specifies static worker instance type.')
         self.instance_owner_param = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME',
+            name='CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME', type=PARAM_STR, default='CP_CAP_AUTOSCALE_OWNER',
             help='Specifies worker parameter name which is used to specify an owner of a worker.\n'
                  'The parameter is used to bill specific users rather than a cluster owner.')
         self.work_dir = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_WORKDIR',
+            name='CP_CAP_AUTOSCALE_WORKDIR', type=PARAM_STR, default=os.getenv('TMP_DIR', '/tmp'),
             help='Specifies autoscaler working directory.')
+        self.active_timeout = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_ACTIVE_TIMEOUT', type=PARAM_INT, default=30,
+            help='Specifies a timeout in seconds after which a worker/main instance is considered active.\n'
+                 'If an instance is active then it is tagged correspondingly.')
         self.log_task = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_TASK',
+            name='CP_CAP_AUTOSCALE_TASK', type=PARAM_STR, default=None,
             help='Specifies logging task.')
+        self.logging_level_run = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_LOGGING_LEVEL_RUN', type=PARAM_STR, default='INFO',
+            help='Specifies run logging level.')
+        self.logging_level_file = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_LOGGING_LEVEL_FILE', type=PARAM_STR, default='DEBUG',
+            help='Specifies file logging level.')
+        self.logging_level_console = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_LOGGING_LEVEL_CONSOLE', type=PARAM_STR, default='INFO',
+            help='Specifies console logging level.')
+        self.logging_format = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_LOGGING_FORMAT', type=PARAM_STR,
+            default='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s',
+            help='Specifies logging format.')
+        self.dry_init = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_DRY_INIT', type=PARAM_BOOL, default=False,
+            help='Enables dry init mode. '
+                 'Only grid engine autoscaling configuration will be performed.')
+        self.dry_run = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_DRY_RUN', type=PARAM_BOOL, default=False,
+            help='Enables dry run mode. '
+                 'Grid engine autoscaling will be performed '
+                 'but no instances will be scaled up or scaled down.')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):
 
     def __init__(self):
         self.queue_name = GridEngineParameter(
-            name='CP_CAP_SGE_QUEUE_NAME',
+            name='CP_CAP_SGE_QUEUE_NAME', type=PARAM_STR, default='main.q',
             help='Specifies a name of a queue which is going to be autoscaled.')
         self.queue_static = GridEngineParameter(
-            name='CP_CAP_SGE_QUEUE_STATIC',
+            name='CP_CAP_SGE_QUEUE_STATIC', type=PARAM_BOOL, default=False,
             help='Enables static queue processing.\n'
                  'If enabled then all static workers are considered to be part of this queue.')
         self.queue_default = GridEngineParameter(
-            name='CP_CAP_SGE_QUEUE_DEFAULT',
+            name='CP_CAP_SGE_QUEUE_DEFAULT', type=PARAM_BOOL, default=False,
             help='Enables default queue processing.\n'
                  'If enabled then all jobs without hard queue requirement are considered to be part of this queue.')
         self.hostlist_name = GridEngineParameter(
-            name='CP_CAP_SGE_HOSTLIST_NAME',
+            name='CP_CAP_SGE_HOSTLIST_NAME', type=PARAM_STR, default='@allhosts',
             help='Specifies a name of a hostlist which is associated with the autoscaling queue.')
         self.hosts_free_cores = GridEngineParameter(
-            name='CP_CAP_SGE_WORKER_FREE_CORES',
+            name='CP_CAP_SGE_WORKER_FREE_CORES', type=PARAM_INT, default=0,
             help='Specifies a number of free cores on workers.')
         self.master_cores = GridEngineParameter(
-            name='CP_CAP_SGE_MASTER_CORES',
+            name='CP_CAP_SGE_MASTER_CORES', type=PARAM_INT, default=None,
             help='Specifies a number of available cores on a cluster manager.')
 
 
@@ -262,21 +366,21 @@ class APIError(ServerError):
 
 class Logger:
 
-    inner = None
+    inner = PrintLogger()
 
     @staticmethod
-    def info(message, crucial=False):
+    def info(message, crucial=False, trace=False):
         if crucial:
-            Logger.inner.info(message)
+            Logger.inner.info(message, trace=trace)
         else:
-            Logger.inner.debug(message)
+            Logger.inner.debug(message, trace=trace)
 
     @staticmethod
-    def warn(message, crucial=False):
+    def warn(message, crucial=False, trace=False):
         if crucial:
-            Logger.inner.warning(message)
+            Logger.inner.warning(message, trace=trace)
         else:
-            Logger.inner.debug(message)
+            Logger.inner.debug(message, trace=trace)
 
 
 class CmdExecutor:
@@ -946,6 +1050,12 @@ class GridEngineScaleUpOrchestrator:
             self.static_host_storage.update_running_jobs_host_activity(running_jobs, self.clock.now())
 
 
+class DoNothingScaleUpHandler:
+
+    def scale_up(self, instance, owner, run_id_queue):
+        pass
+
+
 class GridEngineScaleUpHandler:
     _POLL_TIMEOUT = 900
     _POLL_ATTEMPTS = 60
@@ -953,7 +1063,7 @@ class GridEngineScaleUpHandler:
     _GE_POLL_TIMEOUT = 60
     _GE_POLL_ATTEMPTS = 6
 
-    def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
+    def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, instance_disk,
                  instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name,
                  polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  ge_polling_timeout=_GE_POLL_TIMEOUT, instance_launch_params=None, clock=Clock()):
@@ -967,7 +1077,6 @@ class GridEngineScaleUpHandler:
         :param grid_engine: Grid engine client.
         :param host_storage: Additional hosts storage.
         :param parent_run_id: Additional nodes parent run id.
-        :param default_hostfile: Default host file location.
         :param instance_disk: Additional nodes disk size.
         :param instance_image: Additional nodes docker image.
         :param cmd_template: Additional nodes cmd template.
@@ -986,7 +1095,6 @@ class GridEngineScaleUpHandler:
         self.grid_engine = grid_engine
         self.host_storage = host_storage
         self.parent_run_id = parent_run_id
-        self.default_hostfile = default_hostfile
         self.instance_disk = instance_disk
         self.instance_image = instance_image
         self.cmd_template = cmd_template
@@ -1155,9 +1263,15 @@ class GridEngineScaleUpHandler:
         raise ScalingError(error_msg)
 
 
+class DoNothingScaleDownHandler:
+
+    def scale_down(self, child_host):
+        pass
+
+
 class GridEngineScaleDownHandler:
 
-    def __init__(self, cmd_executor, grid_engine, default_hostfile, common_utils):
+    def __init__(self, cmd_executor, grid_engine, common_utils):
         """
         Grid engine scale down handler.
 
@@ -1165,12 +1279,10 @@ class GridEngineScaleDownHandler:
 
         :param cmd_executor: Cmd executor.
         :param grid_engine: Grid engine client.
-        :param default_hostfile: Default host file location.
         :param common_utils: helpful stuff
         """
         self.executor = cmd_executor
         self.grid_engine = grid_engine
-        self.default_hostfile = default_hostfile
         self.common_utils = common_utils
 
     def scale_down(self, child_host):
@@ -1178,7 +1290,7 @@ class GridEngineScaleDownHandler:
         Scales down an additional worker.
 
         It stops the corresponding run, removes it from the GE cluster configuration and
-        removes host from master /etc/hosts and self.default_hostfile.
+        removes host from master hosts.
 
         :param child_host: Host name of an additional worker to be scaled down.
         :return: True if the run stopping was successful, False otherwise.
@@ -1464,25 +1576,27 @@ class LastActionMarker:
 class GridEngineWorkerTagsHandler:
     _WORKER_TAG = 'SGE_IN_USE'
 
-    def __init__(self, api, tagging_active_timeout, host_storage, static_host_storage, clock, common_utils):
+    def __init__(self, api, active_timeout, host_storage, static_host_storage, clock, common_utils, dry_run):
         """
         Processes active additional workers tags: if at least one job is running at the additional host
         the corresponding run shall be tagged.
 
         :param api: Cloud pipeline client.
-        :param tagging_active_timeout: Indicates how many seconds must pass before the run is recognized as active.
+        :param active_timeout: Indicates how many seconds must pass before the run is recognized as active.
         :param host_storage: Additional hosts storage.
         :param static_host_storage: Static workers host storage.
         :param clock: Clock.
         :param common_utils: helpful stuff.
+        :param dry_run: Dry run flag.
         """
         self.api = api
         self.host_storage = host_storage
         self.static_host_storage = static_host_storage
         self.clock = clock
         self.last_monitored_hosts = {}
-        self.tagging_active_timeout = timedelta(seconds=tagging_active_timeout)
+        self.active_timeout = timedelta(seconds=active_timeout)
         self.common_utils = common_utils
+        self.dry_run = dry_run
         self.static_hosts = self.static_host_storage.load_hosts()
 
     def process_tags(self):
@@ -1501,9 +1615,11 @@ class GridEngineWorkerTagsHandler:
             Logger.warn(traceback.format_exc())
 
     def _run_is_active(self, timestamp):
-        return timestamp > self.clock.now() - self.tagging_active_timeout
+        return timestamp > self.clock.now() - self.active_timeout
 
     def _tag_run(self, host, timestamp, last_monitored_timestamps):
+        if self.dry_run:
+            return
         run_id = self.common_utils.get_run_id_from_host(host)
         self._add_worker_tag(run_id)
         last_monitored_timestamps.last_action_timestamp = timestamp
@@ -1512,6 +1628,8 @@ class GridEngineWorkerTagsHandler:
 
     def _untag_run(self, host, timestamp=None, last_monitored_timestamps=None):
         Logger.info("Removing tag from run for host '%s'." % host)
+        if self.dry_run:
+            return
         run_id = self.common_utils.get_run_id_from_host(host)
         self._remove_worker_tag(run_id)
         if not last_monitored_timestamps:
@@ -1722,7 +1840,7 @@ class GridEngineWorkerValidator:
     _SHOW_RUN_STATUS = 'pipe view-runs %s | grep Status | awk \'{print $2}\''
     _RUNNING_STATUS = 'RUNNING'
 
-    def __init__(self, cmd_executor, api, host_storage, grid_engine, scale_down_handler, common_utils):
+    def __init__(self, cmd_executor, api, host_storage, grid_engine, scale_down_handler, common_utils, dry_run):
         """
         Grid engine worker validator.
 
@@ -1736,6 +1854,7 @@ class GridEngineWorkerValidator:
         :param host_storage: Additional hosts storage.
         :param scale_down_handler: Scale down handler.
         :param common_utils: helpful stuff
+        :param dry_run: Dry run flag.
         """
         self.grid_engine = grid_engine
         self.api = api
@@ -1743,6 +1862,7 @@ class GridEngineWorkerValidator:
         self.host_storage = host_storage
         self.scale_down_handler = scale_down_handler
         self.common_utils = common_utils
+        self.dry_run = dry_run
 
     def validate(self):
         """
@@ -1761,6 +1881,8 @@ class GridEngineWorkerValidator:
                 continue
         for host, run_id in invalid_hosts:
             Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host, crucial=True)
+            if self.dry_run:
+                continue
             self._try_stop_worker(run_id)
             self._try_disable_worker(host, run_id)
             self._try_kill_invalid_host_jobs(host)
@@ -2230,6 +2352,12 @@ class GridEngineAutoscalingDaemon:
                 Logger.warn(traceback.format_exc())
 
 
+class DoNothingAutoscalingDaemon:
+
+    def start(self):
+        pass
+
+
 def make_dirs(path):
     """
     Creates directory and all intermediate parent directories. Does not fail if some of the directories already exist.
@@ -2255,13 +2383,13 @@ class CloudPipelineAPI:
         """
         self.pipe = pipe
 
-    def retrieve_preference(self, preference, default_value):
+    def retrieve_preference(self, preference, default):
         try:
             return self.pipe.get_preference(preference)['value']
         except:
             Logger.warn('Pipeline preference %s retrieving has failed. Using default value: %s.'
-                        % (preference, default_value))
-            return default_value
+                        % (preference, default))
+            return default
 
     def load_run(self, run_id):
         result = self._execute_request(str(self.pipe.api_url) + self.pipe.GET_RUN_URL.format(run_id))
@@ -2307,8 +2435,9 @@ class CloudPipelineAPI:
 
 def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     parent_run = api.load_run(master_run_id)
-    master_system_params = {param.get('name'): param.get('resolvedValue') for param in parent_run.get('pipelineRunParameters', [])}
-    system_launch_params_string = api.retrieve_preference('launch.system.parameters', default_value='[]')
+    master_system_params = {param.get('name'): param.get('resolvedValue')
+                            for param in parent_run.get('pipelineRunParameters', [])}
+    system_launch_params_string = api.retrieve_preference('launch.system.parameters', default='[]')
     system_launch_params = json.loads(system_launch_params_string)
     launch_params = {}
     for launch_param in system_launch_params:
@@ -2343,22 +2472,22 @@ def load_default_hosts(default_hostsfile):
         return []
 
 
-def init_static_hosts(default_hostsfile, static_host_storage, clock, tagging_active_timeout, static_hosts_enabled):
+def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeout, static_hosts_enabled):
     try:
         if static_host_storage.load_hosts():
             Logger.info('Static hosts already initialized.')
             return
         Logger.info('Starting static hosts initialization.')
         if static_hosts_enabled:
-            hosts = load_default_hosts(default_hostsfile)
+            hosts = load_default_hosts(default_hostfile)
             for host in hosts:
                 static_host_storage.add_host(host)
         else:
             master_host = os.getenv('HOSTNAME')
             static_host_storage.add_host(master_host)
             hosts = [master_host]
-        # to prevent false positive run tagging let's add outdated date to hosts:
-        timeout = tagging_active_timeout * 2
+        # to prevent false positive run active status let's add outdated date to hosts:
+        timeout = active_timeout * 2
         timestamp = clock.now() - timedelta(seconds=timeout)
         static_host_storage.update_hosts_activity(hosts, timestamp)
         Logger.info('Static hosts have been initialized.')
@@ -2367,73 +2496,42 @@ def init_static_hosts(default_hostsfile, static_host_storage, clock, tagging_act
         Logger.warn(traceback.format_exc())
 
 
-def main():
+def get_daemon():
     params = GridEngineParameters()
-    pipeline_api = os.environ['API']
-    master_run_id = os.environ['RUN_ID']
-    master_host = os.getenv('HOSTNAME', 'pipeline-' + str(master_run_id))
-    default_hostfile = os.environ['DEFAULT_HOSTFILE']
 
-    static_hosts_cpus = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
-    static_hosts_number = int(os.getenv('node_count', 0))
-    static_instance_type = os.environ['instance_size']
-    autoscaling_hosts_number = int(os.getenv(params.autoscaling.autoscaling_hosts_number.name, 3))
-    autoscale_enabled = os.getenv(params.autoscaling.autoscale.name, 'false').strip().lower() == 'true'
+    api_url = os.environ['API']
 
-    instance_cloud_provider = CloudProvider(os.getenv(params.autoscaling_advanced.instance_cloud_provider.name, os.environ['CLOUD_PROVIDER']))
-    instance_region_id = os.getenv(params.autoscaling_advanced.instance_region_id.name, os.environ['CLOUD_REGION_ID'])
-    instance_type = os.getenv(params.autoscaling.instance_type.name, os.environ['instance_size'])
-    instance_disk = os.getenv(params.autoscaling.instance_disk.name, os.environ['instance_disk'])
-    instance_image = os.getenv(params.autoscaling.instance_image.name, os.environ['docker_image'])
-    instance_price_type = os.getenv(params.autoscaling.price_type.name, os.environ['price_type'])
-    instance_cmd_template = os.getenv(params.autoscaling.cmd_template.name, 'sleep infinity')
-    instance_owner_param = os.getenv(params.autoscaling_advanced.instance_owner_param.name, 'CP_CAP_AUTOSCALE_OWNER')
+    cluster_hostfile = os.environ['DEFAULT_HOSTFILE']
+    cluster_master_run_id = os.environ['RUN_ID']
+    cluster_master_name = os.getenv('HOSTNAME', 'pipeline-' + str(cluster_master_run_id))
+    cluster_work_dir = params.autoscaling_advanced.work_dir.get()
 
-    hybrid_autoscale = os.getenv(params.autoscaling.hybrid_autoscale.name, 'false').strip().lower() == 'true'
-    hybrid_instance_cores = int(os.getenv(params.autoscaling.hybrid_instance_cores.name, 0))
-    hybrid_instance_family = os.getenv(params.autoscaling.hybrid_instance_family.name,
-                                       extract_family_from_instance_type(instance_cloud_provider, instance_type))
-    descending_autoscale = os.getenv(params.autoscaling.descending_autoscale.name, 'true').strip().lower() == 'true'
-
-    scale_up_strategy = os.getenv(params.autoscaling.scale_up_strategy.name, 'cpu-capacity')
-    scale_up_batch_size = int(os.getenv(params.autoscaling.scale_up_batch_size.name, 1))
-    scale_down_batch_size = int(os.getenv(params.autoscaling.scale_down_batch_size.name, 1))
-    scale_up_polling_delay = int(os.getenv(params.autoscaling.scale_up_polling_delay.name, 10))
-    scale_up_unavailability_delay = int(os.getenv(params.autoscaling.scale_up_unavailability_delay.name, 1800))
-
-    scale_down_idle_timeout = int(os.getenv(params.autoscaling.scale_down_idle_timeout.name, 30))
-
-    queue_name = os.getenv(params.queue.queue_name.name, 'main.q')
+    queue_name = params.queue.queue_name.get()
     queue_name_short = (queue_name if not queue_name.endswith('.q') else queue_name[:-2])
-    queue_static = os.getenv(params.queue.queue_static.name, 'false').strip().lower() == 'true'
-    queue_default = os.getenv(params.queue.queue_default.name, 'false').strip().lower() == 'true'
-    hostlist_name = os.getenv(params.queue.hostlist_name.name, '@allhosts')
-    reserved_cpu = int(os.getenv(params.queue.hosts_free_cores.name, 0))
-    master_cpu = int(os.getenv(params.queue.master_cores.name, static_hosts_cpus))
-    effective_master_cpu = master_cpu - reserved_cpu if master_cpu - reserved_cpu > 0 else master_cpu
 
-    work_dir = os.getenv(params.autoscaling_advanced.work_dir.name, os.getenv('TMP_DIR', '/tmp'))
-    logging_dir = os.getenv(params.autoscaling.log_dir.name, os.getenv('LOG_DIR', '/var/log'))
-    logging_verbose = os.getenv(params.autoscaling.log_verbose.name, 'false').strip().lower() == 'true'
-    logging_level_root = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_ROOT', default='WARNING')
-    logging_level_run = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_RUN', default='DEBUG' if logging_verbose else 'INFO')
-    logging_level_file = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_FILE', default='DEBUG')
-    logging_level_console = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_CONSOLE', default='INFO')
-    logging_format = os.getenv('CP_CAP_AUTOSCALE_LOGGING_FORMAT',
-                               default='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
-    logging_task = os.getenv(params.autoscaling_advanced.log_task.name, 'GridEngineAutoscaling-%s' % queue_name_short)
+    logging_dir = params.autoscaling.log_dir.get()
+    logging_verbose = params.autoscaling.log_verbose.get()
+    logging_level_run = params.autoscaling_advanced.logging_level_run.get()
+    logging_level_file = params.autoscaling_advanced.logging_level_file.get()
+    logging_level_console = params.autoscaling_advanced.logging_level_console.get()
+    logging_format = params.autoscaling_advanced.logging_format.get()
+    logging_task = params.autoscaling_advanced.log_task.get() or ('GridEngineAutoscaling-%s' % queue_name_short)
     logging_file = os.path.join(logging_dir, '.autoscaler.%s.log' % queue_name)
     logging_dir_pipe = os.path.join(logging_dir, '.autoscaler.%s.pipe.log' % queue_name)
 
+    if logging_verbose:
+        logging_level_run = 'DEBUG'
+
     # TODO: Git rid of CloudPipelineAPI usage
-    pipe = PipelineAPI(api_url=pipeline_api, log_dir=logging_dir_pipe)
+    pipe = PipelineAPI(api_url=api_url, log_dir=logging_dir_pipe)
     api = CloudPipelineAPI(pipe=pipe)
 
     make_dirs(os.path.dirname(logging_file))
+
     logging_formatter = logging.Formatter(logging_format)
 
     logging_logger_root = logging.getLogger()
-    logging_logger_root.setLevel(logging_level_root)
+    logging_logger_root.setLevel(logging.WARNING)
 
     logging_logger = logging.getLogger(name=logging_task)
     logging_logger.setLevel(logging.DEBUG)
@@ -2449,7 +2547,7 @@ def main():
         file_handler.setFormatter(logging_formatter)
         logging_logger.addHandler(file_handler)
 
-    logger = RunLogger(api=pipe, run_id=master_run_id)
+    logger = RunLogger(api=pipe, run_id=cluster_master_run_id)
     logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
@@ -2457,18 +2555,76 @@ def main():
     # todo: Get rid of Logger usage in favor of logger
     Logger.inner = logger
 
+    static_instance_cpus = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
+    static_instance_number = int(os.getenv('node_count', 0))
+    static_instance_type = params.autoscaling_advanced.static_instance_type.get()
+
+    instance_cloud_provider = CloudProvider(params.autoscaling_advanced.instance_cloud_provider.get())
+    instance_region_id = params.autoscaling_advanced.instance_region_id.get()
+    instance_type = params.autoscaling.instance_type.get()
+    instance_disk = params.autoscaling.instance_disk.get()
+    instance_image = params.autoscaling.instance_image.get()
+    instance_price_type = params.autoscaling.price_type.get()
+    instance_cmd_template = params.autoscaling.cmd_template.get()
+    instance_owner_param = params.autoscaling_advanced.instance_owner_param.get()
+
+    autoscale = params.autoscaling.autoscale.get()
+    autoscale_instance_number = params.autoscaling.autoscaling_hosts_number.get()
+
+    descending_autoscale = params.autoscaling.descending_autoscale.get()
+
+    hybrid_autoscale = params.autoscaling.hybrid_autoscale.get()
+    hybrid_instance_cores = params.autoscaling.hybrid_instance_cores.get()
+    hybrid_instance_family = params.autoscaling.hybrid_instance_family.get() \
+                             or extract_family_from_instance_type(instance_cloud_provider, instance_type)
+
+    scale_up_strategy = params.autoscaling.scale_up_strategy.get()
+    scale_up_batch_size = params.autoscaling.scale_up_batch_size.get()
+    scale_up_polling_delay = params.autoscaling.scale_up_polling_delay.get()
+    scale_up_unavailability_delay = params.autoscaling.scale_up_unavailability_delay.get()
+    scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default=30))
+    scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout', default=900))
+
+    scale_down_batch_size = params.autoscaling.scale_down_batch_size.get()
+    scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default=30))
+    scale_down_idle_timeout = params.autoscaling.scale_down_idle_timeout.get()
+
+    active_timeout = params.autoscaling_advanced.active_timeout.get()
+
+    dry_init = params.autoscaling_advanced.dry_init.get()
+    dry_run = params.autoscaling_advanced.dry_run.get()
+
+    queue_static = params.queue.queue_static.get()
+    queue_default = params.queue.queue_default.get()
+    queue_hostlist_name = params.queue.hostlist_name.get()
+    queue_reserved_cpu = params.queue.hosts_free_cores.get()
+    queue_master_cpu = params.queue.master_cores.get() or static_instance_cpus
+    queue_master_effective_cpu = queue_master_cpu - queue_reserved_cpu \
+        if queue_master_cpu - queue_reserved_cpu > 0 \
+        else queue_master_cpu
+
+    host_storage_file = os.path.join(cluster_work_dir, '.autoscaler.%s.storage' % queue_name)
+    host_storage_static_file = os.path.join(cluster_work_dir, '.autoscaler.%s.static.storage' % queue_name)
+
     Logger.info('Initiating grid engine autoscaling...')
 
-    if not autoscale_enabled:
+    if not autoscale:
         Logger.info('Using non autoscaling mode...')
-        autoscaling_hosts_number = 0
+        autoscale_instance_number = 0
 
-    instance_launch_params = fetch_instance_launch_params(api, master_run_id, queue_name, hostlist_name)
+    if dry_init:
+        Logger.info('Using dry init mode...')
+
+    if dry_run:
+        Logger.info('Using dry run mode...')
+
+    instance_launch_params = fetch_instance_launch_params(api, cluster_master_run_id, queue_name, queue_hostlist_name)
 
     clock = Clock()
     cmd_executor = CmdExecutor()
+    common_utils = ScaleCommonUtils()
 
-    reserved_supply = ResourceSupply(cpu=reserved_cpu)
+    reserved_supply = ResourceSupply(cpu=queue_reserved_cpu)
 
     worker_recorder = CloudPipelineWorkerRecorder(api=api)
     cloud_instance_provider = CloudPipelineInstanceProvider(pipe=pipe, region_id=instance_region_id,
@@ -2478,20 +2634,46 @@ def main():
     static_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,
                                                        instance_type=static_instance_type)
 
-    descending_instance = default_instance_provider.provide().pop()
+    descending_instances = default_instance_provider.provide()
+    if not descending_instances:
+        raise ValidationError('Parameter {name} has invalid value {value}. '
+                              'Such instance type is not available. '
+                              'Please specify available instance type. \n\n'
+                              '{name}\n{help}'
+                              .format(name=params.autoscaling.instance_type.name, value=instance_type,
+                                      help=params.autoscaling.instance_type.help))
+    descending_instance = descending_instances.pop()
     descending_instance_cores = descending_instance.cpu if descending_instance else 0
     descending_instance_type = descending_instance.name if descending_instance else ''
-    descending_instance_family = extract_family_from_instance_type(instance_cloud_provider, descending_instance_type)
+    descending_instance_family = extract_family_from_instance_type(instance_cloud_provider,
+                                                                   descending_instance_type)
 
     if hybrid_autoscale and hybrid_instance_family:
         Logger.info('Using hybrid autoscaling of {} instances...'.format(hybrid_instance_family))
         instance_provider = FamilyInstanceProvider(inner=cloud_instance_provider,
                                                    instance_cloud_provider=instance_cloud_provider,
                                                    instance_family=hybrid_instance_family)
+        if not instance_provider.provide():
+            raise ValidationError('Parameter {name} has invalid value {value}. '
+                                  'Such instance type family is not available. '
+                                  'Please specify available instance type family. \n\n'
+                                  '{name}\n{help}'
+                                  .format(name=params.autoscaling.hybrid_instance_family.name,
+                                          value=hybrid_instance_family,
+                                          help=params.autoscaling.hybrid_instance_family.help))
         if hybrid_instance_cores:
             Logger.info('Using instances with no more than {} cpus...'.format(hybrid_instance_cores))
             instance_provider = SizeLimitingInstanceProvider(inner=instance_provider,
                                                              max_instance_cores=hybrid_instance_cores)
+        if not instance_provider.provide():
+            raise ValidationError('Parameter {name} has invalid value {value}. '
+                                  'There are no such instance types available. '
+                                  'Please specify a different value. \n\n'
+                                  '{name}\n'
+                                  '{help}'
+                                  .format(name=params.autoscaling.hybrid_instance_cores.name,
+                                          value=hybrid_instance_cores,
+                                          help=params.autoscaling.hybrid_instance_cores.help))
         if scale_up_unavailability_delay:
             Logger.info('Using only available instances...')
             instance_provider = AvailableInstanceProvider(inner=instance_provider,
@@ -2503,10 +2685,26 @@ def main():
         instance_provider = FamilyInstanceProvider(inner=cloud_instance_provider,
                                                    instance_cloud_provider=instance_cloud_provider,
                                                    instance_family=descending_instance_family)
+        if not instance_provider.provide():
+            raise ValidationError('Parameter {name} has invalid value {value}. '
+                                  'Such instance type\'s family is not available. '
+                                  'Please specify different instance type. \n\n'
+                                  '{name}\n{help}'
+                                  .format(name=params.autoscaling.instance_type.name,
+                                          value=instance_type,
+                                          help=params.autoscaling.instance_type.help))
         if descending_instance_cores:
             Logger.info('Using instances with no more than {} cpus...'.format(descending_instance_cores))
             instance_provider = SizeLimitingInstanceProvider(inner=instance_provider,
                                                              max_instance_cores=descending_instance_cores)
+        if not instance_provider.provide():
+            raise ValidationError('Parameter {name} has invalid value {value}. '
+                                  'There are no such instance types available. '
+                                  'Please specify different instance type. \n\n'
+                                  '{name}\n{help}'
+                                  .format(name=params.autoscaling.instance_type.name,
+                                          value=instance_type,
+                                          help=params.autoscaling.instance_type.help))
         if scale_up_unavailability_delay:
             Logger.info('Using only available instances...')
             instance_provider = AvailableInstanceProvider(inner=instance_provider,
@@ -2532,46 +2730,50 @@ def main():
                                                                reserved_supply=reserved_supply,
                                                                batch_size=scale_up_batch_size)
 
-    biggest_instance = sorted(instance_provider.provide(), key=lambda instance: instance.cpu).pop()
-    static_instance = static_instance_provider.provide().pop()
+    available_instances = instance_provider.provide()
+    if not available_instances:
+        raise ValidationError('Grid engine autoscaler configuration is invalid. '
+                              'There are no required instance types available. '
+                              'Please use different configuration parameters.')
+    biggest_instance = sorted(available_instances, key=lambda instance: instance.cpu).pop()
+
+    static_instances = static_instance_provider.provide()
+    if not static_instances:
+        raise ValidationError('Parameter {name} has invalid value {value}. '
+                              'Such instance type is not available. '
+                              'Please specify available instance type. \n\n'
+                              '{name}\n{help}'
+                              .format(name=params.autoscaling_advanced.static_instance_type.name,
+                                      value=static_instance_type,
+                                      help=params.autoscaling_advanced.static_instance_type.help))
+    static_instance = static_instances.pop()
 
     biggest_instance_supply = ResourceSupply.of(biggest_instance) - reserved_supply
     static_instance_supply = ResourceSupply.of(static_instance) - reserved_supply
-    master_instance_supply = ResourceSupply(cpu=effective_master_cpu,
+    master_instance_supply = ResourceSupply(cpu=queue_master_effective_cpu,
                                             gpu=static_instance_supply.gpu,
                                             mem=static_instance_supply.mem)
-    cluster_supply = biggest_instance_supply * autoscaling_hosts_number
+    cluster_supply = biggest_instance_supply * autoscale_instance_number
     if queue_static:
-        cluster_supply += master_instance_supply + static_instance_supply * static_hosts_number
+        cluster_supply += master_instance_supply + static_instance_supply * static_instance_number
 
-    grid_engine = GridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=hostlist_name,
+    grid_engine = GridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
                              queue_default=queue_default)
     job_validator = GridEngineJobValidator(grid_engine=grid_engine,
                                            instance_max_supply=biggest_instance_supply,
                                            cluster_max_supply=cluster_supply)
     demand_selector = GridEngineDemandSelector(grid_engine=grid_engine)
-    host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
-                                         storage_file=os.path.join(work_dir, '.autoscaler.%s.storage' % queue_name),
-                                         clock=clock)
+    host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_file, clock=clock)
     host_storage = ThreadSafeHostStorage(host_storage)
-    scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
-    scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
-    scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
-                                                           default_value=900))
-    tagging_active_timeout = int(os.getenv('CP_CAP_AUTOSCALE_ACTIVE_TIMEOUT', 30))
-    common_utils = ScaleCommonUtils()
-    static_host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
-                                                storage_file=os.path.join(work_dir,
-                                                                          '.static.%s.storage' % queue_name),
+    static_host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_static_file,
                                                 clock=clock)
-    init_static_hosts(default_hostsfile=default_hostfile, static_host_storage=static_host_storage, clock=clock,
-                      tagging_active_timeout=tagging_active_timeout,
-                      static_hosts_enabled=queue_static and static_hosts_number)
+    init_static_hosts(default_hostfile=cluster_hostfile, static_host_storage=static_host_storage, clock=clock,
+                      active_timeout=active_timeout, static_hosts_enabled=queue_static and static_instance_number)
 
     if queue_static:
         Logger.info('Using static workers:\n{}\n{}'
                     .format('- {} {} ({} cpu, {} gpu, {} mem)'
-                            .format(master_host, static_instance.name,
+                            .format(cluster_master_name, static_instance.name,
                                     master_instance_supply.cpu,
                                     master_instance_supply.gpu,
                                     master_instance_supply.mem),
@@ -2581,29 +2783,31 @@ def main():
                                               static_instance_supply.gpu,
                                               static_instance_supply.mem)
                                       for host in static_host_storage.load_hosts()
-                                      if host != master_host))
+                                      if host != cluster_master_name))
                     .strip())
     Logger.info('Using autoscaling instance types:\n{}'
                 .format('\n'.join('- {} ({} cpu, {} gpu, {} mem)'
                                   .format(instance.name, instance.cpu, instance.gpu, instance.mem)
-                                  for instance in instance_provider.provide())))
+                                  for instance in available_instances)))
 
-    worker_tags_handler = GridEngineWorkerTagsHandler(api=api, tagging_active_timeout=tagging_active_timeout,
+    worker_tags_handler = GridEngineWorkerTagsHandler(api=api, active_timeout=active_timeout,
                                                       host_storage=host_storage,
                                                       static_host_storage=static_host_storage, clock=clock,
-                                                      common_utils=common_utils)
+                                                      common_utils=common_utils, dry_run=dry_run)
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                                 host_storage=host_storage,
-                                                parent_run_id=master_run_id, default_hostfile=default_hostfile,
+                                                parent_run_id=cluster_master_run_id,
                                                 instance_disk=instance_disk, instance_image=instance_image,
                                                 cmd_template=instance_cmd_template,
                                                 price_type=instance_price_type, region_id=instance_region_id,
-                                                queue=queue_name, hostlist=hostlist_name,
+                                                queue=queue_name, hostlist=queue_hostlist_name,
                                                 owner_param_name=instance_owner_param,
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_launch_params=instance_launch_params,
                                                 clock=clock)
+    if dry_run:
+        scale_up_handler = DoNothingScaleUpHandler()
     scale_up_orchestrator = GridEngineScaleUpOrchestrator(scale_up_handler=scale_up_handler,
                                                           grid_engine=grid_engine,
                                                           host_storage=host_storage,
@@ -2615,14 +2819,16 @@ def main():
                                                           polling_delay=scale_up_polling_delay,
                                                           clock=clock)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
-                                                    default_hostfile=default_hostfile, common_utils=common_utils)
+                                                    common_utils=common_utils)
+    if dry_run:
+        scale_down_handler = DoNothingScaleDownHandler()
     scale_down_orchestrator = GridEngineScaleDownOrchestrator(scale_down_handler=scale_down_handler,
                                                               grid_engine=grid_engine,
                                                               host_storage=host_storage,
                                                               batch_size=scale_down_batch_size)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler,
-                                                 common_utils=common_utils)
+                                                 common_utils=common_utils, dry_run=dry_run)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, job_validator=job_validator,
                                       demand_selector=demand_selector,
                                       cmd_executor=cmd_executor,
@@ -2631,12 +2837,27 @@ def main():
                                       host_storage=host_storage, static_host_storage=static_host_storage,
                                       scale_up_timeout=scale_up_timeout,
                                       scale_down_timeout=scale_down_timeout,
-                                      max_additional_hosts=autoscaling_hosts_number,
+                                      max_additional_hosts=autoscale_instance_number,
                                       idle_timeout=scale_down_idle_timeout, clock=clock)
     daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
                                          worker_tags_handler=worker_tags_handler, polling_timeout=10)
+    if dry_init:
+        daemon = DoNothingAutoscalingDaemon()
+    return daemon
+
+
+def autoscale_grid_engine_queue():
+    try:
+        daemon = get_daemon()
+    except ValidationError as e:
+        Logger.warn(str(e), crucial=True)
+        exit(1)
+    except Exception:
+        Logger.warn('Grid engine autoscaling initialization has failed.', trace=True, crucial=True)
+        exit(1)
+
     daemon.start()
 
 
 if __name__ == '__main__':
-    main()
+    autoscale_grid_engine_queue()
