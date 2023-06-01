@@ -214,10 +214,11 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
         self.scale_up_polling_delay = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', type=PARAM_INT, default=10,
             help='Specifies a status polling delay in seconds for workers scaling up.')
-        self.scale_up_unavailability_delay = GridEngineParameter(
+        self.scale_up_unavail_delay = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_DELAY', type=PARAM_INT, default=30 * 60,
             help='Specifies a delay in seconds to temporary avoid unavailable instance types usage.\n'
-                 'An instance type is considered unavailable if cloud region lacks such instances at the moment.')
+                 'An instance type is considered unavailable if cloud region lacks such instances at the moment '
+                 'or instance type has failed to initialize several times.')
         self.scale_down_batch_size = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_SCALE_DOWN_BATCH_SIZE', type=PARAM_INT, default=1,
             help='Specifies a maximum number of simultaneously scaling down workers.')
@@ -282,6 +283,17 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
             help='Enables dry run mode. '
                  'Grid engine autoscaling will be performed '
                  'but no instances will be scaled up or scaled down.')
+        self.scale_up_unavail_count_insufficient = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_COUNT_INSUFFICIENT', type=PARAM_INT, default=1,
+            help='Specifies a number of runs which may fail because of insufficient instance type capacity '
+                 'before instance type will be considered unavailable.')
+        self.scale_up_unavail_count_failure = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_COUNT_FAILURE', type=PARAM_INT, default=5,
+            help='Specifies a number of runs which may fail during initialization '
+                 'before instance type will be considered unavailable.')
+        self.event_ttl = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_EVENT_TTL', type=PARAM_INT, default=3 * 60 * 60,
+            help='Specifies event ttl in seconds after which an event is removed.')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):
@@ -1131,8 +1143,6 @@ class GridEngineScaleUpHandler:
             self._await_worker_initialization(run_id)
             self._enable_worker_in_grid_engine(pod)
             Logger.info('Additional worker %s (%s) has been scaled up.' % (pod.name, instance.name), crucial=True)
-        except KeyboardInterrupt:
-            pass
         except Exception as e:
             Logger.warn('Scaling up additional worker (%s) has failed due to %s.' % (instance.name, str(e)),
                         crucial=True)
@@ -2060,53 +2070,40 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
         return owner_cpus_counter.most_common()[0][0]
 
 
-class GridEngineWorkerRecord:
-
-    def __init__(self, id, name, instance_type, started, stopped, has_insufficient_instance_capacity):
-        self.id = id
-        self.name = name
-        self.instance_type = instance_type
-        self.started = started
-        self.stopped = stopped
-        self.has_insufficient_instance_capacity = has_insufficient_instance_capacity
-
-
 class GridEngineWorkerRecorder:
 
     def record(self, run_id):
         pass
 
-    def get(self):
-        pass
-
-    def clear(self):
-        pass
-
 
 class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
 
-    def __init__(self, api, capacity=100):
+    def __init__(self, api, event_manager, clock):
         self._api = api
-        self._records = []
-        self._capacity = capacity
+        self._event_manager = event_manager
+        self._clock = clock
         self._datetime_format = '%Y-%m-%d %H:%M:%S.%f'
 
     def record(self, run_id):
         try:
             Logger.info('Recording details of additional worker #%s...' % run_id)
             run = self._api.load_run(run_id)
-            run_name = run.get('podId')
-            run_started = self._to_datetime(run.get('startDate'))
             run_stopped = self._to_datetime(run.get('endDate'))
             instance_type = run.get('instance', {}).get('nodeType')
-            has_insufficient_instance_capacity = self._has_insufficient_instance_capacity(run)
-            record = GridEngineWorkerRecord(id=run_id, name=run_name, instance_type=instance_type,
-                                            started=run_started, stopped=run_stopped,
-                                            has_insufficient_instance_capacity=has_insufficient_instance_capacity)
-            self._records.append(record)
-            self._records = self._records[-self._capacity:]
-        except KeyboardInterrupt:
-            pass
+            run_status = run.get('status')
+            run_status_reason = run.get('stateReasonMessage')
+            if run_status == 'FAILURE':
+                if run_status_reason == 'Insufficient instance capacity.':
+                    Logger.warn('Detected insufficient instance type %s.' % run.get('instance', {}).get('nodeType'))
+                    self._event_manager.register(InsufficientInstanceEvent(instance_type=instance_type,
+                                                                           date=run_stopped))
+                else:
+                    Logger.warn('Detected failing instance type %s.' % run.get('instance', {}).get('nodeType'))
+                    self._event_manager.register(FailingInstanceEvent(instance_type=instance_type,
+                                                                      date=run_stopped))
+            else:
+                self._event_manager.register(AvailableInstanceEvent(instance_type=instance_type,
+                                                                    date=self._clock.now()))
         except Exception as e:
             Logger.warn('Recording details of additional worker #%s has failed due to %s.' % (run_id, str(e)),
                         crucial=True)
@@ -2117,20 +2114,105 @@ class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
             return None
         return datetime.strptime(run_started, self._datetime_format)
 
-    def _has_insufficient_instance_capacity(self, run):
-        run_status = run.get('status')
-        run_status_reason = run.get('stateReasonMessage')
-        if run_status == 'FAILURE' and run_status_reason == 'Insufficient instance capacity.':
-            Logger.warn('Insufficient instance capacity detected for %s instance type'
-                        % run.get('instance', {}).get('nodeType'))
-            return True
-        return False
+
+class GridEngineEvent(object):
+    pass
+
+
+class InstanceEvent(GridEngineEvent):
+
+    def __init__(self, instance_type, date):
+        self._instance_type = instance_type
+        self._date = date
+
+    @property
+    def instance_type(self):
+        return self._instance_type
+
+    @property
+    def date(self):
+        return self._date
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+
+class InsufficientInstanceEvent(InstanceEvent):
+
+    def __init__(self, instance_type, date):
+        super(InsufficientInstanceEvent, self).__init__(instance_type, date)
+
+
+class FailingInstanceEvent(InstanceEvent):
+
+    def __init__(self, instance_type, date):
+        super(FailingInstanceEvent, self).__init__(instance_type, date)
+
+
+class AvailableInstanceEvent(InstanceEvent):
+
+    def __init__(self, instance_type, date):
+        super(AvailableInstanceEvent, self).__init__(instance_type, date)
+
+
+class GridEngineEventManager:
+
+    def __init__(self, ttl, clock):
+        self._ttl = timedelta(seconds=ttl)
+        self._clock = clock
+        self._events = []
+
+    def register(self, event):
+        self._events.append(event)
 
     def get(self):
-        return list(self._records)
+        now = self._clock.now()
+        for event in list(self._events):
+            if event.date < now - self._ttl:
+                self._events.remove(event)
+                continue
+        return list(self._events)
 
-    def clear(self):
-        self._records = []
+
+class InstanceAvailabilityManager:
+
+    def __init__(self, event_manager, clock, unavail_delay,
+                 unavail_count_insufficient, unavail_count_failure):
+        self._event_manager = event_manager
+        self._clock = clock
+        self._unavailability_delay = timedelta(seconds=unavail_delay)
+        self._unavailability_count_insufficient = unavail_count_insufficient
+        self._unavailability_count_failure = unavail_count_failure
+
+    def get_unavailable(self):
+        instance_type_counts = {}
+        for event in list(self._event_manager.get()):
+            if not isinstance(event, InstanceEvent):
+                continue
+            insufficient_count, failure_count, _ = instance_type_counts.get(event.instance_type) \
+                                                   or (0, 0, None)
+            if isinstance(event, AvailableInstanceEvent):
+                failure_count = 0
+                insufficient_count = 0
+            if isinstance(event, FailingInstanceEvent):
+                failure_count += 1
+            if isinstance(event, InsufficientInstanceEvent):
+                insufficient_count += 1
+            instance_type_counts[event.instance_type] = insufficient_count, failure_count, event
+        now = self._clock.now()
+        for instance_type, (insufficient_count, failure_count, last_event) in instance_type_counts.items():
+            if insufficient_count < self._unavailability_count_insufficient \
+                    and failure_count < self._unavailability_count_failure:
+                continue
+            availability_date = last_event.date + self._unavailability_delay
+            if availability_date < now:
+                continue
+            Logger.warn('Circuit breaking %s instance type because it is unavailable %s more minutes...'
+                        % (instance_type, int(math.ceil((availability_date - now).total_seconds() / 60))))
+            yield instance_type
 
 
 class GridEngineInstanceProvider:
@@ -2152,37 +2234,20 @@ class DescendingInstanceProvider(GridEngineInstanceProvider):
 
 class AvailableInstanceProvider(GridEngineInstanceProvider):
 
-    def __init__(self, inner, worker_recorder, unavailability_delay, clock):
+    def __init__(self, inner, availability_manager):
         self._inner = inner
-        self._worker_recorder = worker_recorder
-        self._unavailability_delay = timedelta(seconds=unavailability_delay)
-        self._clock = clock
+        self._availability_manager = availability_manager
 
     def provide(self):
-        allowed_instances = self._inner.provide()
-        available_instances = list(self._get_available(allowed_instances))
-        if available_instances:
-            return available_instances
-        Logger.warn('There are no available instance types. Trying to use all allowed instance types...')
-        return allowed_instances
+        return list(self._provide())
 
-    def _get_available(self, instances):
+    def _provide(self):
+        instances = self._inner.provide()
+        unavailable_instance_types = list(self._availability_manager.get_unavailable())
         for instance in instances:
-            if self._is_available(instance.name):
-                yield instance
-            else:
-                Logger.warn('Circuit breaking %s instance type because it is unavailable...' % instance.name)
-
-    def _is_available(self, instance_type):
-        now = self._clock.now()
-        unavailability_expiration = now - self._unavailability_delay
-        unavailability = None
-        for record in self._worker_recorder.get():
-            if record.instance_type != instance_type:
+            if instance.name in unavailable_instance_types:
                 continue
-            if record.has_insufficient_instance_capacity:
-                unavailability = record.stopped
-        return not unavailability or unavailability < unavailability_expiration
+            yield instance
 
 
 class SizeLimitingInstanceProvider(GridEngineInstanceProvider):
@@ -2581,7 +2646,9 @@ def get_daemon():
     scale_up_strategy = params.autoscaling.scale_up_strategy.get()
     scale_up_batch_size = params.autoscaling.scale_up_batch_size.get()
     scale_up_polling_delay = params.autoscaling.scale_up_polling_delay.get()
-    scale_up_unavailability_delay = params.autoscaling.scale_up_unavailability_delay.get()
+    scale_up_unavail_delay = params.autoscaling.scale_up_unavail_delay.get()
+    scale_up_unavail_count_insufficient = params.autoscaling_advanced.scale_up_unavail_count_insufficient.get()
+    scale_up_unavail_count_failure = params.autoscaling_advanced.scale_up_unavail_count_failure.get()
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default=30))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout', default=900))
 
@@ -2593,6 +2660,8 @@ def get_daemon():
 
     dry_init = params.autoscaling_advanced.dry_init.get()
     dry_run = params.autoscaling_advanced.dry_run.get()
+
+    event_ttl = params.autoscaling_advanced.event_ttl.get()
 
     queue_static = params.queue.queue_static.get()
     queue_default = params.queue.queue_default.get()
@@ -2626,7 +2695,12 @@ def get_daemon():
 
     reserved_supply = ResourceSupply(cpu=queue_reserved_cpu)
 
-    worker_recorder = CloudPipelineWorkerRecorder(api=api)
+    event_manager = GridEngineEventManager(ttl=event_ttl, clock=clock)
+    worker_recorder = CloudPipelineWorkerRecorder(api=api, event_manager=event_manager, clock=clock)
+    availability_manager = InstanceAvailabilityManager(event_manager=event_manager, clock=clock,
+                                                       unavail_delay=scale_up_unavail_delay,
+                                                       unavail_count_insufficient=scale_up_unavail_count_insufficient,
+                                                       unavail_count_failure=scale_up_unavail_count_failure)
     cloud_instance_provider = CloudPipelineInstanceProvider(pipe=pipe, region_id=instance_region_id,
                                                             price_type=instance_price_type)
     default_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,
@@ -2674,12 +2748,6 @@ def get_daemon():
                                   .format(name=params.autoscaling.hybrid_instance_cores.name,
                                           value=hybrid_instance_cores,
                                           help=params.autoscaling.hybrid_instance_cores.help))
-        if scale_up_unavailability_delay:
-            Logger.info('Using only available instances...')
-            instance_provider = AvailableInstanceProvider(inner=instance_provider,
-                                                          worker_recorder=worker_recorder,
-                                                          unavailability_delay=scale_up_unavailability_delay,
-                                                          clock=clock)
     elif descending_autoscale and descending_instance_family and descending_instance_cores:
         Logger.info('Using descending autoscaling of {} instances...'.format(descending_instance_type))
         instance_provider = FamilyInstanceProvider(inner=cloud_instance_provider,
@@ -2705,16 +2773,15 @@ def get_daemon():
                                   .format(name=params.autoscaling.instance_type.name,
                                           value=instance_type,
                                           help=params.autoscaling.instance_type.help))
-        if scale_up_unavailability_delay:
-            Logger.info('Using only available instances...')
-            instance_provider = AvailableInstanceProvider(inner=instance_provider,
-                                                          worker_recorder=worker_recorder,
-                                                          unavailability_delay=scale_up_unavailability_delay,
-                                                          clock=clock)
         instance_provider = DescendingInstanceProvider(inner=instance_provider)
     else:
         Logger.info('Using default autoscaling of {} instances...'.format(instance_type))
         instance_provider = default_instance_provider
+
+    if scale_up_unavail_delay:
+        Logger.info('Using only available instances...')
+        instance_provider = AvailableInstanceProvider(inner=instance_provider,
+                                                      availability_manager=availability_manager)
 
     if scale_up_strategy == 'cpu-capacity':
         Logger.info('Selecting instances using cpu capacity strategy...')
