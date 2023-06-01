@@ -16,7 +16,7 @@ import logging
 
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import GridEngineJob, GridEngineJobValidator, ResourceSupply, AllocationRule
+from pipeline.hpc.autoscaler import GridEngineJob, GridEngineJobValidator, ResourceSupply, AllocationRule
 
 
 LOCAL_PE = 'local'

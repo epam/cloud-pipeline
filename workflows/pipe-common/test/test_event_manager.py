@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 
 from mock import Mock, MagicMock
 
-from scripts.autoscale_sge import GridEngineEventManager, AvailableInstanceEvent, InsufficientInstanceEvent, \
+from pipeline.hpc.autoscaler import GridEngineEventManager, AvailableInstanceEvent, InsufficientInstanceEvent, \
     FailingInstanceEvent
 
 ttl = timedelta(minutes=30)

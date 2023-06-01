@@ -16,7 +16,7 @@ import logging
 
 from mock import Mock, MagicMock
 
-from scripts.autoscale_sge import GridEngineWorkerValidator, MemoryHostStorage, GridEngineJob
+from pipeline.hpc.autoscaler import GridEngineWorkerValidator, MemoryHostStorage, GridEngineJob
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')

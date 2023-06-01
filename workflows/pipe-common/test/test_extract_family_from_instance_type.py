@@ -14,7 +14,7 @@
 
 import logging
 
-from scripts.autoscale_sge import CloudProvider, extract_family_from_instance_type
+from pipeline.hpc.autoscaler import CloudProvider, extract_family_from_instance_type
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 

@@ -17,7 +17,8 @@ import logging
 from datetime import datetime, timedelta
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import GridEngineAutoscaler, GridEngineJob, GridEngineJobState, Clock, MemoryHostStorage
+from pipeline.hpc.autoscaler import GridEngineAutoscaler, GridEngineJob, GridEngineJobState, Clock, \
+    MemoryHostStorage
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 

@@ -19,7 +19,8 @@ import tempfile
 import pytest
 from pytest import fail
 
-from scripts.autoscale_sge import FileSystemHostStorage, MemoryHostStorage, ThreadSafeHostStorage, CmdExecutor, ScalingError
+from pipeline.hpc.autoscaler import FileSystemHostStorage, MemoryHostStorage, ThreadSafeHostStorage, \
+    CmdExecutor, ScalingError
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 

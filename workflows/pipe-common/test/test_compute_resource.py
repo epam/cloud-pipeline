@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-from scripts.autoscale_sge import ComputeResource
+from pipeline.hpc.autoscaler import ComputeResource
 
 
 def test_add():
