@@ -184,6 +184,13 @@ test_cases = [
       instance_2cpu],
      3 * [IntegralDemand(cpu=2, owner=owner)],
      [InstanceDemand(instance=instance_4cpu, owner=owner),
+      InstanceDemand(instance=instance_4cpu, owner=owner)]],
+
+    ['3x2cpu fractional job using 4cpu and 2cpu instances (largest first)',
+     [instance_4cpu,
+      instance_2cpu],
+     3 * [IntegralDemand(cpu=2, owner=owner)],
+     [InstanceDemand(instance=instance_4cpu, owner=owner),
       InstanceDemand(instance=instance_4cpu, owner=owner)]]
 ]
 

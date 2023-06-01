@@ -33,7 +33,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from pipeline import PipelineAPI, Logger as CloudPipelineLogger
+from pipeline import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
 
 try:
     from queue import Queue, Empty as QueueEmptyError
@@ -261,57 +261,22 @@ class APIError(ServerError):
 
 
 class Logger:
-    task = None
-    cmd = None
-    verbose = None
+
+    inner = None
 
     @staticmethod
-    def init(task=None, log_file=None, verbose=False):
-        if not task or not log_file:
-            raise LoggingError('Arguments \'task\' and \'log_file\' should be specified.')
-        Logger.task = task
-        Logger.verbose = verbose
-
-        make_dirs(os.path.dirname(log_file))
-
-        logging_level = logging.INFO
-        logging_formatter = logging.Formatter('%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
-
-        logging.getLogger().setLevel(logging_level)
-
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(logging_level)
-        console_handler.setFormatter(logging_formatter)
-        logging.getLogger().addHandler(console_handler)
-
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging_level)
-        file_handler.setFormatter(logging_formatter)
-        logging.getLogger().addHandler(file_handler)
+    def info(message, crucial=False):
+        if crucial:
+            Logger.inner.info(message)
+        else:
+            Logger.inner.debug(message)
 
     @staticmethod
-    def info(message, crucial=False, *args, **kwargs):
-        logging.info(message, *args, **kwargs)
-        if not Logger.cmd and (crucial or Logger.verbose):
-            CloudPipelineLogger.info(message, task_name=Logger.task, omit_console=True)
-
-    @staticmethod
-    def warn(message, crucial=False, *args, **kwargs):
-        logging.warning(message, *args, **kwargs)
-        if not Logger.cmd and (crucial or Logger.verbose):
-            CloudPipelineLogger.warn(message, task_name=Logger.task, omit_console=True)
-
-    @staticmethod
-    def success(message, crucial=True, *args, **kwargs):
-        logging.info(message, *args, **kwargs)
-        if not Logger.cmd and (crucial or Logger.verbose):
-            CloudPipelineLogger.success(message, task_name=Logger.task, omit_console=True)
-
-    @staticmethod
-    def fail(message, crucial=True, *args, **kwargs):
-        logging.error(message, *args, **kwargs)
-        if not Logger.cmd and (crucial or Logger.verbose):
-            CloudPipelineLogger.fail(message, task_name=Logger.task, omit_console=True)
+    def warn(message, crucial=False):
+        if crucial:
+            Logger.inner.warning(message)
+        else:
+            Logger.inner.debug(message)
 
 
 class CmdExecutor:
@@ -576,36 +541,18 @@ class GridEngine:
         self._remove_host_from_administrative_hosts(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
-    def get_resource_demands(self, expired_jobs):
-        demands = []
-        available_slots = self._get_available_slots()
-        allocation_rules = {}
-        for job in sorted(expired_jobs, key=lambda job: job.root_id):
-            allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
-                                                         or self.get_pe_allocation_rule(job.pe)
-            if allocation_rule in AllocationRule.fractional_rules():
-                if available_slots >= job.cpu:
-                    available_slots -= job.cpu
-                else:
-                    demands.append(FractionalDemand(cpu=job.cpu - available_slots, owner=job.user))
-                    available_slots = 0
-            else:
-                demands.append(IntegralDemand(cpu=job.cpu, owner=job.user))
-        return demands
-
-    def _get_available_slots(self):
-        available_slots = 0
+    def get_host_supplies(self):
         output = self.cmd_executor.execute(GridEngine._QHOST)
         root = ElementTree.fromstring(output)
         for host in root.findall('host'):
             for queue in host.findall('queue[@name=\'%s\']' % self.queue):
+                host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                if any(host_state in self._BAD_HOST_STATES for host_state in host_states):
+                    continue
+                host_slots = int(queue.find('queuevalue[@name=\'slots\']').text or '0')
                 host_used = int(queue.find('queuevalue[@name=\'slots_used\']').text or '0')
                 host_resv = int(queue.find('queuevalue[@name=\'slots_resv\']').text or '0')
-                host_slots = int(queue.find('queuevalue[@name=\'slots\']').text or '0')
-                host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
-                if all(host_state not in self._BAD_HOST_STATES for host_state in host_states):
-                    available_slots += max(host_slots - host_used - host_resv, 0)
-        return available_slots
+                yield ResourceSupply(cpu=host_slots) - ResourceSupply(cpu=host_used + host_resv)
 
     def get_host_supply(self, host):
         for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host):
@@ -698,6 +645,27 @@ class GridEngine:
         """
         job_ids = [str(job.id) for job in jobs]
         self.cmd_executor.execute((GridEngine._FORCE_KILL_JOBS if force else GridEngine._KILL_JOBS) % ' '.join(job_ids))
+
+
+class GridEngineDemandSelector:
+
+    def __init__(self, grid_engine):
+        self.grid_engine = grid_engine
+
+    def select(self, jobs):
+        remaining_supply = functools.reduce(operator.add, self.grid_engine.get_host_supplies(), ResourceSupply())
+        allocation_rules = {}
+        for job in sorted(jobs, key=lambda job: job.root_id):
+            allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
+                                                         or self.grid_engine.get_pe_allocation_rule(job.pe)
+            if allocation_rule in AllocationRule.fractional_rules():
+                remaining_demand = FractionalDemand(cpu=job.cpu, owner=job.user)
+                remaining_demand, remaining_supply = remaining_demand.subtract(remaining_supply)
+                if not remaining_demand:
+                    remaining_demand += FractionalDemand(cpu=1)
+            else:
+                remaining_demand = IntegralDemand(cpu=job.cpu, owner=job.user)
+            yield remaining_demand
 
 
 class GridEngineJobValidator:
@@ -938,6 +906,9 @@ class GridEngineScaleUpOrchestrator:
     def scale_up(self, resource_demands, max_batch_size):
         instance_demands = list(itertools.islice(self.instance_selector.select(resource_demands),
                                                  min(self.batch_size, max_batch_size)))
+        if not instance_demands:
+            Logger.info('There are no instance demands. Scaling up is aborted.')
+            return
         number_of_threads = len(instance_demands)
         Logger.info('Scaling up %s additional workers...' % number_of_threads)
         threads = []
@@ -1590,7 +1561,7 @@ class GridEngineWorkerTagsHandler:
 
 class GridEngineAutoscaler:
 
-    def __init__(self, grid_engine, job_validator,
+    def __init__(self, grid_engine, job_validator, demand_selector,
                  cmd_executor, scale_up_orchestrator, scale_down_orchestrator, host_storage,
                  static_host_storage, scale_up_timeout, scale_down_timeout, max_additional_hosts, idle_timeout=30,
                  clock=Clock()):
@@ -1605,6 +1576,7 @@ class GridEngineAutoscaler:
 
         :param grid_engine: Grid engine.
         :param job_validator: Job validator.
+        :param demand_selector: Demand selector.
         :param cmd_executor: Cmd executor.
         :param scale_up_orchestrator: Scaling up orchestrator.
         :param scale_down_orchestrator: Scaling down orchestrator.
@@ -1619,6 +1591,7 @@ class GridEngineAutoscaler:
         :param idle_timeout: Maximum number of seconds a host could wait for a new job before getting scaled-down.
         """
         self.grid_engine = grid_engine
+        self.demand_selector = demand_selector
         self.job_validator = job_validator
         self.executor = cmd_executor
         self.scale_up_orchestrator = scale_up_orchestrator
@@ -1659,8 +1632,8 @@ class GridEngineAutoscaler:
                 if len(additional_hosts) < self.max_additional_hosts:
                     Logger.info('There are %s/%s additional workers. Scaling up will be performed.' %
                                 (len(additional_hosts), self.max_additional_hosts))
-                    resource_demands = self.grid_engine.get_resource_demands(waiting_jobs)
-                    resource_demand = functools.reduce(operator.add, resource_demands)
+                    resource_demands = list(self.demand_selector.select(waiting_jobs))
+                    resource_demand = functools.reduce(operator.add, resource_demands, IntegralDemand())
                     Logger.info('Waiting jobs require: '
                                 '{cpu} cpu, {gpu} gpu, {mem} mem.'
                                 .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu, mem=resource_demand.mem))
@@ -1927,10 +1900,11 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
                     best_fulfilled_demands = current_fulfilled_demands
             remaining_demands = best_remaining_demands
             if not best_instance:
-                raise ScalingError('No instances were found which satisfy any of the resource demands.')
+                Logger.info('There are no available instance types.')
+                break
             best_instance_owner = self._resolve_owner(best_fulfilled_demands)
-            logging.info('Selecting %s instance using %s/%s cpu for %s user...'
-                         % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
+            Logger.info('Selecting %s instance using %s/%s cpu for %s user...'
+                        % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
             yield InstanceDemand(best_instance, best_instance_owner)
 
     def _apply(self, demands, supply):
@@ -2439,22 +2413,55 @@ def main():
     effective_master_cpu = master_cpu - reserved_cpu if master_cpu - reserved_cpu > 0 else master_cpu
 
     work_dir = os.getenv(params.autoscaling_advanced.work_dir.name, os.getenv('TMP_DIR', '/tmp'))
-    log_dir = os.getenv(params.autoscaling.log_dir.name, os.getenv('LOG_DIR', '/var/log'))
-    log_task = os.getenv(params.autoscaling_advanced.log_task.name, 'GridEngineAutoscaling-%s' % queue_name_short)
-    log_verbose = os.getenv(params.autoscaling.log_verbose.name, 'false').strip().lower() == 'true'
+    logging_dir = os.getenv(params.autoscaling.log_dir.name, os.getenv('LOG_DIR', '/var/log'))
+    logging_verbose = os.getenv(params.autoscaling.log_verbose.name, 'false').strip().lower() == 'true'
+    logging_level_root = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_ROOT', default='WARNING')
+    logging_level_run = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_RUN', default='DEBUG' if logging_verbose else 'INFO')
+    logging_level_file = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_FILE', default='DEBUG')
+    logging_level_console = os.getenv('CP_CAP_AUTOSCALE_LOGGING_LEVEL_CONSOLE', default='INFO')
+    logging_format = os.getenv('CP_CAP_AUTOSCALE_LOGGING_FORMAT',
+                               default='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
+    logging_task = os.getenv(params.autoscaling_advanced.log_task.name, 'GridEngineAutoscaling-%s' % queue_name_short)
+    logging_file = os.path.join(logging_dir, '.autoscaler.%s.log' % queue_name)
+    logging_dir_pipe = os.path.join(logging_dir, '.autoscaler.%s.pipe.log' % queue_name)
 
-    Logger.init(log_file=os.path.join(log_dir, '.autoscaler.%s.log' % queue_name),
-                task=log_task, verbose=log_verbose)
+    # TODO: Git rid of CloudPipelineAPI usage
+    pipe = PipelineAPI(api_url=pipeline_api, log_dir=logging_dir_pipe)
+    api = CloudPipelineAPI(pipe=pipe)
+
+    make_dirs(os.path.dirname(logging_file))
+    logging_formatter = logging.Formatter(logging_format)
+
+    logging_logger_root = logging.getLogger()
+    logging_logger_root.setLevel(logging_level_root)
+
+    logging_logger = logging.getLogger(name=logging_task)
+    logging_logger.setLevel(logging.DEBUG)
+
+    if not logging_logger.handlers:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging_level_console)
+        console_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(console_handler)
+
+        file_handler = logging.FileHandler(logging_file)
+        file_handler.setLevel(logging_level_file)
+        file_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(file_handler)
+
+    logger = RunLogger(api=pipe, run_id=master_run_id)
+    logger = TaskLogger(task=logging_task, inner=logger)
+    logger = LevelLogger(level=logging_level_run, inner=logger)
+    logger = LocalLogger(logger=logging_logger, inner=logger)
+
+    # todo: Get rid of Logger usage in favor of logger
+    Logger.inner = logger
 
     Logger.info('Initiating grid engine autoscaling...')
 
     if not autoscale_enabled:
         Logger.info('Using non autoscaling mode...')
         autoscaling_hosts_number = 0
-
-    # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
-    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(log_dir, '.autoscaler.%s.pipe.log' % queue_name))
-    api = CloudPipelineAPI(pipe=pipe)
 
     instance_launch_params = fetch_instance_launch_params(api, master_run_id, queue_name, hostlist_name)
 
@@ -2542,6 +2549,7 @@ def main():
     job_validator = GridEngineJobValidator(grid_engine=grid_engine,
                                            instance_max_supply=biggest_instance_supply,
                                            cluster_max_supply=cluster_supply)
+    demand_selector = GridEngineDemandSelector(grid_engine=grid_engine)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
                                          storage_file=os.path.join(work_dir, '.autoscaler.%s.storage' % queue_name),
                                          clock=clock)
@@ -2616,6 +2624,7 @@ def main():
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler,
                                                  common_utils=common_utils)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, job_validator=job_validator,
+                                      demand_selector=demand_selector,
                                       cmd_executor=cmd_executor,
                                       scale_up_orchestrator=scale_up_orchestrator,
                                       scale_down_orchestrator=scale_down_orchestrator,
