@@ -15,11 +15,12 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react/index';
 import {computed} from 'mobx';
 import {Button, Row} from 'antd';
-import PropTypes from 'prop-types';
+import PlatformIcon from './platform-icon';
 import styles from './DockerRegistryGroupsList.css';
 
 const MODES = {
@@ -181,9 +182,16 @@ export default class DockerRegistryGroupsList extends React.Component {
             <Row key={os} type="flex">
               <Button
                 id={`os-${os}-button`}
-                className={styles.button}
+                className={classNames(
+                  styles.button,
+                  styles.os
+                )}
                 onClick={() => this.onSelectFilter(`${FILTER_TYPES.os}_${os}`)}
               >
+                <PlatformIcon
+                  platform={os}
+                  style={{marginRight: '5px'}}
+                />
                 <b>{(os || '').toLowerCase()}</b>
               </Button>
             </Row>
