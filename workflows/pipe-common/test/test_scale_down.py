@@ -27,6 +27,7 @@ ADDITIONAL_HOST = 'pipeline-1001'
 cmd_executor = Mock()
 grid_engine = Mock()
 grid_engine_validator = Mock()
+demand_selector = Mock()
 host_storage = MemoryHostStorage()
 static_storage = MemoryHostStorage()
 submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
@@ -37,6 +38,7 @@ max_additional_hosts = 2
 clock = Clock()
 autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
                                   job_validator=grid_engine_validator,
+                                  demand_selector=demand_selector,
                                   cmd_executor=cmd_executor,
                                   scale_up_orchestrator=None,
                                   scale_down_orchestrator=None,
