@@ -201,6 +201,11 @@ export default class ToolsNew extends React.Component {
         tools = this.groups
           .filter(group => isPersonalGroup(group))
           .reduce((acc, group) => [...acc, ...group.tools], []);
+      } else if (this.filter.filterBy === FILTER_TYPES.myTools) {
+        return this.groups.filter(g => g.privateGroup)[0] || {
+          id: 'personal',
+          tools: []
+        };
       } else {
         tools = this.allTools
           .filter(tool => {
@@ -232,10 +237,10 @@ export default class ToolsNew extends React.Component {
   @computed
   get tools () {
     if (this.currentGroup) {
-      const checkIssues = (tool) => {
+      const checkIssues = (tool = {}) => {
         const currentTool = tool;
         if (this._toolsWithIssues && this._toolsWithIssues.loaded) {
-          const toolWithIssues = this._toolsWithIssues.value.toolsWithIssues
+          const toolWithIssues = (this._toolsWithIssues.value.toolsWithIssues || [])
             .filter(t => t.id === currentTool.id)[0];
           if (toolWithIssues && toolWithIssues.hasOwnProperty('issuesCount')) {
             currentTool.issuesCount = toolWithIssues.issuesCount;

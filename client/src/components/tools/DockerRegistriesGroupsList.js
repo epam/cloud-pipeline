@@ -17,9 +17,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import {
+  Button,
+  Row,
+  Icon
+} from 'antd';
 import {observer} from 'mobx-react/index';
 import {computed} from 'mobx';
-import {Button, Row} from 'antd';
 import PlatformIcon from './platform-icon';
 import styles from './DockerRegistryGroupsList.css';
 
@@ -141,27 +145,45 @@ export default class DockerRegistryGroupsList extends React.Component {
     this.onSelectGroup(encodeURIComponent(filter));
   };
 
-  renderFilterCard = ({name, comment}) => {
+  renderFilterCard = (groupKey, isFilterGroup = false) => {
+    const {name, comment} = GROUP_NAMES[groupKey] || {};
+    const {currentGroup} = this.props;
+    if (!name) {
+      return null;
+    }
+    const isActive = isFilterGroup
+      ? false
+      : groupKey === this.props.currentGroup.name ||
+      (currentGroup.privateGroup && groupKey === FILTER_TYPES.myTools);
     return (
-      <div className={styles.groupCard}>
-        <span className={styles.heading}>
-          {name}
-        </span>
-        {comment ? (
-          <span
-            className={classNames(
-              styles.comment,
-              'cp-text-not-important'
-            )}
-          >
-            {comment}
+      <div className={styles.cardContainer}>
+        <div className={styles.card}>
+          <span className={styles.heading}>
+            {name}
           </span>
+          {comment ? (
+            <span
+              className={classNames(
+                styles.comment,
+                'cp-text-not-important'
+              )}
+            >
+              {comment}
+            </span>
+          ) : null}
+        </div>
+        {isActive ? (
+          <Icon
+            className={styles.activeGroupIcon}
+            type="check"
+          />
         ) : null}
       </div>
     );
   }
 
   renderOSSelectorGroup = () => {
+    const {currentGroup, filter = {}} = this.props;
     return (
       <div className={styles.section}>
         <span
@@ -170,14 +192,9 @@ export default class DockerRegistryGroupsList extends React.Component {
             'cp-text-not-important'
           )}
         >
-          {this.renderFilterCard(GROUP_NAMES[FILTER_TYPES.os])}
+          {this.renderFilterCard(FILTER_TYPES.os, true)}
         </span>
         {this.toolsInfo.os
-          .filter(os => {
-            return this.filter.filterBy === FILTER_TYPES.os
-              ? os !== this.filter.value
-              : true;
-          })
           .map(os => (
             <Row key={os} type="flex">
               <Button
@@ -191,8 +208,18 @@ export default class DockerRegistryGroupsList extends React.Component {
                 <PlatformIcon
                   platform={os}
                   style={{marginRight: '5px'}}
+                  renderPlaceholder={() => (
+                    <div style={{width: '21px'}} />
+                  )}
                 />
                 <b>{(os || '').toLowerCase()}</b>
+                {currentGroup.name === FILTER_TYPES.os && os === filter.value
+                  ? (
+                    <Icon
+                      className={styles.activeGroupIcon}
+                      type="check"
+                    />
+                  ) : null}
               </Button>
             </Row>
           ))}
@@ -226,14 +253,14 @@ export default class DockerRegistryGroupsList extends React.Component {
       }
       return (
         <div className={styles.section}>
-          <span
+          <b
             className={classNames(
               styles.heading,
               'cp-text-not-important'
             )}
           >
             Search results:
-          </span>
+          </b>
           {filteredGroups}
         </div>
       );
@@ -252,50 +279,42 @@ export default class DockerRegistryGroupsList extends React.Component {
     }
     return (
       <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
-        {this.filter.filterBy !== FILTER_TYPES.personal ? (
-          <Row key="personal" type="flex">
-            <Button
-              id={`group-personal-button`}
-              className={styles.button}
-              onClick={() => this.onSelectGroup(FILTER_TYPES.personal)}
-            >
-              {this.renderFilterCard(GROUP_NAMES[FILTER_TYPES.personal])}
-            </Button>
-          </Row>
-        ) : null}
-        {this.personalGroup && this.filter.filterBy !== FILTER_TYPES.myTools ? (
-          <Row key="my-tools" type="flex">
-            <Button
-              id={`group-top-used-button`}
-              className={styles.button}
-              onClick={() => this.onSelectFilter(this.personalGroup.id)}
-            >
-              {this.renderFilterCard(GROUP_NAMES[FILTER_TYPES.myTools])}
-            </Button>
-          </Row>
-        ) : null}
-        {this.filter.filterBy !== FILTER_TYPES.top ? (
-          <Row key="top-used" type="flex">
-            <Button
-              id={`group-top-used-button`}
-              className={styles.button}
-              onClick={() => this.onSelectFilter(FILTER_TYPES.top)}
-            >
-              {this.renderFilterCard(GROUP_NAMES[FILTER_TYPES.top])}
-            </Button>
-          </Row>
-        ) : null}
-        {this.filter.filterBy !== FILTER_TYPES.gpu ? (
-          <Row key="gpu-enabled" type="flex">
-            <Button
-              id={`group-top-used-button`}
-              className={styles.button}
-              onClick={() => this.onSelectFilter(FILTER_TYPES.gpu)}
-            >
-              {this.renderFilterCard(GROUP_NAMES[FILTER_TYPES.gpu])}
-            </Button>
-          </Row>
-        ) : null}
+        <Row key="personal" type="flex">
+          <Button
+            id={`group-personal-button`}
+            className={styles.button}
+            onClick={() => this.onSelectGroup(FILTER_TYPES.personal)}
+          >
+            {this.renderFilterCard(FILTER_TYPES.personal)}
+          </Button>
+        </Row>
+        <Row key="my-tools" type="flex">
+          <Button
+            id={`group-top-used-button`}
+            className={styles.button}
+            onClick={() => this.onSelectFilter(FILTER_TYPES.myTools)}
+          >
+            {this.renderFilterCard(FILTER_TYPES.myTools)}
+          </Button>
+        </Row>
+        <Row key="top-used" type="flex">
+          <Button
+            id={`group-top-used-button`}
+            className={styles.button}
+            onClick={() => this.onSelectFilter(FILTER_TYPES.top)}
+          >
+            {this.renderFilterCard(FILTER_TYPES.top)}
+          </Button>
+        </Row>
+        <Row key="gpu-enabled" type="flex">
+          <Button
+            id={`group-top-used-button`}
+            className={styles.button}
+            onClick={() => this.onSelectFilter(FILTER_TYPES.gpu)}
+          >
+            {this.renderFilterCard(FILTER_TYPES.gpu)}
+          </Button>
+        </Row>
         {this.renderOSSelectorGroup()}
         {this.renderGroupsSelector()}
       </div>

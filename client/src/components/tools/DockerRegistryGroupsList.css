@@ -37,15 +37,26 @@
   height: 24px;
 }
 
-.group-card {
+.card-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.card {
   display: flex;
   flex-direction: column;
 }
 
-.group-card .heading {
+.card .heading {
   font-weight: bold;
 }
 
-.group-card .comment {
+.card .comment {
   font-size: smaller;
+}
+
+.active-group-icon {
+  font-size: larger;
+  margin-left: 10px;
 }

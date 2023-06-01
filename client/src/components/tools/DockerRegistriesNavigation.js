@@ -58,7 +58,11 @@ export default class DockerRegistriesNavigation extends React.Component {
           trigger={['click']}
           overlayClassName="registry-dropdown-container"
           overlay={
-            <div id="registries-dropdown" className={styles.navigationDropdownContainer} style={{overflowY: 'auto'}}>
+            <div
+              id="registries-dropdown"
+              className={styles.navigationDropdownContainer}
+              style={{overflowY: 'auto'}}
+            >
               {
                 registries.map(registry => {
                   return (
