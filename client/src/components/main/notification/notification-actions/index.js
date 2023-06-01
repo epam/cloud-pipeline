@@ -91,8 +91,7 @@ class NotificationActions extends React.Component {
       ACTIONS.openDatastorage
     ],
     [NOTIFICATION_TYPES.DATASTORAGE_LIFECYCLE_ACTION]: [
-      ACTIONS.openDatastorage,
-      ACTIONS.postponeLifecycleRule
+      ACTIONS.openDatastorage
     ],
     [NOTIFICATION_TYPES.FULL_NODE_POOL]: [
       ACTIONS.openPoolsUsage
