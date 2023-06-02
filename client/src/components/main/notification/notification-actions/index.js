@@ -25,8 +25,9 @@ import {
   message
 } from 'antd';
 import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
-import styles from './notification-actions.css';
+import BillingQuota from '../../../../models/billing/quotas/get-quota';
 import {ACTIONS, ENTITY_CLASSES, NOTIFICATION_TYPES} from './actions';
+import styles from './notification-actions.css';
 
 @inject('preferences')
 @observer
@@ -136,6 +137,9 @@ class NotificationActions extends React.Component {
       switch (entityClass) {
         case ENTITY_CLASSES.RUN:
           this.entityInfoRequest = new PipelineRunInfo(entityId);
+          break;
+        case ENTITY_CLASSES.QUOTA:
+          this.entityInfoRequest = new BillingQuota(entityId);
           break;
       }
       if (!this.entityInfoRequest) {

@@ -25,6 +25,40 @@ from '../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesPos
 import {canPauseRun, canStopRun} from '../../../runs/actions';
 import RunStatuses from '../../../special/run-status-icon/run-statuses';
 
+function parseQuotaForNavigation (quota) {
+  if (!quota || !quota.type) {
+    return '';
+  }
+  const types = {
+    OVERALL: 'OVERALL',
+    BILLING_CENTER: 'BILLING_CENTER',
+    USER: 'USER'
+  };
+  let user;
+  let group;
+  let period;
+  switch (quota.type) {
+    case types.OVERALL:
+      period = (quota.period || '').toLowerCase();
+      break;
+    case types.BILLING_CENTER:
+      period = (quota.period || '').toLowerCase();
+      group = quota.subject;
+      break;
+    case types.USER:
+      period = (quota.period || '').toLowerCase();
+      user = quota.subject;
+      break;
+  }
+  const parts = [
+    user && `user=${encodeURIComponent(user)}`,
+    group && !user && `group=${encodeURIComponent(group)}`,
+    period && `period=${encodeURIComponent(period)}`
+  ].filter(Boolean);
+  const query = parts.length > 0 ? `?${parts.join('&')}` : '';
+  return query;
+}
+
 const ACTIONS = {
   viewNodeMonitor: {
     key: 'View node monitor',
@@ -141,8 +175,9 @@ const ACTIONS = {
   },
   viewBilling: {
     key: 'View billing',
-    actionFn: ({router}) => {
-      router && router.push('/billing/reports/storage');
+    actionFn: ({entity, router}) => {
+      const query = parseQuotaForNavigation(entity);
+      router && router.push(`/billing/reports${query}`);
     },
     available: () => true
   },
