@@ -121,6 +121,8 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
             assertFalse(storageAllowSignedUrlsState[0],
                     storageAllowSignedUrls + "has 'Enable' value");
         } else {
+            logoutIfNeeded();
+            loginAs(admin);
             navigationMenu()
                     .settings()
                     .switchToPreferences()
@@ -138,6 +140,8 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
     @Test
     @TestCase(value = {"2354_1"})
     public void checkDisableMountingStorageForToolAndLaunchForm() {
+        logoutIfNeeded();
+        loginAs(admin);
         library()
                 .clickOnCreateStorageButton()
                 .clickEnableVersioningCheckbox()
@@ -168,6 +172,7 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
     @TestCase(value = {"2354_2"})
     public void checkDisableMountingStorageForPipelineAndDetachedConfiguration() {
         try {
+            logoutIfNeeded();
             loginAs(admin);
             library()
                     .selectStorage(storageMount2)
