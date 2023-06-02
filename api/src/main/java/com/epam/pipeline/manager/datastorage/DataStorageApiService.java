@@ -268,7 +268,7 @@ public class DataStorageApiService {
         return dataStorageManager.updateDataStorageObjectTags(id, path, tags, version, rewrite);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public Map<String, String> loadDataStorageObjectTagsOwner(Long id, String path, String version) {
         return dataStorageManager.loadDataStorageObjectTags(id, path, version);
     }
@@ -278,7 +278,7 @@ public class DataStorageApiService {
         return dataStorageManager.loadDataStorageObjectTags(id, path, version);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public Map<String, String> deleteDataStorageObjectTags(Long id, String path, Set<String> tags, String version) {
         return dataStorageManager.deleteDataStorageObjectTags(id, path, tags, version);
     }
