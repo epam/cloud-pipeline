@@ -644,11 +644,15 @@ class DataStorageOperations(object):
         except Exception as e:
             err_msg = str(e)
             if isinstance(e, ClientError) \
-                    and err_msg and 'InvalidObjectState' in err_msg and 'storage class' in err_msg:
-                if not quiet:
+                    and err_msg and 'InvalidObjectState' in err_msg:
+                if 'storage class' in err_msg and not quiet:
                     click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
                                .format(full_path))
-                return transfer_results, fail_after_exception
+                    return transfer_results, fail_after_exception
+                if 'access tier' in err_msg and not quiet:
+                    click.echo(u'File {} transferring has failed. Contact storage owner to restore file.'
+                               .format(full_path))
+                    return transfer_results, fail_after_exception
             if on_failures == AllowedFailuresValues.FAIL:
                 err_msg = u'File transferring has failed {}. Exiting...'.format(full_path)
                 logging.warn(err_msg)
