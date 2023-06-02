@@ -195,7 +195,7 @@ public class LaunchLimitMountsTest
                 .ensureNotVisible(PARAMETERS)
                 .waitForSshLink()
                 .waitForTask(mountDataStoragesTask)
-                .clickMountBuckets()
+                .clickTaskWithName(mountDataStoragesTask)
                 .logMessages()
                 .collect(toSet());
 

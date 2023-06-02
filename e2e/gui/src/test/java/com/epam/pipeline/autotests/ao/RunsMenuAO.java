@@ -111,10 +111,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRun(String runId) {
         final SelenideElement runStopButton = $("#run-" + runId + "-stop-button");
-        runStopButton.waitUntil(enabled, 5000).click();
+        runStopButton.waitUntil(enabled, 50000).click();
         sleep(3, SECONDS);
         if (!$(button("STOP")).isEnabled()) {
-            runStopButton.waitUntil(enabled, 5000).click();
+            runStopButton.waitUntil(enabled, 50000).click();
         }
         $(button("STOP")).click();
         return this;

@@ -244,7 +244,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .setAutoscaledParameter("Scale Step", 1)
                 .selectValue(INSTANCE_TYPE, defaultInstance)
                 .selectValue(CLOUD_REGION, defaultRegion[0])
-                .setValue(DISK, "40")
+                .setValue(DISK, "100")
                 .addDockerImage(registry, group, tool)
                 .selectValue(CONDITION,"Matches all filters (\"and\")")
                 .addFilter("Run owner")
