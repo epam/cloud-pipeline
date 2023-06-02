@@ -16,7 +16,9 @@ import logging
 
 from mock import MagicMock, Mock
 
-from pipeline.hpc.autoscaler import GridEngineScaleUpHandler, MemoryHostStorage, Instance
+from pipeline.hpc.autoscaler import GridEngineScaleUpHandler
+from pipeline.hpc.host import MemoryHostStorage
+from pipeline.hpc.instance import Instance
 from utils import assert_first_argument_contained
 
 try:

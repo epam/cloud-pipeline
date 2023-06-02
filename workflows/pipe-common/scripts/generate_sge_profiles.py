@@ -18,7 +18,7 @@ import os
 import sys
 
 from pipeline.api import PipelineAPI
-from pipeline.hpc.autoscaler import GridEngineParameters
+from pipeline.hpc.param import GridEngineParameters
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
 from pipeline.utils.profile import suffix_non_unique, build_environment_profiles
 

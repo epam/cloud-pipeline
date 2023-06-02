@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-from pipeline.hpc.autoscaler import ComputeResource
+from pipeline.hpc.resource import ComputeResource
 
 
 def test_add():

@@ -17,8 +17,8 @@ import logging
 import pytest
 from mock import MagicMock, Mock
 
-from pipeline.hpc.autoscaler import GridEngineDemandSelector, GridEngineJob, IntegralDemand, FractionalDemand, \
-    ResourceSupply, AllocationRule
+from pipeline.hpc.gridengine import GridEngineDemandSelector, GridEngineJob, AllocationRule
+from pipeline.hpc.resource import IntegralDemand, FractionalDemand, ResourceSupply
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 

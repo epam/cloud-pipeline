@@ -17,8 +17,9 @@ import logging
 from datetime import datetime, timedelta
 from mock import MagicMock, Mock
 
-from pipeline.hpc.autoscaler import Instance, InstanceAvailabilityManager, \
-    AvailableInstanceEvent, InsufficientInstanceEvent, FailingInstanceEvent
+from pipeline.hpc.instance import Instance
+from pipeline.hpc.avail import InstanceAvailabilityManager
+from pipeline.hpc.event import AvailableInstanceEvent, InsufficientInstanceEvent, FailingInstanceEvent
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 

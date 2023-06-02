@@ -17,8 +17,8 @@ from datetime import datetime
 
 from mock import MagicMock, Mock
 
-from pipeline.hpc.autoscaler import CloudPipelineWorkerRecorder, AvailableInstanceEvent, \
-    InsufficientInstanceEvent, FailingInstanceEvent
+from pipeline.hpc.event import AvailableInstanceEvent, InsufficientInstanceEvent, FailingInstanceEvent
+from pipeline.hpc.pipe import CloudPipelineWorkerRecorder
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 

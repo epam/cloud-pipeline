@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import logging
-
 from datetime import datetime
+
 from mock import MagicMock, Mock
 
-from pipeline.hpc.autoscaler import GridEngineScaleDownHandler, GridEngineJob, GridEngineJobState, \
-    ComputeResource
+from pipeline.hpc.autoscaler import GridEngineScaleDownHandler
+from pipeline.hpc.gridengine import GridEngineJob, GridEngineJobState
+from pipeline.hpc.resource import ComputeResource
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')

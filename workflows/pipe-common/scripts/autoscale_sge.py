@@ -21,25 +21,29 @@ from datetime import timedelta
 
 import sys
 
-from pipeline.hpc.autoscaler import CloudPipelineAPI, \
-    CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
-    GridEngineWorkerValidator, GridEngineWorkerTagsHandler
-from pipeline.hpc.autoscaler import CloudProvider, ResourceSupply
-from pipeline.hpc.autoscaler import CpuCapacityInstanceSelector, \
+from pipeline.hpc.autoscaler import \
+    GridEngineAutoscalingDaemon, GridEngineAutoscaler, \
+    GridEngineScaleUpOrchestrator, GridEngineScaleUpHandler, \
+    GridEngineScaleDownOrchestrator, GridEngineScaleDownHandler, \
+    DoNothingAutoscalingDaemon, DoNothingScaleUpHandler, DoNothingScaleDownHandler
+from pipeline.hpc.avail import InstanceAvailabilityManager
+from pipeline.hpc.cloud import CloudProvider
+from pipeline.hpc.event import GridEngineEventManager
+from pipeline.hpc.exec import CmdExecutor
+from pipeline.hpc.gridengine import GridEngine, GridEngineDemandSelector, GridEngineJobValidator
+from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
+from pipeline.hpc.instance import CpuCapacityInstanceSelector, \
     NaiveCpuCapacityInstanceSelector, BackwardCompatibleInstanceSelector
-from pipeline.hpc.autoscaler import DefaultInstanceProvider, \
+from pipeline.hpc.instance import DefaultInstanceProvider, \
     FamilyInstanceProvider, DescendingInstanceProvider, \
     SizeLimitingInstanceProvider, AvailableInstanceProvider
-from pipeline.hpc.autoscaler import FileSystemHostStorage, ThreadSafeHostStorage
-from pipeline.hpc.autoscaler import GridEngine, GridEngineDemandSelector, GridEngineJobValidator
-from pipeline.hpc.autoscaler import GridEngineAutoscaler, \
-    GridEngineScaleUpHandler, DoNothingScaleUpHandler, GridEngineScaleUpOrchestrator, \
-    GridEngineScaleDownHandler, DoNothingScaleDownHandler, GridEngineScaleDownOrchestrator, \
-    GridEngineAutoscalingDaemon, DoNothingAutoscalingDaemon
-from pipeline.hpc.autoscaler import GridEngineEventManager, InstanceAvailabilityManager
-from pipeline.hpc.autoscaler import GridEngineParameters, ValidationError
-from pipeline.hpc.autoscaler import Logger, Clock, CmdExecutor
-from pipeline.hpc.autoscaler import ScaleCommonUtils, extract_family_from_instance_type
+from pipeline.hpc.logger import Logger
+from pipeline.hpc.param import GridEngineParameters, ValidationError
+from pipeline.hpc.pipe import CloudPipelineAPI, \
+    CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
+    CloudPipelineWorkerValidator, CloudPipelineWorkerTagsHandler
+from pipeline.hpc.resource import ResourceSupply
+from pipeline.hpc.utils import Clock, ScaleCommonUtils
 from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
 from pipeline.utils.path import mkdir
 
@@ -166,6 +170,8 @@ def get_daemon():
     # todo: Get rid of Logger usage in favor of logger
     Logger.inner = logger
 
+    common_utils = ScaleCommonUtils()
+
     static_instance_cpus = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
     static_instance_number = int(os.getenv('node_count', 0))
     static_instance_type = params.autoscaling_advanced.static_instance_type.get()
@@ -187,7 +193,7 @@ def get_daemon():
     hybrid_autoscale = params.autoscaling.hybrid_autoscale.get()
     hybrid_instance_cores = params.autoscaling.hybrid_instance_cores.get()
     hybrid_instance_family = params.autoscaling.hybrid_instance_family.get() \
-                             or extract_family_from_instance_type(instance_cloud_provider, instance_type)
+                             or common_utils.extract_family_from_instance_type(instance_cloud_provider, instance_type)
 
     scale_up_strategy = params.autoscaling.scale_up_strategy.get()
     scale_up_batch_size = params.autoscaling.scale_up_batch_size.get()
@@ -237,7 +243,6 @@ def get_daemon():
 
     clock = Clock()
     cmd_executor = CmdExecutor()
-    common_utils = ScaleCommonUtils()
 
     reserved_supply = ResourceSupply(cpu=queue_reserved_cpu)
 
@@ -265,14 +270,15 @@ def get_daemon():
     descending_instance = descending_instances.pop()
     descending_instance_cores = descending_instance.cpu if descending_instance else 0
     descending_instance_type = descending_instance.name if descending_instance else ''
-    descending_instance_family = extract_family_from_instance_type(instance_cloud_provider,
-                                                                   descending_instance_type)
+    descending_instance_family = common_utils.extract_family_from_instance_type(instance_cloud_provider,
+                                                                                descending_instance_type)
 
     if hybrid_autoscale and hybrid_instance_family:
         Logger.info('Using hybrid autoscaling of {} instances...'.format(hybrid_instance_family))
         instance_provider = FamilyInstanceProvider(inner=cloud_instance_provider,
                                                    instance_cloud_provider=instance_cloud_provider,
-                                                   instance_family=hybrid_instance_family)
+                                                   instance_family=hybrid_instance_family,
+                                                   common_utils=common_utils)
         if not instance_provider.provide():
             raise ValidationError('Parameter {name} has invalid value {value}. '
                                   'Such instance type family is not available. '
@@ -298,7 +304,8 @@ def get_daemon():
         Logger.info('Using descending autoscaling of {} instances...'.format(descending_instance_type))
         instance_provider = FamilyInstanceProvider(inner=cloud_instance_provider,
                                                    instance_cloud_provider=instance_cloud_provider,
-                                                   instance_family=descending_instance_family)
+                                                   instance_family=descending_instance_family,
+                                                   common_utils=common_utils)
         if not instance_provider.provide():
             raise ValidationError('Parameter {name} has invalid value {value}. '
                                   'Such instance type\'s family is not available. '
@@ -403,10 +410,10 @@ def get_daemon():
                                   .format(instance.name, instance.cpu, instance.gpu, instance.mem)
                                   for instance in available_instances)))
 
-    worker_tags_handler = GridEngineWorkerTagsHandler(api=api, active_timeout=active_timeout,
-                                                      host_storage=host_storage,
-                                                      static_host_storage=static_host_storage, clock=clock,
-                                                      common_utils=common_utils, dry_run=dry_run)
+    worker_tags_handler = CloudPipelineWorkerTagsHandler(api=api, active_timeout=active_timeout,
+                                                         host_storage=host_storage,
+                                                         static_host_storage=static_host_storage, clock=clock,
+                                                         common_utils=common_utils, dry_run=dry_run)
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                                 host_storage=host_storage,
                                                 parent_run_id=cluster_master_run_id,
@@ -439,9 +446,9 @@ def get_daemon():
                                                               grid_engine=grid_engine,
                                                               host_storage=host_storage,
                                                               batch_size=scale_down_batch_size)
-    worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
-                                                 grid_engine=grid_engine, scale_down_handler=scale_down_handler,
-                                                 common_utils=common_utils, dry_run=dry_run)
+    worker_validator = CloudPipelineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
+                                                    grid_engine=grid_engine, scale_down_handler=scale_down_handler,
+                                                    common_utils=common_utils, dry_run=dry_run)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, job_validator=job_validator,
                                       demand_selector=demand_selector,
                                       cmd_executor=cmd_executor,

@@ -16,8 +16,8 @@ from datetime import datetime, timedelta
 
 from mock import Mock, MagicMock
 
-from pipeline.hpc.autoscaler import GridEngineEventManager, AvailableInstanceEvent, InsufficientInstanceEvent, \
-    FailingInstanceEvent
+from pipeline.hpc.event import GridEngineEventManager, \
+    AvailableInstanceEvent, InsufficientInstanceEvent, FailingInstanceEvent
 
 ttl = timedelta(minutes=30)
 instance_type = 'm5.large'
