@@ -23,13 +23,13 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">2</div>
+<div class="counter">3</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">27m30.17s</div>
+<div class="counter">31m10.30s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">66%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,68 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="removeNodes"></a>
+<h3 class="failures">removeNodes</h3>
+<span class="code">
+<pre>Element not found {visible(By.xpath: .//button[normalize-space(.) = 'OK'])}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1685816084182.87.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1685816084182.87.html
+Timeout: 210 s.
+Caused by: Element not found {visible(By.xpath: .//button[normalize-space(.) = 'OK']).findBy(visible)}
+Expected: visible
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:51)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.impl.WebElementSource.findAndAssertElementIsVisible(WebElementSource.java:72)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.ao.ClusterMenuAO.removeNode(ClusterMenuAO.java:178)
+	at com.epam.pipeline.autotests.ao.ClusterMenuAO.removeNodeIfPresent(ClusterMenuAO.java:187)
+	at com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest.lambda$removeNodes$0(AbstractSeveralPipelineRunningTest.java:54)
+	at java.util.ArrayList.forEach(ArrayList.java:1259)
+	at com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest.removeNodes(AbstractSeveralPipelineRunningTest.java:51)
+	at sun.reflect.GeneratedMethodAccessor34.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
+	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
+	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: Element not found {visible(By.xpath: .//button[normalize-space(.) = 'OK']).findBy(visible)}
+Expected: visible
+Screenshot: null
+Timeout: 0 ms.
+	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 24 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,26 +134,31 @@
 </thead>
 <tr>
 <td class="success">checkCustomNodeImageForThePipelineRun - 1517_1</td>
-<td>14m19.27s</td>
+<td>14m10.89s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkNodeReuseAfterTheCustomNodeImageRun - 1517_2</td>
-<td>13m10.90s</td>
+<td>13m12.76s</td>
 <td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">removeNodes</td>
+<td>3m46.65s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 44721 from [44721]
-Returns latest run with runId 44722 from [44721, 44722]
-Returns latest run with runId 44722 from [44721, 44722]
-Returns latest run with runId 44722 from [44721, 44722]
-Returns latest run with runId 44723 from [44721, 44722, 44723]
-Returns latest run with runId 44723 from [44721, 44722, 44723]
-Returns latest run with runId 44723 from [44721, 44722, 44723]
+<pre>Returns latest run with runId 45050 from [45050]
+Returns latest run with runId 45051 from [45050, 45051]
+Returns latest run with runId 45051 from [45050, 45051]
+Returns latest run with runId 45051 from [45050, 45051]
+Returns latest run with runId 45052 from [45050, 45051, 45052]
+Returns latest run with runId 45052 from [45050, 45051, 45052]
+Returns latest run with runId 45052 from [45050, 45051, 45052]
 </pre>
 </span>
 </div>
@@ -110,7 +170,7 @@ Returns latest run with runId 44723 from [44721, 44722, 44723]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 29, 2023 2:19:31 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jun 3, 2023 10:47:32 PM</p>
 </div>
 </div>
 </body>

@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">41m14.76s</div>
+<div class="counter">35m23.80s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">85%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,61 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="forcibleTerminateInstancesIfJobIsStuckInUmount - 2736"></a>
+<h3 class="failures">forcibleTerminateInstancesIfJobIsStuckInUmount - 2736</h3>
+<span class="code">
+<pre>Element should contains messages {By.className: cp-console-output}
+Element: '&lt;div class=&quot;cp-console-output un-task-logs__console&quot;&gt;001:
+[2023-06-03 20:05:14]
+Will wait for 3min to let the run stop normally. Otherwise it will be terminated.
+002:
+[2023-06-03 20:08:17]
+Run #45063 is still running after 3min. Terminating a node.&lt;/div&gt;'
+Actual value: Following messages wasn't found in log:
+Run #45063 is still running after 3min. Terminating a node.
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1685823120698.89.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1685823120698.89.html
+Timeout: 210 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:191)
+	at com.epam.pipeline.autotests.LaunchParametersTest.forcibleTerminateInstancesIfJobIsStuckInUmount(LaunchParametersTest.java:390)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,49 +127,49 @@
 </thead>
 <tr>
 <td class="success">checkAllowedSystemParametersForPipelineAndDetachConfiguration - 2342_4</td>
-<td>46.274s</td>
+<td>45.193s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkAllowedSystemParametersForToolAndLaunchForm - 2342_3</td>
-<td>51.668s</td>
+<td>54.153s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkChangesSystemParameters - 2342_5</td>
-<td>2m30.89s</td>
+<td>2m33.85s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkRestrictedSystemParametersViaCLI - 2342_6</td>
-<td>9m51.70s</td>
+<td>8m27.42s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkSystemParametersForPipelineAndDetachConfiguration - 2342_2</td>
-<td>44.837s</td>
+<td>47.630s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkSystemParametersForToolAndLaunchForm - 2342_1</td>
-<td>51.925s</td>
+<td>51.402s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">forcibleTerminateInstancesIfJobIsStuckInUmount - 2736</td>
-<td>25m37.46s</td>
-<td class="success">passed</td>
+<td class="failures">forcibleTerminateInstancesIfJobIsStuckInUmount - 2736</td>
+<td>21m4.15s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 44733 from [44733]
-Returns latest run with runId 44734 from [44733, 44734]
-Returns latest run with runId 44734 from [44733, 44734]
-Returns latest run with runId 44735 from [44733, 44734, 44735]
-Returns latest run with runId 44735 from [44733, 44734, 44735]
+<pre>Returns latest run with runId 45062 from [45062]
+Returns latest run with runId 45063 from [45062, 45063]
+Returns latest run with runId 45063 from [45062, 45063]
+Returns latest run with runId 45064 from [45062, 45063, 45064]
+Returns latest run with runId 45064 from [45062, 45063, 45064]
 </pre>
 </span>
 </div>
@@ -133,7 +181,7 @@ Returns latest run with runId 44735 from [44733, 44734, 44735]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 29, 2023 2:19:31 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jun 3, 2023 10:47:32 PM</p>
 </div>
 </div>
 </body>
