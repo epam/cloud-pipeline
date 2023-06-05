@@ -31,14 +31,14 @@ class StorageLifecycleRestoreNotification:
         recipients = None
         notify_users = False
         if obj_dict["enabled"]:
-            if "recipients" not in obj_dict or len(obj_dict["recipients"]) < 1:
+            recipients = obj_dict.get('recipients', []) or []
+            notify_users = obj_dict.get('notifyUsers', False)
+            if len(recipients) < 1 or not notify_users:
                 raise RuntimeError("Lifecycle restore notification object with 'enabled' = true, "
-                                   "should have 'recipients' list in place!")
-            for recipient in obj_dict["recipients"]:
+                                   "should have 'recipients' list or users notifications shall be enabled!")
+            for recipient in recipients:
                 if "name" not in recipient or "principal" not in recipient:
                     raise RuntimeError("Wrong format of 'recipient' object, should have 'name' and 'principal'")
-            recipients = obj_dict["recipients"]
-            notify_users = obj_dict.get('notifyUsers', False)
         return StorageLifecycleRestoreNotification(enabled, recipients, notify_users)
 
 
