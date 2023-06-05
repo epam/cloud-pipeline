@@ -12,7 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from pipeline.hpc.error import ParsingError
+
+class CloudProviderParsingError(RuntimeError):
+    pass
 
 
 class CloudProvider:
@@ -22,7 +24,7 @@ class CloudProvider:
         if value in CloudProvider.ALLOWED_VALUES:
             self.value = value
         else:
-            raise ParsingError('Wrong CloudProvider value, only %s is available!' % CloudProvider.ALLOWED_VALUES)
+            raise CloudProviderParsingError('Wrong CloudProvider value, only %s is available!' % CloudProvider.ALLOWED_VALUES)
 
     @staticmethod
     def aws():

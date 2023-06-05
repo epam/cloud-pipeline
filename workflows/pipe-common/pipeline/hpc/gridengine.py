@@ -21,9 +21,12 @@ from datetime import datetime
 from xml.etree import ElementTree
 
 from pipeline.hpc.logger import Logger
-from pipeline.hpc.error import ParsingError
-from pipeline.hpc.exec import ExecutionError
+from pipeline.hpc.ssh import ExecutionError
 from pipeline.hpc.resource import IntegralDemand, ResourceSupply, FractionalDemand
+
+
+class AllocationRuleParsingError(RuntimeError):
+    pass
 
 
 class AllocationRule:
@@ -33,7 +36,7 @@ class AllocationRule:
         if value in AllocationRule.ALLOWED_VALUES:
             self.value = value
         else:
-            raise ParsingError('Wrong AllocationRule value, only %s is available!' % AllocationRule.ALLOWED_VALUES)
+            raise AllocationRuleParsingError('Wrong AllocationRule value, only %s is available!' % AllocationRule.ALLOWED_VALUES)
 
     @staticmethod
     def pe_slots():

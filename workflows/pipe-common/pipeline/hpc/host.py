@@ -18,7 +18,10 @@ import threading
 from datetime import datetime
 
 from pipeline.hpc.utils import Clock
-from pipeline.hpc.error import ScalingError
+
+
+class HostStorageError(RuntimeError):
+    pass
 
 
 def synchronized(func):
@@ -89,7 +92,7 @@ class MemoryHostStorage:
 
     def add_host(self, host):
         if host in self._storage:
-            raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
+            raise HostStorageError('Host with name \'%s\' is already in the host storage' % host)
         self._storage[host] = self.clock.now()
 
     def remove_host(self, host):
@@ -123,7 +126,7 @@ class MemoryHostStorage:
 
     def _validate_existence(self, host):
         if host not in self._storage:
-            raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
+            raise HostStorageError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
 
 
 class FileSystemHostStorage:
@@ -156,7 +159,7 @@ class FileSystemHostStorage:
         """
         hosts = self._load_hosts_stats()
         if host in hosts:
-            raise ScalingError('Host with name \'%s\' is already in the host storage' % host)
+            raise HostStorageError('Host with name \'%s\' is already in the host storage' % host)
         hosts[host] = self.clock.now()
         self._update_storage_file(hosts)
 
@@ -230,4 +233,4 @@ class FileSystemHostStorage:
 
     def _validate_existence(self, host, hosts_dict):
         if host not in hosts_dict:
-            raise ScalingError('Host with name \'%s\' doesn\'t exist in the host storage' % host)
+            raise HostStorageError('Host with name \'%s\' doesn\'t exist in the host storage' % host)

@@ -29,7 +29,6 @@ from pipeline.hpc.autoscaler import \
 from pipeline.hpc.avail import InstanceAvailabilityManager
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.event import GridEngineEventManager
-from pipeline.hpc.exec import CmdExecutor
 from pipeline.hpc.gridengine import GridEngine, GridEngineDemandSelector, GridEngineJobValidator
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance import CpuCapacityInstanceSelector, \
@@ -43,6 +42,7 @@ from pipeline.hpc.pipe import CloudPipelineAPI, \
     CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
     CloudPipelineWorkerValidator, CloudPipelineWorkerTagsHandler
 from pipeline.hpc.resource import ResourceSupply
+from pipeline.hpc.ssh import CmdExecutor
 from pipeline.hpc.utils import Clock, ScaleCommonUtils
 from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
 from pipeline.utils.path import mkdir
@@ -137,7 +137,7 @@ def get_daemon():
     if logging_verbose:
         logging_level_run = 'DEBUG'
 
-    # TODO: Git rid of CloudPipelineAPI usage
+    # TODO: Git rid of CloudPipelineAPI usage in favor of PipelineAPI
     pipe = PipelineAPI(api_url=api_url, log_dir=logging_dir_pipe)
     api = CloudPipelineAPI(pipe=pipe)
 
@@ -242,6 +242,7 @@ def get_daemon():
     instance_launch_params = fetch_instance_launch_params(api, cluster_master_run_id, queue_name, queue_hostlist_name)
 
     clock = Clock()
+    # TODO: Git rid of CmdExecutor usage in favor of CloudPipelineExecutor implementation
     cmd_executor = CmdExecutor()
 
     reserved_supply = ResourceSupply(cpu=queue_reserved_cpu)

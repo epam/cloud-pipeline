@@ -16,9 +16,12 @@ import functools
 import operator
 from collections import Counter
 
-from pipeline.hpc.error import ScalingError
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import FractionalDemand, IntegralDemand, ResourceSupply
+
+
+class InstanceSelectionError(RuntimeError):
+    pass
 
 
 class Instance:
@@ -258,7 +261,7 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
                 fulfilled_demands.append(fulfilled_demand)
                 remaining_supply = current_remaining_supply
             else:
-                raise ScalingError('Unsupported demand type %s.', type(demand))
+                raise InstanceSelectionError('Unsupported demand type %s.', type(demand))
         return remaining_demands, fulfilled_demands
 
     def _resolve_owner(self, demands):

@@ -19,9 +19,8 @@ import tempfile
 import pytest
 from pytest import fail
 
-from pipeline.hpc.host import FileSystemHostStorage, MemoryHostStorage, ThreadSafeHostStorage
-from pipeline.hpc.exec import CmdExecutor
-from pipeline.hpc.error import ScalingError
+from pipeline.hpc.host import FileSystemHostStorage, MemoryHostStorage, ThreadSafeHostStorage, HostStorageError
+from pipeline.hpc.ssh import CmdExecutor
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
@@ -71,7 +70,7 @@ def test_same_host_addition_fails(host_storage):
     try:
         host_storage.add_host(HOST1)
         fail('Addition of the same host should fail')
-    except ScalingError:
+    except HostStorageError:
         pass
 
     hosts = host_storage.load_hosts()
@@ -96,5 +95,5 @@ def test_non_existing_host_removal(host_storage):
     try:
         host_storage.remove_host(HOST1)
         fail('Removal of non existing host should fail')
-    except ScalingError:
+    except HostStorageError:
         pass

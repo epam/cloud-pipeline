@@ -22,7 +22,6 @@ from datetime import timedelta
 import itertools
 import time
 
-from pipeline.hpc.error import ScalingError
 from pipeline.hpc.gridengine import GridEngineJobState
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand
@@ -35,6 +34,10 @@ except ImportError:
 
 
 KubernetesPod = namedtuple('KubernetesPod', 'ip,name')
+
+
+class ScalingError(RuntimeError):
+    pass
 
 
 class GridEngineScaleUpOrchestrator:
