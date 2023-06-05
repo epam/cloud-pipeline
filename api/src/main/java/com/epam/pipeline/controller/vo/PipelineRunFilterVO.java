@@ -42,6 +42,7 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     private String partialParameters;
     private Long parentId;
     private List<String> owners;
+    private List<String> roles;
     private String ownershipFilter;
     private List<Long> entitiesIds;
     private List<Long> configurationIds;
@@ -77,7 +78,7 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     private boolean areSimpleArgumentsEmpty() {
         return CollectionUtils.isEmpty(pipelineIds) && CollectionUtils.isEmpty(versions)
                 && startDateFrom == null && endDateTo == null && partialParameters == null
-                && parentId == null && CollectionUtils.isEmpty(owners)
+                && parentId == null && CollectionUtils.isEmpty(owners) && CollectionUtils.isEmpty(roles)
                 && CollectionUtils.isEmpty(configurationIds) && CollectionUtils.isEmpty(entitiesIds)
                 && CollectionUtils.isEmpty(projectIds)
                 && prettyUrl == null
