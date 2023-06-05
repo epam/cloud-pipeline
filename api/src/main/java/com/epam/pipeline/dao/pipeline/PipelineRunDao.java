@@ -532,6 +532,27 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return clausesCount;
     }
 
+    private int addRoleClause(MapSqlParameterSource params, StringBuilder whereBuilder, int clausesCount,
+                              List<String> roles) {
+        if (!CollectionUtils.isEmpty(roles)) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder
+                    .append(" lower(r.owner) in (" +
+                            "    SELECT lower(u.name) " +
+                            "    FROM pipeline.user u " +
+                            "    LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id " +
+                            "    LEFT JOIN pipeline.role rl ON ur.role_id = rl.id " +
+                            "    WHERE lower(rl.name) in (:")
+                    .append(PipelineRunParameters.ROLE.name())
+                    .append("    )" +
+                            ')');
+            params.addValue(PipelineRunParameters.ROLE.name(),
+                    roles.stream().map(String::toLowerCase).collect(Collectors.toList()));
+            clausesCount++;
+        }
+        return clausesCount;
+    }
+
     private String makeFilterCondition(PipelineRunFilterVO filter,
                                        PipelineRunFilterVO.ProjectFilter projectFilter,
                                        MapSqlParameterSource params,
@@ -555,6 +576,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         }
 
         clausesCount = addOwnerClause(params, whereBuilder, clausesCount, filter.getOwners());
+        clausesCount = addRoleClause(params, whereBuilder, clausesCount, filter.getRoles());
 
         if (CollectionUtils.isNotEmpty(filter.getPipelineIds())) {
             appendAnd(whereBuilder, clausesCount);
@@ -823,6 +845,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         ACTUAL_CMD,
         TIMEOUT,
         OWNER,
+        ROLE,
         PIPELINE_ALLOWED,
         OWNERSHIP,
         POD_IP,
