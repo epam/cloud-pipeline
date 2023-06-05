@@ -365,6 +365,9 @@ public final class MessageConstants {
             "error.datastorage.lifecycle.restore.rule.cant.parse.notification";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOTIFICATION_RECIPIENTS_NOT_PROVIDED =
             "error.datastorage.lifecycle.rule.notification.recipients.not.provided";
+    public static final String ERROR_DATASTORAGE_INTELLIGENT_TIERING_ARCHIVE_ACCESS =
+            "error.datastorage.intelligent.tiering.archive.access";
+    public static final String ERROR_DATASTORAGE_ARCHIVE_ACCESS =  "error.datastorage.archive.access";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";
