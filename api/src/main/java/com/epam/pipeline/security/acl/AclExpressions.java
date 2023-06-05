@@ -59,15 +59,23 @@ public final class AclExpressions {
     public static final String STORAGE_SHARED = "@grantPermissionManager.checkStorageShared(#id)";
 
     public static final String STORAGE_ID_READ =
-            "(hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'READ')) "
+            "(" + ADMIN_ONLY + OR + "@storagePermissionManager.storagePermissionById(#id, 'READ')" + ")"
             + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_WRITE =
-            "(hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'WRITE')) "
+            "(" + ADMIN_ONLY + OR + "@storagePermissionManager.storagePermissionById(#id, 'WRITE')" + ")"
             + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_OWNER =
-            "(hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'OWNER')) "
+            "(" + ADMIN_ONLY + OR + "@storagePermissionManager.storagePermissionById(#id, 'OWNER')" + ")"
+            + AND + STORAGE_SHARED;
+
+    public static final String STORAGE_ID_TAGS_WRITE =
+            "(" + ADMIN_ONLY + OR + "@storagePermissionManager.storageTagsPermission(#id, #tags, 'WRITE')" + ")"
+            + AND + STORAGE_SHARED;
+
+    public static final String STORAGE_ID_TAGS_REQUEST_WRITE =
+            "(" + ADMIN_ONLY + OR + "@storagePermissionManager.storageTagsPermission(#id, #request, 'WRITE')" + ")"
             + AND + STORAGE_SHARED;
 
     public static final String ARCHIVED_PERMISSIONS =
