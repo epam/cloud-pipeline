@@ -1,0 +1,74 @@
+/*
+ * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.dockercompscan.owasp.analyzer;
+
+import com.epam.dockercompscan.owasp.analyzer.filter.FilePathGlobFilter;
+import org.owasp.dependencycheck.Engine;
+import org.owasp.dependencycheck.analyzer.AbstractFileTypeAnalyzer;
+import org.owasp.dependencycheck.analyzer.AnalysisPhase;
+import org.owasp.dependencycheck.analyzer.Experimental;
+import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
+import org.owasp.dependencycheck.dependency.Confidence;
+import org.owasp.dependencycheck.dependency.Dependency;
+import org.owasp.dependencycheck.dependency.EvidenceType;
+import org.owasp.dependencycheck.exception.InitializationException;
+import org.owasp.dependencycheck.utils.FileFilterBuilder;
+
+import java.io.FileFilter;
+
+@Experimental
+public class NvidiaVersionAnalyzer extends AbstractFileTypeAnalyzer {
+    public static final String DEPENDENCY_ECOSYSTEM = "Nvidia";
+    public static final String NVIDIA_VERSION_ANALYZER_ENABLED = AnalyzeEnabler.ANALYZER_NVIDIA_VERSION.getValue();
+    static final String DEPENDENCY_NAME = "NvidiaVersion";
+    private static final String NVIDIA_VERSION_ANALYZER_NAME = "Nvidia Version Analyzer";
+    private static final String NVIDIA_VERSION_PATH = "/**/proc/driver/nvidia/version";
+    private static final String EVIDENCE_SOURCE = "version";
+    private static final String EVIDENCE_VALUE = "found";
+
+    @Override
+    protected FileFilter getFileFilter() {
+        return FileFilterBuilder.newInstance().addFileFilters(new FilePathGlobFilter(NVIDIA_VERSION_PATH)).build();
+    }
+
+    @Override
+    protected void prepareFileTypeAnalyzer(final Engine engine) throws InitializationException {
+        // no-op
+    }
+
+    @Override
+    protected void analyzeDependency(final Dependency dependency, final Engine engine) throws AnalysisException {
+        dependency.setEcosystem(DEPENDENCY_ECOSYSTEM);
+        dependency.setName(DEPENDENCY_NAME);
+        dependency.addEvidence(EvidenceType.VERSION, EVIDENCE_SOURCE, DEPENDENCY_NAME, EVIDENCE_VALUE, Confidence.HIGH);
+    }
+
+    @Override
+    protected String getAnalyzerEnabledSettingKey() {
+        return NVIDIA_VERSION_ANALYZER_ENABLED;
+    }
+
+    @Override
+    public String getName() {
+        return NVIDIA_VERSION_ANALYZER_NAME;
+    }
+
+    @Override
+    public AnalysisPhase getAnalysisPhase() {
+        return AnalysisPhase.INFORMATION_COLLECTION;
+    }
+}

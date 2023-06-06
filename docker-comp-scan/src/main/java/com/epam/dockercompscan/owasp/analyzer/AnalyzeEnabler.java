@@ -56,7 +56,8 @@ public enum AnalyzeEnabler {
     ANALYZER_CENTRAL("analyzer.central.enabled", AnalyzerConstants.SYSTEM),
     ANALYZER_NEXUS("analyzer.nexus.enabled", AnalyzerConstants.SYSTEM),
     ANALYZER_R_PACKAGE("analyzer.r.package.enabled", "R.Pkg"),
-    ANALYZER_OS_PACKAGE("analyzer.os.enabled", "OS");
+    ANALYZER_OS_PACKAGE("analyzer.os.enabled", "OS"),
+    ANALYZER_NVIDIA_VERSION("analyzer.nvidia.version.enabled", "Nvidia");
 
 
     private final String value;
