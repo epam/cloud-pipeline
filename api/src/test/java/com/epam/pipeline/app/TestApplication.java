@@ -19,7 +19,6 @@ package com.epam.pipeline.app;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
-import com.epam.pipeline.manager.SecuredEntityTransferManager;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
@@ -188,9 +187,6 @@ public class TestApplication {
 
     @MockBean
     protected BitbucketMapper bitbucketMapper;
-
-    @MockBean
-    protected SecuredEntityTransferManager securedEntityTransferManager;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

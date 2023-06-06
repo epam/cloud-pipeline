@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.List;
  */
 @Getter
 @Setter
+@NoArgsConstructor
 public class S3bucketDataStorage extends AbstractDataStorage {
 
     /**
