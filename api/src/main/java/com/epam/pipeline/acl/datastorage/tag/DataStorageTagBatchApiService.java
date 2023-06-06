@@ -37,39 +37,34 @@ public class DataStorageTagBatchApiService {
 
     private final DataStorageTagBatchManager dataStorageTagBatchManager;
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public List<DataStorageTag> insert(final Long id,
-                                       final DataStorageTagInsertBatchRequest request) {
+    @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_REQUEST_WRITE)
+    public List<DataStorageTag> insert(final Long id, final DataStorageTagInsertBatchRequest request) {
         return dataStorageTagBatchManager.insert(id, request);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_REQUEST_WRITE)
     public List<DataStorageTag> upsert(final Long id, final DataStorageTagUpsertBatchRequest request) {
         return dataStorageTagBatchManager.upsert(id, request);
 
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public List<DataStorageTag> copy(final Long id,
-                                     final DataStorageTagCopyBatchRequest request) {
+    public List<DataStorageTag> copy(final Long id, final DataStorageTagCopyBatchRequest request) {
         return dataStorageTagBatchManager.copy(id, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<DataStorageTag> load(final Long id,
-                                     final DataStorageTagLoadBatchRequest request) {
+    public List<DataStorageTag> load(final Long id, final DataStorageTagLoadBatchRequest request) {
         return dataStorageTagBatchManager.load(id, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public void delete(final Long id,
-                       final DataStorageTagDeleteBatchRequest request) {
+    public void delete(final Long id, final DataStorageTagDeleteBatchRequest request) {
         dataStorageTagBatchManager.delete(id, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public void deleteAll(final Long id,
-                          final DataStorageTagDeleteAllBatchRequest request) {
+    public void deleteAll(final Long id, final DataStorageTagDeleteAllBatchRequest request) {
         dataStorageTagBatchManager.deleteAll(id, request);
     }
 }

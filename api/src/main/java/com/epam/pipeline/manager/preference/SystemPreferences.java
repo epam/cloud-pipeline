@@ -67,6 +67,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPrefe
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -161,6 +162,14 @@ public class SystemPreferences {
             COMMIT_GROUP, isGreaterThan(0));
 
     // DATA_STORAGE_GROUP
+    public static final BooleanPreference DATA_STORAGE_TAG_RESTRICTED_ACCESS_ENABLED = new BooleanPreference(
+        "storage.tag.restricted.access", false, DATA_STORAGE_GROUP, pass);
+    public static final ObjectPreference<List<String>> DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS =
+        new ObjectPreference<>("storage.tag.restricted.access.exclude.keys",
+        ListUtils.unmodifiableList(Arrays.asList("CP_SOURCE", "CP_OWNER", "CP_RUN_ID", "CP_JOB_ID",
+                "CP_JOB_NAME", "CP_JOB_VERSION", "CP_JOB_CONFIGURATION", "CP_DOCKER_IMAGE", "CP_CALC_CONFIG")),
+        new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
+        isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
