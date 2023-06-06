@@ -1653,7 +1653,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           createActions.push(...folderTemplatesMenu);
         }
       }
-      if (roleModel.isManager.pipeline(this)) {
+      if (roleModel.isManager.versionedStorage(this)) {
         if (!folderTemplatesMenu) {
           createActions.push(<Divider key="divider versioned storages" />);
         }
