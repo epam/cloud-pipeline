@@ -33,7 +33,9 @@ public enum DefaultRoles {
     ROLE_SERVICE_ACCOUNT(new Role(null, "ROLE_SERVICE_ACCOUNT", true, false, null, null, null, null)),
     ROLE_ALLOW_ALL_POLICY(new Role(null, "ROLE_ALLOW_ALL_POLICY", true, false, null, null, null, null)),
     ROLE_STORAGE_ARCHIVE_MANAGER(new Role(null, "ROLE_STORAGE_ARCHIVE_MANAGER", true, false, null, null, null, null)),
-    ROLE_STORAGE_ARCHIVE_READER(new Role(null, "ROLE_STORAGE_ARCHIVE_READER", true, false, null, null, null, null));
+    ROLE_STORAGE_ARCHIVE_READER(new Role(null, "ROLE_STORAGE_ARCHIVE_READER", true, false, null, null, null, null)),
+    ROLE_STORAGE_MANAGER(new Role(null, "ROLE_STORAGE_MANAGER", true, false, null, null, null, null)),
+    ROLE_STORAGE_TAG_MANAGER(new Role(null, "ROLE_STORAGE_TAG_MANAGER", true, false, null, null, null, null));
 
     private Role role;
 

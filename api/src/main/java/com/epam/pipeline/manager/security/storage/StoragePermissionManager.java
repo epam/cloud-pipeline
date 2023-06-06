@@ -26,22 +26,31 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.security.acl.AclPermission;
+import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,6 +65,7 @@ public class StoragePermissionManager {
     private final PermissionsService permissionsService;
     private final QuotaService quotaService;
     private final AuthManager authManager;
+    private final PreferenceManager preferenceManager;
 
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
@@ -96,6 +106,60 @@ public class StoragePermissionManager {
                                            final String permissionName) {
         final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
         return grantPermissionManager.storagePermission(storage, permissionName);
+    }
+
+    public boolean storageTagsPermission(final Long id, final Map<String, String> tags, final String permission) {
+        return storageTagsPermission(id, MapUtils.emptyIfNull(tags).keySet(), permission);
+    }
+
+    public boolean storageTagsPermission(final Long id, final Set<String> tags, final String permission) {
+        return storageTagsPermission(id, new ArrayList<>(SetUtils.emptyIfNull(tags)), permission);
+    }
+
+    public boolean storageTagsPermission(final Long id, final List<String> tags, final String permission) {
+        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, id);
+        return storageTagsPermission(storage, tags, permission);
+    }
+
+    private boolean storageTagsPermission(final AbstractSecuredEntity storage, final List<String> tags,
+                                          final String permission) {
+        return grantPermissionManager.storagePermission(storage, permission)
+                && (grantPermissionManager.isOwnerOrAdmin(storage.getOwner())
+                || !isRestrictedTagsAccessEnabled()
+                || !hasRestrictedTags(tags)
+                || hasAnyRole(DefaultRoles.ROLE_STORAGE_MANAGER, DefaultRoles.ROLE_STORAGE_TAG_MANAGER));
+    }
+
+    private boolean isRestrictedTagsAccessEnabled() {
+        return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_ENABLED)
+                .map(preferenceManager::getPreference)
+                .orElse(false);
+    }
+
+    private boolean hasRestrictedTags(final List<String> tags) {
+        return CollectionUtils.isNotEmpty(CommonUtils.subtract(ListUtils.emptyIfNull(tags),
+                getRestrictedTagsExcludeKeys()));
+    }
+
+    private List<String> getRestrictedTagsExcludeKeys() {
+        return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS)
+                .map(preferenceManager::getPreference)
+                .orElseGet(Collections::emptyList);
+    }
+
+    private boolean hasAnyRole(final DefaultRoles... roles) {
+        return hasAnyRole(Arrays.asList(roles));
+    }
+
+    private boolean hasAnyRole(final List<DefaultRoles> roles) {
+        return hasAnySid(roles.stream()
+                .map(DefaultRoles::getName)
+                .map(GrantedAuthoritySid::new)
+                .collect(Collectors.toList()));
+    }
+
+    private boolean hasAnySid(final List<Sid> sids) {
+        return permissionHelper.getSids().stream().anyMatch(sids::contains);
     }
 
     public void filterStorage(final List<AbstractDataStorage> storages,

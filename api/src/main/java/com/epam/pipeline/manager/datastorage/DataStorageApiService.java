@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -262,7 +262,7 @@ public class DataStorageApiService {
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_CREDENTIALS_REQUEST)));
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)
+    @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_WRITE)
     public Map<String, String> updateDataStorageObjectTags(Long id, String path, Map<String, String> tags,
                                                            String version, Boolean rewrite) {
         return dataStorageManager.updateDataStorageObjectTags(id, path, tags, version, rewrite);
@@ -278,7 +278,7 @@ public class DataStorageApiService {
         return dataStorageManager.loadDataStorageObjectTags(id, path, version);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_WRITE)
     public Map<String, String> deleteDataStorageObjectTags(Long id, String path, Set<String> tags, String version) {
         return dataStorageManager.deleteDataStorageObjectTags(id, path, tags, version);
     }
@@ -337,6 +337,7 @@ public class DataStorageApiService {
     public StorageUsage getStorageUsage(final String id, final String path) {
         return dataStorageManager.getStorageUsage(id, path);
     }
+
     @PreAuthorize(AclExpressions.RUN_ID_OWNER)
     public StorageMountPath getSharedFSSPathForRun(final Long runId, final boolean createFolder) {
         return runMountService.getSharedFSSPathForRun(runId, createFolder);
