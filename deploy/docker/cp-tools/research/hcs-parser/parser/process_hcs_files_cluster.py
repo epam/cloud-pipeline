@@ -38,6 +38,7 @@ HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
 HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
 HCS_CLUSTER_PROCESSING_MEMORY_SIZE_SLOT_FACTOR = get_int_run_param('HCS_PARSING_CLUSTER_PROCESSING_MEMORY_FACTOR', 20)
+HCS_CLUSTER_INSTANCE_SLOT_SIZE = get_int_run_param('HCS_CLUSTER_INSTANCE_SLOT_SIZE', 0)
 HCS_CLUSTER_PROCESSING_MEMORY_CLUSTER_SLOT = \
     get_int_run_param('HCS_PARSING_CLUSTER_PROCESSING_MEMORY_PER_CLUSTER_SLOT', 16)
 HCS_CLUSTER_PROCESSING_MEMORY_INSTANCE_SLOT = \
@@ -74,13 +75,19 @@ class HcsFileSgeParser:
             self.log_info('Size calculation fails, skip processing')
             return
         self.log_info('Total size: {} Gb'.format(hcs_root_size))
-        memory_requirement_slots = int(math.ceil(hcs_root_size / HCS_CLUSTER_PROCESSING_MEMORY_SIZE_SLOT_FACTOR))
-        memory_requirement_slots = max(memory_requirement_slots, 1)
-        memory_requirement_gb = memory_requirement_slots * HCS_CLUSTER_PROCESSING_MEMORY_CLUSTER_SLOT
+        if HCS_CLUSTER_INSTANCE_SLOT_SIZE > 0:
+            memory_requirement_slots = HCS_CLUSTER_INSTANCE_SLOT_SIZE
+            memory_requirement_gb = memory_requirement_slots * HCS_CLUSTER_PROCESSING_MEMORY_INSTANCE_SLOT
+            slots_requirement = memory_requirement_slots
+        else:
+            memory_requirement_slots = int(math.ceil(hcs_root_size / HCS_CLUSTER_PROCESSING_MEMORY_SIZE_SLOT_FACTOR))
+            memory_requirement_slots = max(memory_requirement_slots, 1)
+            memory_requirement_gb = memory_requirement_slots * HCS_CLUSTER_PROCESSING_MEMORY_CLUSTER_SLOT
+            slots_requirement = int(math.ceil(memory_requirement_gb / HCS_CLUSTER_PROCESSING_MEMORY_INSTANCE_SLOT))
+
         self.log_info('Memory requirements: [{} slot(s), {} Gb]'.format(memory_requirement_slots,
                                                                         memory_requirement_gb))
         script_path = self._create_hcs_processing_script(memory_requirement_gb)
-        slots_requirement = int(math.ceil(memory_requirement_gb / HCS_CLUSTER_PROCESSING_MEMORY_INSTANCE_SLOT))
         job_id = self._process_submission_in_sge_sync_mode(slots_requirement, script_path)
         self.log_info('Saving job script')
         HcsFileSgeParser._try_copy_to_cloud_output_folder(script_path, 'job-script-{}.sh'.format(job_id))
