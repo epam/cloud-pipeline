@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Alert, Button, Dropdown, Icon, message} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
@@ -27,6 +28,7 @@ import UserName from '../../../special/UserName';
 import displayDate from '../../../../utils/displayDate';
 import SystemJobLog from './system-job-log';
 import SystemJobParameters from './system-job-parameters';
+import VersionFile from '../../../../models/pipelines/VersionFile';
 import styles from './system-jobs.css';
 
 function autoUpdateJobs (state) {
@@ -36,6 +38,29 @@ function autoUpdateJobs (state) {
   return runs.some((run) => /^running$/i.test(run.status));
 }
 
+function extractScriptParameters (text = '') {
+  const [parametersRow] = text
+    .split('\n')
+    .map(row => row.trim())
+    .filter(row => row.startsWith('#sys_job'));
+  if (!parametersRow) {
+    return undefined;
+  }
+  const parameterString = parametersRow.replace('#sys_job', '');
+  let parameters;
+  let error;
+  if (!parameterString) {
+    return undefined;
+  }
+  try {
+    parameters = JSON.parse(parameterString);
+  } catch (e) {
+    error = 'JSON validation error in system job parameters from script';
+    console.error(e);
+  }
+  return [error, parameters];
+};
+
 @inject('systemJobs')
 @observer
 class SystemJobs extends React.Component {
@@ -43,8 +68,13 @@ class SystemJobs extends React.Component {
     job: undefined,
     launchingJobs: [],
     refreshToken: 0,
-    launchParameters: undefined
+    launchParameters: undefined,
+    jobContentPending: false,
+    selectedJobId: undefined
   }
+
+  @observable
+  jobScriptParameters = {};
 
   componentDidMount () {
     const {
@@ -68,6 +98,19 @@ class SystemJobs extends React.Component {
       return [];
     }
     return jobs;
+  }
+
+  @computed
+  get currentJobParameters () {
+    const {selectedJobId} = this.state;
+    return this.jobScriptParameters[selectedJobId] || {};
+  }
+
+  @computed
+  get currentJobHasRequiredParameters () {
+    return this.currentJobParameters.parameters &&
+      this.currentJobParameters.parameters
+        .some(parameter => `${parameter.mandatory}` === 'true');
   }
 
   openJobLog = (job, run) => {
@@ -122,10 +165,46 @@ class SystemJobs extends React.Component {
     this.launchJob(job, parameters);
   };
 
+  setSelectedJobId = (jobId) => {
+    this.setState({selectedJobId: jobId}, () => this.fetchScriptFile(jobId));
+  };
+
+  fetchScriptFile = (jobId) => {
+    const currentJob = this.jobs.find(job => job.identifier === jobId);
+    if (currentJob) {
+      if (this.jobScriptParameters[currentJob.path]) {
+        return;
+      }
+      this.setState({scriptContentPending: true}, async () => {
+        const request = new VersionFile(
+          currentJob.pipelineId,
+          currentJob.path,
+          currentJob.pipelineVersion
+        );
+        await request.fetch();
+        if (request.error) {
+          message.error(request.error, 5);
+          return this.setState({scriptContentPending: false});
+        }
+        const [jsonError, parameters] = extractScriptParameters(atob(request.response || '')) || [];
+        if (jsonError) {
+          console.error(jsonError, 5);
+          return this.setState({scriptContentPending: false});
+        }
+        this.jobScriptParameters[jobId] = parameters;
+        this.setState({scriptContentPending: false});
+      });
+    }
+  };
+
   /**
    * @param {SystemJob} job
    */
   renderSystemJob = (job) => {
+    const {scriptContentPending} = this.state;
+    if (scriptContentPending) {
+      return <LoadingView />;
+    }
     const {router} = this.props;
     const openRunDetails = (run, event) => {
       if (event) {
@@ -197,7 +276,16 @@ class SystemJobs extends React.Component {
               )
             }
             {
-              !isLaunching && (
+              !isLaunching && this.currentJobHasRequiredParameters ? (
+                <Button
+                  type="primary"
+                  size="small"
+                  className={styles.systemJobActionButton}
+                  onClick={() => this.openLaunchParametersModal(job)}
+                >
+                  LAUNCH
+                </Button>
+              ) : (
                 <Dropdown.Button
                   type="primary"
                   size="small"
@@ -316,6 +404,7 @@ class SystemJobs extends React.Component {
         sections={sections}
         showSectionsSearch
         sectionsSearchPlaceholder="Filter jobs"
+        onSectionChange={this.setSelectedJobId}
       >
         <SystemJobLog
           visible={!!job}
@@ -329,6 +418,7 @@ class SystemJobs extends React.Component {
           job={launchParameters}
           onLaunch={this.launchWithParameters}
           onCancel={this.closeLaunchParametersModal}
+          parametersFromScript={this.currentJobParameters}
         />
       </SubSettings>
     );

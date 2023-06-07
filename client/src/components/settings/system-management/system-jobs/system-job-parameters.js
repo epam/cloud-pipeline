@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Input, Modal} from 'antd';
+import {Button, Input, Modal, Alert} from 'antd';
 
 class SystemJobParameters extends React.Component {
   state = {
@@ -61,6 +61,40 @@ class SystemJobParameters extends React.Component {
     }
   };
 
+  renderAlerts = () => {
+    const {parametersFromScript} = this.props;
+    if (!parametersFromScript) {
+      return null;
+    }
+    const alerts = (parametersFromScript.parameters || [])
+      .filter(parameter => parameter.description);
+    return alerts.length > 0 ? (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        {
+          alerts.map(alert => (
+            <Alert
+              key={alert.parameterId}
+              message={(
+                <p>
+                  <b>{alert.parameterId}: </b>
+                  <span>
+                    {alert.description}
+                  </span>
+                </p>
+              )}
+              type="info"
+              style={{marginBottom: '3px'}}
+            />
+          ))}
+      </div>
+    ) : null;
+  };
+
   render () {
     const {
       className,
@@ -102,6 +136,7 @@ class SystemJobParameters extends React.Component {
           </div>
         )}
       >
+        {this.renderAlerts()}
         <Input
           style={{width: '100%'}}
           value={parameters}
@@ -119,7 +154,8 @@ SystemJobParameters.propTypes = {
   job: PropTypes.object,
   visible: PropTypes.bool,
   onCancel: PropTypes.func,
-  onLaunch: PropTypes.func
+  onLaunch: PropTypes.func,
+  parametersFromScript: PropTypes.object
 };
 
 export default SystemJobParameters;
