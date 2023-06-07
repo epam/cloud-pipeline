@@ -33,16 +33,18 @@ import java.io.FileFilter;
 @Experimental
 public class NvidiaVersionAnalyzer extends AbstractFileTypeAnalyzer {
     public static final String DEPENDENCY_ECOSYSTEM = "Nvidia";
-    public static final String NVIDIA_VERSION_ANALYZER_ENABLED = AnalyzeEnabler.ANALYZER_NVIDIA_VERSION.getValue();
+    public static final String NVIDIA_VERSION_ANALYZER_ENABLED = AnalyzeEnabler.ANALYZER_NVIDIA_PACKAGE.getValue();
     static final String DEPENDENCY_NAME = "NvidiaVersion";
     private static final String NVIDIA_VERSION_ANALYZER_NAME = "Nvidia Version Analyzer";
     private static final String NVIDIA_VERSION_PATH = "/**/proc/driver/nvidia/version";
     private static final String EVIDENCE_SOURCE = "version";
     private static final String EVIDENCE_VALUE = "found";
+    private static final FilePathGlobFilter NAME_FILE_FILTER = new FilePathGlobFilter(NVIDIA_VERSION_PATH);
+    private static final FileFilter FILTER = FileFilterBuilder.newInstance().addFileFilters(NAME_FILE_FILTER).build();
 
     @Override
     protected FileFilter getFileFilter() {
-        return FileFilterBuilder.newInstance().addFileFilters(new FilePathGlobFilter(NVIDIA_VERSION_PATH)).build();
+        return FILTER;
     }
 
     @Override
@@ -54,7 +56,7 @@ public class NvidiaVersionAnalyzer extends AbstractFileTypeAnalyzer {
     protected void analyzeDependency(final Dependency dependency, final Engine engine) throws AnalysisException {
         dependency.setEcosystem(DEPENDENCY_ECOSYSTEM);
         dependency.setName(DEPENDENCY_NAME);
-        dependency.addEvidence(EvidenceType.VERSION, EVIDENCE_SOURCE, DEPENDENCY_NAME, EVIDENCE_VALUE, Confidence.HIGH);
+        dependency.addEvidence(EvidenceType.PRODUCT, EVIDENCE_SOURCE, DEPENDENCY_NAME, EVIDENCE_VALUE, Confidence.HIGH);
     }
 
     @Override
