@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Condition.enabled;
 import com.codeborne.selenide.SelenideElement;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -133,12 +134,12 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public FileEditingPopupAO clickOnFile(String fileName) {
-        $(withText(fileName)).shouldBe(visible).click();
+        $(withText(fileName)).shouldBe(visible, enabled).click();
         return new FileEditingPopupAO(this);
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
-        $(".ant-table-tbody").find("tr").waitUntil(exist, DEFAULT_TIMEOUT);
+        $(".ant-table-tbody").find("tr").waitUntil(enabled, DEFAULT_TIMEOUT);
         $(".ant-table-tbody")
                 .findAll("tr")
                 .shouldHaveSize(3)

@@ -104,7 +104,7 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
         final String editedCode = "Edited code";
         new PipelineCodeTabAO(PIPELINE_NAME)
                 .clearAndFillPipelineFile(RENAMED_FILE_NAME, editedCode)
-                .sleep(1, SECONDS)
+                .sleep(2, SECONDS)
                 .clickOnFile(RENAMED_FILE_NAME)
                 .shouldContainInCode(editedCode)
                 .close();
