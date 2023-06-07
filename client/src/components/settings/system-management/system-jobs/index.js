@@ -264,24 +264,16 @@ class SystemJobs extends React.Component {
               REFRESH
             </Button>
             {
-              isLaunching && (
-                <Button
-                  disabled
-                  type="primary"
-                  size="small"
-                  className={styles.systemJobActionButton}
-                >
-                  LAUNCH
-                </Button>
-              )
-            }
-            {
-              !isLaunching && this.currentJobHasRequiredParameters ? (
+              isLaunching || this.currentJobHasRequiredParameters ? (
                 <Button
                   type="primary"
                   size="small"
+                  disabled={isLaunching}
                   className={styles.systemJobActionButton}
-                  onClick={() => this.openLaunchParametersModal(job)}
+                  onClick={!isLaunching
+                    ? () => this.openLaunchParametersModal(job)
+                    : undefined
+                  }
                 >
                   LAUNCH
                 </Button>
