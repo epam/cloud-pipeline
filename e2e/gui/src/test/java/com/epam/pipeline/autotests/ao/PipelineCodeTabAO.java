@@ -16,7 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
@@ -99,7 +99,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $$(".pipeline-code-form__button").findBy(text("Save")).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
-        $("ant-modal-content").waitUntil(not(exist), C.DEFAULT_TIMEOUT);
+        $("ant-modal-content").waitUntil(not(exist), DEFAULT_TIMEOUT);
 
         return this;
     }
@@ -138,8 +138,8 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
+        $(".ant-table-tbody").find("tr").waitUntil(exist, DEFAULT_TIMEOUT);
         $(".ant-table-tbody")
-                .waitUntil(visible, C.DEFAULT_TIMEOUT)
                 .findAll("tr")
                 .shouldHaveSize(3)
                 .get(0).shouldHave(text(folderName));
