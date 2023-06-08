@@ -43,6 +43,7 @@ public class RunToolsInSandboxCheckDataStorageTest
     private final String bucket1 = "test-storage-1-" + Utils.randomSuffix();
     private final String bucket2 = "test-storage-2-" + Utils.randomSuffix();
     private final String endpoint = C.VALID_ENDPOINT;
+    private final String mountDataStoragesTask = "MountDataStorages";
 
     @BeforeClass
     public void createBuckets() {
@@ -100,7 +101,8 @@ public class RunToolsInSandboxCheckDataStorageTest
                         .setLaunchOptions(disk, type, null)
                         .launchTool(this, Utils.nameWithoutGroup(tool))
                         .showLog(getRunId())
-                        .clickMountBuckets()
+                        .waitForTask(mountDataStoragesTask)
+                        .clickTaskWithName(mountDataStoragesTask)
                         .logMessages().collect(toSet());
 
         assertTrue(logContainsMessageWith(log, bucket1));
