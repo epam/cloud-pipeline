@@ -145,7 +145,7 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
             help='Specifies a maximum number of CPUs available on hybrid autoscaling workers.\n'
                  'If specified, only instance types which have less or equal number of CPUs will be used.')
         self.descending_autoscale = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_DESCENDING', type=PARAM_BOOL, default=True,
+            name='CP_CAP_AUTOSCALE_DESCENDING', type=PARAM_BOOL, default=False,
             help='Enables descending autoscaling.\n'
                  'As long as default instance type is available then autoscaling works as non hybrid.\n'
                  'If target instance type is temporary unavailable then autoscaling works as hybrid\n'
