@@ -19,8 +19,8 @@ import tempfile
 import pytest
 from pytest import fail
 
+from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.host import FileSystemHostStorage, MemoryHostStorage, ThreadSafeHostStorage, HostStorageError
-from pipeline.hpc.ssh import CmdExecutor
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 

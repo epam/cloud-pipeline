@@ -26,23 +26,23 @@ from pipeline.hpc.autoscaler import \
     GridEngineScaleUpOrchestrator, GridEngineScaleUpHandler, \
     GridEngineScaleDownOrchestrator, GridEngineScaleDownHandler, \
     DoNothingAutoscalingDaemon, DoNothingScaleUpHandler, DoNothingScaleDownHandler
-from pipeline.hpc.avail import InstanceAvailabilityManager
 from pipeline.hpc.cloud import CloudProvider
+from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.event import GridEngineEventManager
 from pipeline.hpc.gridengine import GridEngine, GridEngineDemandSelector, GridEngineJobValidator
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
-from pipeline.hpc.instance import CpuCapacityInstanceSelector, \
-    NaiveCpuCapacityInstanceSelector, BackwardCompatibleInstanceSelector
-from pipeline.hpc.instance import DefaultInstanceProvider, \
+from pipeline.hpc.instance.avail import InstanceAvailabilityManager
+from pipeline.hpc.instance.provider import DefaultInstanceProvider, \
     FamilyInstanceProvider, DescendingInstanceProvider, \
     SizeLimitingInstanceProvider, AvailableInstanceProvider
+from pipeline.hpc.instance.select import CpuCapacityInstanceSelector, NaiveCpuCapacityInstanceSelector, \
+    BackwardCompatibleInstanceSelector
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.param import GridEngineParameters, ValidationError
 from pipeline.hpc.pipe import CloudPipelineAPI, \
     CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
     CloudPipelineWorkerValidator, CloudPipelineWorkerTagsHandler
 from pipeline.hpc.resource import ResourceSupply
-from pipeline.hpc.ssh import CmdExecutor
 from pipeline.hpc.utils import Clock, ScaleCommonUtils
 from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
 from pipeline.utils.path import mkdir

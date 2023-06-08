@@ -19,7 +19,7 @@ import requests
 import time
 
 from pipeline.hpc.event import InsufficientInstanceEvent, FailingInstanceEvent, AvailableInstanceEvent
-from pipeline.hpc.instance import GridEngineInstanceProvider, Instance
+from pipeline.hpc.instance.provider import GridEngineInstanceProvider, Instance
 from pipeline.hpc.logger import Logger
 
 

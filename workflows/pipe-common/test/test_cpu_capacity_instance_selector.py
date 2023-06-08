@@ -17,7 +17,8 @@ import logging
 import pytest
 from mock import MagicMock, Mock
 
-from pipeline.hpc.instance import CpuCapacityInstanceSelector, InstanceDemand, Instance
+from pipeline.hpc.instance.provider import Instance
+from pipeline.hpc.instance.select import InstanceDemand, CpuCapacityInstanceSelector
 from pipeline.hpc.resource import IntegralDemand, FractionalDemand, ResourceSupply
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')

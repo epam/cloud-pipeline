@@ -13,15 +13,16 @@
 # limitations under the License.
 
 import functools
-import math
 import operator
 import os
 import traceback
 from datetime import datetime
 from xml.etree import ElementTree
 
+import math
+
+from pipeline.hpc.cmd import ExecutionError
 from pipeline.hpc.logger import Logger
-from pipeline.hpc.ssh import ExecutionError
 from pipeline.hpc.resource import IntegralDemand, ResourceSupply, FractionalDemand
 
 
