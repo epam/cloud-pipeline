@@ -174,6 +174,14 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
             help='Specifies a delay in seconds to temporary avoid unavailable instance types usage.\n'
                  'An instance type is considered unavailable if cloud region lacks such instances at the moment '
                  'or instance type has failed to initialize several times.')
+        self.scale_up_unavail_count_insufficient = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_COUNT_INSUFFICIENT', type=PARAM_INT, default=5,
+            help='Specifies a number of runs which may fail because of insufficient instance type capacity '
+                 'before instance type will be considered unavailable.')
+        self.scale_up_unavail_count_failure = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_COUNT_FAILURE', type=PARAM_INT, default=5,
+            help='Specifies a number of runs which may fail during initialization '
+                 'before instance type will be considered unavailable.')
         self.scale_down_batch_size = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_SCALE_DOWN_BATCH_SIZE', type=PARAM_INT, default=1,
             help='Specifies a maximum number of simultaneously scaling down workers.')
@@ -238,14 +246,6 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
             help='Enables dry run mode. '
                  'Grid engine autoscaling will be performed '
                  'but no instances will be scaled up or scaled down.')
-        self.scale_up_unavail_count_insufficient = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_COUNT_INSUFFICIENT', type=PARAM_INT, default=1,
-            help='Specifies a number of runs which may fail because of insufficient instance type capacity '
-                 'before instance type will be considered unavailable.')
-        self.scale_up_unavail_count_failure = GridEngineParameter(
-            name='CP_CAP_AUTOSCALE_INSTANCE_UNAVAILABILITY_COUNT_FAILURE', type=PARAM_INT, default=5,
-            help='Specifies a number of runs which may fail during initialization '
-                 'before instance type will be considered unavailable.')
         self.event_ttl = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_EVENT_TTL', type=PARAM_INT, default=3 * 60 * 60,
             help='Specifies event ttl in seconds after which an event is removed.')

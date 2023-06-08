@@ -199,8 +199,8 @@ def get_daemon():
     scale_up_batch_size = params.autoscaling.scale_up_batch_size.get()
     scale_up_polling_delay = params.autoscaling.scale_up_polling_delay.get()
     scale_up_unavail_delay = params.autoscaling.scale_up_unavail_delay.get()
-    scale_up_unavail_count_insufficient = params.autoscaling_advanced.scale_up_unavail_count_insufficient.get()
-    scale_up_unavail_count_failure = params.autoscaling_advanced.scale_up_unavail_count_failure.get()
+    scale_up_unavail_count_insufficient = params.autoscaling.scale_up_unavail_count_insufficient.get()
+    scale_up_unavail_count_failure = params.autoscaling.scale_up_unavail_count_failure.get()
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default=30))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout', default=900))
 
