@@ -347,6 +347,8 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO clickMountBuckets() {
         waitForMountBuckets().closest("a").click();
+        ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"),
+                        exist);
         return this;
     }
 

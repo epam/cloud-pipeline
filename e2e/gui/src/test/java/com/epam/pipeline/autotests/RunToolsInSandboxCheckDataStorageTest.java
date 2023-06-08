@@ -101,8 +101,7 @@ public class RunToolsInSandboxCheckDataStorageTest
                         .setLaunchOptions(disk, type, null)
                         .launchTool(this, Utils.nameWithoutGroup(tool))
                         .showLog(getRunId())
-                        .waitForTask(mountDataStoragesTask)
-                        .clickTaskWithName(mountDataStoragesTask)
+                        .clickMountBuckets()
                         .logMessages().collect(toSet());
 
         assertTrue(logContainsMessageWith(log, bucket1));
