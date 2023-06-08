@@ -83,6 +83,8 @@ public class AggregatingToolScanManagerTest {
     public static final String DIGEST_1 = "digest1";
     public static final String DIGEST_2 = "digest2";
     public static final String DIGEST_3 = "digest3";
+    private static final String TEST_LABEL_NAME = "label-name";
+    private static final String TEST_LABEL_VALUE = "label-value";
 
     @InjectMocks
     private AggregatingToolScanManager aggregatingToolScanManager = new AggregatingToolScanManager();
@@ -138,6 +140,8 @@ public class AggregatingToolScanManagerTest {
     private ClairScanResult.ClairVulnerability clairVulnerability;
     private ClairScanResult.ClairFeature feature;
     private ToolDependency testDependency;
+    private final ToolDependency nvidiaDependency = new ToolDependency(
+            1, "latest", "NvidiaVersion", null, ToolDependency.Ecosystem.NVIDIA, null);
 
     @Before
     public void setUp() throws Exception {
@@ -156,6 +160,8 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn(MAX_MEDIUM_VULNERABILITIES);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS))
                 .thenReturn(0);
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_CUDNN_VERSION_LABEL))
+                .thenReturn(TEST_LABEL_NAME);
 
         Assert.assertNotNull(pipelineConfigurationManager); // Dummy line, to shut up PMD
 
@@ -205,7 +211,7 @@ public class AggregatingToolScanManagerTest {
         DockerComponentLayerScanResult layerScanResult = new DockerComponentLayerScanResult();
         testDependency = new ToolDependency(
                 1, "latest", "test", "1.0", ToolDependency.Ecosystem.R_PKG, "R Package");
-        layerScanResult.setDependencies(Collections.singletonList(testDependency));
+        layerScanResult.setDependencies(Arrays.asList(testDependency, nvidiaDependency));
         dockerComponentScanResult.setLayers(Collections.singletonList(layerScanResult));
 
         when(dataStorageApiService.getDataStorages()).thenReturn(Collections.emptyList());
@@ -221,6 +227,8 @@ public class AggregatingToolScanManagerTest {
                 .thenReturn(attributes);
         when(mockDockerClient.getVersionAttributes(any(), eq(TEST_IMAGE), eq(ACTUAL_SCANNED_VERSION)))
                 .thenReturn(actualAttr);
+        when(mockDockerClient.getImageLabels(any(), any(), any()))
+                .thenReturn(Collections.singletonMap(TEST_LABEL_NAME, TEST_LABEL_VALUE));
 
         when(clairService.scanLayer(any(ClairScanRequest.class)))
             .then((Answer<MockCall<ClairScanRequest>>) invocation ->
@@ -273,6 +281,7 @@ public class AggregatingToolScanManagerTest {
     @Test
     public void testScanTool() throws ToolScanExternalServiceException {
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
+        Assert.assertTrue(result.isCudaAvailable());
 
         Assert.assertFalse(result.getVulnerabilities().isEmpty());
 
@@ -284,7 +293,7 @@ public class AggregatingToolScanManagerTest {
         Assert.assertEquals(feature.getVersion(), loadedVulnerability.getFeatureVersion());
 
         List<ToolDependency> dependencies = result.getDependencies();
-        Assert.assertEquals(2, dependencies.size());
+        Assert.assertEquals(3, dependencies.size());
 
         ToolDependency loadedDependency = dependencies.get(0);
         Assert.assertEquals(testDependency.getName(), loadedDependency.getName());
@@ -293,6 +302,10 @@ public class AggregatingToolScanManagerTest {
         Assert.assertEquals(testDependency.getDescription(), loadedDependency.getDescription());
 
         loadedDependency = dependencies.get(1);
+        Assert.assertEquals(nvidiaDependency.getName(), "NvidiaVersion");
+        Assert.assertEquals(nvidiaDependency.getEcosystem(), loadedDependency.getEcosystem());
+
+        loadedDependency = dependencies.get(2);
         Assert.assertEquals(feature.getName(), loadedDependency.getName());
         Assert.assertEquals(ToolDependency.Ecosystem.SYSTEM, loadedDependency.getEcosystem());
         Assert.assertEquals(feature.getVersion(), loadedDependency.getVersion());

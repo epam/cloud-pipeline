@@ -55,6 +55,7 @@ public class ToolDependency {
         SWIFT("Swift.PM"),
         CMAKE("CMAKE"),
         RUBY("Ruby.Bundle"),
+        NVIDIA("Nvidia"),
         OTHER("OTHER");
 
         private static Map<String, Ecosystem> map;

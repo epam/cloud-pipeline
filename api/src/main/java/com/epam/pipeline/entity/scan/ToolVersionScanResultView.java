@@ -32,6 +32,7 @@ public class ToolVersionScanResultView {
     private Long toolId;
     private String version;
     private ToolOSVersionView toolOSVersion;
+    private boolean cudaAvailable;
     private ToolScanStatus status;
     private Date scanDate;
     private Date successScanDate;
@@ -61,6 +62,7 @@ public class ToolVersionScanResultView {
                     .vulnerabilitiesCount(scan.getVulnerabilitiesCount())
                     .defaultCmd(scan.getDefaultCmd())
                     .layersCount(scan.getLayersCount())
+                    .cudaAvailable(scan.isCudaAvailable())
                     .build()
         ).orElse(null);
     }
