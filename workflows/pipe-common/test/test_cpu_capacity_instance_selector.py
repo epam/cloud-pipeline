@@ -37,6 +37,9 @@ instance_32cpu = Instance(name='m5.8xlarge', price_type=price_type, cpu=32, mem=
 instance_48cpu = Instance(name='m5.12xlarge', price_type=price_type, cpu=48, mem=192, gpu=0)
 instance_64cpu = Instance(name='m5.16xlarge', price_type=price_type, cpu=64, mem=256, gpu=0)
 instance_96cpu = Instance(name='m5.24xlarge', price_type=price_type, cpu=96, mem=384, gpu=0)
+instance_8cpu1gpu = Instance(name='p3.2xlarge', price_type=price_type, cpu=8, mem=61, gpu=1)
+instance_32cpu4gpu = Instance(name='p3.8xlarge', price_type=price_type, cpu=32, mem=244, gpu=4)
+instance_64cpu8gpu = Instance(name='p3.16xlarge', price_type=price_type, cpu=64, mem=488, gpu=8)
 all_instances = [instance_2cpu, instance_4cpu,
                  instance_8cpu, instance_16cpu,
                  instance_32cpu, instance_48cpu,
@@ -46,6 +49,11 @@ test_cases = [
     ['2cpu job using no instances',
      [],
      [IntegralDemand(cpu=2, owner=owner)],
+     []],
+
+    ['4cpu job using 2cpu instances',
+     [instance_2cpu],
+     [IntegralDemand(cpu=4, owner=owner)],
      []],
 
     ['2cpu job using 2cpu instances',
@@ -197,7 +205,114 @@ test_cases = [
       instance_2cpu],
      3 * [IntegralDemand(cpu=2, owner=owner)],
      [InstanceDemand(instance=instance_4cpu, owner=owner),
-      InstanceDemand(instance=instance_4cpu, owner=owner)]]
+      InstanceDemand(instance=instance_4cpu, owner=owner)]],
+
+    ['2cpu,1gpu job using 2cpu instances',
+     [instance_2cpu],
+     [IntegralDemand(cpu=2, gpu=1, owner=owner)],
+     []],
+
+    ['2cpu,1gpu job using 8cpu,1gpu instances',
+     [instance_8cpu1gpu],
+     [IntegralDemand(cpu=2, gpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_8cpu1gpu, owner=owner)]],
+
+    ['2x2cpu,1gpu job using 8cpu,1gpu instances',
+     [instance_8cpu1gpu],
+     2 * [IntegralDemand(cpu=2, gpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_8cpu1gpu, owner=owner),
+      InstanceDemand(instance=instance_8cpu1gpu, owner=owner)]],
+
+    ['2cpu,2gpu job using 8cpu,1gpu instances',
+     [instance_8cpu1gpu],
+     [IntegralDemand(cpu=2, gpu=2, owner=owner)],
+     []],
+
+    ['2cpu,2gpu job using 32cpu,4gpu instances',
+     [instance_32cpu4gpu],
+     [IntegralDemand(cpu=2, gpu=2, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['2x2cpu,2gpu job using 32cpu,4gpu instances',
+     [instance_32cpu4gpu],
+     2 * [IntegralDemand(cpu=2, gpu=2, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['3x2cpu,2gpu job using 32cpu,4gpu instances',
+     [instance_32cpu4gpu],
+     3 * [IntegralDemand(cpu=2, gpu=2, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner),
+      InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['3x2cpu,2gpu job using 32cpu,4gpu instances',
+     [instance_32cpu4gpu],
+     4 * [IntegralDemand(cpu=2, gpu=2, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner),
+      InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['4cpu,4gpu job using 32cpu,4gpu instances',
+     [instance_32cpu4gpu],
+     [IntegralDemand(cpu=4, gpu=4, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['2x4cpu,4gpu job using 32cpu,4gpu instances',
+     [instance_32cpu4gpu],
+     2 * [IntegralDemand(cpu=4, gpu=4, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner),
+      InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['4cpu,4gpu job using 8cpu,1gpu instances',
+     [instance_8cpu1gpu],
+     [IntegralDemand(cpu=4, gpu=4, owner=owner)],
+     []],
+
+    ['1cpu,1gpu job using 8cpu,1gpu and 32cpu,4gpu instances',
+     [instance_8cpu1gpu,
+      instance_32cpu4gpu],
+     [IntegralDemand(cpu=1, gpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_8cpu1gpu, owner=owner)]],
+
+    ['2x1cpu,1gpu job using 8cpu,1gpu and 32cpu,4gpu instances',
+     [instance_8cpu1gpu,
+      instance_32cpu4gpu],
+     2 * [IntegralDemand(cpu=1, gpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['4cpu,4gpu job using 8cpu,1gpu and 32cpu,4gpu instances',
+     [instance_8cpu1gpu,
+      instance_32cpu4gpu],
+     [IntegralDemand(cpu=4, gpu=4, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['4cpu,4gpu job using 8cpu,1gpu and 32cpu,4gpu and 64cpu,8gpu instances',
+     [instance_8cpu1gpu,
+      instance_32cpu4gpu,
+      instance_64cpu8gpu],
+     [IntegralDemand(cpu=4, gpu=4, owner=owner)],
+     [InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['1cpu,1gpu job using 8cpu,1gpu and 32cpu,4gpu and 64cpu,8gpu instances',
+     [instance_8cpu1gpu,
+      instance_32cpu4gpu,
+      instance_64cpu8gpu],
+     [IntegralDemand(cpu=1, gpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_8cpu1gpu, owner=owner)]],
+
+    ['9x1cpu,1gpu job using 8cpu,1gpu and 32cpu,4gpu and 64cpu,8gpu instances',
+     [instance_8cpu1gpu,
+      instance_32cpu4gpu,
+      instance_64cpu8gpu],
+     9 * [IntegralDemand(cpu=1, gpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_64cpu8gpu, owner=owner),
+      InstanceDemand(instance=instance_8cpu1gpu, owner=owner)]],
+
+    ['10x1cpu,1gpu job using 8cpu,1gpu and 32cpu,4gpu and 64cpu,8gpu instances',
+     [instance_8cpu1gpu,
+      instance_32cpu4gpu,
+      instance_64cpu8gpu],
+     10 * [IntegralDemand(cpu=1, gpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_64cpu8gpu, owner=owner),
+      InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
 ]
 
 
