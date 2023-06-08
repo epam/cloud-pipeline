@@ -105,6 +105,7 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
         new PipelineCodeTabAO(PIPELINE_NAME)
                 .clearAndFillPipelineFile(RENAMED_FILE_NAME, editedCode)
                 .sleep(4, SECONDS)
+                .waitUntilRenameButtonAppears(RENAMED_FILE_NAME)
                 .clickOnFile(RENAMED_FILE_NAME)
                 .shouldContainInCode(editedCode)
                 .close();

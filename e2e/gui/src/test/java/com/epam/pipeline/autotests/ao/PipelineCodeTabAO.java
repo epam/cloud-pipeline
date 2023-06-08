@@ -86,7 +86,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $(byText(fileName)).click();
 
         //Click Edit
-        $$(".pipeline-code-form__button").findBy(text("Edit")).click();
+        $$(".pipeline-code-form__button").findBy(text("Edit")).shouldBe(exist).click();
 
         sleep(500, MILLISECONDS);
         Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
@@ -131,6 +131,14 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
                 .click();
 
         return new EditFilePopupAO();
+    }
+
+    public PipelineCodeTabAO waitUntilRenameButtonAppears(String filename) {
+        $$(tagName("tr"))
+                .find(text(filename))
+                .find(button("Rename"))
+                .shouldBe(exist);
+        return this;
     }
 
     public FileEditingPopupAO clickOnFile(String fileName) {
