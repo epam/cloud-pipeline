@@ -47,8 +47,15 @@ class Tool(API):
 
     def load_vulnerabilities(self, registry, group, tool):
         tool_path = group + '/' + tool
-        response_data = self.call('/tool/scan?registry=%s&tool=%s'
-                                  % (urllib.quote(registry), urllib.quote(tool_path)), None)
+        url = '/tool/scan?registry=%s&tool=%s' % (urllib.quote(registry), urllib.quote(tool_path))
+        return self._load_tool_scan(url)
+
+    def load_tool_scan(self, tool_path):
+        url = '/tool/scan?tool=%s' % urllib.quote(tool_path)
+        return self._load_tool_scan(url)
+
+    def _load_tool_scan(self, url):
+        response_data = self.call(url, None)
         if 'payload' in response_data:
             return ToolScanResultsModel.load(response_data['payload'])
         if 'message' in response_data:
