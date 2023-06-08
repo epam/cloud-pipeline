@@ -425,12 +425,18 @@ class GridEngineDemandSelector:
             allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
                                                          or self.grid_engine.get_pe_allocation_rule(job.pe)
             if allocation_rule in AllocationRule.fractional_rules():
-                remaining_demand = FractionalDemand(cpu=job.cpu, owner=job.user)
+                remaining_demand = FractionalDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
                 remaining_demand, remaining_supply = remaining_demand.subtract(remaining_supply)
-                if not remaining_demand:
-                    remaining_demand += FractionalDemand(cpu=1)
             else:
-                remaining_demand = IntegralDemand(cpu=job.cpu, owner=job.user)
+                remaining_demand = IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
+            if not remaining_demand:
+                Logger.warn('Problematic job #{job_id} {job_name} by {job_user} is pending for an unknown reason. '
+                            'The job requires resources which are already satisfied by the cluster: '
+                            '{job_cpu} cpu, {job_gpu} gpu, {job_mem} mem.'
+                            .format(job_id=job.id, job_name=job.name, job_user=job.user,
+                                    job_cpu=job.cpu, job_gpu=job.gpu, job_mem=job.mem),
+                            crucial=True)
+                continue
             yield remaining_demand
 
 
