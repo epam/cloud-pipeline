@@ -19,10 +19,7 @@ CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
 
 function build_cloud_pipeline() {
     # pre-fetch gradle dependency to get rid of gradle timeouts in the distTar step
-    ./gradlew api:dependencies core:dependencies notifier:smtp:dependencies billing-report-agent:dependencies \
-                  cloud-pipeline-common:model:dependencies core:dependencies data-sharing-service:api:dependencies \
-                  data-transfer-service:dependencies docker-comp-scan:dependencies elasticsearch-agent:dependencies \
-                  monitoring-service:dependencies vm-monitor:dependencies --no-daemon
+    ./gradlew clean buildDependents -Pfast -x test --no-daemon
 
     if [ "$?" != 0 ]; then
         echo "Problem with resolving gradle dependencies..."
@@ -53,11 +50,11 @@ function build_cloud_pipeline() {
         return 1
     fi
 
-    ./gradlew distTar   -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
-                        -Pprofile=release \
-                        -x test \
-                        -Pfast \
-                        --no-daemon
+    ./gradlew clean distTar -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
+                            -Pprofile=release \
+                            -x test \
+                            -Pfast \
+                            --no-daemon
 
     if [ "$?" != 0 ]; then
         echo "Problem with creating Cloud Pipeline dist..."
