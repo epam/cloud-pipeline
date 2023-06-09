@@ -43,7 +43,6 @@ public class RunToolsInSandboxCheckDataStorageTest
     private final String bucket1 = "test-storage-1-" + Utils.randomSuffix();
     private final String bucket2 = "test-storage-2-" + Utils.randomSuffix();
     private final String endpoint = C.VALID_ENDPOINT;
-    private final String mountDataStoragesTask = "MountDataStorages";
 
     @BeforeClass
     public void createBuckets() {
