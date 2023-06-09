@@ -163,11 +163,11 @@ public class LaunchLimitMountsTest
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage1), exist)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .clickTaskWithName(mountDataStoragesTask)
-                .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
-                .ensure(log(), containsMessages(format("Run is launched with mount limits (%s) Only 1 storages will be mounted", storageID)))
-                .ensure(log(), containsMessages(mountStorageMessage(storage1)))
+                .clickMountBuckets()
+                .ensure(log(), containsMessages(
+                        "Found 1 available storage(s). Checking mount options.",
+                        format("Run is launched with mount limits (%s) Only 1 storages will be mounted", storageID),
+                        mountStorageMessage(storage1)))
                 .ssh(shell -> shell
                         .waitUntilTextAppears(testRunID)
                         .execute("ls /cloud-data/")
@@ -194,8 +194,7 @@ public class LaunchLimitMountsTest
                 .showLog(getLastRunId())
                 .ensureNotVisible(PARAMETERS)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .clickTaskWithName(mountDataStoragesTask)
+                .clickMountBuckets()
                 .logMessages()
                 .collect(toSet());
 
@@ -277,8 +276,7 @@ public class LaunchLimitMountsTest
                 .expandTab(PARAMETERS)
                 .checkMountLimitsParameter(storageSensitive, storage1)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .clickTaskWithName(mountDataStoragesTask)
+                .clickMountBuckets()
                 .ensure(log(), containsMessages("Found 2 available storage(s). Checking mount options."))
                 .ensure(log(), matchText(format("Run is launched with mount limits \\((%s,%s|%s,%s)\\) Only 2 storages will be mounted",
                         sensitiveStorageID, storageID, storageID, sensitiveStorageID)))
@@ -375,8 +373,7 @@ public class LaunchLimitMountsTest
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", "None"), exist)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .clickTaskWithName(mountDataStoragesTask)
+                .clickMountBuckets()
                 .ensure(log(), containsMessages(
                         "Run is launched with mount limits (None) Only 0 storages will be mounted",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
