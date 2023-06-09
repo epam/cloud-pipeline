@@ -19,8 +19,8 @@ spec:
       containers:
         - name: cp-heapster-elk
           command: 
-          - chown -R elasticsearch /home/elasticsearch/elasticsearch/data && sh elasticsearch/bin/elasticsearch -Ehttp.host=0.0.0.0
-          image: nshou/elasticsearch-kibana:kibana5
+          - /init
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:heapster-elk-$CP_VERSION
           imagePullPolicy: "IfNotPresent"
           envFrom:
           - configMapRef:
@@ -38,6 +38,6 @@ spec:
       volumes:
         - name: heapster-elk-data
           hostPath:
-            path: /data/heapster-elk/data
+            path: /local/heapster-elk/data
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
