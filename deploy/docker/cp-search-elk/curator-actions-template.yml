@@ -51,6 +51,7 @@ actions:
       timeout_override: 300
       continue_if_exception: True
       ignore_empty_list: True
+      allow_ilm_indices: True
     filters:
       - filtertype: pattern
         kind: prefix
