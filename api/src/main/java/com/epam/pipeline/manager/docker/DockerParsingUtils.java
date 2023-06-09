@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.docker.HistoryEntryV1;
 import com.epam.pipeline.entity.docker.RawImageDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -80,6 +82,15 @@ public final class DockerParsingUtils {
             .collect(Collectors.toList());
         Collections.reverse(commandsHistory);
         return commandsHistory;
+    }
+
+    public static Map<String, String> getLabels(final RawImageDescription rawImage) {
+        return getHistoryEntryStream(rawImage)
+                .map(HistoryEntryV1::getContainerConfig)
+                .map(ContainerConfig::getLabels)
+                .filter(MapUtils::isNotEmpty)
+                .flatMap(labels -> labels.entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private static Stream<HistoryEntryV1> getHistoryEntryStream(final RawImageDescription rawImage) {

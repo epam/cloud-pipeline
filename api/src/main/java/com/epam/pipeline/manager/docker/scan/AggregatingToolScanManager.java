@@ -56,6 +56,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -316,12 +317,14 @@ public class AggregatingToolScanManager implements ToolScanManager {
             final DockerClient client = getDockerClient(tool.getImage(), registry);
             final String digest = client.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
             final List<ImageHistoryLayer> imageHistory = client.getImageHistory(registry, tool.getImage(), tag);
+            final boolean hasCudnnVersion = hasCudnnVersion(client, registry, tool.getImage(), tag);
             final String defaultCmd = toolManager.loadToolDefaultCommand(imageHistory);
 
             final ClairScanResult clairResult = getScanResult(tool, clairService.getScanResult(clairRef));
             final DockerComponentScanResult dockerScanResult = dockerComponentService == null ? null :
                     getScanResult(tool, dockerComponentService.getScanResult(clairRef));
-            return convertResults(clairResult, dockerScanResult, tool, tag, digest, defaultCmd, imageHistory.size());
+            return convertResults(clairResult, dockerScanResult, tool,
+                    tag, digest, defaultCmd, imageHistory.size(), hasCudnnVersion);
         } catch (IOException e) {
             throw new ToolScanExternalServiceException(tool, e);
         }
@@ -436,7 +439,8 @@ public class AggregatingToolScanManager implements ToolScanManager {
                                                  final String tag,
                                                  final String digest,
                                                  final String defaultCmd,
-                                                 final int layersCount) {
+                                                 final int layersCount,
+                                                 final boolean hasCudnnVersion) {
         final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
         final List<Vulnerability> vulnerabilities = Optional.ofNullable(clairScanResult)
                 .map(result -> ListUtils.emptyIfNull(result.getFeatures()).stream())
@@ -481,9 +485,12 @@ public class AggregatingToolScanManager implements ToolScanManager {
                 .findFirst().map(td -> new ToolOSVersion(td.getName(), td.getVersion()))
                 .orElseGet(() -> createEmptyToolOsVersion(tool, tag));
 
+        final boolean cudaAvailable = hasCudnnVersion && hasNvidiaInstalled(dependencies, tool, tag);
+
         final ToolVersionScanResult result = new ToolVersionScanResult(tag, osVersion, vulnerabilities,
                 dependencies, ToolScanStatus.COMPLETED, clairScanResult.getName(), digest, defaultCmd, layersCount);
         result.setVulnerabilitiesCount(vulnerabilitiesCount);
+        result.setCudaAvailable(cudaAvailable);
         return result;
     }
 
@@ -494,5 +501,26 @@ public class AggregatingToolScanManager implements ToolScanManager {
             .filter(WINDOWS_PLATFORM::equalsIgnoreCase)
             .map(platform -> new ToolOSVersion(WINDOWS_PLATFORM, StringUtils.EMPTY))
             .orElse(new ToolOSVersion(NOT_DETERMINED, NOT_DETERMINED));
+    }
+
+    private boolean hasCudnnVersion(final DockerClient client, final DockerRegistry registry,
+                                   final String image, final String tag) {
+        final String cudnnVersionLabel = preferenceManager.getPreference(
+                SystemPreferences.DOCKER_SECURITY_CUDNN_VERSION_LABEL);
+        final boolean hasCudnnVersion = MapUtils.emptyIfNull(client.getImageLabels(registry, image, tag))
+                .containsKey(cudnnVersionLabel);
+        if (hasCudnnVersion) {
+            LOGGER.debug("Found cudnn version label for tool '{}:{}'", image, tag);
+        }
+        return hasCudnnVersion;
+    }
+
+    private boolean hasNvidiaInstalled(final List<ToolDependency> dependencies, final Tool tool, final String tag) {
+        final boolean nvidiaInstalled = dependencies.stream()
+                .anyMatch(toolDependency -> ToolDependency.Ecosystem.NVIDIA.equals(toolDependency.getEcosystem()));
+        if (nvidiaInstalled) {
+            LOGGER.debug("Found nvidia version file for tool '{}:{}'", tool.getImage(), tag);
+        }
+        return nvidiaInstalled;
     }
 }

@@ -220,7 +220,7 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
                 .flatMap(group -> group.getTools().stream())
                 .forEach(tool -> toolVulnerabilityDao.insertToolVersionScan(tool.getId(), LATEST_VERSION,
                         expectedOsVersion, TEST_USER, TEST_USER, ToolScanStatus.COMPLETED, new Date(),
-                        Collections.emptyMap(), TEST_USER, 1));
+                        Collections.emptyMap(), TEST_USER, 1, false));
 
         final List<DockerRegistry> loadedRegistries = registryDao.loadAllRegistriesContent();
 

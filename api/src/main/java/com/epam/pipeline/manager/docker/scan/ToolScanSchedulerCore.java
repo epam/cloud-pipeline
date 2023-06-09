@@ -112,7 +112,7 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
                             version, result.getToolOSVersion(),
                             result.getLastLayerRef(), result.getDigest(), result.getVulnerabilitiesCount(),
-                            result.getDefaultCmd(), result.getLayersCount());
+                            result.getDefaultCmd(), result.getLayersCount(), result.isCudaAvailable());
                     updateToolVersion(tool, version, registry, dockerClient);
                 } catch (ToolScanExternalServiceException e) {
                     log.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
@@ -173,7 +173,7 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
                             scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
                             scanResult.getLastLayerRef(), scanResult.getDigest(), scanResult.getVulnerabilitiesCount(),
-                            scanResult.getDefaultCmd(), scanResult.getLayersCount());
+                            scanResult.getDefaultCmd(), scanResult.getLayersCount(), scanResult.isCudaAvailable());
                     return scanResult;
                 } catch (Exception e) {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
