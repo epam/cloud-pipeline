@@ -194,6 +194,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-search-elk \
                 -t "$CP_SEARCH_ELK_DIST_NAME"
 docker push "$CP_SEARCH_ELK_DIST_NAME"
 
+# Heapster ELK
+CP_HEAPSTER_ELK_DIST_NAME=${CP_HEAPSTER_ELK_DIST_NAME:-"$CP_DIST_REPO_NAME:heapster-elk-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-heapster-elk \
+                -t "$CP_HEAPSTER_ELK_DIST_NAME"
+docker push "$CP_HEAPSTER_ELK_DIST_NAME"
+
 # Node logger
 CP_NODE_LOGGER_DIST_NAME=${CP_NODE_LOGGER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-logger-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
