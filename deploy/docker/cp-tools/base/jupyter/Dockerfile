@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE=library/centos:7
+ARG BASE_IMAGE=library/centos:7.7.1908
 FROM ${BASE_IMAGE}
 
 # Common dependencies
@@ -28,7 +28,8 @@ RUN yum install -y wget \
                    git \
                    curl \
                    cairo \
-                   epel-release && \
+                   epel-release \
+                   nfs-utils && \
     yum clean all && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
