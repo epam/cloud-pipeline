@@ -127,9 +127,12 @@ fi
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_snapshot/log_backup_repo -d "$LOG_BACKUP_REPO"
 
+if [ ! -d /var/log/curator ]; then
+  mkdir -p /var/log/curator
+fi
 envsubst < /root/.curator/curator-actions-template.yml > /root/.curator/curator-actions.yml
 cat > /etc/cron.d/curator-cron <<EOL
-0 0 * * * curator --config /root/.curator/curator.yml /root/.curator/curator-actions.yml
+0 0 * * * curator --config /root/.curator/curator.yml /root/.curator/curator-actions.yml >> /var/log/curator/curator.log 2>&1
 EOL
 
 chmod 0644 /etc/cron.d/curator-cron

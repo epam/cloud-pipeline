@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.security.notification;
 
+import com.epam.pipeline.dto.notification.UserNotification;
 import com.epam.pipeline.entity.notification.UserNotificationEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
@@ -34,7 +35,7 @@ public class NotificationPermissionManager {
     private final CheckPermissionHelper permissionsHelper;
     private final UserManager userManager;
 
-    public boolean hasPermission(final UserNotificationEntity userNotification) {
+    public boolean hasPermission(final UserNotification userNotification) {
         if (Objects.nonNull(userNotification.getId())) {
             return hasPermission(userNotification.getId());
         }

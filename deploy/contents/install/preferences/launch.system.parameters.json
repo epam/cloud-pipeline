@@ -570,5 +570,12 @@
         "description": "Enables GPU exclusive mode",
         "defaultValue": "true",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SGE_GPU_RSMAP_DEVICES",
+        "type": "boolean",
+        "description": "Enables RSMAP-like GPU devices assignment",
+        "defaultValue": "true",
+        "passToWorkers": true
     }
 ]
