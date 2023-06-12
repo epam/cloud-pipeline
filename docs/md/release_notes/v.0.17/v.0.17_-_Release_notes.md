@@ -19,6 +19,7 @@
 - [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
+- [FS quotas](#fs-quotas)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
@@ -825,6 +826,67 @@ If the user starts a job in this time (_pool's schedule(s)_) and the instance re
 **_Note_**: pools management is available only for admins. Usage of pool nodes is available for any user.
 
 For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
+
+## FS quotas
+
+In some cases, users may store lots of extra files that are not needed more for them in FS storages.  
+Such amount of extra files may lead to unnecessary storage costs.  
+To prevent extra spending in this case, in the current version a new ability was implemented - FS quotas.
+
+There is a feature that allows admins to configure quota(s) to the FS storage volume that user can occupy.
+On exceeding such quota(s), different actions can be applied - e.g., just user notifying or fully read-only mode for the storage.
+
+This allows to minimize the shared filesystem costs by limiting the amount of data being stored in them and to notify the users/admins when FS storage is running out of the specific volume.
+
+To configure notifications/quota settings for the storage, admin shall:
+
+- click the **Configure notifications** hyperlink in the Attributes panel of the storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_01.png)
+- in the appeared pop-up, specify the username(s) or a groupname(s) in the **Recipients** input to choose who will get the FS quota notifications via emails and push notifications, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_02.png)
+- then click the **Add notification** to configure rules/thresholds:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_03.png)
+- Put a threshold in `Gb` or `%` of the total volume and choose which action shall be performed when that threshold is reached. The following actions can be taken by the platform:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_04.png)  
+    - _Send email_ - just notify the recipients that a quota has been reached (notification will be resent each hour)
+    - _Disable mount_ - used to let the users cleanup the data:  
+        - GUI will still allow to perform the modification of this storage (`read-write` mode )
+        - In existing nodes (launched runs), FS storage mount will be switched to a `read-only` mode (if it was mounted previously)
+        - This FS storage will be mounted in a `read-only` mode to the new launched compute nodes
+    - _Make read-only_ - used to stop any data activities from the users, only admins can cleanup the data per a request:  
+        - GUI will show this FS storage in a `read-only` mode
+        - Existing nodes (launched runs) will turn this mounted FS storage in a `read-only` mode as well
+        - This FS storage will be mounted in a `read-only` mode to the new launched compute nodes
+- The notification/quota rules can be combined in any form. E.g., the following example sets three levels of the thresholds. Each level notifies the users about the threshold exceeding and also introduces a new restriction:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_05.png)
+
+For example, if admin will configure notifications/quotas for the storage as described above:
+
+- when user(s) will create/upload some files in the storage and summary FS size will exceed 5 Gb threshold - only notifications will be sent to recipients
+- when user(s) will create/upload some more files in the storage and summary FS size will exceed 10 Gb threshold:  
+    - for active jobs (that were already launched), filesystem mount becomes `read-only` and users will not be able to perform any modification
+    - for new jobs, filesystem will be mounted as `read-only`  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_06.png)
+    - in GUI:  
+        - permissions will not be changed. Write operations can be performed, according to the permissions
+        - "**Warning**" icon will be displayed in the storage page. It will show `MOUNT DISABLED` state:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_07.png)
+        - Storage size will be more than 10 Gb:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_08.png)
+- when user(s) will create/upload some more files in the storage (e.g. via GUI) and summary FS size will exceed 20 Gb threshold:  
+    - for active jobs (that were already launched), filesystem mount will remain `read-only` and users will not be able to perform any modification
+    - for new jobs, filesystem will be mounted as `read-only`
+    - in GUI:  
+        - storage will become `read-only`. User will not be able to perform any modification to the filesystem
+        - "Warning" icon will be still displayed. It will show `READ ONLY` state  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_09.png)
+        - Storage size will be more than 20 Gb:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_10.png)
+    
+Please note, these restrictions will be applied to "general" users only.  
+Admins will not be affected by the restrictions. Even if the storage is in `read-only` state - they can perform _READ_ and _WRITE_ operations.
+
+For more details about FS quotas, their settings and options see [here](../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md#fs-quotas).
 
 ## Export cluster utilization in Excel format
 
