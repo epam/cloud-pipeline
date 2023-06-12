@@ -472,5 +472,19 @@
         "description": "Enables recovery support for a current run",
         "defaultValue": "true",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SGE_GPU_EXCLUSIVE_MODE",
+        "type": "boolean",
+        "description": "Enables GPU exclusive mode",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SGE_GPU_RSMAP_DEVICES",
+        "type": "boolean",
+        "description": "Enables RSMAP-like GPU devices assignment",
+        "defaultValue": "true",
+        "passToWorkers": true
     }
 ]
