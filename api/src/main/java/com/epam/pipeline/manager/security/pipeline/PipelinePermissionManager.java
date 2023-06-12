@@ -15,7 +15,6 @@
 
 package com.epam.pipeline.manager.security.pipeline;
 
-import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -38,8 +37,8 @@ public class PipelinePermissionManager {
     private final EntityManager entityManager;
 
     public boolean hasCreatePermission(final PipelineType type, final Long folderId) {
-        Folder folder = (Folder) entityManager.load(AclClass.FOLDER, folderId);
-        return checkManagerRole(type) && folderId != null  && permissionHelper.isAllowed(WRITE, folder);
+        return checkManagerRole(type) && folderId != null &&
+                permissionHelper.isAllowed(WRITE, entityManager.load(AclClass.FOLDER, folderId));
     }
 
     public boolean hasManagePermission(final Long id) {
