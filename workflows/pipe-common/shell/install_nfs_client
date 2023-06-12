@@ -30,16 +30,18 @@ then
     CHECK_NFS_SMB_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils"
     INSTALL_NFS_SMB_CMD="yum install nfs-utils cifs-utils -y -q"
     CHECK_LUSTRE_CMD="rpm -qa | grep lustre-client"
-    if [ "$CP_VER" == "6" ]; then
-        LUSTRE_VERSION="2.10.8-1"
-    elif [ "$CP_VER" == "7" ]; then
-        LUSTRE_VERSION="2.12.5-1"
-    elif [ "$CP_VER" == "8" ]; then
-        LUSTRE_VERSION="2.10.8-2"
-    elif [ "$CP_VER" == "8.7" ] && [ "$CP_OS" == "rocky" ]; then
-        LUSTRE_VERSION="2.12.5-1"
+    if [ "$CP_OS" == "rocky" ]; then
+      LUSTRE_VERSION="2.12.5-1"
     else
+      if [ "$CP_VER" == "6" ]; then
+        LUSTRE_VERSION="2.10.8-1"
+      elif [ "$CP_VER" == "7" ]; then
+        LUSTRE_VERSION="2.12.5-1"
+      elif [ "$CP_VER" == "8" ]; then
+        LUSTRE_VERSION="2.10.8-2"
+      else
         LUSTRE_VERSION="NA"
+      fi
     fi
 
     LUSTRE_VERSION="$LUSTRE_VERSION.el$CP_VER.x86_64"
