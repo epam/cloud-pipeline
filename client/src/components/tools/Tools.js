@@ -45,7 +45,7 @@ import roleModel from '../../utils/roleModel';
 import ToolsGroupListWithIssues from '../../models/tools/ToolsGroupListWithIssues';
 import PipelineRunFilter from '../../models/pipelines/PipelineRunSingleFilter';
 import HiddenObjects from '../../utils/hidden-objects';
-import {FILTER_TYPES} from './DockerRegistriesGroupsList';
+import extractTools, {TOP_USED_FILTER, DEFAULT_FILTER} from './utils/extractTools';
 import styles from './Tools.css';
 
 const findGroupByNameSelector = (name) => (group) => {
@@ -56,17 +56,6 @@ const findGroupByName = (groups, name) => {
 };
 
 const TOP_USED_AMOUNT = 5;
-
-function isPersonalGroup (group) {
-  const {
-    name = '',
-    owner: ownerName = ''
-  } = group || {};
-  const owner = (ownerName || '')
-    .replace(/[^a-zA-Z0-9-]/g, '-')
-    .toLowerCase();
-  return name.toLowerCase() === owner;
-}
 
 @roleModel.authenticationInfo
 @inject('dockerRegistries', 'authenticatedUserInfo')
@@ -100,16 +89,25 @@ export default class ToolsNew extends React.Component {
     (this.currentGroup && this.currentGroup.privateGroup);
   }
 
+  get filters () {
+    const filter = DEFAULT_FILTER;
+    if (!filter || !filter.groups) {
+      return null;
+    }
+    if (filter.showTopUsed) {
+      return {
+        ...filter,
+        groups: [TOP_USED_FILTER, ...filter.groups]
+      };
+    }
+    return filter;
+  }
+
   @computed
   get filter () {
     const {groupId} = this.props;
     if (typeof groupId === 'string' && groupId.length > 0 && isNaN(groupId)) {
-      const [filterBy, value] = decodeURIComponent(groupId).split('_');
-      return {
-        filter: groupId,
-        filterBy,
-        value
-      };
+      return decodeURIComponent(groupId);
     }
     return null;
   }
@@ -177,7 +175,7 @@ export default class ToolsNew extends React.Component {
   get currentGroup () {
     if (this.filter) {
       let tools;
-      if (this.filter.filterBy === FILTER_TYPES.top) {
+      if (this.filter === 'top-used') {
         if (this.completedRuns) {
           const imagesCount = this.completedRuns
             .map(run => {
@@ -197,30 +195,13 @@ export default class ToolsNew extends React.Component {
         } else {
           tools = [];
         }
-      } else if (this.filter.filterBy === FILTER_TYPES.personal) {
-        tools = this.groups
-          .filter(group => isPersonalGroup(group))
-          .reduce((acc, group) => [...acc, ...group.tools], []);
-      } else if (this.filter.filterBy === FILTER_TYPES.myTools) {
-        return this.groups.filter(g => g.privateGroup)[0] || {
-          id: 'personal',
-          tools: []
-        };
       } else {
-        tools = this.allTools
-          .filter(tool => {
-            if (this.filter.filterBy === FILTER_TYPES.os) {
-              return tool.toolOSVersion &&
-              tool.toolOSVersion.distribution === this.filter.value;
-            }
-            if (this.filter.filterBy === FILTER_TYPES.gpu) {
-              return tool.gpuEnabled === true;
-            }
-            return false;
-          });
+        const currentFilter = (this.filters.groups || [])
+          .find(group => group.id === this.filter);
+        tools = extractTools(this.groups, currentFilter);
       }
       return {
-        name: this.filter.filterBy,
+        name: this.filter,
         tools
       };
     }
@@ -452,6 +433,7 @@ export default class ToolsNew extends React.Component {
             registries={this.registries}
             groups={this.groups}
             filter={this.filter}
+            filters={this.filters}
           />
         </Col>
         <Col type="flex" className={styles.currentFolderActions}>
@@ -598,7 +580,7 @@ export default class ToolsNew extends React.Component {
       (
         this.filter &&
         this._completedRunsRequest &&
-        this.filter.filterBy === FILTER_TYPES.top
+        this.filter === 'top-used'
           ? this._completedRunsRequest.loaded
           : true
       )
@@ -619,7 +601,7 @@ export default class ToolsNew extends React.Component {
       isError = true;
     } else if (
       this.filter &&
-      this.filter.filterBy === FILTER_TYPES.top &&
+      this.filter === 'top-used' &&
       this._completedRunsRequest &&
       !this._completedRunsRequest.loaded
     ) {
@@ -733,7 +715,7 @@ export default class ToolsNew extends React.Component {
     this.redirectIfNeeded();
     if (
       this.filter &&
-      this.filter.filterBy === FILTER_TYPES.top &&
+      this.filter === 'top-used' &&
       !this._completedRunsRequest
     ) {
       this.fetchCompletedRuns();
@@ -756,7 +738,7 @@ export default class ToolsNew extends React.Component {
     }
     if (
       this.filter &&
-      this.filter.filterBy === FILTER_TYPES.top &&
+      this.filter === 'top-used' &&
       !this._completedRunsRequest
     ) {
       this.fetchCompletedRuns();

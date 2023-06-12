@@ -99,11 +99,13 @@ export default class DockerRegistriesNavigation extends React.Component {
       };
     }
     if (group) {
-      const getGroupName = (group) => {
-        if (this.props.filter) {
-          return this.props.filter.filterBy === FILTER_TYPES.os
-            ? (this.props.filter.value || '').toLowerCase()
-            : (GROUP_NAMES[this.props.filter.filterBy] || {}).name;
+      const getGroupName = (group, filter = '') => {
+        if (filter) {
+          const currentFilter = (this.props.filters.groups || [])
+            .find(group => group.id === filter);
+          return currentFilter
+            ? currentFilter.title
+            : filter;
         }
         if (group.privateGroup) {
           return 'My tools';
@@ -137,7 +139,7 @@ export default class DockerRegistriesNavigation extends React.Component {
             size="small"
             style={{border: 'none', fontWeight: 'bold'}}
           >
-            {getGroupName(group)}
+            {getGroupName(group, this.props.filter)}
           </Button>
         );
       }
@@ -156,6 +158,7 @@ export default class DockerRegistriesNavigation extends React.Component {
             <DockerRegistriesGroupsDropdownContent
               groups={groups}
               filter={this.props.filter}
+              filters={this.props.filters}
               isVisible={this.state.groupsDropDownVisible}
               currentGroup={this.props.currentGroup}
               onNavigate={(id) => {
@@ -177,7 +180,7 @@ export default class DockerRegistriesNavigation extends React.Component {
             id="current-group-button"
             size="small"
             style={{border: 'none', fontWeight: 'bold'}}>
-            {getGroupName(this.props.currentGroup)}
+            {getGroupName(this.props.currentGroup, this.props.filter)}
           </Button>
         </Dropdown>
       );
@@ -228,5 +231,6 @@ DockerRegistriesNavigation.propTypes = {
   currentGroup: PropTypes.object,
   onNavigate: PropTypes.func,
   onSearch: PropTypes.func,
-  filter: PropTypes.object
+  filter: PropTypes.string,
+  filters: PropTypes.object
 };
