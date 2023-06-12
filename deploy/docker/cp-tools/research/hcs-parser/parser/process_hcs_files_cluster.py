@@ -14,17 +14,73 @@
 
 import os
 import math
+from pipeline.api import PipelineAPI
 import tempfile
 import time
 import multiprocessing
 import re
 import traceback
 import subprocess
+import urllib
 
 from src.fs import get_processing_roots
 from src.utils import HcsFileLogger, log_run_info, log_run_success
 from src.utils import get_int_run_param, get_bool_run_param
 
+SUCCESS_EXIT_CODE = '0'
+ERROR_EXIT_CODE = '1'
+EMAIL_TEMPLATE = '''
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+        table,
+        td {{
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+        }}
+    </style>
+</head>
+
+<body>
+<p>Dear user,</p>
+<p>*** This is a system generated email, do not reply to this email ***</p>
+<p> {text} </p>
+<p>
+<table>
+    <tr>
+        <td><b>Image name</b></td>
+        <td><b>Status</b></td>
+        <td><b>Raw data</b></td>
+    </tr>
+    {events}
+</table>
+</p>
+<p>Best regards,</p>
+<p>{deploy_name} Platform</p>
+</body>
+
+</html>
+'''
+
+STARTED_TEXT = 'Starting HCS images processing in {deploy_name} Platform. ' \
+               'You can monitor processing using this <a href="{api}/#/run/{run_id}/plain">link</a>. ' \
+               'Please find list of images below:'
+
+FINISHED_TEXT = 'HCS images processing in {deploy_name} Platform has been finished ' \
+                'You can review processing logs using this <a href="{api}/#/run/{run_id}/plain">link</a>. ' \
+                'Please find list of images below:'
+
+EVENT_PATTERN = '''
+ <tr>
+            <td>{image}</td>
+            <td>{status}</a></td>
+            <td><a href="{api}/#/storage/{id}?path={path}">{folder_id}</a></td>
+ </tr>
+'''
 
 CLUSTER_MAX_SIZE = get_int_run_param('CP_CAP_AUTOSCALE_WORKERS', 1)
 TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
@@ -45,6 +101,13 @@ HCS_CLUSTER_PROCESSING_MEMORY_INSTANCE_SLOT = \
     get_int_run_param('HCS_PARSING_CLUSTER_PROCESSING_MEMORY_PER_INSTANCE_SLOT', 8)
 
 
+class HcsResult:
+    def __init__(self, path, image, status):
+        self.path = path
+        self.image = image
+        self.status = status
+
+
 class HcsFileSgeParser:
 
     SUBMISSION_LOCK = multiprocessing.Lock()
@@ -62,7 +125,10 @@ class HcsFileSgeParser:
 
     @staticmethod
     def release_submission_lock():
-        HcsFileSgeParser.SUBMISSION_LOCK.release()
+        try:
+            HcsFileSgeParser.SUBMISSION_LOCK.release()
+        except:
+            pass
 
     def log_info(self, message):
         self.processing_logger.log_info(message)
@@ -73,7 +139,7 @@ class HcsFileSgeParser:
         hcs_root_size = self._calculate_hcs_dir_size_gigabytes()
         if hcs_root_size < 0:
             self.log_info('Size calculation fails, skip processing')
-            return
+            return HcsResult(self.hcs_root_path, self.hcs_img_path, ERROR_EXIT_CODE)
         self.log_info('Total size: {} Gb'.format(hcs_root_size))
         if HCS_CLUSTER_INSTANCE_SLOT_SIZE > 0:
             memory_requirement_slots = HCS_CLUSTER_INSTANCE_SLOT_SIZE
@@ -94,8 +160,10 @@ class HcsFileSgeParser:
         job_stats_content = self._extract_job_stats(job_id)
         if job_stats_content is None:
             self.log_info('Unable to determine execution stats')
+            return HcsResult(self.hcs_root_path, self.hcs_img_path, ERROR_EXIT_CODE)
         else:
-            self._finalize_execution_stats(job_id, job_stats_content)
+            exit_code = self._finalize_execution_stats(job_id, job_stats_content)
+            return HcsResult(self.hcs_root_path, self.hcs_img_path, exit_code)
 
     def _calculate_hcs_dir_size_gigabytes(self):
         path_chunks = self.hcs_root_path.split('/cloud-data/', 1)
@@ -154,7 +222,9 @@ class HcsFileSgeParser:
         processing_script_text = """    
         {}
         bash "$HCS_TOOLS_HOME/scripts/start.sh"
+        result=$?
         pipe storage cp -f $ANALYSIS_DIR/hcs-parser-$RUN_ID.log $HCS_PARSING_LOGS_OUTPUT/{}/hcs-parser-worker-$RUN_ID.log
+        exit $result
         """.format(self._build_env_vars_to_propagate(heap_limit_gb), MASTER_RUN_ID)
         hcs_processing_job_script_path = tempfile.mkstemp(dir='/tmp', suffix='.sh', prefix='hcs-job-')[1]
         HcsFileSgeParser._write_to_file(hcs_processing_job_script_path, processing_script_text)
@@ -181,6 +251,8 @@ class HcsFileSgeParser:
         job_stats_file_path = tempfile.mkstemp(dir='/tmp', suffix='.stat', prefix='hcs-' + job_id)[1]
         HcsFileSgeParser._write_to_file(job_stats_file_path, job_stats_content)
         HcsFileSgeParser._try_copy_to_cloud_output_folder(job_stats_file_path, 'job-{}.stat'.format(job_id))
+        exit_code = re.search("\nexit_status (.*)\n", job_stats_content).group(1).strip()
+        return exit_code
 
     def _process_submission_in_sge_sync_mode(self, slots_requirement, script_path):
         HcsFileSgeParser.acquire_submission_lock()
@@ -223,8 +295,10 @@ def try_process_hcs_in_cluster(hcs_root_dir):
         return parser.process_file_in_sge()
     except Exception as e:
         parser.log_info('An error occurred during parsing: ' + str(e))
-        parser.release_submission_lock()
         print(traceback.format_exc())
+        return HcsResult(hcs_root_dir.root_path, hcs_root_dir.hcs_img_path, ERROR_EXIT_CODE)
+    finally:
+        parser.release_submission_lock()
 
 
 def process_hcs_files_cluster():
@@ -234,10 +308,85 @@ def process_hcs_files_cluster():
         log_run_success('Found no files requires processing in the lookup directories.')
         exit(0)
     log_run_info('Found {} files for processing.'.format(len(paths_to_hcs_roots)))
+    notify_processing_started(paths_to_hcs_roots)
     pool = multiprocessing.Pool(CLUSTER_MAX_SIZE)
-    pool.map(try_process_hcs_in_cluster, paths_to_hcs_roots)
+    results = pool.map(try_process_hcs_in_cluster, paths_to_hcs_roots)
+    notify_processing_finished(results)
     log_run_success('Finished HCS files processing')
     exit(0)
+
+
+def get_api_link(url):
+    return url.rstrip('/').replace('/restapi', '')
+
+
+def prepare_path(path):
+    path = '/'.join(path.split('/')[3:])
+    return urllib.quote(path, safe='');
+
+
+def build_notification_text(images, deploy_name, template, finish=False):
+    message_str = ''
+    api_link = get_api_link(os.environ['API'])
+    data_storage_id = os.getenv('HCS_DATA_STORAGE_ID', '')
+    markup_storage_id = os.getenv('HCS_MARKUP_STORAGE_ID', '')
+    for image in images:
+        image_name = os.path.basename(image.image).replace('.hcs', '')
+        if finish and os.path.isfile(image.image):
+            image_str = '<a href="%s/#/hcs?storage=%s&path=%s">%s</a>' % (api_link, markup_storage_id, prepare_path(image.image), image_name)
+        else:
+            image_str = image_name
+        path = '/'.join(image.path.split('/')[3:])
+        if finish:
+            status = 'Success' if image.status == SUCCESS_EXIT_CODE else 'Failure'
+        else:
+            status = image.status
+        message_str += EVENT_PATTERN.format(**{'image': image_str,
+                                               'path':  prepare_path(image.path),
+                                               'status': status,
+                                               'api': api_link,
+                                               'id': data_storage_id,
+                                               'folder_id': os.path.basename(path)})
+    text = template.format(**{'api': api_link,
+                              'run_id': os.getenv('RUN_ID'),
+                              'deploy_name': deploy_name})
+
+    return EMAIL_TEMPLATE.format(**{'events': message_str,
+                                    'api': api_link,
+                                    'text': text,
+                                    'deploy_name': deploy_name})
+
+
+def notify_processing_finished(results):
+    notify_users = get_notification_settings()
+    if not notify_users:
+        return
+    deploy_name = os.getenv('HCS_DEPLOY_NAME', 'Cloud Pipeline')
+    api = PipelineAPI(os.environ['API'], 'logs')
+    api.create_notification('[%s]: HCS images processing finished' % deploy_name,
+                            build_notification_text(results, deploy_name, FINISHED_TEXT, finish=True),
+                            notify_users[0],
+                            copy_users=notify_users[1:] if len(notify_users) > 0 else None)
+
+
+def notify_processing_started(paths_to_hcs_roots):
+    notify_users = get_notification_settings()
+    if not notify_users:
+        return
+    deploy_name = os.getenv('HCS_DEPLOY_NAME', 'Cloud Pipeline')
+    api = PipelineAPI(os.environ['API'], 'logs')
+    results = [HcsResult(root.root_path, root.hcs_img_path, 'Starting image processing') for root in paths_to_hcs_roots]
+    api.create_notification('[%s]: HCS images processing started' % deploy_name,
+                            build_notification_text(results, deploy_name, STARTED_TEXT),
+                            notify_users[0],
+                            copy_users=notify_users[1:] if len(notify_users) > 0 else None)
+
+
+def get_notification_settings():
+    notify_users = os.getenv('HCS_NOTIFY_USERS', '')
+    if not notify_users:
+        return None
+    return notify_users.split(',')
 
 
 if __name__ == '__main__':

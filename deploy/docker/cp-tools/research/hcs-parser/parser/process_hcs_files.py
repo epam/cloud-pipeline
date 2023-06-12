@@ -44,6 +44,7 @@ def try_process_hcs(hcs_root):
     except Exception as e:
         log_run_info('An error occurred during [{}] parsing: {}'.format(hcs_root.root_path, str(e)))
         print(traceback.format_exc())
+        return 1
     finally:
         if parser:
             if processing_result != 2:
@@ -69,14 +70,17 @@ def process_hcs_files():
         log_run_info('Only tags will be processed, since TAGS_PROCESSING_ONLY is set to `true`')
     if EVAL_PROCESSING_ONLY:
         log_run_info('Only evaluations will be processed, since EVAL_PROCESSING_ONLY is set to `true`')
+    exit_code = 0
     if processing_threads == 1:
         for file_path in paths_to_hcs_roots:
-            try_process_hcs(file_path)
+            result = try_process_hcs(file_path)
+            if result == 1:
+                exit_code = result
     else:
         pool = multiprocessing.Pool(processing_threads)
         pool.map(try_process_hcs, paths_to_hcs_roots)
     log_run_success('Finished HCS files processing')
-    exit(0)
+    exit(exit_code)
 
 
 if __name__ == '__main__':
