@@ -52,25 +52,6 @@ RUN apt-get update && apt-get install -y automake \
                         gettext-base \
                         libjsoncpp-dev && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
-    # Install gitfs
-RUN apt-get install -y libssl1.0-dev \
-                        libffi-dev \
-                        python-dev
-
-RUN  wget -q https://github.com/libgit2/libgit2/archive/v0.24.1.tar.gz && \
-        tar xzf v0.24.1.tar.gz && \
-        cd libgit2-0.24.1/ && \
-        cmake . && \
-        make && make install && cd ..
-
-RUN ldconfig
-RUN pip install 'pygit2==0.24.1'
-
-RUN wget -q https://codeload.github.com/PressLabs/gitfs/zip/0.4.5.1 && \
-        unzip 0.4.5.1 && \
-        cd gitfs-0.4.5.1 && \
-        python setup.py install && cd ..
-RUN mkdir -p /var/lib/gitfs
 
 # Configure nginx
 RUN     mkdir -p /etc/nginx/sites-enabled/
