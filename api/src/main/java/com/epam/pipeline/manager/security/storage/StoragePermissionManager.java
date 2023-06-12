@@ -50,7 +50,6 @@ import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -172,7 +171,8 @@ public class StoragePermissionManager {
                 && (grantPermissionManager.isOwnerOrAdmin(storage.getOwner())
                 || !isRestrictedTagsAccessEnabled()
                 || !hasRestrictedTags(tags)
-                || hasAnyRole(DefaultRoles.ROLE_STORAGE_MANAGER, DefaultRoles.ROLE_STORAGE_TAG_MANAGER));
+                || permissionHelper.hasAnyRole(
+                        DefaultRoles.ROLE_STORAGE_MANAGER, DefaultRoles.ROLE_STORAGE_TAG_MANAGER));
     }
 
     private boolean isRestrictedTagsAccessEnabled() {
@@ -190,21 +190,6 @@ public class StoragePermissionManager {
         return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS)
                 .map(preferenceManager::getPreference)
                 .orElseGet(Collections::emptyList);
-    }
-
-    private boolean hasAnyRole(final DefaultRoles... roles) {
-        return hasAnyRole(Arrays.asList(roles));
-    }
-
-    private boolean hasAnyRole(final List<DefaultRoles> roles) {
-        return hasAnySid(roles.stream()
-                .map(DefaultRoles::getName)
-                .map(GrantedAuthoritySid::new)
-                .collect(Collectors.toList()));
-    }
-
-    private boolean hasAnySid(final List<Sid> sids) {
-        return permissionHelper.getSids().stream().anyMatch(sids::contains);
     }
 
     public void filterStorage(final List<AbstractDataStorage> storages,

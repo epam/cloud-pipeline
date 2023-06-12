@@ -31,7 +31,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * {@code PermissionsHelper} provides methods for ACL permissions check.
@@ -107,6 +109,21 @@ public class CheckPermissionHelper {
     public boolean isAdmin(final String userName) {
         final GrantedAuthoritySid admin = new GrantedAuthoritySid(DefaultRoles.ROLE_ADMIN.getName());
         return getSids(userName).stream().anyMatch(sid -> sid.equals(admin));
+    }
+
+    public boolean hasAnyRole(final DefaultRoles... roles) {
+        return hasAnyRole(Arrays.asList(roles));
+    }
+
+    public boolean hasAnyRole(final List<DefaultRoles> roles) {
+        return hasAnySid(roles.stream()
+                .map(DefaultRoles::getName)
+                .map(GrantedAuthoritySid::new)
+                .collect(Collectors.toList()));
+    }
+
+    public boolean hasAnySid(final List<Sid> sids) {
+        return getSids().stream().anyMatch(sids::contains);
     }
 
     public List<Sid> getSids() {
