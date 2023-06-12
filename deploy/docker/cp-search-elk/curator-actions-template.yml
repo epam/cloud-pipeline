@@ -15,6 +15,7 @@ actions:
       skip_repo_fs_check: False
       disable_action: False
       continue_if_exception: False
+      ignore_empty_list: True
     filters:
       - filtertype: pattern
         kind: prefix

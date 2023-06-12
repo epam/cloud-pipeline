@@ -31,7 +31,7 @@ spec:
           - configMapRef:
               name: cp-config-global
           volumeMounts:
-            - mountPath: /var/lib/elasticsearch
+            - mountPath: /usr/share/elasticsearch/data
               name: search-elk-data
             - mountPath: /var/log/curator
               name: search-elk-curator-log
