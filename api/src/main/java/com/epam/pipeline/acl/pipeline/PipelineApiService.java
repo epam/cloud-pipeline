@@ -67,6 +67,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_COPY;
+import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_CREATE;
+import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_MANAGE;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_WRITE;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_VO_WRITE;
@@ -101,9 +104,7 @@ public class PipelineApiService {
     @Autowired
     private PipelineRepositoryService pipelineRepositoryService;
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "(#pipeline.parentFolderId != null AND hasRole('PIPELINE_MANAGER') AND "
-            + "hasPermission(#pipeline.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
+    @PreAuthorize(PIPELINE_CREATE)
     public Pipeline create(final PipelineVO pipeline) throws GitClientException {
         return pipelineManager.create(pipeline);
     }
@@ -153,8 +154,7 @@ public class PipelineApiService {
         return pipelineManager.loadAllPipelines(false);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('PIPELINE_MANAGER') "
-            + "AND hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE'))")
+    @PreAuthorize(PIPELINE_ID_MANAGE)
     public Pipeline delete(Long id, boolean keepRepository) {
         return pipelineManager.delete(id, keepRepository);
     }
@@ -312,8 +312,7 @@ public class PipelineApiService {
         return pipelineManager.loadByRepoUrl(url);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('PIPELINE_MANAGER') AND " +
-            "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE'))")
+    @PreAuthorize(PIPELINE_ID_MANAGE)
     public GitRepositoryEntry addHookToPipelineRepository(Long id) throws GitClientException {
         return gitManager.addHookToPipelineRepository(id);
     }
@@ -324,9 +323,7 @@ public class PipelineApiService {
         return gitManager.getRepositoryContents(id, version, path);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ') AND "
-            + "(#parentFolderId != null AND hasRole('PIPELINE_MANAGER') AND "
-            + "hasPermission(#parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
+    @PreAuthorize(PIPELINE_COPY)
     public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
         return pipelineManager.copyPipeline(id, parentFolderId, newName);
     }

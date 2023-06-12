@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
@@ -102,13 +103,29 @@ public final class PipelineCreatorUtils {
         final Pipeline pipeline = getPipeline();
         pipeline.setId(id);
         pipeline.setOwner(owner);
+        pipeline.setPipelineType(PipelineType.PIPELINE);
+        pipeline.setParentFolderId(parentId);
+        pipeline.setCurrentVersion(getRevision());
+        return pipeline;
+    }
+
+    public static Pipeline getPipeline(final Long id, final String owner, final Long parentId,
+                                       final PipelineType type) {
+        final Pipeline pipeline = getPipeline();
+        pipeline.setId(id);
+        pipeline.setOwner(owner);
+        pipeline.setPipelineType(type);
         pipeline.setParentFolderId(parentId);
         pipeline.setCurrentVersion(getRevision());
         return pipeline;
     }
 
     public static Pipeline getPipeline(final String owner) {
-        return getPipeline(ID, owner, ID);
+        return getPipeline(ID, owner, ID, PipelineType.PIPELINE);
+    }
+
+    public static Pipeline getVersionedStorage(final String owner) {
+        return getPipeline(ID, owner, ID, PipelineType.VERSIONED_STORAGE);
     }
 
     public static PipelineRun getPipelineRun() {
@@ -153,6 +170,14 @@ public final class PipelineCreatorUtils {
     public static PipelineVO getPipelineVO(final Long id) {
         final PipelineVO pipelineVO = getPipelineVO();
         pipelineVO.setId(ID);
+        pipelineVO.setParentFolderId(id);
+        return pipelineVO;
+    }
+
+    public static PipelineVO getVersionedStorageVO(final Long id) {
+        final PipelineVO pipelineVO = getPipelineVO();
+        pipelineVO.setId(ID);
+        pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
         pipelineVO.setParentFolderId(id);
         return pipelineVO;
     }

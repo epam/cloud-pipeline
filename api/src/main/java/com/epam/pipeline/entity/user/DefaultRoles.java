@@ -35,7 +35,10 @@ public enum DefaultRoles {
     ROLE_STORAGE_ARCHIVE_MANAGER(new Role(null, "ROLE_STORAGE_ARCHIVE_MANAGER", true, false, null, null, null, null)),
     ROLE_STORAGE_ARCHIVE_READER(new Role(null, "ROLE_STORAGE_ARCHIVE_READER", true, false, null, null, null, null)),
     ROLE_STORAGE_MANAGER(new Role(null, "ROLE_STORAGE_MANAGER", true, false, null, null, null, null)),
-    ROLE_STORAGE_TAG_MANAGER(new Role(null, "ROLE_STORAGE_TAG_MANAGER", true, false, null, null, null, null));
+    ROLE_STORAGE_TAG_MANAGER(new Role(null, "ROLE_STORAGE_TAG_MANAGER", true, false, null, null, null, null)),
+    ROLE_PIPELINE_MANAGER(new Role(null, "ROLE_PIPELINE_MANAGER", true, false, null, null, null, null)),
+    ROLE_VERSIONED_STORAGE_MANAGER(new Role(null, "ROLE_VERSIONED_STORAGE_MANAGER", true, false,
+            null, null, null, null));
 
     private Role role;
 
