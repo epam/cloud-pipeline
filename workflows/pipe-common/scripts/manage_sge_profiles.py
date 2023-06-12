@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import subprocess
+import tarfile
 import tempfile
 from collections import namedtuple
 
@@ -54,9 +55,11 @@ def errorhandling(func):
 
 class GridEngineProfileManager:
 
-    def __init__(self, executor, logger, cap_scripts_dir, queue_profile_regexp, autoscaling_script_path):
+    def __init__(self, executor, logger, logger_warning, cap_scripts_dir, queue_profile_regexp,
+                 autoscaling_script_path):
         self._executor = executor
         self._logger = logger
+        self._logger_warning = logger_warning
         self._cap_scripts_dir = cap_scripts_dir
         self._queue_profile_regexp = queue_profile_regexp
         self._autoscaling_script_path = autoscaling_script_path
@@ -122,6 +125,30 @@ class GridEngineProfileManager:
         for profile in profiles:
             self._logger.info('Grid engine profile has been found: {}'.format(profile.name))
 
+    @errorhandling
+    def export(self, profile_names, output_path):
+        self._logger.info('Initiating grid engine profile export...')
+        if profile_names:
+            profiles = list(self._get_profiles(profile_names))
+        else:
+            profiles = list(self._collect_profiles(self._cap_scripts_dir, self._queue_profile_regexp))
+        sge_backup_path = self._create_sge_backup()
+        with tarfile.open(output_path, 'w:gz') as tar:
+            self._logger.info('Exporting grid engine backup...'.format(sge_backup_path))
+            tar.add(sge_backup_path, arcname='backup')
+            for profile in profiles:
+                self._logger.info('Exporting grid engine {} profile...'.format(profile.name))
+                tar.add(profile.path_queue, arcname='profiles/' + os.path.basename(profile.path_queue))
+                tar.add(profile.path_autoscaling, arcname='profiles/' + os.path.basename(profile.path_autoscaling))
+
+    def _create_sge_backup(self):
+        sge_backup_dir = tempfile.mkdtemp()
+        self._logger.info('Saving grid engine backup to {}...'.format(sge_backup_dir))
+        self._executor.execute("""
+${{SGE_ROOT}}/util/upgrade_modules/save_sge_config.sh "{backup_dir}"
+        """.format(backup_dir=sge_backup_dir))
+        return sge_backup_dir
+
     def _find_editor(self):
         self._logger.debug('Searching for editor...')
         default_editor = os.getenv('VISUAL', os.getenv('EDITOR'))
@@ -160,6 +187,14 @@ class GridEngineProfileManager:
         for profile in profiles:
             if profile.name == profile_name:
                 return profile
+
+    def _get_profiles(self, profile_names):
+        for profile_name in profile_names:
+            profile = self._find_profile(self._cap_scripts_dir, self._queue_profile_regexp, profile_name)
+            if not profile:
+                self._logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
+                raise GridEngineProfileError()
+            yield profile
 
     def _collect_profiles(self, cap_scripts_dir, profile_regexp):
         self._logger.debug('Collecting existing profiles...')
@@ -256,7 +291,8 @@ export CP_CAP_AUTOSCALE_DRY_INIT="true"
 source "{autoscaling_profile_path}"
 "$CP_PYTHON2_PATH" "{autoscaling_script_path}"
             """.format(autoscaling_profile_path=profile.path_queue,
-                       autoscaling_script_path=autoscaling_script_path))
+                       autoscaling_script_path=autoscaling_script_path),
+                                   logger=self._logger_warning)
             self._logger.debug('Grid engine {} autoscaling has been verified.'.format(profile.name))
             return True
         except ExecutorError:
@@ -320,11 +356,12 @@ def _get_manager():
     logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
 
-    executor_logger = ExplicitLogger(level='WARNING', inner=logger)
-    executor = LocalExecutor()
-    executor = LoggingExecutor(logger=executor_logger, inner=executor)
+    logger_warning = ExplicitLogger(level='WARNING', inner=logger)
 
-    return GridEngineProfileManager(executor=executor, logger=logger,
+    executor = LocalExecutor()
+    executor = LoggingExecutor(logger=logger, inner=executor)
+
+    return GridEngineProfileManager(executor=executor, logger=logger, logger_warning=logger_warning,
                                     cap_scripts_dir=cap_scripts_dir,
                                     queue_profile_regexp=queue_profile_regexp,
                                     autoscaling_script_path=autoscaling_script_path)
@@ -354,6 +391,15 @@ def cli():
     IV. List all existing grid engine profiles
 
         sge list
+
+    V. Export all existing grid engine profiles
+
+        sge export sge.export.tar.gz
+
+    VI. Export certain existing grid engine profiles
+
+        sge export queue1.q sge.export.tar.gz
+        sge export queue1.q queue2.q sge.export.tar.gz
 
     """
     pass
@@ -417,8 +463,8 @@ def restart(name):
     manager.restart(profile_name=name)
 
 
-@cli.command()
-def list():
+@cli.command('list')
+def ls():
     """
     Lists profiles.
 
@@ -431,6 +477,26 @@ def list():
     """
     manager = _get_manager()
     manager.list()
+
+
+@cli.command()
+@click.argument('names', required=False, type=str, nargs=-1)
+@click.argument('output', required=True, type=str)
+def export(names, output):
+    """
+    Export profiles.
+
+    It exports either all or certain existing grid engine profiles (queues) to a single tar gz file.
+
+    Examples:
+
+        sge export sge.export.tar.gz
+        sge export queue1.q sge.export.tar.gz
+        sge export queue1.q queue2.q sge.export.tar.gz
+
+    """
+    manager = _get_manager()
+    manager.export(profile_names=names, output_path=output)
 
 
 if __name__ == '__main__':
