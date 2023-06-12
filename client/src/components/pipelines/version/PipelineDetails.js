@@ -108,11 +108,33 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   }
 
   @computed
+  get isCWLPipeline () {
+    const {language} = this.props;
+    if (language && language.loaded) {
+      return /^cwl$/i.test(language.value);
+    }
+    return false;
+  }
+
+  get activeTabPath () {
+    const {
+      router: {location}
+    } = this.props;
+    const [,, activeTab] = location.pathname.split('/').filter(o => o.length);
+    return activeTab ? activeTab.toLowerCase() : undefined;
+  }
+
+  @computed
   get tabs () {
     const {
       pipelineId: id,
       version
     } = this.props;
+    const workflow = this.displayGraph && this.isCWLPipeline ? {
+      key: 'workflow',
+      title: 'Workflow',
+      link: `/${id}/${version}/workflow`
+    } : false;
     const documents = {
       key: 'documents',
       title: 'Documents',
@@ -128,7 +150,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       title: 'Configuration',
       link: `/${id}/${version}/configuration`
     };
-    const graph = this.displayGraph ? {
+    const graph = this.displayGraph && !this.isCWLPipeline ? {
       key: 'graph',
       title: 'Graph',
       link: `/${id}/${version}/graph`
@@ -153,6 +175,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         ].filter(Boolean);
       default:
         return [
+          workflow,
           this.docsPath ? documents : false,
           this.codePath ? code : false,
           configuration,
@@ -172,14 +195,24 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   }
 
   redirectIfRequired = () => {
-    if (this.props.pipeline.loaded) {
-      const {id, pipelineType} = this.props.pipeline.value;
+    const {
+      pipeline,
+      language
+    } = this.props;
+    if (
+      pipeline &&
+      pipeline.loaded
+    ) {
+      const {id, pipelineType} = pipeline.value;
       if (/^versioned_storage$/i.test(pipelineType)) {
         this.props.router && this.props.router.push(`/vs/${id}`);
-      } else {
-        const {router: {location}} = this.props;
-        const [,, activeTab] = location.pathname.split('/').filter(o => o.length);
-        const currentTab = this.tabs.find(o => o.key === activeTab);
+        return;
+      }
+      if (
+        language &&
+        language.loaded
+      ) {
+        const currentTab = this.tabs.find(o => o.key === this.activeTabPath);
         const [first] = this.tabs;
         if (!currentTab && first) {
           this.props.router && this.props.router.push(first.link);
@@ -369,10 +402,17 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   };
 
   render () {
-    if (!this.props.pipeline.loaded && this.props.pipeline.pending) {
+    const {
+      pipeline,
+      language
+    } = this.props;
+    if (
+      (!pipeline.loaded && pipeline.pending) ||
+      (!language.loaded && language.pending)
+    ) {
       return <LoadingView />;
     }
-    if (this.props.pipeline.error) {
+    if (pipeline.error) {
       return <Alert type="error" message={this.props.pipeline.error} />;
     }
 
@@ -384,7 +424,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     }
 
     const {router: {location}} = this.props;
-    const [,, activeTab] = location.pathname.split('/').filter(o => o.length);
+    const activeTab = this.activeTabPath;
 
     return (
       <div

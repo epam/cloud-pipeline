@@ -1366,7 +1366,7 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-t', '--threads', help='Enables multithreading', is_flag=True)
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
 @click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
-              default=1000, type=int)
+              default=10000, type=int)
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @common_options
 def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode,

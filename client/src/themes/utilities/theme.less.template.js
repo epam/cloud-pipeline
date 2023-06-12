@@ -260,7 +260,8 @@ export default `
   border: 1px solid @application-color;
 }
 @THEME .cp-tag.filled,
-@THEME .cp-tag.link:hover {
+@THEME .cp-tag.link:hover,
+@THEME .cp-tag.hovered {
   background-color: @application-color;
   border: 1px solid @application-color;
   color: @application-background-color;
@@ -269,7 +270,8 @@ export default `
   color: @application-color-disabled;
 }
 @THEME .cp-tag.filled.disabled,
-@THEME .cp-tag.link.disabled:hover {
+@THEME .cp-tag.link.disabled:hover,
+@THEME .cp-tag.disabled.hovered {
   background-color: @application-color-disabled;
   border: 1px solid @application-color-disabled;
 }
@@ -278,7 +280,8 @@ export default `
   color: @color-yellow;
 }
 @THEME .cp-tag.warning.filled,
-@THEME .cp-tag.warning.link:hover {
+@THEME .cp-tag.warning.link:hover,
+@THEME .cp-tag.warning.hovered {
   background-color: @color-yellow;
   border-color: @color-yellow;
   color: @primary-text-color;
@@ -288,7 +291,8 @@ export default `
   color: @color-red;
 }
 @THEME .cp-tag.critical.filled,
-@THEME .cp-tag.critical.link:hover {
+@THEME .cp-tag.critical.link:hover,
+@THEME .cp-tag.critical.hovered {
   background-color: @color-red;
   border-color: @color-red;
   color: @primary-text-color;
@@ -298,7 +302,8 @@ export default `
   color: @color-green;
 }
 @THEME .cp-tag.success.filled,
-@THEME .cp-tag.success.link:hover {
+@THEME .cp-tag.success.link:hover,
+@THEME .cp-tag.success.hovered {
   background-color: @color-green;
   border-color: @color-green;
   color: @primary-text-color;
@@ -311,7 +316,9 @@ export default `
 @THEME .cp-tag.primary.filled,
 @THEME .cp-tag.cp-primary.filled,
 @THEME .cp-tag.primary.link:hover,
-@THEME .cp-tag.cp-primary.link:hover {
+@THEME .cp-tag.primary.hovered,
+@THEME .cp-tag.cp-primary.link:hover,
+@THEME .cp-tag.cp-primary.hovered {
   background-color: @primary-color;
   border-color: @primary-color;
   color: @primary-text-color;
@@ -2056,6 +2063,9 @@ export default `
 @THEME .ant-tooltip-inner .cp-run-nested-run-link:active,
 @THEME .ant-tooltip-inner .cp-run-nested-run-link:focus,
 @THEME .ant-tooltip-inner .cp-run-nested-run-link:visited {
+  color: @application-color-tooltip;
+}
+@THEME .tooltip-text {
   color: @application-color-tooltip;
 }
 @THEME .cp-wdl-task[data-type=VisualStep] rect,

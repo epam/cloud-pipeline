@@ -35,6 +35,7 @@ public class AutonomousSyncRule {
     private Boolean deleteSource;
     private List<TransferTrigger> transferTriggers;
     private Boolean checkSyncToken;
+    private Boolean checkIllumina;
     private AutonomousSyncRule parentRule;
 
     public AutonomousSyncRule(final String source,
@@ -42,13 +43,15 @@ public class AutonomousSyncRule {
                               final String cron,
                               final Boolean deleteSource,
                               final List<TransferTrigger> transferTriggers,
-                              final Boolean checkSyncToken) {
+                              final Boolean checkSyncToken,
+                              final Boolean checkIllumina) {
         this.source = source;
         this.destination = destination;
         this.cron = cron;
         this.deleteSource = deleteSource;
         this.checkSyncToken = checkSyncToken;
         this.transferTriggers = transferTriggers;
+        this.checkIllumina = checkIllumina;
     }
 
     public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {

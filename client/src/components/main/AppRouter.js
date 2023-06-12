@@ -201,12 +201,12 @@ function AppRouterComponent ({history, uiNavigation}) {
         <Route path="/dashboard" component={HomePageLoader} />
         <Route path="/:id" component={PipelinesLibrary}>
           <IndexRoute component={PipelineBrowser} />
-          <Redirect from=":version" to=":version/documents" />
           <Route path=":version" component={PipelineDetails}>
             <Route path="history" component={PipelineHistory} />
             <Route path="code" component={PipelineCode} />
             <Route path="configuration(/:configuration)" component={PipelineConfiguration} />
             <Route path="graph" component={PipelineGraph} />
+            <Route path="workflow" component={PipelineGraph} />
             <Route path="documents" component={PipelineDocuments} />
             <Route path="storage" component={PipelineStorageRules} />
           </Route>

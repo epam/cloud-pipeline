@@ -36,7 +36,7 @@ scale_down_handler = Mock()
 common_utils = Mock()
 worker_validator = GridEngineWorkerValidator(cmd_executor=executor, api=api, host_storage=host_storage,
                                              grid_engine=grid_engine, scale_down_handler=scale_down_handler,
-                                             common_utils=common_utils)
+                                             common_utils=common_utils, dry_run=False)
 
 
 def setup_function():
@@ -51,13 +51,13 @@ def setup_function():
 
 
 def test_stopping_hosts_that_are_invalid_in_grid_engine():
-    worker_validator.validate_hosts()
+    worker_validator.validate()
 
     assert sorted([HOST1, HOST3]) == sorted(host_storage.load_hosts())
 
 
 def test_stopping_invalid_worker_pipeline():
-    worker_validator.validate_hosts()
+    worker_validator.validate()
 
     assert_first_argument_contained(executor.execute, 'pipe stop --yes ' + HOST2_RUN_ID)
     assert_first_argument_not_contained(executor.execute, 'pipe stop --yes ' + HOST1_RUN_ID)
@@ -68,7 +68,7 @@ def test_force_killing_invalid_host_jobs():
     jobs = [GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='', hosts=[HOST2])]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
 
-    worker_validator.validate_hosts()
+    worker_validator.validate()
 
     grid_engine.kill_jobs.assert_called_with(jobs, force=True)
 
@@ -76,6 +76,6 @@ def test_force_killing_invalid_host_jobs():
 def test_stopping_dead_worker_hosts():
     api.load_run = MagicMock(side_effect=[{'status': 'STOPPED'}, {'status': 'RUNNING'}, {'status': 'FAILURE'}])
     grid_engine.is_valid = MagicMock(return_value=True)
-    worker_validator.validate_hosts()
+    worker_validator.validate()
 
     assert [HOST2] == host_storage.load_hosts()

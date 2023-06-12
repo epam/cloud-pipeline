@@ -54,6 +54,8 @@ public class JsonMapper extends ObjectMapper {
         javaTimeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(TIME_FORMATTER));
         javaTimeModule.addSerializer(LocalTime.class, new LocalTimeSerializer(TIME_FORMATTER));
 
+        super.registerModule(javaTimeModule);
+
         // configures ISO8601 formatter for date without time zone
         // the used format is 'yyyy-MM-dd'
         super.setDateFormat(new SimpleDateFormat(FMT_ISO_LOCAL_DATE));

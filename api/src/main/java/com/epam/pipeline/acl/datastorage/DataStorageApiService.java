@@ -277,7 +277,7 @@ public class DataStorageApiService {
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_CREDENTIALS_REQUEST)));
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_WRITE)
     public Map<String, String> updateDataStorageObjectTags(Long id, String path, Map<String, String> tags,
                                                            String version, Boolean rewrite) {
         return dataStorageManager.updateDataStorageObjectTags(id, path, tags, version, rewrite);
@@ -293,7 +293,7 @@ public class DataStorageApiService {
         return dataStorageManager.loadDataStorageObjectTags(id, path, version);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    @PreAuthorize(AclExpressions.STORAGE_ID_TAGS_WRITE)
     public Map<String, String> deleteDataStorageObjectTags(Long id, String path, String version, Set<String> tags) {
         return dataStorageManager.deleteDataStorageObjectTags(id, path, version, tags);
     }

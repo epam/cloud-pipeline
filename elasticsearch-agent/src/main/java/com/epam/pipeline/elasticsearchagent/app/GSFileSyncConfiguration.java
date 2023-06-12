@@ -48,6 +48,12 @@ public class GSFileSyncConfiguration {
     @Value("${sync.gs-file.tag.value.delimiter:;}")
     private String tagDelimiter;
 
+    @Value("${sync.gs-file.storage.exclude.metadata.key:Billing status}")
+    private String storageExcludeKey;
+
+    @Value("${sync.gs-file.storage.exclude.metadata.value:Exclude}")
+    private String storageExcludeValue;
+
     @Bean
     public ObjectStorageFileManager gsFileManager() {
         return new GsBucketFileManager();
@@ -65,7 +71,8 @@ public class GSFileSyncConfiguration {
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.GS,
                 SearchDocumentType.GS_FILE,
-                tagDelimiter, false);
+                tagDelimiter, false,
+                storageExcludeKey, storageExcludeValue);
     }
 
 }

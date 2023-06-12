@@ -16,26 +16,41 @@
 
 package com.epam.pipeline.entity.notification;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
 @Entity
+@Builder
 @Table(name = "user_notification", schema = "pipeline")
-public class UserNotification {
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserNotificationEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type")
+    private NotificationType type;
     @Column(name = "user_id")
     private Long userId;
     private String subject;
@@ -46,4 +61,6 @@ public class UserNotification {
     private Boolean isRead;
     @Column(name = "read_date")
     private LocalDateTime readDate;
+    @OneToMany(mappedBy = "notification", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<UserNotificationResourceEntity> resources;
 }

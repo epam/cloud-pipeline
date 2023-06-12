@@ -40,13 +40,10 @@ generateUrls()
     const {
       url,
       offsets,
-      urlOverview,
-      offsetsOverview,
     } = urls;
     let o = 0;
     const presets = [
       { url, offsets },
-      { url: urlOverview, offsets: offsetsOverview },
     ];
 
     const next = () => {

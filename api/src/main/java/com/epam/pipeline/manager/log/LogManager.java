@@ -22,9 +22,12 @@ import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.entity.log.LogPaginationRequest;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.log.PageMarker;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.manager.search.SearchRequestBuilder;
+import com.epam.pipeline.manager.search.SearchResultConverter;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
@@ -65,9 +68,12 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -108,6 +114,8 @@ public class LogManager {
     private final GlobalSearchElasticHelper elasticHelper;
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
+    private final SearchRequestBuilder searchRequestBuilder;
+    private final SearchResultConverter searchResultConverter;
 
     @Value("${log.security.elastic.index.prefix:security_log}")
     private String indexPrefix;
@@ -165,6 +173,34 @@ public class LogManager {
                 .token(getToken(entries, pagination.getPageSize()))
                 .totalHits(hits.totalHits)
                 .build();
+    }
+
+    public Map<String, Long> group(final LogRequest logRequest) {
+        final LogFilter logFilter = Optional.ofNullable(logRequest.getFilter()).orElse(new LogFilter());
+        final String groupBy = logRequest.getGroupBy();
+        Assert.isTrue(StringUtils.isNotBlank(groupBy), "Group by field not provided.");
+
+        final SearchSourceBuilder source = new SearchSourceBuilder()
+                .query(constructQueryFilter(logRequest.getFilter()));
+        searchRequestBuilder.addTermAggregationToSource(source, groupBy);
+
+        final SearchRequest request = new SearchRequest()
+                .source(source)
+                .indices(getReadIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
+                .indicesOptions(INDICES_OPTIONS);
+        log.debug("Logs request: {} ", request);
+
+        final SearchResponse response = verifyResponse(executeRequest(request));
+
+        final Map<String, Long> result = new HashMap<>();
+        if (Objects.isNull(response.getAggregations())) {
+            return result;
+        }
+        final Terms terms = response.getAggregations().get(groupBy);
+        for (Terms.Bucket termBucket : terms.getBuckets()) {
+            result.put(termBucket.getKeyAsString(), termBucket.getDocCount());
+        }
+        return result;
     }
 
     public LogFilter getFilters() {
@@ -269,7 +305,7 @@ public class LogManager {
         final LocalDate actualFrom = from.minus(FILEBEAT_TRANSITION_PERIOD);
         final LocalDate actualTo = to.plus(FILEBEAT_TRANSITION_PERIOD);
         return Stream.iterate(actualFrom, date -> date.plusDays(1))
-                .limit(Period.between(actualFrom, actualTo).getDays() + 1)
+                .limit(ChronoUnit.DAYS.between(actualFrom, actualTo) + 1)
                 .map(date -> date.format(ELASTIC_DATE_FORMATTER))
                 .map(dateString -> getIndexName(indexPrefix, dateString, ES_WILDCARD))
                 .toArray(String[]::new);

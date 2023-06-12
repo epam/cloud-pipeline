@@ -29,8 +29,9 @@ import {
   Row,
   Table
 } from 'antd';
+import {isObservableArray, observable} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-
 import GrantGet from '../../models/grant/GrantGet';
 import GrantPermission from '../../models/grant/GrantPermission';
 import GrantRemove from '../../models/grant/GrantRemove';
@@ -39,8 +40,6 @@ import GetAllPermissions from '../../models/grant/GetAllPermissions';
 import UserFind from '../../models/user/UserFind';
 import GroupFind from '../../models/user/GroupFind';
 import Roles from '../../models/user/Roles';
-import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
 import styles from './PermissionsForm.css';
 import roleModel from '../../utils/roleModel';
 import UserName from '../special/UserName';
@@ -51,6 +50,28 @@ function plural (count, noun) {
 }
 
 const MAX_SUB_OBJECTS_WARNINGS_TO_SHOW = 5;
+
+const ALL_ALLOWED_MASK = roleModel.buildPermissionsMask(1, 1, 1, 1, 1, 1);
+
+function findMaskForSubject (config, subject, isPrincipal, defaultMask = 0) {
+  if (typeof config === 'number') {
+    return config;
+  }
+  if (config && (Array.isArray(config) || isObservableArray(config))) {
+    const all = config
+      .find((aMask) => /^all$/i.test(aMask.role));
+    const rule = config
+      .find((aMask) => !isPrincipal &&
+        (subject || '').toLowerCase() === (aMask.role || '').toLowerCase());
+    if (rule) {
+      return rule.mask;
+    }
+    if (all) {
+      return all.mask;
+    }
+  }
+  return defaultMask;
+}
 
 @inject('usersInfo')
 @inject(({routing, authenticatedUserInfo}, params) => ({
@@ -98,8 +119,20 @@ export default class PermissionsForm extends React.Component {
       PropTypes.number
     ]),
     readonly: PropTypes.bool,
-    defaultMask: PropTypes.number,
-    enabledMask: PropTypes.number,
+    defaultMask: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.arrayOf(PropTypes.shape({
+        mask: PropTypes.number,
+        role: PropTypes.string
+      }))
+    ]),
+    enabledMask: PropTypes.oneOfType([
+      PropTypes.number,
+      PropTypes.arrayOf(PropTypes.shape({
+        mask: PropTypes.number,
+        role: PropTypes.string
+      }))
+    ]),
     subObjectsPermissionsMaskToCheck: PropTypes.number,
     subObjectsToCheck: PropTypes.arrayOf(PropTypes.shape({
       entityId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -111,7 +144,7 @@ export default class PermissionsForm extends React.Component {
   };
 
   static defaultProps = {
-    enabledMask: roleModel.buildPermissionsMask(1, 1, 1, 1, 1, 1),
+    enabledMask: ALL_ALLOWED_MASK,
     subObjectsPermissionsMaskToCheck: 0
   }
 
@@ -273,8 +306,26 @@ export default class PermissionsForm extends React.Component {
     this.setState({findUserVisible: false});
   };
 
+  getDefaultMaskForSubject = (subject, isPrincipal) => {
+    const {
+      defaultMask = []
+    } = this.props;
+    return findMaskForSubject(defaultMask, subject, isPrincipal, 0);
+  };
+
+  getEnabledMaskForSubject = (subject, isPrincipal) => {
+    const {
+      enabledMask = []
+    } = this.props;
+    return findMaskForSubject(enabledMask, subject, isPrincipal, ALL_ALLOWED_MASK);
+  };
+
   onSelectUser = async () => {
-    await this.grantPermission(this.selectedUser, true, this.props.defaultMask || 0);
+    await this.grantPermission(
+      this.selectedUser,
+      true,
+      this.getDefaultMaskForSubject(this.selectedUser, true)
+    );
     this.closeFindUserDialog();
   };
 
@@ -291,7 +342,11 @@ export default class PermissionsForm extends React.Component {
     const [role] = (this.props.roles.loaded ? this.props.roles.value || [] : [])
       .filter(r => !r.predefined && this.splitRoleName(r.name) === this.selectedGroup);
     const roleName = role ? role.name : this.selectedGroup;
-    await this.grantPermission(roleName, false, this.props.defaultMask || 0);
+    await this.grantPermission(
+      roleName,
+      false,
+      this.getDefaultMaskForSubject(roleName, false)
+    );
     this.closeFindGroupDialog();
   };
 
@@ -532,6 +587,14 @@ export default class PermissionsForm extends React.Component {
 
   renderUserPermission = () => {
     if (this.state.selectedPermission) {
+      const {
+        sid = {}
+      } = this.state.selectedPermission;
+      const {
+        name,
+        principal
+      } = sid;
+      const enabledMask = this.getEnabledMaskForSubject(name, principal);
       const columns = [
         {
           title: 'Permissions',
@@ -552,7 +615,7 @@ export default class PermissionsForm extends React.Component {
               disabled={
                 this.state.operationInProgress ||
                 this.props.readonly ||
-                ((item.allowMask & this.props.enabledMask) === 0)
+                ((item.allowMask & enabledMask) === 0)
               }
               checked={item.allowed}
               onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.allowMask, !item.isRead)} />
@@ -567,7 +630,7 @@ export default class PermissionsForm extends React.Component {
               disabled={
                 this.state.operationInProgress ||
                 this.props.readonly ||
-                ((item.denyMask & this.props.enabledMask) === 0)
+                ((item.denyMask & enabledMask) === 0)
               }
               checked={item.denied}
               onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.denyMask)} />

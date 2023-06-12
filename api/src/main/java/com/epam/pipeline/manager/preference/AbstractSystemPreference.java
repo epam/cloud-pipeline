@@ -70,13 +70,18 @@ public abstract class AbstractSystemPreference<T> {
      */
     public abstract T parse(String value);
 
+    public String serialize(T defaultValue) {
+        return defaultValue.toString();
+    }
+
     public boolean validate(String value, Map<String, Preference> dependentPreferences) {
         return type.validate(value) && getValidator().test(value, dependentPreferences);
     }
 
     public Preference toPreference() {
-        return new Preference(key, defaultValue == null ? null : defaultValue.toString(), group, null, type,
-                visible);
+        return new Preference(key,
+                defaultValue == null ? null : serialize(defaultValue),
+                group, null, type, visible);
     }
 
     void setValidator(BiPredicate<String, Map<String, Preference>> validator) {
@@ -230,6 +235,11 @@ public abstract class AbstractSystemPreference<T> {
         @Override
         public T parse(String value) {
             return JsonMapper.parseData(value, typeReference);
+        }
+
+        @Override
+        public String serialize(T value) {
+            return JsonMapper.convertDataToJsonStringForQuery(value);
         }
     }
 }

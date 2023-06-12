@@ -22,6 +22,7 @@ import classNames from 'classnames';
 import displayDate from '../../../utils/displayDate';
 import PreviewNotification from './PreviewNotification';
 import {NOTIFICATION_TYPE} from './NotificationCenter';
+import NotificationActions from './notification-actions';
 import styles from './SystemNotification.css';
 
 @observer
@@ -191,7 +192,7 @@ export default class SystemNotification extends React.Component {
           }}>
             <PreviewNotification
               text={this.props.notification.body}
-              sanitize={this.props.notification.type === NOTIFICATION_TYPE.message}
+              sanitize
             />
           </Row>
           <Row type="flex" justify="end">
@@ -200,6 +201,11 @@ export default class SystemNotification extends React.Component {
             >
               {displayDate(this.props.notification.createdDate)}
             </span>
+            <NotificationActions
+              notification={this.props.notification}
+              router={this.props.router}
+              style={{marginLeft: '5px'}}
+            />
           </Row>
         </Row>
       </div>

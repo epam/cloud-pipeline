@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -732,6 +734,45 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     }
 
     @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldUpdateObjectTagsWhenPermissionIsGrantedAndRestrictedModeIsDisabledAndRestrictedTagsAreUsed() {
+        initAclEntity(s3bucket, AclPermission.WRITE);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        mockDataStorageTagRestrictedMode(false, Collections.emptyList());
+        doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
+                .updateDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_MAP, TEST_STRING, true);
+
+        assertThat(dataStorageApiService.updateDataStorageObjectTags(
+                ID, TEST_STRING, TEST_STRING_MAP, TEST_STRING, true)).isEqualTo(TEST_STRING_MAP);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldUpdateObjectTagsWhenPermissionIsGrantedAndRestrictedModeIsEnabledAndRestrictedTagsAreNotUsed() {
+        initAclEntity(s3bucket, AclPermission.WRITE);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        mockDataStorageTagRestrictedMode(true, new ArrayList<>(TEST_STRING_MAP.keySet()));
+        doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
+                .updateDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_MAP, TEST_STRING, true);
+
+        assertThat(dataStorageApiService.updateDataStorageObjectTags(
+                ID, TEST_STRING, TEST_STRING_MAP, TEST_STRING, true)).isEqualTo(TEST_STRING_MAP);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdateObjectTagsWhenPermissionIsGrantedAndRestrictedModeIsEnabledAndRestrictedTagsAreUsed() {
+        initAclEntity(s3bucket, AclPermission.WRITE);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        mockDataStorageTagRestrictedMode(true, Collections.emptyList());
+        doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
+                .updateDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_MAP, TEST_STRING, true);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService
+                .updateDataStorageObjectTags(ID, TEST_STRING, TEST_STRING_MAP, TEST_STRING, true));
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyUpdateObjectTagsWhenStoragePermissionIsNotGranted() {
         initAclEntity(s3bucket);
@@ -862,6 +903,45 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
 
         assertThat(dataStorageApiService.deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET))
                 .isEqualTo(TEST_STRING_MAP);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDeleteObjectTagsWhenPermissionIsGrantedAndRestrictedModeIsDisabledAndRestrictedTagsAreUsed() {
+        initAclEntity(s3bucket, AclPermission.WRITE);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        mockDataStorageTagRestrictedMode(false, Collections.emptyList());
+        doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET);
+
+        assertThat(dataStorageApiService.deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET))
+                .isEqualTo(TEST_STRING_MAP);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDeleteObjectTagsWhenPermissionIsGrantedAndRestrictedModeIsEnabledAndRestrictedTagsAreNotUsed() {
+        initAclEntity(s3bucket, AclPermission.WRITE);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        mockDataStorageTagRestrictedMode(true, new ArrayList<>(TEST_STRING_MAP.keySet()));
+        doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET);
+
+        assertThat(dataStorageApiService.deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET))
+                .isEqualTo(TEST_STRING_MAP);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyDeleteObjectTagsWhenPermissionIsGrantedAndRestrictedModeIsEnabledAndRestrictedTagsAreUsed() {
+        initAclEntity(s3bucket, AclPermission.WRITE);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        mockDataStorageTagRestrictedMode(true, Collections.emptyList());
+        doReturn(TEST_STRING_MAP).when(mockDataStorageManager)
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService
+                .deleteDataStorageObjectTags(ID, TEST_STRING, TEST_STRING, TEST_STRING_SET));
     }
 
     @Test
@@ -1154,5 +1234,12 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService
                 .getStreamingContent(ID, TEST_STRING, TEST_STRING));
+    }
+
+    private void mockDataStorageTagRestrictedMode(final boolean enabled, final List<String> excludeTags) {
+        doReturn(enabled).when(preferenceManager)
+                .getPreference(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_ENABLED);
+        doReturn(excludeTags).when(preferenceManager)
+                .getPreference(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS);
     }
 }

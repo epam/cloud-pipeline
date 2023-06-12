@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
@@ -66,6 +67,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPrefe
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -96,6 +98,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
 /**
@@ -159,6 +162,14 @@ public class SystemPreferences {
             COMMIT_GROUP, isGreaterThan(0));
 
     // DATA_STORAGE_GROUP
+    public static final BooleanPreference DATA_STORAGE_TAG_RESTRICTED_ACCESS_ENABLED = new BooleanPreference(
+        "storage.tag.restricted.access", false, DATA_STORAGE_GROUP, pass);
+    public static final ObjectPreference<List<String>> DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS =
+        new ObjectPreference<>("storage.tag.restricted.access.exclude.keys",
+        ListUtils.unmodifiableList(Arrays.asList("CP_SOURCE", "CP_OWNER", "CP_RUN_ID", "CP_JOB_ID",
+                "CP_JOB_NAME", "CP_JOB_VERSION", "CP_JOB_CONFIGURATION", "CP_DOCKER_IMAGE", "CP_CALC_CONFIG")),
+        new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
+        isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
@@ -337,6 +348,8 @@ public class SystemPreferences {
     public static final ObjectPreference<GitlabIssueLabelsFilter> GITLAB_ISSUE_DEFAULT_FILTER = new ObjectPreference<>(
             "git.gitlab.issue.default.filter", null, new TypeReference<GitlabIssueLabelsFilter>() {},
             GIT_GROUP, isNullOrValidJson(new TypeReference<GitlabIssueLabelsFilter>() {}), true);
+    public static final LongPreference GIT_DEFAULT_TOKEN_DURATION_DAYS = new LongPreference(
+            "git.default.token.duration.days", 1L, GIT_GROUP, isGreaterThan(0L));
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -402,6 +415,9 @@ public class SystemPreferences {
      */
     public static final IntPreference DOCKER_SECURITY_TOOL_POLICY_MAX_HIGH_VULNERABILITIES = new IntPreference(
         "security.tools.policy.max.high.vulnerabilities", 20, DOCKER_SECURITY_GROUP, isGreaterThanOrEquals(0));
+    public static final StringPreference DOCKER_SECURITY_CUDNN_VERSION_LABEL = new StringPreference(
+            "security.tools.nvidia.cudnn.version.label", "com.nvidia.cudnn.version", DOCKER_SECURITY_GROUP,
+            PreferenceValidators.isValidUrlOrBlank);
 
     // CLUSTER_GROUP
     /**
@@ -556,12 +572,23 @@ public class SystemPreferences {
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
                                                             "sleep infinity", LAUNCH_GROUP, pass);
-    public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_LINUX = new StringPreference(
-            "launch.pod.cmd.template.linux", "set -o pipefail; "
-            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
-            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
-            + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'",
-            LAUNCH_GROUP, isNotBlank);
+    public static final ObjectPreference<List<OSSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_LINUX =
+            new ObjectPreference<>(
+                "launch.pod.cmd.template.linux",
+                Collections.singletonList(
+                    OSSpecificLaunchCommandTemplate.builder()
+                        .os("*")
+                        .command("set -o pipefail; "
+                            + "command -v wget >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"wget --no-check-certificate -q -O - '$linuxLaunchScriptUrl'\"; }; "
+                            + "command -v curl >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; "
+                            + "eval $LAUNCH_CMD " +
+                                "| bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
+                        ).build()
+                ),
+                new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {},
+                LAUNCH_GROUP, isValidMapOfLaunchCommands);
     public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_WINDOWS = new StringPreference(
             "launch.pod.cmd.template.windows", "Add-Type @\"\n" +
             "using System.Net;\n" +
@@ -751,8 +778,17 @@ public class SystemPreferences {
     public static final ObjectPreference<List<Object>> UI_RUNS_FILTERS = new ObjectPreference<>(
             "ui.runs.filters", Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final ObjectPreference<Map<String, Object>> UI_TOOLS_FILTERS = new ObjectPreference<>(
+            "ui.tools.filters", Collections.emptyMap(), new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
     public static final BooleanPreference UI_RUNS_CLUSTER_DETAILS_SHOW_ACTIVE_ONLY = new BooleanPreference(
             "ui.runs.cluster.details.show.active.only", true, UI_GROUP, pass);
+    public static final BooleanPreference UI_PERSONAL_TOOL_WARNING_ENABLED = new BooleanPreference(
+            "ui.personal.tools.launch.warning.enabled", false, UI_GROUP, pass, true);
+    public static final ObjectPreference<List<Object>> UI_PERSONAL_TOOL_RESTRICTIONS = new ObjectPreference<>(
+            "ui.personal.tools.permissions.restrictions",
+            Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(

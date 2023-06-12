@@ -355,10 +355,10 @@
         "passToWorkers": true
     },
     {
-        "name": "CP_PIPE_FUSE_TIMEOUT",
+        "name": "CP_PIPE_FUSE_MOUNT_TIMEOUT",
         "type": "int",
         "description": "Allows to specify the pipe fuse timeout",
-        "defaultValue": "500",
+        "defaultValue": "10000",
         "passToWorkers": false
     },
     {
@@ -555,6 +555,27 @@
         "type": "boolean",
         "description": "Specifies if run pod should be run with host network capability",
         "defaultValue": "false",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_RECOVERY",
+        "type": "boolean",
+        "description": "Enables recovery support for a current run",
+        "defaultValue": "true",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SGE_GPU_EXCLUSIVE_MODE",
+        "type": "boolean",
+        "description": "Enables GPU exclusive mode",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SGE_GPU_RSMAP_DEVICES",
+        "type": "boolean",
+        "description": "Enables RSMAP-like GPU devices assignment",
+        "defaultValue": "true",
         "passToWorkers": true
     }
 ]

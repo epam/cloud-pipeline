@@ -112,7 +112,7 @@ export default class Navigation extends React.Component {
 
   navigate = (navigationItem) => {
     const {key} = navigationItem;
-    if (key === 'runs') {
+    if (key === Pages.runs) {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     } else if (key === 'logout') {
       invalidateEdgeTokens()
@@ -185,10 +185,10 @@ export default class Navigation extends React.Component {
             />
           );
         }
-        if (navigationItem.key === 'billing' && !this.props.billingEnabled) {
+        if (navigationItem.key === Pages.billing && !this.props.billingEnabled) {
           return null;
         }
-        if (navigationItem.key === 'search') {
+        if (navigationItem.key === Pages.search) {
           if (!this.props.searchEnabled) {
             return null;
           }
@@ -211,7 +211,7 @@ export default class Navigation extends React.Component {
             </Link>
           );
         }
-        if (navigationItem.key === 'runs') {
+        if (navigationItem.key === Pages.runs) {
           return (
             <CounterMenuItem
               key={navigationItem.key}
@@ -229,6 +229,7 @@ export default class Navigation extends React.Component {
               onClick={() => this.navigate(navigationItem)}
               icon={navigationItem.icon}
               count={this.runsCount}
+              maxCount={Infinity}
             />
           );
         }

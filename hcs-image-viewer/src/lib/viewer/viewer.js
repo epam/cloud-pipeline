@@ -39,6 +39,7 @@
  */
 
 import React, {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -73,12 +74,14 @@ function HCSImageViewer(
     onStateChange,
     onRegisterStateActions,
     onViewerStateChanged,
+    onProjectionChanged,
     style,
     minZoomBackOff = 0,
     maxZoomBackOff = undefined,
     defaultZoomBackOff = 0,
     overview,
     onCellClick,
+    onEditAnnotation,
   },
 ) {
   const {
@@ -89,10 +92,41 @@ function HCSImageViewer(
   const {
     mesh,
     overlayImages,
-    pending
+    annotations,
+    selectedAnnotation,
+    pending,
   } = state;
   const containerRef = useRef();
   const size = useElementSize(containerRef);
+  const {
+    setSelectedAnnotation,
+  } = callbacks;
+  const onSelectAnnotation = useCallback((newSelectedAnnotation) => {
+    if (selectedAnnotation !== newSelectedAnnotation) {
+      setSelectedAnnotation(newSelectedAnnotation);
+    }
+  }, [selectedAnnotation, setSelectedAnnotation]);
+  const [matrix, setMatrix] = useState(undefined);
+  const onViewStateChange = useCallback((event) => {
+    const {
+      viewState,
+    } = event || {};
+    if (viewState) {
+      const {
+        width,
+        height,
+        zoom,
+        target: position,
+      } = viewState;
+      const scale = 2 ** zoom;
+      setMatrix({
+        scale,
+        width,
+        height,
+        position,
+      });
+    }
+  }, [setMatrix]);
   useEffect(() => {
     if (onStateChange) {
       onStateChange(state);
@@ -103,6 +137,27 @@ function HCSImageViewer(
       onViewerStateChanged(viewerState);
     }
   }, [viewerState, onViewerStateChanged]);
+  useEffect(() => {
+    if (onProjectionChanged) {
+      const {
+        width = 0,
+        height = 0,
+        scale = 1,
+        position = [0, 0],
+      } = matrix || {};
+      const convert = (point) => {
+        const diffFromCenter = [
+          point[0] - width / 2.0,
+          point[1] - height / 2.0,
+        ];
+        return [
+          position[0] + diffFromCenter[0] / scale,
+          position[1] + diffFromCenter[1] / scale,
+        ];
+      };
+      onProjectionChanged(convert);
+    }
+  }, [matrix, onProjectionChanged]);
   useEffect(() => {
     if (onRegisterStateActions) {
       onRegisterStateActions(callbacks);
@@ -123,7 +178,7 @@ function HCSImageViewer(
     useLens,
     lensEnabled,
     lensChannel,
-    pending: viewerStatePending
+    pending: viewerStatePending,
   } = viewerState;
   useEffect(() => {
     if (typeof setImageViewportLoading === 'function') {
@@ -140,7 +195,7 @@ function HCSImageViewer(
     ) {
       const [first] = Array.isArray(loader) ? loader : [loader];
       const last = Array.isArray(loader) ? loader[loader.length - 1] : loader;
-      const defaultViewState = [{
+      const defaultViewState = {
         ...getDefaultInitialViewState(loader, size, defaultZoomBackOff),
         id: DETAIL_VIEW_ID,
         minZoom: minZoomBackOff !== undefined
@@ -149,10 +204,18 @@ function HCSImageViewer(
         maxZoom: maxZoomBackOff !== undefined
           ? getZoomLevel(last, size, maxZoomBackOff)
           : Infinity,
-      }];
-      setViewState(defaultViewState);
+      };
+      setViewState([defaultViewState]);
+      onViewStateChange({
+        viewState: {
+          width: size.width,
+          height: size.height,
+          ...defaultViewState,
+        },
+      });
     } else {
       setViewState(undefined);
+      onViewStateChange({});
     }
   }, [
     loader,
@@ -161,6 +224,7 @@ function HCSImageViewer(
     minZoomBackOff,
     maxZoomBackOff,
     defaultZoomBackOff,
+    onViewStateChange,
   ]);
   const readyForRendering = loader
     && ready
@@ -178,6 +242,9 @@ function HCSImageViewer(
           <VivViewer
             mesh={pending || viewerStatePending ? undefined : mesh}
             overlayImages={overlayImages}
+            annotations={annotations}
+            selectedAnnotation={selectedAnnotation}
+            onSelectAnnotation={onSelectAnnotation}
             contrastLimits={contrastLimits}
             colors={colors}
             channelsVisible={channelsVisibility}
@@ -194,6 +261,8 @@ function HCSImageViewer(
             lensSelection={useLens && lensEnabled ? lensChannel : undefined}
             lensEnabled={useLens && lensEnabled}
             onCellClick={onCellClick}
+            onEditAnnotation={onEditAnnotation}
+            onViewStateChange={onViewStateChange}
             deckProps={deckProps}
           />
         )
@@ -207,6 +276,7 @@ HCSImageViewer.propTypes = {
   onStateChange: PropTypes.func,
   onRegisterStateActions: PropTypes.func,
   onViewerStateChanged: PropTypes.func,
+  onProjectionChanged: PropTypes.func,
   // eslint-disable-next-line react/forbid-prop-types
   style: PropTypes.object,
   minZoomBackOff: PropTypes.number,
@@ -215,6 +285,7 @@ HCSImageViewer.propTypes = {
   // eslint-disable-next-line react/forbid-prop-types
   overview: PropTypes.object,
   onCellClick: PropTypes.func,
+  onEditAnnotation: PropTypes.func,
 };
 
 HCSImageViewer.defaultProps = {
@@ -222,12 +293,14 @@ HCSImageViewer.defaultProps = {
   onStateChange: undefined,
   onRegisterStateActions: undefined,
   onViewerStateChanged: undefined,
+  onProjectionChanged: undefined,
   style: undefined,
   minZoomBackOff: 0,
   maxZoomBackOff: undefined,
   defaultZoomBackOff: 0,
   overview: undefined,
   onCellClick: undefined,
+  onEditAnnotation: undefined,
 };
 
 export default HCSImageViewer;

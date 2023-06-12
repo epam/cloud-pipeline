@@ -32,6 +32,7 @@ from src.api.pipeline import Pipeline
 
 ROLE_ADMIN = 'ROLE_ADMIN'
 DELAY = 30
+GPU_WITHOUT_CUDA_WARN_MSG = 'WARN: Requested GPU instance type but cuda is not available for specified configuration!'
 
 
 class PipelineRunOperations(object):
@@ -135,6 +136,7 @@ class PipelineRunOperations(object):
                         price_table.align = "l"
                         price_table.set_style(12)
                         price_table.header = False
+                        instance_type = instance_type or run_price.instance_type
 
                         price_table.add_row(['Price per hour ({}, hdd {})'.format(run_price.instance_type,
                                                                                   run_price.instance_disk),
@@ -152,6 +154,11 @@ class PipelineRunOperations(object):
                         click.echo()
                         click.echo(price_table)
                         click.echo()
+
+                    if not quiet and ClusterManager.is_gpu_instance(instance_type) \
+                            and not cls._is_cuda_available_for_pipeline(pipeline_run_parameters):
+                        click.echo(GPU_WITHOUT_CUDA_WARN_MSG)
+
                     # Checking if user provided required parameters:
                     wrong_parameters = False
                     for parameter in pipeline_run_parameters.parameters:
@@ -239,6 +246,10 @@ class PipelineRunOperations(object):
                     click.echo(', '.join(required_parameters))
                     sys.exit(1)
             else:
+                if not quiet and ClusterManager.is_gpu_instance(instance_type) \
+                        and not cls._is_cuda_available_for_tool(docker_image):
+                    click.echo(GPU_WITHOUT_CUDA_WARN_MSG)
+
                 if not yes:
                     click.confirm('Are you sure you want to schedule a run?', abort=True)
 
@@ -444,3 +455,25 @@ class PipelineRunOperations(object):
                         click.echo('An error has occurred while starting a job: "{}" parameter'
                                    ' is not permitted for overriding'.format(run_param_name), err=True)
                         sys.exit(1)
+
+    @classmethod
+    def _trim_docker_registry_path(cls, docker_image):
+        parts = docker_image.split('/')
+        if len(parts) == 3:
+            return parts[1] + '/' + parts[2]
+        return docker_image
+
+    @classmethod
+    def _is_cuda_available_for_tool(cls, docker_image):
+        if not docker_image:
+            return False
+        image_name, image_tag = cls.parse_image(cls._trim_docker_registry_path(docker_image))
+        tool_scan = Tool().load_tool_scan(docker_image)
+        tool_version_scan = tool_scan.results.get(image_tag)
+        return False if not tool_version_scan else tool_version_scan.cuda_available
+
+    @classmethod
+    def _is_cuda_available_for_pipeline(cls, pipeline_run_parameters):
+        if not pipeline_run_parameters:
+            return False
+        return cls._is_cuda_available_for_tool(pipeline_run_parameters.docker_image)

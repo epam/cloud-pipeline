@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:9
-
-RUN apt-get update -y && \
-    apt-get install -y wget \
+FROM library/centos:7.7.1908
+RUN yum install -y epel-release && \
+    yum install -y wget \
                    curl \
                    python \
                    git \

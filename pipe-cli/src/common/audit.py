@@ -347,14 +347,14 @@ class AuditDaemon:
                 logging.warning('Interrupted.')
                 raise
             except Exception:
-                logging.error('Audit entries processing step has failed.', exc_info=True)
+                logging.warning('Audit entries processing step has failed.', exc_info=True)
         try:
             self._consumer.flush()
         except KeyboardInterrupt:
             logging.warning('Interrupted.')
             raise
         except Exception:
-            logging.error('Audit entries final flushing step has failed.', exc_info=True)
+            logging.warning('Audit entries final flushing step has failed.', exc_info=True)
         logging.info('Finished audit daemon.')
 
 

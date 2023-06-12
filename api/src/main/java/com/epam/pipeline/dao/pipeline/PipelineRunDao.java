@@ -77,6 +77,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private static final String POSTGRE_TYPE_BIGINT = "BIGINT";
     private static final int STRING_BUFFER_SIZE = 70;
     private static final String LIST_PARAMETER = "list";
+    private static final int CLAUSE_LENGTH = 200;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -168,15 +169,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         List<PipelineRun> items = getNamedParameterJdbcTemplate().query(loadRunByIdQuery, params,
                 PipelineRunParameters.getExtendedRowMapper());
         if (!items.isEmpty()) {
-            PipelineRun pipelineRun = items.get(0);
-            List<RunSid> runSids = getJdbcTemplate().query(loadRunSidsQuery,
-                    PipelineRunParameters.getRunSidsRowMapper(), id);
-            pipelineRun.setRunSids(runSids);
-            List<Map<String, String>> envVars = getJdbcTemplate().query(loadEnvVarsQuery,
-                    PipelineRunParameters.getEnvVarsRowMapper(), pipelineRun.getId());
-            pipelineRun.setEnvVars(CollectionUtils.isEmpty(envVars) ? null : envVars.get(0));
-            pipelineRun.setServiceUrl(loadServiceUrlByRunId(id));
-            return pipelineRun;
+            return loadRunFields(items.get(0));
         } else {
             return null;
         }
@@ -457,6 +450,18 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .findFirst();
     }
 
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public PipelineRun loadRunFields(final PipelineRun pipelineRun) {
+        final List<RunSid> runSids = getJdbcTemplate().query(loadRunSidsQuery,
+                PipelineRunParameters.getRunSidsRowMapper(), pipelineRun.getId());
+        pipelineRun.setRunSids(runSids);
+        final List<Map<String, String>> envVars = getJdbcTemplate().query(loadEnvVarsQuery,
+                PipelineRunParameters.getEnvVarsRowMapper(), pipelineRun.getId());
+        pipelineRun.setEnvVars(CollectionUtils.isEmpty(envVars) ? null : envVars.get(0));
+        pipelineRun.setServiceUrl(loadServiceUrlByRunId(pipelineRun.getId()));
+        return pipelineRun;
+    }
+
     public List<PipelineRun> loadRunsByNodeName(final String nodeName) {
         return addServiceUrls(ListUtils.emptyIfNull(getJdbcTemplate()
                 .query(loadRunsByNodeNameQuery, PipelineRunParameters.getRowMapper(), nodeName)));
@@ -527,6 +532,26 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return clausesCount;
     }
 
+    private int addRoleClause(MapSqlParameterSource params, StringBuilder whereBuilder, int clausesCount,
+                              List<String> roles) {
+        if (!CollectionUtils.isEmpty(roles)) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder
+                    .append(" lower(r.owner) in (" +
+                            "    SELECT lower(u.name) " +
+                            "    FROM pipeline.user u " +
+                            "    LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id " +
+                            "    LEFT JOIN pipeline.role rl ON ur.role_id = rl.id " +
+                            "    WHERE lower(rl.name) in (:")
+                    .append(PipelineRunParameters.ROLE.name())
+                    .append("    )" +
+                            ')');
+            params.addValue(PipelineRunParameters.ROLE.name(),
+                    roles.stream().map(String::toLowerCase).collect(Collectors.toList()));
+            clausesCount++;
+        }
+        return clausesCount;
+    }
 
     private String makeFilterCondition(PipelineRunFilterVO filter,
                                        PipelineRunFilterVO.ProjectFilter projectFilter,
@@ -536,7 +561,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             return "";
         }
 
-        StringBuilder whereBuilder = new StringBuilder();
+        StringBuilder whereBuilder = new StringBuilder(CLAUSE_LENGTH);
         int clausesCount = firstCondition ? 0 : 1;
         if (firstCondition) {
             whereBuilder.append(" WHERE ");
@@ -551,6 +576,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         }
 
         clausesCount = addOwnerClause(params, whereBuilder, clausesCount, filter.getOwners());
+        clausesCount = addRoleClause(params, whereBuilder, clausesCount, filter.getRoles());
 
         if (CollectionUtils.isNotEmpty(filter.getPipelineIds())) {
             appendAnd(whereBuilder, clausesCount);
@@ -654,6 +680,18 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             whereBuilder.append(String.format(" r.pretty_url like :%s", PipelineRunParameters.PRETTY_URL.name()));
             params.addValue(PipelineRunParameters.PRETTY_URL.name(),
                     String.format("%%\"path\":\"%s\"%%", filter.getPrettyUrl()));
+            clausesCount++;
+        }
+
+        if (filter.isMasterRun()) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder.append(" (r.node_count > 0 OR r.parameters like '%CP_CAP_AUTOSCALE=true=boolean%')");
+            clausesCount++;
+        }
+
+        if (filter.isWorkerRun()) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder.append(" r.parent_id is not null");
             clausesCount++;
         }
 
@@ -807,6 +845,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         ACTUAL_CMD,
         TIMEOUT,
         OWNER,
+        ROLE,
         PIPELINE_ALLOWED,
         OWNERSHIP,
         POD_IP,

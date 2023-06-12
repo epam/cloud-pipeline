@@ -52,6 +52,12 @@ public class AzureFileSyncConfiguration {
     @Value("${sync.az-file.tag.value.delimiter:;}")
     private String tagDelimiter;
 
+    @Value("${sync.az-file.storage.exclude.metadata.key:Billing status}")
+    private String storageExcludeKey;
+
+    @Value("${sync.az-file.storage.exclude.metadata.value:Exclude}")
+    private String storageExcludeValue;
+
     @Bean
     public ObjectStorageFileManager azFileManager() {
         return new AzureBlobManager();
@@ -69,6 +75,7 @@ public class AzureFileSyncConfiguration {
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.AZ,
                 SearchDocumentType.AZ_BLOB_FILE,
-                tagDelimiter, false);
+                tagDelimiter, false,
+                storageExcludeKey, storageExcludeValue);
     }
 }

@@ -87,21 +87,21 @@
 
 .log-content {
   position: relative;
-  border: 1px solid #cbcbcb;
-  background-color: #222;
-  color: #e8e8e8;
-  font-family: Proggy, Courier;
-  font-size: 9pt;
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: auto;
+}
+
+.log-content .logs {
+  height: 100%;
+  overflow: auto;
 }
 
 .task-list,
 .task-list-timings {
-  background-color: #fff;
   overflow: unset;
-  font-family: Proggy, Courier;
+  font-family: Proggy, Courier, monospace;
   flex: 1;
 }
 
@@ -166,32 +166,6 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-}
-
-.full-height-col {
-  display: flex;
-  flex-direction: column;
-}
-
-.search-container {
-  height: 40px;
-  background-color: white;
-  width: 100%;
-  color: black;
-  z-index: 1;
-}
-
-.search-buttons-container button {
-  margin-left: 5px;
-}
-
-.scroll-to-last-check-box {
-  opacity: 0.5;
-}
-
-.scroll-to-last-check-box:hover {
-  opacity: 1;
-  z-index: 2;
 }
 
 .run-details-table th {

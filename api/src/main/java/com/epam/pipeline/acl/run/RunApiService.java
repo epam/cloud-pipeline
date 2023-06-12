@@ -63,6 +63,7 @@ import com.epam.pipeline.manager.security.acl.AclMaskPage;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -205,6 +206,12 @@ public class RunApiService {
     @AclMask
     public PipelineRun updatePrettyUrl(Long runId, String url) {
         return runManager.updatePrettyUrl(runId, url);
+    }
+
+    @PostAuthorize("hasRole('ADMIN') OR @runPermissionManager.runPermission(returnObject, 'READ')")
+    @AclMask
+    public PipelineRun getRunByPrettyUrl(final String url) {
+        return runManager.loadRunByPrettyUrl(url);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)

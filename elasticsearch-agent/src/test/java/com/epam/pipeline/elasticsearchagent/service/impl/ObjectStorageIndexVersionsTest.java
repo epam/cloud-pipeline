@@ -45,7 +45,9 @@ public class ObjectStorageIndexVersionsTest {
 
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
-    public static final int BULK_SIZE = 1000;
+    private static final int BULK_SIZE = 1000;
+    private static final String EXCLUDE_KEY = "key";
+    private static final String EXCLUDE_VALUE = "value";
 
     private final Supplier<TemporaryCredentials> temporaryCredentials = () ->
             TemporaryCredentials.builder().region("").build();
@@ -77,7 +79,8 @@ public class ObjectStorageIndexVersionsTest {
                         BULK_SIZE,
                         DataStorageType.S3,
                         SearchDocumentType.S3_FILE,
-                        ";", true)
+                        ";", true,
+                        EXCLUDE_KEY, EXCLUDE_VALUE)
         );
     }
 

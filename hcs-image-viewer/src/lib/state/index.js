@@ -49,6 +49,12 @@ function useHCSImageState() {
   const setOverlayImages = useCallback((overlayImages = []) => {
     dispatch({ type: actions.setOverlayImages, overlayImages });
   }, [dispatch]);
+  const setAnnotations = useCallback((annotations = []) => {
+    dispatch({ type: actions.setAnnotations, annotations });
+  }, [dispatch]);
+  const setSelectedAnnotation = useCallback((annotation) => {
+    dispatch({ type: actions.setSelectedAnnotation, selectedAnnotation: annotation });
+  }, [dispatch]);
   const setImageViewportLoaded = useCallback((options) => {
     dispatch({ type: actions.setImageViewportLoaded, ...options });
     viewerDispatch({ type: viewerActions.setLoaded });
@@ -91,6 +97,8 @@ function useHCSImageState() {
     setLockChannels,
     setMesh,
     setOverlayImages,
+    setAnnotations,
+    setSelectedAnnotation,
   }), [
     setData,
     setImage,
@@ -105,6 +113,8 @@ function useHCSImageState() {
     setLockChannels,
     setMesh,
     setOverlayImages,
+    setAnnotations,
+    setSelectedAnnotation,
   ]);
   return {
     callbacks,

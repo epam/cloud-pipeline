@@ -76,6 +76,25 @@ _NODE_GPUS_COUNT="${_NODE_GPUS_COUNT:-0}"
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}
 pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
+if (( _NODE_GPUS_COUNT > 0 )) && check_cp_cap "CP_CAP_SGE_GPU_EXCLUSIVE_MODE"; then
+    nvidia-smi -e 0
+    nvidia-smi -c 3
+    nvidia-smi -pm 1
+    pipe_log_info "GPUs are set to exclusive mode via CP_CAP_SGE_GPU_EXCLUSIVE_MODE" "$_SGE_RESOURCES_SETUP_TASK"
+fi
+
+if (( _NODE_GPUS_COUNT > 0 )) && check_cp_cap "CP_CAP_SGE_GPU_RSMAP_DEVICES"; then
+    CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU="${CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU:-/tmp/sge-gpus-locks}"
+    mkdir -p "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/total"
+    for DEVICE_ID in $(seq 0 "$(( _NODE_GPUS_COUNT - 1 ))"); do
+        mkdir "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/total/$DEVICE_ID"
+    done
+    mkdir -p "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse"
+    chmod g+rw,o+rw "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse" -R
+    setfacl -d -m user::rwx -m group::rwx -m other::rwx "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse"
+    pipe_log_info "GPUs are managed as RSMAP devices via CP_CAP_SGE_GPU_RSMAP_DEVICES" "$_SGE_RESOURCES_SETUP_TASK"
+fi
+
 _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / (1024 * 1024)) "G"}')
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM:-ram}
 pipe_log_info "$_NODE_RAM_COUNT RAM found" "$_SGE_RESOURCES_SETUP_TASK"

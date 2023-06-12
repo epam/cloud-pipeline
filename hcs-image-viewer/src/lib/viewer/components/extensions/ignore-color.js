@@ -16,6 +16,7 @@
 
 /* eslint-disable max-classes-per-file */
 import { LayerExtension } from '@deck.gl/core';
+import {vec4FromColorNormalized} from '../../utilities/vec4-from-color';
 
 const DEFAULT_ACCURACY = 0.1;
 
@@ -47,39 +48,6 @@ class IgnoreColorExtension extends LayerExtension {
   }
 }
 
-function vec4FromColor(color) {
-  if (!color) {
-    return [1.0, 1.0, 1.0, 1.0];
-  }
-  if (typeof color === 'object' && Array.isArray(color)) {
-    const [r = 1.0, g = 1.0, b = 1.0, a = 1.0] = color;
-    return [r, g, b, a];
-  }
-  if (typeof color === 'string' && /^#/i.test(color)) {
-    const parseAndNormalize = (o) => parseInt(o || 'FF', 16) / 255.0;
-    const r = parseAndNormalize(color.slice(1, 3));
-    const g = parseAndNormalize(color.slice(3, 5));
-    const b = parseAndNormalize(color.slice(5, 7));
-    const a = parseAndNormalize(color.slice(7, 9));
-    return [
-      r,
-      g,
-      b,
-      a,
-    ];
-  }
-  if (typeof color === 'number') {
-    const normalize = (o) => Math.max(0, Math.min(1, o));
-    return [
-      normalize(color),
-      normalize(color),
-      normalize(color),
-      1.0,
-    ];
-  }
-  return [1.0, 1.0, 1.0, 1.0];
-}
-
 class IgnoreColorAndTintExtension extends LayerExtension {
   // eslint-disable-next-line class-methods-use-this
   getShaders() {
@@ -108,7 +76,7 @@ class IgnoreColorAndTintExtension extends LayerExtension {
     const models = this.getModels();
     for (let m = 0; m < models.length; m += 1) {
       const model = models[m];
-      model.setUniforms({ accuracy, tint: vec4FromColor(color) });
+      model.setUniforms({ accuracy, tint: vec4FromColorNormalized(color) });
     }
   }
 }

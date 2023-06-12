@@ -147,6 +147,7 @@ import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -183,6 +184,9 @@ public class AclTestBeans {
 
     @MockBean
     protected AuthManager mockAuthManager;
+
+    @MockBean
+    protected JwtTokenGenerator tokenGenerator;
 
     @MockBean
     protected EntityManager mockEntityManager;

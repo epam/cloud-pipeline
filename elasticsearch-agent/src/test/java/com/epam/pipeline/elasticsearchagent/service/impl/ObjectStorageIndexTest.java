@@ -44,7 +44,9 @@ public class ObjectStorageIndexTest {
 
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
-    public static final int BULK_SIZE = 1000;
+    private static final int BULK_SIZE = 1000;
+    private static final String EXCLUDE_KEY = "key";
+    private static final String EXCLUDE_VALUE = "value";
 
     private final AbstractDataStorage dataStorage = new GSBucketStorage(
             1L, "storage", "storage", new StoragePolicy(), null
@@ -79,7 +81,8 @@ public class ObjectStorageIndexTest {
                 BULK_SIZE,
                 DataStorageType.GS,
                 SearchDocumentType.GS_FILE,
-                ";", false)
+                ";", false,
+                EXCLUDE_KEY, EXCLUDE_VALUE)
         );
     }
 

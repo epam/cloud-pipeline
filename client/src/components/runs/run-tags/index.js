@@ -27,7 +27,8 @@ const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 const KNOWN_TAGS = [
   'idle',
   'pressure',
-  'sge_in_use'
+  'sge_in_use',
+  'recovered'
 ];
 
 const isInstanceLink = (tag) => {
@@ -90,7 +91,8 @@ function Tag (
           'accent',
           {
             warning: /^idle$/i.test(tag),
-            critical: /^pressure$/i.test(tag),
+            critical: /^(pressure|recovered)$/i.test(tag),
+            hovered: /^recovered$/i.test(tag),
             primary: /^sge_in_use$/i.test(tag),
             filled: /^black$/i.test(theme),
             link: isLink

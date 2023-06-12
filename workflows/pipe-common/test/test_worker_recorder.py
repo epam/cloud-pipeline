@@ -17,7 +17,8 @@ from datetime import datetime
 
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import CloudPipelineWorkerRecorder
+from scripts.autoscale_sge import CloudPipelineWorkerRecorder, AvailableInstanceEvent, \
+    InsufficientInstanceEvent, FailingInstanceEvent
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
@@ -25,84 +26,67 @@ run_id = 12345
 run_name = 'pipeline-12345'
 started = datetime(2018, 12, 21, 11, 00, 00)
 stopped = datetime(2018, 12, 21, 11, 5, 00)
+now = datetime(2018, 12, 21, 11, 10, 00)
 started_str = '2018-12-21 11:00:00.000'
 stopped_str = '2018-12-21 11:05:00.000'
 instance_type = 'm5.xlarge'
 capacity = 5
 
 api = Mock()
-worker_recorder = CloudPipelineWorkerRecorder(api=api, capacity=capacity)
+event_manager = Mock()
+clock = Mock()
+worker_recorder = CloudPipelineWorkerRecorder(api=api, event_manager=event_manager, clock=clock)
 
 
 def setup_function():
-    worker_recorder.clear()
-    api.load_run = MagicMock(return_value={
+    clock.now = MagicMock(return_value=now)
+
+
+def test_record_sufficient_instance_type():
+    api.load_run = MagicMock(return_value=_sufficient_capacity_run())
+
+    worker_recorder.record(run_id)
+
+    event_manager.register.assert_called_with(
+        AvailableInstanceEvent(instance_type=instance_type, date=now))
+
+
+def test_record_insufficient_instance_type():
+    api.load_run = MagicMock(return_value=_insufficient_capacity_run())
+
+    worker_recorder.record(run_id)
+
+    event_manager.register.assert_called_with(
+        InsufficientInstanceEvent(instance_type=instance_type, date=stopped))
+
+
+def test_record_failing_instance_type():
+    api.load_run = MagicMock(return_value=_failing_run())
+
+    worker_recorder.record(run_id)
+
+    event_manager.register.assert_called_with(
+        FailingInstanceEvent(instance_type=instance_type, date=stopped))
+
+
+def _insufficient_capacity_run():
+    run = _failing_run()
+    run['stateReasonMessage'] = 'Insufficient instance capacity.'
+    return run
+
+
+def _failing_run():
+    run = _sufficient_capacity_run()
+    run['status'] = 'FAILURE'
+    return run
+
+
+def _sufficient_capacity_run():
+    return {
         'podId': run_name,
         'startDate': started_str,
         'endDate': stopped_str,
         'instance': {
             'nodeType': instance_type
         }
-    })
-
-
-def test_record():
-    api.load_task = MagicMock(return_value=[])
-    worker_recorder.record(run_id)
-
-    records = worker_recorder.get()
-    assert len(records) == 1
-    record = records[0]
-    assert record.id == run_id
-    assert record.name == run_name
-    assert record.instance_type == instance_type
-    assert record.started == started
-    assert record.stopped == stopped
-
-
-def test_record_sufficient_instance_type_without_logs():
-    api.load_task = MagicMock(return_value=[])
-
-    worker_recorder.record(run_id)
-
-    records = worker_recorder.get()
-    assert len(records) == 1
-    record = records[0]
-    assert not record.has_insufficient_instance_capacity
-
-
-def test_record_sufficient_instance_type_with_logs():
-    api.load_task = MagicMock(return_value=[
-        {'status': 'FAILURE', 'logText': '...'}])
-
-    worker_recorder.record(run_id)
-
-    records = worker_recorder.get()
-    assert len(records) == 1
-    record = records[0]
-    assert not record.has_insufficient_instance_capacity
-
-
-def test_record_insufficient_instance_type_with_logs():
-    api.load_task = MagicMock(return_value=[
-        {'status': 'FAILURE', 'logText': '...'},
-        {'status': 'FAILURE', 'logText': 'InsufficientInstanceCapacity'}])
-
-    worker_recorder.record(run_id)
-
-    records = worker_recorder.get()
-    assert len(records) == 1
-    record = records[0]
-    assert record.has_insufficient_instance_capacity
-
-
-def test_record_multiple_workers():
-    api.load_task = MagicMock(return_value=[
-        {'status': 'FAILURE', 'logText': '...'},
-        {'status': 'FAILURE', 'logText': 'InsufficientInstanceCapacity'}])
-
-    for _ in range(0, capacity * 2):
-        worker_recorder.record(run_id)
-
-    records = worker_recorder.get()
-    assert len(records) == capacity
+    }

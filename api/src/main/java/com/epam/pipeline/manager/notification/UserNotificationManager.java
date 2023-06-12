@@ -19,14 +19,17 @@ package com.epam.pipeline.manager.notification;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
-import com.epam.pipeline.entity.notification.UserNotification;
+import com.epam.pipeline.dto.notification.UserNotification;
+import com.epam.pipeline.entity.notification.UserNotificationEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,11 +41,14 @@ import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserNotificationManager {
+
     private final UserNotificationRepository userNotificationRepository;
+    private final UserNotificationMapper mapper;
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
     private final UserManager userManager;
@@ -50,14 +56,12 @@ public class UserNotificationManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public UserNotification save(final UserNotification notification) {
-        setUp(notification);
-        return userNotificationRepository.save(notification);
+        return toDto(userNotificationRepository.save(toEntity(notification)));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void save(final List<UserNotification> notifications) {
-        notifications.forEach(this::setUp);
-        userNotificationRepository.save(notifications);
+        userNotificationRepository.save(toEntity(notifications));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -80,10 +84,10 @@ public class UserNotificationManager {
                                                             final int pageNum,
                                                             final int pageSize) {
         final Pageable pageable = new PageRequest(Math.max(pageNum, 0), pageSize > 0 ? pageSize : 10);
-        final Page<UserNotification> notifications = isRead == null ?
+        final Page<UserNotificationEntity> entities = isRead == null ?
                 userNotificationRepository.findByUserIdOrderByCreatedDateDesc(userId, pageable) :
                 userNotificationRepository.findByUserIdAndIsReadOrderByCreatedDateDesc(userId, isRead, pageable);
-        return new PagedResult<>(notifications.getContent(), (int) notifications.getTotalElements());
+        return new PagedResult<>(toDto(entities.getContent()), (int) entities.getTotalElements());
     }
 
     public PagedResult<List<UserNotification>> findMy(final Boolean isRead, final int pageNum, final int pageSize) {
@@ -102,11 +106,28 @@ public class UserNotificationManager {
         cleanUp(LocalDateTime.now().minusDays(expPeriod));
     }
 
-    private void setUp(final UserNotification notification) {
-        if (notification.getId() == null) {
-            notification.setCreatedDate(LocalDateTime.now());
-            notification.setIsRead(false);
+    private List<UserNotificationEntity> toEntity(final List<UserNotification> notifications) {
+        return ListUtils.emptyIfNull(notifications).stream().map(this::toEntity).collect(Collectors.toList());
+    }
+
+    private UserNotificationEntity toEntity(final UserNotification notification) {
+        final UserNotificationEntity entity = mapper.toEntity(notification);
+        entity.setResources(ListUtils.emptyIfNull(entity.getResources()).stream()
+                .peek(resourceEntity -> resourceEntity.setNotification(entity))
+                .collect(Collectors.toList()));
+        if (entity.getId() == null) {
+            entity.setCreatedDate(LocalDateTime.now());
+            entity.setIsRead(false);
         }
+        return entity;
+    }
+
+    private List<UserNotification> toDto(final List<UserNotificationEntity> notifications) {
+        return ListUtils.emptyIfNull(notifications).stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    private UserNotification toDto(final UserNotificationEntity notification) {
+        return mapper.toDto(notification);
     }
 
     private Long getPipelineUserId() {

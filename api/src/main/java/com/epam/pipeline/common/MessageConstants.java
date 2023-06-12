@@ -162,6 +162,7 @@ public final class MessageConstants {
     public static final String ERROR_ACTUAL_CMD_NOT_FOUND = "error.actual.cmd.not.found";
     public static final String ERROR_PIPELINE_RUN_NOT_INITIALIZED = "error.pipeline.run.not.initialized";
     public static final String ERROR_RUN_PRETTY_URL_IN_USE = "error.pipeline.run.pretty.url.in.use";
+    public static final String ERROR_RUN_PRETTY_NOT_FOUND = "error.pipeline.run.pretty.not.found";
     public static final String ERROR_EXCEED_MAX_RESTART_RUN_COUNT = "error.exceed.max.restart.run.count";
     public static final String ERROR_GET_NODE_STAT = "error.get.node.stat";
     public static final String ERROR_CMD_TEMPLATE_NOT_RESOLVED = "error.cmd.template.not.resolved";
@@ -364,6 +365,9 @@ public final class MessageConstants {
             "error.datastorage.lifecycle.restore.rule.cant.parse.notification";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOTIFICATION_RECIPIENTS_NOT_PROVIDED =
             "error.datastorage.lifecycle.rule.notification.recipients.not.provided";
+    public static final String ERROR_DATASTORAGE_INTELLIGENT_TIERING_ARCHIVE_ACCESS =
+            "error.datastorage.intelligent.tiering.archive.access";
+    public static final String ERROR_DATASTORAGE_ARCHIVE_ACCESS =  "error.datastorage.archive.access";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

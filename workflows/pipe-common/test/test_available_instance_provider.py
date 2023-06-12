@@ -14,11 +14,10 @@
 
 import logging
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import Instance, \
-    AvailableInstanceProvider, GridEngineWorkerRecord
+from scripts.autoscale_sge import Instance, AvailableInstanceProvider
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
@@ -30,42 +29,23 @@ worker_name = 'pipeline-12345'
 price_type = 'spot'
 
 inner_instance_provider = Mock()
-worker_recorder = Mock()
-clock = Mock()
-instance_provider = AvailableInstanceProvider(inner=inner_instance_provider, worker_recorder=worker_recorder,
-                                              unavailability_delay=unavailability_delay, clock=clock)
+availability_manager = Mock()
+instance_provider = AvailableInstanceProvider(inner=inner_instance_provider, availability_manager=availability_manager)
 
-instance_2cpu = Instance(name='m5.large', price_type=price_type, cpu=2, memory=8, gpu=0)
-instance_4cpu = Instance(name='m5.xlarge', price_type=price_type, cpu=4, memory=16, gpu=0)
-instance_8cpu = Instance(name='m5.2xlarge', price_type=price_type, cpu=8, memory=32, gpu=0)
+instance_2cpu = Instance(name='m5.large', price_type=price_type, cpu=2, mem=8, gpu=0)
+instance_4cpu = Instance(name='m5.xlarge', price_type=price_type, cpu=4, mem=16, gpu=0)
+instance_8cpu = Instance(name='m5.2xlarge', price_type=price_type, cpu=8, mem=32, gpu=0)
 
 
 def setup_function():
     inner_instance_provider.provide = MagicMock(return_value=[
-        instance_2cpu, instance_4cpu, instance_8cpu])
+        instance_2cpu,
+        instance_4cpu,
+        instance_8cpu])
 
 
-def test_all_available_without_worker_records():
-    worker_recorder.get = MagicMock(return_value=[])
-    clock.now = MagicMock(return_value=stopped + timedelta(seconds=unavailability_delay - 1))
-
-    instances = instance_provider.provide()
-
-    assert len(instances) == 3
-
-
-def test_all_available_with_worker_records():
-    worker_recorder.get = MagicMock(return_value=[
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_8cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=False),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_4cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=False),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_2cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=False)])
-    clock.now = MagicMock(return_value=stopped + timedelta(seconds=unavailability_delay - 1))
+def test_provide_if_all_available():
+    availability_manager.get_unavailable = MagicMock(return_value=[])
 
     instances = instance_provider.provide()
 
@@ -75,18 +55,9 @@ def test_all_available_with_worker_records():
     assert instance_8cpu in instances
 
 
-def test_one_unavailable_with_worker_records():
-    worker_recorder.get = MagicMock(return_value=[
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_8cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_4cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=False),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_2cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=False)])
-    clock.now = MagicMock(return_value=stopped + timedelta(seconds=unavailability_delay - 1))
+def test_provide_if_one_unavailable():
+    availability_manager.get_unavailable = MagicMock(return_value=[
+        instance_8cpu.name])
 
     instances = instance_provider.provide()
 
@@ -96,18 +67,10 @@ def test_one_unavailable_with_worker_records():
     assert instance_8cpu not in instances
 
 
-def test_two_unavailable_with_worker_records():
-    worker_recorder.get = MagicMock(return_value=[
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_8cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_4cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=False),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_2cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True)])
-    clock.now = MagicMock(return_value=stopped + timedelta(seconds=unavailability_delay - 1))
+def test_provide_if_two_unavailable():
+    availability_manager.get_unavailable = MagicMock(return_value=[
+        instance_8cpu.name,
+        instance_2cpu.name])
 
     instances = instance_provider.provide()
 
@@ -117,43 +80,12 @@ def test_two_unavailable_with_worker_records():
     assert instance_8cpu not in instances
 
 
-def test_all_unavailable_with_worker_records():
-    worker_recorder.get = MagicMock(return_value=[
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_8cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_4cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_2cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True)])
-    clock.now = MagicMock(return_value=stopped + timedelta(seconds=unavailability_delay - 1))
+def test_provide_if_all_unavailable():
+    availability_manager.get_unavailable = MagicMock(return_value=[
+        instance_8cpu.name,
+        instance_4cpu.name,
+        instance_2cpu.name])
 
     instances = instance_provider.provide()
 
-    assert len(instances) == 3
-    assert instance_2cpu in instances
-    assert instance_4cpu in instances
-    assert instance_8cpu in instances
-
-
-def test_one_unavailable_with_outdated_worker_records():
-    worker_recorder.get = MagicMock(return_value=[
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_8cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_4cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True),
-        GridEngineWorkerRecord(id=run_id, name=worker_name, instance_type=instance_2cpu.name,
-                               started=started, stopped=stopped,
-                               has_insufficient_instance_capacity=True)])
-    clock.now = MagicMock(return_value=stopped + timedelta(seconds=unavailability_delay + 1))
-
-    instances = instance_provider.provide()
-
-    assert len(instances) == 3
-    assert instance_2cpu in instances
-    assert instance_4cpu in instances
-    assert instance_8cpu in instances
+    assert not instances

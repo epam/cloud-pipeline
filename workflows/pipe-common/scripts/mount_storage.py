@@ -522,7 +522,7 @@ class S3Mounter(StorageMounter):
         permissions = 'rw'
         stat_cache = os.getenv('CP_S3_FUSE_STAT_CACHE', '1m0s')
         type_cache = os.getenv('CP_S3_FUSE_TYPE_CACHE', '1m0s')
-        mount_timeout = os.getenv('CP_PIPE_FUSE_TIMEOUT', 500)
+        mount_timeout = os.getenv('CP_PIPE_FUSE_MOUNT_TIMEOUT', 10000)
         aws_key_id, aws_secret, region_name, session_token = self._get_credentials(self.storage)
         path_chunks = self.storage.path.split('/')
         bucket = path_chunks[0]
@@ -553,20 +553,30 @@ class S3Mounter(StorageMounter):
                 'logging_file': logging_file
                 }
 
+    def remove_prefix(self, text, prefix):
+        if text.startswith(prefix):
+            return text[len(prefix):]
+        return text
+
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            mount_options = os.getenv('CP_PIPE_FUSE_MOUNT_OPTIONS')
+            pipe_mount_options = os.getenv('CP_PIPE_FUSE_MOUNT_OPTIONS')
+            mount_options = os.getenv('CP_PIPE_FUSE_OPTIONS')
             persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
             debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
             logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
+            merged_options = '-o allow_other'
+            if debug_libfuse:
+                merged_options = merged_options + ',debug'
+            if mount_options:
+                merged_options = merged_options + ',' + self.remove_prefix(mount_options.strip(), '-o').strip()
             if logging_level:
                 params['logging_level'] = logging_level
             return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
                     + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
-                    + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
-                    + (mount_options if mount_options else '')
-                    ).format(**params)
+                    + merged_options + ' '
+                    + (pipe_mount_options if pipe_mount_options else '')).format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
@@ -631,7 +641,7 @@ class GCPMounter(StorageMounter):
         super(GCPMounter, self).mount(mount_root, task_name)
 
     def build_mount_params(self, mount_point):
-        mount_timeout = os.getenv('CP_PIPE_FUSE_TIMEOUT', 500)
+        mount_timeout = os.getenv('CP_PIPE_FUSE_MOUNT_TIMEOUT', 10000)
         gcp_creds_content, _ = self._get_credentials(self.storage)
         if gcp_creds_content:
             creds_named_pipe_path = "<(echo \'{gcp_creds_content}\')".format(gcp_creds_content=gcp_creds_content)

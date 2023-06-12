@@ -70,6 +70,7 @@ import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
@@ -99,6 +100,7 @@ import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
+import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
@@ -480,5 +482,11 @@ public class AspectTestBeans {
     protected UserNotificationRepository userNotificationRepository;
 
     @MockBean
+    protected UserNotificationMapper userNotificationMapper;
+
+    @MockBean
     protected StorageEventCollector events;
+
+    @MockBean
+    protected CloudFacade cloudFacade;
 }

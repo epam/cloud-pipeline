@@ -26,7 +26,8 @@ import sys
 import time
 
 from pipeline.api import PipelineAPI
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger
+from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
 from scripts.generate_sge_profiles import generate_sge_profiles, \
     PROFILE_QUEUE_FORMAT, PROFILE_AUTOSCALING_FORMAT, PROFILE_QUEUE_PATTERN
 
@@ -42,16 +43,17 @@ class GridEngineProfileError(RuntimeError):
 class ManagementTask:
     CREATE = 'CREATE'
     CONFIGURE = 'CONFIGURE'
+    RESTART = 'RESTART'
     LIST = 'LIST'
 
 
 def manage(task, profile_name=None):
-    logging_dir = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOG_DIR', default=os.getenv('LOG_DIR', '/var/log'))
-    logging_level = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL', default='INFO')
-    logging_level_local = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_LOCAL', default='DEBUG')
+    logging_level_run = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_RUN', default='INFO')
+    logging_level_file = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_FILE', default='DEBUG')
     logging_level_console = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_CONSOLE', default='INFO')
-    logging_format = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_FORMAT', default='%(asctime)s:%(levelname)s: %(message)s')
+    logging_format = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_FORMAT', default='%(asctime)s [%(levelname)s] %(message)s')
     logging_task = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_TASK', default='ConfigureSGEProfiles')
+    logging_dir = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOG_DIR', default=os.getenv('LOG_DIR', '/var/log'))
     logging_file = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_FILE', default='configure_sge_profiles_interactively.log')
 
     api_url = os.environ['API']
@@ -65,25 +67,33 @@ def manage(task, profile_name=None):
     queue_profile_regexp = re.compile(PROFILE_QUEUE_PATTERN)
 
     logging_formatter = logging.Formatter(logging_format)
-    logging_logger = logging.getLogger()
-    if not logging_logger.handlers:
-        logging_logger.setLevel(logging_level_local)
 
+    logging_logger_root = logging.getLogger()
+    logging_logger_root.setLevel(logging.WARNING)
+
+    logging_logger = logging.getLogger(name=logging_task)
+    logging_logger.setLevel(logging.DEBUG)
+
+    if not logging_logger.handlers:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging_level_console)
         console_handler.setFormatter(logging_formatter)
         logging_logger.addHandler(console_handler)
 
         file_handler = logging.FileHandler(os.path.join(logging_dir, logging_file))
-        file_handler.setLevel(logging_level_local)
+        file_handler.setLevel(logging_level_file)
         file_handler.setFormatter(logging_formatter)
         logging_logger.addHandler(file_handler)
 
     api = PipelineAPI(api_url=api_url, log_dir=logging_dir)
     logger = RunLogger(api=api, run_id=run_id)
     logger = TaskLogger(task=logging_task, inner=logger)
-    logger = LevelLogger(level=logging_level, inner=logger)
-    logger = LocalLogger(inner=logger)
+    logger = LevelLogger(level=logging_level_run, inner=logger)
+    logger = LocalLogger(logger=logging_logger, inner=logger)
+
+    executor_logger = ExplicitLogger(level='WARNING', inner=logger)
+    executor = LocalExecutor()
+    executor = LoggingExecutor(logger=executor_logger, inner=executor)
 
     try:
         if task == ManagementTask.CREATE:
@@ -99,24 +109,46 @@ def manage(task, profile_name=None):
             if not profile:
                 logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
                 raise GridEngineProfileError()
-            _configure_profile(profile, editor, logger)
             _create_queue(profile, logger)
-            _restart_autoscaler(profile, autoscaling_script_path, logger)
-        elif task == ManagementTask.LIST:
-            logger.info('Initiating grid engine profiles listing...')
-            profiles = _collect_profiles(cap_scripts_dir, queue_profile_regexp, logger)
-            for profile in profiles:
-                logger.info('Grid engine profile has been found: {}'.format(profile.name))
-        else:
-            logger.info('Initiating grid engine profiles configuration...')
+            modified_profile = _configure_profile(profile, editor, logger)
+            verified = True
+            if modified_profile:
+                verified = _verify_profile(modified_profile, autoscaling_script_path, logger, executor)
+                if verified:
+                    _persist_profile(modified_profile, profile, logger)
+            _launch_autoscaler(profile, autoscaling_script_path, logger, executor)
+            if not verified:
+                raise GridEngineProfileError()
+        elif task == ManagementTask.CONFIGURE:
+            logger.info('Initiating grid engine profile configuration...')
             editor = _find_editor(logger)
             profile = _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger)
             if not profile:
                 logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
                 raise GridEngineProfileError()
             modified_profile = _configure_profile(profile, editor, logger)
+            verified = True
             if modified_profile:
-                _restart_autoscaler(modified_profile, autoscaling_script_path, logger)
+                _stop_autoscaler(profile, autoscaling_script_path, logger)
+                verified = _verify_profile(modified_profile, autoscaling_script_path, logger, executor)
+                if verified:
+                    _persist_profile(modified_profile, profile, logger)
+                _launch_autoscaler(profile, autoscaling_script_path, logger, executor)
+            if not verified:
+                raise GridEngineProfileError()
+        elif task == ManagementTask.RESTART:
+            logger.info('Initiating grid engine profile restart...')
+            profile = _find_profile(cap_scripts_dir, queue_profile_regexp, profile_name, logger)
+            if not profile:
+                logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
+                raise GridEngineProfileError()
+            _stop_autoscaler(profile, autoscaling_script_path, logger)
+            _launch_autoscaler(profile, autoscaling_script_path, logger, executor)
+        elif task == ManagementTask.LIST:
+            logger.info('Initiating grid engine profiles listing...')
+            profiles = _collect_profiles(cap_scripts_dir, queue_profile_regexp, logger)
+            for profile in profiles:
+                logger.info('Grid engine profile has been found: {}'.format(profile.name))
     except KeyboardInterrupt:
         logger.warning('Interrupted.')
     except GridEngineProfileError:
@@ -148,7 +180,7 @@ def _find_editor(logger):
 
 
 def _preprocess_profile_name(profile_name, logger):
-    logging.debug('Preprocessing profile name...')
+    logger.debug('Preprocessing profile name...')
     profile_name = re.sub(PROFILE_NAME_REMOVAL_PATTERN, '', profile_name.lower())
     if not profile_name:
         logger.warning('Grid engine profile name should consist only of alphanumeric characters and dots.')
@@ -187,28 +219,42 @@ def _generate_profile(profile_name, logger):
 
 
 def _configure_profile(profile, editor, logger):
-    tmp_profile_path = tempfile.mktemp()
-    logger.debug('Copying grid engine {} profile to {}...'.format(profile.name, tmp_profile_path))
-    shutil.copy2(profile.path_autoscaling, tmp_profile_path)
+    tmp_profile = Profile(name=profile.name,
+                          path_queue=tempfile.mktemp(),
+                          path_autoscaling=tempfile.mktemp())
+    logger.debug('Copying grid engine {} profile to {}...'.format(profile.name, tmp_profile.path_autoscaling))
+    shutil.copy2(profile.path_autoscaling, tmp_profile.path_autoscaling)
+    shutil.copy2(profile.path_queue, tmp_profile.path_queue)
+    _replace_in_file(tmp_profile.path_queue, profile.path_autoscaling, tmp_profile.path_autoscaling)
     logger.debug('Modifying temporary grid engine {} profile...'.format(profile.name))
-    subprocess.check_call([editor, tmp_profile_path])
-    profile_changes = _compare_profiles(profile.name, profile.path_autoscaling, tmp_profile_path, logger)
+    subprocess.check_call([editor, tmp_profile.path_autoscaling])
+    logger.debug('Extracting changes from grid engine {} profile...'.format(profile.name))
+    profile_changes = _compare_file(profile.path_autoscaling, tmp_profile.path_autoscaling)
     if not profile_changes:
         logger.info('Grid engine {} profile has not been changed.'.format(profile.name))
         return None
     logger.info('Grid engine {} profile has been changed:\n{}'.format(profile.name, profile_changes))
-    logger.debug('Persisting grid engine {} profile changes...'.format(profile.name))
-    shutil.move(tmp_profile_path, profile.path_autoscaling)
-    return profile
+    return tmp_profile
 
 
-def _compare_profiles(profile_name, before_path, after_path, logger):
-    logger.debug('Extracting changes from grid engine {} profile...'
-                 .format(profile_name, after_path))
+def _replace_in_file(file_path, before, after):
+    with open(file_path, 'r') as file:
+        content = file.read()
+    updated_content = re.sub(re.escape(before), re.escape(after), content)
+    with open(file_path, 'w') as file:
+        file.write(updated_content)
+
+
+def _compare_file(before_path, after_path):
     try:
         return subprocess.check_output(['diff', before_path, after_path], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         return e.output
+
+
+def _persist_profile(modified_profile, profile, logger):
+    logger.debug('Persisting grid engine {} profile changes...'.format(profile.name))
+    shutil.move(modified_profile.path_autoscaling, profile.path_autoscaling)
 
 
 def _create_queue(profile, logger):
@@ -219,11 +265,6 @@ sge_setup_queue
     """.format(autoscaling_profile_path=profile.path_queue),
                           shell=True)
     logger.info('Grid engine {} queue has been created.'.format(profile.name))
-
-
-def _restart_autoscaler(profile, autoscaling_script_path, logger):
-    _stop_autoscaler(profile, autoscaling_script_path, logger)
-    _launch_autoscaler(profile, autoscaling_script_path, logger)
 
 
 def _stop_autoscaler(profile, autoscaling_script_path, logger):
@@ -248,14 +289,33 @@ def _get_processes(logger, *args, **kwargs):
             yield proc
 
 
-def _launch_autoscaler(profile, autoscaling_script_path, logger):
+def _verify_profile(profile, autoscaling_script_path, logger, executor):
+    logger.debug('Verifying grid engine queue {} autoscaling...'.format(profile.name))
+    try:
+        executor.execute("""
+export CP_CAP_AUTOSCALE_LOGGING_LEVEL_RUN="ERROR"
+export CP_CAP_AUTOSCALE_LOGGING_LEVEL_FILE="ERROR"
+export CP_CAP_AUTOSCALE_LOGGING_LEVEL_CONSOLE="INFO"
+export CP_CAP_AUTOSCALE_LOGGING_FORMAT="%(message)s"
+export CP_CAP_AUTOSCALE_DRY_INIT="true"
+source "{autoscaling_profile_path}"
+"$CP_PYTHON2_PATH" "{autoscaling_script_path}"
+        """.format(autoscaling_profile_path=profile.path_queue,
+                   autoscaling_script_path=autoscaling_script_path))
+        logger.debug('Grid engine {} autoscaling has been verified.'.format(profile.name))
+        return True
+    except ExecutorError:
+        logger.warning('Grid engine profile verification has failed. Reverting the changes...')
+        return False
+
+
+def _launch_autoscaler(profile, autoscaling_script_path, logger, executor):
     logger.debug('Launching grid engine queue {} autoscaling...'.format(profile.name))
-    subprocess.check_call("""
+    executor.execute("""
 source "{autoscaling_profile_path}"
 nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
     """.format(autoscaling_profile_path=profile.path_queue,
-               autoscaling_script_path=autoscaling_script_path),
-                          shell=True)
+               autoscaling_script_path=autoscaling_script_path))
     logger.info('Grid engine {} autoscaling has been launched.'.format(profile.name))
 
 
@@ -276,7 +336,11 @@ def cli():
 
         sge configure queue.q
 
-    III. List all existing grid engine profiles
+    III. Restart an existing grid engine profile
+
+        sge restart queue.q
+
+    IV. List all existing grid engine profiles
 
         sge list
 
@@ -320,6 +384,23 @@ def configure(name):
 
     """
     manage(task=ManagementTask.CONFIGURE, profile_name=name)
+
+
+@cli.command()
+@click.argument('name', required=True, type=str)
+def restart(name):
+    """
+    Restarts profiles.
+
+    Depending on the value of CP_CAP_AUTOSCALE parameter (true/false)
+    the corresponding queue's autoscaler may be restarted.
+
+    Examples:
+
+        sge restart queue.q
+
+    """
+    manage(task=ManagementTask.RESTART, profile_name=name)
 
 
 @cli.command(name='list')

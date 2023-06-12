@@ -71,7 +71,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -610,12 +609,12 @@ public class ToolManager implements SecuredEntityManager {
                                             String version, ToolOSVersion toolOSVersion,
                                             String layerRef, String digest,
                                             Map<VulnerabilitySeverity, Integer> vulnerabilityCount,
-                                            String defaultCmd, Integer layersCount) {
+                                            String defaultCmd, Integer layersCount, boolean cudaAvailable) {
         final Tool tool = load(toolId);
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
         Optional<ToolVersionScanResult> prev = loadToolVersionScan(tool, version);
-        if(prev.isPresent()) {
+        if (prev.isPresent()) {
             ToolVersionScanResult scanResult = prev.get();
             boolean whiteList = scanResult.isFromWhiteList();
             if (scanResult.getDigest() == null || !scanResult.getDigest().equals(digest)) {
@@ -623,10 +622,10 @@ public class ToolManager implements SecuredEntityManager {
                 whiteList = false;
             }
             toolVulnerabilityDao.updateToolVersionScan(toolId, version, toolOSVersion, layerRef, digest, newStatus,
-                    scanDate, whiteList, vulnerabilityCount, defaultCmd, layersCount);
+                    scanDate, whiteList, vulnerabilityCount, defaultCmd, layersCount, cudaAvailable);
         } else {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, toolOSVersion, layerRef,
-                    digest, newStatus, scanDate, vulnerabilityCount, defaultCmd, layersCount);
+                    digest, newStatus, scanDate, vulnerabilityCount, defaultCmd, layersCount, cudaAvailable);
         }
     }
 
@@ -636,7 +635,7 @@ public class ToolManager implements SecuredEntityManager {
                                             Map<VulnerabilitySeverity, Integer> vulnerabilityCount,
                                             String defaultCmd, Integer layersCount) {
         updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef, digest,
-                vulnerabilityCount, defaultCmd, layersCount);
+                vulnerabilityCount, defaultCmd, layersCount, false);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -648,7 +647,7 @@ public class ToolManager implements SecuredEntityManager {
         Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
         if (!toolVersionScanResult.isPresent()) {
             toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
-                    DateUtils.now(), new HashMap<>(), null, null);
+                    DateUtils.now(), new HashMap<>(), null, null, false);
         }
         toolVulnerabilityDao.updateWhiteListWithToolVersion(toolId, version, fromWhiteList);
         return loadToolVersionScan(tool, version).orElse(null);
@@ -804,22 +803,10 @@ public class ToolManager implements SecuredEntityManager {
 
     public boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
         final String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
-
         if (StringUtils.isEmpty(allowedOSes) || toolOSVersion == null) {
             return true;
         }
-
-        return Arrays.stream(allowedOSes.split(",")).anyMatch(os -> {
-            String[] distroVersion = os.split(":");
-            // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
-            if (!distroVersion[0].equalsIgnoreCase(toolOSVersion.getDistribution())) {
-                return false;
-            }
-            // return false only if version of allowed exists (e.g. centos:6)
-            // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
-            return distroVersion.length != 2 || toolOSVersion.getVersion().toLowerCase()
-                    .startsWith(distroVersion[1].toLowerCase());
-        });
+        return toolOSVersion.isMatched(allowedOSes);
     }
 
     /**

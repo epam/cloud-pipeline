@@ -16,25 +16,8 @@ ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
 # JupyterLab
-RUN conda install -c conda-forge jupyterlab==1.0.7 -y && \
+RUN conda install -c conda-forge jupyterlab -y && \
     jupyter serverextension enable --py jupyterlab --sys-prefix
-
-# NodeJS for git plugin
-RUN conda install -c anaconda nodejs==10.13.0 -y
-
-# Git Plugin
-## Set WITH_GIT_PLUGIN to NO for python2-based conda images
-ARG WITH_GIT_PLUGIN="YES"
-RUN if [ "$WITH_GIT_PLUGIN" == "YES" ]; then \
-        jupyter labextension install @jupyterlab/git && \
-        pip install --upgrade jupyterlab-git==0.22.1 && \
-        jupyter serverextension enable --py jupyterlab_git; \
-    fi
-
-# Add nbdime to the jupyterlab build
-RUN pip install --upgrade nbdime==3.1.1 && \
-    jupyter nbextension enable nbdime --py --sys-prefix && \
-    jupyter lab build
 
 ADD start.sh /start.sh
 RUN chmod +x /start.sh

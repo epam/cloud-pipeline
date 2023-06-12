@@ -85,7 +85,13 @@ INDEX="{
   }
 }"
 
-curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-0000001%3E -d "$INDEX"
+status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:9200/${CP_SECURITY_LOGS_ELASTIC_PREFIX})
+if [[ "$status_code" == 404 ]] ; then
+  echo "Creating security log index"
+  curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E -d "$INDEX"
+else
+  echo "Security log index already exists"
+fi
 
 for _pipeline_path in /etc/search-elk/pipelines/*.json; do
   _pipeline_name="$(basename "$_pipeline_path" .json)"
@@ -121,9 +127,12 @@ fi
 
 curl -H 'Content-Type: application/json' -XPUT localhost:9200/_snapshot/log_backup_repo -d "$LOG_BACKUP_REPO"
 
+if [ ! -d /var/log/curator ]; then
+  mkdir -p /var/log/curator
+fi
 envsubst < /root/.curator/curator-actions-template.yml > /root/.curator/curator-actions.yml
 cat > /etc/cron.d/curator-cron <<EOL
-0 0 * * * curator --config /root/.curator/curator.yml /root/.curator/curator-actions.yml
+0 0 * * * curator --config /root/.curator/curator.yml /root/.curator/curator-actions.yml >> /var/log/curator/curator.log 2>&1
 EOL
 
 chmod 0644 /etc/cron.d/curator-cron

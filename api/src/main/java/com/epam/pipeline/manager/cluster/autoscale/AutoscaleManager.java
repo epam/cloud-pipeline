@@ -520,7 +520,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     final int nodeUpRetryCount = preferenceManager.getPreference(
                             SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT);
 
-                    if (retryCount >= nodeUpRetryCount) {
+                    if (retryCount >= nodeUpRetryCount &&
+                            !pipelineRunManager.findRun(longId).get().getStatus().isFinal()) {
                         pipelineRunManager.updateStateReasonMessageById(longId, preferenceManager
                                 .getPreference(SystemPreferences.LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE));
                         runRegionShiftHandler.restartRunInAnotherRegion(longId);

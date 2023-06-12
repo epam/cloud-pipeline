@@ -260,7 +260,7 @@ while IFS='|' read -r id name path type region_id; do
          blobfuse ${mount_root_srv_dir} --container-name=${path} --tmp-path=$CP_TMP_DIR_PATH
          mount_result=$?
      elif [[ "${type}" == "S3" ]] || [[ "${type}" == "GCP" ]]; then
-         pipe storage mount ${mount_root_srv_dir} -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_TIMEOUT:-500} -o allow_other -c audit-buffer-ttl=0 -l /var/log/fuse_${id}.log
+         pipe storage mount ${mount_root_srv_dir} -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_MOUNT_TIMEOUT:-10000} -o allow_other -c audit-buffer-ttl=0 -l /var/log/fuse_${id}.log
          mount_result=$?
          # Even in the "pipe storage mount" is OK, it may take a second or two to fully initialized
          # During this period the directory is considered as an empty "overlayfs"
