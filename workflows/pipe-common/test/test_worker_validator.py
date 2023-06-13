@@ -16,7 +16,9 @@ import logging
 
 from mock import Mock, MagicMock
 
-from scripts.autoscale_sge import GridEngineWorkerValidator, MemoryHostStorage, GridEngineJob
+from pipeline.hpc.gridengine import GridEngineJob
+from pipeline.hpc.host import MemoryHostStorage
+from pipeline.hpc.pipe import CloudPipelineWorkerValidator
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
@@ -34,9 +36,9 @@ grid_engine = Mock()
 api = Mock()
 scale_down_handler = Mock()
 common_utils = Mock()
-worker_validator = GridEngineWorkerValidator(cmd_executor=executor, api=api, host_storage=host_storage,
-                                             grid_engine=grid_engine, scale_down_handler=scale_down_handler,
-                                             common_utils=common_utils, dry_run=False)
+worker_validator = CloudPipelineWorkerValidator(cmd_executor=executor, api=api, host_storage=host_storage,
+                                                grid_engine=grid_engine, scale_down_handler=scale_down_handler,
+                                                common_utils=common_utils, dry_run=False)
 
 
 def setup_function():
