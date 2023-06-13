@@ -127,7 +127,8 @@ export default class DockerRegistryGroupsList extends React.Component {
               className={styles.button}
               style={{
                 fontWeight: group.privateGroup ? 'bold' : 'normal',
-                fontStyle: group.privateGroup ? 'italic' : 'normal'
+                fontStyle: group.privateGroup ? 'italic' : 'normal',
+                padding: 0
               }}
               onClick={() => this.onSelectGroup(group.id)}
             >
@@ -161,6 +162,7 @@ export default class DockerRegistryGroupsList extends React.Component {
         ))}
         <Collapse bordered={false}>
           <Collapse.Panel
+            className={styles.collapseContainer}
             header={(
               <div>
                 <span>Tool groups</span>

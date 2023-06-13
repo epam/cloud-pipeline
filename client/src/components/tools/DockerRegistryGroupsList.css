@@ -60,3 +60,12 @@
   font-size: larger;
   margin-left: 10px;
 }
+
+.collapse-container div[class="ant-collapse-content ant-collapse-content-active"] {
+  max-height: 250px;
+  overflow: auto;
+}
+
+.collapse-container div[class="ant-collapse-content-box"] {
+  padding: 5px 0;
+}

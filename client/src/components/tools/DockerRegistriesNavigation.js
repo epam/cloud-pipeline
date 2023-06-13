@@ -20,7 +20,6 @@ import {observer} from 'mobx-react';
 import {Button, Dropdown, Icon, Input, Row} from 'antd';
 import registryName from './registryName';
 import DockerRegistriesGroupsDropdownContent from './DockerRegistriesGroupsDropdownContent';
-import {GROUP_NAMES, FILTER_TYPES} from './DockerRegistriesGroupsList';
 import styles from './Tools.css';
 
 @observer

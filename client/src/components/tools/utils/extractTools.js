@@ -24,21 +24,21 @@ export const DEFAULT_FILTER = {
   groups: [
     {
       id: 'filter1',
-      title: 'Filter1',
-      description: 'Description',
+      title: 'GPU enabled',
+      description: 'GPU enabled personal tools',
       filters: {
         my: false,
         personal: true,
         sensitive: false,
         os: 'all',
         interactive: false,
-        gpu: false
+        gpu: true
       }
     },
     {
       id: 'filter2',
       title: 'Centos 7 and Ubuntu 22',
-      description: '',
+      description: 'Get Centos 7 and Ubuntu 22 personal tools',
       filters: {
         personal: true,
         os: 'centos 7*, ubuntu 22*'

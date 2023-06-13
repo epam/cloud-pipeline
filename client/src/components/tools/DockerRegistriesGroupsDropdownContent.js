@@ -64,12 +64,12 @@ export default class DockerRegistriesGroupsDropdownContent extends React.Compone
           filter={this.props.filter}
           filters={this.props.filters}
           currentGroup={this.props.currentGroup}
-          onNavigate={(id, filter) => {
+          onNavigate={(id) => {
             this.setState({
               groupSearch: null
             }, () => {
               this.props.onNavigate &&
-              this.props.onNavigate(id, filter);
+              this.props.onNavigate(id);
             });
           }}
           groupSearch={this.state.groupSearch}

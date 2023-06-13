@@ -175,7 +175,7 @@ export default class ToolsNew extends React.Component {
   get currentGroup () {
     if (this.filter) {
       let tools;
-      if (this.filter === 'top-used') {
+      if (this.filter === TOP_USED_FILTER.id) {
         if (this.completedRuns) {
           const imagesCount = this.completedRuns
             .map(run => {
@@ -580,7 +580,7 @@ export default class ToolsNew extends React.Component {
       (
         this.filter &&
         this._completedRunsRequest &&
-        this.filter === 'top-used'
+        this.filter === TOP_USED_FILTER.id
           ? this._completedRunsRequest.loaded
           : true
       )
@@ -601,7 +601,7 @@ export default class ToolsNew extends React.Component {
       isError = true;
     } else if (
       this.filter &&
-      this.filter === 'top-used' &&
+      this.filter === TOP_USED_FILTER.id &&
       this._completedRunsRequest &&
       !this._completedRunsRequest.loaded
     ) {
