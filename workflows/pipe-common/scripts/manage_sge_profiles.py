@@ -399,6 +399,7 @@ def cli():
     VI. Export certain existing grid engine profiles
 
         sge export queue1.q sge.export.tar.gz
+
         sge export queue1.q queue2.q sge.export.tar.gz
 
     """
@@ -491,7 +492,9 @@ def export(names, output):
     Examples:
 
         sge export sge.export.tar.gz
+
         sge export queue1.q sge.export.tar.gz
+
         sge export queue1.q queue2.q sge.export.tar.gz
 
     """
