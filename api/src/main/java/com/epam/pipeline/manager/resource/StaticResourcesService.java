@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.exception.InvalidPathException;
@@ -77,7 +78,10 @@ public class StaticResourcesService {
             return new DataStorageStreamingContent(new ByteArrayInputStream(html.getBytes()),
                     ProviderUtils.withoutTrailingDelimiter(filePath) + HTML);
         }
-        return dataStorageManager.getStreamingContent(storage.getId(), filePath, null);
+        final long sizeLimit = preferenceManager.getPreference(SystemPreferences.STATIC_RESOURCES_DOWNLOAD_LIMIT);
+        final DataStorageItemContent content = dataStorageManager
+                .getDataStorageItemContent(storage.getId(), filePath, null, sizeLimit);
+        return new DataStorageStreamingContent(new ByteArrayInputStream(content.getContent()), filePath);
     }
 
     public static String buildHtml(final List<AbstractDataStorageItem> items,

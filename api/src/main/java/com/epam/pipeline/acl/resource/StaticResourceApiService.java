@@ -28,7 +28,7 @@ public class StaticResourceApiService {
 
     private final StaticResourcesService resourcesService;
 
-    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByPath(#path, 'READ')")
+    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionAndSharedByPath(#path, 'READ')")
     public DataStorageStreamingContent getContent(final String path) {
         return resourcesService.getContent(path);
     }

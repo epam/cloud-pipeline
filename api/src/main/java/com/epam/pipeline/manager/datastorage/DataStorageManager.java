@@ -751,6 +751,13 @@ public class DataStorageManager implements SecuredEntityManager {
         return storageProviderManager.getFile(dataStorage, path, version);
     }
 
+    public DataStorageItemContent getDataStorageItemContent(final Long id, final String path, final String version,
+                                                            final long maxDownloadSize) {
+        AbstractDataStorage dataStorage = load(id);
+        checkDataStorageVersioning(dataStorage, version);
+        return storageProviderManager.getFile(dataStorage, path, version, maxDownloadSize);
+    }
+
     @Transactional
     public Map<String, String> loadDataStorageObjectTags(Long id, String path, String version) {
         final AbstractDataStorage dataStorage = load(id);

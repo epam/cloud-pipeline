@@ -217,6 +217,12 @@ public class StorageProviderManager {
     @SensitiveStorageOperation
     public DataStorageItemContent getFile(AbstractDataStorage dataStorage, String path, String version) {
         long maxDownloadSize = preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_MAX_DOWNLOAD_SIZE);
+        return getFile(dataStorage, path, version, maxDownloadSize);
+    }
+
+    @SensitiveStorageOperation
+    public DataStorageItemContent getFile(final AbstractDataStorage dataStorage, final String path,
+                                          final String version, final long maxDownloadSize) {
         return getStorageProvider(dataStorage).getFile(dataStorage, path, version, maxDownloadSize);
     }
 

@@ -843,6 +843,9 @@ public class SystemPreferences {
     public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
             new StringPreference("data.sharing.static.resource.template.path", "classpath:views/folder.vm",
                     DATA_SHARING_GROUP, pass);
+    public static final LongPreference STATIC_RESOURCES_DOWNLOAD_LIMIT = new LongPreference(
+            "data.sharing.static.resources.download.limit", 1000L, DATA_SHARING_GROUP,
+            isGreaterThan(0L));
 
     // SYSTEM_GROUP
     /**
