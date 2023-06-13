@@ -86,7 +86,7 @@ public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
             return Optional.empty();
         }
         final String name = machineType.getName();
-        final String family = elements[1];
+        final String family = String.format("%s_%s", elements[0], elements[1]);
         if (elements.length == 2) {
             return Optional.of(GCPMachine.withCpu(name, family, 1, 0, 0));
         }
