@@ -13,12 +13,13 @@
 #  limitations under the License.
 
 import logging
-
 from datetime import datetime, timedelta
+
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import Instance, InstanceAvailabilityManager, \
-    AvailableInstanceEvent, InsufficientInstanceEvent, FailingInstanceEvent
+from pipeline.hpc.event import AvailableInstanceEvent, InsufficientInstanceEvent, FailingInstanceEvent
+from pipeline.hpc.instance.avail import InstanceAvailabilityManager
+from pipeline.hpc.instance.provider import Instance
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 

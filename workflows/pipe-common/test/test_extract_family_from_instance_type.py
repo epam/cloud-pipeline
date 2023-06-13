@@ -14,27 +14,30 @@
 
 import logging
 
-from scripts.autoscale_sge import CloudProvider, extract_family_from_instance_type
+from pipeline.hpc.cloud import CloudProvider
+from pipeline.hpc.utils import ScaleCommonUtils
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
+utils = ScaleCommonUtils()
+
 
 def test_aws_familes():
-    assert extract_family_from_instance_type(CloudProvider.aws(), "c5.xlarge") == "c5"
-    assert extract_family_from_instance_type(CloudProvider.aws(), "p2.xlarge") == "p2"
-    assert extract_family_from_instance_type(CloudProvider.aws(), "g4dn.2xlarge") == "g4dn"
+    assert utils.extract_family_from_instance_type(CloudProvider.aws(), "c5.xlarge") == "c5"
+    assert utils.extract_family_from_instance_type(CloudProvider.aws(), "p2.xlarge") == "p2"
+    assert utils.extract_family_from_instance_type(CloudProvider.aws(), "g4dn.2xlarge") == "g4dn"
 
 
 def test_gcp_familes():
-    assert extract_family_from_instance_type(CloudProvider.gcp(), "n2-standard-2") == "n2-standard"
-    assert extract_family_from_instance_type(CloudProvider.gcp(), "n2-highcpu-2") == "n2-highcpu"
-    assert extract_family_from_instance_type(CloudProvider.gcp(), "n2d-highcpu-128") == "n2d-highcpu"
-    assert extract_family_from_instance_type(CloudProvider.gcp(), "e2-small") == "e2-small"
-    assert extract_family_from_instance_type(CloudProvider.gcp(), "custom-12-16") is None
-    assert extract_family_from_instance_type(CloudProvider.gcp(), "gpu-custom-4-16384-k80-1") is None
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "n2-standard-2") == "n2-standard"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "n2-highcpu-2") == "n2-highcpu"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "n2d-highcpu-128") == "n2d-highcpu"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "e2-small") == "e2-small"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "custom-12-16") is None
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "gpu-custom-4-16384-k80-1") is None
 
 
 def test_azure_familes():
-    assert extract_family_from_instance_type(CloudProvider.azure(), "Standard_B1ms") == "Bms"
-    assert extract_family_from_instance_type(CloudProvider.azure(), "Standard_D2s_v3") == "Dsv3"
-    assert extract_family_from_instance_type(CloudProvider.azure(), "Standard_D16s_v3") == "Dsv3"
+    assert utils.extract_family_from_instance_type(CloudProvider.azure(), "Standard_B1ms") == "Bms"
+    assert utils.extract_family_from_instance_type(CloudProvider.azure(), "Standard_D2s_v3") == "Dsv3"
+    assert utils.extract_family_from_instance_type(CloudProvider.azure(), "Standard_D16s_v3") == "Dsv3"

@@ -17,8 +17,9 @@ import logging
 import pytest
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import CpuCapacityInstanceSelector, IntegralDemand, InstanceDemand, Instance, \
-    FractionalDemand, ResourceSupply
+from pipeline.hpc.instance.provider import Instance
+from pipeline.hpc.instance.select import InstanceDemand, CpuCapacityInstanceSelector
+from pipeline.hpc.resource import IntegralDemand, FractionalDemand, ResourceSupply
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
