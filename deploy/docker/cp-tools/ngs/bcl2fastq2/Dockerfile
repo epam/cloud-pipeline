@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,12 @@
 
 FROM library/centos:7.7.1908
 
+ENV LANG="en_US.UTF-8" \
+	LC_ALL="en_US.UTF-8" \
+	LC_CTYPE="en_US.UTF-8"
+
 RUN	yum install -y unzip && \
-	curl -o bcl2fastq2-v2-20-0-linux-x86-64.zip "https://support.illumina.com/content/dam/illumina-support/documents/downloads/software/bcl2fastq/bcl2fastq2-v2-20-0-linux-x86-64.zip" && \
+	curl -o bcl2fastq2-v2-20-0-linux-x86-64.zip "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bcl2fastq2/2.20.0/bcl2fastq2-v2-20-0-linux-x86-64.zip" && \
 	unzip bcl2fastq2-v2-20-0-linux-x86-64.zip && \
 	yum install -y bcl2fastq2-v2.20.0.422-Linux-x86_64.rpm && \
 	rm -f bcl2fastq2-v2.20.0.422-Linux-x86_64.rpm
