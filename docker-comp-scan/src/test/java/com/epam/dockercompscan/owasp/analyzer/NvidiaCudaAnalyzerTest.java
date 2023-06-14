@@ -21,15 +21,15 @@ import org.junit.Test;
 import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.owasp.dependencycheck.dependency.Dependency;
 
-public class NvidiaVersionAnalyzerTest {
-    private final NvidiaVersionAnalyzer nvidiaVersionAnalyzer = new NvidiaVersionAnalyzer();
+public class NvidiaCudaAnalyzerTest {
+    private final NvidiaCudaAnalyzer nvidiaCudaAnalyzer = new NvidiaCudaAnalyzer();
 
     @Test
     public void shouldAnalyzeNvidiaVersion() throws AnalysisException {
         final Dependency dependency = new Dependency();
-        nvidiaVersionAnalyzer.analyzeDependency(dependency, null);
+        nvidiaCudaAnalyzer.analyzeDependency(dependency, null);
 
-        Assert.assertEquals(NvidiaVersionAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
-        Assert.assertEquals(NvidiaVersionAnalyzer.DEPENDENCY_NAME, dependency.getName());
+        Assert.assertEquals(NvidiaCudaAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
+        Assert.assertEquals(NvidiaCudaAnalyzer.DEPENDENCY_NAME, dependency.getName());
     }
 }

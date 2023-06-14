@@ -31,16 +31,17 @@ import org.owasp.dependencycheck.utils.FileFilterBuilder;
 import java.io.FileFilter;
 
 @Experimental
-public class NvidiaVersionAnalyzer extends AbstractFileTypeAnalyzer {
+public class NvidiaCudaAnalyzer extends AbstractFileTypeAnalyzer {
     public static final String DEPENDENCY_ECOSYSTEM = "Nvidia";
     public static final String NVIDIA_VERSION_ANALYZER_ENABLED = AnalyzeEnabler.ANALYZER_NVIDIA_PACKAGE.getValue();
-    static final String DEPENDENCY_NAME = "NvidiaVersion";
-    private static final String NVIDIA_VERSION_ANALYZER_NAME = "Nvidia Version Analyzer";
-    private static final String NVIDIA_VERSION_PATH = "/**/proc/driver/nvidia/version";
-    private static final String EVIDENCE_SOURCE = "version";
+    static final String DEPENDENCY_NAME = "NvidiaCuda";
+    private static final String NVIDIA_VERSION_ANALYZER_NAME = "Nvidia Cuda Analyzer";
+    private static final String NVIDIA_VERSION_PATH = "/**/usr/local/cuda-*/targets/x86_64-linux/lib/libcuda*.so.*";
+    private static final String EVIDENCE_SOURCE = "cuda";
     private static final String EVIDENCE_VALUE = "found";
     private static final FilePathGlobFilter NAME_FILE_FILTER = new FilePathGlobFilter(NVIDIA_VERSION_PATH);
     private static final FileFilter FILTER = FileFilterBuilder.newInstance().addFileFilters(NAME_FILE_FILTER).build();
+    private static final AnalysisPhase ANALYSIS_PHASE = AnalysisPhase.INFORMATION_COLLECTION;
 
     @Override
     protected FileFilter getFileFilter() {
@@ -71,6 +72,6 @@ public class NvidiaVersionAnalyzer extends AbstractFileTypeAnalyzer {
 
     @Override
     public AnalysisPhase getAnalysisPhase() {
-        return AnalysisPhase.INFORMATION_COLLECTION;
+        return ANALYSIS_PHASE;
     }
 }
