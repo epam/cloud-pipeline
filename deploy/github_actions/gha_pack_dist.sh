@@ -77,6 +77,6 @@ if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     # Publish repackaged distribution tgz to S3 into builds/ prefix
     # Only if it is one of the allowed branches and it is a push (not PR)
     if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]]; then
-            aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
+            aws s3 cp --quiet $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
     fi
 fi
