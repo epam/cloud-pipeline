@@ -21,30 +21,7 @@ export const TOP_USED_FILTER = {
 };
 
 export const DEFAULT_FILTER = {
-  groups: [
-    {
-      id: 'filter1',
-      title: 'GPU enabled',
-      description: 'GPU enabled personal tools',
-      filters: {
-        my: false,
-        personal: true,
-        sensitive: false,
-        os: 'all',
-        interactive: false,
-        gpu: true
-      }
-    },
-    {
-      id: 'filter2',
-      title: 'Centos 7 and Ubuntu 22',
-      description: 'Get Centos 7 and Ubuntu 22 personal tools',
-      filters: {
-        personal: true,
-        os: 'centos 7*, ubuntu 22*'
-      }
-    }
-  ],
+  groups: [TOP_USED_FILTER],
   showTopUsed: true
 };
 
@@ -73,7 +50,7 @@ function validateOS (tool = {}, mask) {
     .replace(/\*/g, '.*')
     .split(',')
     .filter(Boolean);
-  return osMasks.some(mask => new RegExp(`^${mask}$`, 'i').test(os));
+  return osMasks.some(mask => new RegExp(`^${mask.trim()}$`, 'i').test(os));
 }
 
 export default function extractTools (groups = [], currentFilter) {
@@ -104,18 +81,18 @@ export default function extractTools (groups = [], currentFilter) {
       }, []);
   }
   tools = tools.filter(tool => {
-    return (sensitive !== undefined
-      ? tool.allowSensitive === sensitive
-      : true
-    ) && (interactive !== undefined
-      ? tool.endpoints && tool.endpoints.length > 0
-      : true
-    ) && (gpu !== undefined
-      ? tool.gpuEnabled === gpu
-      : true
-    ) && (os !== undefined
-      ? validateOS(tool, os)
-      : true
+    return (sensitive === undefined || sensitive === null
+      ? true
+      : tool.allowSensitive === sensitive
+    ) && (interactive === undefined || sensitive === null
+      ? true
+      : tool.endpoints && tool.endpoints.length > 0
+    ) && (gpu === undefined || gpu === null
+      ? true
+      : tool.gpuEnabled === gpu
+    ) && (os === undefined || os === null
+      ? true
+      : validateOS(tool, os)
     );
   });
   return tools;

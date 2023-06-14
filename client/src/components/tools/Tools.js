@@ -58,7 +58,7 @@ const findGroupByName = (groups, name) => {
 const TOP_USED_AMOUNT = 5;
 
 @roleModel.authenticationInfo
-@inject('dockerRegistries', 'authenticatedUserInfo')
+@inject('dockerRegistries', 'authenticatedUserInfo', 'preferences')
 @HiddenObjects.injectToolsFilters
 @inject((stores, {params}) => {
   return {
@@ -89,18 +89,19 @@ export default class ToolsNew extends React.Component {
     (this.currentGroup && this.currentGroup.privateGroup);
   }
 
+  @computed
   get filters () {
-    const filter = DEFAULT_FILTER;
-    if (!filter || !filter.groups) {
-      return null;
-    }
-    if (filter.showTopUsed) {
+    const {preferences} = this.props;
+    if (preferences.loaded && preferences.uiToolsFilters) {
+      const {showTopUsed} = preferences.uiToolsFilters;
       return {
-        ...filter,
-        groups: [TOP_USED_FILTER, ...filter.groups]
+        ...preferences.uiToolsFilters,
+        groups: [showTopUsed ? TOP_USED_FILTER : undefined]
+          .concat(preferences.uiToolsFilters.groups || [])
+          .filter(Boolean)
       };
     }
-    return filter;
+    return DEFAULT_FILTER;
   }
 
   @computed
