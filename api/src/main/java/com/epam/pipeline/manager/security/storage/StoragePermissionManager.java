@@ -168,7 +168,7 @@ public class StoragePermissionManager {
     private boolean storageTagsPermission(final AbstractSecuredEntity storage, final List<String> tags,
                                           final String permission) {
         return grantPermissionManager.storagePermission(storage, permission)
-                && (grantPermissionManager.isOwnerOrAdmin(storage.getOwner())
+                && (grantPermissionManager.isAdmin()
                 || !isRestrictedTagsAccessEnabled()
                 || !hasRestrictedTags(tags)
                 || permissionHelper.hasAnyRole(

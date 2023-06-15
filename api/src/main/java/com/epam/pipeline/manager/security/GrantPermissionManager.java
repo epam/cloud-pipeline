@@ -461,6 +461,10 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
+    public boolean isAdmin() {
+        return isAdmin(getSids());
+    }
+
     public boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
         if (forbiddenByStorageStatus(storage, permissionName)) {
             return false;
