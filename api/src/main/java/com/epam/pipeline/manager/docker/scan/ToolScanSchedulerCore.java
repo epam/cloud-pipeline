@@ -170,7 +170,9 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolVulnerabilities(scanResult.getVulnerabilities(), tool.getId(),
                             version);
                     toolManager.updateToolDependencies(scanResult.getDependencies(), tool.getId(), version);
-                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
+                    final ToolScanStatus effectiveScanStatus = scanResult.getStatus() != null
+                            ? scanResult.getStatus() : ToolScanStatus.COMPLETED;
+                    toolManager.updateToolVersionScanStatus(tool.getId(), effectiveScanStatus,
                             scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
                             scanResult.getLastLayerRef(), scanResult.getDigest(), scanResult.getVulnerabilitiesCount(),
                             scanResult.getDefaultCmd(), scanResult.getLayersCount(), scanResult.isCudaAvailable());

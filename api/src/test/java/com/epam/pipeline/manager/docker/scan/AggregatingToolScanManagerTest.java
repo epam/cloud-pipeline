@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.scan.*;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -49,6 +50,8 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.util.TestUtils;
 import okhttp3.Request;
+import okhttp3.internal.http.RealResponseBody;
+import okio.Buffer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,7 +66,10 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -86,6 +92,7 @@ public class AggregatingToolScanManagerTest {
     public static final String DIGEST_3 = "digest3";
     private static final String TEST_LABEL_NAME = "label-name";
     private static final String TEST_LABEL_VALUE = "label-value";
+    private static final int ERROR_CODE = 500;
 
     @InjectMocks
     private AggregatingToolScanManager aggregatingToolScanManager = new AggregatingToolScanManager();
@@ -287,6 +294,8 @@ public class AggregatingToolScanManagerTest {
         when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
             .thenReturn(new ToolVersionAttributes());
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
+        Assert.assertEquals(ToolScanStatus.COMPLETED, result.getStatus());
+
         Assert.assertTrue(result.isCudaAvailable());
 
         Assert.assertFalse(result.getVulnerabilities().isEmpty());
@@ -357,6 +366,47 @@ public class AggregatingToolScanManagerTest {
         when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), LATEST_VERSION))
                 .thenReturn(Optional.of(scanResult));
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+    }
+
+    @Test
+    public void testThatScanIsPerformedEvenIfClairFails() throws ToolScanExternalServiceException {
+        when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(true));
+        when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
+                .thenReturn(new ToolVersionAttributes());
+
+        ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
+
+        Assert.assertEquals(ToolScanStatus.FAILED, result.getStatus());
+        List<ToolDependency> dependencies = result.getDependencies();
+        Assert.assertEquals(2, dependencies.size());
+    }
+
+    @Test
+    public void testThatScanIsPerformedEvenIfClairFailsToScan() throws ToolScanExternalServiceException {
+        when(clairService.scanLayer(Mockito.any())).thenReturn(new MockCall<>(true));
+        when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(true));
+        when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
+                .thenReturn(new ToolVersionAttributes());
+
+        ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
+
+        Assert.assertEquals(ToolScanStatus.FAILED, result.getStatus());
+        List<ToolDependency> dependencies = result.getDependencies();
+        Assert.assertEquals(2, dependencies.size());
+    }
+
+    @Test
+    public void testThatScanIsPerformedEvenIfDockerCompFails() throws ToolScanExternalServiceException {
+        when(compScanService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(true));
+        when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
+                .thenReturn(new ToolVersionAttributes());
+
+        ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
+
+        // Check that even that status is FAILED we still get vulnerabilities from clair
+        Assert.assertEquals(ToolScanStatus.FAILED, result.getStatus());
+        Assert.assertEquals(1, result.getVulnerabilities().size());
+        Assert.assertEquals(1, result.getVulnerabilities().stream().map(Vulnerability::getFeature).count());
     }
 
     @Test
@@ -463,15 +513,26 @@ public class AggregatingToolScanManagerTest {
     }
 
     private final class MockCall<T> implements Call<T> {
+        private final boolean errored;
         private T payload;
 
         private MockCall(T payload) {
             this.payload = payload;
+            this.errored = false;
+        }
+
+        private MockCall(boolean errored) {
+            this.errored = errored;
         }
 
         @Override
         public Response<T> execute() {
-            return Response.success(payload);
+            if (!errored) {
+                return Response.success(payload);
+            } else {
+                return Response.error(ERROR_CODE,
+                        new RealResponseBody(null, 0, new Buffer()));
+            }
         }
 
         @Override
