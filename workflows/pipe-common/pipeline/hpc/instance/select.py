@@ -65,16 +65,15 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
         instances = self.instance_provider.provide()
         remaining_demands = demands
         while remaining_demands:
-            best_capacity = 0
+            best_capacity = IntegralDemand()
             best_instance = None
             best_remaining_demands = None
             best_fulfilled_demands = None
             for instance in instances:
                 supply = ResourceSupply.of(instance) - self.reserved_supply
                 current_remaining_demands, current_fulfilled_demands = self._apply(remaining_demands, supply)
-                current_fulfilled_demand = functools.reduce(operator.add, current_fulfilled_demands, IntegralDemand())
-                current_capacity = current_fulfilled_demand.cpu
-                if current_capacity > best_capacity:
+                current_capacity = functools.reduce(operator.add, current_fulfilled_demands, IntegralDemand())
+                if current_capacity.cpu > best_capacity.cpu:
                     best_capacity = current_capacity
                     best_instance = instance
                     best_remaining_demands = current_remaining_demands
@@ -84,8 +83,12 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
                 Logger.info('There are no available instance types.')
                 break
             best_instance_owner = self._resolve_owner(best_fulfilled_demands)
-            Logger.info('Selecting %s instance using %s/%s cpu for %s user...'
-                        % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
+            Logger.info('Selecting %s instance using %s/%s cpu, %s/%s gpu, %s/%s mem for %s user...'
+                        % (best_instance.name,
+                           best_capacity.cpu, best_instance.cpu,
+                           best_capacity.gpu, best_instance.gpu,
+                           best_capacity.mem, best_instance.mem,
+                           best_instance_owner))
             yield InstanceDemand(best_instance, best_instance_owner)
 
     def _apply(self, demands, supply):
