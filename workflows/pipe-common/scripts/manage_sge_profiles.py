@@ -28,7 +28,7 @@ import sys
 import time
 
 from pipeline.api import PipelineAPI
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger, PrintLogger
 from pipeline.utils.path import mkdir
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
 from scripts.generate_sge_profiles import generate_sge_profiles, \
@@ -43,15 +43,33 @@ class GridEngineProfileError(RuntimeError):
     pass
 
 
-def errorhandling(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return_value = func(*args, **kwargs)
-            return return_value
-        except GridEngineProfileError:
-            exit(1)
-    return wrapper
+class ResilientGridEngineProfileManager:
+
+    def __init__(self, inner, logger):
+        self._inner = inner
+        self._logger = logger
+
+    def __getattr__(self, name):
+        if not hasattr(self._inner, name):
+            return None
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+        return self._wrap(attr)
+
+    def _wrap(self, attr):
+        @functools.wraps(attr)
+        def _wrapped_attr(*args, **kwargs):
+            try:
+                return attr(*args, **kwargs)
+            except KeyboardInterrupt:
+                self._logger.warning('Interrupted.')
+            except GridEngineProfileError:
+                exit(1)
+            except Exception:
+                self._logger.warning('Grid engine profiles management has failed.', trace=True)
+                exit(1)
+        return _wrapped_attr
 
 
 class GridEngineProfileManager:
@@ -65,7 +83,6 @@ class GridEngineProfileManager:
         self._queue_profile_regexp = queue_profile_regexp
         self._autoscaling_script_path = autoscaling_script_path
 
-    @errorhandling
     def create(self, profile_name):
         self._logger.info('Initiating grid engine profiles creation...')
         editor = self._find_editor()
@@ -90,7 +107,6 @@ class GridEngineProfileManager:
         if not verified:
             raise GridEngineProfileError()
 
-    @errorhandling
     def configure(self, profile_name):
         self._logger.info('Initiating grid engine profile configuration...')
         editor = self._find_editor()
@@ -109,7 +125,6 @@ class GridEngineProfileManager:
         if not verified:
             raise GridEngineProfileError()
 
-    @errorhandling
     def restart(self, profile_name):
         self._logger.info('Initiating grid engine profile restart...')
         profile = self._find_profile(self._cap_scripts_dir, self._queue_profile_regexp, profile_name)
@@ -119,14 +134,12 @@ class GridEngineProfileManager:
         self._stop_autoscaler(profile, self._autoscaling_script_path)
         self._launch_autoscaler(profile, self._autoscaling_script_path)
 
-    @errorhandling
     def list(self):
         self._logger.info('Initiating grid engine profiles listing...')
         profiles = self._collect_profiles(self._cap_scripts_dir, self._queue_profile_regexp)
         for profile in profiles:
             self._logger.info('Grid engine profile has been found: {}'.format(profile.name))
 
-    @errorhandling
     def export(self, profile_names, output_path):
         self._logger.info('Initiating grid engine profiles export...')
         if profile_names:
@@ -301,8 +314,6 @@ sge_setup_queue
             try:
                 proc_cmdline = proc.cmdline()
                 proc_environ = proc.environ()
-            except KeyboardInterrupt:
-                raise
             except Exception:
                 self._logger.error('Please use root account to configure grid engine profiles.')
                 raise GridEngineProfileError()
@@ -340,7 +351,6 @@ nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscale
         self._logger.info('Grid engine {} autoscaling has been launched.'.format(profile.name))
 
 
-@errorhandling
 def _get_manager():
     logging_level_run = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_RUN', default='INFO')
     logging_level_file = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_FILE', default='DEBUG')
@@ -392,10 +402,12 @@ def _get_manager():
     executor = LocalExecutor()
     executor = LoggingExecutor(logger=logger, inner=executor)
 
-    return GridEngineProfileManager(executor=executor, logger=logger, logger_warning=logger_warning,
-                                    cap_scripts_dir=cap_scripts_dir,
-                                    queue_profile_regexp=queue_profile_regexp,
-                                    autoscaling_script_path=autoscaling_script_path)
+    manager = GridEngineProfileManager(executor=executor, logger=logger, logger_warning=logger_warning,
+                                       cap_scripts_dir=cap_scripts_dir,
+                                       queue_profile_regexp=queue_profile_regexp,
+                                       autoscaling_script_path=autoscaling_script_path)
+    manager = ResilientGridEngineProfileManager(inner=manager, logger=logger)
+    return manager
 
 
 @click.group()
