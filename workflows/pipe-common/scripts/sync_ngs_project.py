@@ -476,7 +476,8 @@ def main():
     estimate_size = os.getenv('NGS_SYNC_ESTIMATE_DATA_SIZE', 'false')
     sample_sheet_prefix = os.getenv('NGS_SYNC_SAMPLE_SHEET_PREFIX', 'SampleSheet')
     demultiplex_config_prefix = os.getenv('NGS_SYNC_DEMU_CONFIG_PREFIX', 'demu_config')
-    api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs')
+    connection_timeout = int(os.getenv('NGS_SYNC_CONNECTION_TIMEOUT', '20'))
+    api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs', connection_timeout=connection_timeout)
     settings = Settings(api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                         configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
                         deploy_name, run_id, last_processed_column, config_prefix, data_size_multiplier,

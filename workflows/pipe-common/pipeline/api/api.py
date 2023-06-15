@@ -1096,7 +1096,7 @@ class PipelineAPI:
                                           data=json.dumps(data))
             return [] if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to launch configuration %s. "
+            raise RuntimeError("Failed to launch configuration {}. "
                                "Error message: {}".format(str(data['id']), str(e.message)))
 
     def get_edge_external_url(self, region=None):
