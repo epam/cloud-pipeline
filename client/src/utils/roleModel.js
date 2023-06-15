@@ -369,6 +369,7 @@ const manager = {
   folder: management('ROLE_FOLDER_MANAGER'),
   configuration: management('ROLE_CONFIGURATION_MANAGER'),
   storage: management('ROLE_STORAGE_MANAGER'),
+  storageTag: management('ROLE_STORAGE_TAG_MANAGER'),
   toolGroup: management('ROLE_TOOL_GROUP_MANAGER'),
   entities: management('ROLE_ENTITIES_MANAGER'),
   billing: management('ROLE_BILLING_MANAGER')
@@ -382,6 +383,7 @@ const isManager = {
   folder: hasRole('ROLE_FOLDER_MANAGER'),
   configuration: hasRole('ROLE_CONFIGURATION_MANAGER'),
   storage: hasRole('ROLE_STORAGE_MANAGER'),
+  storageTag: hasRole('ROLE_STORAGE_TAG_MANAGER'),
   toolGroup: hasRole('ROLE_TOOL_GROUP_MANAGER'),
   entities: hasRole('ROLE_ENTITIES_MANAGER'),
   billing: hasRole('ROLE_BILLING_MANAGER')

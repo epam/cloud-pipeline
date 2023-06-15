@@ -599,6 +599,12 @@ class PreferencesLoad extends Remote {
     return value && `${value}`.toLowerCase() === 'true';
   }
 
+  @computed
+  get storageTagRestrictedAccess () {
+    const value = this.getPreferenceValue('storage.tag.restricted.access');
+    return value && `${value}`.toLowerCase() === 'true';
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
