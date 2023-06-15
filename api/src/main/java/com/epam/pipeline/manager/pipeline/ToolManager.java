@@ -493,7 +493,13 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public String loadToolDefaultCommand(final Long id, final String tag) {
-        final List<String> commands = loadToolHistory(id, tag)
+        return toolVulnerabilityDao.loadToolVersionScan(id, tag)
+                .map(ToolVersionScanResult::getDefaultCmd)
+                .orElseGet(() -> loadToolDefaultCommand(loadToolHistory(id, tag)));
+    }
+
+    public String loadToolDefaultCommand(final List<ImageHistoryLayer> imageHistory) {
+        final List<String> commands = imageHistory
             .stream()
             .map(ImageHistoryLayer::getCommand)
             .collect(Collectors.toList());
