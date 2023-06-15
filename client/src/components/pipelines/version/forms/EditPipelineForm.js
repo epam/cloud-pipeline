@@ -506,16 +506,19 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     this.setState({activeTab: key});
   };
 
-  getModalFooter = (isNewPipeline) => {
+  getModalFooter = (isNewPipeline, isVersionedStorage) => {
     if (this.props.pending) {
       return false;
     }
+    const isManager = isVersionedStorage
+      ? roleModel.isManager.versionedStorage(this)
+      : roleModel.isManager.pipeline(this);
     const deleteAllowed = !isNewPipeline &&
       !!this.props.onDelete &&
       roleModel.writeAllowed(this.props.pipeline) &&
-      roleModel.isManager.versionedStorage(this);
+      isManager;
     const saveAllowed = isNewPipeline
-      ? roleModel.isManager.versionedStorage(this)
+      ? isManager
       : roleModel.writeAllowed(this.props.pipeline);
     if (deleteAllowed && saveAllowed) {
       return (
@@ -584,11 +587,12 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     const isNewPipeline = !this.props.pipeline;
     const isReadOnly = this.props.pipeline ? this.props.pipeline.locked : false;
     const pipelineType = this.props.pipeline ? this.props.pipeline.pipelineType : undefined;
-    const objectName = /^versioned_storage$/i.test(pipelineType)
+    const isVersionedStorage = /^versioned_storage$/i.test(pipelineType);
+    const objectName = isVersionedStorage
       ? 'versioned storage'
       : 'pipeline';
     const {resetFields} = this.props.form;
-    const modalFooter = this.getModalFooter(isNewPipeline);
+    const modalFooter = this.getModalFooter(isNewPipeline, isVersionedStorage);
     const deleteConfirmTitle = (
       <span
         style={{paddingRight: '25px', display: 'flex'}}
