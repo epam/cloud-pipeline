@@ -28,7 +28,6 @@ import UserName from '../../../special/UserName';
 import displayDate from '../../../../utils/displayDate';
 import SystemJobLog from './system-job-log';
 import SystemJobParameters from './system-job-parameters';
-import VersionFile from '../../../../models/pipelines/VersionFile';
 import styles from './system-jobs.css';
 
 function autoUpdateJobs (state) {
@@ -37,29 +36,6 @@ function autoUpdateJobs (state) {
   } = state || {};
   return runs.some((run) => /^running$/i.test(run.status));
 }
-
-function extractScriptParameters (text = '') {
-  const [parametersRow] = text
-    .split('\n')
-    .map(row => row.trim())
-    .filter(row => row.startsWith('#sys_job'));
-  if (!parametersRow) {
-    return undefined;
-  }
-  const parameterString = parametersRow.replace('#sys_job', '');
-  let parameters;
-  let error;
-  if (!parameterString) {
-    return undefined;
-  }
-  try {
-    parameters = JSON.parse(parameterString);
-  } catch (e) {
-    error = 'JSON validation error in system job parameters from script';
-    console.error(e);
-  }
-  return [error, parameters];
-};
 
 @inject('systemJobs')
 @observer
@@ -103,14 +79,19 @@ class SystemJobs extends React.Component {
   @computed
   get currentJobParameters () {
     const {selectedJobId} = this.state;
-    return this.jobScriptParameters[selectedJobId] || {};
+    return Object
+      .entries(this.jobScriptParameters[selectedJobId] || {})
+      .map(([parameter, info]) => ({
+        ...info,
+        parameter,
+        required: `${info.required}`.toLowerCase() === 'true'
+      }));
   }
 
   @computed
   get currentJobHasRequiredParameters () {
-    return this.currentJobParameters.parameters &&
-      this.currentJobParameters.parameters
-        .some(parameter => `${parameter.mandatory}` === 'true');
+    return this.currentJobParameters
+      .some(parameter => parameter.required);
   }
 
   openJobLog = (job, run) => {
@@ -175,24 +156,15 @@ class SystemJobs extends React.Component {
       if (this.jobScriptParameters[currentJob.path]) {
         return;
       }
+      const {systemJobs} = this.props;
       this.setState({scriptContentPending: true}, async () => {
-        const request = new VersionFile(
-          currentJob.pipelineId,
-          currentJob.path,
-          currentJob.pipelineVersion
-        );
-        await request.fetch();
-        if (request.error) {
-          message.error(request.error, 5);
-          return this.setState({scriptContentPending: false});
+        try {
+          this.jobScriptParameters[jobId] = await systemJobs.fetchJobParameters(currentJob);
+        } catch (error) {
+          message.error(error.message, 5);
+        } finally {
+          this.setState({scriptContentPending: false});
         }
-        const [jsonError, parameters] = extractScriptParameters(atob(request.response || '')) || [];
-        if (jsonError) {
-          console.error(jsonError, 5);
-          return this.setState({scriptContentPending: false});
-        }
-        this.jobScriptParameters[jobId] = parameters;
-        this.setState({scriptContentPending: false});
       });
     }
   };

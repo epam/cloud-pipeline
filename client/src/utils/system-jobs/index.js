@@ -20,6 +20,26 @@ import Pipeline from '../../models/pipelines/Pipeline';
 import PipelineFiles from '../../models/pipelines/Source';
 import PipelineConfigurations from '../../models/pipelines/PipelineConfigurations';
 import {PipelineRunner} from '../../models/pipelines/PipelineRunner';
+import VersionFile from '../../models/pipelines/VersionFile';
+
+function extractScriptParameters (text = '') {
+  const [parametersRow] = text
+    .split('\n')
+    .map(row => row.trim())
+    .filter(row => row.startsWith('#sys_job'));
+  if (!parametersRow) {
+    return {};
+  }
+  const parameterString = parametersRow.replace('#sys_job', '');
+  if (!parameterString) {
+    return {};
+  }
+  try {
+    return JSON.parse(parameterString);
+  } catch (e) {
+    throw new Error('JSON validation error in system job parameters from script');
+  }
+}
 
 /**
  * @typedef {Object} SystemJob
@@ -174,6 +194,36 @@ class SystemJobs {
     } finally {
       this.pending = false;
     }
+  }
+
+  async fetchJobParameters (job) {
+    if (!job) {
+      return {};
+    }
+    if (!job.parametersPromise) {
+      job.parametersPromise = new Promise((resolve, reject) => {
+        const request = new VersionFile(
+          job.pipelineId,
+          job.path,
+          job.pipelineVersion
+        );
+        request
+          .fetch()
+          .then(() => {
+            if (request.error) {
+              return Promise.reject(request.error);
+            }
+            try {
+              const content = atob(request.response || '');
+              resolve(extractScriptParameters(content) || {});
+            } catch (error) {
+              return Promise.reject(error);
+            }
+          })
+          .catch(reject);
+      });
+    }
+    return job.parametersPromise;
   }
 }
 

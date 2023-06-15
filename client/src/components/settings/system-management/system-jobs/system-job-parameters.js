@@ -62,11 +62,11 @@ class SystemJobParameters extends React.Component {
   };
 
   renderAlerts = () => {
-    const {parametersFromScript} = this.props;
-    if (!parametersFromScript) {
+    const {parametersFromScript = []} = this.props;
+    if (!parametersFromScript || !parametersFromScript.length) {
       return null;
     }
-    const alerts = (parametersFromScript.parameters || [])
+    const alerts = (parametersFromScript || [])
       .filter(parameter => parameter.description);
     return alerts.length > 0 ? (
       <div
@@ -78,10 +78,10 @@ class SystemJobParameters extends React.Component {
         {
           alerts.map(alert => (
             <Alert
-              key={alert.parameterId}
+              key={alert.parameter}
               message={(
                 <p>
-                  <b>{alert.parameterId}: </b>
+                  <b>{alert.parameter}: </b>
                   <span>
                     {alert.description}
                   </span>
@@ -155,7 +155,7 @@ SystemJobParameters.propTypes = {
   visible: PropTypes.bool,
   onCancel: PropTypes.func,
   onLaunch: PropTypes.func,
-  parametersFromScript: PropTypes.object
+  parametersFromScript: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
 };
 
 export default SystemJobParameters;
