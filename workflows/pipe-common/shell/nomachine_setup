@@ -89,7 +89,7 @@ function remove_nm {
 function install_nm {
   nm_version=$1
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    os_ver="${CP_OS}-${CP_VER_MAJOR}"
+    os_ver="${CP_OS}-${CP_VER//.}"
     wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/xfce4-$os_ver.tar.gz" -O xfcedesktop.tar.gz && \
     mkdir -p xfcedesktop && \
     tar -xzvf xfcedesktop.tar.gz -C xfcedesktop && \
