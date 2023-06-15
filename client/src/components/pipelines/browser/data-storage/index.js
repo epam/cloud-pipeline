@@ -387,6 +387,35 @@ export default class DataStorage extends React.Component {
       ));
   }
 
+  get storageTagRestrictedAccess () {
+    const {
+      preferences
+    } = this.props;
+    return preferences.storageTagRestrictedAccess;
+  }
+
+  get metadataEditable () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    const isAdmin = authenticatedUserInfo && authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value.admin
+      : false;
+    // Whilst in the restricted tag access mode, only admins and users (including owners) with roles
+    // STORAGE_MANAGER or STORAGE_TAG_MANAGER are allowed to edit file's tags.
+    const restrictedAccessCheck = isAdmin ||
+      roleModel.isManager.storage(this) ||
+      roleModel.isManager.storageTag(this);
+    const storageFileTagsEditable = this.storageTagRestrictedAccess
+      ? restrictedAccessCheck
+      // If restricted tag access mode is off, all users with WRITE permissions are
+      // allowed to edit file's tags.
+      : this.storage.writeAllowed;
+    return this.state.selectedFile
+      ? storageFileTagsEditable
+      : this.storage.writeAllowed;
+  }
+
   onDataStorageEdit = async (storage) => {
     if (!this.storage.info) {
       return;
@@ -2306,7 +2335,7 @@ export default class DataStorage extends React.Component {
             <Metadata
               pending={this.state.previewPending}
               key={METADATA_PANEL_KEY}
-              readOnly={!this.storage.writeAllowed}
+              readOnly={!this.metadataEditable}
               downloadable={!sensitive}
               showContent={
                 !sensitive &&
