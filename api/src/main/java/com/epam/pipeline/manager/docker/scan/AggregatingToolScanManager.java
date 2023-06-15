@@ -58,7 +58,6 @@ import okhttp3.ResponseBody;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -317,20 +316,20 @@ public class AggregatingToolScanManager implements ToolScanManager {
         }
     }
 
-    private <T> Pair<Boolean, T> getScanResult(final boolean initialized,
-                                               final Supplier<Call<T>> call) throws IOException {
+    private <T> Optional<T> getScanResult(final boolean initialized,
+                                          final Supplier<Call<T>> call) throws IOException {
         if (!initialized) {
-            return Pair.of(false, null);
+            return Optional.empty();
         }
 
         final Response<T> response = call.get().execute();
         if (!response.isSuccessful()) {
             try (ResponseBody erroredBody = response.errorBody()) {
                 LOGGER.error(erroredBody != null ? "Error while getting scan result: " + erroredBody.string() : "");
-                return Pair.of(false, null);
+                return Optional.empty();
             }
         }
-        return Pair.of(true, response.body());
+        return Optional.of(response.body());
     }
 
     private Optional<ToolVersionScanResult> getActualScan(Tool tool, String tag, DockerRegistry registry) {
@@ -451,15 +450,15 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
         ToolScanStatus toolScanStatus = ToolScanStatus.COMPLETED;
 
-        final Pair<Boolean, ClairScanResult> clairScanResult =
+        final Optional<ClairScanResult> clairScanResult =
                 getScanResult(clairService != null, () -> clairService.getScanResult(lastLayerRef));
 
-        if (!clairScanResult.getKey()) {
+        if (!clairScanResult.isPresent()) {
             toolScanStatus = ToolScanStatus.FAILED;
         }
 
         final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
-        final List<Vulnerability> vulnerabilities = Optional.ofNullable(clairScanResult.getValue())
+        final List<Vulnerability> vulnerabilities = clairScanResult
                 .map(result -> ListUtils.emptyIfNull(result.getFeatures()).stream())
                 .orElse(Stream.empty())
                 .flatMap(f -> f.getVulnerabilities() != null ? f.getVulnerabilities().stream().map(v -> {
@@ -478,16 +477,16 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
         LOGGER.debug("Found: " + vulnerabilities.size() + " vulnerabilities for " + tool.getImage() + ":" + tag);
 
-        final Pair<Boolean, DockerComponentScanResult> compScanResult = getScanResult(
+        final Optional<DockerComponentScanResult> compScanResult = getScanResult(
                 dockerComponentService != null, () -> dockerComponentService.getScanResult(lastLayerRef));
 
-        if (!compScanResult.getKey()) {
+        if (!compScanResult.isPresent()) {
             toolScanStatus = ToolScanStatus.FAILED;
         }
 
         //Concat dependencies from Clair and DockerCompScan
         final List<ToolDependency> dependencies = Stream.concat(
-            Optional.ofNullable(compScanResult.getValue()).map(result ->
+            compScanResult.map(result ->
                             ListUtils.emptyIfNull(result.getLayers()).stream())
                     .orElse(Stream.empty())
                     .flatMap(l -> l.getDependencies().stream().peek(dependency -> {
@@ -495,7 +494,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
                         dependency.setToolId(tool.getId());
                     })),
 
-            Optional.ofNullable(clairScanResult.getValue()).map(result -> ListUtils.emptyIfNull(result.getFeatures())
+            clairScanResult.map(result -> ListUtils.emptyIfNull(result.getFeatures())
                     .stream())
                     .orElse(Stream.empty())
                     .map(f -> new ToolDependency(tool.getId(), tag, f.getName(),
