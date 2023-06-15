@@ -66,7 +66,7 @@ public class LogAO implements AccessObject<LogAO> {
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
-            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find(byXpath("td/div[2]/a[1]"))),
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find(".log__nested-run")),
             entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a")),
             entry(SHOW_TIMINGS, $(byClassName("log__timing-btn")))
     );
@@ -435,15 +435,14 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO clickTaskWithName(final String name) {
         return click(taskWithName(name))
-               .ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"),
-                       exist);
+               .ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"), exist);
     }
 
     public static By parameterWithName(final String name, final String value) {
         Objects.requireNonNull(name);
         return byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
-                        ".//td[contains(., '%s')]]", name, value));
+                ".//td[contains(., '%s')]]", name, value));
     }
 
     public LogAO checkMountLimitsParameter(String...storages) {

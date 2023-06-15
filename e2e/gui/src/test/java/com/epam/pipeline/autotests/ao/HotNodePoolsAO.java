@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
@@ -89,9 +90,9 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
     private HotNodePoolsAO waitUntilNodesAppear(String poolName, int nodeType, int count) {
         NodeEntry node = searchForNodeEntry(poolName);
         int attempt = 0;
-        int maxAttempts = 10;
+        int maxAttempts = 60;
         while (!node.getNodeCount(nodeType).equals(valueOf(count)) && attempt < maxAttempts) {
-            sleep(30, SECONDS);
+            sleep(10, SECONDS);
             click(REFRESH);
             attempt++;
         }
@@ -167,6 +168,8 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                 entry(CLOUD_REGION, context().find(byXpath(".//div[.='Region']"))),
                 entry(DISK, context().find(byText("Disk:"))
                         .find(byXpath("following-sibling::div//input"))),
+                entry(PRICE_TYPE, context()
+                        .find(byXpath(".//span[.='Price type:']/following-sibling::div/div[@role='combobox']"))),
                 entry(AUTOSCALED, context().find(byText("Autoscaled:"))
                         .parent().find(byClassName("ant-checkbox"))),
                 entry(CONDITION, context()
@@ -211,7 +214,8 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
 
         public CreateHotNodePoolAO addFilter(String filter) {
             context().find(byText("Add filter")).parent().click();
-            context().find(byXpath("//*[contains(@class, 'ant-select-selection__placeholder') and contains(., 'Select property')]")).click();
+            context().find(byXpath("//*[contains(@class, 'ant-select-selection__placeholder') and contains(., 'Select property')]"))
+                    .click();
             $(byClassName("ilters-control__column")).$(byClassName("ant-select-dropdown-menu"))
                     .shouldBe(enabled)
                     .findAll(byClassName("ant-select-dropdown-menu-item"))
