@@ -29,6 +29,7 @@ import time
 
 from pipeline.api import PipelineAPI
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger
+from pipeline.utils.path import mkdir
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
 from scripts.generate_sge_profiles import generate_sge_profiles, \
     PROFILE_QUEUE_FORMAT, PROFILE_AUTOSCALING_FORMAT, PROFILE_QUEUE_PATTERN
@@ -127,27 +128,57 @@ class GridEngineProfileManager:
 
     @errorhandling
     def export(self, profile_names, output_path):
-        self._logger.info('Initiating grid engine profile export...')
+        self._logger.info('Initiating grid engine profiles export...')
         if profile_names:
             profiles = list(self._get_profiles(profile_names))
         else:
             profiles = list(self._collect_profiles(self._cap_scripts_dir, self._queue_profile_regexp))
-        sge_backup_path = self._create_sge_backup()
-        with tarfile.open(output_path, 'w:gz') as tar:
-            self._logger.info('Exporting grid engine backup...'.format(sge_backup_path))
-            tar.add(sge_backup_path, arcname='backup')
-            for profile in profiles:
-                self._logger.info('Exporting grid engine {} profile...'.format(profile.name))
-                tar.add(profile.path_queue, arcname='profiles/' + os.path.basename(profile.path_queue))
-                tar.add(profile.path_autoscaling, arcname='profiles/' + os.path.basename(profile.path_autoscaling))
+        tmp_dir = tempfile.mkdtemp()
+        self._export(profiles, tmp_dir)
+        self._archive(tmp_dir, output_path)
 
-    def _create_sge_backup(self):
-        sge_backup_dir = tempfile.mkdtemp()
-        self._logger.info('Saving grid engine backup to {}...'.format(sge_backup_dir))
+    def _export(self, profiles, export_dir):
+        self._logger.info('Exporting to {}...'.format(export_dir))
+        self._export_queues(export_dir)
+        self._export_pes(export_dir)
+        self._export_profiles(profiles, export_dir)
+
+    def _export_queues(self, export_dir):
+        self._logger.info('Exporting grid engine queues...')
+        output_dir = os.path.join(export_dir, 'cqueues')
+        mkdir(output_dir)
         self._executor.execute("""
-${{SGE_ROOT}}/util/upgrade_modules/save_sge_config.sh "{backup_dir}"
-        """.format(backup_dir=sge_backup_dir))
-        return sge_backup_dir
+for name in $(qconf -sql); do 
+    qconf -sq "$name" > "{output_dir}/$name"
+done
+        """.format(output_dir=output_dir))
+
+    def _export_pes(self, export_dir):
+        self._logger.info('Exporting grid engine pes...')
+        output_dir = os.path.join(export_dir, 'pe')
+        mkdir(output_dir)
+        self._executor.execute("""
+for name in $(qconf -spl); do 
+    qconf -sp "$name" > "{output_dir}/$name"
+done
+        """.format(output_dir=output_dir))
+
+    def _export_profiles(self, profiles, export_dir):
+        output_dir = os.path.join(export_dir, 'profiles')
+        mkdir(output_dir)
+        for profile in profiles:
+            self._logger.info('Exporting grid engine {} profile...'.format(profile.name))
+            path_queue = os.path.join(output_dir, os.path.basename(profile.path_queue))
+            path_autoscaling = os.path.join(output_dir, os.path.basename(profile.path_autoscaling))
+            shutil.copyfile(profile.path_queue, path_queue)
+            shutil.copyfile(profile.path_autoscaling, path_autoscaling)
+
+    def _archive(self, export_dir, output_path):
+        self._logger.info('Archiving...')
+        with tarfile.open(output_path, 'w:gz') as tar:
+            for item in os.listdir(export_dir):
+                item_path = os.path.join(export_dir, item)
+                tar.add(item_path, arcname=os.path.basename(item_path))
 
     def _find_editor(self):
         self._logger.debug('Searching for editor...')
