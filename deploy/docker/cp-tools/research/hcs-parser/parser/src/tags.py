@@ -17,6 +17,7 @@ import glob
 import os
 import urllib
 import xml.etree.ElementTree as ET
+from datetime import datetime
 
 from pipeline.api import PipelineAPI, TaskStatus
 from .utils import HcsParsingUtils, log_run_info, get_list_run_param
@@ -30,6 +31,8 @@ EXTENDED_TAGS_OWNER_TAG_KEY = 'OWNER'
 EXTENDED_TAGS_CHANNEL_TYPE_TAG_KEY = 'CHANNELTYPE'
 EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY = 'PLANES'
 EXTENDED_TAGS_TIMECOURSE_FLAG_TAG_KEY = 'TIMEPOINTS'
+KEYWORD_FILE_DATE_KEY = "DATE"
+EXTENDED_TAGS_EXPERIMENT_DATE_TAG_KEY = 'Experiment date'
 HYPHEN = '-'
 PATH_DELIMITER = '/'
 COMMA = ','
@@ -118,6 +121,7 @@ class HcsFileTagProcessor:
             return 0
         metadata_dict = self.map_to_metadata_dict(ome_schema, metadata)
         self.add_metadata_from_keyword_file(metadata_dict)
+        experiment_date = self._prepare_experiment_date(metadata_dict)
         if wells_tags:
             for well_tags in wells_tags.values():
                 for key, val in well_tags.items():
@@ -130,6 +134,8 @@ class HcsFileTagProcessor:
             return 0
         pipe_tags = self.prepare_tags(existing_attributes_dictionary, tags_to_push)
         tags_to_push_str = ' '.join(pipe_tags)
+        if experiment_date:
+            tags_to_push_str += ' %s' % experiment_date
         self.log_processing_info('Following tags will be assigned to the file: {}'.format(tags_to_push_str))
         url_encoded_cloud_file_path = HcsParsingUtils.extract_cloud_path(urllib.quote(self.hcs_img_path))
         return os.system('pipe storage set-object-tags "{}" {}'.format(url_encoded_cloud_file_path, tags_to_push_str))
@@ -145,6 +151,7 @@ class HcsFileTagProcessor:
         self.add_channel_type_info_if_present(keyword_file_content, metadata_dict)
         self.add_timepoints_info_if_present(keyword_file_content, metadata_dict)
         self.add_plane_info_if_present(keyword_file_content, metadata_dict)
+        self.add_experiment_date_info_if_present(keyword_file_content, metadata_dict)
 
     @staticmethod
     def try_extract_keyword_file_content(keyword_file_path):
@@ -160,6 +167,15 @@ class HcsFileTagProcessor:
         if EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY in keyword_file_content:
             planes_count = int(keyword_file_content[EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY])
             metadata_dict[EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY] = 'Yes' if planes_count > 1 else 'No'
+
+    @staticmethod
+    def add_experiment_date_info_if_present(keyword_file_content, metadata_dict):
+        if KEYWORD_FILE_DATE_KEY in keyword_file_content:
+            experiment_date = keyword_file_content[KEYWORD_FILE_DATE_KEY]
+            if not experiment_date:
+                return
+            experiment_date = datetime.strptime(experiment_date[:10], "%Y-%m-%d").strftime('%Y-%d-%m')
+            metadata_dict[EXTENDED_TAGS_EXPERIMENT_DATE_TAG_KEY] = experiment_date
 
     @staticmethod
     def add_timepoints_info_if_present(keyword_file_content, metadata_dict):
@@ -280,3 +296,12 @@ class HcsFileTagProcessor:
         existing_attributes = self.api.execute_request(self.system_dictionaries_url)
         existing_attributes_dictionary = {attribute['key']: attribute['values'] for attribute in existing_attributes}
         return existing_attributes_dictionary
+
+    @staticmethod
+    def _prepare_experiment_date(metadata_dict):
+        if EXTENDED_TAGS_EXPERIMENT_DATE_TAG_KEY not in metadata_dict:
+            return None
+        experiment_date = metadata_dict.pop(EXTENDED_TAGS_EXPERIMENT_DATE_TAG_KEY)
+        if experiment_date:
+            return "'{}'='{}'".format(EXTENDED_TAGS_EXPERIMENT_DATE_TAG_KEY, experiment_date)
+        return None
