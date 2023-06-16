@@ -65,6 +65,7 @@ import RunCapabilities, {
 import ToolLayersCheckWarning from './check/tool-layers/warning';
 import DiskSizeWarning from './warnings/disk-size-warning';
 import PersonalToolWarning from './warnings/personal-tool-warning';
+import CudaWarning from './warnings/cuda-warning';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -1141,6 +1142,17 @@ export class RunConfirmation extends React.Component {
           parameters={this.props.parameters}
           style={{margin: 2}}
         />
+        <Provider
+          dockerRegistries={this.props.dockerRegistries}
+        >
+          <CudaWarning
+            style={{margin: 2}}
+            showIcon
+            docker={this.props.dockerImage}
+            gpuEnabledRun={this.gpuEnabled}
+            instanceType={this.state.instanceType}
+          />
+        </Provider>
         {
           this.renderCapabilitiesDisclaimer()
         }
