@@ -136,14 +136,14 @@ export default class CudaWarning extends React.Component {
       if (gpuEnabledRun && !this.cudaAvailable) {
         return (
           // eslint-disable-next-line max-len
-          <p>You are going to start a tool without a CUDA toolkit, using a GPU-enabled node (<b>{instanceType}</b>). No CUDA environment will be available, but the compute cost will be high.
+          <p>You are going to start a tool <i>without a CUDA toolkit</i>, using a <i>GPU-enabled node ({instanceType})</i>. No CUDA environment will be available, but the compute cost will be high.
           </p>
         );
       }
       if (!gpuEnabledRun && this.cudaAvailable) {
         return (
           // eslint-disable-next-line max-len
-          <p>You are going to start a tool with a CUDA toolkit installed, but using a CPU-only node (<b>{instanceType}</b>). No CUDA/Nvidia environment will be available.
+          <p>You are going to start a tool <i>with a CUDA toolkit installed</i>, but using a <i>CPU-only node ({instanceType})</i>. No CUDA/Nvidia environment will be available.
           </p>
         );
       }

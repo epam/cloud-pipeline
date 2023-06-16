@@ -1063,11 +1063,11 @@ export default class Tool extends localization.LocalizedReactComponent {
     }, {
       dataIndex: 'cudaAvailable',
       key: 'cudaAvailable',
-      title: 'Cuda',
+      title: 'CUDA',
       className: styles.osColumn,
-      render: (cudaAvailable) => cudaAvailable !== undefined
-        ? `${!!cudaAvailable}`
-        : emptyField
+      render: (cudaAvailable) => cudaAvailable
+        ? 'Available'
+        : undefined
     }, {
       key: 'actions',
       className: styles.actionsColumn,
