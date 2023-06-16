@@ -854,10 +854,10 @@ export default class Tool extends localization.LocalizedReactComponent {
           ? versionsByDigest[versionAttributes.digest]
             .filter(version => version !== currentVersion.version)
           : [];
-
         data.push({
           key: keyIndex,
           name: currentVersion.version,
+          cudaAvailable: scanResult.cudaAvailable,
           digest: versionAttributes && versionAttributes.digest ? versionAttributes.digest : '',
           digestAliases,
           fromWhiteList: scanResult.fromWhiteList,
@@ -1045,6 +1045,14 @@ export default class Tool extends localization.LocalizedReactComponent {
       title: 'Modified date',
       className: styles.nameColumn,
       render: (modificationDate) => modificationDate ? displayDate(modificationDate) : emptyField
+    }, {
+      dataIndex: 'cudaAvailable',
+      key: 'cudaAvailable',
+      title: 'CUDA',
+      className: styles.osColumn,
+      render: (cudaAvailable) => cudaAvailable
+        ? 'Available'
+        : undefined
     }, {
       key: 'actions',
       className: styles.actionsColumn,
