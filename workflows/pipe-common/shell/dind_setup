@@ -90,6 +90,13 @@ REQUIRES_GPU_DIND=$?
 if [ $REQUIRES_GPU_DIND -eq 0 ]; then
     pipe_log_info "Active CUDA environment detected, try to install NVIDIA Docker" "$DIND_SETUP_TASK"
     distribution="${CP_OS}${CP_VER}"
+    if [ "$CP_OS" != "rocky" ]; then
+      if [[ "$CP_VER" == "8"* ]]; then
+        distribution="rhel8.6"
+      elif [[ "$CP_VER" == "9"* ]]; then
+        distribution="rhel9.0"
+      fi
+    fi
     if [ $IS_RPM_BASED -eq 0 ]; then
         export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-2.0.0-3.docker18.09.6}"
 
