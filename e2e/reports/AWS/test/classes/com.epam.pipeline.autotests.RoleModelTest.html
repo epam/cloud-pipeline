@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">2</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">52m28.90s</div>
+<div class="counter">45m37.18s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">92%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,140 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549"></a>
-<h3 class="failures">checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549</h3>
-<span class="code">
-<pre>Element not found {By.xpath: .//li[@role = 'menuitem' and contains(@class, 'rc-dropdown-menu-item') and text() ='Edit folder']}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1686437647552.9.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1686437647552.9.html
-Timeout: 210 s.
-Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//li[@role = 'menuitem' and contains(@class, 'rc-dropdown-menu-item') and text() ='Edit folder']&quot;}
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:101)
-	at com.epam.pipeline.autotests.ao.LibraryFolderAO.clickEditButton(LibraryFolderAO.java:64)
-	at com.epam.pipeline.autotests.RoleModelTest.getFolderPermissionsTab(RoleModelTest.java:867)
-	at com.epam.pipeline.autotests.RoleModelTest.checkFolderPermissionForReadOnlyUser(RoleModelTest.java:263)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//li[@role = 'menuitem' and contains(@class, 'rc-dropdown-menu-item') and text() ='Edit folder']&quot;}
-  (Session info: chrome=63.0.3239.132)
-  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
-Command duration or timeout: 0 milliseconds
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edf8ef62dd7c', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
-Driver info: org.openqa.selenium.chrome.ChromeDriver
-Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 0abc5b8f7476ade8adb5abdfc1d9df46
-*** Element info: {Using=xpath, value=.//li[@role = 'menuitem' and contains(@class, 'rc-dropdown-menu-item') and text() ='Edit folder']}
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
-	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
-	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
-	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
-	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
-	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
-	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:179)
-	at org.openqa.selenium.remote.RemoteWebElement.findElementByXPath(RemoteWebElement.java:255)
-	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 24 more
-</pre>
-</span>
-</div>
-<div class="test">
-<a name="checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552"></a>
-<h3 class="failures">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</h3>
-<span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'folder-with-several-pipelines-4604236543160069103')]]}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1686437944272.10.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1686437944272.10.html
-Timeout: 210 s.
-Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'folder-with-several-pipelines-4604236543160069103')]]
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.cd(PipelinesLibraryAO.java:156)
-	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.clickOnFolder(PipelinesLibraryAO.java:183)
-	at com.epam.pipeline.autotests.RoleModelTest.checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions(RoleModelTest.java:297)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'folder-with-several-pipelines-4604236543160069103')]]
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'edf8ef62dd7c', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 23 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -206,154 +79,154 @@ Driver info: driver.version: unknown
 </thead>
 <tr>
 <td class="success">checkBucketEditProhibitionForReadOnlyUser - EPMCMBIBPC-563</td>
-<td>34.183s</td>
+<td>32.920s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</td>
-<td>4m7.09s</td>
+<td>4m6.18s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkClusterNodesByNonAdminUser - EPMCMBIBPC-567</td>
-<td>7m14.73s</td>
+<td>7m20.74s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549</td>
-<td>3m43.85s</td>
-<td class="failures">failed</td>
+<td class="success">checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549</td>
+<td>1m7.17s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</td>
-<td>4m56.83s</td>
-<td class="failures">failed</td>
+<td class="success">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</td>
+<td>1m22.92s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPermissionsForExecutingPipelines - EPMCMBIBPC-553</td>
-<td>5m41.39s</td>
+<td>5m13.06s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPipelinePermissionsForGroup - EPMCMBIBPC-578</td>
-<td>25.737s</td>
+<td>26.840s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkReadPermissionForBucket - EPMCMBIBPC-562</td>
-<td>49.778s</td>
+<td>49.934s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByEditPermissionUser - EPMCMBIBPC-574</td>
-<td>1m31.61s</td>
+<td>1m31.48s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByExecutePermissionUser - EPMCMBIBPC-573</td>
-<td>1m46.14s</td>
+<td>1m40.92s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByReadOnlyUser - EPMCMBIBPC-572</td>
-<td>1m56.65s</td>
+<td>2m0.87s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkWritePermissionForBucket - EPMCMBIBPC-565</td>
-<td>56.161s</td>
+<td>55.441s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">editAndExecutePipeline - EPMCMBIBPC-561</td>
-<td>6m39.67s</td>
+<td>6m32.61s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">givePermissionsToUser - EPMCMBIBPC-537</td>
-<td>24.951s</td>
+<td>25.585s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">giveUserReadPermissionForPipeline - EPMCMBIBPC-546</td>
-<td>39.149s</td>
+<td>36.244s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">giveUserWritePermissionForPipeline - EPMCMBIBPC-540</td>
-<td>55.456s</td>
+<td>55.609s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">readOnlyUserIsNotAbleToEditFileInPipeline - EPMCMBIBPC-558</td>
-<td>5.585s</td>
+<td>5.947s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">readOnlyUserIsNotAbleToEditPipeline - EPMCMBIBPC-547</td>
-<td>33.523s</td>
+<td>30.905s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">rerunPipelineWithoutPermissionsForExecute - EPMCMBIBPC-560</td>
-<td>1m13.69s</td>
+<td>1m13.36s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</td>
-<td>2m40.74s</td>
+<td>2m38.22s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580</td>
-<td>1m28.65s</td>
+<td>1m31.81s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">tryToNavigateToAnotherBucketByNavigationBar - EPMCMBIBPC-564</td>
-<td>24.189s</td>
+<td>22.376s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePermissionsForEditPipeline - EPMCMBIBPC-556</td>
-<td>1m20.79s</td>
+<td>1m22.94s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePermissionsForEditPipelineFiles - EPMCMBIBPC-557</td>
-<td>1m5.35s</td>
+<td>1m3.75s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateSearchForNoUser - EPMCMBIBPC-1581</td>
-<td>14.099s</td>
+<td>14.498s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateSearchWithinEditUser - EPMCMBIBPC-1575</td>
-<td>27.585s</td>
+<td>26.799s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">viewUserPermissions - EPMCMBIBPC-539</td>
-<td>31.320s</td>
+<td>28.042s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 45343 from [45343]
-Returns latest run with runId 45343 from [45343]
-Returns latest run with runId 45343 from [45343]
-Returns latest run with runId 45344 from [45343, 45344]
-Returns latest run with runId 45344 from [45343, 45344]
-Returns latest run with runId 45344 from [45343, 45344]
-Returns latest run with runId 45345 from [45343, 45344, 45345]
-Returns latest run with runId 45345 from [45343, 45344, 45345]
-Returns latest run with runId 45346 from [45343, 45344, 45345, 45346]
-Returns latest run with runId 45346 from [45343, 45344, 45345, 45346]
+<pre>Returns latest run with runId 45732 from [45732]
+Returns latest run with runId 45732 from [45732]
+Returns latest run with runId 45732 from [45732]
+Returns latest run with runId 45733 from [45732, 45733]
+Returns latest run with runId 45733 from [45732, 45733]
+Returns latest run with runId 45733 from [45732, 45733]
+Returns latest run with runId 45734 from [45732, 45733, 45734]
+Returns latest run with runId 45734 from [45732, 45733, 45734]
+Returns latest run with runId 45735 from [45732, 45733, 45734, 45735]
+Returns latest run with runId 45735 from [45732, 45733, 45734, 45735]
 </pre>
 </span>
 </div>
@@ -365,7 +238,7 @@ Returns latest run with runId 45346 from [45343, 45344, 45345, 45346]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jun 12, 2023 1:27:14 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jun 18, 2023 1:43:50 AM</p>
 </div>
 </div>
 </body>
