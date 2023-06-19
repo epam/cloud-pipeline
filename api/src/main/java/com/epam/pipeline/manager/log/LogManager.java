@@ -176,7 +176,6 @@ public class LogManager {
     }
 
     public Map<String, Long> group(final LogRequest logRequest) {
-        final LogFilter logFilter = Optional.ofNullable(logRequest.getFilter()).orElse(new LogFilter());
         final String groupBy = logRequest.getGroupBy();
         Assert.isTrue(StringUtils.isNotBlank(groupBy), "Group by field not provided.");
 
