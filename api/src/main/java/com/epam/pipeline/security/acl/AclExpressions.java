@@ -78,6 +78,13 @@ public final class AclExpressions {
             "(" + ADMIN_ONLY + OR + "@storagePermissionManager.storagePermissionById(#id, 'OWNER')" + ")"
             + AND + STORAGE_SHARED;
 
+    public static final String STORAGE_MGMT_UPDATE =
+            ADMIN_ONLY + OR + "@storagePermissionManager.storageMgmtPermission(#storage.id, 'OWNER')";
+
+    public static final String STORAGE_ID_MGMT_DELETE =
+            ADMIN_ONLY + OR + "(" + "hasRole('STORAGE_MANAGER')"
+                + AND + "@storagePermissionManager.storageMgmtPermission(#id, 'OWNER')" + ")";
+
     public static final String STORAGE_ID_TAGS_WRITE =
             "(" + ADMIN_ONLY + OR + "@storagePermissionManager.storageTagsPermission(#id, #tags, 'WRITE')" + ")"
             + AND + STORAGE_SHARED;
