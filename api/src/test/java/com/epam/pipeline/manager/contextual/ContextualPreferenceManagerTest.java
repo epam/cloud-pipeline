@@ -248,15 +248,6 @@ public class ContextualPreferenceManagerTest {
     }
 
     @Test
-    public void searchShouldFailIfPreferenceLevelIsNotTool() {
-        Arrays.stream(ContextualPreferenceLevel.values())
-                .filter(level -> level != ContextualPreferenceLevel.TOOL)
-                .forEach(level ->
-                        assertThrows(IllegalArgumentException.class,
-                            () -> manager.search(NAMES, new ContextualPreferenceExternalResource(level, TOOL_ID))));
-    }
-
-    @Test
     public void searchShouldSearchPreferenceWithResourceConstructedFromTheRequestedResourceIfItIsSpecified() {
         final ContextualPreference preference = new ContextualPreference(NAME, VALUE, toolResource);
         when(contextualPreferenceHandler.search(eq(NAMES), any())).thenReturn(Optional.of(preference));

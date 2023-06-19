@@ -24,19 +24,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.epam.pipeline.entity.preference.PreferenceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Default contextual preference reducer that only reduces preferences specified in the {@link #preferenceReducerMap}
- * using corresponding reducer from that map.
+ * Default contextual preference reducer that only reduces preferences specified in {@link #preferenceNameToReducer}
+ * or {@link #preferenceTypeToReducer} using corresponding reducer from one of the maps.
  */
 @Slf4j
 @RequiredArgsConstructor
 public class DefaultContextualPreferenceReducer implements ContextualPreferenceReducer {
 
     private final MessageHelper messageHelper;
-    private final Map<String, ContextualPreferenceReducer> preferenceReducerMap;
+    private final Map<String, ContextualPreferenceReducer> preferenceNameToReducer;
+    private final Map<PreferenceType, ContextualPreferenceReducer> preferenceTypeToReducer;
 
     @Override
     public Optional<ContextualPreference> reduce(final List<ContextualPreference> preferences) {
@@ -58,8 +61,13 @@ public class DefaultContextualPreferenceReducer implements ContextualPreferenceR
     }
 
     private Optional<ContextualPreference> reduceValidPreferences(final List<ContextualPreference> preferences) {
-        return preferenceReducerMap.getOrDefault(preferences.get(0).getName(), defaultReducer())
-                .reduce(preferences);
+        return getReducer(preferences.get(0)).reduce(preferences);
+    }
+
+    private ContextualPreferenceReducer getReducer(final ContextualPreference preference) {
+        return Optional.ofNullable(preferenceNameToReducer.get(preference.getName())).map(Optional::of)
+                .orElseGet(() -> Optional.ofNullable(preferenceTypeToReducer.get(preference.getType())))
+                .orElseGet(this::defaultReducer);
     }
 
     private ContextualPreferenceReducer defaultReducer() {
