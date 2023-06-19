@@ -17,7 +17,6 @@ import glob
 import os
 import urllib
 import xml.etree.ElementTree as ET
-from datetime import datetime
 
 from pipeline.api import PipelineAPI, TaskStatus
 from .utils import HcsParsingUtils, log_run_info, get_list_run_param
@@ -174,7 +173,7 @@ class HcsFileTagProcessor:
             experiment_date = keyword_file_content[KEYWORD_FILE_DATE_KEY]
             if not experiment_date:
                 return
-            experiment_date = datetime.strptime(experiment_date[:10], "%Y-%m-%d").strftime('%Y-%d-%m')
+            experiment_date = experiment_date[:10]
             metadata_dict[EXTENDED_TAGS_EXPERIMENT_DATE_TAG_KEY] = experiment_date
 
     @staticmethod
