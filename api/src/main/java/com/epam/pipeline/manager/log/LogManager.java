@@ -186,7 +186,7 @@ public class LogManager {
 
         final SearchRequest request = new SearchRequest()
                 .source(source)
-                .indices(getReadIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
+                .indices(getAllIndices())
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
