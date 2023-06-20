@@ -791,6 +791,10 @@ public class SystemPreferences {
             "ui.personal.tools.permissions.restrictions",
             Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final ObjectPreference<List<Object>> UI_SEARCH_COLUMNS_ORDER = new ObjectPreference<>(
+            "ui.search.columns.order",
+            Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
@@ -1096,6 +1100,10 @@ public class SystemPreferences {
 
     public static final StringPreference SEARCH_ELASTIC_PREFIX_FILTER_FIELD = new StringPreference(
             "search.elastic.prefix.filter.field", "id", SEARCH_GROUP, pass);
+    public static final ObjectPreference<List<String>> SEARCH_ELASTIC_METADATA_FIELDS = new ObjectPreference<>(
+            "search.elastic.index.metadata.fields", null,
+            new TypeReference<List<String>>() {}, SEARCH_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
