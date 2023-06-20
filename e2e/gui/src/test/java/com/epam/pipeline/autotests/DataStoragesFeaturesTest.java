@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,11 +121,13 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
             assertFalse(storageAllowSignedUrlsState[0],
                     storageAllowSignedUrls + "has 'Enable' value");
         } else {
-            navigationMenu()
-                    .settings()
-                    .switchToPreferences()
-                    .setCheckboxPreference(storageAllowSignedUrls, false, true)
-                    .saveIfNeeded();
+            loginAsAdminAndPerform(() -> {
+                navigationMenu()
+                        .settings()
+                        .switchToPreferences()
+                        .setCheckboxPreference(storageAllowSignedUrls, false, true)
+                        .saveIfNeeded();
+            });
         }
         logout();
         loginAs(user);
@@ -138,43 +140,47 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
     @Test
     @TestCase(value = {"2354_1"})
     public void checkDisableMountingStorageForToolAndLaunchForm() {
-        library()
-                .clickOnCreateStorageButton()
-                .clickEnableVersioningCheckbox()
-                .ensure(DISABLE_MOUNT, visible, enabled)
-                .ensureVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
-                .click(DISABLE_MOUNT)
-                .ensureNotVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
-                .setStoragePath(storageMount)
-                .ok();
-        tools()
-                .perform(registry, group, tool, tool ->
-                        tool.settings()
-                                .selectDataStoragesToLimitMounts()
-                                .clearSelection()
-                                .searchStorage(storageMount)
-                                .validateNotFoundStorage()
-                                .cancel()
-                                .runWithCustomSettings()
-                                .selectDataStoragesToLimitMounts()
-                                .clearSelection()
-                                .searchStorage(storageMount)
-                                .validateNotFoundStorage()
-                                .cancel()
-                );
+        loginAsAdminAndPerform(() -> {
+            library()
+                    .clickOnCreateStorageButton()
+                    .clickEnableVersioningCheckbox()
+                    .ensure(DISABLE_MOUNT, visible, enabled)
+                    .ensureVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
+                    .click(DISABLE_MOUNT)
+                    .ensureNotVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
+                    .setStoragePath(storageMount)
+                    .ok();
+            tools()
+                    .perform(registry, group, tool, tool ->
+                            tool.settings()
+                                    .selectDataStoragesToLimitMounts()
+                                    .clearSelection()
+                                    .searchStorage(storageMount)
+                                    .validateNotFoundStorage()
+                                    .cancel()
+                                    .runWithCustomSettings()
+                                    .selectDataStoragesToLimitMounts()
+                                    .clearSelection()
+                                    .searchStorage(storageMount)
+                                    .validateNotFoundStorage()
+                                    .cancel()
+                    );
+        });
     }
 
     @Test
     @TestCase(value = {"2354_2"})
     public void checkDisableMountingStorageForPipelineAndDetachedConfiguration() {
         try {
-            library()
-                    .selectStorage(storageMount2)
-                    .clickEditStorageButton()
-                    .ensure(DISABLE_MOUNT, visible, enabled, have(not(cssClass("ant-checkbox-checked"))))
-                    .click(DISABLE_MOUNT)
-                    .ensureNotVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
-                    .clickSaveButton();
+            loginAsAdminAndPerform(() -> {
+                        library()
+                                .selectStorage(storageMount2)
+                                .clickEditStorageButton()
+                                .ensure(DISABLE_MOUNT, visible, enabled, have(not(cssClass("ant-checkbox-checked"))))
+                                .click(DISABLE_MOUNT)
+                                .ensureNotVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
+                                .clickSaveButton();
+            });
             logout();
             loginAs(user);
             library()

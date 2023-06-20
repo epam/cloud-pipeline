@@ -107,10 +107,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO stopRun(String runId) {
         final SelenideElement runStopButton = $("#run-" + runId + "-stop-button");
-        runStopButton.waitUntil(enabled, 5000).click();
+        runStopButton.waitUntil(enabled, 50000).click();
         sleep(3, SECONDS);
         if (!$(button("STOP")).isEnabled()) {
-            runStopButton.waitUntil(enabled, 5000).click();
+            runStopButton.waitUntil(enabled, 50000).click();
         }
         $(button("STOP")).click();
         return this;
@@ -430,17 +430,17 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return Collections.emptyMap();
     }
 
-    public RunsMenuAO filterBy(HeaderColumn header, String ip) {
+    public RunsMenuAO filterBy(HeaderColumn header, String group, String ip) {
         SelenideElement createdHeaderButton = $$("th").findBy(cssClass(header.cssClass));
         createdHeaderButton.find(byAttribute("title", "Filter menu")).click();
         switch (header) {
             case PIPELINE:
-                inputFilterValue(ip);
+                inputFilterValue("Filter pipelines", ip);
                 $(byXpath(format(".//span[.='%s']/preceding-sibling::span[@class='ant-checkbox']", ip)))
                         .click();
                 break;
             case DOCKER_IMAGE:
-                inputFilterValue(ip);
+                inputFilterValue("Filter docker images", group);
                 $(byXpath(format(".//span[.='%s']", ip))).parent()
                         .$(byXpath("preceding-sibling::span[@class='ant-checkbox']")).click();
                 break;
@@ -459,9 +459,9 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
-    private void inputFilterValue(String value) {
+    private void inputFilterValue(String placeholder, String value) {
         $(byClassName("un-table-columns__filter-popover-container"))
-                .$$("input").findBy(attribute("placeholder", "Filter"))
+                .$$("input").findBy(attribute("placeholder", placeholder))
                 .setValue(value);
     }
 

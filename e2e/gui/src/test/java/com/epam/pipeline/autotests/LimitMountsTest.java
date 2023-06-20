@@ -80,6 +80,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
         cleanToolLimitMounts();
         cleanUserLimitMounts();
         logout();
+        loginAs(user);
     }
 
     @AfterClass(alwaysRun = true)
@@ -99,7 +100,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
     @Test
     @TestCase(value = {"2210_1"})
     public void validateSelectDataStoragesToLimitMountsForm() {
-        loginAs(user);
         navigationMenu()
                 .settings()
                 .switchToMyProfile()
@@ -133,12 +133,12 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter(cpCapLimitMounts, "None"), exist)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
+                .clickMountBuckets()
                 .ensure(log(), containsMessages(
                         "Run is launched with mount limits (None) Only 0 storages will be mounted",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls -l cloud-data/")
                         .assertOutputContains("total 0")
                         .close());
@@ -161,7 +161,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .perform(registry, group, testTool, tool ->
                         tool
                                 .settings()
-                                .sleep(1, SECONDS)
                                 .ensure(LIMIT_MOUNTS, text("All available non-sensitive storages"))
                                 .runWithCustomSettings()
                 )
@@ -176,12 +175,14 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
         runsMenu()
                 .showLog(getLastRunId())
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
-                .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
-                .ensure(log(), containsMessages("Only 1 storages will be mounted"))
-                .ensure(log(), containsMessages(mountStorageMessage(storage3)))
+                .clickMountBuckets()
+                .sleep(5, SECONDS)
+                .ensure(log(), containsMessages(
+                        "Found 1 available storage(s). Checking mount options.",
+                        "Only 1 storages will be mounted",
+                        mountStorageMessage(storage3)))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage3.toLowerCase())
                         .close());

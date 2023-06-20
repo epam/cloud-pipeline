@@ -63,6 +63,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String onDemandPrice = ON_DEMAND;
     private final String mastersConfigPrice = "Master's config";
     private final String sleepCommand = "sleep";
+    private final String errorMessage = "The following jobs cannot be satisfied with " +
+            "the requested resources and therefore will be killed: #1";
 
     @AfterMethod(alwaysRun = true)
     @Override
@@ -198,7 +200,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .setPriceType(onDemandPrice)
-                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 5m && sleep infinity")
+                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:20 sleep 5m && sleep infinity")
                 .enableClusterLaunch()
                 .clusterSettingsForm(autoScaledSettingForm)
                 .setDefaultChildNodes("1")
@@ -222,8 +224,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
         runsMenu()
                 .activeRuns()
                 .showLog(getRunId())
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .waitForLog(String.format("Additional worker with host=%s and instance type=%s has been created.",
+                .clickTaskWithName(gridEngineAutoscalingTask)
+                .waitForLog(String.format("Additional worker %s \\(%s\\) has been scaled up.",
                         String.format("pipeline-%s", childRunID2), C.DEFAULT_INSTANCE));
         navigationMenu()
                 .runs()
@@ -233,7 +235,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .shouldContainRun("pipeline", childRunID2)
                 .showLog(getRunId())
                 .ensure(taskWithName(gridEngineAutoscalingTask), visible)
-                .click(taskWithName(gridEngineAutoscalingTask))
+                .clickTaskWithName(gridEngineAutoscalingTask)
                 .waitForLog(String.format("Additional worker %s has been scaled down.",
                         String.format("pipeline-%s", childRunID2)));
 
@@ -275,9 +277,9 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SGE", "true"), exist)
                 .waitForSshLink()
-                .click(taskWithName("SGEMasterSetup"))
+                .clickTaskWithName("SGEMasterSetup")
                 .ensure(log(), containsMessages("SGE master node was successfully configured"))
-                .click(taskWithName("SGEMasterSetupWorkers"))
+                .clickTaskWithName("SGEMasterSetupWorkers")
                 .ensure(log(), containsMessages("All execution hosts are connected"))
                 .ssh(shell -> shell
                         .assertPageContains(String.format("[root@%s-%s",
@@ -324,11 +326,12 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SLURM", "true"), exist)
                 .waitForSshLink()
-                .click(taskWithName("SLURMMasterSetup"))
+                .clickTaskWithName("SLURMMasterSetup")
                 .ensure(log(), containsMessages("Master ENV is ready"))
-                .click(taskWithName("SLURMMasterSetupWorkers"))
+                .clickTaskWithName("SLURMMasterSetupWorkers")
                 .ensure(log(), containsMessages("All SLURM hosts are connected"))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("sinfo")
                         .assertOutputContains("main.q*", "idle", String.format("%s-[%s-%s]",
                                 getPipelineName().toLowerCase(), getRunId(), childRunID))
@@ -359,11 +362,11 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SPARK", "true"), exist)
                 .waitForEndpointLink()
-                .click(taskWithName("SparkMasterSetup"))
+                .clickTaskWithName("SparkMasterSetup")
                 .ensure(log(), containsMessages("Spark master is started"))
-                .click(taskWithName("SparkWorkerSetup"))
+                .clickTaskWithName("SparkWorkerSetup")
                 .ensure(log(), containsMessages("Spark worker is started and connected to the master"))
-                .click(taskWithName("SparkMasterSetupWorkers"))
+                .clickTaskWithName("SparkMasterSetupWorkers")
                 .ensure(log(), containsMessages("All workers are connected"))
                 .clickOnEndpointLink("SparkUI")
                 .sleep(3, SECONDS)
@@ -420,6 +423,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qsub -b y -pe local 150 sleep 5m")
                         .assertOutputContains("Your job 1 (\"sleep\") has been submitted")
                         .sleep(20, SECONDS)
@@ -430,10 +434,10 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .activeRuns()
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
-                        "requested resources and therefore they will be rejected: 1 (150 cpu)"))
+                .clickTaskWithName(gridEngineAutoscalingTask)
+                .ensure(log(), containsMessages(errorMessage))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qsub -b y -pe local 50 sleep 5m")
                         .sleep(20, SECONDS)
                         .execute("qstat")
@@ -474,6 +478,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ensure(configurationParameter("CP_CAP_AUTOSCALE_HYBRID", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
                                 getPipelineName().toLowerCase(), getRunId()))
@@ -499,6 +504,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 )
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qhost")
                         .assertOutputContains("HOSTNAME", "global", String.format("%s-%s lx-amd64",
                                 getPipelineName().toLowerCase(), getRunId()), String.format("pipeline-%s",
@@ -534,6 +540,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .showLog(getRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getPipelineName(), getRunId())
                         .execute("qsub -b y -pe local 50 sleep 5m")
                         .assertOutputContains("Your job 1 (\"sleep\") has been submitted")
                         .sleep(20, SECONDS)
@@ -544,9 +551,8 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .activeRuns()
                 .showLog(getRunId())
                 .waitForTask(gridEngineAutoscalingTask)
-                .click(taskWithName(gridEngineAutoscalingTask))
-                .ensure(log(), containsMessages("The following jobs cannot be satisfied with the " +
-                        "requested resources and therefore they will be rejected: 1 (50 cpu)"));
+                .clickTaskWithName(gridEngineAutoscalingTask)
+                .ensure(log(), containsMessages(errorMessage));
     }
 
     @Test

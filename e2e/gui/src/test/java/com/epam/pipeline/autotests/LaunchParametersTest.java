@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -364,7 +364,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForTask(CONSOLE)
-                .click(taskWithName(CONSOLE))
+                .clickTaskWithName(CONSOLE)
                 .waitForLog(UNMOUNTING_STARTED)
                 .sleep(DEFAULT_TERMINATE_RUN_TIMEOUT, MINUTES)
                 .shouldHaveRunningStatus();
@@ -379,10 +379,10 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForTask(CONSOLE)
-                .click(taskWithName(CONSOLE))
+                .clickTaskWithName(CONSOLE)
                 .waitForLog(UNMOUNTING_STARTED)
                 .waitForTask(CLEANUP_ENVIRONMENT_TASK)
-                .click(taskWithName(CLEANUP_ENVIRONMENT_TASK))
+                .clickTaskWithName(CLEANUP_ENVIRONMENT_TASK)
                 .ensure(log(), containsMessages(format(CLEANUP_WORNING, valueOf(TEST_TERMINATE_RUN_TIMEOUT))))
                 .sleep(TEST_TERMINATE_RUN_TIMEOUT, MINUTES)
                 .refresh()

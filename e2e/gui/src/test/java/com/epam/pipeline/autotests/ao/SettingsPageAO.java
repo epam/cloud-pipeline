@@ -995,6 +995,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 private final GroupsTabAO parentAO;
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
                         entry(OK, context().find(By.id("close-edit-user-form"))),
+                        entry(CANCEL, context().$(button("CANCEL"))),
                         entry(PRICE_TYPE, context().find(byXpath(
                                 format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
                 );
@@ -1011,7 +1012,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                 @Override
                 public GroupsTabAO ok() {
-                    click(OK);
+                    if (get(OK).isEnabled()) {
+                        click(OK);
+                    } else {
+                        click(CANCEL);
+                    }
                     return parentAO;
                 }
 

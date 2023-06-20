@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,12 +163,13 @@ public class LaunchLimitMountsTest
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage1), exist)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
-                .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
-                .ensure(log(), containsMessages(format("Run is launched with mount limits (%s) Only 1 storages will be mounted", storageID)))
-                .ensure(log(), containsMessages(mountStorageMessage(storage1)))
+                .clickMountBuckets()
+                .ensure(log(), containsMessages(
+                        "Found 1 available storage(s). Checking mount options.",
+                        format("Run is launched with mount limits (%s) Only 1 storages will be mounted", storageID),
+                        mountStorageMessage(storage1)))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(testRunID)
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
                         .assertPageDoesNotContain(storage2.toLowerCase())
@@ -193,7 +194,6 @@ public class LaunchLimitMountsTest
                 .showLog(getLastRunId())
                 .ensureNotVisible(PARAMETERS)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
                 .clickMountBuckets()
                 .logMessages()
                 .collect(toSet());
@@ -206,6 +206,7 @@ public class LaunchLimitMountsTest
                 .logContainsMessage(logMess, mountStorageMessage(storage1))
                 .logContainsMessage(logMess, mountStorageMessage(storage2))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
                         .assertOutputContains(storage2.toLowerCase())
@@ -219,6 +220,7 @@ public class LaunchLimitMountsTest
                 .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
                                 .enableAllowSensitiveStorage()
+                                .doNotMountStoragesSelect(false)
                                 .performIf(SAVE, enabled, ToolSettings::save)
                 );
         tools()
@@ -274,14 +276,14 @@ public class LaunchLimitMountsTest
                 .expandTab(PARAMETERS)
                 .checkMountLimitsParameter(storageSensitive, storage1)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
+                .clickMountBuckets()
                 .ensure(log(), containsMessages("Found 2 available storage(s). Checking mount options."))
                 .ensure(log(), matchText(format("Run is launched with mount limits \\((%s,%s|%s,%s)\\) Only 2 storages will be mounted",
                         sensitiveStorageID, storageID, storageID, sensitiveStorageID)))
                 .ensure(log(), containsMessages(mountStorageMessage(storage1)))
                 .ensure(log(), containsMessages(mountStorageMessage(storageSensitive)))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage1.toLowerCase())
                         .assertOutputContains(storageSensitive.toLowerCase())
@@ -371,12 +373,12 @@ public class LaunchLimitMountsTest
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", "None"), exist)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
+                .clickMountBuckets()
                 .ensure(log(), containsMessages(
                         "Run is launched with mount limits (None) Only 0 storages will be mounted",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls -l cloud-data/")
                         .assertOutputContains("total 0")
                         .close());

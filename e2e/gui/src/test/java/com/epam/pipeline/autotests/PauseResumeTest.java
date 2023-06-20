@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell.execute(
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(getLastRunId())
+                                                .execute(
                                                 String.format("echo '%s' > %s", testFileContent, testFileName)))
                                 )
                                 .waitForPauseButton()
@@ -244,7 +246,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .pause(nameWithoutGroup(tool))
                                 .assertPausingFinishedSuccessfully()
                                 .ensure(taskWithName(pauseTask), visible)
-                                .click(taskWithName(pauseTask))
+                                .clickTaskWithName(pauseTask)
                                 .waitForLog("Docker service was successfully stopped")
                                 .ensure(log(), matchText("Temporary container was successfully committed"))
                                 .ensure(log(), matchText("Docker container logs were successfully retrieved."))

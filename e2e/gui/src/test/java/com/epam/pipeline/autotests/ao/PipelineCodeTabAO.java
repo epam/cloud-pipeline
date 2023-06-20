@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
@@ -34,6 +33,7 @@ import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
@@ -51,6 +51,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.NEW_FILE;
 import static com.epam.pipeline.autotests.ao.Primitive.RENAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static java.lang.String.format;
@@ -85,7 +86,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $(byText(fileName)).click();
 
         //Click Edit
-        $$(".pipeline-code-form__button").findBy(text("Edit")).click();
+        $$(".pipeline-code-form__button").findBy(text("Edit")).shouldBe(exist).click();
 
         sleep(500, MILLISECONDS);
         Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
@@ -99,7 +100,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $$(".pipeline-code-form__button").findBy(text("Save")).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
-        $("ant-modal-content").waitUntil(not(exist), C.DEFAULT_TIMEOUT);
+        $("ant-modal-content").waitUntil(not(exist), DEFAULT_TIMEOUT);
 
         return this;
     }
@@ -132,14 +133,22 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         return new EditFilePopupAO();
     }
 
+    public PipelineCodeTabAO waitUntilRenameButtonAppears(String filename) {
+        $$(tagName("tr"))
+                .find(text(filename))
+                .find(button("Rename"))
+                .shouldBe(exist);
+        return this;
+    }
+
     public FileEditingPopupAO clickOnFile(String fileName) {
-        $(withText(fileName)).shouldBe(visible).click();
+        $(withText(fileName)).shouldBe(visible, enabled).click();
         return new FileEditingPopupAO(this);
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
+        $(".ant-table-tbody").find("tr").waitUntil(enabled, DEFAULT_TIMEOUT);
         $(".ant-table-tbody")
-                .waitUntil(visible, C.DEFAULT_TIMEOUT)
                 .findAll("tr")
                 .shouldHaveSize(3)
                 .get(0).shouldHave(text(folderName));

@@ -31,7 +31,7 @@ import static java.time.format.DateTimeFormatter.ofPattern;
 
 public class PlatformUsageTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
 
-    static final String showOnlineUsers = "Show online users";
+    static final String showOnlineUsers = "Online";
     static final String ROLE_USER_READER = "ROLE_USER_READER";
 
     @BeforeClass

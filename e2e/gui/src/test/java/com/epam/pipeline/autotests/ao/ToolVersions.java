@@ -328,7 +328,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         scanComponent.find(byClassName("ant-table-row-expand-icon")).click();
         final ElementsCollection advisors = $$(".tool-scanning-info__vulnerability-row").filterBy(visible);
         advisors.forEach(a -> {
-            a.find("a").shouldHave(attribute("href")).shouldHave(text("CVE-"));
+            a.find("a").shouldHave(attribute("href")).shouldHave(text("RHSA-"));
             a.shouldHave(Condition.or("severity",
                     text(severity[0]), text(severity[1]), text(severity[2]), text(severity[3]), text(severity[4])));
         });

@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -65,7 +66,7 @@ public class LogAO implements AccessObject<LogAO> {
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
-            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find(".log__nested-run")),
             entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a")),
             entry(SHOW_TIMINGS, $(byClassName("log__timing-btn")))
     );
@@ -110,16 +111,16 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public Stream<String> logMessages() {
-        $(byClassName("log__logs-table")).shouldBe(visible);
-        Utils.scrollElementToPosition(".log__logs-table", 0);
+        $(byClassName("cp-console-output")).shouldBe(visible);
+        Utils.scrollElementToPosition(".cp-console-output", 0);
         Set<String> lines = new LinkedHashSet<>();
         boolean keepScrolling = true;
         int offset = 0;
         while (keepScrolling) {
-            ElementsCollection messages = $(byClassName("log__logs-table")).findAll(byClassName("log__log-row"));
+            ElementsCollection messages = $(byClassName("cp-console-output")).findAll(byClassName("un-task-logs__console-line"));
             keepScrolling = lines.addAll(messages.texts());
             offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
-            Utils.scrollElementToPosition(".log__logs-table", offset);
+            Utils.scrollElementToPosition(".cp-console-output", offset);
         }
         return lines.stream();
     }
@@ -277,7 +278,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public String getNestedRunID(int childNum) {
         return $(withText("Nested runs:")).closest("tr")
-                .find(byXpath(format("td/div[2]/a[1]/b", childNum))).getText();
+                .find(byXpath(format("td/div[2]/a[%s]/b", childNum))).getText();
     }
 
     public LogAO shareWithGroup(final String groupName) {
@@ -346,6 +347,8 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO clickMountBuckets() {
         waitForMountBuckets().closest("a").click();
+        ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"),
+                        exist);
         return this;
     }
 
@@ -430,11 +433,16 @@ public class LogAO implements AccessObject<LogAO> {
         return Combiners.confine(taskQualifier, taskList(), format("task with name %s", name));
     }
 
+    public LogAO clickTaskWithName(final String name) {
+        return click(taskWithName(name))
+               .ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"), exist);
+    }
+
     public static By parameterWithName(final String name, final String value) {
         Objects.requireNonNull(name);
         return byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
-                        ".//td[contains(., '%s')]]", name, value));
+                ".//td[contains(., '%s')]]", name, value));
     }
 
     public LogAO checkMountLimitsParameter(String...storages) {
@@ -451,7 +459,9 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public static By log() {
-        return byClassName("ReactVirtualized__List");
+        $(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"))
+                .waitUntil(exist, DEFAULT_TIMEOUT);
+        return byClassName("cp-console-output");
     }
 
     public LogAO logContainsMessage(Set<String> logMess, final String message) {
@@ -477,7 +487,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By logMessage(final String text) {
         Objects.requireNonNull(text);
-        final String messageClass = "log__log-row";
+        final String messageClass = "un-task-logs__console-line";
         final By messageQualifier = byXpath(format(
                 "//*[contains(concat(' ', @class, ' '), ' %s ') and .//*[contains(., \"%s\")]]",
                 messageClass, text
@@ -497,7 +507,7 @@ public class LogAO implements AccessObject<LogAO> {
         Objects.requireNonNull(text);
         return new Condition(format("contains message {%s}", text)) {
 
-            private static final String container = ".log__logs-table";
+            private static final String container = ".cp-console-output";
             private final By message = logMessage(text);
 
             @Override
@@ -509,7 +519,7 @@ public class LogAO implements AccessObject<LogAO> {
                     int offset = 0;
                     Utils.scrollElementToPosition(container, 0);
                     while (!seen && keepScrolling) {
-                        final ElementsCollection messages = $(container).findAll(byClassName("log__log-row"));
+                        final ElementsCollection messages = $(container).findAll(byClassName("un-task-logs__console-line"));
                         seen = $(message).is(visible);
                         keepScrolling = lines.addAll(messages.texts());
                         offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();

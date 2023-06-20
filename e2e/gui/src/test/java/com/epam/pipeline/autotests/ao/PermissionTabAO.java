@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,11 +63,14 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO addNewUser(String userName) {
+        if (getTabTable().should(exist).$(byText(userName)).exists()) {
+            return this;
+        }
         UserAdditionPopupAO userAdditionPopupAO = clickAddNewUser()
                 .typeInField(userName);
-        $(visible(byText("Select user"))).click();
-        return userAdditionPopupAO
-            .ok();
+        $(byXpath(String
+                .format(".//ul[contains(@class, 'ant-select-dropdown-menu') and contains(., '%s')]", userName))).click();
+        return userAdditionPopupAO.ok();
     }
 
     public PermissionTabAO validateDeleteButtonIsDisplayedOppositeTo(String name) {
@@ -103,6 +106,9 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO addNewGroup(String usersGroup) {
+        if (getTabTable().$(byText(usersGroup)).exists()) {
+            return this;
+        }
         return clickAddNewGroup()
                 .typeInField(usersGroup)
                 .selectGroup(usersGroup)

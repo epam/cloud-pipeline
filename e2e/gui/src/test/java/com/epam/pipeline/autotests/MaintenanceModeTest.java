@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import static com.epam.pipeline.autotests.ao.LogAO.Status.PAUSED;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTOSCALED;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.COMMIT;
+import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.ENDS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.ENDS_ON_TIME;
@@ -54,9 +55,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.RESUME;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
-import static com.epam.pipeline.autotests.utils.Utils.SPOT;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.time.format.TextStyle.FULL;
 import static java.util.Locale.getDefault;
@@ -73,12 +74,15 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     private final String defaultInstance = C.DEFAULT_INSTANCE;
     private final String poolName = format("test_pool-%s", randomSuffix());
     private final String version = format("version-%s", randomSuffix());
-
+    private final String clusterInstanceHddExtraMmulti = "cluster.instance.hdd_extra_multi";
+    private final String clusterDockerExtraMulti = "cluster.docker.extra_multi";
     private String defaultSystemMaintenanceModeBanner;
     private String run1ID = "";
     private String run2ID = "";
     private String run3ID = "";
     private String[] defaultRegion;
+    private String[] initialClusterInstanceHddExtraMulti;
+    private String[] initialClusterDockerExtraMulti;
 
     @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
@@ -90,8 +94,15 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         defaultRegion = navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .switchToCluster()
                 .getLinePreference("default.edge.region");
+        initialClusterInstanceHddExtraMulti = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .getLinePreference(clusterInstanceHddExtraMmulti);
+        initialClusterDockerExtraMulti = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .getLinePreference(clusterDockerExtraMulti);
     }
 
     @BeforeMethod
@@ -108,16 +119,22 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .setSystemMaintenanceModeBanner(defaultSystemMaintenanceModeBanner)
                 .switchToSystem()
                 .disableSystemMaintenanceMode()
+                .saveIfNeeded()
+                .setPreference(clusterInstanceHddExtraMmulti, initialClusterInstanceHddExtraMulti[0],
+                        parseBoolean(initialClusterInstanceHddExtraMulti[1]))
+                .saveIfNeeded()
+                .setPreference(clusterDockerExtraMulti, initialClusterDockerExtraMulti[0],
+                        parseBoolean(initialClusterDockerExtraMulti[1]))
                 .saveIfNeeded();
+        clusterMenu()
+                .switchToHotNodePool()
+                .searchForNodeEntry(poolName)
+                .deleteNode(poolName);
         final RunsMenuAO runsMenuAO = runsMenu();
         if (runsMenuAO.isActiveRun(run2ID)) {
             runsMenuAO
                     .terminateRun(run2ID, format("pipeline-%s", run2ID));
         }
-        clusterMenu()
-                .switchToHotNodePool()
-                .searchForNodeEntry(poolName)
-                .deleteNode(poolName);
     }
 
     @Test(priority = 1)
@@ -162,7 +179,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .ensureAll(enabled, PAUSE, COMMIT);
     }
 
-    @Test(priority = 4, dependsOnMethods = {"checkLaunchRunInMaintenanceMode"})
+    @Test(priority = 3, dependsOnMethods = {"checkLaunchRunInMaintenanceMode"})
     @TestCase(value = {"2423_3"})
     public void checkSwitchToMaintenanceModeDuringTheRunCommittingOperation() {
         try {
@@ -190,7 +207,6 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                                     .performIf(hasOnPage(version), t -> t.deleteVersion(version))
                     );
         }
-
     }
 
     @Test(priority = 4, dependsOnMethods = {"maintenanceModeNotification"})
@@ -221,9 +237,16 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         setDisableSystemMaintenanceMode();
     }
 
-    @Test(priority = 3, dependsOnMethods = {"maintenanceModeNotification"})
+    @Test(priority = 4, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_5"})
     public void hotNodePoolInMaintenanceMode() {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .setPreference(clusterInstanceHddExtraMmulti, "1", true)
+                .saveIfNeeded()
+                .setPreference(clusterDockerExtraMulti,  "1", true)
+                .saveIfNeeded();
         DayOfWeek day = LocalDate.now().getDayOfWeek();
         String currentDay = day.getDisplayName(FULL, getDefault());
         String nextDay = day.plus(1).getDisplayName(FULL, getDefault());
@@ -242,9 +265,13 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .setAutoscaledParameter("Scale Up Threshold", 70)
                 .setAutoscaledParameter("Scale Step", 1)
                 .selectValue(INSTANCE_TYPE, defaultInstance)
+                .selectValue(PRICE_TYPE, ON_DEMAND)
                 .selectValue(CLOUD_REGION, defaultRegion[0])
-                .setValue(DISK, "20")
+                .setValue(DISK, "50")
                 .addDockerImage(registry, group, tool)
+                .selectValue(CONDITION,"Matches all filters (\"and\")")
+                .addFilter("Run owner")
+                .addRunOwnerFilterValue(admin.login)
                 .ok()
                 .waitUntilRunningNodesAppear(poolName, 2);
         launchTool();
@@ -308,8 +335,8 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setTypeValue(defaultInstance)
-                .setDisk("15")
-                .selectValue(PRICE_TYPE, SPOT)
+                .setDisk("20")
+                .selectValue(PRICE_TYPE, ON_DEMAND)
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForIP();

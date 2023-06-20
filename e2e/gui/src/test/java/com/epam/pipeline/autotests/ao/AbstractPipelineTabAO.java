@@ -81,23 +81,23 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     public DocumentTabAO documentsTab() {
-        return onTab(DocumentTabAO.class);
+        return onTab(DocumentTabAO.class).tabShouldBeActive(DOCUMENTS_TAB);
     }
 
     public PipelineCodeTabAO codeTab() {
-        return onTab(PipelineCodeTabAO.class);
+        return onTab(PipelineCodeTabAO.class).tabShouldBeActive(CODE_TAB);
     }
 
     public PipelineConfigurationTabAO configurationTab() {
-        return onTab(PipelineConfigurationTabAO.class);
+        return onTab(PipelineConfigurationTabAO.class).tabShouldBeActive(CONFIGURATION_TAB);
     }
 
     public PipelineGraphTabAO graphTab() {
-        return onTab(PipelineGraphTabAO.class);
+        return onTab(PipelineGraphTabAO.class).tabShouldBeActive(GRAPH_TAB);
     }
 
     public PipelineHistoryTabAO historyTab() {
-        return onTab(PipelineHistoryTabAO.class);
+        return onTab(PipelineHistoryTabAO.class).tabShouldBeActive(HISTORY_TAB);
     }
 
     public StorageRulesTabAO storageRulesTab() {

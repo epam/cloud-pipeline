@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Condition.have;
 import com.codeborne.selenide.SelenideElement;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -61,7 +62,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(NEW_ENDPOINT, context().find(button("Add endpoint"))),
                 entry(LABEL_INPUT_FIELD, context().find(withText("Labels")).closest(".ant-row")
                         .find(tagName("input"))),
-                entry(EXEC_ENVIRONMENT, context().find(byClassName("ant-collapse-header"))),
+                entry(EXEC_ENVIRONMENT, context().find(byText("EXECUTION ENVIRONMENT")).parent()),
                 entry(DEFAULT_COMMAND, context().find(byText("Cmd template:")).closest(".ant-row")
                         .find(byClassName("tools__code-editor"))),
                 entry(INSTANCE, context().find(byClassName("ant-select-selection-selected-value"))),
@@ -87,6 +88,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     @Override
     public ToolSettings open() {
         click(SETTINGS);
+        get(SETTINGS).waitUntil(have(cssClass("ant-menu-item-selected")), DEFAULT_TIMEOUT);
         get(EXEC_ENVIRONMENT).waitUntil(exist, DEFAULT_TIMEOUT);
         return click(EXEC_ENVIRONMENT);
     }
