@@ -64,6 +64,7 @@ import {
   getDocumentDisplayName,
   getStorageFileDisplayNameTemplates
 } from './utilities/get-storage-file-display-name-templates';
+import getUserSearchColumnsOrder from './utilities/get-user-search-columns-order';
 import roleModel from '../../utils/roleModel';
 
 function getDomainKey (domain) {
@@ -272,20 +273,60 @@ class FacetedSearch extends React.Component {
       .filter(key => !excludedKeys.includes(key));
   }
 
+  get facetsColumns () {
+    return this.filters
+      .filter(f => f.values.length > 0 && f.name !== DocumentTypeFilterName)
+      .map(f => ({
+        key: f.name,
+        name: f.name
+      }));
+  }
+
+  @computed
+  get searchColumnsOrder () {
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    if (preferences.loaded && authenticatedUserInfo.loaded) {
+      return getUserSearchColumnsOrder(preferences, authenticatedUserInfo);
+    }
+    return [];
+  }
+
   get extraColumns () {
     const {extraColumnsConfiguration: extra} = this.state;
-    const extraColumns = this.filters
-      .filter(f => f.values.length > 0 && f.name !== DocumentTypeFilterName)
-      .map(f => f.name);
-    const extraColumnsConfiguration = extraColumns.map(key => ({key, name: key}));
-    if (extra && extra.length) {
-      extra.forEach(column => {
-        if (!extraColumnsConfiguration.find(c => c.key === column.key)) {
-          extraColumnsConfiguration.push(column);
-        }
-      });
-    }
-    return extraColumnsConfiguration;
+    return extra || [];
+  }
+
+  get additionalColumns () {
+    const {extraColumns = []} = this;
+    const additionalColumns = this.facetsColumns.slice();
+    extraColumns.forEach(column => {
+      if (!additionalColumns.find(c => c.key === column.key)) {
+        additionalColumns.push(column);
+      }
+    });
+    return additionalColumns;
+  }
+
+  get metadataFields () {
+    const {
+      storageFileDisplayNameTemplates = [],
+      facets = []
+    } = this.state;
+    const additionalTags = [...new Set(
+      storageFileDisplayNameTemplates.reduce((result, current) => ([
+        ...result,
+        ...current.tags
+      ]), []))];
+    return [...new Set(this.allColumns
+      .slice()
+      .map((column) => column.key)
+      .concat(facets.map((facet) => facet.name))
+      .concat([this.nameTag, this.downloadFileTag, ...additionalTags].filter(Boolean))
+      .filter((column) => !DocumentColumns.some((documentColumn) => documentColumn.key === column))
+    )];
   }
 
   get documentTypes () {
@@ -306,7 +347,11 @@ class FacetedSearch extends React.Component {
 
   get allColumns () {
     const documentTypes = this.documentTypes;
-    const all = getDefaultColumns(this.extraColumns);
+    const all = getDefaultColumns({
+      facetsColumns: this.facetsColumns,
+      extraColumns: this.extraColumns,
+      searchColumnsOrder: this.searchColumnsOrder
+    });
     if (!documentTypes || !documentTypes.length) {
       return all;
     } else {
@@ -517,11 +562,6 @@ class FacetedSearch extends React.Component {
           if (currentSearchToken === searchToken) {
             return;
           }
-          const additionalTags = [...new Set(
-            storageFileDisplayNameTemplates.reduce((result, current) => ([
-              ...result,
-              ...current.tags
-            ]), []))];
           this.setState({searchToken}, () => {
             this.updateCurrentRouting();
             if (this.abortController && abortPendingRequests) {
@@ -538,10 +578,7 @@ class FacetedSearch extends React.Component {
                 facetsCount: currentFacetsCount,
                 facetsToken: currentFacetsToken,
                 stores: this.props,
-                metadataFields: facets
-                  .map(f => f.name)
-                  .filter(facet => facet !== DocumentTypeFilterName)
-                  .concat([this.nameTag, this.downloadFileTag, ...additionalTags].filter(Boolean))
+                metadataFields: this.metadataFields
               },
               scrollingParameters: continuousOptions,
               abortSignal: this.abortSignal
@@ -966,7 +1003,7 @@ class FacetedSearch extends React.Component {
         <SearchResults
           className={classNames(styles.panel, styles.searchResults)}
           documents={documents}
-          extraColumns={this.extraColumns}
+          extraColumns={this.additionalColumns}
           onChangeSortingOrder={this.changeSortingOrder}
           sortingOrder={sortingOrder}
           disabled={pending}
@@ -1099,7 +1136,7 @@ class FacetedSearch extends React.Component {
             }
             items={selectedItems}
             onClearSelection={this.clearSelection}
-            extraColumns={this.extraColumns}
+            extraColumns={this.additionalColumns}
             onDownload={this.handleDownloadItems}
             dataStorageSharingEnabled={this.dataStorageSharingEnabled}
             notDownloadableStorages={this.state.notDownloadableStorages}

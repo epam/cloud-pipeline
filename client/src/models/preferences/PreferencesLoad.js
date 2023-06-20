@@ -217,6 +217,34 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get searchColumnsOrder () {
+    const value = this.getPreferenceValue('ui.search.columns.order');
+    if (value && typeof value === 'string') {
+      const tryParseAsJSON = () => {
+        try {
+          return JSON.parse(value);
+        } catch (e) {
+          console.warn('Error parsing "search.columns.order" preference:', e);
+        }
+        return undefined;
+      };
+      const tryParseAsString = () => {
+        try {
+          return value
+            .split(/[,\s;]/)
+            .map((item) => item.trim())
+            .filter((item) => item.length);
+        } catch (e) {
+          console.warn('Error parsing "search.columns.order" preference:', e);
+        }
+        return undefined;
+      };
+      return tryParseAsJSON() || tryParseAsString() || [];
+    }
+    return [];
+  }
+
+  @computed
   get versionStorageIgnoredFiles () {
     const value = this.getPreferenceValue('storage.version.storage.ignored.files');
     if (!value) {

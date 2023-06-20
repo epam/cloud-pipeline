@@ -291,13 +291,126 @@ const detailsColumns = [Owner, Path];
 const otherColumns = DocumentColumns
   .filter((aColumn) => !mainColumns.includes(aColumn) && !detailsColumns.includes(aColumn));
 
-function getDefaultColumns (extraColumns = []) {
-  return [
-    ...mainColumns,
-    ...extraColumns,
-    ...detailsColumns,
-    ...otherColumns
-  ];
+/**
+ * @typedef {Object} ColumnConfig
+ * @property {string} key
+ * @property {string} name
+ */
+
+/**
+ * @typedef {string|ColumnConfig} Column
+ */
+
+/**
+ * @typedef {Object} ColumnsOptions
+ * @property {ColumnConfig[]} facetsColumns
+ * @property {ColumnConfig[]} extraColumns
+ * @property {Column[]} searchColumnsOrder
+ */
+
+/**
+ * @param {string} group
+ * @param {ColumnsOptions} options
+ * @returns {ColumnConfig[]}
+ */
+function getColumnsFromGroup (group, options = {}) {
+  if (!group) {
+    return [];
+  }
+  const {
+    extraColumns = [],
+    facetsColumns = []
+  } = options || {};
+  switch (group.toLowerCase()) {
+    case 'main':
+      return mainColumns.slice();
+    case 'extra':
+      return extraColumns.slice();
+    case 'facets':
+      return facetsColumns.slice();
+    case 'details':
+      return detailsColumns.slice();
+    case 'other':
+      return otherColumns.slice();
+    default:
+      return [];
+  }
+}
+
+/**
+ * @param {Column} config
+ * @param {ColumnsOptions} [options]
+ * @returns {{columns: ColumnConfig[], group: boolean}}
+ */
+function getColumns (config, options = {}) {
+  if (typeof config === 'string' && /^<.+>$/.test(config)) {
+    const groupName = config.slice(1, -1);
+    return {
+      columns: getColumnsFromGroup(groupName, options),
+      group: true
+    };
+  }
+  if (typeof config === 'string') {
+    const findColumnByProperty = (propertyName) => DocumentColumns
+      .find((aColumn) => (aColumn[propertyName] || '').toLowerCase() === config.toLowerCase());
+    const aColumn = findColumnByProperty('key') || findColumnByProperty('name');
+    return {
+      columns: aColumn ? [aColumn] : [{key: config, name: config}]
+    };
+  }
+  if (typeof config === 'object' && typeof config.key === 'string') {
+    return {
+      columns: [{
+        key: config.key,
+        name: config.name || config.key
+      }]
+    };
+  }
+  return {
+    columns: []
+  };
+}
+
+const DEFAULT_ORDER = ['<MAIN>', '<FACETS>', '<EXTRA>', '<DETAILS>', '<OTHER>'];
+
+/**
+ * @param {ColumnsOptions} options
+ * @returns {ColumnConfig[]}
+ */
+function getDefaultColumns (
+  options = {}
+) {
+  const {
+    searchColumnsOrder = DEFAULT_ORDER
+  } = options || {};
+  const order = searchColumnsOrder && searchColumnsOrder.length
+    ? searchColumnsOrder
+    : DEFAULT_ORDER;
+  const result = [];
+  const parsed = order.map((aConfig) => getColumns(aConfig, options));
+  const explicitColumns = parsed
+    .filter((parsedConfig) => !parsedConfig.group)
+    .reduce((result, config) => ([...result, ...config.columns]), []);
+  const columnDefinedExplicitly = (aColumn) =>
+    explicitColumns.some((used) => used.key === aColumn.key);
+  const columnAdded = (aColumn) =>
+    result.some((item) => item.key === aColumn.key);
+  for (let p = 0; p < parsed.length; p++) {
+    const {
+      columns = [],
+      group = false
+    } = parsed[p];
+    const items = group
+      ? columns.filter((aColumn) => !columnDefinedExplicitly(aColumn))
+      : columns;
+    for (let i = 0; i < items.length; i++) {
+      const column = items[i];
+      if (!columnAdded(column)) {
+        result.push(column);
+      }
+    }
+  }
+  return result;
 }
 
 function filterDisplayedColumns (columns = [], documentTypes = []) {
