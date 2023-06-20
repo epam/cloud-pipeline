@@ -18,23 +18,28 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
+import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.manager.contextual.handler.ArrayContextualPreferenceReducer;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceReducer;
 import com.epam.pipeline.manager.contextual.handler.DefaultContextualPreferenceReducer;
+import com.epam.pipeline.manager.contextual.handler.BooleanContextualPreferenceReducer;
 import com.epam.pipeline.manager.contextual.handler.RoleContextualPreferenceHandler;
+import com.epam.pipeline.manager.contextual.handler.StorageContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.SystemPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.ToolContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.UserContextualPreferenceHandler;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 public class ContextualPreferenceConfiguration {
@@ -61,8 +66,17 @@ public class ContextualPreferenceConfiguration {
     public ToolContextualPreferenceHandler toolContextualPreferenceHandler(
             final ToolDao toolDao,
             final ContextualPreferenceDao contextualPreferenceDao,
+            final StorageContextualPreferenceHandler storageContextualPreferenceHandler) {
+        return new ToolContextualPreferenceHandler(toolDao, contextualPreferenceDao,
+                storageContextualPreferenceHandler);
+    }
+
+    @Bean
+    public StorageContextualPreferenceHandler storageContextualPreferenceHandler(
+            final DataStorageDao storageDao,
+            final ContextualPreferenceDao contextualPreferenceDao,
             final SystemPreferenceHandler systemPreferenceHandler) {
-        return new ToolContextualPreferenceHandler(toolDao, contextualPreferenceDao, systemPreferenceHandler);
+        return new StorageContextualPreferenceHandler(storageDao, contextualPreferenceDao, systemPreferenceHandler);
     }
 
     @Bean
@@ -73,17 +87,25 @@ public class ContextualPreferenceConfiguration {
     @Bean
     public DefaultContextualPreferenceReducer defaultContextualPreferenceReducer(
             final MessageHelper messageHelper,
-            final ArrayContextualPreferenceReducer arrayContextualPreferenceReducer) {
-        final Map<String, ContextualPreferenceReducer> preferenceReducerMap = new HashMap<>();
-        preferenceReducerMap.put(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES.getKey(),
+            final ArrayContextualPreferenceReducer arrayContextualPreferenceReducer,
+            final BooleanContextualPreferenceReducer booleanContextualPreferenceReducer) {
+        final Map<String, ContextualPreferenceReducer> preferenceNameToReducer = new HashMap<>();
+        preferenceNameToReducer.put(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES.getKey(),
                 arrayContextualPreferenceReducer);
-        preferenceReducerMap.put(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER.getKey(),
+        preferenceNameToReducer.put(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER.getKey(),
                 arrayContextualPreferenceReducer);
-        return new DefaultContextualPreferenceReducer(messageHelper, preferenceReducerMap);
+        final Map<PreferenceType, ContextualPreferenceReducer> preferenceTypeToReducer = new HashMap<>();
+        preferenceTypeToReducer.put(PreferenceType.BOOLEAN, booleanContextualPreferenceReducer);
+        return new DefaultContextualPreferenceReducer(messageHelper, preferenceNameToReducer, preferenceTypeToReducer);
     }
 
     @Bean
     public ArrayContextualPreferenceReducer arrayContextualPreferenceReducer() {
         return new ArrayContextualPreferenceReducer();
+    }
+
+    @Bean
+    public BooleanContextualPreferenceReducer booleanContextualPreferenceReducer() {
+        return new BooleanContextualPreferenceReducer();
     }
 }

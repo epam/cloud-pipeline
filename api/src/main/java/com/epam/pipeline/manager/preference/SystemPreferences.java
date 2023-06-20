@@ -170,6 +170,8 @@ public class SystemPreferences {
                 "CP_JOB_NAME", "CP_JOB_VERSION", "CP_JOB_CONFIGURATION", "CP_DOCKER_IMAGE", "CP_CALC_CONFIG")),
         new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
         isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final BooleanPreference DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED = new BooleanPreference(
+        "storage.mgmt.restricted.access", false, DATA_STORAGE_GROUP, pass);
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(

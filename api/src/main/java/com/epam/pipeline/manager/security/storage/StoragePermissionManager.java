@@ -19,6 +19,9 @@ import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
@@ -30,7 +33,9 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertRequest;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.QuotaService;
@@ -45,11 +50,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +79,7 @@ public class StoragePermissionManager {
     private final AuthManager authManager;
     private final DataStoragePathLoader storagePathLoader;
     private final PreferenceManager preferenceManager;
+    private final ContextualPreferenceManager contextualPreferenceManager;
 
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
@@ -122,6 +130,48 @@ public class StoragePermissionManager {
         } catch (IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public boolean storageMgmtPermission(final Long id, final String permission) {
+        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, id);
+        return storageMgmtPermission(storage, permission);
+    }
+
+    private boolean storageMgmtPermission(final AbstractSecuredEntity storage, final String permission) {
+        return grantPermissionManager.storagePermission(storage, permission)
+                && (grantPermissionManager.isAdmin()
+                || !isRestrictedMgmtAccessEnabled(storage));
+    }
+
+    private boolean isRestrictedMgmtAccessEnabled(final AbstractSecuredEntity storage) {
+        final ContextualPreferenceExternalResource resource = storageResource(storage);
+        return getPreferenceValueAsBoolean(resource);
+    }
+
+    private Boolean getPreferenceValueAsBoolean(final ContextualPreferenceExternalResource resource) {
+        final ContextualPreference preference = getPreference(resource,
+                SystemPreferences.DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED);
+        return Optional.ofNullable(preference)
+                .map(ContextualPreference::getValue)
+                .map(BooleanUtils::toBoolean)
+                .orElse(false);
+    }
+
+    private ContextualPreferenceExternalResource storageResource(final AbstractSecuredEntity storage) {
+        return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.STORAGE, storage.getId().toString());
+    }
+
+    private ContextualPreference getPreference(final ContextualPreferenceExternalResource resource,
+                                               final AbstractSystemPreference.BooleanPreference... preferences) {
+        final List<String> preferenceNames = Arrays.stream(preferences)
+                .map(AbstractSystemPreference::getKey)
+                .collect(Collectors.toList());
+        return getPreference(resource, preferenceNames);
+    }
+
+    private ContextualPreference getPreference(final ContextualPreferenceExternalResource resource,
+                                               final List<String> preferences) {
+        return contextualPreferenceManager.search(preferences, resource);
     }
 
     public boolean storageTagsPermission(final Long id, final DataStorageTagInsertBatchRequest request,

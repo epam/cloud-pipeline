@@ -54,7 +54,14 @@ public enum ContextualPreferenceLevel {
      *
      * It is translated to a system preference.
      */
-    SYSTEM(3);
+    SYSTEM(3),
+
+    /**
+     * Storage contextual preference level.
+     *
+     * It is associated with a single storage.
+     */
+    STORAGE(4);
 
     private final long id;
 

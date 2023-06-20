@@ -101,7 +101,7 @@ public class ContextualPreferenceManager {
      *
      * Returns a first found preference from the list of preferences.
      *
-     * Methods takes into account the context preference was searched in. It includes
+     * Method takes into account the context preference was searched in. It includes
      * user, its role, requested resource, etc.
      *
      * @param preferences List of preference names.
@@ -115,8 +115,6 @@ public class ContextualPreferenceManager {
         }
         validateNames(preferences);
         validateResource(resource);
-        Assert.isTrue(resource.getLevel() == ContextualPreferenceLevel.TOOL, messageHelper.getMessage(
-                MessageConstants.ERROR_SEARCH_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_LEVEL_INVALID));
         return contextualPreferenceHandler.search(preferences, resources(resource))
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, resource)));
@@ -127,7 +125,7 @@ public class ContextualPreferenceManager {
      *
      * Returns a first found preference from the list of preferences.
      *
-     * Methods takes into account the context preference was searched in. It includes
+     * Method takes into account the context preference was searched in. It includes
      * user, its role, etc.
      *
      * @param preferences List of preference names.
