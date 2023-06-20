@@ -226,19 +226,18 @@ public class DataStorageApiService {
         return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'OWNER')")
+    @PreAuthorize(AclExpressions.STORAGE_MGMT_UPDATE)
     @AclMask
-    public AbstractDataStorage update(DataStorageVO dataStorageVO) {
-        return dataStorageManager.update(dataStorageVO);
+    public AbstractDataStorage update(DataStorageVO storage) {
+        return dataStorageManager.update(storage);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'OWNER')")
-    public AbstractDataStorage updatePolicy(DataStorageVO dataStorageVO) {
-        return dataStorageManager.updatePolicy(dataStorageVO);
+    @PreAuthorize(AclExpressions.STORAGE_MGMT_UPDATE)
+    public AbstractDataStorage updatePolicy(DataStorageVO storage) {
+        return dataStorageManager.updatePolicy(storage);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('STORAGE_MANAGER') AND "
-            + "@storagePermissionManager.storagePermissionById(#id, 'OWNER'))")
+    @PreAuthorize(AclExpressions.STORAGE_ID_MGMT_DELETE)
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
         return dataStorageManager.delete(id, proceedOnCloud);
     }
