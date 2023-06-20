@@ -32,6 +32,8 @@ RUN curl -sk "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/cen
 RUN yum install -y wget \
                    bzip2 \
                    gcc \
+                   gcc-c++ \
+                   make \
                    zlib-devel \
                    bzip2-devel \
                    xz-devel \
@@ -88,16 +90,27 @@ RUN wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
     bash /tmp/miniconda.sh -b -p /opt/local/miniconda && \
     rm -f /tmp/miniconda.sh && \
     source /opt/local/miniconda/etc/profile.d/conda.sh && \
-    conda create -y -n toil python=3.7
+    conda create -y -n toil python=3.10
 ENV PATH="$PATH:/opt/local/miniconda/envs/toil/bin/"
 
 ADD requirements.txt /tmp/requirements.txt
-RUN pip3 install "setuptools<58.0.0" && \
-    pip3 install -r /tmp/requirements.txt && \
+RUN pip3 install -r /tmp/requirements.txt && \
     rm -f /tmp/requirements.txt
 
-ENV TMPDIR=/tmp
+RUN mv /etc/yum.repos.d/cloud-pipeline.repo /tmp/cloud-pipeline.repo && \
+    curl -sL https://rpm.nodesource.com/setup_16.x | bash - && \
+    yum install nodejs -y && \
+    mv /tmp/cloud-pipeline.repo /etc/yum.repos.d/cloud-pipeline.repo
+
 ENV TOIL_HOME=/toil_bin
 ENV PATH="$PATH:$TOIL_HOME"
 COPY cwl_inputs_parser.py cwl-runner $TOIL_HOME/
 RUN chmod +x $TOIL_HOME/cwl-runner
+
+ENV TMP="/common/tmp"
+ENV TEMP="/common/tmp"
+ENV TMPDIR="/common/tmp"
+ENV INPUT_DIR="/common/input"
+ENV COMMON_DIR="/common/ref"
+ENV COMMON_DIR="/common/ref"
+ENV ANALYSIS_DIR="/common/analysis"

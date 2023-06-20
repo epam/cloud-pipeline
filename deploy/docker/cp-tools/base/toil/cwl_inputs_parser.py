@@ -16,6 +16,7 @@ import subprocess
 import sys
 import yaml
 import ruamel.yaml
+import csv
 
 
 VARIABLE_DELIMITER = ","
@@ -69,9 +70,29 @@ def build_simple_inputs(template_value, env_var_values):
 def build_file_or_directory_object(class_value, path_value):
     result = dict()
     result['class'] = class_value
-    result['path'] = path_value
+
+    if type(path_value) == dict:
+        if 'path' not in path_value:
+            raise RuntimeError('"path" field not found for the {} object'.format(path_value))
+        result['path'] = path_value['path']
+        if len(path_value.keys()) > 1:
+            result['metadata'] = {}
+            for metadata_name in path_value.keys():
+                if metadata_name != 'path':
+                    result['metadata'][metadata_name] = path_value[metadata_name]
+    else:
+        result['path'] = path_value
     return result
 
+def parse_manifest_file(manifest_file_path):
+    if not os.path.isfile(manifest_file_path):
+        return [manifest_file_path]
+
+    parsed_items = []
+    with open(manifest_file_path) as f:
+        parsed_items = [{k.strip(): v.strip() if v else '' for k, v in row.items()}
+                            for row in csv.DictReader(f, skipinitialspace=True)]
+    return parsed_items
 
 def build_array_input(key, value, optional):
     if not value:
@@ -85,6 +106,8 @@ def build_array_input(key, value, optional):
         class_value = template_value.get('class')
         if not class_value or 'path' not in template_value:
             raise RuntimeError('Unknown type')
+        if len(env_var_values) == 1 and env_var_values[0].endswith('.manifest.csv'):
+            env_var_values = parse_manifest_file(env_var_values[0])
         return [build_file_or_directory_object(class_value, env_var_value_path) for env_var_value_path
                 in env_var_values]
     return build_simple_inputs(template_value, env_var_values)

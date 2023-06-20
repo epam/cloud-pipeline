@@ -34,6 +34,19 @@ elif [[ "$CP_LOCALIZE_FROM_FILES" =~ ^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Z
     CP_LOCALIZE_FROM_FILES=$(echo "$CP_LOCALIZE_FROM_FILES" | base64 -d)
     _env_var_list=$(echo "$CP_LOCALIZE_FROM_FILES" | jq -r 'keys  | join(" ")')
     _localize_json_config=true
+elif [ "${CP_LOCALIZE_FROM_FILES,,}" = "all" ]; then
+    CP_LOCALIZE_FROM_FILES_ALL_PATTERN="${CP_LOCALIZE_FROM_FILES_ALL_PATTERN:-.*.manifest.csv}"
+    pipe_log_info "CP_LOCALIZE_FROM_FILES is set to ALL, will find any parameter which value matches '$CP_LOCALIZE_FROM_FILES_ALL_PATTERN'" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    while IFS= read -r _env_var_candidate; do
+        _env_var_candidate_value="${!_env_var_candidate}"
+        if echo "$_env_var_candidate_value" | grep -qe "$CP_LOCALIZE_FROM_FILES_ALL_PATTERN"; then
+            _env_var_list="$_env_var_list $_env_var_candidate"
+        fi
+    done <<< "$(env | grep "_PARAM_TYPE=input\|_PARAM_TYPE=common" | sed -e 's/\(_PARAM_TYPE=input\|_PARAM_TYPE=common\)//g')"
+    if [ -z "$_env_var_list" ]; then
+        pipe_log_fail "Unable to find any parameters matching '$CP_LOCALIZE_FROM_FILES_ALL_PATTERN', no configs will be localized" "$LOCALIZE_FROM_FILES_TASK_NAME"
+        exit 1
+    fi
 else
     pipe_log_info "CP_LOCALIZE_FROM_FILES is a PLAIN list, parsing it" "$LOCALIZE_FROM_FILES_TASK_NAME"
     _env_var_list="${CP_LOCALIZE_FROM_FILES//,/ }"

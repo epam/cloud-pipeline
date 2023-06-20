@@ -44,7 +44,7 @@ if [ -z $inputs ] || [ ! -f $inputs ]; then
   if [ -z $inputs ]; then
     inputs=/tmp/inputs.yml
   fi
-  python /toil_bin/cwl_inputs_parser.py $cwl $inputs /tmp/tmp-toil-inputs.yml
+  python3 /toil_bin/cwl_inputs_parser.py $cwl $inputs /tmp/tmp-toil-inputs.yml
   if [ $? -ne 0 ]; then
     echo "[ERROR] Can't parse inputs"
     exit 1
@@ -53,13 +53,36 @@ fi
 
 _batch_system=""
 if check_cp_cap "CP_CAP_SGE"; then
-  if [ -z $TOIL_GRIDENGINE_PE ]; then
-    TOIL_GRIDENGINE_PE=$CP_CAP_SGE_PE_NAME
+  if [ -z "$TOIL_GRIDENGINE_PE" ]; then
+    export TOIL_GRIDENGINE_PE=local
   fi
-  if [ -z $TOIL_GRIDENGINE_ARGS ]; then
-    TOIL_GRIDENGINE_ARGS="-q $CP_CAP_SGE_PE_NAME"
+  if [ -z "$TOIL_GRIDENGINE_ARGS" ]; then
+    export TOIL_GRIDENGINE_ARGS="-q main.q"
   fi
-  _batch_system="--batchSystem=grid_engine --disableCaching=true --statePollingWait=10"
+
+  TOIL_GRIDENGINE_STATE_POLLING_WAIT=${TOIL_GRIDENGINE_STATE_POLLING_WAIT:-30}
+  _batch_system="--batchSystem=grid_engine --disableCaching --statePollingWait=$TOIL_GRIDENGINE_STATE_POLLING_WAIT"
+  
+  # Make sure the flush time is 1s, if it's more than that - toil will fail running qacct
+  echo "[INFO] Setting up SGE accounting configuration"
+  SGE_SINGLE_LINE=1 qconf -sconf > /tmp/global
+  sed -i '/reporting_params/c\reporting_params accounting=true reporting=false accounting_flush_time=00:00:01 joblog=false sharelog=00:00:00' /tmp/global
+  qconf -Mconf /tmp/global
+  rm -f /tmp/global
+
+  echo "[INFO] Final SGE configuration:"
+  echo "       Batch system info:                     $_batch_system"
+  echo "       TOIL_GRIDENGINE_ARGS:                  $TOIL_GRIDENGINE_ARGS"
+  echo "       TOIL_GRIDENGINE_PE:                    $TOIL_GRIDENGINE_PE"
+  echo "       TOIL_GRIDENGINE_STATE_POLLING_WAIT:    $TOIL_GRIDENGINE_STATE_POLLING_WAIT"
 fi
 
-toil-cwl-runner $_batch_system --preserve-entire-environment --workDir=/common/workdir $cwl $inputs
+# Create the temp dir if it is set to /common/...
+mkdir -p $TMP
+
+toil-cwl-runner $_batch_system \
+                --cleanWorkDir never \
+                --no-match-user \
+                --no-read-only \
+                --workDir=/common/workdir \
+                $cwl $inputs
