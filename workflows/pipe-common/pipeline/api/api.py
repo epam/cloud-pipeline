@@ -334,6 +334,9 @@ class PipelineAPI:
         preference = self.get_preference_efficiently(name) or {}
         return preference.get('value')
 
+    def load_current_user_efficiently(self):
+        return self._request('GET', 'whoami')
+
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self.api_url, endpoint)
         count = 0
