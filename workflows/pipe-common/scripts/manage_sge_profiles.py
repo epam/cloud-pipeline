@@ -27,7 +27,7 @@ import psutil
 import sys
 import time
 
-from pipeline.api import PipelineAPI
+from pipeline.api import PipelineAPI, APIError
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger, PrintLogger
 from pipeline.utils.path import mkdir
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
@@ -37,13 +37,15 @@ from scripts.generate_sge_profiles import generate_sge_profiles, \
 Profile = namedtuple('Profile', 'name,path_queue,path_autoscaling')
 
 PROFILE_NAME_REMOVAL_PATTERN = r'[^a-zA-Z0-9.]+'
+GROUP_ADMIN = 'ROLE_ADMIN'
+DEFAULT_ALLOWED_GROUPS = 'ROLE_ADMIN,ROLE_ADVANCED_USER'
 
 
 class GridEngineProfileError(RuntimeError):
     pass
 
 
-class ResilientGridEngineProfileManager:
+class ResilientProfileManager:
 
     def __init__(self, inner, logger):
         self._inner = inner
@@ -69,6 +71,37 @@ class ResilientGridEngineProfileManager:
             except Exception:
                 self._logger.warning('Grid engine profiles management has failed.', trace=True)
                 exit(1)
+        return _wrapped_attr
+
+
+class SecurityProfileManager:
+
+    def __init__(self, inner, api, logger, allowed_groups):
+        self._inner = inner
+        self._api = api
+        self._logger = logger
+        self._allowed_groups = allowed_groups
+
+    def __getattr__(self, name):
+        if not hasattr(self._inner, name):
+            return None
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+        return self._wrap(attr)
+
+    def _wrap(self, attr):
+        @functools.wraps(attr)
+        def _wrapped_attr(*args, **kwargs):
+            self._logger.debug('Loading current user...')
+            user = self._api.load_current_user_efficiently() or {}
+            user_groups = list(user.get('groups') or [])
+            user_roles = [role.get('name') for role in user.get('roles') or []]
+            if not any(group in self._allowed_groups for group in user_groups + user_roles):
+                self._logger.error('Access denied. Only users with explicit rights have access to sge utility. '
+                                   'Please contact the support team for the access.')
+                raise GridEngineProfileError()
+            return attr(*args, **kwargs)
         return _wrapped_attr
 
 
@@ -352,14 +385,14 @@ nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscale
 
 
 def _get_manager():
-    logging_level_run = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_RUN', default='INFO')
-    logging_level_file = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_FILE', default='DEBUG')
-    logging_level_console = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_LEVEL_CONSOLE', default='INFO')
-    logging_format_file = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_FORMAT_FILE', default='%(asctime)s [%(levelname)s] %(message)s')
-    logging_format_console = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_FORMAT_CONSOLE', default='%(message)s')
-    logging_task = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_TASK', default='ConfigureSGEProfiles')
-    logging_dir = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOG_DIR', default=os.getenv('LOG_DIR', '/var/log'))
-    logging_file = os.getenv('CP_CAP_SGE_PROFILE_CONFIGURATION_LOGGING_FILE', default='configure_sge_profiles_interactively.log')
+    logging_level_run = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_LEVEL_RUN', default='INFO')
+    logging_level_file = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_LEVEL_FILE', default='DEBUG')
+    logging_level_console = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_LEVEL_CONSOLE', default='INFO')
+    logging_format_file = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_FORMAT_FILE', default='%(asctime)s [%(levelname)s] %(message)s')
+    logging_format_console = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_FORMAT_CONSOLE', default='%(message)s')
+    logging_task = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_TASK', default='ConfigureSGEProfiles')
+    logging_dir = os.getenv('CP_CAP_SGE_UTILITY_LOG_DIR', default=os.getenv('LOG_DIR', '/var/log'))
+    logging_file = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_FILE', default='configure_sge_profiles_interactively.log')
 
     api_url = os.environ['API']
     run_id = os.environ['RUN_ID']
@@ -399,6 +432,8 @@ def _get_manager():
 
     logger_warning = ExplicitLogger(level='WARNING', inner=logger)
 
+    allowed_groups = _resolve_allowed_groups(api)
+
     executor = LocalExecutor()
     executor = LoggingExecutor(logger=logger, inner=executor)
 
@@ -406,8 +441,20 @@ def _get_manager():
                                        cap_scripts_dir=cap_scripts_dir,
                                        queue_profile_regexp=queue_profile_regexp,
                                        autoscaling_script_path=autoscaling_script_path)
-    manager = ResilientGridEngineProfileManager(inner=manager, logger=logger)
+    if allowed_groups:
+        manager = SecurityProfileManager(inner=manager, api=api, logger=logger, allowed_groups=allowed_groups)
+    manager = ResilientProfileManager(inner=manager, logger=logger)
     return manager
+
+
+def _resolve_allowed_groups(api):
+    try:
+        allowed_groups_str = api.get_preference_value('ge.utility.allowed.groups') or DEFAULT_ALLOWED_GROUPS
+    except APIError:
+        allowed_groups_str = DEFAULT_ALLOWED_GROUPS
+    allowed_groups = set(group.strip() for group in allowed_groups_str.split(',') if group.strip())
+    allowed_groups.add(GROUP_ADMIN)
+    return allowed_groups
 
 
 @click.group()

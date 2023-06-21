@@ -958,6 +958,9 @@ public class SystemPreferences {
             new ObjectPreference<>("ge.autoscaling.scale.multi.queues.template", null,
                     new TypeReference<Map<String, Object>>() {}, GRID_ENGINE_AUTOSCALING_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+    public static final StringPreference GE_UTILITY_ALLOWED_GROUPS =
+            new StringPreference("ge.utility.allowed.groups", "ROLE_ADMIN,ROLE_ADVANCED_USER",
+                    GRID_ENGINE_AUTOSCALING_GROUP, pass, true);
 
     //GCP
     public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
