@@ -187,7 +187,6 @@
                         tv.version,
                         tv.settings,
                         tv.size,
-                        tv.platform,
                         tv.allow_commit
                     FROM pipeline.tool_version AS tv
                     WHERE tv.version = 'latest'
@@ -198,7 +197,6 @@
                         tv.version,
                         tv.settings,
                         tv.size,
-                        tv.platform,
                         tv.allow_commit
                     FROM pipeline.tool_version AS tv
                     LEFT JOIN pipeline.tool tl ON (tl.id = tv.tool_id)
