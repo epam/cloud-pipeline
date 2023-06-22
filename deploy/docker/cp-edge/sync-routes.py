@@ -394,8 +394,8 @@ def construct_additional_endpoints_from_run_parameters(run_details):
                         "endpoint": e.get(e_id + "_PORT"),
                         "friendly_name": e.get(e_id + "_NAME", "pipeline-" + str(run_details['id']) + "-" + e.get(e_id + "_PORT")),
                         "endpoint_additional": e.get(e_id + "_ADDITIONAL", ""),
-                        "ssl_backend": e.get(e_id + "_SSL_BACKEND", "false"),
-                        "endpoint_same_tab": e.get(e_id + "_SAME_TAB", "false")
+                        "ssl_backend": e.get(e_id + "_SSL_BACKEND", False),
+                        "endpoint_same_tab": e.get(e_id + "_SAME_TAB", False)
                 } for e_id, e in custom_endpoint_param_groups.items()
         ]
 
