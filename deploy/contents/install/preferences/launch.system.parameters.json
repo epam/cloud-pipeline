@@ -577,5 +577,11 @@
         "description": "Enables RSMAP-like GPU devices assignment",
         "defaultValue": "true",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_RESCHEDULE_RUN",
+        "type": "boolean",
+        "description": "Enables rescheduling run to other regions",
+        "passToWorkers": false
     }
 ]

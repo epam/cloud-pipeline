@@ -29,11 +29,14 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -48,6 +51,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class RunRegionShiftHandler {
+
+    static final String CP_CAP_RESCHEDULE_RUN_PARAM = "CP_CAP_RESCHEDULE_RUN";
+
     private static final String RESTART_TASK = "RestartPipelineRun";
 
     private final PipelineRunManager pipelineRunManager;
@@ -55,6 +61,7 @@ public class RunRegionShiftHandler {
     private final RestartRunManager restartRunManager;
     private final RunLogManager runLogManager;
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
 
     public PipelineRun restartRunInAnotherRegion(final long currentRunId) {
         final Long parentRunId = restartRunManager.findRestartRunById(currentRunId)
@@ -84,7 +91,7 @@ public class RunRegionShiftHandler {
                 .filter(this::isShiftRunEnabled)
                 .collect(Collectors.toMap(AbstractCloudRegion::getId, Function.identity()));
 
-        if (validate(parentRun, currentRun, availableRegions)) {
+        if (!validate(parentRun, currentRun, availableRegions)) {
             return null;
         }
 
@@ -113,40 +120,51 @@ public class RunRegionShiftHandler {
             log.debug("Failed to find region for run '{}'", parentRun.getId());
             addRunLog(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RESTART_RUN_FAILURE, parentRun.getId()), TaskStatus.FAILURE);
-            return true;
+            return false;
         }
 
         if (!availableRegions.containsKey(currentRegionId)) {
             final String regionName = cloudRegionManager.load(currentRegionId).getName();
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RUN_REGION_RELAUNCH_FORBIDDEN, regionName), currentRun);
-            return true;
+            return false;
         }
 
         if (availableRegions.size() == 1) {
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND, currentRun.getId()), currentRun);
-            return true;
+            return false;
         }
 
         if (!isRunParametersValid(parentRun)) {
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT, currentRun.getId()), currentRun);
-            return true;
+            return false;
         }
 
         if (Objects.nonNull(parentRun.getNodeCount()) && parentRun.getNodeCount() > 0) {
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RESTART_CLUSTER_FORBIDDEN, currentRun.getId()), currentRun);
-            return true;
+            return false;
         }
 
         if (parentRun.isWorkerRun()) {
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RESTART_WORKER_FORBIDDEN, currentRun.getId()), currentRun);
-            return true;
+            return false;
         }
-        return false;
+
+        final boolean shouldReschedule = parentRun.getParameterValue(CP_CAP_RESCHEDULE_RUN_PARAM)
+                .map(BooleanUtils::toBoolean)
+                .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED));
+
+        if (!shouldReschedule) {
+            logRestartFailure(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_IS_NOT_CONFIGURED_FOR_RESTART, parentRun.getId()), parentRun);
+            return false;
+        }
+
+        return true;
     }
 
     private Long findNextRegion(final PipelineRun parentRun,
