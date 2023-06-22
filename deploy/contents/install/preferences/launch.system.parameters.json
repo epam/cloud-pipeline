@@ -581,7 +581,7 @@
     {
         "name": "CP_CAP_RESCHEDULE_RUN",
         "type": "boolean",
-        "description": "Enables rescheduling run to another regions",
+        "description": "Enables rescheduling run to other regions",
         "passToWorkers": false
     }
 ]
