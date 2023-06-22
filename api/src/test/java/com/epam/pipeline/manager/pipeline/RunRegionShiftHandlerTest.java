@@ -26,9 +26,12 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
+import org.junit.Before;
 import org.junit.Test;
 
 
@@ -48,13 +51,16 @@ import static org.mockito.Mockito.verify;
 
 public class RunRegionShiftHandlerTest {
 
+    private static final String FALSE = "false";
+    private static final String TRUE = "true";
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
     private final RestartRunManager restartRunManager = mock(RestartRunManager.class);
     private final CloudRegionManager cloudRegionManager = mock(CloudRegionManager.class);
     private final RunLogManager runLogManager = mock(RunLogManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
+    private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final RunRegionShiftHandler runRegionShiftHandler = new RunRegionShiftHandler(
-            pipelineRunManager, cloudRegionManager, restartRunManager, runLogManager, messageHelper);
+            pipelineRunManager, cloudRegionManager, restartRunManager, runLogManager, messageHelper, preferenceManager);
 
     private static final Long PARENT_RUN_ID = 1L;
     private static final Long CURRENT_RUN_ID = 2L;
@@ -62,6 +68,11 @@ public class RunRegionShiftHandlerTest {
     private static final Long NEXT_AVAILABLE_REGION_ID = 4L;
     private static final Long PARENT_AVAILABLE_REGION_ID = 6L;
     private static final Long NOT_AVAILABLE_REGION_ID = 5L;
+
+    @Before
+    public void setup() {
+        doReturn(true).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED);
+    }
 
     @Test
     public void shouldRestartRunWhenParentRunNotRestarted() {
@@ -196,6 +207,60 @@ public class RunRegionShiftHandlerTest {
     }
 
     @Test
+    public void shouldRestartRunWhenRunConfiguredOnlyBySysPref() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        verify(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+        verify(pipelineRunManager).stop(CURRENT_RUN_ID);
+    }
+
+    @Test
+    public void shouldRestartRunWhenRunConfiguredWithParameter() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        doReturn(false).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getConfiguredForRestartParameter(TRUE)));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        verify(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+        verify(pipelineRunManager).stop(CURRENT_RUN_ID);
+    }
+
+    @Test
+    public void shouldNotRestartRunWhenRunIsNotConfiguredAtAll() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        doReturn(false).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED);
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+
+        assertRunNotRestarted();
+    }
+
+    @Test
+    public void shouldNotRestartRunWhenRunIsConfiguredInSysPrefButRestrictedWithParam() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getConfiguredForRestartParameter(FALSE)));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+
+        assertRunNotRestarted();
+    }
+
+    @Test
     public void shouldNotRestartRunWhenWorker() {
         final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
         final PipelineRun currentRun = getCurrentRun(runInstance);
@@ -321,6 +386,10 @@ public class RunRegionShiftHandlerTest {
 
     private static PipelineRunParameter getCloudIndependentRunParameter() {
         return new PipelineRunParameter(TEST_NAME, TEST_STRING);
+    }
+
+    private static PipelineRunParameter getConfiguredForRestartParameter(final String value) {
+        return new PipelineRunParameter(RunRegionShiftHandler.CP_CAP_RESCHEDULE_RUN_PARAM, value);
     }
 
     private static PipelineRun expectedSuccessfulRun() {
