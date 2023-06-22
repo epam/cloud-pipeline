@@ -670,16 +670,21 @@ function list_storage_mounts() {
 function update_user_limits() {
     local _MAX_NOPEN_LIMIT=$1
     local _MAX_PROCS_LIMIT=$2
+    local _MAX_CORE_LIMIT=$3
     ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT"
 cat <<EOT >> /etc/security/limits.conf
 * soft nofile $_MAX_NOPEN_LIMIT
 * hard nofile $_MAX_NOPEN_LIMIT
 * soft nproc $_MAX_PROCS_LIMIT
 * hard nproc $_MAX_PROCS_LIMIT
+* soft core $_MAX_CORE_LIMIT
+* hard core $_MAX_CORE_LIMIT
 root soft nofile $_MAX_NOPEN_LIMIT
 root hard nofile $_MAX_NOPEN_LIMIT
 root soft nproc $_MAX_PROCS_LIMIT
 root hard nproc $_MAX_PROCS_LIMIT
+root soft nproc $_MAX_CORE_LIMIT
+root hard nproc $_MAX_CORE_LIMIT
 EOT
     if [[ -f "/etc/security/limits.d/20-nproc.conf" ]]; then
         # On centos this configuration file contains some default nproc limits
@@ -1182,6 +1187,12 @@ if [ -z "$MAX_NOPEN_LIMIT" ] ;
     then
         export MAX_NOPEN_LIMIT="65536"
         echo "MAX_NOPEN_LIMIT is not defined, setting to ${MAX_NOPEN_LIMIT}"
+fi
+
+if [ -z "$MAX_CORE_LIMIT" ] ;
+    then
+        export MAX_CORE_LIMIT="unlimited"
+        echo "MAX_CORE_LIMIT is not defined, setting to ${MAX_CORE_LIMIT}"
 fi
 
 if [ -z "$CP_CAP_ENV_UMASK" ] ;
