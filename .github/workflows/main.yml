@@ -8,6 +8,7 @@ on:
       - develop
       - 'release/**'
       - 'stage/**'
+      - ga_python_fix
 
   workflow_dispatch:
 
@@ -25,7 +26,7 @@ jobs:
           java-version: '8'
       - uses: actions/setup-python@v2
         with:
-          python-version: '2.7'
+          python-version: '3.6'
           architecture: 'x64'
       - uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -44,7 +45,7 @@ jobs:
           java-version: '8'
       - uses: actions/setup-python@v2
         with:
-          python-version: '2.7.18'
+          python-version: '3.6'
           architecture: 'x64'
       - uses: actions/setup-node@v3
         with:
