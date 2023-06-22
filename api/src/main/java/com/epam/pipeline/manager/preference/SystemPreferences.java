@@ -550,6 +550,10 @@ public class SystemPreferences {
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
+
+    public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_ENABLED = new BooleanPreference(
+            "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
+
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
      * from run container.
