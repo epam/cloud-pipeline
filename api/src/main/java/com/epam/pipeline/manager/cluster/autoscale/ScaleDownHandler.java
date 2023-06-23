@@ -15,6 +15,8 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
@@ -26,16 +28,27 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,63 +58,228 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ScaleDownHandler {
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
+    private static final Duration FALLBACK_CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD = Duration.ofMinutes(30);
+    private static final String NODE_UNAVAILABLE_TAG = "NODE_UNAVAILABLE";
+
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
     private final PipelineRunManager pipelineRunManager;
     private final KubernetesManager kubernetesManager;
     private final PipelineRunCRUDService runCRUDService;
+    private final PreferenceManager preferenceManager;
 
     public void checkFreeNodes(final Set<String> scheduledRuns,
                                final KubernetesClient client,
                                final Set<String> pods) {
         final List<InstanceRequest> requiredInstances = getRequiredInstances(scheduledRuns, client);
-        kubernetesManager.getAvailableNodes(client)
-                .getItems()
-                .forEach(node -> scaleDownNodeIfFree(scheduledRuns, client, pods, requiredInstances, node));
+        final Duration grace = getUnavailabilityGracePeriod();
+        for (Node node : kubernetesManager.getAvailableNodes(client).getItems()) {
+            try {
+                scaleDownNodeIfFree(scheduledRuns, client, pods, requiredInstances, node, grace);
+            } catch (Exception e) {
+                log.error("Node {} processing has failed.", getNodeName(node), e);
+            }
+        }
+    }
+
+    private Duration getUnavailabilityGracePeriod() {
+        return Optional.of(SystemPreferences.CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES)
+                .map(preferenceManager::getPreference)
+                .map(Duration::ofMinutes)
+                .orElse(FALLBACK_CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD);
     }
 
     private void scaleDownNodeIfFree(final Set<String> scheduledRuns,
                                      final KubernetesClient client,
                                      final Set<String> pods,
                                      final List<InstanceRequest> requiredInstances,
-                                     final Node node) {
-        final String nodeLabel = node.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL);
-        if (node.getMetadata().getLabels().get(KubernetesConstants.PAUSED_NODE_LABEL) != null) {
-            log.debug("Node {} is paused.", nodeLabel);
+                                     final Node node,
+                                     final Duration grace) {
+        final String name = getNodeName(node);
+        final String label = getNodeLabel(node);
+
+        if (isPaused(node)) {
+            log.debug("Skipping paused node {} #{}...", name, label);
             return;
         }
-        //TODO: refactor this
-        final boolean poolNode = nodeLabel.startsWith(AutoscaleContants.NODE_POOL_PREFIX);
-        if (kubernetesManager.isNodeUnavailable(node)) {
-            if (poolNode) {
-                log.debug("Scaling down unavailable {} pool node.", nodeLabel);
-                cloudFacade.scaleDownPoolNode(nodeLabel);
-            } else {
-                final Long currentRunId = Long.parseLong(nodeLabel);
-                if (autoscalerService.getPreviousRunInstance(nodeLabel, client) != null) {
-                    log.debug("Trying to set failure status for run {}.", nodeLabel);
-                    pipelineRunManager.updatePipelineStatusIfNotFinal(currentRunId, TaskStatus.FAILURE);
-                    updatePodStatus(node, currentRunId);
-                }
-                log.debug("Scaling down unavailable {} node.", nodeLabel);
-                cloudFacade.scaleDownNode(currentRunId);
+
+        if (isUnavailable(node)) {
+            log.debug("Processing unavailable node {} #{}...", name, label);
+            processUnavailableNode(client, node, grace);
+            return;
+        }
+
+        if (isRecovered(node)) {
+            log.debug("Processing recovered node {} #{}...", name, label);
+            processRecoveredNode(node);
+        }
+
+        if (isAssigned(node, scheduledRuns, pods)) {
+            log.debug("Skipping assigned node {} #{}...", name, label);
+            return;
+        }
+
+        log.debug("Processing unassigned node {} #{}...", name, label);
+        scaleDownNode(client, node, requiredInstances);
+    }
+
+    private String getNodeName(final Node node) {
+        return node.getMetadata().getName();
+    }
+
+    private String getNodeLabel(final Node node) {
+        return node.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL);
+    }
+
+    private boolean isPaused(final Node node) {
+        return node.getMetadata().getLabels().get(KubernetesConstants.PAUSED_NODE_LABEL) != null;
+    }
+
+    private boolean isUnavailable(final Node node) {
+        return kubernetesManager.isNodeUnavailable(node);
+    }
+
+    private void processUnavailableNode(final KubernetesClient client, final Node node, final Duration grace) {
+        final LocalDateTime now = DateUtils.nowUTC();
+        final LocalDateTime unavailable = kubernetesManager.getLastConditionDateTime(node).orElse(now);
+        if (now.minus(grace).isBefore(unavailable)) {
+            if (isUnavailableNodeLabeled(client, node)) {
+                return;
             }
+            final String name = getNodeName(node);
+            final String label = getNodeLabel(node);
+            log.debug("Labeling unavailable node {} #{}", name, label);
+            labelUnavailableNode(node, unavailable);
+            labelUnavailableNodeRun(node, unavailable);
             return;
         }
-        if (scheduledRuns.contains(nodeLabel) || pods.contains(nodeLabel)) {
-            log.debug("Node is already assigned to run {}.", nodeLabel);
+        scaleDownUnavailableNode(client, node);
+    }
+
+    private boolean isUnavailableNodeLabeled(final KubernetesClient client, final Node node) {
+        return kubernetesManager.getNodeLabels(client, getNodeName(node))
+                .containsKey(KubernetesConstants.UNAVAILABLE_NODE_LABEL);
+    }
+
+    private void labelUnavailableNode(final Node node, final LocalDateTime unavailable) {
+        kubernetesManager.addNodeLabel(getNodeName(node), KubernetesConstants.UNAVAILABLE_NODE_LABEL,
+                KubernetesConstants.KUBE_LABEL_DATE_FORMATTER.format(unavailable));
+    }
+
+    private void labelUnavailableNodeRun(final Node node, final LocalDateTime unavailable) {
+        final long runId = NumberUtils.toLong(getNodeLabel(node));
+        if (runId <= 0) {
             return;
         }
-        if (poolNode) {
-            scaleDownPoolNodeIfNotRequired(nodeLabel, client, requiredInstances);
+        labelUnavailableNodeRun(runId, unavailable);
+    }
+
+    private void labelUnavailableNodeRun(final long runId,  final LocalDateTime unavailable) {
+        final Map<String, String> tags = new HashMap<>();
+        tags.put(NODE_UNAVAILABLE_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+        getTimestampTag(NODE_UNAVAILABLE_TAG).ifPresent(tag -> tags.put(tag, DATE_TIME_FORMATTER.format(unavailable)));
+        pipelineRunManager.updateTags(runId, new TagsVO(tags), false);
+    }
+
+    private Optional<String> getTimestampTag(final String tag) {
+        return Optional.of(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX)
+                .map(preferenceManager::getPreference)
+                .filter(StringUtils::isNotEmpty)
+                .map(suffix -> tag + suffix);
+    }
+
+    private void scaleDownUnavailableNode(final KubernetesClient client, final Node node) {
+        if (isPooled(node)) {
+            scaleDownUnavailablePoolNode(node);
         } else {
-            scaleDownRunNodeIfNotRequired(nodeLabel, client, requiredInstances);
+            scaleDownUnavailableRunNode(client, node);
         }
     }
 
-    private void scaleDownPoolNodeIfNotRequired(final String nodeLabel,
-                                                final KubernetesClient client,
+    private void scaleDownUnavailablePoolNode(final Node node) {
+        final String name = getNodeName(node);
+        final String label = getNodeLabel(node);
+        log.debug("Scaling down unavailable pool node {} #{}.", name, label);
+        cloudFacade.scaleDownPoolNode(label);
+    }
+
+    private void scaleDownUnavailableRunNode(final KubernetesClient client, final Node node) {
+        final String name = getNodeName(node);
+        final String label = getNodeLabel(node);
+        final Long runId = Long.parseLong(label);
+        if (autoscalerService.getPreviousRunInstance(label, client) != null) {
+            log.debug("Failing run of unavailable node {} #{}.", name, label);
+            pipelineRunManager.updatePipelineStatusIfNotFinal(runId, TaskStatus.FAILURE);
+            updatePodStatus(node, runId);
+        }
+        log.debug("Scaling down unavailable node {} #{}.", name, label);
+        cloudFacade.scaleDownNode(runId);
+    }
+
+    private boolean isPooled(final Node node) {
+        return getNodeLabel(node).startsWith(AutoscaleContants.NODE_POOL_PREFIX);
+    }
+
+    private boolean isRecovered(final Node node) {
+        return getLabels(node).containsKey(KubernetesConstants.UNAVAILABLE_NODE_LABEL);
+    }
+
+    private Map<String, String> getLabels(final Node node) {
+        return Optional.ofNullable(node)
+                .map(Node::getMetadata)
+                .map(ObjectMeta::getLabels)
+                .orElseGet(Collections::emptyMap);
+    }
+
+    private void processRecoveredNode(final Node node) {
+        final String name = getNodeName(node);
+        final String label = getNodeLabel(node);
+        log.debug("Labeling recovered node {} #{}", name, label);
+        labelRecoveredNode(node);
+        labelRecoveredNodeRun(node);
+    }
+
+    private void labelRecoveredNode(final Node node) {
+        kubernetesManager.removeNodeLabel(getNodeName(node), KubernetesConstants.UNAVAILABLE_NODE_LABEL);
+    }
+
+    private void labelRecoveredNodeRun(final Node node) {
+        final long runId = NumberUtils.toLong(getNodeLabel(node));
+        if (runId <= 0) {
+            return;
+        }
+        labelRecoveredNodeRun(runId);
+    }
+
+    private void labelRecoveredNodeRun(final long runId) {
+        final Map<String, String> tags = pipelineRunManager.findRun(runId)
+                .map(PipelineRun::getTags)
+                .map(HashMap::new)
+                .orElseGet(HashMap::new);
+        tags.remove(NODE_UNAVAILABLE_TAG);
+        getTimestampTag(NODE_UNAVAILABLE_TAG).ifPresent(tags::remove);
+        pipelineRunManager.updateTags(runId, new TagsVO(tags), true);
+    }
+
+    private boolean isAssigned(final Node node, final Set<String> runs, final Set<String> pods) {
+        final String label = getNodeLabel(node);
+        return runs.contains(label) || pods.contains(label);
+    }
+
+    private void scaleDownNode(final KubernetesClient client, final Node node,
+                               final List<InstanceRequest> requiredInstances) {
+        if (isPooled(node)) {
+            scaleDownPoolNodeIfNotRequired(client, node, requiredInstances);
+        } else {
+            scaleDownRunNodeIfNotRequired(client, node, requiredInstances);
+        }
+    }
+
+    private void scaleDownPoolNodeIfNotRequired(final KubernetesClient client, final Node node,
                                                 final List<InstanceRequest> requiredInstances) {
+        final String nodeLabel = getNodeLabel(node);
         final NodePool nodePool = autoscalerService
                 .findPool(nodeLabel, client)
                 .orElse(null);
@@ -126,9 +304,9 @@ public class ScaleDownHandler {
         }
     }
 
-    private void scaleDownRunNodeIfNotRequired(final String nodeLabel,
-                                               final KubernetesClient client,
+    private void scaleDownRunNodeIfNotRequired(final KubernetesClient client, final Node node,
                                                final List<InstanceRequest> requiredInstances) {
+        final String nodeLabel = getNodeLabel(node);
         final Long currentRunId = Long.parseLong(nodeLabel);
         final RunningInstance previousConfiguration = autoscalerService.getPreviousRunInstance(nodeLabel, client);
 

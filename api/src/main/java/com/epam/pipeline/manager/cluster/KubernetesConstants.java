@@ -40,6 +40,7 @@ public final class KubernetesConstants {
     public static final String CLOUD_PROVIDER_LABEL = "cloud_provider";
     public static final String POD_WORKER_NODE_LABEL = "cluster_id";
     public static final String PAUSED_NODE_LABEL = "Paused";
+    public static final String UNAVAILABLE_NODE_LABEL = "Unavailable";
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
     public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
