@@ -1344,7 +1344,7 @@ if [ -z "$CP_CAP_SUDO_ENABLE" ] ;
 fi
 
 # Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
-update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT
+update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT $MAX_CORE_LIMIT
 
 # default 0002 - will result into 775 (dir) and 664 (file) permissions
 _CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
