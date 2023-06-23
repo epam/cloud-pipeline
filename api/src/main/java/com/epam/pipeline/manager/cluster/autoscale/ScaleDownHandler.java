@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -28,6 +29,7 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.Node;
@@ -38,6 +40,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Component;
@@ -62,10 +65,12 @@ public class ScaleDownHandler {
             DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
     private static final Duration FALLBACK_CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD = Duration.ofMinutes(30);
     private static final String NODE_UNAVAILABLE_TAG = "NODE_UNAVAILABLE";
+    private static final String NODE_AVAILABILITY_MONITOR = "NodeAvailabilityMonitor";
 
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
     private final PipelineRunManager pipelineRunManager;
+    private final RunLogManager runLogManager;
     private final KubernetesManager kubernetesManager;
     private final PipelineRunCRUDService runCRUDService;
     private final PreferenceManager preferenceManager;
@@ -143,16 +148,17 @@ public class ScaleDownHandler {
 
     private void processUnavailableNode(final KubernetesClient client, final Node node, final Duration grace) {
         final LocalDateTime now = DateUtils.nowUTC();
-        final LocalDateTime unavailable = kubernetesManager.getLastConditionDateTime(node).orElse(now);
-        if (now.minus(grace).isBefore(unavailable)) {
+        final LocalDateTime timestamp = kubernetesManager.getLastConditionDateTime(node).orElse(now);
+        if (now.minus(grace).isBefore(timestamp)) {
             if (isUnavailableNodeLabeled(client, node)) {
                 return;
             }
-            final String name = getNodeName(node);
-            final String label = getNodeLabel(node);
-            log.debug("Labeling unavailable node {} #{}", name, label);
-            labelUnavailableNode(node, unavailable);
-            labelUnavailableNodeRun(node, unavailable);
+            log.debug("Marking unavailable node {} #{}", getNodeName(node), getNodeLabel(node));
+            labelUnavailableNode(node, timestamp);
+            findRun(node).ifPresent(run -> {
+                labelUnavailableNodeRun(run, timestamp);
+                logUnavailableNodeRun(run, timestamp);
+            });
             return;
         }
         scaleDownUnavailableNode(client, node);
@@ -163,31 +169,32 @@ public class ScaleDownHandler {
                 .containsKey(KubernetesConstants.UNAVAILABLE_NODE_LABEL);
     }
 
-    private void labelUnavailableNode(final Node node, final LocalDateTime unavailable) {
+    private void labelUnavailableNode(final Node node, final LocalDateTime timestamp) {
         kubernetesManager.addNodeLabel(getNodeName(node), KubernetesConstants.UNAVAILABLE_NODE_LABEL,
-                KubernetesConstants.KUBE_LABEL_DATE_FORMATTER.format(unavailable));
+                KubernetesConstants.KUBE_LABEL_DATE_FORMATTER.format(timestamp));
     }
 
-    private void labelUnavailableNodeRun(final Node node, final LocalDateTime unavailable) {
-        final long runId = NumberUtils.toLong(getNodeLabel(node));
-        if (runId <= 0) {
-            return;
-        }
-        labelUnavailableNodeRun(runId, unavailable);
-    }
-
-    private void labelUnavailableNodeRun(final long runId,  final LocalDateTime unavailable) {
+    private void labelUnavailableNodeRun(final PipelineRun run, final LocalDateTime timestamp) {
         final Map<String, String> tags = new HashMap<>();
         tags.put(NODE_UNAVAILABLE_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
-        getTimestampTag(NODE_UNAVAILABLE_TAG).ifPresent(tag -> tags.put(tag, DATE_TIME_FORMATTER.format(unavailable)));
-        pipelineRunManager.updateTags(runId, new TagsVO(tags), false);
+        getTimestampTag(NODE_UNAVAILABLE_TAG).ifPresent(tag -> tags.put(tag, DATE_TIME_FORMATTER.format(timestamp)));
+        pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
     }
 
-    private Optional<String> getTimestampTag(final String tag) {
-        return Optional.of(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX)
-                .map(preferenceManager::getPreference)
-                .filter(StringUtils::isNotEmpty)
-                .map(suffix -> tag + suffix);
+    private void logUnavailableNodeRun(final PipelineRun run, final LocalDateTime timestamp) {
+        log(run, String.format("Node %s has been unavailable since %s", run.getInstance().getNodeId(),
+                DATE_TIME_FORMATTER.format(timestamp)));
+    }
+
+    private void log(final PipelineRun run, final String text) {
+        runLogManager.saveLog(RunLog.builder()
+                .date(DateUtils.now())
+                .runId(run.getId())
+                .instance(run.getPodId())
+                .status(TaskStatus.RUNNING)
+                .taskName(NODE_AVAILABILITY_MONITOR)
+                .logText(text)
+                .build());
     }
 
     private void scaleDownUnavailableNode(final KubernetesClient client, final Node node) {
@@ -234,33 +241,37 @@ public class ScaleDownHandler {
     }
 
     private void processRecoveredNode(final Node node) {
-        final String name = getNodeName(node);
-        final String label = getNodeLabel(node);
-        log.debug("Labeling recovered node {} #{}", name, label);
+        final LocalDateTime now = DateUtils.nowUTC();
+        final LocalDateTime timestamp = kubernetesManager.getLastConditionDateTime(node).orElse(now);
+        log.debug("Marking recovered node {} #{}", getNodeName(node), getNodeLabel(node));
         labelRecoveredNode(node);
-        labelRecoveredNodeRun(node);
+        findRun(node).ifPresent(run -> {
+            labelRecoveredNodeRun(run);
+            logRecoveredNodeRun(run, timestamp);
+        });
     }
 
     private void labelRecoveredNode(final Node node) {
         kubernetesManager.removeNodeLabel(getNodeName(node), KubernetesConstants.UNAVAILABLE_NODE_LABEL);
     }
 
-    private void labelRecoveredNodeRun(final Node node) {
-        final long runId = NumberUtils.toLong(getNodeLabel(node));
-        if (runId <= 0) {
-            return;
-        }
-        labelRecoveredNodeRun(runId);
-    }
-
-    private void labelRecoveredNodeRun(final long runId) {
-        final Map<String, String> tags = pipelineRunManager.findRun(runId)
-                .map(PipelineRun::getTags)
-                .map(HashMap::new)
-                .orElseGet(HashMap::new);
+    private void labelRecoveredNodeRun(final PipelineRun run) {
+        final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
         tags.remove(NODE_UNAVAILABLE_TAG);
         getTimestampTag(NODE_UNAVAILABLE_TAG).ifPresent(tags::remove);
-        pipelineRunManager.updateTags(runId, new TagsVO(tags), true);
+        pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), true);
+    }
+
+    private void logRecoveredNodeRun(final PipelineRun run, final LocalDateTime timestamp) {
+        log(run, String.format("Node %s has been available since %s", run.getInstance().getNodeId(),
+                DATE_TIME_FORMATTER.format(timestamp)));
+    }
+
+    private Optional<PipelineRun> findRun(final Node node) {
+        return Optional.ofNullable(getNodeLabel(node))
+                .map(NumberUtils::toLong)
+                .filter(runId -> runId > 0)
+                .flatMap(pipelineRunManager::findRun);
     }
 
     private boolean isAssigned(final Node node, final Set<String> runs, final Set<String> pods) {
@@ -390,5 +401,12 @@ public class ScaleDownHandler {
                     return instanceRequest;
                 })
                 .collect(Collectors.toList());
+    }
+
+    private Optional<String> getTimestampTag(final String name) {
+        return Optional.of(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX)
+                .map(preferenceManager::getPreference)
+                .filter(StringUtils::isNotEmpty)
+                .map(suffix -> name + suffix);
     }
 }
