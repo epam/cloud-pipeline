@@ -795,10 +795,10 @@ public class SystemPreferences {
             "ui.personal.tools.permissions.restrictions",
             Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
-    public static final ObjectPreference<List<Object>> UI_SEARCH_COLUMNS_ORDER = new ObjectPreference<>(
+    public static final ObjectPreference<Object> UI_SEARCH_COLUMNS_ORDER = new ObjectPreference<>(
             "ui.search.columns.order",
-            Collections.emptyList(), new TypeReference<List<Object>>() {},
-            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+            Collections.emptyList(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
