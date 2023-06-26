@@ -476,6 +476,7 @@ export default class Tools extends React.Component {
       createPrivateGroupError: null
     }, async () => {
       const request = new ToolsGroupPrivateCreate(this.props.registryId);
+      const hide = message.loading('Creating personal group...', 0);
       await request.send({});
       if (!request.error) {
         await this.refresh();
@@ -484,6 +485,7 @@ export default class Tools extends React.Component {
         createPrivateGroupInProgress: false,
         createPrivateGroupError: request.error
       });
+      hide();
     });
   };
 
