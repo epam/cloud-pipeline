@@ -297,6 +297,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     activeAutoCompleteParameterKey: null,
     currentProjectMetadata: null,
     estimatedPrice: {
+      error: null,
       evaluated: false,
       pending: false,
       pricePerHour: 0,
@@ -956,6 +957,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
+          error: null,
           evaluated: false,
           pending: false,
           pricePerHour: 0,
@@ -1014,6 +1016,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
+          error: null,
           evaluated: false,
           pending: false,
           pricePerHour: 0,
@@ -1682,7 +1685,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
     }
     isSpot = `${isSpot}` === 'true';
-    if (!isNaN(disk) && type && !this.state.estimatedPrice.pending) {
+    if (!isNaN(disk) &&
+      type &&
+      !this.state.estimatedPrice.pending &&
+      !this.state.estimatedPrice.error
+    ) {
       const request = this.props.pipeline
         ? new PipelineRunEstimatedPrice(
           this.props.pipeline.id,
@@ -1692,7 +1699,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         : new PipelineRunEstimatedPrice();
       const estimatedPriceState = this.state.estimatedPrice;
       estimatedPriceState.pending = true;
-      this.setState({estimatedPrice: estimatedPriceState}, async () => {
+      this.setState({estimatedPrice: {...estimatedPriceState}}, async () => {
         await request.send({
           'instanceType': type,
           'instanceDisk': disk,
@@ -1713,8 +1720,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           estimatedPriceState.maximumPrice = adjustPrice(request.value.maximumTimePrice);
           estimatedPriceState.minimumPrice = adjustPrice(request.value.minimumTimePrice);
           estimatedPriceState.pricePerHour = adjustPrice(request.value.pricePerHour);
+        } else {
+          estimatedPriceState.error = request.error;
         }
-        this.setState({estimatedPrice: estimatedPriceState});
+        this.setState({estimatedPrice: {...estimatedPriceState}});
       });
     }
   };
@@ -5796,7 +5805,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (prevProps.allowedInstanceTypes.loaded &&
       !this.state.estimatedPrice.evaluated &&
-      !this.state.estimatedPrice.pending) {
+      !this.state.estimatedPrice.pending &&
+      !this.state.estimatedPrice.error
+    ) {
       this.evaluateEstimatedPrice({});
     }
   }
