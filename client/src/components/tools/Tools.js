@@ -209,7 +209,8 @@ export default class Tools extends React.Component {
       }
       return {
         name: this.filter,
-        tools
+        tools,
+        aggregatedFromFilters: true
       };
     }
     return this.groups.filter(g => `${g.id}` === `${this.props.groupId}` ||

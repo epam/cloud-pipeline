@@ -349,7 +349,8 @@ export default class DockerRegistriesActionsButton extends React.Component {
 
   _renderActionsMenu = () => {
     const registryActions = [];
-    const canEditGroup = roleModel.writeAllowed(this.props.group);
+    const canEditGroup = !this.props.group.aggregatedFromFilters &&
+      roleModel.writeAllowed(this.props.group);
     if (roleModel.writeAllowed(this.props.docker)) {
       registryActions.push(
         <MenuItem
