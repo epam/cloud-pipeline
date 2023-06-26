@@ -38,6 +38,7 @@ import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import lombok.SneakyThrows;
@@ -319,7 +320,7 @@ public class GitManagerTest extends AbstractManagerTest {
                 .withQueryParam(REF, equalTo(TEST_REVISION))
                 .withQueryParam(PATH, equalTo(DOCS + "/"))
                 .withQueryParam(RECURSIVE, equalTo(String.valueOf(false)))
-                .willReturn(okJson(with(tree)))
+                .willReturn(treeResponse(tree))
         );
         final GitTagEntry tag = new GitTagEntry();
         givenThat(
@@ -404,7 +405,7 @@ public class GitManagerTest extends AbstractManagerTest {
                 .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                 .withQueryParam(PATH, equalTo(DOCS))
                 .withQueryParam(RECURSIVE, equalTo(String.valueOf(true)))
-                .willReturn(okJson(with(tree)))
+                .willReturn(treeResponse(tree))
         );
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
         final Pipeline pipeline = testingPipeline();
@@ -494,7 +495,7 @@ public class GitManagerTest extends AbstractManagerTest {
         givenThat(
             get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                 .withQueryParam(PATH, equalTo(DOCS))
-                .willReturn(okJson(with(tree)))
+                .willReturn(treeResponse(tree))
         );
         givenThat(
                 get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
@@ -518,7 +519,7 @@ public class GitManagerTest extends AbstractManagerTest {
         givenThat(
                 get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
                         .withQueryParam(PATH, equalTo(DOCS))
-                        .willReturn(okJson(with(tree)))
+                        .willReturn(treeResponse(tree))
         );
         mockFileContentRequest(DOCS, GIT_MASTER_REPOSITORY, FILE_CONTENT);
         gitManager.createOrRenameFolder(pipeline.getId(), folder);
@@ -769,5 +770,9 @@ public class GitManagerTest extends AbstractManagerTest {
                         .willReturn(okJson(with(expectedCommit)))
         );
         return expectedCommit;
+    }
+
+    private ResponseDefinitionBuilder treeResponse(final List<GitRepositoryEntry> tree) {
+        return okJson(with(tree)).withHeader("X-Total", String.valueOf(tree.size()));
     }
 }
