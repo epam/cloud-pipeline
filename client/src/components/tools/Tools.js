@@ -56,7 +56,7 @@ const findGroupByName = (groups, name) => {
 };
 
 const TOP_USED_AMOUNT = 5;
-const PERSONAL_GROUP_ID = 'cp-personal-group';
+const PERSONAL_GROUP_ID = 'create-personal-group';
 
 @roleModel.authenticationInfo
 @inject('dockerRegistries', 'authenticatedUserInfo', 'preferences')
