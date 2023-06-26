@@ -107,7 +107,6 @@ function configure_dcv {
   pipe_log_info "Configuring DCV server" "$DCV_INSTALL_TASK"
   usermod -aG video dcv
   sed -i 's|#authentication="none"|authentication="none"|g' /etc/dcv/dcv.conf
-  sed -i -E "s|#web-port=.*|web-port=$CP_DCV_WEB_PORT|g" /etc/dcv/dcv.conf
 
 cat <<EOF >>/etc/dcv/dcv.conf
 [clipboard]
@@ -129,6 +128,10 @@ chmod +x /opt/dcv/extras/xfce4launch
 
 function run_dcv {
   pipe_log_info "Starting DCV server and waiting for boot up" "$DCV_INSTALL_TASK"
+
+  pipe_log_info "Placing dcv server on $CP_DCV_WEB_PORT port" "$DCV_INSTALL_TASK"
+  sed -i -E "s|.*web-port=.*|web-port=$CP_DCV_WEB_PORT|g" /etc/dcv/dcv.conf
+
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     systemctl start dcvserver
   else
