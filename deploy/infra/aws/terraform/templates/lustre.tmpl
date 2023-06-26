@@ -1,0 +1,6 @@
+#! /bin/bash
+
+sudo yum update -y
+sudo amazon-linux-extras install -y lustre2.10
+sudo mount -t lustre -o noatime,flock ${lustre_url} /opt
+echo "${lustre_url} /opt lustre noatime,flock,_netdev 0 0" >> /etc/fstab

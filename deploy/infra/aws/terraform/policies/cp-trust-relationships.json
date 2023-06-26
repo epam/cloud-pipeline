@@ -1,0 +1,12 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::${cp_account_id}:role/${cp_project}-Service"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+}
