@@ -662,20 +662,29 @@ def load_pods_for_runs_with_endpoints():
         all_pipeline_pods = Pod.objects(kube_api).filter(selector={'type': 'pipeline'})\
                                                  .filter(field_selector={"status.phase": "Running"})
         for pod in all_pipeline_pods.response['items']:
-                labels = pod['metadata']['labels']
-                if 'job-type' in labels and labels['job-type'] == 'Service':
-                        pods_with_endpoints.append(pod)
-                        continue
+                pod_env = None
                 if 'spec' in pod \
                         and pod['spec'] \
                         and 'containers' in pod['spec'] \
                         and pod['spec']['containers'] \
                         and 'env' in pod['spec']['containers'][0] \
                         and pod['spec']['containers'][0]['env']:
-                    pipeline_env_parameters = pod['spec']['containers'][0]['env']
+                                pod_env = pod['spec']['containers'][0]['env']
+
+                # Skip autoscaled cluster workers, they don't need endpoints
+                if pod_env:
+                        for env_var in pod_env:
+                                if env_var['name'] == 'cluster_role_type' and env_var['value'] == 'additional':
+                                        continue
+
+                labels = pod['metadata']['labels']
+                if 'job-type' in labels and labels['job-type'] == 'Service':
+                        pods_with_endpoints.append(pod)
+                        continue
+                if pod_env:
                     matched_sys_endpoints = list(filter(lambda env_var: env_var['name'] in SYSTEM_ENDPOINTS.keys()
                                                                         and match_sys_endpoint_value(env_var['value'], SYSTEM_ENDPOINTS[env_var["name"]]["value"]),
-                                                        pipeline_env_parameters))
+                                                        pod_env))
                     if matched_sys_endpoints:
                                 pods_with_endpoints.append(pod)
         return pods_with_endpoints
