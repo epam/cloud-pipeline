@@ -446,21 +446,24 @@ class LaunchVSForm extends React.Component {
               style={{
                 marginRight: 5
               }}
+              id="launch-vs-modal-run-custom-btn"
             >
-              Run custom
+              RUN CUSTOM
             </Button>
             <div>
               <Button
                 onClick={onClose}
+                id="launch-vs-modal-cancel-btn"
               >
-                Cancel
+                CANCEL
               </Button>
               <Button
                 type="primary"
                 disabled={!tool || error || pending}
                 onClick={this.handleLaunch}
+                id="launch-vs-modal-launch-btn"
               >
-                Launch
+                LAUNCH
               </Button>
             </div>
           </div>

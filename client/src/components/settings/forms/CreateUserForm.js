@@ -160,12 +160,12 @@ export default class CreateUserForm extends React.Component {
       <Row>
         <Button
           id="create-user-form-cancel-button"
-          onClick={this.props.onCancel}>Cancel</Button>
+          onClick={this.props.onCancel}>CANCEL</Button>
         <Button
           id="create-user-form-ok-button"
           type="primary"
           htmlType="submit"
-          onClick={this.handleSubmit}>Create</Button>
+          onClick={this.handleSubmit}>CREATE</Button>
       </Row>
     );
     const onClose = () => {

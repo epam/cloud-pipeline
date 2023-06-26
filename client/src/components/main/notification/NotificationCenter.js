@@ -518,6 +518,7 @@ export default class NotificationCenter extends React.Component {
               <Button
                 type="primary"
                 onClick={() => this.onCloseBlockingNotification(blockingNotification)}
+                id="notification-center-modal-confirm-btn"
               >
                 CONFIRM
               </Button>

@@ -81,16 +81,18 @@ class VersionedStorageDialog extends React.Component {
         <Button
           onClick={this.props.onCancel}
           disabled={pending}
+          id="create-versioned-storage-modal-cancel-btn"
         >
-          Cancel
+          CANCEL
         </Button>
         <Button
           type="primary"
           htmlType="submit"
           onClick={this.handleSubmit}
           disabled={pending}
+          id="create-versioned-storage-modal-create-btn"
         >
-          Create
+          CREATE
         </Button>
       </Row>
     );

@@ -230,6 +230,7 @@ class LifeCycleHistoryModal extends React.Component {
             <Button
               onClick={onOk}
               type="primary"
+              id="lifecycle-rules-history-modal-ok-btn"
             >
               OK
             </Button>

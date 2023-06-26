@@ -483,7 +483,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           <Row type="flex" justify="start">
             <Button
               id="edit-pipeline-delete-dialog-cancel-button"
-              onClick={this.closeDeleteDialog}>Cancel</Button>
+              onClick={this.closeDeleteDialog}>CANCEL</Button>
           </Row>
         </Col>
         <Col span={12}>
@@ -491,11 +491,11 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             <Button
               id="edit-pipeline-delete-dialog-unregister-button"
               type="danger"
-              onClick={() => this.onDeleteClicked(true)}>Unregister</Button>
+              onClick={() => this.onDeleteClicked(true)}>UNREGISTER</Button>
             <Button
               id="edit-pipeline-delete-dialog-delete-button"
               type="danger"
-              onClick={() => this.onDeleteClicked(false)}>Delete</Button>
+              onClick={() => this.onDeleteClicked(false)}>DELETE</Button>
           </Row>
         </Col>
       </Row>

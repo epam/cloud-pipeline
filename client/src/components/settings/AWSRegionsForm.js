@@ -1451,6 +1451,7 @@ class AWSRegionForm extends React.Component {
         <Modal
           title="Select user"
           onCancel={this.closeFindUserDialog}
+          cancelText="CANCEL"
           onOk={this.onSelectUser}
           visible={this.state.findUserVisible}>
           <AutoComplete
@@ -1473,6 +1474,7 @@ class AWSRegionForm extends React.Component {
         <Modal
           title="Select group"
           onCancel={this.closeFindGroupDialog}
+          cancelText="CANCEL"
           onOk={this.onSelectGroup}
           visible={this.state.findGroupVisible}>
           <AutoComplete

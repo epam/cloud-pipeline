@@ -86,10 +86,26 @@ export default class ConfigureHomePage extends localization.LocalizedReactCompon
         onCancel={this.props.onCancel}
         footer={
           <Row type="flex" justify="space-between">
-            <Button onClick={this.restoreDefaultLayoutClicked}>Restore default layout</Button>
+            <Button
+              onClick={this.restoreDefaultLayoutClicked}
+              id="configure-home-page-modal-restore-btn"
+            >
+              RESTORE DEFAULT LAYOUT
+            </Button>
             <Col>
-              <Button onClick={this.props.onCancel}>Cancel</Button>
-              <Button type="primary" onClick={this.onSave}>OK</Button>
+              <Button
+                onClick={this.props.onCancel}
+                id="configure-home-page-modal-cancel-btn"
+              >
+                CANCEL
+              </Button>
+              <Button
+                type="primary"
+                onClick={this.onSave}
+                id="configure-home-page-modal-ok-btn"
+              >
+                OK
+              </Button>
             </Col>
           </Row>
         }>

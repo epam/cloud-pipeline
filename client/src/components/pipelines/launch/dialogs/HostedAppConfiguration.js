@@ -217,8 +217,9 @@ class HostedAppConfigurationDialog extends React.Component {
                     <Button
                       type="danger"
                       onClick={onRemove}
+                      id="hosted-app-configure-dns-modal-remove-btn"
                     >
-                      Remove configuration
+                      REMOVE CONFIGURATION
                     </Button>
                   )
                   : '\u00A0'
@@ -228,16 +229,18 @@ class HostedAppConfigurationDialog extends React.Component {
               <Button
                 className={styles.button}
                 onClick={onClose}
+                id="hosted-app-configure-dns-modal-cancel-btn"
               >
-                Cancel
+                CANCEL
               </Button>
               <Button
                 disabled={validationError}
                 className={styles.button}
                 type="primary"
                 onClick={this.handleSave}
+                id="hosted-app-configure-dns-modal-save-btn"
               >
-                Save
+                SAVE
               </Button>
             </div>
           </div>

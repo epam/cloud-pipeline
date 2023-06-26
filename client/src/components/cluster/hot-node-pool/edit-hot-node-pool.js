@@ -1625,6 +1625,7 @@ class EditHotNodePool extends React.Component {
             <Button
               disabled={disabled}
               onClick={onCancel}
+              id="edit-hot-node-pool-modal-cancel-btn"
             >
               CANCEL
             </Button>
@@ -1632,6 +1633,7 @@ class EditHotNodePool extends React.Component {
               disabled={disabled}
               onClick={this.onSave}
               type="primary"
+              id="edit-hot-node-pool-modal-ok-btn"
             >
               {isNew ? 'CREATE' : 'SAVE'}
             </Button>

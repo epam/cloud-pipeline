@@ -734,15 +734,25 @@ export default class BucketBrowser extends React.Component {
           <Row type="flex" justify="space-between">
             <Col>
               <Button
-                onClick={() => this.onClearSelectionClicked()}>Clear selection</Button>
+                onClick={() => this.onClearSelectionClicked()}
+                id="bucket-browser-select-item-modal-clear-selection-btn"
+              >
+                CLEAR SELECTION
+              </Button>
             </Col>
             <Col className={styles.buttonsContainer}>
               <Button
-                onClick={() => this.onCancelClicked()}>Cancel</Button>
+                onClick={() => this.onCancelClicked()}
+                id="bucket-browser-select-item-modal-cancel-btn"
+              >
+                CANCEL
+              </Button>
               <Button
                 type="primary"
                 disabled={this.state.selectedItems.length === 0}
-                onClick={() => this.onSelectClicked()}>
+                onClick={() => this.onSelectClicked()}
+                id="bucket-browser-select-item-modal-ok-btn"
+              >
                 OK{
                   itemsSelectedCount > 0
                     ? (itemsSelectedCount > 1 ? ` (${itemsSelectedCount} items)` : ' (1 item)')
@@ -757,8 +767,9 @@ export default class BucketBrowser extends React.Component {
                       !this.state.bucket || DTS_ROOT_ITEM_TYPE === this.state.bucket.type
                     }
                     onClick={() => this.onSelectBucketClicked()}
+                    id="bucket-browser-select-item-modal-select-bucket-btn"
                   >
-                    Select bucket
+                    SELECT BUCKET
                   </Button>
                 )
               }

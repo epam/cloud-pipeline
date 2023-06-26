@@ -93,8 +93,20 @@ class CreateItemForm extends React.Component {
     const {getFieldDecorator, resetFields} = this.props.form;
     const modalFooter = this.props.pending ? false : (
       <Row>
-        <Button onClick={this.props.onCancel}>Cancel</Button>
-        <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>OK</Button>
+        <Button
+          onClick={this.props.onCancel}
+          id="versioned-storage-create-item-modal-cancel-btn"
+        >
+          CANCEL
+        </Button>
+        <Button
+          type="primary"
+          htmlType="submit"
+          onClick={this.handleSubmit}
+          id="versioned-storage-create-item-modal-ok-btn"
+        >
+          OK
+        </Button>
       </Row>
     );
     const onClose = () => {

@@ -48,7 +48,7 @@ export default class RegisterVersionFormDialog extends Component {
       <Row>
         <Button
           id="register-version-form-cancel-button"
-          onClick={this.props.onCancel}>Cancel</Button>
+          onClick={this.props.onCancel}>CANCEL</Button>
         <Button
           id="register-version-form-release-button"
           type="primary" htmlType="submit" onClick={this.handleSubmit}>RELEASE</Button>
@@ -60,7 +60,9 @@ export default class RegisterVersionFormDialog extends Component {
         closable={!this.props.pending}
         visible={this.props.visible}
         title={this.props.title}
-        onCancel={this.props.onCancel} footer={modalFooter}>
+        onCancel={this.props.onCancel}
+        footer={modalFooter}
+      >
         <Spin spinning={this.props.pending}>
           <Form className="register-version-form">
             <Form.Item

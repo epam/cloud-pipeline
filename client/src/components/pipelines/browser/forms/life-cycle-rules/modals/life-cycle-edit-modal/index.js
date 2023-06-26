@@ -366,13 +366,17 @@ class LifeCycleEditModal extends React.Component {
         style={{maxWidth: '1100px', top: 20}}
         footer={
           <Row type="flex" justify="end">
-            <Button onClick={this.onCancel}>
+            <Button
+              onClick={this.onCancel}
+              id="lifecycle-rules-edit-modal-cancel-btn"
+            >
               CANCEL
             </Button>
             <Button
               type="primary"
               onClick={this.handleSubmit}
               disabled={pending || !this.modified}
+              id="lifecycle-rules-edit-modal-save-btn"
             >
               SAVE
             </Button>

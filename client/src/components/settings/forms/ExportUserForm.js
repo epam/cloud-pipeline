@@ -102,8 +102,9 @@ export default function ExportUserForm ({
     <Button
       key="back"
       onClick={onCancel}
+      id="export-user-modal-cancel-btn"
     >
-      Cancel
+      CANCEL
     </Button>,
     <Button
       disabled={values.length === 0}
@@ -113,8 +114,9 @@ export default function ExportUserForm ({
         onSubmit && onSubmit(values, selectedMetadataKeys);
         onCancel && onCancel();
       }}
+      id="export-user-modal-download-csv-btn"
     >
-      Download CSV
+      DOWNLOAD CSV
     </Button>
   ];
 

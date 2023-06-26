@@ -2437,7 +2437,9 @@ export default class DataStorage extends React.Component {
           footer={
             <Button
               type="primary"
-              onClick={() => this.closeDownloadUrlModal(true)}>
+              onClick={() => this.closeDownloadUrlModal(true)}
+              id="data-storage-download-url-modal-ok-btn"
+            >
               OK
             </Button>
           }>
@@ -2541,7 +2543,7 @@ export default class DataStorage extends React.Component {
                 <Row type="flex" justify="start">
                   <Button
                     id="delete-bucket-item-modal-cancel-button"
-                    onClick={this.closeDeleteModal}>Cancel</Button>
+                    onClick={this.closeDeleteModal}>CANCEL</Button>
                 </Row>
               </Col>
               <Col span={16}>
@@ -2553,7 +2555,7 @@ export default class DataStorage extends React.Component {
                       this.closeDeleteModal();
                       this.setState({selectedItems: []});
                       this.afterDataStorageEdit();
-                    })}>Set deletion marker</Button>
+                    })}>SET DELETION MARKER</Button>
                   <Button
                     id="delete-bucket-item-modal-delete-from-bucket-button"
                     type="danger"
@@ -2561,7 +2563,7 @@ export default class DataStorage extends React.Component {
                       this.closeDeleteModal();
                       this.setState({selectedItems: []});
                       this.afterDataStorageEdit();
-                    })}>Delete from object storage</Button>
+                    })}>DELETE FROM OBJECT STORAGE</Button>
                 </Row>
               </Col>
             </Row>

@@ -644,6 +644,7 @@ class EditQuotaDialog extends React.Component {
                   type="danger"
                   disabled={disabled}
                   onClick={this.onRemove}
+                  id="quota-edit-modal-remove-btn"
                 >
                   REMOVE
                 </Button>
@@ -653,6 +654,7 @@ class EditQuotaDialog extends React.Component {
               <Button
                 onClick={onCancel}
                 disabled={disabled}
+                id="quota-edit-modal-cancel-btn"
               >
                 {this.isNewQuota ? 'CANCEL' : 'CLOSE'}
               </Button>
@@ -663,6 +665,7 @@ class EditQuotaDialog extends React.Component {
                     disabled={disabled || !modified || Object.keys(errors).length > 0}
                     onClick={this.onSaveClicked}
                     style={{marginLeft: 5}}
+                    id="quota-edit-modal-save-btn"
                   >
                     SAVE
                   </Button>

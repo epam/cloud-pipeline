@@ -111,8 +111,9 @@ class ConflictsDialog extends React.Component {
                   type="danger"
                   disabled={disabled}
                   onClick={this.onAbortClicked}
+                  id="vs-actions-conflicts-modal-cancel-btn"
                 >
-                  Cancel
+                  CANCEL
                 </Button>
               )
             }
@@ -123,8 +124,9 @@ class ConflictsDialog extends React.Component {
               type="primary"
               disabled={!resolved || disabled}
               onClick={this.onResolveClicked}
+              id="vs-actions-conflicts-modal-resolve-btn"
             >
-              Resolve
+              RESOLVE
             </Button>
           </div>
         )}
