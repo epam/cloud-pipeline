@@ -363,18 +363,26 @@ export default class EditEmailNotification extends React.Component {
               <Input />
             )}
           </Form.Item>
-          <Row type="flex" align="middle" style={{display: this.state.previewMode ? 'flex' : 'none'}}>
-            <Col style={{marginBottom: 5}}>Subject:</Col>
-            <Col style={{flex: 1}}>
+          <Row
+            type="flex"
+            align="middle"
+            style={{display: this.state.previewMode ? 'flex' : 'none'}}
+          >
+            <Col>
+              Subject:
+            </Col>
+            <Col
+              style={{
+                flex: 1,
+                marginBottom: 5
+              }}
+            >
               <EmailPreview
+                renderIntoDiv
                 style={{
-                  marginLeft: 5
-                }}
-                iFrameStyle={{
-                  height: 34,
-                  width: '100%',
-                  overflow: 'hidden',
-                  border: 'none'
+                  marginLeft: 5,
+                  borderTopLeftRadius: 0,
+                  borderTopRightRadius: 0
                 }}
                 value={this.props.form.getFieldValue('subject')} />
             </Col>
