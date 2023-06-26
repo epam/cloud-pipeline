@@ -584,16 +584,20 @@ export default class DataStorage extends React.Component {
         selectable: !i.deleteMarker,
         miew: !i.deleteMarker &&
           i.type.toLowerCase() === 'file' &&
-          i.path.toLowerCase().endsWith('.pdb'),
-        vsi: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
+          i.path.toLowerCase().endsWith('.pdb') &&
+          (!archived || restored),
+        vsi: !i.deleteMarker && i.type.toLowerCase() === 'file' &&
+          (!archived || restored) && (
           i.path.toLowerCase().endsWith('.vsi') ||
           i.path.toLowerCase().endsWith('.mrxs')
         ),
         hcs: !i.deleteMarker &&
           i.type.toLowerCase() === 'file' &&
-          fastCheckHCSPreviewAvailable({path: i.path, storageId}),
+          fastCheckHCSPreviewAvailable({path: i.path, storageId}) &&
+          (!archived || restored),
         documentPreview: !i.deleteMarker &&
-          documentPreviewAvailable(i),
+          documentPreviewAvailable(i) &&
+          (!archived || restored),
         archived,
         restored
       };
