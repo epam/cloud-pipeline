@@ -89,17 +89,21 @@ class DockerRegistryGroupsList extends React.Component {
     this.props.onNavigate && this.props.onNavigate(encodeURIComponent(id));
   };
 
+  onChangeExpandedState = (keys) => {
+    this.setState({
+      allGroupsExpanded: keys.length > 0
+    });
+  };
+
+  expandAllGroups = () => this.setState({allGroupsExpanded: true});
+
   renderFilterCard = group => {
     const {filter} = this.props;
     const isActive = filter === group.id;
     return (
-      <div
+      <Button
         key={group.id}
-        className={
-          classNames(
-            styles.cardContainer
-          )
-        }
+        className={classNames(styles.button, styles.cardContainer)}
         id={`group-${group.id}-filter`}
         onClick={() => this.onSelectGroup(group.id)}
       >
@@ -124,7 +128,7 @@ class DockerRegistryGroupsList extends React.Component {
             type="check"
           />
         ) : null}
-      </div>
+      </Button>
     );
   }
 
@@ -156,14 +160,6 @@ class DockerRegistryGroupsList extends React.Component {
     );
   };
 
-  onChangeExpandedState = (keys) => {
-    this.setState({
-      allGroupsExpanded: keys.length > 0
-    });
-  };
-
-  expandAllGroups = () => this.setState({allGroupsExpanded: true});
-
   render () {
     const {mode, filters, groupSearch} = this.props;
     if (mode === MODES.groups) {
@@ -190,7 +186,7 @@ class DockerRegistryGroupsList extends React.Component {
       );
     }
     return (
-      <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
+      <div className={styles.extendedContainer}>
         {
           (!groupSearch || groupSearch.length === 0) &&
           filters.groups.map(group => this.renderFilterCard(group))

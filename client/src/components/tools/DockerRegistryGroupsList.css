@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+.extended-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -43,7 +49,8 @@
   flex-wrap: nowrap;
   padding: 3px 20px;
   cursor: pointer;
-  min-height: 30px;
+  height: auto;
+  margin: 0;
 }
 
 .card {
@@ -53,10 +60,14 @@
 
 .card .heading {
   font-weight: bold;
+  line-height: 18px;
 }
 
 .card .comment {
   font-size: smaller;
+  line-height: 15px;
+  white-space: pre-line;
+  word-break: break-word;
 }
 
 .active-group-icon {
@@ -68,11 +79,6 @@
   max-height: 250px;
   overflow: auto;
   padding: 0 10px;
-}
-
-.collapse-container div[class="ant-collapse-content ant-collapse-content-active"] {
-  max-height: 250px;
-  overflow: auto;
 }
 
 .collapse-container div[class="ant-collapse-content-box"] {
