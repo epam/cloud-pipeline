@@ -203,14 +203,19 @@ class WebdavFileSystem extends FileSystem {
                 )
               );
             })
-            .catch(
-              utilities.rejectError(
+            .catch(error => {
+              const extraMessage = directoryCorrected
+                ? undefined
+                : 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you';
+              const regexp = /Request failed with status code 404/i;
+              const errorObject = regexp.test(error.message)
+                ? {message: `Folder ${directoryCorrected} not found`}
+                : error;
+              return utilities.rejectError(
                 reject,
-                directoryCorrected
-                  ? undefined
-                  : 'Typically, this means that you don\'t have any data storages available for remote access. Please contact the platform support to create them for you'
-              )
-            );
+                extraMessage
+              )(errorObject)
+            });
         });
     });
   }
