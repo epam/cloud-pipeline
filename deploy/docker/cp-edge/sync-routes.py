@@ -25,6 +25,7 @@ import time
 import urllib3
 
 CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
+CP_CAP_AUTOSCALE_SKIP_ENDPOINTS = 'CP_CAP_AUTOSCALE_SKIP_ENDPOINTS'
 
 try:
         from pykube.config import KubeConfig
@@ -662,29 +663,36 @@ def load_pods_for_runs_with_endpoints():
         all_pipeline_pods = Pod.objects(kube_api).filter(selector={'type': 'pipeline'})\
                                                  .filter(field_selector={"status.phase": "Running"})
         for pod in all_pipeline_pods.response['items']:
-                pod_env = None
+                pipeline_env_parameters = None
                 if 'spec' in pod \
                         and pod['spec'] \
                         and 'containers' in pod['spec'] \
                         and pod['spec']['containers'] \
                         and 'env' in pod['spec']['containers'][0] \
                         and pod['spec']['containers'][0]['env']:
-                                pod_env = pod['spec']['containers'][0]['env']
+                    pipeline_env_parameters = pod['spec']['containers'][0]['env']
+
 
                 # Skip autoscaled cluster workers, they don't need endpoints
-                if pod_env:
-                        for env_var in pod_env:
+                pod_is_autoscaled_worker = False
+                pod_skip_autoscaled_worker = True
+                if pipeline_env_parameters:
+                        for env_var in pipeline_env_parameters:
                                 if env_var['name'] == 'cluster_role_type' and env_var['value'] == 'additional':
-                                        continue
+                                        pod_is_autoscaled_worker = True
+                                if env_var['name'] == CP_CAP_AUTOSCALE_SKIP_ENDPOINTS and env_var['value'] == 'false':
+                                        pod_skip_autoscaled_worker = False
+                if pod_is_autoscaled_worker and not pod_skip_autoscaled_worker:
+                        continue
 
                 labels = pod['metadata']['labels']
                 if 'job-type' in labels and labels['job-type'] == 'Service':
                         pods_with_endpoints.append(pod)
                         continue
-                if pod_env:
+                if pipeline_env_parameters:
                     matched_sys_endpoints = list(filter(lambda env_var: env_var['name'] in SYSTEM_ENDPOINTS.keys()
                                                                         and match_sys_endpoint_value(env_var['value'], SYSTEM_ENDPOINTS[env_var["name"]]["value"]),
-                                                        pod_env))
+                                                        pipeline_env_parameters))
                     if matched_sys_endpoints:
                                 pods_with_endpoints.append(pod)
         return pods_with_endpoints
