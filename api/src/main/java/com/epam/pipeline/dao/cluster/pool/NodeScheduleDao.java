@@ -29,7 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -116,9 +119,11 @@ public class NodeScheduleDao extends NamedParameterJdbcDaoSupport {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(SCHEDULE_ID.name(), scheduleId);
             params.addValue(FROM_DAY_OF_WEEK.name(), entry.getFrom().getValue());
-            params.addValue(FROM_TIME.name(), entry.getFromTime());
+            params.addValue(FROM_TIME.name(), entry.getFromTime().toString().equals("00:00") ? LocalDateTime.MIN :
+                    entry.getFromTime());
             params.addValue(TO_DAY_OF_WEEK.name(), entry.getTo().getValue());
-            params.addValue(TO_TIME.name(), entry.getToTime());
+            params.addValue(TO_TIME.name(), entry.getToTime().toString().equals("00:00") ? LocalDateTime.MIN :
+                    entry.getToTime());
             return params;
         }
 
@@ -142,9 +147,11 @@ public class NodeScheduleDao extends NamedParameterJdbcDaoSupport {
         static ScheduleEntry parseScheduleEntry(final ResultSet rs) throws SQLException {
             final ScheduleEntry entry = new ScheduleEntry();
             entry.setFrom(DayOfWeek.of(rs.getInt(FROM_DAY_OF_WEEK.name())));
-            entry.setFromTime(rs.getTime(FROM_TIME.name()).toLocalTime());
+            final Time fromTime = rs.getTime(FROM_TIME.name());
+            entry.setFromTime(!rs.wasNull() ? fromTime.toLocalTime() : LocalTime.MIN);
             entry.setTo(DayOfWeek.of(rs.getInt(TO_DAY_OF_WEEK.name())));
-            entry.setToTime(rs.getTime(TO_TIME.name()).toLocalTime());
+            final Time toTime = rs.getTime(TO_TIME.name());
+            entry.setToTime(!rs.wasNull() ? toTime.toLocalTime() : LocalTime.MIN);
             return entry;
         }
 
