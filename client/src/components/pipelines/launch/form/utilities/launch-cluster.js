@@ -44,7 +44,8 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_LIMIT_MOUNTS
+  CP_CAP_LIMIT_MOUNTS,
+  CP_CAP_RESCHEDULE_RUN
 } from './parameters';
 import {getRunCapabilitiesSkippedParameters} from './run-capabilities';
 import {
@@ -128,11 +129,17 @@ export function getSkippedSystemParametersList (controller) {
       CP_CAP_AUTOSCALE_WORKERS,
       CP_CAP_AUTOSCALE_HYBRID,
       CP_CAP_AUTOSCALE_PRICE_TYPE,
+      CP_CAP_RESCHEDULE_RUN,
       ...getRunCapabilitiesSkippedParameters(),
       ...getGPUScalingSkippedParameters(controller.props.preferences)
     ];
   }
-  return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS, ...getRunCapabilitiesSkippedParameters()];
+  return [
+    CP_CAP_AUTOSCALE,
+    CP_CAP_AUTOSCALE_WORKERS,
+    CP_CAP_RESCHEDULE_RUN,
+    ...getRunCapabilitiesSkippedParameters()
+  ];
 }
 
 export function getAllSkippedSystemParametersList (preferences) {
