@@ -232,11 +232,14 @@ export default class DockerRegistriesActionsButton extends React.Component {
       createPrivateGroupInProgress: true,
       createPrivateGroupError: null
     }, async () => {
+      const hide = message.loading('Creating personal group...', 0);
       const request = new ToolsGroupPrivateCreate(this.props.registry.id);
       await request.send({});
       if (!request.error) {
         this.props.onRefresh && await this.props.onRefresh();
+        this.props.onNavigate && this.props.onNavigate(this.props.registry.id, request.value.id);
       }
+      hide();
       this.setState({
         createPrivateGroupInProgress: false,
         createPrivateGroupError: request.error
@@ -349,7 +352,9 @@ export default class DockerRegistriesActionsButton extends React.Component {
 
   _renderActionsMenu = () => {
     const registryActions = [];
-    const canEditGroup = roleModel.writeAllowed(this.props.group);
+    const canEditGroup = this.props.group &&
+      !this.props.group.aggregatedFromFilters &&
+      roleModel.writeAllowed(this.props.group);
     if (roleModel.writeAllowed(this.props.docker)) {
       registryActions.push(
         <MenuItem
