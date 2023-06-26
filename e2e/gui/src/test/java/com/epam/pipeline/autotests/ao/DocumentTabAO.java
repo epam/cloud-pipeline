@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,6 +118,19 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
         click(EDIT);
         $(byXpath("//textarea")).append(text);
         return this;
+    }
+
+    public DocumentTabAO updateReadMeFile(String description) {
+        click(EDIT);
+        $(byXpath("//textarea")).shouldBe(visible).setValue(description);
+        saveAndCommitWithMessage("test: Change ReadMe file");
+        sleep(3, SECONDS);
+        return this;
+    }
+
+    public String getDescriptionHtml() {
+        return  $(byClassName("markdown"))
+                .shouldBe(visible).innerHtml().replaceAll("\n", "");
     }
 
     public DocumentTabAO saveAndCommitWithMessage(String message) {
