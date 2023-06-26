@@ -387,7 +387,7 @@ def get_any_network_from_location(location):
 def get_disk_type(instance_type):
     disk_type = None
     for sku in compute_client.resource_skus.list():
-        if sku.locations[0].lower() == zone.lower() and sku.resource_type.lower() == "virtualmachines" \
+        if len(sku.locations) > 0 and sku.locations[0].lower() == zone.lower() and sku.resource_type.lower() == "virtualmachines" \
                 and sku.name.lower() == instance_type.lower():
             for capability in sku.capabilities:
                 if capability.name.lower() == "premiumio":
