@@ -100,11 +100,25 @@ class DataUsageHelper(object):
             if du_command.perform_on_cloud and _storage.type != "nfs":
                 summary = self.get_cloud_storage_summary(_storage, du_command.relative_path, du_command.depth)
             else:
-                summary = self.get_storage_summary(_storage.path, du_command.relative_path)
+                path, relative_path = self._get_paths(_storage.path, du_command.relative_path)
+                summary = self.get_storage_summary(path, relative_path)
             for path_summary in summary:
                 if path_summary[0] and path_summary[1]:
+                    if _storage.source_storage_id:
+                        path_summary[0] = "".join([path_summary[0], "(", _storage.identifier, ")"])
                     result.append(path_summary)
         return result
+
+    @classmethod
+    def _get_paths(cls, path, relative_path):
+        if relative_path:
+            return path, relative_path
+        else:
+            paths = path.split("/", 1)
+            path = paths[0]
+            if len(paths) == 2:
+                relative_path = paths[1] + ("" if paths[1].endswith("/") else "/")
+            return path, relative_path
 
     def get_storage_summary(self, storage_name, relative_path):
         path, usage = self.__get_storage_usage(storage_name, relative_path)
