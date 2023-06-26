@@ -86,3 +86,23 @@ export function getRoles (labels) {
   }
   return roles;
 }
+
+export function matchesCloudPipelineRoles (node) {
+  if (node && node.labels) {
+    return Object.keys(node.labels).some(key => {
+      const info = parseLabel(key, node.labels[key]);
+      return testRole(info.role, nodeRoles.cloudPipelineRole);
+    });
+  }
+  return false;
+}
+
+export function containsCPLabel (node, value) {
+  return matchesCloudPipelineRoles(node) &&
+  Object.keys(node.labels).some(key => {
+    const exec = /^CLOUD-PIPELINE\/(.+)$/i.exec(key);
+    if (exec && exec[1]) {
+      return exec[1].toLowerCase().search(value.trim().toLowerCase()) > -1;
+    }
+  });
+}

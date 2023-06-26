@@ -125,7 +125,7 @@ thead[class*="ant-table-thead"] .cluster-node-row-pipeline {
 .filter-popover-container {
   padding-bottom: 5px;
   border-radius: 4px;
-  min-width: 100px;
+  min-width: 200px;
 }
 
 .filter-actions-buttons-container {
