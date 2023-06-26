@@ -56,6 +56,7 @@ const findGroupByName = (groups, name) => {
 };
 
 const TOP_USED_AMOUNT = 5;
+const PERSONAL_GROUP_ID = 'cp-personal-group';
 
 @roleModel.authenticationInfo
 @inject('dockerRegistries', 'authenticatedUserInfo', 'preferences')
@@ -85,7 +86,7 @@ export default class Tools extends React.Component {
 
   @computed
   get isPrivate () {
-    return this.props.groupId === 'personal' ||
+    return this.props.groupId === PERSONAL_GROUP_ID ||
     (this.currentGroup && this.currentGroup.privateGroup);
   }
 
@@ -107,7 +108,12 @@ export default class Tools extends React.Component {
   @computed
   get filter () {
     const {groupId} = this.props;
-    if (typeof groupId === 'string' && groupId.length > 0 && isNaN(groupId)) {
+    if (
+      typeof groupId === 'string' &&
+      groupId.length > 0 &&
+      isNaN(groupId) &&
+      groupId !== PERSONAL_GROUP_ID
+    ) {
       return decodeURIComponent(groupId);
     }
     return null;
@@ -137,7 +143,7 @@ export default class Tools extends React.Component {
       ) {
         return [
           {
-            id: 'personal',
+            id: PERSONAL_GROUP_ID,
             name: 'personal',
             privateGroup: true,
             missing: true
@@ -207,7 +213,7 @@ export default class Tools extends React.Component {
       };
     }
     return this.groups.filter(g => `${g.id}` === `${this.props.groupId}` ||
-      (g.privateGroup && this.props.groupId === 'personal')
+      (g.privateGroup && this.props.groupId === PERSONAL_GROUP_ID)
     )[0];
   }
 
@@ -660,7 +666,7 @@ export default class Tools extends React.Component {
       }
     }
     const personalGroup = usePersonal
-      ? ((groups || []).filter(g => g.privateGroup)[0] || {id: 'personal'})
+      ? ((groups || []).filter(g => g.privateGroup)[0] || {id: PERSONAL_GROUP_ID})
       : null;
     return findGroupByName(groups, 'library') ||
       findGroupByName(groups, 'default') ||
