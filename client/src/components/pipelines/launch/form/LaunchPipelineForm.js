@@ -120,7 +120,8 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
+  CP_CAP_RESCHEDULE_RUN
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import AllowedInstancesCountWarning from
@@ -133,6 +134,9 @@ import {
   readGPUScalingPreference
 } from './utilities/enable-gpu-scaling';
 import {mapObservableNotification} from '../dialogs/job-notifications/job-notification';
+import RescheduleRunControl, {
+  rescheduleRunParameterValue
+} from './utilities/reschedule-run-control';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -403,6 +407,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
   @observable toolAllowSensitive = true;
+
+  @observable rescheduleRun = undefined;
+  @observable rescheduleRunInitialValue = undefined;
 
   @action
   formFieldsChanged = async () => {
@@ -1180,6 +1187,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: true
         };
       }
+      if (this.rescheduleRun !== undefined) {
+        payload[PARAMETERS][CP_CAP_RESCHEDULE_RUN] = {
+          type: 'boolean',
+          value: this.rescheduleRun
+        };
+      }
     }
     payload[PARAMETERS] = applyCapabilities(
       payload[PARAMETERS],
@@ -1386,6 +1399,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.params[CP_CAP_SYSTEMD_CONTAINER] = {
         type: 'boolean',
         value: true
+      };
+    }
+    if (this.rescheduleRun !== undefined) {
+      payload.params[CP_CAP_RESCHEDULE_RUN] = {
+        type: 'boolean',
+        value: !!this.rescheduleRun
       };
     }
     payload.params = applyCapabilities(
@@ -3521,6 +3540,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.toolCloudRegion = null;
     this.toolAllowSensitive = true;
     this.toolDefaultCmd = undefined;
+    this.rescheduleRun = undefined;
+    this.rescheduleRunInitialValue = undefined;
     this.setState({
       useDefaultCmd: false
     });
@@ -3557,6 +3578,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             } else {
               this.regionDisabledByToolSettings = false;
               this.toolCloudRegion = null;
+            }
+
+            if (this._toolSettings && this._toolSettings.loaded && this._toolSettings.value &&
+              this._toolSettings.value[0] && this._toolSettings.value[0].settings &&
+              this._toolSettings.value[0].settings[0].configuration) {
+              const {
+                parameters: toolParameters
+              } = this._toolSettings.value[0].settings[0].configuration;
+              const rescheduleRun = rescheduleRunParameterValue(toolParameters);
+              this.rescheduleRun = rescheduleRun;
+              this.rescheduleRunInitialValue = rescheduleRun;
+            } else {
+              this.rescheduleRun = undefined;
+              this.rescheduleRunInitialValue = undefined;
             }
 
             const defaultCmdRequest = new ToolDefaultCommand(im.id, version);
@@ -3681,6 +3716,53 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           </Select>
         )}
       </FormItem>
+    );
+  };
+
+  renderRescheduleRunControl = () => {
+    if (this.props.detached || this.props.editConfigurationMode) {
+      return undefined;
+    }
+    const {
+      rescheduleRun,
+      rescheduleRunInitialValue
+    } = this;
+    const onChange = (value) => {
+      this.rescheduleRun = value;
+      (this.formFieldsChanged)();
+    };
+    const disabled = rescheduleRunInitialValue !== undefined || (
+      this.regionDisabledByToolSettings ||
+      !!this.state.fireCloudMethodName ||
+      (this.props.readOnly && !this.props.canExecute) ||
+      (
+        this.props.allowedInstanceTypes &&
+        (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
+      ) ||
+      (!this._toolSettings || this._toolSettings.pending)
+    );
+    return (
+      <div
+        className={getFormItemClassName(styles.formItem, 'rescheduleRun')}
+      >
+        <div
+          className={styles.formItemLabelColumn}
+        >
+          {'\u00A0'}
+        </div>
+        <div
+          className={styles.formItemWrapperColumn}
+        >
+          <RescheduleRunControl
+            value={rescheduleRun}
+            disabled={disabled}
+            onChange={onChange}
+            checkbox
+          >
+            Allow reschedule to different region in case of insufficient capacity
+          </RescheduleRunControl>
+        </div>
+      </div>
     );
   };
 
@@ -5273,6 +5355,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         this.regionDisabledByToolSettings
                           ? hints.awsRegionRestrictedByToolSettingsHint
                           : hints.awsRegionHint
+                      )
+                    }
+                    {
+                      this.renderFormItemRow(
+                        this.renderRescheduleRunControl
                       )
                     }
                     {this.renderFormItemRow(this.renderCoresFormItem)}

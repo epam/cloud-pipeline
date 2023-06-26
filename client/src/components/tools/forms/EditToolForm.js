@@ -66,13 +66,11 @@ import {
   CP_CAP_KUBE,
   CP_CAP_DIND_CONTAINER,
   CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_MODULES,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_SINGULARITY,
-  CP_CAP_DESKTOP_NM
+  CP_CAP_RESCHEDULE_RUN
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
@@ -97,6 +95,9 @@ import {
 import {
   mapObservableNotification
 } from '../../pipelines/launch/dialogs/job-notifications/job-notification';
+import RescheduleRunControl, {
+  rescheduleRunParameterValue
+} from '../../pipelines/launch/form/utilities/reschedule-run-control';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -181,6 +182,7 @@ export default class EditToolForm extends React.Component {
     slurmEnabled: false,
     kubeEnabled: false,
     launchCluster: false,
+    rescheduleRun: undefined,
     runCapabilities: []
   };
 
@@ -324,6 +326,13 @@ export default class EditToolForm extends React.Component {
               name: CP_CAP_SYSTEMD_CONTAINER,
               type: 'boolean',
               value: true
+            });
+          }
+          if (this.state.rescheduleRun !== undefined) {
+            params.push({
+              name: CP_CAP_RESCHEDULE_RUN,
+              type: 'boolean',
+              value: this.state.rescheduleRun
             });
           }
           parameters = applyCapabilities(
@@ -511,6 +520,8 @@ export default class EditToolForm extends React.Component {
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
         state.kubeEnabled = props.configuration && kubeEnabled(props.configuration.parameters);
+        state.rescheduleRun = props.configuration &&
+          rescheduleRunParameterValue(props.configuration.parameters);
         state.autoScaledPriceType = props.configuration &&
           getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
@@ -843,6 +854,8 @@ export default class EditToolForm extends React.Component {
       slurmEnabled(this.props.configuration.parameters);
     const kubeEnabledValue = this.props.configuration &&
       kubeEnabled(this.props.configuration.parameters);
+    const rescheduleRunValue = this.props.configuration &&
+      rescheduleRunParameterValue(this.props.configuration.parameters);
     const autoScaledPriceTypeValue = this.props.configuration &&
       getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
@@ -872,6 +885,7 @@ export default class EditToolForm extends React.Component {
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
       !!kubeEnabledValue !== !!this.state.kubeEnabled ||
+      rescheduleRunValue !== this.state.rescheduleRun ||
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
@@ -1146,6 +1160,10 @@ export default class EditToolForm extends React.Component {
       });
     }
   };
+
+  onChangeRescheduleRun = (value) => this.setState({
+    rescheduleRun: value
+  });
 
   renderExecutionEnvironment = () => {
     const renderExecutionEnvironmentSection = () => {
@@ -1448,6 +1466,28 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
+              <Row
+                type="flex"
+                align="middle"
+                style={{marginBottom: 10}}
+              >
+                <Col xs={24} sm={{span: 18}}>
+                  <Row type="flex" justify="center">
+                    Allow reschedule to different region in case of insufficient capacity:
+                  </Row>
+                </Col>
+              </Row>
+              <Row type="flex" align="middle" style={{marginBottom: 30}}>
+                <Col xs={24} sm={{span: 12, offset: 6}}>
+                  <Row type="flex" justify="start">
+                    <RescheduleRunControl
+                      disabled={this.state.pending || this.props.readOnly}
+                      value={this.state.rescheduleRun}
+                      onChange={this.onChangeRescheduleRun}
+                    />
+                  </Row>
+                </Col>
+              </Row>
               <Form.Item
                 {...this.formItemLayout}
                 label="Run capabilities"
