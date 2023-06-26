@@ -75,6 +75,7 @@ public class ScaleDownHandler {
     private final PipelineRunCRUDService runCRUDService;
     private final PreferenceManager preferenceManager;
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void checkFreeNodes(final Set<String> scheduledRuns,
                                final KubernetesClient client,
                                final Set<String> pods) {
