@@ -99,7 +99,7 @@ export default class MetadataParameterInput extends React.Component {
               className={styles.pathType}
               onClick={this.showMetadataBrowser}
             >
-              <Icon type="folder" />
+              <Icon type="appstore-o" />
             </div>
           }
           placeholder="Select metadata"
