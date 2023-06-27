@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.manager.cluster;
 
-import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
-
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
@@ -37,6 +35,8 @@ import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.NodeStatus;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
@@ -68,6 +68,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -79,6 +80,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
 
 @Slf4j
 @Component
@@ -644,6 +647,48 @@ public class KubernetesManager {
         modifyNodeLabel(nodeName, labelName, labels -> labels.remove(labelName));
     }
 
+    private void modifyNodeLabel(String nodeName, String labelName, Consumer<Map<String, String>> actionOnLabel) {
+        if (StringUtils.isBlank(nodeName) || StringUtils.isBlank(labelName)) {
+            return;
+        }
+        try (KubernetesClient client = getKubernetesClient()) {
+            Node node = getNode(client, nodeName);
+
+            Map<String, String> labels = node.getMetadata().getLabels();
+
+            actionOnLabel.accept(labels);
+
+            node.getMetadata().setLabels(labels);
+            client.nodes().createOrReplace(node);
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    public Map<String, String> getNodeLabels(final KubernetesClient client, final String nodeName) {
+        if (StringUtils.isBlank(nodeName)) {
+            return Collections.emptyMap();
+        }
+        try {
+            return findNode(client, nodeName)
+                    .map(Node::getMetadata)
+                    .map(ObjectMeta::getLabels)
+                    .orElseGet(Collections::emptyMap);
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            return Collections.emptyMap();
+        }
+    }
+
+    private Node getNode(final KubernetesClient client, final String nodeName) {
+        return findNode(client, nodeName).orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                MessageConstants.ERROR_NODE_NOT_FOUND, nodeName)));
+    }
+
+    private Optional<Node> findNode(final KubernetesClient client, final String nodeName) {
+        return Optional.ofNullable(client.nodes().withName(nodeName).get());
+    }
+
     /**
      * Waits until node will be removed from Kubernetes cluster.
      *
@@ -669,26 +714,6 @@ public class KubernetesManager {
         } catch (InterruptedException e) {
             LOGGER.error(e.getMessage(), e);
             Thread.currentThread().interrupt();
-        }
-    }
-
-    private void modifyNodeLabel(String nodeName, String labelName, Consumer<Map<String, String>> actionOnLabel) {
-        if (StringUtils.isBlank(nodeName) || StringUtils.isBlank(labelName)) {
-            return;
-        }
-        try (KubernetesClient client = getKubernetesClient()) {
-            Node node = client.nodes().withName(nodeName).get();
-            Assert.notNull(node, messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND,
-                    node.getMetadata().getName()));
-
-            Map<String, String> labels = node.getMetadata().getLabels();
-
-            actionOnLabel.accept(labels);
-
-            node.getMetadata().setLabels(labels);
-            client.nodes().createOrReplace(node);
-        } catch (KubernetesClientException e) {
-            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -989,25 +1014,41 @@ public class KubernetesManager {
     }
 
     public boolean isNodeAvailable(final Node node) {
-        if (node == null) {
-            return false;
-        }
-        List<NodeCondition> conditions = node.getStatus().getConditions();
-        if (CollectionUtils.isEmpty(conditions)) {
-            return true;
-        }
-        String lastReason = conditions.get(0).getReason();
-        for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
-            if (lastReason.contains(reason)) {
-                log.debug("Node is out of order: {}", conditions);
-                return false;
-            }
-        }
-        return true;
+        return !isLastConditionUnavailable(node);
     }
 
     public boolean isNodeUnavailable(final Node node) {
-        return !isNodeAvailable(node);
+        return isLastConditionUnavailable(node);
+    }
+
+    private boolean isLastConditionUnavailable(final Node node) {
+        return getLastCondition(node)
+                .map(NodeCondition::getReason)
+                .map(lastReason -> {
+                    for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
+                        if (lastReason.contains(reason)) {
+                            log.debug("Node is out of order: {}", node.getStatus().getConditions());
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .orElse(true);
+    }
+
+    public Optional<LocalDateTime> getLastConditionDateTime(final Node node) {
+        return getLastCondition(node)
+                .map(NodeCondition::getLastHeartbeatTime)
+                .map(dateTime -> LocalDateTime.parse(dateTime, KubernetesConstants.KUBE_DATE_FORMATTER));
+    }
+
+    private Optional<NodeCondition> getLastCondition(final Node node) {
+        return Optional.ofNullable(node)
+                .map(Node::getStatus)
+                .map(NodeStatus::getConditions)
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .findFirst();
     }
 
     public Service createService(final String serviceName, final Map<String, String> labels,
