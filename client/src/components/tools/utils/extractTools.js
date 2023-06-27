@@ -63,37 +63,37 @@ export default function extractTools (groups = [], currentFilter) {
     sensitive,
     os,
     interactive,
-    gpu
+    gpu,
+    shared
   } = currentFilter.filters || {};
-  let tools = [];
-  if (my) {
-    const myGroup = groups.filter(g => g.privateGroup)[0];
-    tools = (myGroup || {}).tools || [];
-  } else if (personal) {
-    tools = groups
-      .filter(group => isPersonalGroup(group))
-      .reduce((acc, group) => [...acc, ...group.tools], []);
-  } else {
-    tools = (groups || [])
-      .reduce((acc, current) => {
-        acc.push(...(current.tools || []));
-        return acc;
-      }, []);
-  }
-  tools = tools.filter(tool => {
-    return (sensitive === undefined || sensitive === null
-      ? true
-      : tool.allowSensitive === sensitive
-    ) && (interactive === undefined || sensitive === null
-      ? true
-      : tool.endpoints && tool.endpoints.length > 0
-    ) && (gpu === undefined || gpu === null
-      ? true
-      : tool.gpuEnabled === gpu
-    ) && (os === undefined || os === null
-      ? true
-      : validateOS(tool, os)
-    );
-  });
-  return tools;
+  const tools = (groups || [])
+    .reduce((acc, current) => ([
+      ...acc,
+      ...(current.tools || []).map((aTool) => ({
+        ...aTool,
+        personal: isPersonalGroup(current),
+        my: current.privateGroup,
+        interactive: aTool.endpoints && aTool.endpoints.length > 0,
+        shared: isPersonalGroup(current) && !current.privateGroup
+      }))
+    ]), []);
+  const checkBooleanProperty = (tool, property, criteria) => typeof criteria === 'boolean'
+    ? !!(tool[property]) === criteria
+    : true;
+  const checkSensitive = (tool) => checkBooleanProperty(tool, 'allowSensitive', sensitive);
+  const checkInteractive = (tool) => checkBooleanProperty(tool, 'interactive', interactive);
+  const checkGPUEnabled = (tool) => checkBooleanProperty(tool, 'gpuEnabled', gpu);
+  const checkOS = (tool) => typeof os === 'string' && os.length > 0 ? validateOS(tool, os) : true;
+  const checkMy = (tool) => checkBooleanProperty(tool, 'my', my);
+  const checkPersonal = (tool) => checkBooleanProperty(tool, 'personal', personal);
+  const checkShared = (tool) => checkBooleanProperty(tool, 'shared', shared);
+  return tools.filter((tool) =>
+    checkSensitive(tool) &&
+    checkInteractive(tool) &&
+    checkGPUEnabled(tool) &&
+    checkOS(tool) &&
+    checkMy(tool) &&
+    checkPersonal(tool) &&
+    checkShared(tool)
+  );
 };
