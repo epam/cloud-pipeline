@@ -702,6 +702,10 @@ public class SystemPreferences {
             "ui.personal.tools.permissions.restrictions",
             Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final IntPreference UI_UPLOAD_CHUNK_COUNT = new IntPreference("ui.upload.chunk.count",
+            null, UI_GROUP, isNullOrGreaterThan(0));
+    public static final IntPreference UI_UPLOAD_CHUNK_SIZE = new IntPreference("ui.upload.chunk.size.mb", 
+            null, UI_GROUP, isNullOrGreaterThan(0));
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
