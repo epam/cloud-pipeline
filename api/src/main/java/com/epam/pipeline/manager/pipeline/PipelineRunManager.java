@@ -86,6 +86,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -95,7 +96,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -371,7 +371,7 @@ public class PipelineRunManager {
         validateCloudRegion(toolConfiguration, region);
         validateInstanceAndPriceTypes(configuration, pipeline, region, instanceType);
         final String instanceDisk = configuration.getInstanceDisk();
-        if (StringUtils.hasText(instanceDisk)) {
+        if (StringUtils.isNotBlank(instanceDisk)) {
             Assert.isTrue(NumberUtils.isNumber(instanceDisk) &&
                 Integer.parseInt(instanceDisk) > 0,
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, instanceDisk));
@@ -391,16 +391,10 @@ public class PipelineRunManager {
         PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, region, parentRun.orElse(null),
                 entityIds, configurationId, sensitive);
 
+        // If there is no podAssignPolicy, then run is scheduled to a dedicated node
         if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
-            log.debug(String.format("Setup run assign policy as run id for run: %d", run.getId()));
-            configuration.setPodAssignPolicy(
-                    RunAssignPolicy.builder()
-                            .selector(
-                                    RunAssignPolicy.PodAssignSelector.builder()
-                                            .label(KubernetesConstants.RUN_ID_LABEL)
-                                            .value(run.getId().toString()).build())
-                            .build()
-            );
+            log.debug(String.format("Configuring default pod assign policy for run #%d", run.getId()));
+            configuration.setPodAssignPolicy(getDefaultPodAssignPolicy(run));
         }
 
         configuration.getPodAssignPolicy()
@@ -429,7 +423,7 @@ public class PipelineRunManager {
 
     private void checkGPUInstance(final PipelineConfiguration configuration, final Long regionId) {
         final String instanceType = configuration.getInstanceType();
-        if (StringUtils.hasText(instanceType)) {
+        if (StringUtils.isNotBlank(instanceType)) {
             final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, regionId);
             if (instance.isPresent()) {
                 final InstanceOffer offer = instance.get();
@@ -443,6 +437,24 @@ public class PipelineRunManager {
             }
         }
         MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_COUNT);
+    }
+
+    private RunAssignPolicy getDefaultPodAssignPolicy(final PipelineRun run) {
+        return RunAssignPolicy.builder()
+                .selector(
+                        RunAssignPolicy.PodAssignSelector.builder()
+                                .label(KubernetesConstants.RUN_ID_LABEL)
+                                .value(run.getId().toString()).build())
+                .tolerances(Arrays.asList(
+                        RunAssignPolicy.PodAssignTolerance.builder()
+                                .label(KubernetesConstants.KUBE_UNREACHABLE_NODE_LABEL)
+                                .value(StringUtils.EMPTY)
+                                .build(),
+                        RunAssignPolicy.PodAssignTolerance.builder()
+                                .label(KubernetesConstants.KUBE_NOT_READY_NODE_LABEL)
+                                .value(StringUtils.EMPTY)
+                                .build()))
+                .build();
     }
 
     private AbstractCloudRegion resolveCloudRegion(final PipelineRun parentRun,
@@ -496,7 +508,7 @@ public class PipelineRunManager {
                                                        final PriceType priceType,
                                                        final Long regionId,
                                                        final boolean isMasterNode) {
-        Assert.isTrue(!StringUtils.hasText(instanceType)
+        Assert.isTrue(StringUtils.isBlank(instanceType)
                         || instanceOfferManager.isInstanceAllowed(instanceType, regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
         Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null, isMasterNode),
@@ -511,7 +523,7 @@ public class PipelineRunManager {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
         final ContextualPreferenceExternalResource toolResource =
                 new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
-        Assert.isTrue(!StringUtils.hasText(instanceType)
+        Assert.isTrue(StringUtils.isBlank(instanceType)
                         || instanceOfferManager.isToolInstanceAllowed(instanceType, toolResource,
                                                     regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
@@ -900,7 +912,7 @@ public class PipelineRunManager {
         run.setConfigurationId(configurationId);
         run.setExecutionPreferences(Optional.ofNullable(configuration.getExecutionPreferences())
                 .orElse(ExecutionPreferences.getDefault()));
-        if (StringUtils.hasText(configuration.getPrettyUrl())) {
+        if (StringUtils.isNotBlank(configuration.getPrettyUrl())) {
             validatePrettyUrlFree(configuration.getPrettyUrl());
             run.setPrettyUrl(configuration.getPrettyUrl());
         }
@@ -919,7 +931,7 @@ public class PipelineRunManager {
                             if (LIMIT_MOUNTS_NONE.equalsIgnoreCase(limitMounts)) {
                                 return Stream.empty();
                             }
-                            return Arrays.stream(StringUtils.commaDelimitedListToStringArray(limitMounts))
+                            return Arrays.stream(commaDelimitedListToStringArray(limitMounts))
                                          .map(Long::valueOf);
                         }
                 )
@@ -929,6 +941,10 @@ public class PipelineRunManager {
         }
         return dataStorageManager.getDatastoragesByIds(datastorageIds)
                 .stream().anyMatch(AbstractDataStorage::isSensitive);
+    }
+
+    private String[] commaDelimitedListToStringArray(final String limitMounts) {
+        return org.springframework.util.StringUtils.commaDelimitedListToStringArray(limitMounts);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -1423,7 +1439,7 @@ public class PipelineRunManager {
         }
         params.forEach(p -> p.setResolvedValue(p.getValue()));
         final List<PipelineRunParameter> paramsWithPossibleEnvVars = params.stream()
-                .filter(p -> org.apache.commons.lang3.StringUtils.isNotBlank(p.getValue()) &&
+                .filter(p -> StringUtils.isNotBlank(p.getValue()) &&
                         p.getValue().contains("$"))
                 .collect(Collectors.toList());
         if (CollectionUtils.isEmpty(paramsWithPossibleEnvVars)) {
@@ -1444,8 +1460,8 @@ public class PipelineRunManager {
                                             final String envVarName,
                                             final String envVarValue,
                                             final String parameter) {
-        if (!StringUtils.hasText(parameter) || !StringUtils.hasText(envVarName)
-                || !StringUtils.hasText(envVarValue)) {
+        if (StringUtils.isBlank(parameter) || StringUtils.isBlank(envVarName)
+                || StringUtils.isBlank(envVarValue)) {
             return parameter;
         }
         try {
