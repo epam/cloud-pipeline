@@ -63,7 +63,7 @@ export default class MetadataBrowser extends React.Component {
     currentMetadataEntity: PropTypes.array,
     readOnly: PropTypes.bool,
     hideExpansionExpression: PropTypes.bool,
-    selection: PropTypes.array,
+    selection: PropTypes.object,
     browseLibrary: PropTypes.bool,
     disableMetadataFolderSelection: PropTypes.bool
   };
@@ -371,6 +371,8 @@ export default class MetadataBrowser extends React.Component {
       folderId: parseInt(metadata.id, 10),
       selectedKeys: [`${ItemTypes.metadata}_${metadata.id}`],
       expandedKeys
+    }, () => {
+      this.updateInitialSelection(false);
     });
   };
 
@@ -598,6 +600,22 @@ export default class MetadataBrowser extends React.Component {
     );
   }
 
+  updateInitialSelection = (navigate = true) => {
+    if (this.props.selection && Object.keys(this.props.selection).length) {
+      const {entitiesIds, folderId, metadataClassName} = this.props.selection;
+      const selectionId = `${folderId}/metadata/${metadataClassName}`;
+      navigate && this.onSelectMetadata({
+        id: selectionId,
+        name: metadataClassName
+      });
+      this.setState({
+        selectedMetadata: this.state.metadataClassName === metadataClassName
+          ? entitiesIds
+          : []
+      });
+    }
+  };
+
   updateState = () => {
     const {initialFolderId, initialActiveFolderId} = this.props;
     const id = initialActiveFolderId || initialFolderId;
@@ -627,14 +645,7 @@ export default class MetadataBrowser extends React.Component {
         search: null
       });
     }
-    if (this.props.selection && Object.keys(this.props.selection).length) {
-      const {entitiesIds, folderId, metadataClassName} = this.props.selection;
-      this.onSelectMetadata({
-        id: `${folderId}/metadata/${metadataClassName}`,
-        name: metadataClassName
-      });
-      this.setState({selectedMetadata: entitiesIds});
-    }
+    this.updateInitialSelection(true);
   };
 
   componentDidMount () {
