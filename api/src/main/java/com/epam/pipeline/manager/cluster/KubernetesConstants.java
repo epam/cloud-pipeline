@@ -40,6 +40,7 @@ public final class KubernetesConstants {
     public static final String CLOUD_PROVIDER_LABEL = "cloud_provider";
     public static final String POD_WORKER_NODE_LABEL = "cluster_id";
     public static final String PAUSED_NODE_LABEL = "Paused";
+    public static final String UNAVAILABLE_NODE_LABEL = "Unavailable";
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
     public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
@@ -61,6 +62,8 @@ public final class KubernetesConstants {
     public static final String KUBERNETES_APP_LABEL = "k8s-app";
     public static final String KUBE_DNS_APP = "kube-dns";
     public static final String HYPHEN = "-";
+    public static final String KUBE_UNREACHABLE_NODE_LABEL = "node.kubernetes.io/unreachable";
+    public static final String KUBE_NOT_READY_NODE_LABEL = "node.kubernetes.io/not-ready";
 
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";

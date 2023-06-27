@@ -444,6 +444,8 @@ public class SystemPreferences {
         "cluster.kill.not.matching.nodes", true, CLUSTER_GROUP, pass);
     public static final BooleanPreference CLUSTER_ENABLE_AUTOSCALING = new BooleanPreference(
         "cluster.enable.autoscaling", true, CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES = new IntPreference(
+        "cluster.node.unavailable.grace.period.minutes", 30, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_AUTOSCALE_RATE = new IntPreference("cluster.autoscale.rate",
                                                     40000, CLUSTER_GROUP, isGreaterThan(1000));
     public static final IntPreference CLUSTER_MAX_SIZE = new IntPreference("cluster.max.size", 50,
