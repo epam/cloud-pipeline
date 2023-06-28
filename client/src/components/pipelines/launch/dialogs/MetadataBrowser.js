@@ -254,12 +254,11 @@ export default class MetadataBrowser extends React.Component {
 
   generateTree () {
     const {
-      pipelinesLibrary,
       tree,
       initialFolderId
     } = this.props;
     if (
-      pipelinesLibrary.loaded &&
+      tree.loaded &&
       !tree.pending &&
       !tree.error &&
       !this.rootItems
