@@ -39,6 +39,7 @@ public class MetadataDownloadManagerTest {
     private static final String TSV = "tsv";
     private static final String SAMPLE = "sample";
     private static final long FOLDER_ID = 10L;
+    private static final List<Long> NO_ENTITY_IDS = Collections.emptyList();
 
     private final MetadataEntityManager metadataEntityManager = mock(MetadataEntityManager.class);
     private final FolderManager folderManager = mock(FolderManager.class);
@@ -51,7 +52,7 @@ public class MetadataDownloadManagerTest {
     public void getInputStreamShouldThrowIfFolderDoesNotExist() {
         when(folderManager.load(FOLDER_ID)).thenThrow(new IllegalArgumentException());
 
-        manager.getInputStream(FOLDER_ID, SAMPLE, TSV);
+        manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -59,7 +60,7 @@ public class MetadataDownloadManagerTest {
         when(metadataEntityManager.loadMetadataEntityByClassNameAndFolderId(FOLDER_ID, SAMPLE))
                 .thenReturn(Collections.emptyList());
 
-        manager.getInputStream(FOLDER_ID, SAMPLE, TSV);
+        manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -67,7 +68,7 @@ public class MetadataDownloadManagerTest {
         final List<MetadataEntity> entities = Collections.singletonList(new MetadataEntity());
         when(metadataEntityManager.loadMetadataEntityByClassNameAndFolderId(FOLDER_ID, SAMPLE)).thenReturn(entities);
 
-        manager.getInputStream(FOLDER_ID, SAMPLE, "unsupportedFileFormat");
+        manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, "unsupportedFileFormat");
     }
 
     @Test
@@ -77,7 +78,7 @@ public class MetadataDownloadManagerTest {
         final MetadataWriter metadataWriter = mock(MetadataWriter.class);
         when(metadataWriterProvider.getMetadataWriter(any(), any())).thenReturn(metadataWriter);
 
-        manager.getInputStream(FOLDER_ID, SAMPLE, TSV);
+        manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV);
 
         verify(metadataWriter).writeEntities(eq(SAMPLE), eq(entities));
     }
@@ -92,7 +93,7 @@ public class MetadataDownloadManagerTest {
         doAnswer(invocation -> writeMessageAndReturnNothing(writerCaptor.getValue(), "message"))
                 .when(metadataWriter).writeEntities(any(), any());
 
-        final InputStream actualInputStream = manager.getInputStream(FOLDER_ID, SAMPLE, TSV);
+        final InputStream actualInputStream = manager.getInputStream(FOLDER_ID, SAMPLE, NO_ENTITY_IDS, TSV);
 
         Assert.assertEquals("message", inputStreamAsString(actualInputStream));
     }
