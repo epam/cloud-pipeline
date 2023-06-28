@@ -22,7 +22,6 @@ import {Alert, Button, Col, Icon, Input, Modal, Row, Select, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import Metadata from '../../browser/Metadata';
 import MetadataFolder from '../../browser/MetadataFolder';
-import LoadingView from '../../../special/LoadingView';
 import {
   expandItem,
   formatTreeItems,
@@ -491,79 +490,79 @@ export default class MetadataBrowser extends React.Component {
     this.setState({expandedKeys, search: e});
   };
 
-  render () {
-    let content = <LoadingView />;
+  renderContent = () => {
     if (!this.props.tree.pending && this.props.tree.error) {
-      content = <Alert message="Error retrieving library" type="error" />;
-    } else if (!this.props.tree.pending) {
-      let listingContent;
-      if (this.state.isMetadataFolder) {
-        listingContent = (
-          <MetadataFolder
+      return <Alert message="Error retrieving library" type="error" />;
+    }
+    let listingContent;
+    if (this.state.isMetadataFolder) {
+      listingContent = (
+        <MetadataFolder
+          id={this.state.folderId}
+          onNavigate={this.onSelectItem}
+          onSelectItem={this.onSelectMetadataEntityItem}
+          selection={this.state.selectedMetadataClassEntity}
+          selectionAvailable={!this.props.disableMetadataFolderSelection}
+          hideUploadMetadataBtn
+        />
+      );
+    } else if (this.state.isMetadata && this.state.metadataClassName) {
+      listingContent = (
+        <div style={{height: 450}}>
+          <Metadata
             id={this.state.folderId}
-            onNavigate={this.onSelectItem}
-            onSelectItem={this.onSelectMetadataEntityItem}
-            selection={this.state.selectedMetadataClassEntity}
-            selectionAvailable={!this.props.disableMetadataFolderSelection}
+            class={this.state.metadataClassName}
+            initialSelection={this.state.selectedMetadata}
+            onSelectItems={this.onSelectMetadataItems}
             hideUploadMetadataBtn
+            readOnly={this.props.readOnly}
           />
-        );
-      } else if (this.state.isMetadata && this.state.metadataClassName) {
-        listingContent = (
-          <div style={{height: 450}}>
-            <Metadata
-              id={this.state.folderId}
-              class={this.state.metadataClassName}
-              initialSelection={this.state.selectedMetadata}
-              onSelectItems={this.onSelectMetadataItems}
-              hideUploadMetadataBtn
-              readOnly={this.props.readOnly}
-            />
-          </div>
-        );
-      } else {
-        listingContent = (
-          <Folder
-            id={this.state.folderId}
-            treatAsRootId={this.props.initialFolderId}
-            onSelectItem={this.onSelectItem}
-            listingMode
-            readOnly
-            supportedTypes={[ItemTypes.metadataFolder, ItemTypes.metadata]} />
-        );
-      }
-      content = (
-        <SplitPane
-          split="vertical"
-          minSize={200}
-          pane2Style={{
-            overflowY: 'auto',
-            overflowX: 'hidden'
-          }}
-          resizerClassName="cp-split-panel-resizer"
-          resizerStyle={{
-            width: 3,
-            margin: '0 5px',
-            cursor: 'col-resize',
-            boxSizing: 'border-box',
-            backgroundClip: 'padding',
-            zIndex: 1
-          }}>
-          <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-            <Row>
-              <Input.Search onSearch={this.onSearchChanged} />
-            </Row>
-            <div style={{flex: 1, overflowY: 'auto', overflowX: 'hidden'}}>
-              {this.generateTree()}
-            </div>
-          </div>
-          <div>
-            {listingContent}
-          </div>
-        </SplitPane>
+        </div>
+      );
+    } else {
+      listingContent = (
+        <Folder
+          id={this.state.folderId}
+          treatAsRootId={this.props.initialFolderId}
+          onSelectItem={this.onSelectItem}
+          listingMode
+          readOnly
+          supportedTypes={[ItemTypes.metadataFolder, ItemTypes.metadata]} />
       );
     }
+    return (
+      <SplitPane
+        split="vertical"
+        minSize={200}
+        pane2Style={{
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
+        resizerClassName="cp-split-panel-resizer"
+        resizerStyle={{
+          width: 3,
+          margin: '0 5px',
+          cursor: 'col-resize',
+          boxSizing: 'border-box',
+          backgroundClip: 'padding',
+          zIndex: 1
+        }}>
+        <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+          <Row>
+            <Input.Search onSearch={this.onSearchChanged} />
+          </Row>
+          <div style={{flex: 1, overflowY: 'auto', overflowX: 'hidden'}}>
+            {this.generateTree()}
+          </div>
+        </div>
+        <div>
+          {listingContent}
+        </div>
+      </SplitPane>
+    );
+  };
 
+  render () {
     return (
       <Modal
         width="80%"
@@ -591,9 +590,10 @@ export default class MetadataBrowser extends React.Component {
             </Col>
           </Row>
         }
-        visible={this.props.visible}>
+        visible={this.props.visible}
+      >
         <Row style={{height: 450}}>
-          {content}
+          {this.renderContent()}
         </Row>
         {this.renderExpansionExpression()}
       </Modal>
