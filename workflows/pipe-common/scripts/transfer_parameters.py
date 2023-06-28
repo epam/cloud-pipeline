@@ -186,8 +186,17 @@ class PathType(object):
 
 class ParameterType(object):
     INPUT_PARAMETER = 'input'
+    METADATA_PARAMETER = 'metadata'
     COMMON_PARAMETER = 'common'
     OUTPUT_PARAMETER = 'output'
+
+
+class RunParameter:
+
+    def __init__(self, name, value, type):
+        self.name = name
+        self.value = value
+        self.type = type
 
 
 class LocalizedPath:
@@ -209,6 +218,16 @@ class RemoteLocation:
         self.type = type
         self.paths = paths
         self.delimiter = delimiter
+
+
+class MetadataLocation:
+
+    def __init__(self, param, folder_id, entity_class, entity_ids, local_path):
+        self.param = param
+        self.folder_id = folder_id
+        self.entity_class = entity_class
+        self.entity_ids = entity_ids
+        self.local_path = local_path
 
 
 def split(list, n):
@@ -267,11 +286,26 @@ class InputDataTask:
     def run(self):
         Logger.info('Starting localization of remote data...', task_name=self.task_name)
         try:
+            Logger.info('Processing metadata parameters...', task_name=self.task_name)
+            metadata_locations = list(self.find_metadata_locations({ParameterType.METADATA_PARAMETER}))
+            if not metadata_locations:
+                Logger.info('No metadata sources found', task_name=self.task_name)
+            else:
+                if self.is_upload:
+                    for location in metadata_locations:
+                        Logger.info('Downloading metadata entities for folder #{} ({} {})...',
+                                    location.entity_class, location.folder_id, location.entity_ids)
+                        self.api.download_metadata_entities(output_path=location.local_path,
+                                                            folder_id=location.folder_id,
+                                                            entity_class=location.entity_class,
+                                                            entity_ids=location.entity_ids,
+                                                            file_format='csv')
+            Logger.info('Processing remote parameters...', task_name=self.task_name)
             dts_registry = self.fetch_dts_registry()
             parameter_types = {ParameterType.INPUT_PARAMETER, ParameterType.COMMON_PARAMETER} if self.is_upload else \
                 {ParameterType.OUTPUT_PARAMETER}
-            remote_locations = self.find_remote_locations(dts_registry, parameter_types)
-            if len(remote_locations) == 0:
+            remote_locations = list(self.find_remote_locations(dts_registry, parameter_types))
+            if not remote_locations:
                 Logger.info('No remote sources found', task_name=self.task_name)
             else:
                 dts_locations = [path for location in remote_locations
@@ -279,17 +313,6 @@ class InputDataTask:
                 if self.is_upload:
                     self.transfer_dts(dts_locations, dts_registry)
                     self.localize_data(remote_locations)
-                    if self.report_file:
-                        with open(self.report_file, 'w') as report:
-                            for location in remote_locations:
-                                env_name = location.env_name
-                                original_value = location.original_value
-                                localized_value = location.delimiter.join(
-                                    [os.path.join(path.local_path, path.suffix) if path.suffix else path.local_path 
-                                    for path in location.paths]
-                                )
-                                report.write('export {}="{}"\n'.format(env_name, localized_value))
-                                report.write('export {}="{}"\n'.format(env_name + '_ORIGINAL', original_value))
                 else:
                     rule_patterns = DataStorageRule.read_from_file(self.rules)
                     rules = []
@@ -298,6 +321,21 @@ class InputDataTask:
                             rules.append(rule.file_mask)
                     self.localize_data(remote_locations, rules=rules)
                     self.transfer_dts(dts_locations, dts_registry, rules=rules)
+            if self.is_upload and self.report_file:
+                Logger.info('Writing report file {}...'.format(self.report_file), task_name=self.task_name)
+                with open(self.report_file, 'w') as report:
+                    for location in metadata_locations:
+                        report.write('export {}="{}"\n'.format(location.param.name, location.local_path))
+                        report.write('export {}="{}"\n'.format(location.param.name + '_ORIGINAL', location.param.value))
+                    for location in remote_locations:
+                        env_name = location.env_name
+                        original_value = location.original_value
+                        localized_value = location.delimiter.join(
+                            [os.path.join(path.local_path, path.suffix) if path.suffix else path.local_path
+                             for path in location.paths]
+                        )
+                        report.write('export {}="{}"\n'.format(env_name, localized_value))
+                        report.write('export {}="{}"\n'.format(env_name + '_ORIGINAL', original_value))
             Logger.success('Finished localization of remote data', task_name=self.task_name)
         except BaseException as e:
             Logger.fail('Localization of remote data failed due to exception: %s' % e.message, task_name=self.task_name)
@@ -315,41 +353,59 @@ class InputDataTask:
                 result[prefix] = registry['url']
         return result
 
-    def find_remote_locations(self, dts_registry, parameter_types):
-        remote_locations = []
-        for env in os.environ:
-            param_type_name = env + self.env_suffix
-            if os.environ[env] and param_type_name in os.environ:
-                param_type = os.environ[param_type_name]
-                if param_type in parameter_types:
-                    value = os.environ[env].strip()
-                    resolved_value = replace_all_system_variables_in_path(value)
-                    Logger.info('Found remote parameter %s (%s) with type %s' % (resolved_value, value, param_type),
-                                task_name=self.task_name)
-                    original_paths = [resolved_value]
-                    delimiter = ''
-                    for supported_delimiter in VALUE_DELIMITERS:
-                        if resolved_value.find(supported_delimiter) != -1:
-                            original_paths = re.split(supported_delimiter, resolved_value)
-                            delimiter = supported_delimiter
-                            break
-                    # Strip spaces, which may arise if the parameter was splitted by comma
-                    # e.g. "s3://bucket1/f1, s3://bucket2/f2" will be splitted into
-                    # "s3://bucket1/f1"
-                    # " s3://bucket2/f2"
-                    original_paths = map(str.strip, original_paths)
-                    paths = []
-                    for path in original_paths:
-                        if self.match_dts_path(path, dts_registry):
-                            paths.append(self.build_dts_path(path, dts_registry, param_type))
-                        elif self.match_cloud_path(path):
-                            paths.append(self.build_cloud_path(path, param_type))
-                        elif self.match_ftp_or_http_path(path):
-                            paths.append(self.build_ftp_or_http_path(path, param_type))
-                    if len(paths) != 0:
-                        remote_locations.append(RemoteLocation(env, resolved_value, param_type, paths, delimiter))
+    def find_remote_locations(self, dts_registry, param_types):
+        for param in self.find_params(param_types):
+            resolved_value = replace_all_system_variables_in_path(param.value)
+            Logger.info('Found remote parameter %s (%s) with type %s' % (resolved_value, param.value, param.type),
+                        task_name=self.task_name)
+            original_paths = [resolved_value]
+            delimiter = ''
+            for supported_delimiter in VALUE_DELIMITERS:
+                if resolved_value.find(supported_delimiter) != -1:
+                    original_paths = re.split(supported_delimiter, resolved_value)
+                    delimiter = supported_delimiter
+                    break
+            # Strip spaces, which may arise if the parameter was splitted by comma
+            # e.g. "s3://bucket1/f1, s3://bucket2/f2" will be splitted into
+            # "s3://bucket1/f1"
+            # " s3://bucket2/f2"
+            original_paths = map(str.strip, original_paths)
+            paths = []
+            for path in original_paths:
+                if self.match_dts_path(path, dts_registry):
+                    paths.append(self.build_dts_path(path, dts_registry, param.type))
+                elif self.match_cloud_path(path):
+                    paths.append(self.build_cloud_path(path, param.type))
+                elif self.match_ftp_or_http_path(path):
+                    paths.append(self.build_ftp_or_http_path(path, param.type))
+            if paths:
+                yield RemoteLocation(param.name, resolved_value, param.type, paths, delimiter)
 
-        return remote_locations
+    def find_metadata_locations(self, param_types):
+        for param in self.find_params(param_types):
+            Logger.info('Found metadata parameter %s=%s' % (param.name, param.value), task_name=self.task_name)
+            try:
+                folder_id, entity_class, entity_ids = param.value.split(':', 2)
+            except Exception:
+                Logger.warn('Metadata parameter value is malformed. The following format is expected: '
+                            '<folder id>:<class name>:<id1,id2,...>')
+                continue
+            yield MetadataLocation(param=param, folder_id=folder_id, entity_class=entity_class, entity_ids=entity_ids,
+                                   local_path=os.path.join(self.input_dir, param.name + '.metadata.csv'))
+
+    def find_params(self, param_types=None):
+        param_types = param_types or ()
+        for param_name in os.environ:
+            param_type = os.getenv(param_name + self.env_suffix)
+            if not param_type:
+                continue
+            if param_type not in param_types:
+                continue
+            param_value = os.getenv(param_name)
+            if not param_value:
+                continue
+            param_value = param_value.strip()
+            yield RunParameter(name=param_name, value=param_value, type=param_type)
 
     @staticmethod
     def match_ftp_or_http_path(path):
