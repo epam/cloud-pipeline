@@ -211,6 +211,7 @@ function makeCurrentOrderSort (array) {
 export default class Metadata extends React.Component {
   static propTypes = {
     onSelectItems: PropTypes.func,
+    onNavigate: PropTypes.func,
     initialSelection: PropTypes.array,
     hideUploadMetadataBtn: PropTypes.bool,
     readOnly: PropTypes.bool
@@ -2625,6 +2626,7 @@ export default class Metadata extends React.Component {
               icon="appstore-o"
               iconClassName={styles.editableControl}
               subject={this.props.folder.value}
+              onNavigate={this.props.onNavigate}
             />
           </div>
           <Input.Search

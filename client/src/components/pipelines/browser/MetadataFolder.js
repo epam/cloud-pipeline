@@ -252,7 +252,7 @@ export default class MetadataFolder extends React.Component {
   navigate = (item) => {
     if (this.props.onNavigate) {
       this.props.onNavigate(item);
-    } else {
+    } else if (item && typeof item.url === 'function') {
       this.props.router.push(item.url());
     }
   };
@@ -439,6 +439,7 @@ export default class MetadataFolder extends React.Component {
               icon="appstore-o"
               iconClassName={styles.editableControl}
               subject={folder.value}
+              onNavigate={this.navigate}
             />
           </Col>
           <Col className={styles.currentFolderActions}>

@@ -513,6 +513,7 @@ export default class MetadataBrowser extends React.Component {
             class={this.state.metadataClassName}
             initialSelection={this.state.selectedMetadata}
             onSelectItems={this.onSelectMetadataItems}
+            onNavigate={this.onSelectItem}
             hideUploadMetadataBtn
             readOnly={this.props.readOnly}
           />
