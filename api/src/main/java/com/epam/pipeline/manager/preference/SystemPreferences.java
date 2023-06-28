@@ -786,6 +786,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<Object>> UI_RUNS_FILTERS = new ObjectPreference<>(
             "ui.runs.filters", Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final ObjectPreference<Object> UI_RUNS_OWNERS_FILTERS = new ObjectPreference<>(
+            "ui.runs.owners.filter", Collections.emptyList(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
     public static final ObjectPreference<Map<String, Object>> UI_TOOLS_FILTERS = new ObjectPreference<>(
             "ui.tools.filters", Collections.emptyMap(), new TypeReference<Map<String, Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
