@@ -20,6 +20,7 @@ import DataStorageTagsUpdate from '../dataStorage/tags/DataStorageTagsUpdate';
 import fetchTempCredentials from './fetch-temp-credentials';
 import displaySize from '../../utils/displaySize';
 import auditStorageAccessManager from '../../utils/audit-storage-access';
+import preferences from '../preferences/PreferencesLoad';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -27,9 +28,8 @@ const GB = 1024 * MB;
 const TB = 1024 * GB;
 const S3_MAX_FILE_SIZE_TB = 5;
 
-const UPLOAD_CONCURRENCY_LIMIT = 9;
-const S3_MIN_UPLOAD_CHUNK_SIZE = 5 * MB;
-const S3_MAX_UPLOAD_CHUNKS_COUNT = 10000;
+const UPLOAD_CONCURRENCY_LIMIT = 5;
+const S3_MIN_UPLOAD_CHUNK_SIZE_MB = 5;
 
 const MAX_FILE_SIZE = S3_MAX_FILE_SIZE_TB * TB;
 const MAX_FILE_SIZE_DESCRIPTION = displaySize(MAX_FILE_SIZE, false);
@@ -62,6 +62,15 @@ AWS.util.update(AWS.S3.prototype, {
   }
 });
 // ====================================================================
+const SECOND = 1000;
+const MINUTE = 60 * SECOND;
+
+AWS.config.update({
+  httpOptions: {
+    timeout: 10 * MINUTE, // 10 minutes
+    connectTimeout: 2 * MINUTE // 2 minutes
+  }
+});
 
 class S3Storage {
   _s3;
@@ -219,7 +228,7 @@ class S3Storage {
     return upload;
   };
 
-  doUpload = (file, options, callbacks) => {
+  doUpload = async (file, options, callbacks) => {
     if (this.storage) {
       const path = [this.prefix, file.name].filter((o) => o.length).join('/');
       auditStorageAccessManager.reportWriteAccess({
@@ -239,10 +248,16 @@ class S3Storage {
       setAbort,
       setMultipartUploadParts
     } = callbacks;
+    await preferences.fetchIfNeededOrWait();
+    const chunkCountPreference = preferences.uiUploadChunkCount;
+    const chunkSizePreference = Math.max(
+      S3_MIN_UPLOAD_CHUNK_SIZE_MB,
+      (preferences.uiUploadChunkSizeMB || S3_MIN_UPLOAD_CHUNK_SIZE_MB)
+    ) * MB;
     const chunkSize =
-      Math.ceil(file.size / S3_MIN_UPLOAD_CHUNK_SIZE) > S3_MAX_UPLOAD_CHUNKS_COUNT
-        ? Math.ceil(file.size / S3_MAX_UPLOAD_CHUNKS_COUNT)
-        : S3_MIN_UPLOAD_CHUNK_SIZE;
+      Math.ceil(file.size / chunkSizePreference) > chunkCountPreference
+        ? Math.ceil(file.size / chunkCountPreference)
+        : chunkSizePreference;
     const upload = (uploadID, part = 0) => {
       const chunks = [];
       let last = false;
@@ -401,17 +416,10 @@ class S3Storage {
     };
     if (currentUploadID && currentPartNumber !== undefined && currentPartNumber !== null) {
       return continueUpload(currentUploadID, currentPartNumber);
-    } else {
-      return new Promise((resolve, reject) => {
-        startUpload()
-          .then((uploadID) => {
-            setMultipartUploadParts && setMultipartUploadParts(uploadID, []);
-            continueUpload(uploadID)
-              .then(resolve);
-          })
-          .catch(reject);
-      });
     }
+    const uploadID = await startUpload();
+    setMultipartUploadParts && setMultipartUploadParts(uploadID, []);
+    return continueUpload(uploadID);
   };
 }
 

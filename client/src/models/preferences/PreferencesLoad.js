@@ -894,6 +894,24 @@ class PreferencesLoad extends Remote {
     return value && `${value}`.toLowerCase() === 'true';
   }
 
+  @computed
+  get uiUploadChunkCount () {
+    const value = this.getPreferenceValue('ui.upload.chunk.count');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get uiUploadChunkSizeMB () {
+    const value = this.getPreferenceValue('ui.upload.chunk.size.mb');
+    if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
