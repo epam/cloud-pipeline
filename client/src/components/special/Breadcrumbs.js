@@ -22,7 +22,12 @@ import {Link} from 'react-router';
 import {Icon} from 'antd';
 import classNames from 'classnames';
 import EditableField from './EditableField';
-import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
+import {
+  findPath,
+  generateTreeData,
+  generateUrl,
+  ItemTypes
+} from '../pipelines/model/treeStructureFunctions';
 import Owner from './owner';
 import styles from './Breadcrumbs.css';
 import HiddenObjects from '../../utils/hidden-objects';
@@ -31,7 +36,6 @@ import HiddenObjects from '../../utils/hidden-objects';
 @HiddenObjects.injectTreeFilter
 @observer
 export default class Breadcrumbs extends React.Component {
-
   static propTypes = {
     id: PropTypes.number,
     type: PropTypes.string,
@@ -85,10 +89,16 @@ export default class Breadcrumbs extends React.Component {
       if (!items) {
         return [];
       }
-      items.push({
+      const metadataFolder = {
         name: 'Metadata',
-        id: `${ItemTypes.metadataFolder}_${this.props.id}`,
-        url: `/metadataFolder/${this.props.id}`
+        id: `${this.props.id}metadataFolder`,
+        key: `${ItemTypes.metadataFolder}_${this.props.id}metadataFolder`,
+        parentId: this.props.id,
+        type: ItemTypes.metadataFolder
+      };
+      items.push({
+        ...metadataFolder,
+        url: () => generateUrl(metadataFolder)
       });
       items.push({
         name: this.props.displayTextEditableField,
