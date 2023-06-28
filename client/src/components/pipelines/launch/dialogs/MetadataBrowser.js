@@ -22,7 +22,6 @@ import {Alert, Button, Col, Icon, Input, Modal, Row, Select, Tree} from 'antd';
 import Folder from '../../browser/Folder';
 import Metadata from '../../browser/Metadata';
 import MetadataFolder from '../../browser/MetadataFolder';
-import LoadingView from '../../../special/LoadingView';
 import {
   expandItem,
   formatTreeItems,
@@ -36,21 +35,36 @@ import {
 import styles from './Browser.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 
-@inject('folders', 'preferences')
-@inject(({routing, folders}, params) => ({
-  tree: folders.loadWithoutMetadata(params.initialFolderId ? params.initialFolderId : null)
-}))
+@inject('folders', 'preferences', 'pipelinesLibrary')
+@inject(({routing, folders, pipelinesLibrary}, params) => {
+  if (!params.initialFolderId) {
+    return {
+      tree: pipelinesLibrary
+    };
+  }
+  return {
+    tree: folders.loadWithoutMetadata(params.initialFolderId
+      ? params.initialFolderId
+      : null
+    )
+  };
+})
 @HiddenObjects.injectTreeFilter
 @observer
 export default class MetadataBrowser extends React.Component {
   static propTypes = {
     initialFolderId: PropTypes.number,
+    initialActiveFolderId: PropTypes.number,
     visible: PropTypes.bool,
     onSelect: PropTypes.func,
     onCancel: PropTypes.func,
     rootEntityId: PropTypes.string,
     currentMetadataEntity: PropTypes.array,
-    readOnly: PropTypes.bool
+    readOnly: PropTypes.bool,
+    hideExpansionExpression: PropTypes.bool,
+    selection: PropTypes.object,
+    browseLibrary: PropTypes.bool,
+    disableMetadataFolderSelection: PropTypes.bool
   };
 
   rootItems = null;
@@ -59,6 +73,7 @@ export default class MetadataBrowser extends React.Component {
     folderId: null,
     expandedKeys: [],
     selectedKeys: [],
+    initialSelection: null,
     selectedMetadata: [],
     selectedMetadataClassEntity: [],
     treeReady: false,
@@ -103,7 +118,17 @@ export default class MetadataBrowser extends React.Component {
         folderId = this.state.selectedMetadataClassEntity[0].parent.parentId;
       }
       const entitiesIds = this.state.selectedMetadata.map(metadata => metadata.rowKey.value);
-      this.props.onSelect(entitiesIds, selectedMetadataClassEntity, this.state.expansionExpression, folderId);
+      const metadataLibraryLocation = {
+        folderId: this.state.folderId,
+        metadataClassName: this.state.metadataClassName
+      };
+      this.props.onSelect(
+        entitiesIds,
+        selectedMetadataClassEntity,
+        this.state.expansionExpression,
+        folderId,
+        metadataLibraryLocation
+      );
     }
   };
 
@@ -184,7 +209,8 @@ export default class MetadataBrowser extends React.Component {
               className={`pipelines-library-tree-node-${item.key}`}
               title={this.renderItemTitle(item)}
               key={item.key}
-              isLeaf={item.isLeaf}/>
+              isLeaf={item.isLeaf}
+            />
           );
         } else {
           return (
@@ -227,19 +253,38 @@ export default class MetadataBrowser extends React.Component {
   };
 
   generateTree () {
-    if (!this.props.tree.pending && !this.props.tree.error && !this.rootItems) {
-      const folder = {
-        id: this.props.tree.value.id,
-        key: `${ItemTypes.folder}_${this.props.tree.value.id}`,
-        name: this.props.tree.value.name,
+    const {
+      tree,
+      initialFolderId
+    } = this.props;
+    if (
+      tree.loaded &&
+      !tree.pending &&
+      !tree.error &&
+      !this.rootItems
+    ) {
+      let folder = {
+        id: undefined,
+        key: `${ItemTypes.folder}_root`,
+        name: 'Library',
         type: ItemTypes.folder,
         parentId: null,
-        parent: null,
-        createdDate: this.props.tree.value.createdDate,
-        mask: this.props.tree.value.mask
+        parent: null
       };
+      if (initialFolderId) {
+        folder = {
+          id: this.props.tree.value.id,
+          key: `${ItemTypes.folder}_${this.props.tree.value.id}`,
+          name: this.props.tree.value.name,
+          type: ItemTypes.folder,
+          parentId: null,
+          parent: null,
+          createdDate: this.props.tree.value.createdDate,
+          mask: this.props.tree.value.mask
+        };
+      }
       folder.children = generateTreeData(
-        this.props.tree.value,
+        tree.value,
         {
           parent: folder,
           types: [ItemTypes.metadata],
@@ -258,7 +303,8 @@ export default class MetadataBrowser extends React.Component {
         onExpand={this.onExpand}
         checkStrictly
         expandedKeys={this.state.expandedKeys}
-        selectedKeys={this.state.selectedKeys} >
+        selectedKeys={this.state.selectedKeys}
+      >
         {this.generateTreeItems(this.rootItems)}
       </Tree>
     );
@@ -323,6 +369,8 @@ export default class MetadataBrowser extends React.Component {
       folderId: parseInt(metadata.id, 10),
       selectedKeys: [`${ItemTypes.metadata}_${metadata.id}`],
       expandedKeys
+    }, () => {
+      this.updateInitialSelection(false);
     });
   };
 
@@ -346,6 +394,9 @@ export default class MetadataBrowser extends React.Component {
   };
 
   renderExpansionExpression = () => {
+    if (this.props.hideExpansionExpression) {
+      return null;
+    }
     let filteredEntityFields = this.state.filteredEntityFields;
     const getType = (name, matadataEntity) => {
       const [currentField] = matadataEntity.fields.filter(field => field.name === name);
@@ -397,35 +448,38 @@ export default class MetadataBrowser extends React.Component {
     };
 
     return (
-      <Select
-        style={{width: '100%'}}
-        disabled={!this.isExpansionExpressionAvailable}
-        value={this.state.expansionExpression}
-        mode="combobox"
-        filterOption={false}
-        onChange={handleSearch}
-        onFocus={() => {
-          handleSearch(this.state.expansionExpression);
-        }
-        }
-      >
-        {
-          this.state.filteredEntityFields.map(field => {
-            let currentValue = field.name;
-            if (this.state.expansionExpression) {
-              const parseValue = this.state.expansionExpression.split('.');
-              parseValue.pop();
-              currentValue = parseValue.join('.') + '.' + field.name;
-            }
-            return (
-              <Select.Option
-                key={field.name}
-                value={currentValue}>
-                {field.name}
-              </Select.Option>);
-          })
-        }
-      </Select>
+      <Row style={{display: 'flex', paddingTop: 10}}>
+        <div className={styles.expansionExpressionTitle}>
+          Define expression
+        </div>
+        <Select
+          style={{width: '100%'}}
+          disabled={!this.isExpansionExpressionAvailable}
+          value={this.state.expansionExpression}
+          mode="combobox"
+          filterOption={false}
+          onChange={handleSearch}
+          onFocus={() => handleSearch(this.state.expansionExpression)}
+        >
+          {
+            this.state.filteredEntityFields.map(field => {
+              let currentValue = field.name;
+              if (this.state.expansionExpression) {
+                const parseValue = this.state.expansionExpression.split('.');
+                parseValue.pop();
+                currentValue = parseValue.join('.') + '.' + field.name;
+              }
+              return (
+                <Select.Option
+                  key={field.name}
+                  value={currentValue}
+                >
+                  {field.name}
+                </Select.Option>);
+            })
+          }
+        </Select>
+      </Row>
     );
   };
 
@@ -435,79 +489,80 @@ export default class MetadataBrowser extends React.Component {
     this.setState({expandedKeys, search: e});
   };
 
-  render () {
-    let content = <LoadingView />;
+  renderContent = () => {
     if (!this.props.tree.pending && this.props.tree.error) {
-      content = <Alert message="Error retrieving library" type="error" />;
-    } else if (!this.props.tree.pending) {
-      let listingContent;
-      if (this.state.isMetadataFolder) {
-        listingContent = (
-          <MetadataFolder
+      return <Alert message="Error retrieving library" type="error" />;
+    }
+    let listingContent;
+    if (this.state.isMetadataFolder) {
+      listingContent = (
+        <MetadataFolder
+          id={this.state.folderId}
+          onNavigate={this.onSelectItem}
+          onSelectItem={this.onSelectMetadataEntityItem}
+          selection={this.state.selectedMetadataClassEntity}
+          selectionAvailable={!this.props.disableMetadataFolderSelection}
+          hideUploadMetadataBtn
+        />
+      );
+    } else if (this.state.isMetadata && this.state.metadataClassName) {
+      listingContent = (
+        <div style={{height: 450}}>
+          <Metadata
             id={this.state.folderId}
+            class={this.state.metadataClassName}
+            initialSelection={this.state.selectedMetadata}
+            onSelectItems={this.onSelectMetadataItems}
             onNavigate={this.onSelectItem}
-            onSelectItem={this.onSelectMetadataEntityItem}
-            selection={this.state.selectedMetadataClassEntity}
-            selectionAvailable
             hideUploadMetadataBtn
+            readOnly={this.props.readOnly}
           />
-        );
-      } else if (this.state.isMetadata && this.state.metadataClassName) {
-        listingContent = (
-          <div style={{height: 450}}>
-            <Metadata
-              id={this.state.folderId}
-              class={this.state.metadataClassName}
-              initialSelection={this.state.selectedMetadata}
-              onSelectItems={this.onSelectMetadataItems}
-              hideUploadMetadataBtn
-              readOnly={this.props.readOnly}
-            />
-          </div>
-        );
-      } else {
-        listingContent = (
-          <Folder
-            id={this.state.folderId}
-            treatAsRootId={this.props.initialFolderId}
-            onSelectItem={this.onSelectItem}
-            listingMode
-            readOnly
-            supportedTypes={[ItemTypes.metadataFolder, ItemTypes.metadata]} />
-        );
-      }
-      content = (
-        <SplitPane
-          split="vertical"
-          minSize={200}
-          pane2Style={{
-            overflowY: 'auto',
-            overflowX: 'hidden'
-          }}
-          resizerClassName="cp-split-panel-resizer"
-          resizerStyle={{
-            width: 3,
-            margin: '0 5px',
-            cursor: 'col-resize',
-            boxSizing: 'border-box',
-            backgroundClip: 'padding',
-            zIndex: 1
-          }}>
-          <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-            <Row>
-              <Input.Search onSearch={this.onSearchChanged} />
-            </Row>
-            <div style={{flex: 1, overflowY: 'auto', overflowX: 'hidden'}}>
-              {this.generateTree()}
-            </div>
-          </div>
-          <div>
-            {listingContent}
-          </div>
-        </SplitPane>
+        </div>
+      );
+    } else {
+      listingContent = (
+        <Folder
+          id={this.state.folderId}
+          treatAsRootId={this.props.initialFolderId}
+          onSelectItem={this.onSelectItem}
+          listingMode
+          readOnly
+          supportedTypes={[ItemTypes.metadataFolder, ItemTypes.metadata]} />
       );
     }
+    return (
+      <SplitPane
+        split="vertical"
+        minSize={200}
+        pane2Style={{
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
+        resizerClassName="cp-split-panel-resizer"
+        resizerStyle={{
+          width: 3,
+          margin: '0 5px',
+          cursor: 'col-resize',
+          boxSizing: 'border-box',
+          backgroundClip: 'padding',
+          zIndex: 1
+        }}>
+        <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+          <Row>
+            <Input.Search onSearch={this.onSearchChanged} />
+          </Row>
+          <div style={{flex: 1, overflowY: 'auto', overflowX: 'hidden'}}>
+            {this.generateTree()}
+          </div>
+        </div>
+        <div>
+          {listingContent}
+        </div>
+      </SplitPane>
+    );
+  };
 
+  render () {
     return (
       <Modal
         width="80%"
@@ -535,24 +590,40 @@ export default class MetadataBrowser extends React.Component {
             </Col>
           </Row>
         }
-        visible={this.props.visible}>
+        visible={this.props.visible}
+      >
         <Row style={{height: 450}}>
-          {content}
+          {this.renderContent()}
         </Row>
-        <Row style={{display: 'flex', paddingTop: 10}}>
-          <div className={styles.expansionExpressionTitle}>Define expression</div>
-          {this.renderExpansionExpression()}
-        </Row>
+        {this.renderExpansionExpression()}
       </Modal>
     );
   }
 
+  updateInitialSelection = (navigate = true) => {
+    if (this.props.selection && Object.keys(this.props.selection).length) {
+      const {entitiesIds, folderId, metadataClassName} = this.props.selection;
+      const selectionId = `${folderId}/metadata/${metadataClassName}`;
+      navigate && this.onSelectMetadata({
+        id: selectionId,
+        name: metadataClassName
+      });
+      this.setState({
+        selectedMetadata: this.state.metadataClassName === metadataClassName
+          ? entitiesIds
+          : []
+      });
+    }
+  };
+
   updateState = () => {
-    if (this.props.initialFolderId) {
+    const {initialFolderId, initialActiveFolderId} = this.props;
+    const id = initialActiveFolderId || initialFolderId;
+    if (id) {
       let expandedKeys = this.state.expandedKeys;
       if (this.rootItems) {
         const item = getTreeItemByKey(
-          `${ItemTypes.folder}_${this.props.initialFolderId}`,
+          `${ItemTypes.folder}_${id}`,
           this.rootItems
         );
         if (item) {
@@ -561,19 +632,20 @@ export default class MetadataBrowser extends React.Component {
         }
       }
       this.setState({
-        folderId: this.props.initialFolderId,
-        selectedKeys: [`${ItemTypes.folder}_${this.props.initialFolderId}`],
+        folderId: id,
+        selectedKeys: [`${ItemTypes.folder}_${id}`],
         expandedKeys,
         search: null
       });
     } else {
       this.setState({
         folderId: null,
-        selectedKeys: [],
-        expandedKeys: [],
+        selectedKeys: [`${ItemTypes.folder}_root`],
+        expandedKeys: getExpandedKeys(this.rootItems),
         search: null
       });
     }
+    this.updateInitialSelection(true);
   };
 
   componentDidMount () {
@@ -584,8 +656,11 @@ export default class MetadataBrowser extends React.Component {
     if (prevProps.initialFolderId !== this.props.initialFolderId) {
       this.props.tree.invalidateCache();
     }
-    if (prevProps.initialFolderId !== this.props.initialFolderId ||
-      prevProps.visible !== this.props.visible) {
+    if (
+      prevProps.initialFolderId !== this.props.initialFolderId ||
+      prevProps.visible !== this.props.visible ||
+      prevProps.selection !== this.props.selection
+    ) {
       this.updateState();
     } else if (!this.state.treeReady && this.rootItems && this.rootItems.length > 0) {
       this.setState({
@@ -594,7 +669,7 @@ export default class MetadataBrowser extends React.Component {
     }
   }
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     this.props.tree.invalidateCache();
   }
 }

@@ -42,6 +42,7 @@ import BucketBrowser from './../dialogs/BucketBrowser';
 import PipelineBrowser from './../dialogs/PipelineBrowser';
 import DockerImageInput from './DockerImageInput';
 import BooleanParameterInput from './BooleanParameterInput';
+import MetadataParameterInput from './MetadataParameterInput';
 import MetadataBrowser from './../dialogs/MetadataBrowser';
 import CodeEditor from '../../../special/CodeEditor';
 import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
@@ -2091,6 +2092,65 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       allowBucketSelectionInBucketBrowser: false
     });
   };
+
+  selectMetadataParameter = (
+    value,
+    key,
+    sectionName
+  ) => {
+    if (key && sectionName) {
+      const parametersValue = this.getSectionValue(sectionName);
+      parametersValue.params[key].value = value;
+      this.props.form.setFieldsValue({[sectionName]: parametersValue});
+      this.props.form.validateFieldsAndScroll();
+    }
+  };
+
+  renderMetadataParameter = (
+    sectionName,
+    {key, value, required, readOnly, validator},
+    type,
+    system,
+    visible
+  ) => {
+    const rules = [];
+    if (validator) {
+      rules.push({validator});
+    }
+    if (visible && (required || system)) {
+      rules.push({
+        required: true,
+        message: 'Required'
+      });
+    }
+    return (
+      <FormItem
+        className={styles.formItemRow}
+        required={visible && (required || system)}
+        hasFeedback
+      >
+        {this.getSectionFieldDecorator(sectionName)(`params.${key}.value`, {
+          rules: rules,
+          initialValue: value,
+          onChange: () => { this.forceValidation = true; }
+        })(
+          <MetadataParameterInput
+            style={{width: '100%'}}
+            disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
+            onSelectMetadata={(value) => this.selectMetadataParameter(
+              value,
+              key,
+              sectionName
+            )}
+            currentProjectId={this.state.currentProjectId}
+            rootEntityId={this.state.rootEntityId}
+            currentMetadataEntity={this.state.currentMetadataEntity.slice()}
+          />
+        )}
+      </FormItem>
+    );
+  };
+
   renderPathParameter = (
     sectionName,
     {key, value, required, readOnly, validator},
@@ -2823,6 +2883,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <MenuItem id="add-input-parameter" key="input">Input path parameter</MenuItem>
         <MenuItem id="add-output-parameter" key="output">Output path parameter</MenuItem>
         <MenuItem id="add-common-parameter" key="common">Common path parameter</MenuItem>
+        <MenuItem id="add-metadata-parameter" key="metadata">Metadata parameter</MenuItem>
       </Menu>
     );
 
@@ -3050,6 +3111,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             case 'input':
             case 'common':
               formItem = this.renderPathParameter(
+                sectionName,
+                {
+                  key,
+                  value,
+                  required: requiredCorrectedValue,
+                  readOnly: readOnlyCorrectedValue,
+                  description,
+                  validator
+                },
+                type,
+                isSystemParametersSection,
+                parameterIsVisible
+              );
+              break;
+            case 'metadata':
+              formItem = this.renderMetadataParameter(
                 sectionName,
                 {
                   key,

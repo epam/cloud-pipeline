@@ -45,7 +45,7 @@ export const ItemTypes = {
   fireCloudMethodConfiguration
 };
 
-function generateUrl (item) {
+export function generateUrl (item) {
   if (!item) {
     return '/library';
   }
@@ -716,7 +716,10 @@ export function findPath (key, items, parentPath) {
     if (item.key === key) {
       return [
         ...prefix,
-        {name: item.name, id: item.id, type: item.type, key: item.key, url: generateUrl(item)}
+        {
+          ...item,
+          url: () => generateUrl(item)
+        }
       ];
     } else if (item.children && item.children.length > 0) {
       const result =
@@ -725,7 +728,10 @@ export function findPath (key, items, parentPath) {
           item.children,
           [
             ...prefix,
-            {name: item.name, id: item.id, type: item.type, key: item.key, url: generateUrl(item)}
+            {
+              ...item,
+              url: () => generateUrl(item)
+            }
           ]
         );
       if (result) {
