@@ -650,6 +650,16 @@ export default class Tools extends React.Component {
 
   getDefaultGroup = (groups, usePersonal = false) => {
     const {authenticatedUserInfo} = this.props;
+    if (
+      this.filters &&
+      this.filters.groups &&
+      this.filters.groups.length > 0
+    ) {
+      const defaultGroup = this.filters.groups.find((o) => o.default);
+      if (defaultGroup) {
+        return defaultGroup;
+      }
+    }
     if (authenticatedUserInfo && authenticatedUserInfo.loaded) {
       const adGroups = (authenticatedUserInfo.value.groups || []).map(g => g);
       const performGroupName = (groupName) => {
@@ -680,6 +690,7 @@ export default class Tools extends React.Component {
   redirectIfNeeded = () => {
     if (!this.state.redirected &&
       this.props.dockerRegistries.loaded &&
+      this.props.preferences.loaded &&
       (!this.currentRegistry || !this.currentGroup)) {
       if (!this.currentRegistry) {
         let registryToRedirect = this.props.registryId ||
@@ -716,13 +727,19 @@ export default class Tools extends React.Component {
     }
   };
 
-  componentWillMount () {
-    this.props.dockerRegistries.fetch();
-    this.reloadIssues();
-  }
-
   componentDidMount () {
+    this.reloadIssues();
     this.redirectIfNeeded();
+    const {
+      dockerRegistries,
+      preferences
+    } = this.props;
+    Promise.all([
+      dockerRegistries.fetch(),
+      preferences.fetchIfNeededOrWait()
+    ])
+      .then(() => this.redirectIfNeeded())
+      .catch(() => {});
     if (
       this.filter &&
       this.filter === 'top-used' &&
