@@ -134,6 +134,13 @@ async function fetchTools(opts = {}) {
       readOnly: true
     });
   }
+  if (settings.disablePackages && settings.disablePackages.tag) {
+    versionsInfoTags.push({
+      key: settings.disablePackages.tag,
+      value: 'true',
+      disablePackages: true
+    });
+  }
   const toolVersionsInfo = await fetchToolsByTags(versionsInfoTags);
   const allTools = await getTools();
 

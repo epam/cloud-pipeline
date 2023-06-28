@@ -213,7 +213,8 @@ async function launchTool(application, user, options) {
         appSettings,
         {
           launchOptions: options,
-          user
+          user,
+          application,
         }
       );
       const settings = await getToolSettings(toolId, version);
@@ -402,6 +403,22 @@ async function launchTool(application, user, options) {
         payload.parameters = attachParameters(
           payload.parameters,
           getPortParameters(joinedLaunchOptions.specifyPorts)
+        );
+      }
+      if (
+        application.disablePackages &&
+        appSettings &&
+        appSettings.disablePackages &&
+        appSettings.disablePackages.parameter
+      ) {
+        payload.parameters = attachParameters(
+          payload.parameters,
+          {
+            [appSettings.disablePackages.parameter]: {
+              type: 'boolean',
+              value: true
+            }
+          }
         );
       }
       const launchedRun = await launchToolRequest(

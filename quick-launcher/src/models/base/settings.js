@@ -193,7 +193,12 @@ const defaultSettings = {
   redirectStyle: 'default', // 'white' / 'default'
   deprecatedTag: 'deprecated',
   latestTag: 'latest',
-  readOnlyTag: 'readonly'
+  readOnlyTag: 'readonly',
+  disablePackages: {
+    tag: 'disablePackages',
+    parameter: 'CP_RGATEWAY_DISABLE_PACKAGES',
+    warning: undefined
+  },
 };
 
 function parseUrl(url, verbose = false) {

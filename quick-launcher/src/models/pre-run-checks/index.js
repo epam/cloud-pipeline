@@ -2,6 +2,7 @@ import PreRunCheckError from './pre-run-check-error';
 import checkUserStorage from './check-user-storage-state';
 import confirmation from '../../components/shared/confirmation';
 import checkSensitiveStorages from './check-sensitive-storages';
+import checkDisablePackages from "./check-disable-packages";
 
 function getSingleCheckError (check) {
   return new Promise((resolve, reject) => {
@@ -33,11 +34,13 @@ export default function performPreRunChecks (settings, options = {}) {
   const {
     user,
     launchOptions,
+    application,
   } = options;
   return new Promise((resolve, reject) => {
     Promise.all([
       getSingleCheckError(checkUserStorage(settings, user)),
-      getSingleCheckError(checkSensitiveStorages(settings, launchOptions))
+      getSingleCheckError(checkSensitiveStorages(settings, launchOptions)),
+      getSingleCheckError(checkDisablePackages(settings, application)),
     ])
       .then(results => {
         const errors = results.filter(Boolean);
