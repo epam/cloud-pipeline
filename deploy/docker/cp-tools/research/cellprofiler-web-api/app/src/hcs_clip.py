@@ -410,7 +410,7 @@ def create_image(params):
     path = get_required_field(params, 'path')
     path = prepare_cloud_path(path)
     # field ids
-    fields = [int(field) for field in get_required_field(params, 'cells')]
+    fields = [int(field) for field in get_required_field(params, 'cells').split(',')]
     # well: shall have format as in wells_map.json col_row (example: 2_2)
     wells_map_key = get_required_field(params, 'well')
 
