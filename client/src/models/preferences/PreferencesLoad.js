@@ -757,7 +757,17 @@ class PreferencesLoad extends Remote {
     const value = this.getPreferenceValue('ui.tools.filters');
     if (value) {
       try {
-        return JSON.parse(value);
+        const {
+          groups = [],
+          ...rest
+        } = JSON.parse(value);
+        return {
+          ...rest,
+          groups: groups.map((aGroup) => ({
+            ...aGroup,
+            name: aGroup.name || aGroup.title || aGroup.id
+          }))
+        };
       } catch (e) {
         console.warn('Error parsing "ui.tools.filters" preference:', e.message);
       }

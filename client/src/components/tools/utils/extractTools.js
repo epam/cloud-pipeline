@@ -16,6 +16,7 @@
 
 export const TOP_USED_FILTER = {
   id: 'top-used',
+  name: 'Top used tools',
   title: 'Top used tools',
   description: 'Top 5 tools by usage frequency'
 };
