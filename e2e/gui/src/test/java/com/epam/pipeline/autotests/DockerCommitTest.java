@@ -59,7 +59,7 @@ public class DockerCommitTest
     private final String defaultPriceType = Tools.defaultPriceType;
     private final String testFileName = "test_file.txt";
     private final String testFileContent = "This is a test file " + suffix;
-    private final String personalGroup = "personal";
+    private final String personalGroup = "Personal";
     private final String toolInPersonalGroup = personalGroupActualName(login) + "/" + exactToolName(tool);
     private final String customTag = "test_tag";
 
