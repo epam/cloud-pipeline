@@ -235,7 +235,7 @@ class RunTable extends localization.LocalizedReactComponent {
   get rolesFilterPreference () {
     const {preferences} = this.props;
     if (preferences.loaded) {
-      return {...preferences.uiRunsOwnersFilter};
+      return {...(preferences.uiRunsOwnersFilter || {})};
     }
     return {};
   }
