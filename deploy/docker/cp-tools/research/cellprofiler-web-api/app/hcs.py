@@ -236,7 +236,7 @@ def get_image():
 
 
 @app.route('/hcs/projections', methods=['GET'])
-def get_image():
+def get_projection_image():
     try:
         params = flask.request.args
         image_full_path = create_z_plane_projection(params)
