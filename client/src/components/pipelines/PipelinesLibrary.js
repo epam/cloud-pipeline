@@ -48,6 +48,7 @@ import DataStorageUpdate from '../../models/dataStorage/DataStorageUpdate';
 import UpdatePipeline from '../../models/pipelines/UpdatePipeline';
 import AWSRegionTag from '../special/AWSRegionTag';
 import HiddenObjects from '../../utils/hidden-objects';
+import dataStorageRestrictedAccessCheck from '../../utils/data-storage-restricted-access';
 
 const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
 
@@ -79,7 +80,6 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
 @HiddenObjects.injectTreeFilter
 @observer
 export default class PipelinesLibrary extends localization.LocalizedReactComponent {
-
   state = {
     rootItems: [],
     expandedKeys: [],
@@ -138,7 +138,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     } else if (item.type === ItemTypes.pipeline) {
       event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.id}`);
     } else if (item.type === ItemTypes.version && item.parent) {
-      event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.parent.id}_${item.name}`);
+      event.dataTransfer.setData(
+        'dropDataKey',
+        `${ItemTypes.pipeline}_${item.parent.id}_${item.name}`
+      );
     } else {
       event.dataTransfer.setData('dropDataKey', node.props.eventKey);
     }
@@ -169,6 +172,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       const hide = message.loading(`Moving '${dragItem.name}' to '${dropItem.name}'`, 0);
       let request;
       let body;
+      let check;
       switch (dragItem.type) {
         case ItemTypes.pipeline:
         case ItemTypes.versionedStorage:
@@ -190,6 +194,13 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           };
           break;
         case ItemTypes.storage:
+          check = async () => {
+            const restrictedAccess = await dataStorageRestrictedAccessCheck(dragItem.id);
+            if (typeof restrictedAccess === 'boolean' && restrictedAccess) {
+              return 'You cannot move this storage';
+            }
+            return undefined;
+          };
           request = new DataStorageUpdate();
           body = {
             id: dragItem.id,
@@ -209,6 +220,14 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             parentId: dropItem.id === 'root' ? undefined : dropItem.id
           };
           break;
+      }
+      if (check) {
+        const checkError = await check();
+        if (checkError) {
+          message.error(checkError, 5);
+          hide();
+          return;
+        }
       }
       if (request && body) {
         await request.send(body);
@@ -411,7 +430,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
               className={`pipelines-library-tree-node-${item.key}`}
               title={this.renderItemTitle(item)}
               key={item.key}
-              isLeaf={item.isLeaf}/>
+              isLeaf={item.isLeaf}
+            />
           );
         } else {
           return (
@@ -529,7 +549,12 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           maxSize={this._paneWidth ? this._paneWidth / 2.0 : 400}
           defaultSize="15%"
           pane1Style={{overflowY: 'auto', display: 'flex', flexDirection: 'column'}}
-          pane2Style={{overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column'}}
+          pane2Style={{
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
           resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
             width: 8,
