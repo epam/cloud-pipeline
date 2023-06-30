@@ -21,7 +21,7 @@ import flask
 from flask import Flask, jsonify,  request
 
 from src.hcs_manager import HCSManager
-from src.hcs_clip import create_clip, create_image, create_z_plane_projection
+from src.hcs_clip import create_clip, create_image
 
 
 if getattr(sys, 'frozen', False):
@@ -229,17 +229,6 @@ def get_image():
     try:
         params = flask.request.args
         image_full_path = create_image(params)
-        return jsonify(success({"path": image_full_path}))
-    except Exception as e:
-        print(traceback.format_exc())
-        return jsonify(error(e.__str__()))
-
-
-@app.route('/hcs/projections', methods=['GET'])
-def get_projection_image():
-    try:
-        params = flask.request.args
-        image_full_path = create_z_plane_projection(params)
         return jsonify(success({"path": image_full_path}))
     except Exception as e:
         print(traceback.format_exc())
