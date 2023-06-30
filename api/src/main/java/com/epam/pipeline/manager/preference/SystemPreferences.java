@@ -1017,7 +1017,7 @@ public class SystemPreferences {
     public static final IntPreference SYSTEM_USAGE_USERS_STORE_DAYS = new IntPreference(
             "system.usage.users.store.days", 365, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_NOTIFICATIONS_EXP_PERIOD = new IntPreference(
-            "system.notifications.exp.period", null, SYSTEM_GROUP, pass);
+            "system.notifications.exp.period", 3, SYSTEM_GROUP, pass);
     public static final BooleanPreference SYSTEM_NOTIFICATIONS_ENABLE = new BooleanPreference(
             "system.notifications.enable", false, SYSTEM_GROUP, pass);
 
