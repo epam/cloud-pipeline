@@ -102,6 +102,17 @@ def read_images(ome_tiff_path, pages):
         page['image'] = image
 
 
+def read_images_for_planes(ome_tiff_path, pages):
+    tiff_file = TiffFile(ome_tiff_path)
+    for page in pages:
+        plane_images = list()
+        planes = page.pop('planes')
+        for page_plane in planes:
+            plane_images.append(TiffPage(tiff_file, index=page_plane['page_num'],
+                                         offset=page_plane['offset']).asarray())
+        page['image'] = np.maximum.reduce(plane_images)
+
+
 def get_clip_name(by_field, cell, clip_format, sequence_id, point_id, by_time):
     clip_dir = os.path.join(Config.COMMON_RESULTS_DIR, 'video', str(uuid.uuid4()))
     mkdir(clip_dir)
@@ -127,6 +138,15 @@ def build_image_path(image_extension, z_plane, channels, timepoint, sequence_id,
     return os.path.join(images_dir, image_name)
 
 
+def build_image_path_plane(image_extension):
+    images_dir = os.path.join(Config.COMMON_RESULTS_DIR, 'images')
+    mkdir(images_dir)
+    if not str(image_extension).startswith('.'):
+        image_extension = '.{}'.format(image_extension)
+    image_name = str(uuid.uuid4()) + image_extension
+    return os.path.join(images_dir, image_name)
+
+
 def get_pages(channel_ids, point_id, planes, channels, by_time, timepoints, cell):
     num = 0
     pages = dict()
@@ -148,6 +168,16 @@ def set_offsets(offsets_path, pages):
             page['offset'] = int(offsets[page_num])
 
 
+def set_offsets_for_planes(offsets_path, pages):
+    with open(offsets_path, 'r') as offsets_file:
+        offsets_line = offsets_file.read()
+        offsets = offsets_line.replace("[", "").replace("]", "").split(", ")
+        for page in pages:
+            for page_plane in page['planes']:
+                page_num = page_plane['page_num']
+                page_plane['offset'] = int(offsets[page_num])
+
+
 def get_pages_for_fields(channel_ids, z_plane, planes, channels_count, timepoint, timepoints, field_ids):
     pages = dict()
     for field_id in field_ids:
@@ -165,6 +195,32 @@ def get_pages_for_fields(channel_ids, z_plane, planes, channels_count, timepoint
                             'cell': field_id
                         }
                     num = num + 1
+    return pages
+
+
+def get_pages_for_planes(channel_ids, z_planes, planes, channels_count, timepoint, timepoints, field_ids):
+    pages = list()
+    for field_id in field_ids:
+        num = 0
+        offset = len(planes) * channels_count * len(timepoints) * field_id
+        for time_point in timepoints:
+            for channel_id in range(channels_count):
+                page_planes = list()
+                for plane in planes:
+                    if (channel_id in channel_ids) and plane in z_planes and time_point == timepoint:
+                        page_num = num + offset
+                        page_plane = {
+                            'page_num': page_num
+                        }
+                        page_planes.append(page_plane)
+                    num = num + 1
+                if page_planes:
+                    pages.append({
+                        'channel_id': channel_id,
+                        'time_point': time_point,
+                        'planes': page_planes,
+                        'cell': field_id
+                    })
     return pages
 
 
@@ -392,6 +448,33 @@ def merge_pages(pages, chanel_ids, timepoint, z_plane, coordinates, field_size):
     return merged_pages
 
 
+def merge_pages_for_planes(pages, chanel_ids, timepoint, coordinates, field_size):
+    merged_pages = list()
+
+    # prepare common initial coordinates
+    image_array = pages[0]['image']
+    image_size_x, image_size_y = image_array.shape
+    initial_size_x, x_start, pixel_size_x = calculate_initials_x(coordinates, field_size, image_size_x)
+    initial_size_y, y_start, pixel_size_y = calculate_initials_y(coordinates, field_size, image_size_y)
+
+    # merge cells for each channel
+    for chanel_id in chanel_ids:
+        image_by_cell = dict()
+        chanel_pages = _get_items(pages, 'channel_id', chanel_id)
+        [image_by_cell.update({page['cell']: page['image']}) for page in chanel_pages]
+
+        image = merge_images_as_arrays(image_by_cell, field_size, coordinates, initial_size_x, x_start, pixel_size_x,
+                                       initial_size_y, y_start, pixel_size_y)
+
+        page = {
+            'image': image,
+            'channel_id': chanel_id,
+            'time_point': timepoint
+        }
+        merged_pages.append(page)
+    return merged_pages
+
+
 def parse_coordinates(well_map, fields):
     coordinates = dict()
     well_map_coordinates = well_map.get('coordinates')
@@ -439,6 +522,61 @@ def create_image(params):
     read_images(ome_tiff_path, pages)
 
     pages = merge_pages(pages, selected_channels.keys(), timepoint, z_plane, coordinates, field_size)
+    colored_images = []
+    for page in pages:
+        channel_id = page['channel_id']
+        colored_image = color_image(page['image'], selected_channels[channel_id])
+        colored_images.append(colored_image)
+    merged_image = merge_hcs_channels(colored_images)
+    merged_image.save(image_path)
+
+    return image_path
+
+
+def create_z_plane_projection(params):
+    z_planes = get_required_field(params, 'zPlanes').split(',')
+    if len(z_planes) == 1:
+        raise RuntimeError('More than 1 z-plane shall be specified to create z-plane projection.')
+    sequence_id = str(get_required_field(params, 'sequenceId'))
+    timepoint = get_required_field(params, 'timepoint')
+    image_format = params.get('format', 'tiff')
+    original = params.get('original', 1)
+    path = get_required_field(params, 'path')
+    path = prepare_cloud_path(path)
+    cells = [int(field) for field in get_required_field(params, 'cells').split(',')]
+    # well: shall have format as in wells_map.json col_row (example: 2_2)
+    wells_map_key = params.get('well', None)
+    if not original and len(cells) > 1:
+        raise RuntimeError('Z-plane projection available for one well only.')
+
+    preview_dir, sequences = parse_hcs(path, sequence_id)
+    timepoints = sequences[sequence_id]
+    preview_dir = prepare_cloud_path(preview_dir)
+    index_path = get_index_path(preview_dir)
+    # hcs channels and z-planes
+    channels, planes = get_planes_and_channels(index_path)
+    selected_channels = get_selected_channels(params, channels)
+    image_path = build_image_path_plane(image_format)
+
+    preview_seq_dir = os.path.join(preview_dir, '{}'.format(sequence_id))
+    ome_tiff_path, offsets_path = get_path(preview_seq_dir, original)
+    well_map = None
+    if original or wells_map_key:
+        well_map = get_well_map(preview_seq_dir, wells_map_key)
+    if not os.path.isfile(ome_tiff_path):
+        if not well_map:
+            raise RuntimeError('Failed to determine source tiff path.')
+        ome_tiff_path, offsets_path = get_paths_from_wells_map(well_map, preview_seq_dir)
+
+    pages = get_pages_for_planes(list(selected_channels.keys()), z_planes, planes, len(channels), timepoint, timepoints,
+                                 cells)
+    set_offsets_for_planes(offsets_path, pages)
+    read_images_for_planes(ome_tiff_path, pages)
+
+    if original:
+        coordinates = parse_coordinates(well_map, cells)
+        field_size = well_map.get('field_size')
+        pages = merge_pages_for_planes(pages, selected_channels.keys(), timepoint, coordinates, field_size)
     colored_images = []
     for page in pages:
         channel_id = page['channel_id']
