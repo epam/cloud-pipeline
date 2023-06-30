@@ -120,3 +120,8 @@ td.run-row {
 .tags-column {
   padding: 0 !important;
 }
+
+.roles-filters-container {
+  max-height: 40vh;
+  overflow-y: auto;
+}

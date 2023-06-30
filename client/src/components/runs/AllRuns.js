@@ -262,7 +262,9 @@ class AllRuns extends React.Component {
       );
     }
     if (current.showPersonalRuns && !all && authenticatedUserInfo.loaded) {
-      filters.owners = [authenticatedUserInfo.value.userName].filter(Boolean);
+      filters.owners = {
+        owners: [authenticatedUserInfo.value.userName].filter(Boolean)
+      };
     }
     return (
       <RunTable

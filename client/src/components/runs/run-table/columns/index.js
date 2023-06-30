@@ -110,7 +110,7 @@ function getColumn (
   }
   const column = config.getColumn(localizedString, reload);
   if (column && !disabledFilters.includes(type)) {
-    const filters = config.getColumnFilter(state, setState);
+    const filters = config.getColumnFilter(state, setState, options);
     const {
       filtered = false
     } = filters || {};

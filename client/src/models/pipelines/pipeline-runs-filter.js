@@ -83,8 +83,10 @@ export function endDatesAreEqual (endDate1, endDate2) {
   return datesAreEqual(endDate1, endDate2);
 }
 
-export function ownerArraysAreEqual (array1, array2) {
-  return simpleArraysAreEqual(array1, array2);
+export function ownersAreEqual (filterA = {}, filterB = {}) {
+  return simpleArraysAreEqual(filterA.owners, filterB.owners) &&
+    simpleArraysAreEqual(filterA.rolesFilterKeys, filterB.rolesFilterKeys) &&
+    simpleArraysAreEqual(filterA.roles, filterB.roles);
 }
 
 export function tagsAreEqual (tagsA, tagsB) {
@@ -128,7 +130,7 @@ export function filtersAreEqual (filter1, filter2) {
     dockerImagesArraysAreEqual(dockerImagesA, dockerImagesB) &&
     startDatesAreEqual(startDateFromA, startDateFromB) &&
     endDatesAreEqual(endDateToA, endDateToB) &&
-    ownerArraysAreEqual(ownersA, ownersB) &&
+    ownersAreEqual(ownersA, ownersB) &&
     onlyMasterJobsA === onlyMasterJobsB &&
     tagsAreEqual(tagsA, tagsB);
 }
@@ -138,6 +140,7 @@ export function getFiltersPayload (filters) {
     startDateFrom,
     endDateTo,
     onlyMasterJobs = true,
+    owners: ownersFilter = {},
     ...rest
   } = filters || {};
   const formatDate = (date) => date
@@ -147,6 +150,12 @@ export function getFiltersPayload (filters) {
     ...rest,
     startDateFrom: formatDate(startDateFrom),
     endDateTo: formatDate(endDateTo),
-    userModified: !onlyMasterJobs
+    userModified: !onlyMasterJobs,
+    owners: ownersFilter.owners
+      ? ownersFilter.owners
+      : undefined,
+    roles: ownersFilter.roles
+      ? ownersFilter.roles
+      : undefined
   };
 }

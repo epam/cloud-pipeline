@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {isObservableArray, observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {Alert, Pagination, Table} from 'antd';
-import {isObservableArray, observable} from 'mobx';
 import {
   filtersAreEqual,
   getFiltersPayload,
@@ -193,7 +193,7 @@ function runIsService (run) {
     run.initialized;
 }
 
-@inject('localization', 'routing')
+@inject('localization', 'routing', 'preferences')
 @runPipelineActions
 @observer
 class RunTable extends localization.LocalizedReactComponent {
@@ -231,7 +231,18 @@ class RunTable extends localization.LocalizedReactComponent {
     return correctedColumns.filter((column) => !hiddenColumns.includes(column));
   }
 
+  @computed
+  get rolesFilterPreference () {
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return {...preferences.uiRunsOwnersFilter};
+    }
+    return {};
+  }
+
   componentDidMount () {
+    const {preferences} = this.props;
+    preferences.fetchIfNeededOrWait();
     this.updateFromProps();
   }
 
@@ -609,7 +620,8 @@ class RunTable extends localization.LocalizedReactComponent {
         reload: this.reload.bind(this),
         state: this.state,
         setState: this.filtersChanged.bind(this),
-        disabledFilters: parseDisableFiltersProps(disableFilters)
+        disabledFilters: parseDisableFiltersProps(disableFilters),
+        rolesFilterPreference: this.rolesFilterPreference
       }
     );
     const {
@@ -743,7 +755,10 @@ RunTable.propTypes = {
     dockerImages: PropTypes.arrayOf(PropTypes.string),
     startDateFrom: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     endDateTo: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
-    owners: PropTypes.arrayOf(PropTypes.string),
+    owners: PropTypes.shape({
+      owners: PropTypes.arrayOf(PropTypes.string),
+      roles: PropTypes.arrayOf(PropTypes.string)
+    }),
     onlyMasterJobs: PropTypes.bool,
     tags: PropTypes.object
   }),

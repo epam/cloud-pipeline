@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Row} from 'antd';
+import {Row, Checkbox} from 'antd';
 import classNames from 'classnames';
 import UserName from '../../../special/UserName';
 import UserAutoComplete from '../../../special/UserAutoComplete';
@@ -27,15 +27,16 @@ import {
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
 
-function getColumnFilter (state, setState) {
+function getColumnFilter (state, setState, options) {
   const parameter = 'owners';
+  const {rolesFilterPreference = {}} = options;
   const onFilterDropdownVisibleChange = onFilterDropdownVisibilityChangedGenerator(
     parameter,
     state,
     setState
   );
   const {
-    value,
+    value = {},
     visible: filterDropdownVisible,
     onChange,
     filtered
@@ -44,11 +45,30 @@ function getColumnFilter (state, setState) {
   const clear = () => onFilter(undefined);
   const onOk = () => onFilter(value);
   const onChangeOwner = (newOwner) => {
-    if (newOwner) {
-      onChange([newOwner]);
-    } else {
-      onChange(undefined);
+    onChange({
+      owners: newOwner
+        ? [newOwner]
+        : [],
+      roles: [],
+      rolesFilterKeys: []
+    });
+  };
+  const enabledRolesFilters = new Set(value.rolesFilterKeys || []);
+  const onChangeRolesFilter = (filterKey) => (event) => {
+    let keys = [];
+    if (event.target.checked && !enabledRolesFilters.has(filterKey)) {
+      keys = [...enabledRolesFilters, filterKey];
+    } else if (!event.target.checked && enabledRolesFilters.has(filterKey)) {
+      keys = [...enabledRolesFilters].filter((k) => k !== filterKey);
     }
+    onChange({
+      owners: [],
+      roles: [...new Set(keys
+        .reduce((acc, key) => acc.concat(rolesFilterPreference[key] || []), [])
+        .filter(Boolean)
+      )],
+      rolesFilterKeys: keys
+    });
   };
   const filterDropdown = (
     <div
@@ -62,10 +82,28 @@ function getColumnFilter (state, setState) {
     >
       <UserAutoComplete
         placeholder="Owners"
-        value={value && value.length > 0 ? value[0] : undefined}
+        value={value.owners && value.owners.length > 0
+          ? value.owners[0]
+          : undefined
+        }
         onChange={onChangeOwner}
         onPressEnter={onOk}
       />
+      <div className={styles.rolesFiltersContainer}>
+        {Object.keys(rolesFilterPreference).map(key => (
+          <Row
+            style={{margin: 5}}
+            key={key}
+          >
+            <Checkbox
+              onChange={onChangeRolesFilter(key)}
+              checked={enabledRolesFilters.has(key)}
+            >
+              {key}
+            </Checkbox>
+          </Row>
+        ))}
+      </div>
       <Row
         type="flex"
         justify="space-between"
