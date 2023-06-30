@@ -123,22 +123,7 @@ def get_clip_name(by_field, cell, clip_format, sequence_id, point_id, by_time):
     return os.path.join(clip_dir, clip_name)
 
 
-def build_image_path(image_extension, z_plane, channels, timepoint, sequence_id, fields):
-    images_dir = os.path.join(Config.COMMON_RESULTS_DIR, 'images', str(uuid.uuid4()))
-    mkdir(images_dir)
-    field_prefix = ''
-    for field_id in fields:
-        field_prefix = field_prefix + 'f{}'.format(str(field_id))
-    prefix = 'p{}t{}seq{}'.format(z_plane, timepoint, sequence_id)
-    for channel_id in [int(channel) for channel in channels.keys()]:
-        prefix = prefix + 'ch{}'.format(channel_id)
-    if not str(image_extension).startswith('.'):
-        image_extension = '.{}'.format(image_extension)
-    image_name = field_prefix + prefix + image_extension
-    return os.path.join(images_dir, image_name)
-
-
-def build_image_path_plane(image_extension):
+def build_image_path(image_extension):
     images_dir = os.path.join(Config.COMMON_RESULTS_DIR, 'images')
     mkdir(images_dir)
     if not str(image_extension).startswith('.'):
@@ -464,7 +449,7 @@ def create_image(params):
             raise RuntimeError('Incorrect Z plane id [{}]'.format(selected_plane))
 
     selected_channels = get_selected_channels(params, channels)
-    image_path = build_image_path_plane(image_format)
+    image_path = build_image_path(image_format)
 
     preview_seq_dir = os.path.join(preview_dir, '{}'.format(sequence_id))
     ome_tiff_path, offsets_path = get_path(preview_seq_dir, original)
