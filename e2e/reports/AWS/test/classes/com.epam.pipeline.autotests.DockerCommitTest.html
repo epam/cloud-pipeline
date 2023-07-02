@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">2</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1h19m25.69s</div>
+<div class="counter">1h31m17.13s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">83%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,153 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validateCommitDockerImageWithTag - EPMCMBIBPC-1408"></a>
+<h3 class="failures">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</h3>
+<span class="code">
+<pre>Element not found {with text: COMMITTING}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1688219434924.10.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1688219434924.10.html
+Timeout: 210 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.messageShouldAppear(AccessObject.java:409)
+	at com.epam.pipeline.autotests.ao.LogAO.assertCommittingFinishedSuccessfully(LogAO.java:143)
+	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateCommitDockerImageWithTag$26(DockerCommitTest.java:350)
+	at com.epam.pipeline.autotests.ao.RunsMenuAO.log(RunsMenuAO.java:149)
+	at com.epam.pipeline.autotests.DockerCommitTest.validateCommitDockerImageWithTag(DockerCommitTest.java:340)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '	
+ ', '    ')), &quot;COMMITTING&quot;)]/parent::*&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '88ebabc9dcf9', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 46070911b931ed914f789ba2a83ea343
+*** Element info: {Using=xpath, value=.//*/text()[contains(normalize-space(translate(string(.), '	
+ ', '    ')), &quot;COMMITTING&quot;)]/parent::*}
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 25 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validateDisableCommitFunction - 2338"></a>
+<h3 class="failures">validateDisableCommitFunction - 2338</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-tools}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1688219857169.12.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1688219857169.12.html
+Timeout: 210 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-tools&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/tools&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 198). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.tools(Navigation.java:56)
+	at com.epam.pipeline.autotests.DockerCommitTest.validateDisableCommitFunction(DockerCommitTest.java:412)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-tools&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/tools&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 198). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '88ebabc9dcf9', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 46070911b931ed914f789ba2a83ea343
+	at sun.reflect.GeneratedConstructorAccessor17.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 17 more
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,97 +219,92 @@
 </thead>
 <tr>
 <td class="success">checkListOfRegistry - EPMCMBIBPC-693</td>
-<td>2.826s</td>
+<td>2.798s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">commitDockerValidation - EPMCMBIBPC-694</td>
-<td>14m33.62s</td>
+<td>15m37.67s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">listOfGroupInRegistry - EPMCMBIBPC-1350</td>
-<td>2.114s</td>
+<td>2.299s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pushDockerFormValidation - EPMCMBIBPC-692</td>
-<td>5m7.44s</td>
+<td>5m30.29s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
-<td>2m5.93s</td>
-<td class="success">passed</td>
+<td class="failures">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
+<td>4m23.11s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDocker - EPMCMBIBPC-695</td>
-<td>12m44.72s</td>
+<td>12m49.31s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerInGroup - EPMCMBIBPC-1353</td>
-<td>14m44.62s</td>
+<td>16m1.10s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352</td>
-<td>20m40.96s</td>
+<td>21m59.61s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</td>
-<td>37.034s</td>
+<td>34.958s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
-<td>3m1.24s</td>
+<td>3m27.78s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateDisableCommitFunction - 2338</td>
-<td>1m46.75s</td>
-<td class="success">passed</td>
+<td class="failures">validateDisableCommitFunction - 2338</td>
+<td>7m2.14s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">validateLaunchSpecificVersion - EPMCMBIBPC-1409</td>
-<td>34.355s</td>
-<td class="success">passed</td>
+<td class="skipped">validateLaunchSpecificVersion</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
-<td>3m24.08s</td>
+<td>3m46.07s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 45739 from [45739]
-Returns latest run with runId 45739 from [45739]
-Returns latest run with runId 45739 from [45739]
-Returns latest run with runId 45739 from [45739]
-Returns latest run with runId 45740 from [45739, 45740]
-Returns latest run with runId 45740 from [45739, 45740]
-Returns latest run with runId 45740 from [45739, 45740]
-Returns latest run with runId 45741 from [45739, 45740, 45741]
-Returns latest run with runId 45742 from [45739, 45740, 45741, 45742]
-Returns latest run with runId 45743 from [45739, 45740, 45741, 45742, 45743]
-Returns latest run with runId 45743 from [45739, 45740, 45741, 45742, 45743]
-Returns latest run with runId 45744 from [45739, 45740, 45741, 45742, 45743, 45744]
-Returns latest run with runId 45744 from [45739, 45740, 45741, 45742, 45743, 45744]
-Returns latest run with runId 45744 from [45739, 45740, 45741, 45742, 45743, 45744]
-Returns latest run with runId 45745 from [45739, 45740, 45741, 45742, 45743, 45744, 45745]
-Returns latest run with runId 45745 from [45739, 45740, 45741, 45742, 45743, 45744, 45745]
-Returns latest run with runId 45745 from [45739, 45740, 45741, 45742, 45743, 45744, 45745]
-Returns latest run with runId 45746 from [45739, 45740, 45741, 45742, 45743, 45744, 45745, 45746]
-Returns latest run with runId 45746 from [45739, 45740, 45741, 45742, 45743, 45744, 45745, 45746]
-Returns latest run with runId 45747 from [45739, 45740, 45741, 45742, 45743, 45744, 45745, 45746, 45747]
-Returns latest run with runId 45747 from [45739, 45740, 45741, 45742, 45743, 45744, 45745, 45746, 45747]
-Returns latest run with runId 45748 from [45739, 45740, 45741, 45742, 45743, 45744, 45745, 45746, 45747, 45748]
-Returns latest run with runId 45749 from [45739, 45740, 45741, 45742, 45743, 45744, 45745, 45746, 45747, 45748, 45749]
+<pre>Returns latest run with runId 46245 from [46245]
+Returns latest run with runId 46245 from [46245]
+Returns latest run with runId 46245 from [46245]
+Returns latest run with runId 46245 from [46245]
+Returns latest run with runId 46246 from [46245, 46246]
+Returns latest run with runId 46246 from [46245, 46246]
+Returns latest run with runId 46246 from [46245, 46246]
+Returns latest run with runId 46247 from [46245, 46246, 46247]
+Returns latest run with runId 46248 from [46245, 46246, 46247, 46248]
+Returns latest run with runId 46249 from [46245, 46246, 46247, 46248, 46249]
+Returns latest run with runId 46249 from [46245, 46246, 46247, 46248, 46249]
+Returns latest run with runId 46250 from [46245, 46246, 46247, 46248, 46249, 46250]
+Returns latest run with runId 46250 from [46245, 46246, 46247, 46248, 46249, 46250]
+Returns latest run with runId 46250 from [46245, 46246, 46247, 46248, 46249, 46250]
+Returns latest run with runId 46251 from [46245, 46246, 46247, 46248, 46249, 46250, 46251]
+Returns latest run with runId 46251 from [46245, 46246, 46247, 46248, 46249, 46250, 46251]
+Returns latest run with runId 46251 from [46245, 46246, 46247, 46248, 46249, 46250, 46251]
+Returns latest run with runId 46252 from [46245, 46246, 46247, 46248, 46249, 46250, 46251, 46252]
 </pre>
 </span>
 </div>
@@ -181,7 +316,7 @@ Returns latest run with runId 45749 from [45739, 45740, 45741, 45742, 45743, 457
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jun 18, 2023 1:43:50 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 2, 2023 12:40:17 PM</p>
 </div>
 </div>
 </body>
