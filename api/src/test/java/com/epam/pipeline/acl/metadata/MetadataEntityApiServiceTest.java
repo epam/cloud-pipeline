@@ -48,6 +48,7 @@ import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_SET;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
@@ -566,28 +567,33 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetMetadataEntityFileForAdmin() {
-        doReturn(inputStream).when(mockMetadataDownloadManager).getInputStream(ID, TEST_STRING, TEST_STRING);
+        doReturn(inputStream).when(mockMetadataDownloadManager)
+                .getInputStream(ID, TEST_STRING, TEST_LONG_LIST, TEST_STRING);
 
-        assertThat(entityApiService.getMetadataEntityFile(ID, TEST_STRING, TEST_STRING)).isEqualTo(inputStream);
+        assertThat(entityApiService.getMetadataEntityFile(ID, TEST_STRING, TEST_LONG_LIST, TEST_STRING))
+                .isEqualTo(inputStream);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = ENTITIES_MANAGER_ROLE)
     public void shouldGetMetadataEntityFileWhenPermissionIsGranted() {
         initAclEntity(folder, AclPermission.READ);
-        doReturn(inputStream).when(mockMetadataDownloadManager).getInputStream(ID, TEST_STRING, TEST_STRING);
+        doReturn(inputStream).when(mockMetadataDownloadManager)
+                .getInputStream(ID, TEST_STRING, TEST_LONG_LIST, TEST_STRING);
 
-        assertThat(entityApiService.getMetadataEntityFile(ID, TEST_STRING, TEST_STRING)).isEqualTo(inputStream);
+        assertThat(entityApiService.getMetadataEntityFile(ID, TEST_STRING, TEST_LONG_LIST, TEST_STRING))
+                .isEqualTo(inputStream);
     }
 
     @Test
     @WithMockUser
     public void shouldDenyGetMetadataEntityFileWhenPermissionIsNotGranted() {
         initAclEntity(folder);
-        doReturn(inputStream).when(mockMetadataDownloadManager).getInputStream(ID, TEST_STRING, TEST_STRING);
+        doReturn(inputStream).when(mockMetadataDownloadManager)
+                .getInputStream(ID, TEST_STRING, TEST_LONG_LIST, TEST_STRING);
 
         assertThrows(AccessDeniedException.class, () ->
-                entityApiService.getMetadataEntityFile(ID, TEST_STRING, TEST_STRING));
+                entityApiService.getMetadataEntityFile(ID, TEST_STRING, TEST_LONG_LIST, TEST_STRING));
     }
 
     private void mockLoadEntities() {

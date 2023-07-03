@@ -156,7 +156,8 @@ public class MetadataEntityApiService {
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND hasPermission(#folderId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'READ'))")
-    public InputStream getMetadataEntityFile(Long folderId, String entityClass, String fileFormat) {
-        return metadataDownloadManager.getInputStream(folderId, entityClass, fileFormat);
+    public InputStream getMetadataEntityFile(Long folderId, String entityClass, List<Long> entityIds,
+                                             String fileFormat) {
+        return metadataDownloadManager.getInputStream(folderId, entityClass, entityIds, fileFormat);
     }
 }
