@@ -137,6 +137,10 @@
   line-height: 1;
 }
 
+.action button {
+  line-height: 1;
+}
+
 .details-panel,
 .configuration {
   position: absolute;

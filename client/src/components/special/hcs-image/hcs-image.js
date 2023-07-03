@@ -20,7 +20,6 @@ import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, Button, Icon, Radio} from 'antd';
-import FileSaver from 'file-saver';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
@@ -33,10 +32,6 @@ import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import Panel from '../panel';
 import HcsZPositionSelector from './hcs-z-position-selector';
-import {
-  downloadAvailable as downloadCurrentTiffAvailable,
-  downloadCurrentTiff
-} from './utilities/download-current-tiff';
 import HcsImageAnalysis from './hcs-image-analysis';
 import AnalysisOutput from '../cellprofiler/components/analysis-output';
 import {Analysis} from '../cellprofiler/model/analysis';
@@ -46,7 +41,9 @@ import {cellsAreEqual, ascSorter} from './utilities/cells-utilities';
 import CellProfilerJobResults from '../cellprofiler/components/cell-profiler-job-results';
 import HcsVideoPlayer from './hcs-video-player';
 import HcsVideoSource from './hcs-video-player/hcs-video-source';
+import HcsMergedImageSource from './utilities/hcs-merged-image-source';
 import VideoButton from './hcs-video-player/video-button';
+import HCSDownloadButton from './hcs-download-button';
 import styles from './hcs-image.css';
 
 @observer
@@ -75,11 +72,14 @@ class HcsImage extends React.PureComponent {
   @observable hcsViewerState = new ViewerState();
   @observable hcsSourceState = new SourceState();
   @observable hcsVideoSource = new HcsVideoSource();
+  @observable hcsMergedImageSource = new HcsMergedImageSource();
   @observable hcsImageViewer;
   @observable hcsAnalysis = new Analysis();
 
   componentDidMount () {
     this.hcsVideoSource.attachViewerState(this.hcsViewerState);
+    this.hcsMergedImageSource.attachViewerState(this.hcsViewerState);
+    this.hcsMergedImageSource.addOmeTiffGenerationListener(this.loadImage.bind(this));
     this.hcsAnalysis.setCurrentUser(this.props.authenticatedUserInfo);
     this.hcsAnalysis.addEventListener(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.prepare();
@@ -99,6 +99,8 @@ class HcsImage extends React.PureComponent {
     this.container = undefined;
     this.hcsVideoSource.destroy();
     this.hcsVideoSource = undefined;
+    this.hcsMergedImageSource.destroy();
+    this.hcsMergedImageSource = undefined;
     this.hcsAnalysis.removeEventListeners(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.hcsAnalysis.destroy();
     if (this.hcsInfo) {
@@ -220,6 +222,7 @@ class HcsImage extends React.PureComponent {
       this.hcsInfo.destroy();
       this.hcsInfo = undefined;
       this.hcsVideoSource.setHcsFile();
+      this.hcsMergedImageSource.setHcsFile();
     }
     if ((storageId || storage) && path) {
       if (this.hcsAnalysis) {
@@ -259,11 +262,13 @@ class HcsImage extends React.PureComponent {
               this.hcsInfo = info;
               this.hcsInfo
                 .addURLsRegeneratedListener(this.loadImage);
-              this.hcsVideoSource.setHcsFile({
+              const hcsFilePayload = {
                 storageId: storage ? storage.id : storageId,
                 path,
                 pathMask: info && info.objectStorage ? info.objectStorage.pathMask : undefined
-              });
+              };
+              this.hcsVideoSource.setHcsFile(hcsFilePayload);
+              this.hcsMergedImageSource.setHcsFile(hcsFilePayload);
               this.onChangeSequenceTimePoints([
                 {
                   sequence,
@@ -316,14 +321,20 @@ class HcsImage extends React.PureComponent {
         this.loadImageForAnalysis();
       } else if (newSequenceId !== currentSequenceId) {
         this.changeSequence();
-      } else if (this.hcsImageViewer) {
+      } else if (this.hcsImageViewer && !this.hcsMergedImageSource.omeTiffAvailable) {
         this.hcsImageViewer.setGlobalTimePosition(timePointId);
+        this.loadImageForAnalysis();
+      } else if (this.hcsImageViewer) {
         this.loadImageForAnalysis();
       }
       this.hcsVideoSource.setSequenceTimePoints(
         newSequenceId,
         timePointId,
         newSequence ? (newSequence.timeSeries || []).length > 1 : false
+      );
+      this.hcsMergedImageSource.setSequenceTimePoints(
+        newSequenceId,
+        timePointId
       );
     });
   };
@@ -335,10 +346,11 @@ class HcsImage extends React.PureComponent {
       mergeZPlanes
     }, () => {
       const newZ = this.selectedZCoordinate;
-      if (newZ !== currentZ && this.hcsImageViewer) {
+      if (newZ !== currentZ && this.hcsImageViewer && !this.hcsMergedImageSource.omeTiffAvailable) {
         this.hcsImageViewer.setGlobalZPosition(Number(newZ));
       }
       this.hcsVideoSource.setZPlanes(this.selectedZCoordinate);
+      this.hcsMergedImageSource.setZPlanes(selection.slice(), mergeZPlanes);
       this.loadImageForAnalysis();
     });
   };
@@ -407,13 +419,61 @@ class HcsImage extends React.PureComponent {
   changeWellImages = (images = []) => {
     this.setState({
       selectedFields: images.slice()
-    }, () => this.loadImage());
+    }, () => {
+      const sequence = this.selectedSequence;
+      const well = this.selectedWell;
+      const fields = this.selectedWellFields;
+      if (
+        sequence &&
+        well &&
+        fields.length > 0 &&
+        this.hcsMergedImageSource
+      ) {
+        this.hcsMergedImageSource.setWell(
+          well,
+          fields.map((f) => f.id)
+        );
+      }
+      this.loadImage();
+    });
   };
 
   loadImage = () => {
     const sequence = this.selectedSequence;
     const well = this.selectedWell;
     const fields = this.selectedWellFields;
+    if (
+      this.hcsMergedImageSource.omeTiffAvailable &&
+      this.hcsImageViewer
+    ) {
+      this.hcsMergedImageSource.urlsManager
+        .setActiveURL(
+          this.hcsMergedImageSource.omeTiffPath,
+          this.hcsMergedImageSource.omeTiffOffsetsPath
+        )
+        .then(() => {
+          this.hcsMergedImageSource.urlsManager.reportReadAccess();
+          return Promise.resolve();
+        })
+        .then(() => {
+          this.hcsImageViewer.setData(
+            this.hcsMergedImageSource.urlsManager.omeTiffURL,
+            this.hcsMergedImageSource.urlsManager.offsetsJsonURL
+          )
+            .then(() => {
+              const imagePayload = {
+                imageTimePosition: 0,
+                imageZPosition: 0,
+                mesh: this.showEntireWell
+                  ? getWellMesh(well, fields)
+                  : undefined
+              };
+              this.hcsImageViewer.setImage(imagePayload);
+              this.loadImageForAnalysis();
+            });
+        });
+      return;
+    }
     if (
       sequence &&
       well &&
@@ -445,18 +505,16 @@ class HcsImage extends React.PureComponent {
             sequence.hcsURLsManager.offsetsJsonURL
           ))
           .then(() => {
-            if (this.hcsImageViewer) {
-              const imagePayload = {
-                ID: id,
-                imageTimePosition: this.selectedTimePoint || 0,
-                imageZPosition: this.selectedZCoordinate,
-                mesh: this.showEntireWell
-                  ? getWellMesh(well, this.selectedWellFields)
-                  : undefined
-              };
-              this.hcsImageViewer.setImage(imagePayload);
-              this.loadImageForAnalysis();
-            }
+            const imagePayload = {
+              ID: id,
+              imageTimePosition: this.selectedTimePoint || 0,
+              imageZPosition: this.selectedZCoordinate,
+              mesh: this.showEntireWell
+                ? getWellMesh(well, this.selectedWellFields)
+                : undefined
+            };
+            this.hcsImageViewer.setImage(imagePayload);
+            this.loadImageForAnalysis();
           });
       }
     }
@@ -636,14 +694,10 @@ class HcsImage extends React.PureComponent {
 
   toggleWellView = () => {
     if (this.showEntireWell) {
-      this.setState({
-        selectedFields: this.selectedWellFields.slice(0, 1)
-      }, this.loadImage);
+      this.changeWellImages(this.selectedWellFields.slice(0, 1));
     } else if (this.wellViewAvailable && this.selectedWell) {
       const {images = []} = this.selectedWell;
-      this.setState({
-        selectedFields: images.slice()
-      }, this.loadImage);
+      this.changeWellImages(images.slice());
     }
   };
 
@@ -660,56 +714,6 @@ class HcsImage extends React.PureComponent {
       >
         {children}
       </Panel>
-    );
-  }
-
-  renderDownloadBtn (options = {}) {
-    const {
-      showTitle = false,
-      buttonSize = 'small'
-    } = options;
-    const {
-      videoMode,
-      videoUrl,
-      videoAccessCallback = () => {},
-      videoPending
-    } = this.hcsVideoSource;
-    const downloadAvailable = videoMode
-      ? (videoUrl && !videoPending)
-      : downloadCurrentTiffAvailable(this.hcsImageViewer);
-    const handleClickDownload = () => {
-      if (videoMode) {
-        videoAccessCallback();
-        fetch(videoUrl)
-          .then(res => res.blob())
-          .then(blob => FileSaver.saveAs(blob, this.hcsVideoSource.getVideoFileName(videoUrl)));
-      } else {
-        downloadCurrentTiff(
-          this.hcsImageViewer,
-          {
-            wellView: this.showEntireWell,
-            wellId: this.selectedWell ? this.selectedWell.id : undefined
-          }
-        );
-      }
-    };
-    const btnContent = showTitle
-      ? `Download current ${videoMode ? 'video' : 'image'}`
-      : (
-        <Icon
-          type={videoMode ? 'download' : 'camera'}
-          className="cp-larger"
-        />
-      );
-    return (
-      <Button
-        className={styles.action}
-        disabled={!downloadAvailable}
-        onClick={handleClickDownload}
-        size={buttonSize}
-      >
-        {btnContent}
-      </Button>
     );
   }
 
@@ -753,7 +757,13 @@ class HcsImage extends React.PureComponent {
               (selectedImage && selectedImage.depth > 1)
             }
           />
-          {this.renderDownloadBtn()}
+          <HCSDownloadButton
+            size="small"
+            className={styles.action}
+            viewer={this.hcsImageViewer}
+            wellId={this.selectedWell ? this.selectedWell.id : undefined}
+            wellView={this.showEntireWell}
+          />
           <Button
             className={styles.action}
             size="small"
@@ -814,7 +824,13 @@ class HcsImage extends React.PureComponent {
               </Radio.Group>
             </div>
           )}
-          {this.renderDownloadBtn({showTitle: true, buttonSize: 'default'})}
+          <HCSDownloadButton
+            showTitle
+            className={styles.action}
+            viewer={this.hcsImageViewer}
+            wellId={this.selectedWell ? this.selectedWell.id : undefined}
+            wellView={this.showEntireWell}
+          />
         </div>
       </Panel>
     );
@@ -903,7 +919,8 @@ class HcsImage extends React.PureComponent {
         this.hcsVideoSource.videoPending
       ) ||
       this.hcsSourceState.pending ||
-      this.hcsViewerState.pending;
+      this.hcsViewerState.pending ||
+      this.hcsMergedImageSource.omeTiffPending;
     if (this.showBatchJobInfo) {
       return null;
     }
@@ -1080,6 +1097,7 @@ class HcsImage extends React.PureComponent {
         hcsSourceState={this.hcsSourceState}
         hcsAnalysis={this.hcsAnalysis}
         hcsVideoSource={this.hcsVideoSource}
+        hcsMergedImageSource={this.hcsMergedImageSource}
       >
         <div
           className={
