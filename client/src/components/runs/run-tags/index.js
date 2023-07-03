@@ -28,7 +28,8 @@ const KNOWN_TAGS = [
   'idle',
   'pressure',
   'sge_in_use',
-  'recovered'
+  'recovered',
+  'node_unavailable'
 ];
 
 const isInstanceLink = (tag) => {
