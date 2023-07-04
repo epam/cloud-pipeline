@@ -93,7 +93,7 @@ public class AggregatingToolScanManagerTest {
     public static final String DIGEST_3 = "digest3";
     private static final String TEST_LABEL_NAME = "test-label-name";
     private static final String TEST_LABEL_VALUE = "label-value";
-    private static final Set<String> TEST_LABEL_MARK = Collections.singleton("label-name");
+    private static final Set<String> TEST_LABEL_MARK = Collections.singleton("LABEL-name");
     private static final int ERROR_CODE = 500;
 
     @InjectMocks

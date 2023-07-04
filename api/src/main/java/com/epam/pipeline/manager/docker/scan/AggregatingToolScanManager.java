@@ -542,7 +542,8 @@ public class AggregatingToolScanManager implements ToolScanManager {
         }
         final boolean hasNvidia = Stream.concat(SetUtils.emptyIfNull(imageLabels.keySet()).stream(),
                         CollectionUtils.emptyIfNull(imageLabels.values()).stream())
-                .anyMatch(imageLabel -> nvidiaLabels.stream().anyMatch(imageLabel::contains));
+                .anyMatch(imageLabel -> nvidiaLabels.stream()
+                        .anyMatch(nvidiaLabel -> StringUtils.containsIgnoreCase(imageLabel, nvidiaLabel)));
         if (hasNvidia) {
             LOGGER.debug("Found nvidia label for tool '{}:{}'", image, tag);
         }
