@@ -11,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from .hcs_utils import get_required_field, prepare_cloud_path
-from .config import Config
+from multiprocessing.pool import ThreadPool
+import traceback
 import os
-from .modules.tifffile_with_offsets import TiffFile, TiffPage
 import numpy as np
 from moviepy.editor import ImageSequenceClip
 import time
@@ -24,6 +22,12 @@ import xml.etree.ElementTree as ET
 import json
 import errno
 import uuid
+
+from .config import Config
+from .modules.tifffile_with_offsets import TiffFile, TiffPage
+from .hcs_utils import get_required_field, prepare_cloud_path
+
+POOL_SIZE = int(os.getenv('CELLPROFILER_API_IMAGES_THREADS', 2))
 
 
 def create_clip(params):
@@ -480,3 +484,89 @@ def create_image(params):
     merged_image.save(image_path)
 
     return image_path
+
+
+class HCSImagesManager:
+
+    def __init__(self, tasks):
+        self._tasks = tasks
+        self._pool = ThreadPool(processes=POOL_SIZE)
+
+    def generate_clip(self, params):
+        pass
+
+    def get_results(self, task_id):
+        return self._tasks.get(task_id)
+
+    def generate_image(self, params):
+        z_planes = get_required_field(params, 'zPlanes').split(',')
+        sequence_id = str(get_required_field(params, 'sequenceId'))
+        timepoint = get_required_field(params, 'timepoint')
+        image_format = params.get('format', 'tiff')
+        original = int(params.get('original', 1))
+        path = get_required_field(params, 'path')
+        path = prepare_cloud_path(path)
+        cells = [int(field) for field in get_required_field(params, 'cells').split(',')]
+        # well: shall have format as in wells_map.json col_row (example: 2_2)
+        wells_map_key = params.get('well', None)
+        if not original and len(cells) > 1:
+            raise RuntimeError('Overview image creation available for single well only.')
+
+        preview_dir, sequences = parse_hcs(path, sequence_id)
+        timepoints = sequences[sequence_id]
+        preview_dir = prepare_cloud_path(preview_dir)
+        index_path = get_index_path(preview_dir)
+        # hcs channels and z-planes
+        channels, planes = get_planes_and_channels(index_path)
+        for selected_plane in z_planes:
+            if str(selected_plane) not in [str(plane) for plane in planes]:
+                raise RuntimeError('Incorrect Z plane id [{}]'.format(selected_plane))
+
+        selected_channels = get_selected_channels(params, channels)
+        image_path = build_image_path(image_format)
+
+        preview_seq_dir = os.path.join(preview_dir, '{}'.format(sequence_id))
+        ome_tiff_path, offsets_path = get_path(preview_seq_dir, original)
+        ome_tiff_not_found = not os.path.isfile(ome_tiff_path)
+        well_map = None
+        if original or (wells_map_key and ome_tiff_not_found):
+            well_map = get_well_map(preview_seq_dir, wells_map_key)
+        if ome_tiff_not_found:
+            if not well_map:
+                raise RuntimeError("Failed to determine source tiff path: 'well' parameter shall be provided.")
+            ome_tiff_path, offsets_path = get_paths_from_wells_map(well_map, preview_seq_dir)
+        if original:
+            if not well_map.get('coordinates') or not well_map.get('field_size'):
+                raise RuntimeError("Incorrect 'wells_map.json' format. Mandatory fields: 'coordinates', 'field_size'")
+
+        task_id = str(uuid.uuid4())
+        self._tasks.update({task_id: {'state': 'running'}})
+        self._pool.apply_async(func=self.run_image_generation,
+                               args=(task_id, selected_channels, z_planes, planes, channels, timepoint, timepoints,
+                                     cells, offsets_path, ome_tiff_path, original, image_path, well_map))
+        return task_id
+
+    def run_image_generation(self, task_id, selected_channels, z_planes, planes, channels, timepoint, timepoints,
+                             cells, offsets_path, ome_tiff_path, original, image_path, well_map=None):
+        try:
+            pages = get_pages_with_cells(list(selected_channels.keys()), z_planes, planes, len(channels), timepoint,
+                                         timepoints, cells)
+            set_offsets_with_planes(offsets_path, pages)
+            read_images_with_planes(ome_tiff_path, pages)
+
+            if original:
+                coordinates = parse_coordinates(well_map, cells)
+                field_size = well_map.get('field_size')
+                pages = merge_fields_pages(pages, selected_channels.keys(), timepoint, coordinates, field_size)
+            colored_images = []
+            for page in pages:
+                channel_id = page['channel_id']
+                colored_image = color_image(page['image'], selected_channels[channel_id])
+                colored_images.append(colored_image)
+            merged_image = merge_hcs_channels(colored_images)
+            merged_image.save(image_path)
+
+            self._tasks.update({task_id: {'state': 'success', 'path': image_path}})
+        except Exception as e:
+            print(traceback.format_exc())
+            self._tasks.get({task_id: {'state': 'failure', 'message': e.__str__()}})

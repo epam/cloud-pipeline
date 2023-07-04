@@ -21,8 +21,7 @@ import flask
 from flask import Flask, jsonify,  request
 
 from src.hcs_manager import HCSManager
-from src.hcs_clip import create_clip, create_image
-
+from src.hcs_clip import create_clip, HCSImagesManager
 
 if getattr(sys, 'frozen', False):
     static_folder = os.path.join(sys._MEIPASS, 'hcs', 'static')
@@ -226,10 +225,19 @@ def get_movie():
 
 @app.route('/hcs/images', methods=['GET'])
 def get_image():
+    manager = app.config['images']
     try:
-        params = flask.request.args
-        image_full_path = create_image(params)
-        return jsonify(success({"path": image_full_path}))
+        return jsonify(success({'uuid': manager.generate_image(flask.request.args)}))
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/hcs/images/statuses', methods=['GET'])
+def get_image_processing_results():
+    manager = app.config['images']
+    try:
+        return jsonify(success(manager.get_results(flask.request.args.get('uuid'))))
     except Exception as e:
         print(traceback.format_exc())
         return jsonify(error(e.__str__()))
@@ -243,8 +251,10 @@ def main():
     args = parser.parse_args()
 
     pipelines = {}
+    image_tasks = {}
 
     app.config['hcs'] = HCSManager(pipelines)
+    app.config['images'] = HCSImagesManager(image_tasks)
 
     app.run(host=args.host, port=args.port)
 
