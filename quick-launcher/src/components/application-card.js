@@ -14,7 +14,9 @@ export default function ApplicationCard(
     options,
     onFavouriteClick,
     displayFavourite = true,
-    isFavourite
+    isFavourite,
+    isHidden,
+    onShowHideCallback
   }
 ) {
   const settings = useSettings();
@@ -51,7 +53,8 @@ export default function ApplicationCard(
             dark: settings?.darkMode,
             sensitive,
             latest: application.latest,
-            disabled: application.readOnly
+            disabled: application.readOnly,
+            hidden: isHidden
           }
         )
       }
@@ -115,12 +118,33 @@ export default function ApplicationCard(
         onChange={onChange}
         onDependencyChange={onDependencyChange}
         extendedOptions={extendedOptions}
+        onShowHideCallback={() => onShowHideCallback(application)}
+        isHidden={isHidden}
       />
       {
-        (application.deprecated || application.readOnly) && (
-          <span className="deprecated">
+        (application.deprecated || application.readOnly || isHidden) && (
+          <span
+            className="labels"
+          >
             {
-              application.readOnly ? 'READ ONLY' : 'DEPRECATED'
+              (application.deprecated || application.readOnly) && (
+                <span
+                  className="deprecated"
+                >
+                  {
+                    application.readOnly ? 'READ ONLY' : 'DEPRECATED'
+                  }
+                </span>
+              )
+            }
+            {
+              isHidden && (
+                <span
+                  className="hidden-label"
+                >
+                  HIDDEN
+                </span>
+              )
             }
           </span>
         )

@@ -97,19 +97,11 @@ function ContextMenu(
         h = window.innerHeight;
         setUpdatePosition(o => o + 1);
       } else if (
-        menuRef.current && (
-          (
-            modalW !== menuRef.current.clientWidth &&
-            menuRef.current.clientWidth
-          ) ||
-          (
-            modalH !== menuRef.current.clientHeight &&
-            menuRef.current.clientHeight
-          )
-        )
+        modalW !== menuRef.current?.clientWidth ||
+        modalH !== menuRef.current?.clientHeight
       ) {
-        modalW = menuRef.current.clientWidth;
-        modalH = menuRef.current.clientHeight;
+        modalW = menuRef.current?.clientWidth || 0;
+        modalH = menuRef.current?.clientHeight || 0;
         setUpdatePosition(o => o + 1);
       }
       cancel = requestAnimationFrame(handle);
@@ -128,6 +120,13 @@ function ContextMenu(
       onVisibilityChange(isVisible);
     }
   }, [isVisible, onVisibilityChange]);
+  useEffect(() => {
+    if (isVisible) {
+      openOverlay();
+    } else {
+      closeOverlay();
+    }
+  }, [isVisible, openOverlay, closeOverlay]);
   useLayoutEffect(() => {
     const newPosition = getContextMenuPosition(
       triggerRef.current || anchorElement,
@@ -155,11 +154,8 @@ function ContextMenu(
       event.preventDefault();
       event.stopPropagation();
     }
-    if (openOverlay) {
-      openOverlay();
-    }
     setIsVisible(true);
-  }, [setIsVisible, openOverlay]);
+  }, [setIsVisible]);
   const hide = useCallback((event) => {
     if (event) {
       event.preventDefault();

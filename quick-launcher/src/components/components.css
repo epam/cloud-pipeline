@@ -133,11 +133,13 @@
   padding: 10px 5px;
 }
 
-.app:not(.app-folder).disabled {
+.app:not(.app-folder).disabled,
+.app:not(.app-folder).hidden {
   background-color: rgba(0, 0, 0, 0.15)!important;
 }
 
-.app:not(.app-folder).dark.disabled {
+.app:not(.app-folder).dark.disabled,
+.app:not(.app-folder).dark.hidden {
   background-color: rgba(0, 0, 0, 0.3)!important;
 }
 
@@ -241,16 +243,29 @@
   margin-top: 8px;
 }
 
-.app .deprecated {
+.app .labels {
   position: absolute;
   bottom: 0;
   left: 0;
   padding: 4px;
   font-size: x-small;
-  color: #e44d4d;
   background-color: rgba(0, 0, 0, 0.75);
   border-radius: 0 5px 0 5px;
   text-transform: uppercase;
+}
+
+.app .labels .deprecated {
+  color: #e44d4d;
+}
+
+.app .labels .hidden-label {
+  color: #aaa;
+}
+
+.app .labels > *:not(:last-child)::after {
+  content: '/';
+  color: #666666;
+  margin: 0 2px;
 }
 
 .app:hover {
@@ -489,13 +504,17 @@
 }
 
 .app-folder .folder-app-star > svg,
-.app .app-star > svg {
+.app .app-star > svg,
+.app-folder .folder-app-hide > svg,
+.app .app-hide > svg {
   stroke: currentColor;
   fill: rgba(255, 255, 255, 0.15);
 }
 
 .app-folder .folder-app-star:hover,
-.app .app-star:hover {
+.app .app-star:hover,
+.app-folder .folder-app-hide:hover,
+.app .app-hide:hover {
   color: #ccc;
 }
 

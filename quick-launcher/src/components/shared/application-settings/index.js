@@ -23,6 +23,8 @@ export default function ApplicationSettings (
     extendedOptions,
     onChange,
     onDependencyChange,
+    onShowHideCallback,
+    isHidden
   }
 ) {
   const appSettings = useSettings();
@@ -37,7 +39,7 @@ export default function ApplicationSettings (
       setMultiSelectionSubMenu(undefined);
       setFilter(undefined);
     }
-  }, [setSubMenu, setMultiSelectionSubMenu, setFilter]);
+  }, [setSubMenu, setMultiSelectionSubMenu, setFilter, setContextMenuVisible]);
   const onChangeDependencyOptions = (setting, dependency, value) => {
     onDependencyChange(setting, dependency, value, true);
   }
@@ -113,6 +115,12 @@ export default function ApplicationSettings (
     appendDefault,
     options
   ]);
+  const toggleShowHide = useCallback(() => {
+    onContextMenuVisibilityChanged(false);
+    if (typeof onShowHideCallback === 'function') {
+      onShowHideCallback();
+    }
+  }, [onContextMenuVisibilityChanged, onShowHideCallback]);
   const extendedOptionsPresentation = [];
   for (let setting of appExtendedSettingsFiltered) {
     const value = getSettingValue(setting);
@@ -185,6 +193,7 @@ export default function ApplicationSettings (
               {extendedOptionsPresentation}
             </Gear>
           )}
+          visible={contextMenuVisible}
           onVisibilityChange={onContextMenuVisibilityChanged}
         >
           {
@@ -309,6 +318,20 @@ export default function ApplicationSettings (
                     </span>
                   )
                 }
+              </div>
+            )
+          }
+          {
+            contextMenuVisible && (
+              <div
+                className="application-hide-action"
+                onClick={toggleShowHide}
+              >
+                <span className="show-hide-link">
+                  {
+                    isHidden ? 'Show application' : 'Hide application'
+                  }
+                </span>
               </div>
             )
           }

@@ -10,7 +10,7 @@ import EditFolderApplication from './edit-folder-application';
 import PickUpFolderApplicationModal from './components/shared/pick-up-folder-application-modal';
 import Modal from './components/shared/modal';
 import filterAppFn from './components/utilities/filter-applications-fn';
-import useFavouriteApplications, {FOLDER_APPLICATIONS} from './components/utilities/use-favourite-applications';
+import useFavouriteApplications, {Modes} from './components/utilities/use-favourite-applications';
 import LaunchFolderApplication from './components/shared/launch-folder-application';
 import Help from './components/shared/help';
 import {
@@ -86,7 +86,7 @@ function FolderApp ({location}) {
     toggleFavourite,
     sorter
   } = useFavouriteApplications(
-    FOLDER_APPLICATIONS,
+    Modes.folder,
     'path'
   );
   let applicationsContent;

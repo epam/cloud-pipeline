@@ -1,56 +1,69 @@
-import {useCallback, useEffect, useState} from 'react';
+import useLocalStorageApplicationsList from './use-local-storage-applications-list';
+import { useCallback } from "react";
 
-const FOLDER_APPLICATIONS = 'FOLDER_APPLICATIONS_FAVOURITES';
-const DOCKER_APPLICATIONS = 'DOCKER_APPLICATIONS_FAVOURITES';
+const FOLDER_APPLICATIONS_FAVOURITES = 'FOLDER_APPLICATIONS_FAVOURITES';
+const DOCKER_APPLICATIONS_FAVOURITES = 'DOCKER_APPLICATIONS_FAVOURITES';
+
+const FOLDER_APPLICATIONS_HIDDEN = 'FOLDER_APPLICATIONS_HIDDEN';
+const DOCKER_APPLICATIONS_HIDDEN = 'DOCKER_APPLICATIONS_HIDDEN';
+
+const Modes = {
+  folder: 'folder',
+  docker: 'docker'
+}
 
 export {
-  FOLDER_APPLICATIONS,
-  DOCKER_APPLICATIONS
+  Modes
 };
 
-export default function useFavouriteApplications (key, property = 'id') {
-  const [favourites, setFavourites] = useState([]);
-  useEffect(() => {
-    try {
-      const storageValue = JSON.parse(localStorage.getItem(key))
-      if (Array.isArray(storageValue)) {
-        setFavourites(storageValue);
-      }
-    } catch (_) {}
-  }, [setFavourites]);
-  const updateFavourites = useCallback((o) => {
-    localStorage.setItem(key, JSON.stringify(o || []));
-    setFavourites(o || []);
-  }, [setFavourites]);
-  const isFavourite = useCallback((application) => {
-    return !!application && !!favourites.find(p => `${application[property]}` === `${p}`);
-  }, [favourites, property]);
-  const onFavouriteChange = useCallback((application, favourite) => {
-    if (application) {
-      updateFavourites([
-        ...favourites.filter(o => `${o}` !== `${application[property]}`),
-        ...(favourite ? [application[property]] : [])
-      ]);
+export default function useFavouriteApplications (mode, property = 'id') {
+  const {
+    isInList: isFavourite,
+    onChange: onFavouriteChange,
+    sorter: favouriteSorter
+  } = useLocalStorageApplicationsList(
+    mode === Modes.docker ? DOCKER_APPLICATIONS_FAVOURITES : FOLDER_APPLICATIONS_FAVOURITES,
+    property
+  );
+  const {
+    isInList: isHidden,
+    onChange: onHiddenChange,
+    sorter: hiddenSorter
+  } = useLocalStorageApplicationsList(
+    mode === Modes.docker ? DOCKER_APPLICATIONS_HIDDEN : FOLDER_APPLICATIONS_HIDDEN,
+    property
+  );
+  const sorter = useCallback(
+    (a, b) => -hiddenSorter(a, b) || favouriteSorter(a, b),
+    [hiddenSorter, favouriteSorter]
+  );
+  const changeFavourite = useCallback((application, favourite) => {
+    onFavouriteChange(application, favourite);
+    if (favourite) {
+      onHiddenChange(application, false);
     }
-  }, [favourites, updateFavourites, property]);
-  const toggleFavourite = useCallback((application) => {
-    onFavouriteChange(application, !isFavourite(application));
-  }, [onFavouriteChange, isFavourite]);
-  const sorter = useCallback((a, b) => {
-    const aFavourite = isFavourite(a);
-    const bFavourite = isFavourite(b);
-    if (aFavourite === bFavourite) {
-      return 0;
+  }, [onFavouriteChange, onHiddenChange]);
+  const changeHidden = useCallback((application, hidden) => {
+    onHiddenChange(application, hidden);
+    if (hidden) {
+      onFavouriteChange(application, false);
     }
-    if (aFavourite) {
-      return -1;
-    }
-    return 1;
-  }, [isFavourite]);
+  }, [onFavouriteChange, onHiddenChange]);
+  const toggleFavourite = useCallback((app) => {
+    const appIsFavourite = isFavourite(app);
+    changeFavourite(app, !appIsFavourite);
+  }, [changeFavourite, isFavourite]);
+  const toggleHidden = useCallback((app) => {
+    const appIsHidden = isHidden(app);
+    changeHidden(app, !appIsHidden);
+  }, [changeHidden, isHidden]);
   return {
     isFavourite,
+    isHidden,
     toggleFavourite,
-    onFavouriteChange,
+    toggleHidden,
+    onFavouriteChange: changeFavourite,
+    onHiddenChange: changeHidden,
     sorter
   };
 }

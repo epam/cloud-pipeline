@@ -7,7 +7,7 @@ import useDefaultLaunchExtendedSettings from './components/utilities/use-default
 import Application from './components/application';
 import LoadingIndicator from './components/shared/loading-indicator';
 import ApplicationCard from './components/application-card';
-import useFavouriteApplications, { DOCKER_APPLICATIONS } from "./components/utilities/use-favourite-applications";
+import useFavouriteApplications, { Modes } from "./components/utilities/use-favourite-applications";
 import generateParametersFromDependencies from './components/utilities/generate-parameters-from-dependencies';
 import { escapeRegExp } from './models/utilities/escape-reg-exp';
 import './components/components.css';
@@ -63,13 +63,13 @@ function findApplication (settings, location, applications = []) {
 
 function App({launch, location}) {
   const settings = useSettings();
-  const [showDeprecated, setShowDeprecated] = useState(false);
-  const onChangeShowDeprecated = useCallback((event) => {
-    setShowDeprecated(event.target.checked);
-  }, [setShowDeprecated]);
-  const onToggleDeprecated = useCallback(() => {
-    setShowDeprecated((current) => !current);
-  }, [setShowDeprecated]);
+  const [showAll, setShowAll] = useState(false);
+  const onChangeShowAll = useCallback((event) => {
+    setShowAll(event.target.checked);
+  }, [setShowAll]);
+  const onToggleShowAll = useCallback(() => {
+    setShowAll((current) => !current);
+  }, [setShowAll]);
   const {appExtendedSettings, dependencies} = useExtendedSettings();
   const [launchExtendedOptions, setLaunchExtendedOptions] = useDefaultLaunchExtendedSettings(
     appExtendedSettings
@@ -112,12 +112,16 @@ function App({launch, location}) {
   const hasDeprecated = applications.some((anApp) => (anApp.deprecated || anApp.readOnly));
   const {
     isFavourite,
+    isHidden,
     toggleFavourite,
+    toggleHidden,
     sorter
   } = useFavouriteApplications(
-    DOCKER_APPLICATIONS
+    Modes.docker
   );
   const sorted = applications.slice().sort(sorter);
+  const filtered = sorted
+    .filter((anApp) => showAll || (!anApp.deprecated && !anApp.readOnly && !isHidden(anApp)) || isFavourite(anApp));
   if (pending) {
     applicationsContent = (
       <div className="content loading">
@@ -148,6 +152,34 @@ function App({launch, location}) {
         </div>
       </div>
     )
+  } else if (filtered.length === 0) {
+    applicationsContent = (
+      <div className="content error">
+        <div className="header">
+          No applications found
+        </div>
+        <div className="description">
+          {
+            !showAll && (
+              <span>
+                There are only deprecated, read-only or hidden applications available -
+                <a
+                  onClick={()=> setShowAll(true)}
+                  style={{
+                    marginLeft: 5,
+                    color: 'white',
+                    textDecoration: 'underline',
+                    cursor: 'pointer'
+                  }}
+                >
+                  show all
+                </a>
+              </span>
+            )
+          }
+        </div>
+      </div>
+    )
   } else if (!user || !user.userName) {
     applicationsContent = (
       <div className="content error">
@@ -160,8 +192,6 @@ function App({launch, location}) {
       </div>
     )
   } else if (!launch) {
-    const filtered = sorted
-      .filter((anApp) => showDeprecated || (!anApp.deprecated && !anApp.readOnly) || isFavourite(anApp));
     const renderApps = (latest) => filtered
       .filter((anApp) => !!latest === !!anApp.latest)
       .map((anApp) => (
@@ -171,7 +201,9 @@ function App({launch, location}) {
           onClick={(extended) => onSelectApplication(anApp.id, extended)}
           options={options}
           isFavourite={isFavourite(anApp)}
+          isHidden={isHidden(anApp)}
           onFavouriteClick={toggleFavourite}
+          onShowHideCallback={toggleHidden}
         />
       ));
     applicationsContent = ([
@@ -250,15 +282,15 @@ function App({launch, location}) {
               >
                 <div
                   className="deprecated-checkbox"
-                  onClick={onToggleDeprecated}
+                  onClick={onToggleShowAll}
                   style={{marginLeft: 'auto'}}
                 >
                   <input
                     type="checkbox"
-                    checked={showDeprecated}
-                    onChange={onChangeShowDeprecated}
+                    checked={showAll}
+                    onChange={onChangeShowAll}
                   />
-                  Show deprecated / read only
+                  Show all
                 </div>
               </div>
               {

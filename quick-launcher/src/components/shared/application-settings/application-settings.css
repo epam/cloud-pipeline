@@ -1,5 +1,6 @@
 .application-setting,
-.application-session-info {
+.application-session-info,
+.application-hide-action {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -95,7 +96,8 @@
 }
 
 .application-setting-title,
-.application-session-info {
+.application-session-info,
+.application-hide-action {
   padding-left: 5px;
 }
 
@@ -114,7 +116,8 @@
   white-space: nowrap;
 }
 
-.application-session-info {
+.application-session-info,
+.application-hide-action {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -217,7 +220,8 @@
   position: relative;
 }
 
-.application-session-info .clear-session-info-link {
+.application-session-info .clear-session-info-link,
+.application-hide-action .show-hide-link {
   color: #999;
 }
 
@@ -228,7 +232,8 @@
   align-items: center;
 }
 
-.application-session-info:hover .clear-session-info-link {
+.application-session-info:hover .clear-session-info-link,
+.application-hide-action:hover .show-hide-link {
   color: #ccc;
   text-decoration: underline;
 }
