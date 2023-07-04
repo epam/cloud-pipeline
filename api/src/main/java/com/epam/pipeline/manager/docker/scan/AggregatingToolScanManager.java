@@ -52,8 +52,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +76,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -301,14 +304,13 @@ public class AggregatingToolScanManager implements ToolScanManager {
             final DockerClient client = getDockerClient(tool.getImage(), registry);
             final String digest = client.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
             final List<ImageHistoryLayer> imageHistory = client.getImageHistory(registry, tool.getImage(), tag);
-            final boolean hasCudnnVersion = hasCudnnVersion(client, registry, tool.getImage(), tag);
+            final boolean hasNvidiaMark = hasNvidiaMark(client, registry, tool.getImage(), tag);
             final String defaultCmd = toolManager.loadToolDefaultCommand(imageHistory);
-
             final ClairScanResult clairResult = getScanResult(tool, clairService.getScanResult(clairRef));
             final DockerComponentScanResult dockerScanResult = dockerComponentService == null ? null :
                     getScanResult(tool, dockerComponentService.getScanResult(clairRef));
             return convertResults(clairResult, dockerScanResult, tool,
-                    tag, digest, defaultCmd, imageHistory.size(), hasCudnnVersion);
+                    tag, digest, defaultCmd, imageHistory.size(), hasNvidiaMark);
         } catch (IOException e) {
             throw new ToolScanExternalServiceException(tool, e);
         }
@@ -424,7 +426,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
                                                  final String digest,
                                                  final String defaultCmd,
                                                  final int layersCount,
-                                                 final boolean hasCudnnVersion) {
+                                                 final boolean hasNvidiaMark) {
         final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
         final List<Vulnerability> vulnerabilities = Optional.ofNullable(clairScanResult)
                 .map(result -> ListUtils.emptyIfNull(result.getFeatures()).stream())
@@ -469,7 +471,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
                 .findFirst().map(td -> new ToolOSVersion(td.getName(), td.getVersion()))
                 .orElse(new ToolOSVersion(NOT_DETERMINED, NOT_DETERMINED));
 
-        final boolean cudaAvailable = hasCudnnVersion && hasNvidiaInstalled(dependencies, tool, tag);
+        final boolean cudaAvailable = hasNvidiaMark && hasNvidiaInstalled(dependencies, tool, tag);
 
         final ToolVersionScanResult result = new ToolVersionScanResult(tag, osVersion, vulnerabilities,
                 dependencies, ToolScanStatus.COMPLETED, clairScanResult.getName(), digest, defaultCmd, layersCount);
@@ -478,16 +480,25 @@ public class AggregatingToolScanManager implements ToolScanManager {
         return result;
     }
 
-    private boolean hasCudnnVersion(final DockerClient client, final DockerRegistry registry,
-                                   final String image, final String tag) {
-        final String cudnnVersionLabel = preferenceManager.getPreference(
+    private boolean hasNvidiaMark(final DockerClient client, final DockerRegistry registry, final String image,
+                                  final String tag) {
+        final Set<String> nvidiaLabels = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_SECURITY_CUDNN_VERSION_LABEL);
-        final boolean hasCudnnVersion = MapUtils.emptyIfNull(client.getImageLabels(registry, image, tag))
-                .containsKey(cudnnVersionLabel);
-        if (hasCudnnVersion) {
-            LOGGER.debug("Found cudnn version label for tool '{}:{}'", image, tag);
+        if (CollectionUtils.isEmpty(nvidiaLabels)) {
+            return true;
         }
-        return hasCudnnVersion;
+        final Map<String, String> imageLabels = MapUtils.emptyIfNull(client.getImageLabels(registry, image, tag));
+        if (MapUtils.isEmpty(imageLabels)) {
+            return false;
+        }
+        final boolean hasNvidia = Stream.concat(SetUtils.emptyIfNull(imageLabels.keySet()).stream(),
+                        CollectionUtils.emptyIfNull(imageLabels.values()).stream())
+                .anyMatch(imageLabel -> nvidiaLabels.stream()
+                        .anyMatch(nvidiaLabel -> StringUtils.containsIgnoreCase(imageLabel, nvidiaLabel)));
+        if (hasNvidia) {
+            LOGGER.debug("Found nvidia label for tool '{}:{}'", image, tag);
+        }
+        return hasNvidia;
     }
 
     private boolean hasNvidiaInstalled(final List<ToolDependency> dependencies, final Tool tool, final String tag) {
