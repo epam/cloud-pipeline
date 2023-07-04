@@ -70,6 +70,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -90,8 +91,9 @@ public class AggregatingToolScanManagerTest {
     public static final String DIGEST_1 = "digest1";
     public static final String DIGEST_2 = "digest2";
     public static final String DIGEST_3 = "digest3";
-    private static final String TEST_LABEL_NAME = "label-name";
+    private static final String TEST_LABEL_NAME = "test-label-name";
     private static final String TEST_LABEL_VALUE = "label-value";
+    private static final Set<String> TEST_LABEL_MARK = Collections.singleton("label-name");
     private static final int ERROR_CODE = 500;
 
     @InjectMocks
@@ -169,7 +171,7 @@ public class AggregatingToolScanManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_GRACE_HOURS))
                 .thenReturn(0);
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_CUDNN_VERSION_LABEL))
-                .thenReturn(TEST_LABEL_NAME);
+                .thenReturn(TEST_LABEL_MARK);
 
         Assert.assertNotNull(pipelineConfigurationManager); // Dummy line, to shut up PMD
 
