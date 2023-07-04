@@ -57,6 +57,7 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
      * Names of OS version files to analyze.
      */
     public static final String OS_RELEASE = "/**/etc/os-release";
+    public static final String OS_RELEASE_USR_LIB = "/**/usr/lib/os-release";
     public static final String REDHAT_RELEASE = "/**/etc/redhat-release";
     public static final String SYSTEM_RELEASE = "/**/etc/system-release";
     public static final String CENTOS_RELEASE = "/**/etc/centos-release";
@@ -65,7 +66,7 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
      * Filter that detects files named "os-release".
      */
     private static final FilePathGlobFilter NAME_FILE_FILTER = new FilePathGlobFilter(
-            OS_RELEASE, REDHAT_RELEASE, SYSTEM_RELEASE, CENTOS_RELEASE
+            OS_RELEASE, OS_RELEASE_USR_LIB, REDHAT_RELEASE, SYSTEM_RELEASE, CENTOS_RELEASE
     );
 
     /**
@@ -77,6 +78,7 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
     private static final Pattern NAME_TITLE_PATTERN = Pattern.compile(".*\nID=\"?([^\n\"]*)\"?\n.*");
     private static final Pattern SYSTEM_NAME_TITLE_PATTERN = Pattern.compile("([^ ]+).*");
     private static final Pattern SYSTEM_VERSION_PATTERN = Pattern.compile("([\\d\\.\\-_]+)");
+    public static final String OS_RELEASE_FILE = "os-release";
 
     @Override
     protected FileFilter getFileFilter() {
@@ -118,8 +120,8 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
             return;
         }
         final String cleanContent = contents.replaceAll("\n\\s+", " ");
-        final Pattern namePattern = OS_RELEASE.endsWith(source) ? NAME_TITLE_PATTERN : SYSTEM_NAME_TITLE_PATTERN;
-        final Pattern versionPattern = OS_RELEASE.endsWith(source) ? VERSION_PATTERN : SYSTEM_VERSION_PATTERN;
+        final Pattern namePattern = OS_RELEASE_FILE.equals(source) ? NAME_TITLE_PATTERN : SYSTEM_NAME_TITLE_PATTERN;
+        final Pattern versionPattern = OS_RELEASE_FILE.equals(source) ? VERSION_PATTERN : SYSTEM_VERSION_PATTERN;
 
         gatherEvidence(dependency, EvidenceType.VERSION, versionPattern, cleanContent,
                 source, "Version", Confidence.HIGH);
