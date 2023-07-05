@@ -1156,7 +1156,7 @@ function check_pod_exists {
 function wait_for_deletion {
     local DEPLOYMENT_NAME=$1
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         print_info "Waiting for pod \"$p\" final deletion and cleanup..."
         while check_pod_exists "$p"; do
@@ -1173,7 +1173,7 @@ function wait_for_deployment {
     print_info "Waiting for deployment/pod $DEPLOYMENT_NAME creation..."
     set -o pipefail
     while "true"; do
-        pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+        pods=$(get_deployment_pods $DEPLOYMENT_NAME)
         [ $? -eq 0 ] && [ "$pods" ] && break
     done
     set +o pipefail
@@ -1215,7 +1215,7 @@ function execute_deployment_command {
         CONTAINER_NAME=
     fi
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         bash -c "kubectl exec -i $CONTAINER_NAME $p -- $CMD"
     done
@@ -1224,10 +1224,18 @@ function execute_deployment_command {
 function delete_deployment_pods {
     local DEPLOYMENT_NAME=$1
 
-    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
+    pods=$(get_deployment_pods $DEPLOYMENT_NAME)
     for p in $pods; do
         kubectl delete po $p --grace-period=0 --force
     done
+}
+
+function get_deployment_pods() {
+    DEPLOYMENT_NAME=$1
+    # Since pod name is: {deployment-name}-{replica-set-hash}-{pod-hash} we can assume that all pods that have such
+    # name is related to the specific deployment
+    _pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ' | grep -E "^${DEPLOYMENT_NAME}-[a-zA-Z0-9]+-[a-zA-Z0-9]+$")
+    echo $_pods
 }
 
 function create_user_and_db {
