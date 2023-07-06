@@ -418,9 +418,9 @@ public class SystemPreferences {
      */
     public static final IntPreference DOCKER_SECURITY_TOOL_POLICY_MAX_HIGH_VULNERABILITIES = new IntPreference(
         "security.tools.policy.max.high.vulnerabilities", 20, DOCKER_SECURITY_GROUP, isGreaterThanOrEquals(0));
-    public static final StringPreference DOCKER_SECURITY_CUDNN_VERSION_LABEL = new StringPreference(
-            "security.tools.nvidia.cudnn.version.label", "com.nvidia.cudnn.version", DOCKER_SECURITY_GROUP,
-            PreferenceValidators.isValidUrlOrBlank);
+    public static final ObjectPreference<Set<String>> DOCKER_SECURITY_CUDNN_VERSION_LABEL =
+            new ObjectPreference<>("security.tools.nvidia.cudnn.version.label", null,
+                    new TypeReference<Set<String>>() {}, DOCKER_SECURITY_GROUP, pass, true);
 
     // CLUSTER_GROUP
     /**
