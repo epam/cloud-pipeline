@@ -1592,6 +1592,16 @@ export default `
 @THEME .cp-close-button:hover {
   color: @application-color;
 }
+@THEME .cp-panel.cp-dark-background {
+  color: @application-tooltip-color;
+  background-color: @application-tooltip-background-color;
+  border-color: @application-tooltip-border-color;
+}
+@THEME .cp-panel.cp-dark-background.semi-transparent {
+  color: @application-tooltip-color;
+  background-color: fade(@application-tooltip-background-color, 85%);
+  border-color: @application-tooltip-border-color;
+}
 
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;

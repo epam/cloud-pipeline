@@ -164,6 +164,9 @@ export default {
     '@vs-color-change-applied-background': '@vs-color-change-background',
     '@application-console-background-color': '#222222',
     '@application-console-color': '#ececec',
-    '@application-console-color-details': '#aaaaaa'
+    '@application-console-color-details': '#aaaaaa',
+    '@application-tooltip-background-color': '#222222',
+    '@application-tooltip-border-color': '#333333',
+    '@application-tooltip-color': '#ececec'
   }
 };
