@@ -30,6 +30,7 @@ import com.epam.pipeline.manager.search.SearchRequestBuilder;
 import com.epam.pipeline.manager.search.SearchResultConverter;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.epam.pipeline.utils.ElasticsearchUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -41,7 +42,6 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.ShardSearchFailure;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -58,7 +58,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -160,7 +159,7 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
         final SearchHits hits = response.getHits();
 
         final List<LogEntry> entries = Arrays.stream(hits.getHits())
@@ -189,7 +188,7 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
 
         final Map<String, Long> result = new HashMap<>();
         if (Objects.isNull(response.getAggregations())) {
@@ -217,7 +216,7 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
         response.getAggregations()
                 .asList()
                 .stream()
@@ -369,31 +368,6 @@ public class LogManager {
         }
 
         boolQuery.filter(rangeQueryBuilder);
-    }
-
-    private SearchResponse verifyResponse(final SearchResponse logsResponse) {
-        if (logsResponse.status().getStatus() != HttpStatus.OK.value()) {
-            throw new IllegalStateException(String.format("Search request has failed with HTTP status %s (%s).",
-                    logsResponse.status().name(), logsResponse.status().getStatus()));
-        }
-
-        log.debug("Search request has finished with {} successful, {} skipped and {} failed shards of {} total.",
-                logsResponse.getSuccessfulShards(), logsResponse.getSkippedShards(),
-                logsResponse.getFailedShards(), logsResponse.getTotalShards());
-        final ShardSearchFailure[] failures = logsResponse.getShardFailures();
-        if (failures.length > 0) {
-            final List<Throwable> errors = Arrays.stream(failures)
-                    .map(ShardSearchFailure::getCause)
-                    .collect(Collectors.toList());
-            final String errorMessages = errors.stream()
-                    .map(Throwable::getMessage)
-                    .collect(Collectors.joining("\n"));
-            log.error("Search request has finished with the following shard failures: {}", errorMessages);
-            throw new IllegalStateException("Search request has failed because some shards failed. ",
-                    failures[0].getCause());
-        }
-
-        return logsResponse;
     }
 
     private LogEntry mapHitToLogEntry(SearchHit searchHit) {

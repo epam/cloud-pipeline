@@ -32,8 +32,10 @@ import com.epam.pipeline.manager.cluster.writer.AbstractMonitoringStatsWriter;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.CommonUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -115,29 +117,30 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     @Override
     public long getDiskSpaceAvailable(final String nodeName, final String podId, final String dockerImage) {
         final Duration duration = minimalDuration();
-        final MonitoringStats.DisksUsage.DiskStats diskStats =
-                AbstractMetricRequester.getStatsRequester(ELKUsageMetric.FS, client)
-                        .requestStats(nodeName,
-                                DateUtils.nowUTC().minus(duration.multipliedBy(Math.max(numberOfIntervals(), TWO))),
-                                DateUtils.nowUTC(),
-                                duration
-                        )
-                        .stream()
-                        .collect(Collectors.groupingBy(MonitoringStats::getStartTime,
-                                Collectors.reducing(this::mergeStats)))
-                        .values()
-                        .stream()
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .max(Comparator.comparing(MonitoringStats::getStartTime,
-                                Comparator.comparing(this::asMonitoringDateTime)))
-                        .map(MonitoringStats::getDisksUsage)
-                        .map(MonitoringStats.DisksUsage::getStatsByDevices)
-                        .orElse(Collections.emptyMap())
-                        .entrySet().stream()
-                        .filter(it -> !SWAP_FILESYSTEM.equalsIgnoreCase(it.getKey()))
-                        .map(Map.Entry::getValue)
-                        .reduce(new MonitoringStats.DisksUsage.DiskStats(), this::merged);
+        final List<MonitoringStats> monitoringStats = AbstractMetricRequester
+                .getStatsRequester(ELKUsageMetric.FS, client)
+                .requestStats(nodeName,
+                        DateUtils.nowUTC().minus(duration.multipliedBy(Math.max(numberOfIntervals(), TWO))),
+                        DateUtils.nowUTC(),
+                        duration
+                );
+        Assert.isTrue(CollectionUtils.isNotEmpty(monitoringStats),
+                messageHelper.getMessage(MessageConstants.ERROR_GET_NODE_STAT, nodeName));
+        final MonitoringStats.DisksUsage.DiskStats diskStats = monitoringStats.stream()
+                .collect(Collectors.groupingBy(MonitoringStats::getStartTime, Collectors.reducing(this::mergeStats)))
+                .values().stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .max(Comparator.comparing(MonitoringStats::getStartTime,
+                        Comparator.comparing(this::asMonitoringDateTime)))
+                .map(MonitoringStats::getDisksUsage)
+                .map(MonitoringStats.DisksUsage::getStatsByDevices)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_GET_NODE_STAT, nodeName)))
+                .entrySet().stream()
+                .filter(it -> !SWAP_FILESYSTEM.equalsIgnoreCase(it.getKey()))
+                .map(Map.Entry::getValue)
+                .reduce(new MonitoringStats.DisksUsage.DiskStats(), this::merged);
         return diskStats.getCapacity() - diskStats.getUsableSpace();
     }
 

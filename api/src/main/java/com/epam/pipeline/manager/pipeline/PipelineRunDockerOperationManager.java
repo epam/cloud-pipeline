@@ -172,10 +172,8 @@ public class PipelineRunDockerOperationManager {
      */
     public Boolean checkFreeSpaceAvailable(final Long runId) {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        Assert.notNull(pipelineRun,
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        final long availableDisk = usageMonitoringManager.getDiskSpaceAvailable(
-                pipelineRun.getInstance().getNodeName(), pipelineRun.getPodId(), pipelineRun.getDockerImage());
+        Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
+        final long availableDisk = getDiskSpaceAvailable(pipelineRun);
         final long requiredImageSize = (long)Math.ceil(
                 (double)toolManager.getCurrentImageSize(pipelineRun.getDockerImage())
                         * preferenceManager.getPreference(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI) / 2);
@@ -280,5 +278,16 @@ public class PipelineRunDockerOperationManager {
     private void checkAbilityToPerformOperation() {
         Assert.state(!preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE).orElse(false),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_OPERATION_FORBIDDEN));
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private long getDiskSpaceAvailable(final PipelineRun pipelineRun) {
+        try {
+            return usageMonitoringManager.getDiskSpaceAvailable(pipelineRun.getInstance().getNodeName(),
+                    pipelineRun.getPodId(), pipelineRun.getDockerImage());
+        } catch (Exception e) {
+            log.error("Failed to load available disk space.", e);
+            return Long.MAX_VALUE;
+        }
     }
 }
