@@ -1816,3 +1816,15 @@ li.ant-time-picker-panel-select-option-selected {
 .cp-close-button:hover {
   color: @application-color;
 }
+
+.cp-panel.cp-dark-background {
+  color: @application-tooltip-color;
+  background-color: @application-tooltip-background-color;
+  border-color: @application-tooltip-border-color;
+}
+
+.cp-panel.cp-dark-background.semi-transparent {
+  color: @application-tooltip-color;
+  background-color: fade(@application-tooltip-background-color, 85%);
+  border-color: @application-tooltip-border-color;
+}

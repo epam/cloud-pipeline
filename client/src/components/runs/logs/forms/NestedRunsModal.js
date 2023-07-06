@@ -17,8 +17,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import ChartJS from 'chart.js';
 import moment from 'moment-timezone';
 import {Modal, Alert, Popover} from 'antd';
 import classNames from 'classnames';
@@ -28,255 +26,147 @@ import PipelineRunInfo from '../../../../models/pipelines/PipelineRunInfo';
 import StatusIcon from '../../../special/run-status-icon';
 import displayDate from '../../../../utils/displayDate';
 import styles from './NestedRunsModal.css';
+import TimelineChart from '../../../special/timeline-chart';
 
-const DEFAULT_COLOR = '#108ee9';
-const DEFAULT_BACKGROUND_COLOR = '#ffffff';
-const DEFAULT_TEXT_COLOR = 'rgba(0, 0, 0, 0.65)';
-const DEFAULT_LINE_COLOR = DEFAULT_TEXT_COLOR;
-
-function runsArraysAreEqual (a, b) {
-  const runIdA = [...new Set((a || []).map((item) => item.runId))].sort((r1, r2) => r1 - r2);
-  const runIdB = [...new Set((b || []).map((item) => item.runId))].sort((r1, r2) => r1 - r2);
-  if (runIdA.length !== runIdB.length) {
-    return false;
+function buildDatasets (runsData = []) {
+  if (runsData.length === 0) {
+    return [];
   }
-  for (let i = 0; i < runIdA.length; i += 1) {
-    if (runIdA[i] !== runIdB[i]) {
-      return false;
+  let head = {
+    next: undefined,
+    items: [],
+    runningItems: []
+  };
+  const findOrInsertNode = (timePoint, from = undefined) => {
+    if (!from) {
+      if (head.timePoint > timePoint) {
+        const newHead = {
+          timePoint: timePoint,
+          next: head,
+          items: [],
+          runningItems: []
+        };
+        head = newHead;
+        return newHead;
+      }
+      return findOrInsertNode(timePoint, head);
+    }
+    if (!from.timePoint) {
+      from.timePoint = timePoint;
+    }
+    if (from.timePoint === timePoint) {
+      return from;
+    }
+    if (!from.next || from.next.timePoint > timePoint) {
+      const newNext = {
+        timePoint: timePoint,
+        next: from.next,
+        items: from.runningItems.slice(),
+        runningItems: from.runningItems.slice()
+      };
+      from.next = newNext;
+      return newNext;
+    }
+    return findOrInsertNode(timePoint, from.next);
+  };
+  const now = moment().unix();
+  for (let i = 0; i < runsData.length; i += 1) {
+    const run = runsData[i];
+    let start = findOrInsertNode(run.start);
+    const end = findOrInsertNode(run.end || now, start);
+    if (!start || !end) {
+      break;
+    }
+    if (!run.end) {
+      end.runningItems.push(run);
+    }
+    end.items.push(run);
+    while (start && start !== end) {
+      start.items.push(run);
+      start.runningItems.push(run);
+      start = start.next;
     }
   }
-  return true;
-}
-
-class Chart extends React.PureComponent {
-  componentDidMount () {
-    this.initializeChart();
-  }
-
-  componentDidUpdate () {
-    this.initializeChart();
-  }
-
-  initializeChart = () => {
-    if (!this.canvas) {
-      return;
-    }
-    const {
-      data = [],
-      title,
-      background = DEFAULT_BACKGROUND_COLOR,
-      color = DEFAULT_COLOR,
-      textColor = DEFAULT_TEXT_COLOR,
-      lineColor = DEFAULT_LINE_COLOR,
-      pending = false,
-      onClick,
-      dateAxisLabel
-    } = this.props;
-    const max = Math.max(0, ...data.map((o) => o.y)) + 1;
-    let minUnit = 'second';
-    let stepSize = 10;
-    let minDate, maxDate;
-    let shouldDisplayDate = false;
-    if (data.length > 1) {
-      minDate = moment(data[0].x);
-      maxDate = moment(data[data.length - 1].x);
-      shouldDisplayDate = moment(minDate).startOf('d') < moment(maxDate).startOf('d');
-      const duration = maxDate.diff(minDate, 's');
-      const MINUTE = 60;
-      const HOUR = 60 * MINUTE;
-      const DAY = 24 * HOUR;
-      const WEEK = 7 * DAY;
-      if (duration >= WEEK) {
-        minUnit = 'day';
-        minDate = moment(minDate).startOf('day');
-        maxDate = moment(maxDate).endOf('day');
-        stepSize = 1;
-      } else if (duration > HOUR * 6) {
-        minUnit = 'hour';
-        minDate = moment(minDate).startOf('hour');
-        maxDate = moment(maxDate).endOf('hour');
-        stepSize = 1;
-      } else if (duration > HOUR * 3) {
-        minUnit = 'minute';
-        minDate = moment(minDate).startOf('hour');
-        maxDate = moment(maxDate).endOf('hour');
-        stepSize = 30;
-      } else if (duration > HOUR) {
-        minUnit = 'minute';
-        minDate = moment(minDate).startOf('hour');
-        maxDate = moment(maxDate).endOf('hour');
-        stepSize = 15;
-      } else if (duration > MINUTE * 6) {
-        minUnit = 'second';
-        minDate = moment(minDate).startOf('minute');
-        maxDate = moment(maxDate).endOf('minute');
-        stepSize = 30;
-      } else if (duration > MINUTE) {
-        minUnit = 'second';
-        stepSize = 15;
-        minDate = moment(minDate).startOf('minute');
-        maxDate = moment(maxDate).endOf('minute');
-      } else {
-        minUnit = 'second';
-        stepSize = 10;
-        minDate = moment(minDate).startOf('minute');
-        maxDate = moment(maxDate).endOf('minute');
-      }
-    }
-    const getDistancesToPoint = (item, x, y, xAxis, yAxis) => {
-      const xx = xAxis.getPixelForValue(item.x);
-      const yy = yAxis.getPixelForValue(item.y);
-      return Math.sqrt((xx - x) ** 2 + (yy - y) ** 2);
-    };
-    const getClosestItemToPoint = (x, y, xAxis, yAxis) => {
-      const closest = data
-        .map((item) => ({
-          item,
-          distance: getDistancesToPoint(item, x, y, xAxis, yAxis)
-        }))
-        .sort((a, b) => b.distance - a.distance)
-        .pop();
-      if (closest) {
-        return closest.item;
-      }
-      return undefined;
-    };
-    const chartOptions = {
-      responsive: true,
-      animation: {duration: 0},
-      maintainAspectRatio: false,
-      title: {
-        display: !!title,
-        text: title,
-        fontColor: textColor
-      },
-      scales: {
-        xAxes: [{
-          type: 'time',
-          gridLines: {
-            drawOnChartArea: false,
-            color: lineColor,
-            zeroLineColor: lineColor
-          },
-          ticks: {
-            display: true,
-            maxRotation: 45,
-            fontColor: textColor,
-            source: 'auto',
-            min: minDate,
-            max: maxDate
-          },
-          scaleLabel: {
-            display: !!dateAxisLabel,
-            labelString: dateAxisLabel,
-            fontColor: textColor
-          },
-          offset: true,
-          time: {
-            stepSize,
-            minUnit,
-            displayFormats: {
-              second: shouldDisplayDate ? 'D MMM, HH:mm:ss' : 'HH:mm:ss',
-              minute: shouldDisplayDate ? 'D MMM, HH:mm' : 'HH:mm',
-              hour: shouldDisplayDate ? 'D MMM, HH:mm' : 'HH:mm',
-              day: 'D MMM',
-              quarter: 'MMM'
-            }
-          }
-        }],
-        yAxes: [{
-          gridLines: {
-            display: !pending,
-            color: lineColor,
-            zeroLineColor: lineColor
-          },
-          ticks: {
-            display: !pending,
-            fontColor: textColor,
-            beginAtZero: true,
-            min: 0,
-            max,
-            stepSize: 1
-          }
-        }]
-      },
-      legend: {
-        display: false
-      },
-      onClick: (e) => {
-        const xAxis = this.chart.scales['x-axis-0'];
-        const yAxis = this.chart.scales['y-axis-0'];
-        if (xAxis && yAxis) {
-          const canvasPosition = ChartJS.helpers.getRelativePosition(e, this.chart);
-          const item = getClosestItemToPoint(canvasPosition.x, canvasPosition.y, xAxis, yAxis);
-          if (item) {
-            const x = xAxis.getPixelForValue(item.x);
-            const y = yAxis.getPixelForValue(item.y);
-            if (onClick) {
-              onClick(item.item, {x, y});
-            }
-          }
-        }
-      },
-      tooltips: {
-        mode: 'nearest',
-        intersect: false,
-        callbacks: {
-          title: function (items, o) {
-            const [item] = items || [];
-            if (item) {
-              const {index} = item;
-              const dataItem = data[index];
-              if (dataItem) {
-                return moment(dataItem.x).format('D MMMM, YYYY, HH:mm:ss');
-              }
-            }
-            return undefined;
-          }
-        }
-      }
-    };
-    const dataConfiguration = {
-      datasets: [
-        {
-          label: 'Jobs',
-          data,
-          fill: false,
-          borderColor: color,
-          borderWidth: 2,
-          backgroundColor: background,
-          pointRadius: 2,
-          pointBackgroundColor: color,
-          cubicInterpolationMode: 'monotone'
-        }
-      ]
-    };
-    if (this.chart) {
-      this.chart.data = dataConfiguration;
-      this.chart.options = chartOptions;
-      this.chart.update();
-    } else {
-      this.chart = new ChartJS(this.canvas, {
-        type: 'line',
-        data: dataConfiguration,
-        options: chartOptions
+  const result = [{
+    date: head.timePoint,
+    items: [],
+    value: 0
+  }, {
+    date: head.timePoint,
+    items: head.runningItems,
+    value: head.runningItems.length
+  }];
+  let prevItems = head.runningItems;
+  head = head.next;
+  while (head) {
+    if (prevItems.length !== head.runningItems.length) {
+      result.push({
+        date: head.timePoint,
+        items: prevItems,
+        value: prevItems.length
       });
     }
-    this.chart.resize();
-  };
-
-  initializeCanvas = (canvas) => {
-    this.canvas = canvas;
-    this.initializeChart();
-  };
-
-  render () {
-    return (
-      <canvas
-        ref={this.initializeCanvas}
-      />
-    );
+    result.push({
+      date: head.timePoint,
+      items: head.runningItems,
+      value: head.runningItems.length
+    });
+    prevItems = head.runningItems;
+    head.items = undefined;
+    head.runningItems = undefined;
+    head = head.next;
   }
+  return [{
+    data: result
+  }];
+}
+
+function getHoveredElementsInfo (hoveredItems = [], styles = {}) {
+  const dates = [...new Set(hoveredItems.map((item) => item.item.date))];
+  const renderInfoForDate = (date) => {
+    const elements = hoveredItems.filter((item) => item.item.date === date);
+    const color = elements.length > 0 ? elements[0].color : '#ffffff';
+    const values = elements.map((item) => item.item.value);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    return (
+      <div
+        className={styles.row}
+        key={`element-${date}`}
+      >
+        {
+          color && (
+            <div
+              className={styles.color}
+              style={{background: color}}
+            />
+          )
+        }
+        <span className={styles.dataset}>
+          Jobs:
+        </span>
+        <span className={styles.value}>
+          {min === max ? min : `${min} - ${max}`}
+        </span>
+      </div>
+    );
+  };
+  return (
+    <div>
+      {
+        dates.map((date) => (
+          <div key={`${date}`}>
+            <div>
+              <b>{moment.unix(date).format('D MMMM YYYY, HH:mm:ss')}</b>
+            </div>
+            <div>
+              {renderInfoForDate(date)}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  );
 }
 
 @inject('themes')
@@ -285,46 +175,9 @@ class NestedRunsChart extends React.Component {
   state = {
     pending: false,
     error: undefined,
-    runsData: [],
+    datasets: [],
     tooltip: undefined
   };
-
-  @computed
-  get chartColor () {
-    const {themes} = this.props;
-    if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@primary-color'] || DEFAULT_COLOR;
-    }
-    return DEFAULT_COLOR;
-  }
-
-  @computed
-  get backgroundColor () {
-    const {themes} = this.props;
-    if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color'] ||
-        DEFAULT_BACKGROUND_COLOR;
-    }
-    return DEFAULT_BACKGROUND_COLOR;
-  }
-
-  @computed
-  get lineColor () {
-    const {themes} = this.props;
-    if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-border-color'] || DEFAULT_LINE_COLOR;
-    }
-    return DEFAULT_LINE_COLOR;
-  }
-
-  @computed
-  get textColor () {
-    const {themes} = this.props;
-    if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@application-color'] || DEFAULT_TEXT_COLOR;
-    }
-    return DEFAULT_TEXT_COLOR;
-  }
 
   fetchToken = 0;
 
@@ -338,65 +191,6 @@ class NestedRunsChart extends React.Component {
     if (prevProps.runId !== this.props.runId) {
       this.fetchData();
     }
-  }
-
-  get data () {
-    const {
-      includeMasterRun = true
-    } = this.props;
-    const {
-      runsData = []
-    } = this.state;
-    const timePoints = [
-      ...new Set(
-        runsData
-          .filter((item) => includeMasterRun || !item.master)
-          .map((item) => ([item.start, item.end]))
-          .reduce((r, c) => ([...r, ...c]), [])
-      )
-    ].sort((a, b) => {
-      if (a === undefined) {
-        return 1;
-      }
-      if (b === undefined) {
-        return -1;
-      }
-      return a - b;
-    });
-    return timePoints.map((timePoint) => {
-      const date = timePoint || moment.utc().valueOf();
-      const before = runsData
-        .filter((item) => item.start < date && (!item.end || item.end >= date));
-      const after = runsData
-        .filter((item) => item.start <= date && (!item.end || item.end > date));
-      if (runsArraysAreEqual(before, after)) {
-        return [{
-          timePoint: date,
-          count: after.length,
-          items: after
-        }];
-      }
-      return [
-        {
-          timePoint: date,
-          count: before.length,
-          items: before
-        },
-        {
-          timePoint: date,
-          count: after.length,
-          items: after
-        }
-      ];
-    }).reduce((r, c) => ([...r, ...c]), []);
-  }
-
-  get dataPoints () {
-    return this.data.map((item) => ({
-      x: moment(item.timePoint).toDate(),
-      y: item.count,
-      item
-    }));
   }
 
   fetchData = () => {
@@ -437,7 +231,8 @@ class NestedRunsChart extends React.Component {
               ? displayDate(run.endDate, 'D MMMM, YYYY HH:mm:ss')
               : `till now`
           ].join(' - ');
-          state.runsData = [
+
+          const runsData = [
             {
               runId: run.id,
               startDate: run.startDate,
@@ -454,8 +249,8 @@ class NestedRunsChart extends React.Component {
               endDate,
               master = false
             } = item;
-            const start = moment.utc(startDate).startOf('s').valueOf();
-            const end = endDate ? moment.utc(endDate).startOf('s').valueOf() : undefined;
+            const start = moment.utc(startDate).startOf('s').unix();
+            const end = endDate ? moment.utc(endDate).startOf('s').unix() : undefined;
             return {
               runId,
               status,
@@ -464,6 +259,7 @@ class NestedRunsChart extends React.Component {
               master
             };
           });
+          state.datasets = buildDatasets(runsData);
           state.error = undefined;
         } catch (error) {
           state.error = error.message;
@@ -473,7 +269,7 @@ class NestedRunsChart extends React.Component {
       });
     } else {
       this.setState({
-        runsData: [],
+        datasets: [],
         pending: false,
         error: undefined,
         periodTitle: undefined
@@ -481,13 +277,13 @@ class NestedRunsChart extends React.Component {
     }
   };
 
-  onItemClick = (item, {x, y}) => {
-    if (item) {
+  onItemClick = (datasetItem, {x, y}) => {
+    if (datasetItem) {
       this.setState({
         tooltip: {
           x,
           y,
-          item
+          item: datasetItem.item
         }
       });
     }
@@ -521,12 +317,12 @@ class NestedRunsChart extends React.Component {
       if (item) {
         const {
           items: nestedRuns = [],
-          timePoint
+          date
         } = item;
         return (
           <div className={styles.tooltip}>
             <div className={styles.header}>
-              Running jobs at {moment(timePoint).format('D MMMM YYYY, HH:mm:ss')}
+              Running jobs at {moment.unix(date).format('D MMMM YYYY, HH:mm:ss')}
             </div>
             <div className={styles.runsList}>
               {nestedRuns.map(run => (
@@ -563,9 +359,9 @@ class NestedRunsChart extends React.Component {
     const {
       error,
       pending,
-      periodTitle,
       tooltip,
-      runsData = []
+      datasets = [],
+      periodTitle
     } = this.state;
     if (error) {
       return (
@@ -574,26 +370,33 @@ class NestedRunsChart extends React.Component {
         </div>
       );
     }
-    if (runsData.length === 0 && pending) {
+    if (datasets.length === 0 && pending) {
       return (
         <LoadingView />
       );
     }
-    if (runsData.length === 0) {
+    if (datasets.length === 0) {
       return null;
     }
     return (
       <div className={styles.chartContainer}>
-        <Chart
-          data={this.dataPoints}
-          pending={pending}
-          dateAxisLabel={periodTitle}
-          onClick={this.onItemClick}
-          color={this.chartColor}
-          background={this.backgroundColor}
-          lineColor={this.lineColor}
-          textColor={this.textColor}
+        <TimelineChart
+          className={styles.chart}
+          datasets={datasets}
+          onItemClick={this.onItemClick}
+          hover={
+            tooltip ? false : {
+              getHoveredElementsInfo
+            }
+          }
         />
+        {
+          periodTitle && (
+            <div className={styles.chartTimelineTitle}>
+              {periodTitle}
+            </div>
+          )
+        }
         <div
           className={classNames(
             styles.popoverContainer,
@@ -607,6 +410,7 @@ class NestedRunsChart extends React.Component {
                 onVisibleChange={this.tooltipVisibilityChange}
                 trigger={['click']}
                 content={this.renderTooltipInfo()}
+                placement="left"
               >
                 <div
                   style={{
@@ -632,12 +436,7 @@ NestedRunsChart.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  onRunClick: PropTypes.func,
-  includeMasterRun: PropTypes.bool
-};
-
-NestedRunsChart.defaultProps = {
-  includeMasterRun: true
+  onRunClick: PropTypes.func
 };
 
 function NestedRunsModal (props) {
