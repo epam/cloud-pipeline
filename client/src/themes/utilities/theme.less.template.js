@@ -1615,6 +1615,16 @@ export default `
 @THEME .cp-dark-background {
   background-color: @application-dark-background-color;
 }
+@THEME .cp-panel.cp-dark-background {
+  color: @application-tooltip-color;
+  background-color: @application-tooltip-background-color;
+  border-color: @application-tooltip-border-color;
+}
+@THEME .cp-panel.cp-dark-background.semi-transparent {
+  color: @application-tooltip-color;
+  background-color: fade(@application-tooltip-background-color, 85%);
+  border-color: @application-tooltip-border-color;
+}
 @THEME .cp-hcs-zoom-button {
   cursor: pointer;
   color: @application-color;

@@ -20,6 +20,13 @@
   width: 100%;
   position: relative;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart {
+  width: 100%;
+  flex: 1;
 }
 
 .popover-container {
@@ -37,6 +44,8 @@
 
 .tooltip {
   width: 250px;
+  max-height: 50vh;
+  overflow: auto;
 }
 
 .tooltip .header {
@@ -61,4 +70,12 @@
   text-decoration: underline;
   display: inline-flex;
   align-items: center;
+}
+
+.chart-timeline-title {
+  line-height: 28px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
 }
