@@ -206,9 +206,10 @@ public class SystemPreferences {
      * */
     public static final StringPreference DATA_STORAGE_NFS_MOUNT_SENSITIVE_POLICY = new StringPreference(
             "storage.mounts.nfs.sensitive.policy",
-            null,
+            NFSMountPolicy.SKIP.name(),
             DATA_STORAGE_GROUP,
-            isNullOrValidEnum(NFSMountPolicy.class));
+            isNullOrValidEnum(NFSMountPolicy.class),
+            true);
 
     /**
      * Configures a system data storage for storing attachments and etc.
