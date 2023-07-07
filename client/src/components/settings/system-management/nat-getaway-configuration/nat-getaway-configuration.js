@@ -84,7 +84,7 @@ export default class NATGetaway extends React.Component {
 
   tableColumnsAmount;
 
-  get content () {
+  get sortedContent () {
     const {
       routes = [],
       addedRoutes = []
@@ -94,17 +94,13 @@ export default class NATGetaway extends React.Component {
         this.routeIsRemoved(route) ||
         (route.routes || []).some(r => this.routeIsRemoved(r));
     };
-    return [
+    const sorted = [
       ...portUtilities.groupRoutes(routes),
       ...portUtilities.groupRoutes(addedRoutes)
     ].map(route => ({
       ...route,
       isTouched: routeIsTouched(route)
-    }));
-  }
-
-  get sortedContent () {
-    const sorted = this.content.sort(routesSorter);
+    })).sort(routesSorter);
     const touched = sorted.filter(r => r.isTouched);
     const rest = sorted.filter(r => !r.isTouched);
     return [
