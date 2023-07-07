@@ -105,11 +105,11 @@ export default class NATGetaway extends React.Component {
     const rest = sorted.filter(r => !r.isTouched);
     return [
       touched.length > 0
-        ? {divider: true, description: 'Recent changes:', key: 'divider1'}
+        ? {divider: true, description: 'Unsaved routes:', key: 'divider1'}
         : undefined,
       ...touched,
       touched.length > 0 && rest.length > 0
-        ? {divider: true, description: 'Other:', key: 'divider2'}
+        ? {divider: true, description: 'Routes:', key: 'divider2'}
         : undefined,
       ...rest
     ].filter(Boolean);
