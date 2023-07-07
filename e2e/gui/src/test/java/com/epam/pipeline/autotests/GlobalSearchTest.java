@@ -488,6 +488,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 endpointPage.closeTab();
             }
         }
+        sleep(SEARCH_TIMEOUT, MINUTES);
         LogAO logAO = new LogAO();
         String endpointLink = logAO.getEndpointLink();
         String[] instanceParam = new String[] {
