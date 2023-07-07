@@ -144,6 +144,9 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
             Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
             if (mountFolder == null) {
                 log.warn("Unable to retrieve mount for [{}],  skipping...", dataStorage.getName());
+                if (elasticsearchServiceClient.isIndexExists(indexName))  {
+                    elasticsearchServiceClient.deleteIndex(indexName);
+                }
                 return;
             }
 
