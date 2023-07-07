@@ -22,6 +22,10 @@
   height: 100%;
 }
 
+.search-input {
+  margin-bottom: 5px;
+}
+
 .table thead tr {
   text-transform: uppercase;
   height: 34px;
@@ -100,6 +104,17 @@
 .removed {
   color: rgba(0, 0, 0, 0.25);
   text-decoration: line-through;
+}
+
+.divider-row {
+  color: rgba(0, 0, 0, 0.65);
+  text-align: center;
+  height: 15px !important;
+}
+
+.divider-row td {
+  padding: 5px !important;
+  line-height: 15px;
 }
 
 .revert-action-block {
