@@ -18,7 +18,7 @@ import React from 'react';
 import {Modal} from 'antd';
 
 import SystemLogs from './system-logs';
-import NATGetaway from './nat-getaway-configuration/nat-getaway-configuration';
+import NATGateway from './nat-gateway-configuration/nat-gateway-configuration';
 import SystemJobs from './system-jobs';
 import SubSettings from '../sub-settings';
 
@@ -105,7 +105,7 @@ export default class SystemManagement extends React.Component {
           {
             key: 'nat',
             title: 'NAT GATEWAY',
-            render: () => (<NATGetaway handleModified={this.handleModified} />)
+            render: () => (<NATGateway handleModified={this.handleModified} />)
           },
           {
             key: 'jobs',

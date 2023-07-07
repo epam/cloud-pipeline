@@ -19,7 +19,8 @@ import {Icon, Popover, Tooltip} from 'antd';
 import classNames from 'classnames';
 import NATRouteStatuses from './route-statuses';
 import * as portUtilities from './ports-utilities';
-import styles from './nat-getaway-configuration.css';
+import highlightText from '../../../special/highlightText';
+import styles from './nat-gateway-configuration.css';
 
 const validationConfig = {
   port: {
@@ -217,7 +218,7 @@ function renderStatusIcon (status) {
   }
 }
 
-function renderPorts (value) {
+function renderPorts (value, record, index, search) {
   if (Array.isArray(value)) {
     const MAX_ITEMS_TO_DISPLAY = 5;
     const slicedArray = value.slice(0, MAX_ITEMS_TO_DISPLAY);
@@ -239,7 +240,7 @@ function renderPorts (value) {
                   {
                     value.map(item => (
                       <div key={item}>
-                        {item}
+                        {highlightText(item, search)}
                       </div>
                     ))
                   }
@@ -264,7 +265,7 @@ function renderPorts (value) {
                 className={styles.port}
                 key={row}
               >
-                {row}
+                {highlightText(row, search)}
               </span>
             ))
           }
@@ -272,30 +273,64 @@ function renderPorts (value) {
       </Wrapper>
     );
   }
-  return value;
+  return highlightText(value, search);
+}
+
+function renderText (text, record, index, search) {
+  return highlightText(text, search);
 }
 
 export const columns = {
   external: [
-    {name: 'status', prettyName: '', renderer: renderStatusIcon, className: styles.statusColumn},
-    {name: 'externalName', prettyName: 'name', className: styles.nameColumn},
-    {name: 'externalIp', prettyName: 'ip', className: styles.ipColumn},
+    {
+      name: 'status',
+      prettyName: '',
+      className: styles.statusColumn,
+      renderer: renderStatusIcon
+    },
+    {
+      name: 'externalName',
+      prettyName: 'name',
+      className: styles.nameColumn,
+      renderer: renderText
+    },
+    {
+      name: 'externalIp',
+      prettyName: 'ip',
+      className: styles.ipColumn,
+      renderer: renderText
+    },
     {
       name: 'externalPortsPresentation',
       prettyName: 'ports',
-      renderer: renderPorts,
-      className: styles.portsColumn
+      className: styles.portsColumn,
+      renderer: renderPorts
     },
-    {name: 'protocol', prettyName: 'protocol', className: styles.protocolColumn}
+    {
+      name: 'protocol',
+      prettyName: 'protocol',
+      className: styles.protocolColumn,
+      renderer: renderText
+    }
   ],
   internal: [
-    {name: 'internalName', prettyName: 'service name', className: styles.serviceNameColumn},
-    {name: 'internalIp', prettyName: 'ip', className: styles.ipColumn},
+    {
+      name: 'internalName',
+      prettyName: 'service name',
+      className: styles.serviceNameColumn,
+      renderer: renderText
+    },
+    {
+      name: 'internalIp',
+      prettyName: 'ip',
+      className: styles.ipColumn,
+      renderer: renderText
+    },
     {
       name: 'internalPortsPresentation',
       prettyName: 'ports',
-      renderer: renderPorts,
-      className: styles.portsColumn
+      className: styles.portsColumn,
+      renderer: renderPorts
     }
   ]
 };
