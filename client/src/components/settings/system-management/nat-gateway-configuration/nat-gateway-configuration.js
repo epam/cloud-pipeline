@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,23 @@
  */
 
 import React from 'react';
-import {Button, Spin, Table, message, Tooltip} from 'antd';
+import {
+  Button,
+  Spin,
+  Table,
+  message,
+  Tooltip,
+  Input
+} from 'antd';
 import classNames from 'classnames';
 
 import {NATRules, DeleteRules, SetRules} from '../../../../models/nat';
 import AddRouteForm from './add-route-modal/add-route-modal';
+import NATRouteStatuses from './route-statuses';
 import {columns} from './helpers';
 import * as portUtilities from './ports-utilities';
-import styles from './nat-getaway-configuration.css';
+import highlightText from '../../../special/highlightText';
+import styles from './nat-gateway-configuration.css';
 
 const {Column, ColumnGroup} = Table;
 
@@ -54,29 +63,114 @@ function routesSorter (a, b) {
   return nameA.toString().localeCompare(nameB.toString());
 }
 
-export default class NATGetaway extends React.Component {
+function collapseColumn (content = '') {
+  return {
+    children: content,
+    props: {
+      colSpan: 0
+    }
+  };
+};
+
+export default class NATGateway extends React.Component {
   state = {
     addedRoutes: [],
     removedRoutes: [],
     routes: [],
     addRouteModalIsOpen: false,
     pending: false,
-    expandedRowKeys: []
+    expandedRowKeys: [],
+    search: undefined
   }
+
+  tableColumnsAmount;
 
   get sortedContent () {
     const {
       routes = [],
       addedRoutes = []
     } = this.state;
-    const added = portUtilities.groupRoutes(addedRoutes);
-    return portUtilities.groupRoutes(routes)
-      .sort(routesSorter)
-      .concat(added.sort(routesSorter));
+    const routeIsTouched = (route = {}) => {
+      return Boolean(route.isNew) ||
+        this.routeIsRemoved(route) ||
+        (route.routes || []).some(r => this.routeIsRemoved(r));
+    };
+    const sorted = [
+      ...portUtilities.groupRoutes(routes),
+      ...portUtilities.groupRoutes(addedRoutes)
+    ].map(route => ({
+      ...route,
+      isTouched: routeIsTouched(route)
+    })).sort(routesSorter);
+    const important = sorted.filter(r => r.isTouched || r.status !== NATRouteStatuses.ACTIVE);
+    const rest = sorted.filter(r => !r.isTouched && r.status === NATRouteStatuses.ACTIVE);
+    return [
+      ...important,
+      important.length > 0 && rest.length > 0
+        ? {divider: true, description: '', key: 'divider1'}
+        : undefined,
+      ...rest
+    ].filter(Boolean);
+  }
+
+  get filteredAndSortedContent () {
+    const {search} = this.state;
+    if (!search) {
+      return this.sortedContent;
+    }
+    const searchFilter = (route = {}, search = '') => {
+      const {
+        divider,
+        routes,
+        isTouched
+      } = route;
+      if (divider || isTouched) {
+        return true;
+      }
+      const checkStringifiedProperty = (property, search) => {
+        if (property) {
+          return `${property}`.toLowerCase().includes(search.toLowerCase());
+        }
+        return false;
+      };
+      const checkPorts = (ports = [], search) => {
+        if (typeof ports === 'string' || typeof ports === 'number') {
+          return checkStringifiedProperty(ports, search);
+        }
+        if (Array.isArray(ports)) {
+          return ports.some(port => checkStringifiedProperty(port, search));
+        }
+        return false;
+      };
+      if (routes && routes.length > 0) {
+        return routes.some(route => {
+          const {
+            externalIp,
+            externalName,
+            internalIp,
+            internalName,
+            protocol,
+            externalPort,
+            internalPort,
+            description
+          } = route;
+          return checkStringifiedProperty(externalIp, search) ||
+          checkStringifiedProperty(externalName, search) ||
+          checkPorts(externalPort, search) ||
+          checkStringifiedProperty(internalIp, search) ||
+          checkStringifiedProperty(internalName, search) ||
+          checkPorts(internalPort, search) ||
+          checkStringifiedProperty(protocol, search) ||
+          checkStringifiedProperty(description, search);
+        });
+      }
+      return false;
+    };
+    return this.sortedContent.filter(route => searchFilter(route, search));
   }
 
   get hasChildRoutes () {
-    return this.sortedContent.some(o => o.children && o.children.length > 0);
+    return this.filteredAndSortedContent.some(o => o.children && o.children.length > 0);
   }
 
   get tableContentChanged () {
@@ -117,7 +211,7 @@ export default class NATGetaway extends React.Component {
         this.setState(state);
       }
     });
-  }
+  };
 
   removeRoute = (route) => {
     const {addedRoutes = [], removedRoutes = []} = this.state;
@@ -148,7 +242,7 @@ export default class NATGetaway extends React.Component {
         ]
       });
     }
-  }
+  };
 
   revertRoute = (route) => {
     const {
@@ -170,7 +264,7 @@ export default class NATGetaway extends React.Component {
           .filter(r => !(r.externalIp === externalIp && r.externalPort === externalPort))
       });
     }
-  }
+  };
 
   routeIsRemoved = (route) => {
     const {
@@ -188,7 +282,7 @@ export default class NATGetaway extends React.Component {
     const {removedRoutes = []} = this.state;
     return !!removedRoutes
       .find(r => r.externalIp === externalIp && r.externalPort === externalPort);
-  }
+  };
 
   addNewDataToTable = async (formData) => {
     const {serverName, ip, ports = [], description} = formData;
@@ -207,19 +301,19 @@ export default class NATGetaway extends React.Component {
         ...formattedData
       ]
     });
-  }
+  };
 
   openAddRouteModal = () => {
     this.setState({
       addRouteModalIsOpen: true
     });
-  }
+  };
 
   closeAddRouteModal = () => {
     this.setState({
       addRouteModalIsOpen: false
     });
-  }
+  };
 
   onSave = () => {
     this.setState({
@@ -269,29 +363,52 @@ export default class NATGetaway extends React.Component {
         }, () => this.loadRoutes());
       }
     });
-  }
+  };
 
   onRevert = () => {
     this.setState({
       addedRoutes: [],
       removedRoutes: []
     });
-  }
+  };
 
   onRefreshTable = () => {
     this.loadRoutes();
-  }
+  };
 
   onChangeExpandedRows = (expandedRows) => {
     this.setState({
       expandedRowKeys: expandedRows
     });
-  }
+  };
+
+  onSearchChange = (e) => {
+    this.setState({
+      search: e.target.value
+    });
+  };
+
+  clearSearch = () => {
+    this.setState({search: undefined});
+  };
+
+  renderColumnContent = column => (text, record, index) => {
+    const {search} = this.state;
+    const {renderer = (o) => o} = column;
+    if (record.divider) {
+      return collapseColumn(text);
+    }
+    if (!text) {
+      return '';
+    }
+    return renderer(text, record, index, search);
+  };
 
   render () {
     const {
       pending,
-      expandedRowKeys = []
+      expandedRowKeys = [],
+      search
     } = this.state;
     return (
       <div
@@ -304,6 +421,12 @@ export default class NATGetaway extends React.Component {
             overflow: 'auto'
           }}
         >
+          <Input.Search
+            placeholder="Search routes"
+            className={styles.searchInput}
+            onChange={this.onSearchChange}
+            value={search}
+          />
           <div
             className={
               classNames(
@@ -321,6 +444,15 @@ export default class NATGetaway extends React.Component {
           </div>
           <Spin spinning={pending}>
             <Table
+              ref={(table) => {
+                if (table) {
+                  this.tableColumnsAmount = table.columns
+                    .reduce((acc, column) => column.children
+                      ? [...acc, ...column.children]
+                      : [...acc, column], [])
+                    .length;
+                }
+              }}
               indentSize={0}
               className={
                 classNames(
@@ -331,11 +463,15 @@ export default class NATGetaway extends React.Component {
                   }
                 )
               }
-              dataSource={this.sortedContent}
+              dataSource={this.filteredAndSortedContent}
               pagination={false}
-              rowKey={getRouteIdentifier}
+              rowKey={(record) => record.divider
+                ? record.key || record.description
+                : getRouteIdentifier(record)
+              }
               rowClassName={record => classNames({
                 [styles.removed]: this.routeIsRemoved(record),
+                [styles.dividerRow]: record.divider,
                 'cp-nat-route-removed': this.routeIsRemoved(record),
                 'cp-disabled': this.routeIsRemoved(record),
                 'cp-primary': !this.routeIsRemoved(record) && record.isNew
@@ -344,17 +480,15 @@ export default class NATGetaway extends React.Component {
               onExpandedRowsChange={this.onChangeExpandedRows}
             >
               <ColumnGroup title="External resources">
-                {columns.external.map((col) => {
-                  return (
-                    <Column
-                      title={col.prettyName}
-                      dataIndex={col.name}
-                      key={col.name}
-                      className={classNames('external-column', styles.column, col.className)}
-                      render={(col.renderer || (o => o))}
-                    />);
-                })
-                }
+                {columns.external.map((col) => (
+                  <Column
+                    title={col.prettyName}
+                    dataIndex={col.name}
+                    key={col.name}
+                    className={classNames('external-column', styles.column, col.className)}
+                    render={this.renderColumnContent(col)}
+                  />
+                ))}
               </ColumnGroup>
               <ColumnGroup title="Internal config">
                 {columns.internal.map((col) => (
@@ -363,7 +497,7 @@ export default class NATGetaway extends React.Component {
                     dataIndex={col.name}
                     key={col.name}
                     className={classNames('internal-column', styles.column, col.className)}
-                    render={(col.renderer || (o => o))}
+                    render={this.renderColumnContent(col)}
                   />))
                 }
               </ColumnGroup>
@@ -373,29 +507,45 @@ export default class NATGetaway extends React.Component {
                   title="Comment"
                   className={classNames('nat-column', styles.commentColumn)}
                   dataIndex="description"
-                  render={description => (
-                    <Tooltip title={description}>
-                      {description}
-                    </Tooltip>
-                  )}
+                  render={(description, record, index) => {
+                    const content = (
+                      <Tooltip title={description}>
+                        {highlightText(description, search)}
+                      </Tooltip>
+                    );
+                    if (record.divider) {
+                      return {
+                        children: content,
+                        props: {
+                          colSpan: this.tableColumnsAmount
+                        }
+                      };
+                    }
+                    return content;
+                  }}
                 />
                 <Column
                   key="remover"
                   className={classNames('nat-column', styles.actionsColumn)}
-                  render={(record) => !this.routeIsRemoved(record) ? (
-                    <Button
-                      type="danger"
-                      icon="delete"
-                      onClick={() => this.removeRoute(record)}
-                      size="small"
-                    />
-                  ) : (
-                    <Button
-                      icon="rollback"
-                      size="small"
-                      onClick={() => this.revertRoute(record)}
-                    />
-                  )}
+                  render={(text, record) => {
+                    if (record.divider) {
+                      return collapseColumn(text);
+                    }
+                    return !this.routeIsRemoved(text) ? (
+                      <Button
+                        type="danger"
+                        icon="delete"
+                        onClick={() => this.removeRoute(text)}
+                        size="small"
+                      />
+                    ) : (
+                      <Button
+                        icon="rollback"
+                        size="small"
+                        onClick={() => this.revertRoute(text)}
+                      />
+                    );
+                  }}
                 />
               </ColumnGroup>
             </Table>
