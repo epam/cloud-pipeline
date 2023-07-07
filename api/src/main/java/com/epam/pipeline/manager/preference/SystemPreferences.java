@@ -1003,10 +1003,13 @@ public class SystemPreferences {
             "system.kube.network.policy.name", "sensitive-runs-policy", SYSTEM_GROUP, pass);
 
     public static final BooleanPreference SYSTEM_MAINTENANCE_MODE = new BooleanPreference(
-            "system.maintenance.mode", false, SYSTEM_GROUP, pass);
+            "system.maintenance.mode", false, SYSTEM_GROUP, pass, true);
     public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
             "system.maintenance.mode.banner",
-            "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
+            "Platform is in a maintenance mode, operation is temporary unavailable",
+            SYSTEM_GROUP, pass, true);
+    public static final BooleanPreference SYSTEM_BLOCKING_MAINTENANCE_MODE = new BooleanPreference(
+            "system.blocking.maintenance.mode", false, SYSTEM_GROUP, pass, true);
     public static final IntPreference SYSTEM_USAGE_USERS_MONITOR_DELAY = new IntPreference(
             "system.usage.users.monitor.delay", 300000, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_USAGE_USERS_MONITOR_ENABLE = new BooleanPreference(
