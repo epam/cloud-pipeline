@@ -31,6 +31,7 @@ import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.SEARCH_TIMEOUT;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.BeforeClass;
@@ -100,6 +101,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .configurationWithin(configuration, configuration ->
                         configuration.expandTabs(advancedTab)
                                 .setValue(DISK, customDisk)
+                                .ensure(INSTANCE_TYPE, enabled)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .setValue(NAME, customConfigurationProfile)
                                 .selectDockerImage(dockerImage ->
@@ -141,7 +143,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .messageShouldAppear("The query string supports the following special characters:")
                 .close();
 
-        sleep(2, MINUTES);
+        sleep(SEARCH_TIMEOUT, MINUTES);
     }
 
     @BeforeMethod
@@ -355,7 +357,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickEditStorageButton()
                 .setAlias(storageAlias)
                 .ok();
-        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
+        home().sleep(SEARCH_TIMEOUT + 2, MINUTES);
         search()
                 .search(storageAlias)
                 .enter()
@@ -390,7 +392,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+        home().sleep(SEARCH_TIMEOUT, MINUTES);
         search()
                 .click(RUNS)
                 .search(storage)
@@ -540,7 +542,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
             runsMenu()
                     .activeRuns()
                     .stopRun(testRunID_2668);
-            home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
+            home().sleep(SEARCH_TIMEOUT + 2, MINUTES);
             search()
                     .click(RUNS)
                     .search(testRunID_2668)
@@ -583,7 +585,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .showIssues()
                 .clickNewIssue()
                 .addNewIssue(title, description);
-        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
+        home().sleep(SEARCH_TIMEOUT + 2, MINUTES);
         search()
                 .search(title)
                 .enter()
@@ -616,7 +618,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         library()
                 .cd(folder)
                 .createFolder(title);
-        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
+        home().sleep(SEARCH_TIMEOUT + 2, MINUTES);
         search()
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .search(title)
@@ -712,7 +714,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .library()
                 .cd(folder)
                 .createFolder(folderWithExpression);
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+        home().sleep(SEARCH_TIMEOUT, MINUTES);
         search()
                 .search(innerFolder1 + "*")
                 .enter()
@@ -777,7 +779,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
     public void searchAfterDeleting() {
         library()
                 .removeNotEmptyFolder(folder)
-                .sleep(C.SEARCH_TIMEOUT, MINUTES);
+                .sleep(SEARCH_TIMEOUT, MINUTES);
         home();
         search()
                 .search(pipeline)
