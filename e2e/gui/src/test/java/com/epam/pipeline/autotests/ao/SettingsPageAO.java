@@ -1226,12 +1226,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             searchPreference(preference);
             final SelenideElement editor = $(byClassName("CodeMirror-line"));
             selectAllAndClearTextField(editor);
-            final StringSelection stringSelection = new StringSelection(value);
-            Toolkit.getDefaultToolkit().getSystemClipboard()
-                    .setContents(stringSelection, null);
-            actions().moveToElement(editor).click()
-                    .sendKeys(Keys.chord(Keys.CONTROL, "v"))
-                    .perform();
+            pasteText(editor, value);
             setEyeOption(eyeIsChecked);
             return this;
         }
