@@ -24,7 +24,7 @@ if [ "$CP_CLOUD_PLATFORM" == 'aws' ]; then
     ES_JAVA_OPTS=""; echo $(get-aws-profile.sh --key) | bin/elasticsearch-keystore add s3.client.default.access_key -f
     ES_JAVA_OPTS=""; echo $(get-aws-profile.sh --secret) | bin/elasticsearch-keystore add s3.client.default.secret_key -f
 elif [ "$CP_CLOUD_PLATFORM" == 'gcp' ]; then
-    ES_JAVA_OPTS=""; echo "$CP_CLOUD_CREDENTIALS_LOCATION" | bin/elasticsearch-keystore add gcs.client.default.credentials_file -f
+    ES_JAVA_OPTS=""; bin/elasticsearch-keystore add-file gcs.client.default.credentials_file -f "$CP_CLOUD_CREDENTIALS_LOCATION"
 elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
     ES_JAVA_OPTS=""; echo "$CP_AZURE_STORAGE_ACCOUNT" | bin/elasticsearch-keystore add azure.client.default.account -f
     ES_JAVA_OPTS=""; echo "$CP_AZURE_STORAGE_KEY" | bin/elasticsearch-keystore add azure.client.default.key -f
