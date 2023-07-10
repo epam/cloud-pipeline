@@ -76,8 +76,10 @@ export default class CudaWarning extends React.Component {
   }
 
   get showWarning () {
+    const {versionInfo} = this.state;
     const {gpuEnabledRun = false} = this.props;
-    if (this.cudaAvailable === undefined) {
+    const {platform} = (versionInfo || {}).attributes || {};
+    if (this.cudaAvailable === undefined || /^windows$/i.test(platform)) {
       return false;
     }
     return gpuEnabledRun !== this.cudaAvailable;
