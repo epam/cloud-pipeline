@@ -27,6 +27,7 @@ import classNames from 'classnames';
 
 import {NATRules, DeleteRules, SetRules} from '../../../../models/nat';
 import AddRouteForm from './add-route-modal/add-route-modal';
+import NATRouteStatuses from './route-statuses';
 import {columns} from './helpers';
 import * as portUtilities from './ports-utilities';
 import highlightText from '../../../special/highlightText';
@@ -101,15 +102,12 @@ export default class NATGetaway extends React.Component {
       ...route,
       isTouched: routeIsTouched(route)
     })).sort(routesSorter);
-    const touched = sorted.filter(r => r.isTouched);
-    const rest = sorted.filter(r => !r.isTouched);
+    const important = sorted.filter(r => r.isTouched || r.status !== NATRouteStatuses.ACTIVE);
+    const rest = sorted.filter(r => !r.isTouched && r.status === NATRouteStatuses.ACTIVE);
     return [
-      touched.length > 0
-        ? {divider: true, description: 'Unsaved routes:', key: 'divider1'}
-        : undefined,
-      ...touched,
-      touched.length > 0 && rest.length > 0
-        ? {divider: true, description: 'Routes:', key: 'divider2'}
+      ...important,
+      important.length > 0 && rest.length > 0
+        ? {divider: true, description: '', key: 'divider2'}
         : undefined,
       ...rest
     ].filter(Boolean);
