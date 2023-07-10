@@ -107,7 +107,7 @@ export default class NATGetaway extends React.Component {
     return [
       ...important,
       important.length > 0 && rest.length > 0
-        ? {divider: true, description: '', key: 'divider2'}
+        ? {divider: true, description: '', key: 'divider1'}
         : undefined,
       ...rest
     ].filter(Boolean);
@@ -122,10 +122,9 @@ export default class NATGetaway extends React.Component {
       const {
         divider,
         routes,
-        isTouched,
-        status
+        isTouched
       } = route;
-      if (divider || isTouched || status !== NATRouteStatuses.ACTIVE) {
+      if (divider || isTouched) {
         return true;
       }
       const checkStringifiedProperty = (property, search) => {
