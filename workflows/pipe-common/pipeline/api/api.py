@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -351,6 +351,25 @@ class PipelineAPI:
                 return response_data.get('payload')
             except APIError as e:
                 raise e
+            except Exception as e:
+                exceptions.append(e)
+            time.sleep(self.timeout)
+        raise exceptions[-1]
+
+    def _download(self, http_method, endpoint, output_path, data=None):
+        url = '{}/{}'.format(self.api_url, endpoint)
+        count = 0
+        exceptions = []
+        while count < self.attempts:
+            count += 1
+            try:
+                with requests.request(method=http_method, url=url, data=json.dumps(data),
+                                      headers=self.header, verify=False,
+                                      timeout=self.connection_timeout, stream=True) as r:
+                    with open(output_path, 'wb') as f:
+                        for chunk in r.iter_content(chunk_size=1024):
+                            f.write(chunk)
+                        return
             except Exception as e:
                 exceptions.append(e)
             time.sleep(self.timeout)
@@ -711,6 +730,14 @@ class PipelineAPI:
         except BaseException as e:
             raise RuntimeError("Failed to load entities data. "
                                "Error message: {}".format(str(e.message)))
+
+    def download_metadata_entities(self, output_path, folder_id, entity_class, entity_ids=None, file_format=None):
+        endpoint = 'metadataEntity/download?folderId={}&entityClass={}'.format(folder_id, entity_class)
+        if entity_ids:
+            endpoint += '&entityIds={}'.format(','.join(map(str, entity_ids)))
+        if file_format:
+            endpoint += '&fileFormat={}'.format(file_format)
+        self._download('GET', endpoint, output_path=output_path)
 
     def load_dts_registry(self):
         try:
