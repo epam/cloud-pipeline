@@ -205,7 +205,9 @@ def get_selected_channels(params, all_channels, is_ome_tiff=False):
                 'min': int(channel_params[3]),
                 'max': int(channel_params[4])
             }
-    if not is_ome_tiff and len(selected_channels) < 1:
+        if is_ome_tiff:
+            selected_channels[channel_id] = {'name': channel_name}
+    if len(selected_channels) < 1:
         raise RuntimeError("At least one channel is required")
     return selected_channels
 
@@ -398,15 +400,13 @@ def extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix=None):
 def adjust_images_index(hcs_xml_info_root, hcs_schema_prefix, image_properties, pages, coordinates):
     image_ids = list()
     images_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Images')
-    target_image = copy.deepcopy(images_list[0])
     for page in pages:
         channel_id = page['channel_id']
         field_id = page['cell']
         image_id = 'F{}R{}'.format(field_id, channel_id)
         image_ids.append(image_id)
-        if image_properties.original:
-            position_x, position_y = coordinates.get(int(field_id))
 
+        target_image = copy.deepcopy(images_list[0])
         target_image.find(hcs_schema_prefix + 'id').text = image_id
         target_image.find(hcs_schema_prefix + 'SequenceID').text = image_properties.sequence_id
         target_image.find(hcs_schema_prefix + 'TimepointID').text = image_properties.timepoint
@@ -416,11 +416,12 @@ def adjust_images_index(hcs_xml_info_root, hcs_schema_prefix, image_properties, 
         target_image.find(hcs_schema_prefix + 'Row').text = image_properties.well_row
         target_image.find(hcs_schema_prefix + 'URL').text = page['path']
         if image_properties.original:
+            position_x, position_y = coordinates.get(int(field_id))
             target_image.find(hcs_schema_prefix + 'PositionX').text = str(position_x)
             target_image.find(hcs_schema_prefix + 'PositionY').text = str(position_y)
         else:
-            target_image.find(hcs_schema_prefix + 'PositionX').clear()
-            target_image.find(hcs_schema_prefix + 'PositionY').clear()
+            target_image.find(hcs_schema_prefix + 'PositionX').text = '0'
+            target_image.find(hcs_schema_prefix + 'PositionY').text = '0'
         target_image.find(hcs_schema_prefix + 'PlaneID').text = '1'
 
         images_list.append(target_image)
@@ -654,7 +655,7 @@ class OriginalImageGenerator(ImageGenerator):
         result = np.zeros((initial_size_y, initial_size_x))
         for coord_id, coord in coordinates.items():
             col_start, col_end = self.get_array_range(coord[0], field_size, pixel_size_x, x_start)
-            row_start, row_end = self. get_array_range(coord[1], field_size, pixel_size_y, y_start)
+            row_start, row_end = self.get_array_range(coord[1], field_size, pixel_size_y, y_start)
             result[row_start:row_end, col_start:col_end] = np.flipud(images[coord_id])
         merged_image = np.flipud(result)
 
