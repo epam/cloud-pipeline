@@ -346,7 +346,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .waitForSshLink()
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
-                        .execute(format("pipe run -di %s --CP_FSBROWSER_ENABLED true", tool))
+                        .execute(format("pipe run -di %s --CP_FSBROWSER_ENABLED true -y", tool))
                         .assertPageContainsString("An error has occurred while starting a job: " +
                                 "\"CP_FSBROWSER_ENABLED\" parameter is not permitted for overriding")
                         .close()
