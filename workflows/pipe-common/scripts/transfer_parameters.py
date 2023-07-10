@@ -226,7 +226,7 @@ class MetadataLocation:
         self.param = param
         self.folder_id = folder_id
         self.entity_class = entity_class
-        self.entity_ids = entity_ids
+        self.entity_ids = entity_ids.split(',')
         self.local_path = local_path
 
 
@@ -293,8 +293,8 @@ class InputDataTask:
             else:
                 if self.is_upload:
                     for location in metadata_locations:
-                        Logger.info('Downloading metadata entities for folder #{} ({} {})...',
-                                    location.entity_class, location.folder_id, location.entity_ids)
+                        Logger.info('Downloading metadata entities for folder {} #{} {}...'.format(
+                                    location.entity_class, location.folder_id, location.entity_ids))
                         self.api.download_metadata_entities(output_path=location.local_path,
                                                             folder_id=location.folder_id,
                                                             entity_class=location.entity_class,

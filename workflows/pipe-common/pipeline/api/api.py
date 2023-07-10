@@ -375,6 +375,7 @@ class PipelineAPI:
                     with open(output_path, 'wb') as f:
                         for chunk in r.iter_content(chunk_size=1024):
                             f.write(chunk)
+                        return
             except Exception as e:
                 exceptions.append(e)
             time.sleep(self.timeout)
