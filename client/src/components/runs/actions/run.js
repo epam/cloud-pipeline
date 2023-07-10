@@ -36,7 +36,7 @@ import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
 import AllowedInstancesCountWarning from
-  '../../pipelines/launch/form/utilities/allowed-instances-count-warning';
+'../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../run-name';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
@@ -974,12 +974,15 @@ export class RunConfirmation extends React.Component {
             showIcon
             message={
               <Row>
+                {/* eslint-disable-next-line max-len */}
                 Note that you will not be able to commit a cluster. Commit feature is only available for single-node runs
               </Row>
             } />
         }
         {
-          !this.props.isCluster && this.gpuEnabled &&
+          !this.props.isCluster &&
+          this.gpuEnabled &&
+          !/^windows$/i.test(this.props.platform) &&
           <Alert
             type="info"
             style={{margin: 2}}
@@ -987,12 +990,15 @@ export class RunConfirmation extends React.Component {
             message={
               <Row>
                 <Row style={{marginBottom: 5}}>
+                  {/* eslint-disable-next-line max-len */}
                   <b>You are going to launch a job using GPU-enabled instance</b> - <b>{this.state.instanceType}.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
+                  {/* eslint-disable-next-line max-len */}
                   Note that if you install any <b>NVIDIA packages</b> manually and commit it, that may produce an unusable image.
                 </Row>
                 <Row>
+                  {/* eslint-disable-next-line max-len */}
                   All cuda-based dockers shall be built using <b><a target="_blank" href="https://hub.docker.com/r/nvidia/cuda/">nvidia/cuda</a></b> base image instead.
                 </Row>
               </Row>
@@ -1019,9 +1025,11 @@ export class RunConfirmation extends React.Component {
                   optionFilterProp="children"
                   notFoundContent="Instance types not found"
                   onChange={this.setInstanceType}
-                  filterOption={
-                    (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+                  filterOption={(input, option) => option.props.value
+                    .toLowerCase()
+                    .indexOf(input.toLowerCase()) >= 0
+                  }
+                >
                   {
                     this.getInstanceTypes()
                       .map(t => t.instanceFamily)
@@ -1038,8 +1046,10 @@ export class RunConfirmation extends React.Component {
                                 .map(t =>
                                   <Select.Option
                                     key={t.sku}
-                                    value={t.name}>
-                                    {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}`: ''})
+                                    value={t.name}
+                                  >
+                                    {/* eslint-disable-next-line max-len */}
+                                    {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
                                   </Select.Option>
                                 )
                             }
@@ -1075,9 +1085,11 @@ export class RunConfirmation extends React.Component {
               message={
                 <div>
                   <Row style={{marginBottom: 5}}>
+                    {/* eslint-disable-next-line max-len */}
                     There is a number of data storages, that are going to be mounted to the same location within the compute node. This may lead to unexpected behavior.
                   </Row>
                   <Row style={{marginBottom: 5, fontWeight: 'bold'}}>
+                    {/* eslint-disable-next-line max-len */}
                     Please review the list of the mount points below and choose the data storage to be mounted:
                   </Row>
                   <Row style={{width: '100%'}}>
@@ -1354,7 +1366,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     let titleFn = (runName) => ([
       (<span key="launch">Launch</span>),
       runName,
-      (<span key="question">?</span>),
+      (<span key="question">?</span>)
     ]);
     if (title && typeof title === 'function') {
       titleFn = title;
