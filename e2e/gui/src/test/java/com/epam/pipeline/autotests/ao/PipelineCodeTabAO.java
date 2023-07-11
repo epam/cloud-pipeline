@@ -147,7 +147,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
-        $(".ant-table-tbody").find("tr").waitUntil(enabled, DEFAULT_TIMEOUT);
+        $(byText("config.json")).waitUntil(visible, DEFAULT_TIMEOUT);
         $(".ant-table-tbody")
                 .findAll("tr")
                 .shouldHaveSize(3)
