@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,35 +15,30 @@
 # limitations under the License.
 
 INDEX_FILE_PATH="$1"
-IMAGE_PREVIEW_DATA_ROOT="$2"
-OME_TIFF_IMAGE_NAME="$3"
+RESULTS_IMAGES_DIR="$2"
+IMAGES_DATA_ROOT="$3"
+OME_TIFF_IMAGE_NAME="$4"
 
-RAW_IMAGE_DIR=$(mktemp -d --dry-run "$IMAGE_PREVIEW_DATA_ROOT/data_XXXXX.raw/")
+RAW_IMAGE_DIR=$(mktemp -d --dry-run "$RESULTS_IMAGES_DIR/data_XXXXX.raw/")
 if [[ -z "$OME_TIFF_IMAGE_NAME" ]]; then
     OME_TIFF_IMAGE_NAME="${HCS_PARSER_OME_TIFF_FILE_NAME:-data.ome.tiff}"
 fi
-OME_TIFF_IMAGE_PATH="$IMAGE_PREVIEW_DATA_ROOT/$OME_TIFF_IMAGE_NAME"
-
-HCS_PROCESSING_TASK="${HCS_PROCESSING_TASK:-HCS processing}"
-
-function cleanup_raw_dir() {
-    rm -rf "$RAW_IMAGE_DIR"
-}
+OME_TIFF_IMAGE_PATH="$RESULTS_IMAGES_DIR/$OME_TIFF_IMAGE_NAME"
 
 bioformats2raw $BIOFORMATS2RAW_EXTRA_FLAGS "$INDEX_FILE_PATH" "$RAW_IMAGE_DIR"
 if [ $? -ne 0 ]; then
-    cleanup_raw_dir
+    rm -rf "$RAW_IMAGE_DIR"
     exit 1
 fi
 
 raw2ometiff $RAW2OMETIFF_EXTRA_FLAGS "$RAW_IMAGE_DIR" "$OME_TIFF_IMAGE_PATH"
 if [ $? -ne 0 ]; then
-    cleanup_raw_dir
+    rm -rf "$RAW_IMAGE_DIR"
     rm -f "$OME_TIFF_IMAGE_PATH"
     exit 1
 fi
 
-cleanup_raw_dir
+rm -rf "$RAW_IMAGE_DIR"
 generate_tiff_offsets --input_file "$OME_TIFF_IMAGE_PATH"
 if [ $? -ne 0 ]; then
     exit 1
