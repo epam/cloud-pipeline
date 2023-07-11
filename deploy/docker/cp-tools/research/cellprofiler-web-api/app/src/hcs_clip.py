@@ -29,6 +29,9 @@ from .modules.tifffile_with_offsets import TiffFile, TiffPage
 from .hcs_utils import get_required_field, prepare_cloud_path
 
 POOL_SIZE = int(os.getenv('CELLPROFILER_IMAGES_API_THREADS', 2))
+HCS_TOOLS_HOME = os.getenv('HCS_TOOLS_HOME', '/opt/local/hcs-tools')
+CONVERT_TO_OME_TIFF_SCRIPT = 'scripts/convert_to_ome_tiff.sh'
+OME_TIFF_NAME = 'data.ome.tiff'
 
 
 def create_clip(params):
@@ -591,7 +594,16 @@ class OmeTiffImageGenerator:
                 if new_key in self.generator.image_properties.cells:
                     coordinates.update({new_key: value})
 
-        adjust_index_xml(results_path, pages, self.generator.image_properties, coordinates)
+        index_file_path = adjust_index_xml(results_path, pages, self.generator.image_properties, coordinates)
+        self.generate_ome_tiff_file(index_file_path, image_path_tmp, OME_TIFF_NAME)
+
+    @staticmethod
+    def generate_ome_tiff_file(index_file_path, images_dir, tiff_file_name):
+        path_to_script = os.path.join(HCS_TOOLS_HOME, CONVERT_TO_OME_TIFF_SCRIPT)
+        conversion_result = os.system('bash "{}" "{}" "{}" "{}"'.format(
+            path_to_script, index_file_path, images_dir, tiff_file_name))
+        if conversion_result != 0:
+            raise RuntimeError('Failed to generate OME-TIFF image.')
 
 
 class OriginalImageGenerator(ImageGenerator):

@@ -33,8 +33,6 @@ RUN yum install -y \
         libGLU-devel \
         sqlite-devel \
         which \
-        blosc \
-        ImageMagick \
         libreoffice-writer \
         libreoffice-calc && \
     wget "$PYTHON_3_DISTRIBUTION_URL" -O python3.tgz  && \
@@ -52,14 +50,19 @@ ENV LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
 ARG CELL_PROFILER_VERSION=4.2.1
 ARG NUMPY_VERSION=1.23.1
 ARG CYTHON_VERSION=0.29.30
-ARG GENERATE_OFFSETS_VERSION=0.1.7
 
 COPY requirements.txt $CELLPROFILER_API_HOME/
 RUN python3.8 -m pip install wheel numpy==$NUMPY_VERSION \
                                    Cython==$CYTHON_VERSION && \
     python3.8 -m pip install cellprofiler==$CELL_PROFILER_VERSION && \
-    python3.8 -m pip install -r $CELLPROFILER_API_HOME/requirements.txt && \
-    python3.8 -m pip install generate-tiff-offsets==$GENERATE_OFFSETS_VERSION
+    python3.8 -m pip install -r $CELLPROFILER_API_HOME/requirements.txt
+
+RUN yum install -y \
+        blosc \
+        ImageMagick
+
+ARG GENERATE_OFFSETS_VERSION=0.1.7
+RUN python3.8 -m pip install generate-tiff-offsets==$GENERATE_OFFSETS_VERSION
 
 ARG BIOFORMATS_TO_RAW_VERSION=0.6.1
 ARG BIOFORMATS_TO_RAW_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION.zip"
