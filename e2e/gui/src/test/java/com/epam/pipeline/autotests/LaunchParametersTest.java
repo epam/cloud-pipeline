@@ -109,6 +109,14 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
             );
         });
         initialLaunchSystemParameters = editLaunchSystemParameters();
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(userWithoutCompletedRuns.login)
+                .edit()
+                .deleteRoleOrGroupIfExist(USER_ROLE)
+                .ok();
     }
 
     @AfterClass(alwaysRun = true)
@@ -346,7 +354,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .waitForSshLink()
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getLastRunId())
-                        .execute(format("pipe run -di %s --CP_FSBROWSER_ENABLED true -y", tool))
+                        .execute(format("pipe run -di %s --CP_FSBROWSER_ENABLED true", tool))
                         .assertPageContainsString("An error has occurred while starting a job: " +
                                 "\"CP_FSBROWSER_ENABLED\" parameter is not permitted for overriding")
                         .close()

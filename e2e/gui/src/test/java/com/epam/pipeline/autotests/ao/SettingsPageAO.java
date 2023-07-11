@@ -19,7 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
-import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,8 +31,6 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
-import java.awt.*;
-import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -48,7 +46,6 @@ import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -767,6 +764,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
 
+                    public EditUserPopup deleteRoleOrGroupIfExist(final String value) {
+                        $(byClassName("edit-user-roles-dialog__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                        if(!$$(byClassName("role-name-column")).findBy(text(value)).exists()) {
+                            return this;
+                        }
+                        return deleteRoleOrGroup(value);
+                    }
+
                     public EditUserPopup blockUser(final String user) {
                         click(BLOCK);
                         new ConfirmationPopupAO(this)
@@ -1347,7 +1352,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         */
             actions().moveToElement(get(SAVE)).perform();
             get(SAVE).pressEnter();
-            get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
+            get(SAVE).waitUntil(disabled, DEFAULT_TIMEOUT);
             return this;
         }
 
