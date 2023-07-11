@@ -101,6 +101,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     public void shouldCreateFolderInPipeline() {
         codeTab()
                 .createFolder(pipelineFolder)
+                .ensure(byText(pipelineFolder), visible)
                 .shouldContainElement(pipelineFolder);
     }
 
