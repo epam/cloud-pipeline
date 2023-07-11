@@ -43,4 +43,8 @@ generate_tiff_offsets --input_file "$OME_TIFF_IMAGE_PATH"
 if [ $? -ne 0 ]; then
     exit 1
 fi
+
+rm -rf "$IMAGES_DATA_ROOT"
+rm -f "$INDEX_FILE_PATH"
+
 exit 0

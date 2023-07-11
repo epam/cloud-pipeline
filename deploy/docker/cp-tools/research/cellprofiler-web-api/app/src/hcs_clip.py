@@ -29,8 +29,9 @@ from .modules.tifffile_with_offsets import TiffFile, TiffPage
 from .hcs_utils import get_required_field, prepare_cloud_path
 
 POOL_SIZE = int(os.getenv('CELLPROFILER_IMAGES_API_THREADS', 2))
-HCS_TOOLS_HOME = os.getenv('HCS_TOOLS_HOME', '/opt/local/hcs-tools')
-CONVERT_TO_OME_TIFF_SCRIPT = 'scripts/convert_to_ome_tiff.sh'
+CELLPROFILER_API_HOME = os.getenv('CELLPROFILER_API_HOME', '/opt/cellprofiler-api-wrapper')
+HCS_TOOLS_HOME = os.path.join(CELLPROFILER_API_HOME, 'hcs-tools')
+CONVERT_TO_OME_TIFF_SCRIPT = os.path.join(CELLPROFILER_API_HOME, 'convert_to_ome_tiff.sh')
 OME_TIFF_NAME = 'data.ome.tiff'
 
 
@@ -392,94 +393,6 @@ class ImageParametersValidator:
         return ome_tiff_path, offsets_path
 
 
-def extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix=None):
-    if not hcs_schema_prefix:
-        hcs_schema_prefix = extract_xml_schema(hcs_xml_info_root)
-    plates_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Plates')
-    plate = plates_list.find(hcs_schema_prefix + 'Plate')
-    return plate
-
-
-def adjust_images_index(hcs_xml_info_root, hcs_schema_prefix, image_properties, pages, coordinates):
-    image_ids = list()
-    images_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Images')
-    for page in pages:
-        channel_id = page['channel_id']
-        field_id = page['cell']
-        image_id = 'F{}R{}'.format(field_id, channel_id)
-        image_ids.append(image_id)
-
-        target_image = copy.deepcopy(images_list[0])
-        target_image.find(hcs_schema_prefix + 'id').text = image_id
-        target_image.find(hcs_schema_prefix + 'SequenceID').text = image_properties.sequence_id
-        target_image.find(hcs_schema_prefix + 'TimepointID').text = image_properties.timepoint
-        target_image.find(hcs_schema_prefix + 'ChannelID').text = str(channel_id)
-        target_image.find(hcs_schema_prefix + 'FieldID').text = str(field_id)
-        target_image.find(hcs_schema_prefix + 'Col').text = image_properties.well_column
-        target_image.find(hcs_schema_prefix + 'Row').text = image_properties.well_row
-        target_image.find(hcs_schema_prefix + 'URL').text = page['path']
-        if image_properties.original:
-            position_x, position_y = coordinates.get(int(field_id))
-            target_image.find(hcs_schema_prefix + 'PositionX').text = str(position_x)
-            target_image.find(hcs_schema_prefix + 'PositionY').text = str(position_y)
-        else:
-            target_image.find(hcs_schema_prefix + 'PositionX').text = '0'
-            target_image.find(hcs_schema_prefix + 'PositionY').text = '0'
-        target_image.find(hcs_schema_prefix + 'PlaneID').text = '1'
-
-        images_list.append(target_image)
-
-    for image in images_list.findall(hcs_schema_prefix + 'Image'):
-        image_id = image.find(hcs_schema_prefix + 'id').text
-        if image_id not in image_ids:
-            images_list.remove(image)
-
-    return image_ids
-
-
-def adjust_wells_index(hcs_xml_info_root, hcs_schema_prefix, image_ids, image_properties):
-    wells_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Wells')
-    targe_well = wells_list[0]
-    target_well_id = targe_well.find(hcs_schema_prefix + 'id').text
-    for image_id in image_ids:
-        targe_well.append(ET.fromstring('<Image id="{}" />'.format(image_id)))
-    targe_well.find(hcs_schema_prefix + 'Col').text = image_properties.well_column
-    targe_well.find(hcs_schema_prefix + 'Row').text = image_properties.well_row
-    for well_image in targe_well.findall(hcs_schema_prefix + 'Image'):
-        if well_image.get('id') not in image_ids:
-            targe_well.remove(well_image)
-
-    for well in wells_list.findall(hcs_schema_prefix + 'Well'):
-        well_id = well.find(hcs_schema_prefix + 'id').text
-        if well_id != target_well_id:
-            wells_list.remove(well)
-
-    return target_well_id
-
-
-def adjust_plate_index(hcs_xml_info_root, hcs_schema_prefix, target_well_id):
-    plate = extract_plate_from_hcs_xml(hcs_xml_info_root)
-    for well in plate.findall(hcs_schema_prefix + 'Well'):
-        if well.get('id') != target_well_id:
-            plate.remove(well)
-
-
-def adjust_index_xml(service_images_dir: str, pages: list, image_properties: ImageProperties, coordinates: dict):
-    original_index_file_path = image_properties.index_path
-    index_xml_tree = ET.parse(original_index_file_path)
-    index_xml_root = index_xml_tree.getroot()
-    hcs_schema_prefix = extract_xml_schema(index_xml_root)
-
-    image_ids = adjust_images_index(index_xml_root, hcs_schema_prefix, image_properties, pages, coordinates)
-    target_well_id = adjust_wells_index(index_xml_root, hcs_schema_prefix, image_ids, image_properties)
-    adjust_plate_index(index_xml_root, hcs_schema_prefix, target_well_id)
-
-    index_file_path = os.path.join(service_images_dir, 'Index.xml')
-    ET.register_namespace('', hcs_schema_prefix[1:-1])
-    index_xml_tree.write(index_file_path)
-    return index_file_path
-
-
 class ImageGenerator:
 
     def __init__(self, image_properties: ImageProperties):
@@ -552,6 +465,17 @@ class ImageGenerator:
             colored_images.append(colored_image)
         return merge_hcs_channels(colored_images)
 
+    def parse_coordinates(self):
+        coordinates = dict()
+        if not self.image_properties:
+            return coordinates
+        well_map_coordinates = self.image_properties.well_map.get('coordinates')
+        for key, value in well_map_coordinates.items():
+            new_key = int(str(key).lstrip('Image:'))
+            if new_key in self.image_properties.cells:
+                coordinates.update({new_key: value})
+        return coordinates
+
 
 class OverviewImageGenerator(ImageGenerator):
 
@@ -564,38 +488,115 @@ class OverviewImageGenerator(ImageGenerator):
         image.save(self.image_properties.result_image_path)
 
 
-class OmeTiffImageGenerator:
+class OmeTiffImageGenerator(ImageGenerator):
 
-    def __init__(self, generator: ImageGenerator):
-        self.generator = generator
+    def __init__(self, image_properties: ImageProperties):
+        super().__init__(image_properties)
 
     def generate(self):
-        pages = self.generator.get_pages_with_cells()
-        self.generator.set_offsets_with_planes(pages)
-        self.generator.read_images_with_planes(pages)
+        pages = self.generate_pages()
 
-        results_path = self.generator.image_properties.result_image_path
+        results_path = self.image_properties.result_image_path
         image_path_tmp = os.path.join(results_path, 'tmp')
         mkdir(image_path_tmp)
+
         for page in pages:
             page['channel_id'] = int(page['channel_id']) + 1
             image_name = 'f{}ch{}.tiff'.format(page['cell'], page['channel_id'])
-            image_path = os.path.join(image_path_tmp, image_name)
-            image = page['image']
-            Image.fromarray(image).save(image_path)
-            page['image'] = None
             page['path'] = os.path.join('tmp', image_name)
+            Image.fromarray(page['image']).save(os.path.join(image_path_tmp, image_name))
+            page['image'] = None
 
-        coordinates = dict()
-        if self.generator.image_properties.original:
-            well_map_coordinates = self.generator.image_properties.well_map.get('coordinates')
-            for key, value in well_map_coordinates.items():
-                new_key = int(str(key).lstrip('Image:'))
-                if new_key in self.generator.image_properties.cells:
-                    coordinates.update({new_key: value})
-
-        index_file_path = adjust_index_xml(results_path, pages, self.generator.image_properties, coordinates)
+        coordinates = self.parse_coordinates()
+        index_file_path = self.adjust_index_xml(results_path, pages, self.image_properties, coordinates)
         self.generate_ome_tiff_file(index_file_path, image_path_tmp, results_path, OME_TIFF_NAME)
+
+    def adjust_index_xml(self, service_images_dir: str, pages: list, image_properties: ImageProperties,
+                         coordinates: dict):
+        original_index_file_path = image_properties.index_path
+        index_xml_tree = ET.parse(original_index_file_path)
+        index_xml_root = index_xml_tree.getroot()
+        hcs_schema_prefix = extract_xml_schema(index_xml_root)
+
+        image_ids = self.adjust_images_index(index_xml_root, hcs_schema_prefix, image_properties, pages, coordinates)
+        target_well_id = self.adjust_wells_index(index_xml_root, hcs_schema_prefix, image_ids, image_properties)
+        self.adjust_plate_index(index_xml_root, hcs_schema_prefix, target_well_id)
+
+        index_file_path = os.path.join(service_images_dir, 'Index.xml')
+        ET.register_namespace('', hcs_schema_prefix[1:-1])
+        index_xml_tree.write(index_file_path)
+        return index_file_path
+
+    @staticmethod
+    def adjust_images_index(hcs_xml_info_root, hcs_schema_prefix, image_properties, pages, coordinates):
+        image_ids = list()
+        images_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Images')
+        for page in pages:
+            channel_id = page['channel_id']
+            field_id = page['cell']
+            image_id = 'F{}R{}'.format(field_id, channel_id)
+            image_ids.append(image_id)
+
+            target_image = copy.deepcopy(images_list[0])
+            target_image.find(hcs_schema_prefix + 'id').text = image_id
+            target_image.find(hcs_schema_prefix + 'SequenceID').text = image_properties.sequence_id
+            target_image.find(hcs_schema_prefix + 'TimepointID').text = image_properties.timepoint
+            target_image.find(hcs_schema_prefix + 'ChannelID').text = str(channel_id)
+            target_image.find(hcs_schema_prefix + 'FieldID').text = str(field_id)
+            target_image.find(hcs_schema_prefix + 'Col').text = image_properties.well_column
+            target_image.find(hcs_schema_prefix + 'Row').text = image_properties.well_row
+            target_image.find(hcs_schema_prefix + 'URL').text = page['path']
+            if image_properties.original:
+                position_x, position_y = coordinates.get(int(field_id))
+                target_image.find(hcs_schema_prefix + 'PositionX').text = str(position_x)
+                target_image.find(hcs_schema_prefix + 'PositionY').text = str(position_y)
+            else:
+                target_image.find(hcs_schema_prefix + 'PositionX').text = '0'
+                target_image.find(hcs_schema_prefix + 'PositionY').text = '0'
+            target_image.find(hcs_schema_prefix + 'PlaneID').text = '1'
+
+            images_list.append(target_image)
+
+        for image in images_list.findall(hcs_schema_prefix + 'Image'):
+            image_id = image.find(hcs_schema_prefix + 'id').text
+            if image_id not in image_ids:
+                images_list.remove(image)
+
+        return image_ids
+
+    @staticmethod
+    def adjust_wells_index(hcs_xml_info_root, hcs_schema_prefix, image_ids, image_properties):
+        wells_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Wells')
+        targe_well = wells_list[0]
+        target_well_id = targe_well.find(hcs_schema_prefix + 'id').text
+        for image_id in image_ids:
+            targe_well.append(ET.fromstring('<Image id="{}" />'.format(image_id)))
+        targe_well.find(hcs_schema_prefix + 'Col').text = image_properties.well_column
+        targe_well.find(hcs_schema_prefix + 'Row').text = image_properties.well_row
+        for well_image in targe_well.findall(hcs_schema_prefix + 'Image'):
+            if well_image.get('id') not in image_ids:
+                targe_well.remove(well_image)
+
+        for well in wells_list.findall(hcs_schema_prefix + 'Well'):
+            well_id = well.find(hcs_schema_prefix + 'id').text
+            if well_id != target_well_id:
+                wells_list.remove(well)
+
+        return target_well_id
+
+    @staticmethod
+    def extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix=None):
+        if not hcs_schema_prefix:
+            hcs_schema_prefix = extract_xml_schema(hcs_xml_info_root)
+        plates_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Plates')
+        plate = plates_list.find(hcs_schema_prefix + 'Plate')
+        return plate
+
+    def adjust_plate_index(self, hcs_xml_info_root, hcs_schema_prefix, target_well_id):
+        plate = self.extract_plate_from_hcs_xml(hcs_xml_info_root)
+        for well in plate.findall(hcs_schema_prefix + 'Well'):
+            if well.get('id') != target_well_id:
+                plate.remove(well)
 
     @staticmethod
     def generate_ome_tiff_file(index_file_path, images_dir, results_path, tiff_file_name):
@@ -618,19 +619,9 @@ class OriginalImageGenerator(ImageGenerator):
 
     def generate_pages(self):
         pages = super().generate_pages()
-
         coordinates = self.parse_coordinates()
         field_size = self.image_properties.well_map.get('field_size')
         return self.merge_fields_pages(pages, self.image_properties.selected_channels.keys(), coordinates, field_size)
-
-    def parse_coordinates(self):
-        coordinates = dict()
-        well_map_coordinates = self.image_properties.well_map.get('coordinates')
-        for key, value in well_map_coordinates.items():
-            new_key = int(str(key).lstrip('Image:'))
-            if new_key in self.image_properties.cells:
-                coordinates.update({new_key: value})
-        return coordinates
 
     def merge_fields_pages(self, pages, chanel_ids, coordinates, field_size):
         merged_pages = list()
@@ -727,9 +718,7 @@ class HCSImagesManager:
     @staticmethod
     def get_generator(image_properties: ImageProperties):
         if image_properties.original:
-            generator = OriginalImageGenerator(image_properties)
-        else:
-            generator = OverviewImageGenerator(image_properties)
-        if image_properties.is_ome_tiff():
-            return OmeTiffImageGenerator(generator)
-        return generator
+            return OriginalImageGenerator(image_properties)
+        elif image_properties.is_ome_tiff():
+            return OmeTiffImageGenerator(image_properties)
+        return OverviewImageGenerator(image_properties)
