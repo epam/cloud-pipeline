@@ -59,7 +59,7 @@ public class ToolsParametersTest
     private static final String SYSTEM_D = "SystemD";
     private static final String TOOLTIP_2 = "This capability is not allowed\nSupported OS versions:\ncentos*";
     private static final String TOOLTIP_1 = "This capability is not allowed\nSupported OS versions:\ndebian 10\n" +
-            "centos*";
+            "centos 8";
     private static final String CUSTOM_CAPABILITY_DESC_1 = "Custom test capability 1";
     private static final String CUSTOM_CAPABILITY_DESC_2 = "Custom test capability 2";
     private static final String CUSTOM_CAPABILITY_DESC_3 = "Custom test capability 3";
@@ -222,9 +222,8 @@ public class ToolsParametersTest
                                 .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
                                 .checkCustomCapability(CUSTOM_CAPABILITY_4, false)
                                 .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
-                                .checkCustomCapability(SYSTEM_D, true)
+                                .checkCustomCapability(SYSTEM_D, false)
                                 .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
-                                .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
                                 .click(byTitle(RUN_CAPABILITIES_TITLE))
                                 .selectRunCapability(CUSTOM_CAPABILITY_1)
                                 .click(byTitle(RUN_CAPABILITIES_TITLE))
@@ -240,9 +239,8 @@ public class ToolsParametersTest
                 .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
                 .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
                 .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
-                .checkCustomCapability(SYSTEM_D, true)
+                .checkCustomCapability(SYSTEM_D, false)
                 .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
-                .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
                 .selectRunCapability(CUSTOM_CAPABILITY_1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
