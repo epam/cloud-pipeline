@@ -88,12 +88,25 @@ if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" 
 fi
 export GLOBAL_DISTRIBUTION_URL
 
+_WO="--timeout=10 --waitretry=1 --tries=10"
+wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.gz && \
+gzip -d /bin/nvme.gz && \
+chmod +x /bin/nvme
+
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
 FS_TYPE="@FS_TYPE@"
 
+_ds=()
+if [[ -x /bin/nvme ]]; then
+  _ds=($(nvme list | grep 'Instance Storage' | awk '{ print $1 }'))
+fi
 UNMOUNTED_DRIVES=($(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }'))
+_dsc=( $({ printf "%s\n" "${UNMOUNTED_DRIVES[@]}" | sort -u; printf "%s\n" "${_ds[@]}" "${_ds[@]}"; } | sort | uniq -u) )
+if [[ ${#_dsc[@]} > 0 ]]; then
+  UNMOUNTED_DRIVES=("${_dsc[@]}")
+fi
 if [[ ${#UNMOUNTED_DRIVES[@]} > 1 ]]; then
   pvcreate ${UNMOUNTED_DRIVES[@]}
   vgcreate nvmevg ${UNMOUNTED_DRIVES[@]}
@@ -110,7 +123,7 @@ elif [[ ${#UNMOUNTED_DRIVES[@]} == 1 ]]; then
       unset DRIVE_NAME
   fi
 else
-  echo "No unmounted drives found. Root volume is used as for the /ebs"
+  echo "No unmounted drives found. Root volume is used for the /ebs"
 fi
 
 MOUNT_POINT="/ebs"
@@ -147,7 +160,6 @@ if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" 
   _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
 fi
 mkdir -p $_DOCKER_SYS_IMGS
-_WO="--timeout=10 --waitretry=1 --tries=10"
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
