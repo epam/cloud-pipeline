@@ -64,11 +64,16 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         network_interfaces = self.__build_networks()
         if is_spot:
             utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
+        
+        maintenance_type = 'terminate'
+        if ins_type.startswith('e2'):
+            maintenance_type = 'migrate'
+
         body = {
             'name': instance_name,
             'machineType': machine_type,
             'scheduling': {
-                'onHostMaintenance': 'terminate',
+                'onHostMaintenance': maintenance_type,
                 'preemptible': is_spot
             },
             # No need for IP forwarding as it can be used as a security breach
