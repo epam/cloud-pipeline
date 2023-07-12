@@ -34,7 +34,8 @@ def get_processing_roots(should_force_processing, measurement_index_file):
             lookup_paths, measurement_index_file, should_force_processing,
             skip=get_list_run_param('HCS_SKIP_FILES'),
             objmeta_file=os.getenv('HCS_OBJECT_META_FILE', None),
-            hs_file=os.getenv('HCS_HARMONY_HS_FILE', '_hs.txt')).generate_paths()
+            hs_file=os.getenv('HCS_HARMONY_HS_FILE', '_hs.txt'),
+            skip_markers=get_list_run_param('HCS_SKIP_MARKERS')).generate_paths()
     else:
         result = []
         image_names = get_list_run_param('HCS_TARGET_IMG_NAMES')
@@ -50,13 +51,14 @@ def get_processing_roots(should_force_processing, measurement_index_file):
 class HcsProcessingDirsGenerator:
 
     def __init__(self, lookup_paths, measurement_index_file_path, force_processing=False, skip=[],
-                 objmeta_file=None, hs_file=None):
+                 objmeta_file=None, hs_file=None, skip_markers=[]):
         self.lookup_paths = lookup_paths
         self.measurement_index_file_path = measurement_index_file_path
         self.force_processing = force_processing
         self.skip = skip
         self.objmeta_file = objmeta_file
         self.hs_file = hs_file
+        self.skip_markers = skip_markers
 
     @staticmethod
     def is_folder_content_modified_after(dir_path, modification_date):
@@ -92,6 +94,8 @@ class HcsProcessingDirsGenerator:
         return hcs_roots
 
     def is_processing_required(self, hcs_folder_root_path, hcs_img_path):
+        if self.is_skip_marker_present(hcs_folder_root_path):
+            return False
         if self.force_processing:
             return True
         if not os.path.exists(hcs_img_path):
@@ -104,6 +108,14 @@ class HcsProcessingDirsGenerator:
             return True
         stat_file_modification_date = HcsParsingUtils.get_file_last_modification_time(stat_file)
         return self.is_folder_content_modified_after(hcs_folder_root_path, stat_file_modification_date)
+
+    def is_skip_marker_present(self, folder):
+        if not self.skip_markers:
+            return False
+        for skip in self.skip_markers:
+            if os.path.isfile(os.path.join(folder, skip)):
+                return True
+        return False
 
     def get_obj_metadata(self, root, file_name):
         if not file_name:
