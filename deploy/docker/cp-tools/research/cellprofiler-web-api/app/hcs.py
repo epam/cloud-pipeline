@@ -63,7 +63,7 @@ def create_pipeline():
         pipeline_id = manager.create_pipeline(measurement_uuid)
         return jsonify(success({"pipelineId": pipeline_id}))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -77,7 +77,7 @@ def get_pipeline():
         pipeline_id = manager.get_pipeline(pipeline_id)
         return jsonify(success({"pipelineId": pipeline_id}))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -92,7 +92,7 @@ def add_files():
         manager.add_files(pipeline_id, files_data)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -107,7 +107,7 @@ def create_module():
         manager.create_module(pipeline_id, module_data)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -127,7 +127,7 @@ def move_module():
         manager.move_module(pipeline_id, module_id, direction)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -145,7 +145,7 @@ def update_module():
         manager.update_module(pipeline_id, module_id, module_data)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -162,7 +162,7 @@ def delete_module():
         manager.delete_module(pipeline_id, module_id)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -176,7 +176,7 @@ def run_pipeline():
         manager.launch_pipeline(pipeline_id)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -193,7 +193,7 @@ def run_module():
         manager.run_module(pipeline_id, module_id)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -208,7 +208,7 @@ def get_status():
         response = manager.get_status(pipeline_id, module_id)
         return jsonify(success(response))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -219,7 +219,7 @@ def get_movie():
         clip_full_path, total_time = create_clip(params)
         return jsonify(success({"path": clip_full_path, "time": total_time}))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -229,7 +229,7 @@ def get_image():
     try:
         return jsonify(success({'uuid': manager.generate_image(flask.request.args)}))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -239,7 +239,7 @@ def get_image_processing_results():
     try:
         return jsonify(success(manager.get_results(flask.request.args.get('uuid'))))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 

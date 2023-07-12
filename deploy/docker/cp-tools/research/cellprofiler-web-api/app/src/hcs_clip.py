@@ -323,6 +323,8 @@ class ImageParametersValidator:
             raise RuntimeError('Overview image creation available for single well only.')
         if image.is_ome_tiff() and len(image.cells) > 1:
             raise RuntimeError('OME-TIFF image creation available for single cell only.')
+        if image.is_ome_tiff() and not wells_map_key:
+            raise RuntimeError('Field "well" is required for OME-TIFF image generation.')
         if wells_map_key:
             image.well_column, image.well_row = wells_map_key.split('_')
 
@@ -471,7 +473,7 @@ class ImageGenerator:
 
     def parse_coordinates(self):
         coordinates = dict()
-        if not self.image_properties:
+        if not self.image_properties.original:
             return coordinates
         well_map_coordinates = self.image_properties.well_map.get('coordinates')
         for key, value in well_map_coordinates.items():
@@ -505,6 +507,7 @@ class OmeTiffImageGenerator(ImageGenerator):
         image_path_tmp = os.path.join(local_workdir, 'tmp')
         mkdir(image_path_tmp)
 
+        print("[DEBUG] Preparing raw TIFF data '{}'".format(local_workdir), flush=True)
         for page in pages:
             page['channel_id'] = int(page['channel_id']) + 1
             image_name = 'f{}ch{}.tiff'.format(page['cell'], page['channel_id'])
@@ -528,6 +531,7 @@ class OmeTiffImageGenerator(ImageGenerator):
         self.adjust_plate_index(index_xml_root, hcs_schema_prefix, target_well_id)
 
         index_file_path = os.path.join(service_images_dir, 'Index.xml')
+        print("[DEBUG] Writing OME-TIFF index for '{}'".format(index_file_path), flush=True)
         ET.register_namespace('', hcs_schema_prefix[1:-1])
         index_xml_tree.write(index_file_path)
         return index_file_path
@@ -606,17 +610,14 @@ class OmeTiffImageGenerator(ImageGenerator):
     @staticmethod
     def generate_ome_tiff_file(index_file_path, images_dir, local_workdir, tiff_file_name, results_dir):
         path_to_script = os.path.join(HCS_TOOLS_HOME, CONVERT_TO_OME_TIFF_SCRIPT)
-        command = ['bash',
-                   '"{}"'.format(path_to_script),
-                   '"{}"'.format(index_file_path),
-                   '"{}"'.format(local_workdir),
-                   '"{}"'.format(images_dir),
-                   '"{}"'.format(tiff_file_name),
-                   '"{}"'.format(results_dir)]
-        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        print("[DEBUG] Generating OME-TIFF image", flush=True)
+        command = 'bash "{}" "{}" "{}" "{}" "{}" "{}"'.format(path_to_script, index_file_path, local_workdir,
+                                                              images_dir, tiff_file_name, results_dir)
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         exit_code = process.wait()
         if exit_code != 0:
             raise RuntimeError('Failed to generate OME-TIFF image. Error: {}'.format(process.stderr.readlines()))
+        print("[DEBUG] OME-TIFF image generated successfully! Results: '{}'".format(results_dir), flush=True)
 
 
 class OriginalImageGenerator(ImageGenerator):
@@ -714,7 +715,7 @@ class HCSImagesManager:
     def generate_image(self, params):
         image_properties = ImageParametersValidator().validate(params)
 
-        task_id = str(uuid.uuid4())
+        task_id = image_properties.uuid
         self._tasks.update({task_id: {'state': 'running'}})
         self._pool.apply_async(func=self.run_image_generation, args=(task_id, image_properties))
         return task_id
@@ -724,13 +725,13 @@ class HCSImagesManager:
             self.get_generator(image_properties).generate()
             self._tasks.update({task_id: {'state': 'success', 'path': image_properties.result_image_path}})
         except Exception as e:
-            print(traceback.format_exc())
-            self._tasks.get({task_id: {'state': 'failure', 'message': e.__str__()}})
+            print(traceback.format_exc(), flush=True)
+            self._tasks.update({task_id: {'state': 'failure', 'message': e.__str__()}})
 
     @staticmethod
     def get_generator(image_properties: ImageProperties):
+        if image_properties.is_ome_tiff():
+            return OmeTiffImageGenerator(image_properties)
         if image_properties.original:
             return OriginalImageGenerator(image_properties)
-        elif image_properties.is_ome_tiff():
-            return OmeTiffImageGenerator(image_properties)
         return OverviewImageGenerator(image_properties)
