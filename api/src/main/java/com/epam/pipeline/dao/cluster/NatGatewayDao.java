@@ -47,7 +47,7 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
     private String updateRouteQuery;
     private String deleteRouteQuery;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public List<NatRoute> registerRoutingRules(final List<NatRoutingRuleDescription> newRouteRules,
                                                final NatRouteStatus status) {
         final List<NatRoute> newRoutes = newRouteRules.stream()
@@ -56,7 +56,7 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
         return registerRoutes(newRoutes);
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public List<NatRoute> registerRoutes(final List<NatRoute> newRoutes) {
         final MapSqlParameterSource[] params = newRoutes.stream()
             .map(NatRoutingRuleParameters::getRouteParameters)
@@ -79,7 +79,7 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
             .findFirst();
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public NatRoute updateRoute(final NatRoute route) {
         final NatRoute routeUpdate = route.toBuilder()
             .lastUpdateTime(getNowUTC())
@@ -89,7 +89,7 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
         return routeUpdate;
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public boolean deleteRouteById(final Long routeId) {
         return getNamedParameterJdbcTemplate().update(deleteRouteQuery,
                                                       NatRoutingRuleParameters.getRouteIdAsParamSource(routeId)) > 0;
