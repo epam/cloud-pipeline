@@ -15,15 +15,18 @@
 # limitations under the License.
 
 INDEX_FILE_PATH="$1"
-RESULTS_IMAGES_DIR="$2"
+IMAGES_WORKDIR="$2"
 IMAGES_DATA_ROOT="$3"
 OME_TIFF_IMAGE_NAME="$4"
+REMOTE_RESULTS_DIR="$5"
 
-RAW_IMAGE_DIR=$(mktemp -d --dry-run "$RESULTS_IMAGES_DIR/data_XXXXX.raw/")
+RAW_IMAGE_DIR=$(mktemp -d --dry-run "$IMAGES_WORKDIR/data_XXXXX.raw/")
 if [[ -z "$OME_TIFF_IMAGE_NAME" ]]; then
-    OME_TIFF_IMAGE_NAME="${HCS_PARSER_OME_TIFF_FILE_NAME:-data.ome.tiff}"
+    OME_TIFF_IMAGE_NAME="data.ome.tiff"
 fi
-OME_TIFF_IMAGE_PATH="$RESULTS_IMAGES_DIR/$OME_TIFF_IMAGE_NAME"
+OME_TIFF_RESULTS="$IMAGES_WORKDIR/results"
+mkdir $OME_TIFF_RESULTS
+OME_TIFF_IMAGE_PATH="$OME_TIFF_RESULTS/$OME_TIFF_IMAGE_NAME"
 
 bioformats2raw $BIOFORMATS2RAW_EXTRA_FLAGS "$INDEX_FILE_PATH" "$RAW_IMAGE_DIR"
 if [ $? -ne 0 ]; then
@@ -44,7 +47,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-rm -rf "$IMAGES_DATA_ROOT"
-rm -f "$INDEX_FILE_PATH"
+cp -R $OME_TIFF_RESULTS/* $REMOTE_RESULTS_DIR
 
 exit 0

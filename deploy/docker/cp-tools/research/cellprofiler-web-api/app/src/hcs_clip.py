@@ -23,6 +23,7 @@ import xml.etree.ElementTree as ET
 import json
 import errno
 import uuid
+import subprocess
 
 from .config import Config
 from .modules.tifffile_with_offsets import TiffFile, TiffPage
@@ -31,7 +32,8 @@ from .hcs_utils import get_required_field, prepare_cloud_path
 POOL_SIZE = int(os.getenv('CELLPROFILER_IMAGES_API_THREADS', 2))
 CELLPROFILER_API_HOME = os.getenv('CELLPROFILER_API_HOME', '/opt/cellprofiler-api-wrapper')
 HCS_TOOLS_HOME = os.path.join(CELLPROFILER_API_HOME, 'hcs-tools')
-CONVERT_TO_OME_TIFF_SCRIPT = os.path.join(CELLPROFILER_API_HOME, 'convert_to_ome_tiff.sh')
+RAW_IMAGES_ROOT = os.path.join(HCS_TOOLS_HOME, '.images')
+CONVERT_TO_OME_TIFF_SCRIPT = os.path.join(HCS_TOOLS_HOME, 'convert_to_ome_tiff.sh')
 OME_TIFF_NAME = 'data.ome.tiff'
 
 
@@ -278,7 +280,8 @@ def _get_items(collection, key, target):
 
 class ImageProperties:
 
-    def __init__(self):
+    def __init__(self, image_uuid):
+        self.uuid = image_uuid
         self.sequence_id = None
         self.timepoint = None
         self.format = 'tiff'
@@ -304,7 +307,8 @@ class ImageProperties:
 class ImageParametersValidator:
 
     def validate(self, params):
-        image = ImageProperties()
+        image_uuid = str(uuid.uuid4())
+        image = ImageProperties(image_uuid)
         image.selected_z_planes = get_required_field(params, 'zPlanes').split(',')
         image.sequence_id = str(get_required_field(params, 'sequenceId'))
         image.timepoint = get_required_field(params, 'timepoint')
@@ -333,7 +337,7 @@ class ImageParametersValidator:
                 raise RuntimeError('Incorrect Z plane id [{}]'.format(selected_plane))
 
         image.selected_channels = get_selected_channels(params, image.all_channels, image.is_ome_tiff())
-        image.result_image_path = self.build_image_path(image.format, image.is_ome_tiff())
+        image.result_image_path = self.build_image_path(image.format, image.is_ome_tiff(), image.uuid)
 
         preview_seq_dir = os.path.join(preview_dir, '{}'.format(image.sequence_id))
         ome_tiff_path, offsets_path = get_path(preview_seq_dir, image.original)
@@ -361,16 +365,16 @@ class ImageParametersValidator:
         return index_path
 
     @staticmethod
-    def build_image_path(image_extension, is_ome_tiff):
+    def build_image_path(image_extension, is_ome_tiff, image_uuid):
         images_dir = os.path.join(Config.COMMON_RESULTS_DIR, 'images')
         mkdir(images_dir)
         if is_ome_tiff:
-            images_dir = os.path.join(images_dir, str(uuid.uuid4()))
+            images_dir = os.path.join(images_dir, image_uuid)
             mkdir(images_dir)
             return images_dir
         if not str(image_extension).startswith('.'):
             image_extension = '.{}'.format(image_extension)
-        image_name = str(uuid.uuid4()) + image_extension
+        image_name = image_uuid + image_extension
         return os.path.join(images_dir, image_name)
 
     @staticmethod
@@ -497,7 +501,8 @@ class OmeTiffImageGenerator(ImageGenerator):
         pages = self.generate_pages()
 
         results_path = self.image_properties.result_image_path
-        image_path_tmp = os.path.join(results_path, 'tmp')
+        local_workdir = os.path.join(RAW_IMAGES_ROOT, self.image_properties.uuid)
+        image_path_tmp = os.path.join(local_workdir, 'tmp')
         mkdir(image_path_tmp)
 
         for page in pages:
@@ -508,8 +513,8 @@ class OmeTiffImageGenerator(ImageGenerator):
             page['image'] = None
 
         coordinates = self.parse_coordinates()
-        index_file_path = self.adjust_index_xml(results_path, pages, self.image_properties, coordinates)
-        self.generate_ome_tiff_file(index_file_path, image_path_tmp, results_path, OME_TIFF_NAME)
+        index_file_path = self.adjust_index_xml(local_workdir, pages, self.image_properties, coordinates)
+        self.generate_ome_tiff_file(index_file_path, image_path_tmp, local_workdir, OME_TIFF_NAME, results_path)
 
     def adjust_index_xml(self, service_images_dir: str, pages: list, image_properties: ImageProperties,
                          coordinates: dict):
@@ -599,12 +604,19 @@ class OmeTiffImageGenerator(ImageGenerator):
                 plate.remove(well)
 
     @staticmethod
-    def generate_ome_tiff_file(index_file_path, images_dir, results_path, tiff_file_name):
+    def generate_ome_tiff_file(index_file_path, images_dir, local_workdir, tiff_file_name, results_dir):
         path_to_script = os.path.join(HCS_TOOLS_HOME, CONVERT_TO_OME_TIFF_SCRIPT)
-        conversion_result = os.system('bash "{}" "{}" "{}" "{}" "{}"'.format(
-            path_to_script, index_file_path, results_path, images_dir, tiff_file_name))
-        if conversion_result != 0:
-            raise RuntimeError('Failed to generate OME-TIFF image.')
+        command = ['bash',
+                   '"{}"'.format(path_to_script),
+                   '"{}"'.format(index_file_path),
+                   '"{}"'.format(local_workdir),
+                   '"{}"'.format(images_dir),
+                   '"{}"'.format(tiff_file_name),
+                   '"{}"'.format(results_dir)]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        exit_code = process.wait()
+        if exit_code != 0:
+            raise RuntimeError('Failed to generate OME-TIFF image. Error: {}'.format(process.stderr.readlines()))
 
 
 class OriginalImageGenerator(ImageGenerator):
