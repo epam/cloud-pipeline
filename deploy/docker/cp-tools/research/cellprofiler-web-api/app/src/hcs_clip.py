@@ -323,8 +323,6 @@ class ImageParametersValidator:
             raise RuntimeError('Overview image creation available for single well only.')
         if image.is_ome_tiff() and len(image.cells) > 1:
             raise RuntimeError('OME-TIFF image creation available for single cell only.')
-        if image.is_ome_tiff() and not wells_map_key:
-            raise RuntimeError('Field "well" is required for OME-TIFF image generation.')
         if wells_map_key:
             image.well_column, image.well_row = wells_map_key.split('_')
 
@@ -473,7 +471,7 @@ class ImageGenerator:
 
     def parse_coordinates(self):
         coordinates = dict()
-        if not self.image_properties.original:
+        if not self.image_properties.original or not self.image_properties.well_map:
             return coordinates
         well_map_coordinates = self.image_properties.well_map.get('coordinates')
         for key, value in well_map_coordinates.items():
@@ -531,7 +529,7 @@ class OmeTiffImageGenerator(ImageGenerator):
         self.adjust_plate_index(index_xml_root, hcs_schema_prefix, target_well_id)
 
         index_file_path = os.path.join(service_images_dir, 'Index.xml')
-        print("[DEBUG] Writing OME-TIFF index for '{}'".format(index_file_path), flush=True)
+        print("[DEBUG] Writing OME-TIFF index to '{}'".format(index_file_path), flush=True)
         ET.register_namespace('', hcs_schema_prefix[1:-1])
         index_xml_tree.write(index_file_path)
         return index_file_path
@@ -552,8 +550,8 @@ class OmeTiffImageGenerator(ImageGenerator):
             target_image.find(hcs_schema_prefix + 'TimepointID').text = image_properties.timepoint
             target_image.find(hcs_schema_prefix + 'ChannelID').text = str(channel_id)
             target_image.find(hcs_schema_prefix + 'FieldID').text = str(field_id)
-            target_image.find(hcs_schema_prefix + 'Col').text = image_properties.well_column
-            target_image.find(hcs_schema_prefix + 'Row').text = image_properties.well_row
+            target_image.find(hcs_schema_prefix + 'Col').text = image_properties.well_column or '2'
+            target_image.find(hcs_schema_prefix + 'Row').text = image_properties.well_row or '2'
             target_image.find(hcs_schema_prefix + 'URL').text = page['path']
             if image_properties.original:
                 position_x, position_y = coordinates.get(int(field_id))
@@ -580,8 +578,8 @@ class OmeTiffImageGenerator(ImageGenerator):
         target_well_id = targe_well.find(hcs_schema_prefix + 'id').text
         for image_id in image_ids:
             targe_well.append(ET.fromstring('<Image id="{}" />'.format(image_id)))
-        targe_well.find(hcs_schema_prefix + 'Col').text = image_properties.well_column
-        targe_well.find(hcs_schema_prefix + 'Row').text = image_properties.well_row
+        targe_well.find(hcs_schema_prefix + 'Col').text = image_properties.well_column or '2'
+        targe_well.find(hcs_schema_prefix + 'Row').text = image_properties.well_row or '2'
         for well_image in targe_well.findall(hcs_schema_prefix + 'Image'):
             if well_image.get('id') not in image_ids:
                 targe_well.remove(well_image)
