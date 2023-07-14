@@ -15,6 +15,8 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Condition.not;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -84,7 +86,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
-                        .findAll(byClassName("ant-table-row")).stream()
+                        .findAll(byClassName("ant-table-row"))
+                        .filter(not(cssClass("at-gateway-configuration__divider-row")))
+                        .stream()
                         .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(2))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
@@ -99,7 +103,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
-                        .findAll(byClassName("ant-table-row")).stream()
+                        .findAll(byClassName("ant-table-row"))
+                        .filter(not(cssClass("at-gateway-configuration__divider-row")))
+                        .stream()
                         .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
@@ -115,6 +121,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
                         .findAll(byClassName("ant-table-row")).stream()
+                        .filter(not(cssClass("at-gateway-configuration__divider-row")))
                         .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
                         .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists() &&

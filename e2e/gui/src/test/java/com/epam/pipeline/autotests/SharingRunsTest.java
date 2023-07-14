@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -219,8 +220,11 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .setSystemSshDefaultRootUserEnabled()
                     .saveIfNeeded()
                     .ensure(SAVE, Condition.disabled);
-            runsMenu()
-                    .showLog(runID)
+            LogAO logAO = runsMenu()
+                    .showLog(runID);
+            String region = logAO
+                    .getBestRegion();
+            logAO
                     .shareWithUser(user.login, true)
                     .validateShareLink(user.login)
                     .ssh(shell -> shell
@@ -240,7 +244,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .ensureVisible(SERVICES)
                     .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsDisplayedOnServicesPanel(runID)
-                    .openSSHLink(runID)
+                    .openSSHLink(runID, region)
                     .waitUntilTextLoads(runID)
                     .execute("cat test.file")
                     .assertPageContains("123")

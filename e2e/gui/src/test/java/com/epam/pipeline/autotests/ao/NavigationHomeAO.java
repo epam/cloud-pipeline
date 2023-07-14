@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -110,8 +111,10 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
         return this;
     }
 
-    public ShellAO openSSHLink(String runId) {
-        serviceSshLink(runId).hover().closest("a").shouldBe(visible).click();
+    public ShellAO openSSHLink(String runId, String region) {
+        serviceSshLink(runId).hover().closest("div")
+                .find(className("ultizone-url__expander")).click();
+        $(byText(region)).click();
         switchTo().window(1);
         switchTo().frame(0);
         return new ShellAO();

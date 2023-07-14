@@ -23,6 +23,7 @@ import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 import org.openqa.selenium.WebElement;
 
 import java.util.*;
@@ -84,6 +85,16 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO waitForSshLink() {
         get(SSH_LINK).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;
+    }
+
+    private void openRegionSelector() {
+            get(SSH_LINK).parent().find(className("ultizone-url__expander")).click();
+    }
+
+    public String getBestRegion() {
+        openRegionSelector();
+        return $$(className("rc-dropdown-menu-item")).get(0).find("a")
+                .text().replace("(best)", "");
     }
 
     public ShellAO clickOnSshLink() {
