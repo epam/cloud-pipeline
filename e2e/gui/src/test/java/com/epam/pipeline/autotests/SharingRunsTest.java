@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.BeforeMethod;
@@ -220,11 +221,8 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .setSystemSshDefaultRootUserEnabled()
                     .saveIfNeeded()
                     .ensure(SAVE, Condition.disabled);
-            LogAO logAO = runsMenu()
-                    .showLog(runID);
-            String region = logAO
-                    .getBestRegion();
-            logAO
+            runsMenu()
+                    .showLog(runID)
                     .shareWithUser(user.login, true)
                     .validateShareLink(user.login)
                     .ssh(shell -> shell
@@ -244,7 +242,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .ensureVisible(SERVICES)
                     .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsDisplayedOnServicesPanel(runID)
-                    .openSSHLink(runID, region)
+                    .openSSHLink(runID, DEFAULT_CLOUD_REGION)
                     .waitUntilTextLoads(runID)
                     .execute("cat test.file")
                     .assertPageContains("123")

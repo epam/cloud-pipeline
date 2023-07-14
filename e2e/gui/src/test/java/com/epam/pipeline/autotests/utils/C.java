@@ -126,6 +126,7 @@ public class C {
         BACKUP_STORAGE_OFFSET = Integer.parseInt(conf.getProperty("e2e.ui.backup.storage.offset"));
         DEFAULT_CLUSTER_AWS_EBS_TYPE = conf.getProperty("e2e.ui.cluster.aws.ebs.type");
         TEST_RUN_TAG = conf.getProperty("e2e.ui.test.run.tag");
+        DEFAULT_CLOUD_REGION = conf.getProperty("e2e.ui.default.cloud.region");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -194,6 +195,7 @@ public class C {
     public static final String SEARCH_PREFIX;
     public static final String PLATFORM_NAME;
     public static final String ANOTHER_CLOUD_REGION;
+    public static final String DEFAULT_CLOUD_REGION;
 
     public static final String ANONYMOUS_NAME;
     public static final String ANONYMOUS_TOKEN;
