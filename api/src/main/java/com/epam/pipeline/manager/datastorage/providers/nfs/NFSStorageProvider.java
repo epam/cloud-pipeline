@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
@@ -555,7 +556,13 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public DataStorageItemType getItemType(final NFSDataStorage dataStorage,
                                            final String path,
                                            final String version) {
-        throw new UnsupportedOperationException();
+        final File mntDir = nfsStorageMounter.mount(dataStorage);
+        final File file = new File(mntDir, path);
+        if (!file.exists()) {
+            throw new ObjectNotFoundException(messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getName()));
+        }
+        return file.isFile() ? DataStorageItemType.File : DataStorageItemType.Folder;
     }
 
     private String encodeUrl(final String path) {
