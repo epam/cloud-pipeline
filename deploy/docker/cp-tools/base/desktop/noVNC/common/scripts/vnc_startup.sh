@@ -28,7 +28,9 @@ if [[ $1 =~ --skip ]]; then
 fi
 
 ## write correct window size to chrome properties
-$STARTUPDIR/chrome-init.sh
+if [ -f $STARTUPDIR/chrome-init.sh ]; then
+    $STARTUPDIR/chrome-init.sh
+fi
 
 ## resolve_vnc_connection
 VNC_IP=$(hostname -i)
@@ -51,7 +53,7 @@ chmod 600 $PASSWD_PATH
 $NO_VNC_HOME/utils/launch.sh --vnc 127.0.0.1:$VNC_PORT --listen $NO_VNC_PORT &
 vncserver -kill $DISPLAY || rm -rfv /tmp/.X*-lock /tmp/.X11-unix || echo "remove old vnc locks to be a reattachable container"
 vncserver $DISPLAY -depth $VNC_COL_DEPTH -geometry $VNC_RESOLUTION
-$HOME/wm_startup.sh
+$STARTUPDIR/wm_startup.sh
 
 ## log connect options
 echo -e "\n\n------------------ VNC environment started ------------------"

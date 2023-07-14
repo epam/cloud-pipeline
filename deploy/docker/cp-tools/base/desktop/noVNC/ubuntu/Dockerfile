@@ -42,13 +42,15 @@ ENV HOME=/user_home \
 WORKDIR $HOME
 
 ### Add all install scripts for further steps
-ADD ./src/common/install/ $INST_SCRIPTS/
-ADD ./src/ubuntu/install/ $INST_SCRIPTS/
+ADD common/install/ $INST_SCRIPTS/
+ADD ubuntu/scripts/ $INST_SCRIPTS/
 RUN find $INST_SCRIPTS -name '*.sh' -exec chmod a+x {} +
 
 ### Install some common tools
 RUN $INST_SCRIPTS/tools.sh
-ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+ENV LANG='en_US.UTF-8' \
+    LANGUAGE='en_US:en' \
+    LC_ALL='en_US.UTF-8'
 
 ### Install xvnc-server & noVNC - HTML5 based VNC viewer
 RUN $INST_SCRIPTS/tigervnc.sh
@@ -59,15 +61,18 @@ RUN $INST_SCRIPTS/chrome.sh
 
 ### Install xfce UI
 RUN $INST_SCRIPTS/xfce_ui.sh
-ADD ./src/common/xfce/ $HOME/
+ADD common/xfce/ $HOME/
 
 ### configure startup
 RUN $INST_SCRIPTS/libnss_wrapper.sh
-ADD ./src/common/scripts $STARTUPDIR
+ADD common/scripts $STARTUPDIR
 RUN $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
 
 ### Install LibreOffice
 ARG WITH_OFFICE=
 RUN if [ "$WITH_OFFICE" ]; then $INST_SCRIPTS/libreoffice.sh; fi
+
+ADD ubuntu/Desktop $HOME/Desktop
+ADD ubuntu/scripts/chrome_init.sh $STARTUPDIR/chrome_init.sh
 
 USER 0
