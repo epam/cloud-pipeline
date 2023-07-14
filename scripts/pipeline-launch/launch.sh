@@ -684,7 +684,7 @@ function update_user_limits() {
     local _MAX_NOPEN_LIMIT=$1
     local _MAX_PROCS_LIMIT=$2
     local _MAX_CORE_LIMIT=$3
-    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT"
+    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT" -c "$_MAX_CORE_LIMIT"
 cat <<EOT >> /etc/security/limits.conf
 * soft nofile $_MAX_NOPEN_LIMIT
 * hard nofile $_MAX_NOPEN_LIMIT
