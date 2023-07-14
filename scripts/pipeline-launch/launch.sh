@@ -696,8 +696,8 @@ root soft nofile $_MAX_NOPEN_LIMIT
 root hard nofile $_MAX_NOPEN_LIMIT
 root soft nproc $_MAX_PROCS_LIMIT
 root hard nproc $_MAX_PROCS_LIMIT
-root soft nproc $_MAX_CORE_LIMIT
-root hard nproc $_MAX_CORE_LIMIT
+root soft core $_MAX_CORE_LIMIT
+root hard core $_MAX_CORE_LIMIT
 EOT
     if [[ -f "/etc/security/limits.d/20-nproc.conf" ]]; then
         # On centos this configuration file contains some default nproc limits
