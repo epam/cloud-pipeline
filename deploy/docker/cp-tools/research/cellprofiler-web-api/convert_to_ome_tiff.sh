@@ -47,6 +47,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-cp -R $OME_TIFF_RESULTS/* $REMOTE_RESULTS_DIR
+cp -R "$OME_TIFF_RESULTS"/* "$REMOTE_RESULTS_DIR"
+rm -rf "$IMAGES_WORKDIR"
 
 exit 0
