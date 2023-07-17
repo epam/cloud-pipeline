@@ -23,16 +23,16 @@ function check_service_is_ready {
     fi
 }
 
-export CP_STATPING_API_SECRET=${CP_STATPING_API_SECRET:-apisecretcanbeset}
-export CP_STATPING_INTERNAL_PORT=${CP_STATPING_INTERNAL_PORT:-8080}
-
+export CP_STATPING_API_SECRET="${CP_STATPING_API_SECRET:-apisecretcanbeset}"
+export CP_STATPING_INTERNAL_PORT="${CP_STATPING_INTERNAL_PORT:-8080}"
+export CP_STATPING_DATABASE_PASSWORD="${CP_STATPING_DATABASE_PASSWORD:-admin}"
 
 DB_CONFIG="$CP_STATPING_HOME/config.yml"
 cat >$DB_CONFIG<<EOF
 connection: ${CP_STATPING_DATABASE_TYPE:-sqlite}
 host: ${CP_STATPING_DATABASE_HOST:-localhost}
 user: ${CP_STATPING_DATABASE_USERNAME:-admin}
-password: ${CP_STATPING_DATABASE_PASSWORD:-admin}
+password: ${CP_STATPING_DATABASE_PASSWORD}
 database: ${CP_STATPING_DATABASE_DATABASE:-statpingdb}
 port: ${CP_STATPING_DATABASE_PORT:-3306}
 api_secret: $CP_STATPING_API_SECRET
@@ -91,9 +91,15 @@ cat >$STATPING_EMAIL_JSON<<EOF
 EOF
     curl --location -g localhost:$CP_STATPING_INTERNAL_PORT/api/notifier/email \
         --header 'Content-Type: application/json' \
-        --header "Authorization: Bearer $CP_STATPING_API_SECRET"  \
+        --header "Authorization: Bearer $CP_STATPING_API_SECRET" \
         --data @$STATPING_EMAIL_JSON
 fi
+
+curl 'http://127.0.0.1:$CP_STATPING_INTERNAL_PORT/api/users/1' \
+  --header 'Accept: application/json' \
+  --header 'Content-Type: application/json' \
+  --header "Authorization: Bearer $CP_STATPING_API_SECRET" \
+  --data "{\"id\":1,\"username\":\"admin\",\"email\":\"info@admin.com\",\"api_key\":\"$CP_STATPING_API_SECRET\",\"scopes\":\"admin\",\"admin\":true,\"token\":\"\",\"password\":\"${CP_STATPING_DATABASE_PASSWORD}\"}"
 
 
 function sig_handler {
