@@ -95,7 +95,7 @@ EOF
         --data @$STATPING_EMAIL_JSON
 fi
 
-curl 'http://127.0.0.1:$CP_STATPING_INTERNAL_PORT/api/users/1' \
+curl "http://127.0.0.1:$CP_STATPING_INTERNAL_PORT/api/users/1" \
   --header 'Accept: application/json' \
   --header 'Content-Type: application/json' \
   --header "Authorization: Bearer $CP_STATPING_API_SECRET" \
