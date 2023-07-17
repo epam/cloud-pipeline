@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+function check_service_is_ready {
+    health_status=$(curl -s "http://localhost:$CP_STATPING_INTERNAL_PORT/health" | jq -r -e ".online==true")
+    if [ "$health_status" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+export CP_STATPING_API_SECRET=${CP_STATPING_API_SECRET:-apisecretcanbeset}
+export CP_STATPING_INTERNAL_PORT=${CP_STATPING_INTERNAL_PORT:-8080}
+
+
+DB_CONFIG="$CP_STATPING_HOME/config.yml"
+cat >$DB_CONFIG<<EOF
+connection: ${CP_STATPING_DATABASE_TYPE:-sqlite}
+host: ${CP_STATPING_DATABASE_HOST:-localhost}
+user: ${CP_STATPING_DATABASE_USERNAME:-admin}
+password: ${CP_STATPING_DATABASE_PASSWORD:-admin}
+database: ${CP_STATPING_DATABASE_DATABASE:-statpingdb}
+port: ${CP_STATPING_DATABASE_PORT:-3306}
+api_secret: $CP_STATPING_API_SECRET
+location: ${CP_STATPING_DATA_DIR:-/opt/statping}
+sqlfile: ${CP_STATPING_SQLFILE:-/opt/statping/statping.db}
+sample_data: false
+name: Statping ${CP_DEPLOYMENT_ID:-Cloud Pipeline}
+description: This status page shows the status of available ${CP_DEPLOYMENT_ID:-Cloud Pipeline} services
+EOF
+CONFIG_ARG="--config $DB_CONFIG"
+
+
+TEMPLATE_SERVICES_CONFIG="/templates/services_template.yml"
+SERVICES_CONFIG="$CP_STATPING_HOME/services.yml"
+if [ ! -f "$TEMPLATE_SERVICES_CONFIG" ]; then
+    echo "The custom services config file was not found. The default settings will be used."
+else
+    envsubst < $TEMPLATE_SERVICES_CONFIG > $SERVICES_CONFIG
+fi
+
+STATPING_RUNTIME_LOG=$CP_STATPING_HOME/logs/runtime.log
+mkdir -p $(dirname $STATPING_RUNTIME_LOG)
+touch $STATPING_RUNTIME_LOG
+
+nohup statping --port $CP_STATPING_INTERNAL_PORT $CONFIG_ARG &> $STATPING_RUNTIME_LOG &
+APP_PID="$!"
+
+echo "Waiting for Statping service readiness..."
+STATPING_INIT_ATTEMPTS="${STATPING_INIT_ATTEMPTS:-24}"
+try_count=0
+while ! check_service_is_ready && [ $try_count -lt $STATPING_INIT_ATTEMPTS ]; do
+    sleep 5
+    try_count=$(( $try_count + 1 ))
+done
+if ! check_service_is_ready; then
+    echo "Failed to start up Statping service. Exiting..."
+    exit 1
+else
+    echo "Statping service is ready"
+fi
+
+STATPING_EMAIL_JSON="$CP_STATPING_HOME/email_template.json"
+if [ ! -f "$STATPING_EMAIL_JSON" ]; then
+cat >$STATPING_EMAIL_JSON<<EOF
+{
+    "method": "email",
+    "host": "${CP_STATPING_SMTP_SERVER_HOST:-$CP_NOTIFIER_SMTP_SERVER_HOST}",
+    "port": ${CP_STATPING_SMTP_SERVER_PORT:-$CP_NOTIFIER_SERVER_PORT},
+    "username": "${CP_STATPING_SMTP_USER:-$CP_NOTIFIER_SMTP_USER}",
+    "password": "${CP_STATPING_SMTP_PASS:-$CP_NOTIFIER_SMTP_PASS}",
+    "var1": "${CP_STATPING_SMTP_FROM:-$CP_NOTIFIER_SMTP_FROM}",
+    "var2": "${CP_STATPING_EMAIL_TO}",
+    "enabled": true,
+    "limits": 5
+}
+EOF
+    curl --location -g localhost:$CP_STATPING_INTERNAL_PORT/api/notifier/email \
+        --header 'Content-Type: application/json' \
+        --header "Authorization: Bearer $CP_STATPING_API_SECRET"  \
+        --data @$STATPING_EMAIL_JSON
+fi
+
+
+function sig_handler {
+    echo "Got SIGTERM, stopping PID $APP_PID and exiting"
+    if [ $APP_PID -ne 0 ]; then
+        kill -SIGTERM "$APP_PID"
+        wait "$APP_PID"
+    fi
+    exit 143
+}
+
+trap 'kill $! ; sig_handler' SIGTERM
+tail -F $STATPING_RUNTIME_LOG &
+wait "$!"

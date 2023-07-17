@@ -1,0 +1,60 @@
+services:
+  - name: ${CP_DEPLOYMENT_ID} API
+    domain: https://${CP_API_SRV_INTERNAL_HOST}:${CP_API_SRV_INTERNAL_PORT}/pipeline/
+    type: http
+    method: GET
+    check_interval: 60
+    timeout: 10
+    expected_status: 302
+    allow_notifications: true
+    notify_after: 3
+    notify_all_changes: false
+    public: true
+    redirect: false
+  - name: ${CP_DEPLOYMENT_ID} Database
+    domain: ${PSG_HOST}
+    port: ${PSG_PORT}
+    type: tcp
+    check_interval: 60
+    timeout: 10
+    allow_notifications: true
+    notify_after: 3
+    notify_all_changes: false
+    public: true
+    redirect: false
+  - name: ${CP_DEPLOYMENT_ID} EDGE
+    domain: https://${CP_EDGE_INTERNAL_HOST}:${CP_EDGE_INTERNAL_PORT}/
+    type: http
+    method: GET
+    check_interval: 60
+    timeout: 10
+    expected_status: 404
+    allow_notifications: true
+    notify_after: 3
+    notify_all_changes: false
+    public: true
+    redirect: false
+  - name: ${CP_DEPLOYMENT_ID} Docker
+    domain: https://${CP_DOCKER_INTERNAL_HOST}:${CP_DOCKER_INTERNAL_PORT}/v2/
+    type: http
+    method: GET
+    check_interval: 60
+    timeout: 10
+    expected_status: 401
+    allow_notifications: true
+    notify_after: 3
+    notify_all_changes: false
+    public: true
+    redirect: false
+  - name: ${CP_DEPLOYMENT_ID} GIT
+    domain: https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}/v2/
+    type: http
+    method: GET
+    check_interval: 60
+    timeout: 10
+    expected_status: 302
+    allow_notifications: true
+    notify_after: 3
+    notify_all_changes: false
+    public: true
+    redirect: false
