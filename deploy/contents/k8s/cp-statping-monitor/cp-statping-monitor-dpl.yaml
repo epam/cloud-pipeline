@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: "IfNotPresent"
           ports:
             - containerPort: 8080
-          command: ["sleep", infinity]
+          command: ["/init"]
           envFrom:
             - configMapRef:
                 name: cp-config-global

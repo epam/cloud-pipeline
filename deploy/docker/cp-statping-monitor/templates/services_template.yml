@@ -47,7 +47,7 @@ services:
     public: true
     redirect: false
   - name: ${CP_DEPLOYMENT_ID} GIT
-    domain: https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}/v2/
+    domain: https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}/
     type: http
     method: GET
     check_interval: 60
