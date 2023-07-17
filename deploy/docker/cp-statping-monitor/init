@@ -15,7 +15,7 @@
 # limitations under the License.
 
 function check_service_is_ready {
-    health_status=$(curl -s "http://localhost:$PORT/health" | jq -r -e ".online==true")
+    health_status=$(curl -s "http://localhost:$CP_STATPING_INTERNAL_PORT/health" | jq -r -e ".online==true")
     if [ "$health_status" ]; then
         return 0
     else
@@ -23,7 +23,9 @@ function check_service_is_ready {
     fi
 }
 
-CP_STATPING_API_SECRET=${CP_STATPING_API_SECRET:-apisecretcanbeset}
+export CP_STATPING_API_SECRET=${CP_STATPING_API_SECRET:-apisecretcanbeset}
+export CP_STATPING_INTERNAL_PORT=${CP_STATPING_INTERNAL_PORT:-8080}
+
 
 DB_CONFIG="$CP_STATPING_HOME/config.yml"
 cat >$DB_CONFIG<<EOF
@@ -55,7 +57,7 @@ STATPING_RUNTIME_LOG=$CP_STATPING_HOME/logs/runtime.log
 mkdir -p $(dirname $STATPING_RUNTIME_LOG)
 touch $STATPING_RUNTIME_LOG
 
-nohup statping --port $PORT $CONFIG_ARG &> $STATPING_RUNTIME_LOG &
+nohup statping --port $CP_STATPING_INTERNAL_PORT $CONFIG_ARG &> $STATPING_RUNTIME_LOG &
 APP_PID="$!"
 
 echo "Waiting for Statping service readiness..."
@@ -87,7 +89,7 @@ cat >$STATPING_EMAIL_JSON<<EOF
     "limits": 5
 }
 EOF
-    curl --location -g localhost:$PORT/api/notifier/email \
+    curl --location -g localhost:$CP_STATPING_INTERNAL_PORT/api/notifier/email \
         --header 'Content-Type: application/json' \
         --header "Authorization: Bearer $CP_STATPING_API_SECRET"  \
         --data @$STATPING_EMAIL_JSON

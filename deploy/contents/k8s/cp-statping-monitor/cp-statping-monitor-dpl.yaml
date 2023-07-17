@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: cp-statping-monitor
+  name: cp-health
   namespace: default
 spec:
   replicas: 1
@@ -9,23 +9,23 @@ spec:
     metadata:
       namespace: default
       labels:
-        cloud-pipeline/cp-statping-monitor: "true"
+        cloud-pipeline/cp-health: "true"
     spec:
       nodeSelector:
-        cloud-pipeline/cp-statping-monitor: "true"
+        cloud-pipeline/cp-health: "true"
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       containers:
-        - name: cp-statping-monitor
+        - name: cp-health
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:statping-monitor-$CP_VERSION
-          imagePullPolicy: "Always"
+          imagePullPolicy: "IfNotPresent"
           ports:
             - containerPort: 8080
-          command: ["/init"]
+          command: ["sleep", infinity]
           envFrom:
             - configMapRef:
-                name: cp-config-statping
+                name: cp-config-global
           readinessProbe:
             exec:
               command:
@@ -43,25 +43,11 @@ spec:
             periodSeconds: 15
             timeoutSeconds: 3
           volumeMounts:
-            - mountPath: /opt/statping/logs
-              name: statping-monitor-logs
-            - mountPath: /opt/statping/templates
-              name: statping-monitor-templates
-            - mountPath: /opt/statping/pki
-              name: statping-pki
-            - mountPath: /opt/common/pki
-              name: common-pki
-              readOnly: true
+            - mountPath: /opt/statping
+              name: health-data
       volumes:
-        - name: statping-monitor-logs
+        - name: health-data
           hostPath:
-            path: /opt/statping/logs
-        - name: statping-monitor-templates
-          hostPath:
-            path: /opt/statping/templates
-        - name: statping-pki
-          hostPath:
-            path: /opt/statping/pki
-        - name: common-pki
-          hostPath:
-            path: /opt/common/pki
+            path: /opt/statping
+      imagePullSecrets:
+        - name: ${CP_DOCKER_PULL_SECRET}

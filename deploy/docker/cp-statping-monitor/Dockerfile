@@ -46,7 +46,6 @@ RUN gem install bundler \
 ENV IS_DOCKER=true
 ENV STATPING_DIR=/opt/statping
 ENV CP_STATPING_HOME=$STATPING_DIR
-ENV PORT=8080
 
 RUN MACHINE_ARCH="$(uname -m)" && \
     case "$MACHINE_ARCH" in \
