@@ -88,7 +88,7 @@
             <value>
                 <!--updateServiceUrlQuery-->
                 <![CDATA[
-                    UPDATE pipeline.pipeline_run_service_url SET
+                    UPDATE pipeline.pipeline_run_service_url s SET
                         pipeline_run_id = :PIPELINE_RUN_ID,
                         region = :REGION,
                         SERVICE_URL = :SERVICE_URL
