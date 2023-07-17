@@ -62,7 +62,7 @@ RUN MACHINE_ARCH="$(uname -m)" && \
     rm -rf statping-linux-"$ARCH".tar.gz
 
 WORKDIR $STATPING_DIR
-EXPOSE $PORT
+ADD templates /templates
 
 ADD init /init
 RUN chmod +x /init

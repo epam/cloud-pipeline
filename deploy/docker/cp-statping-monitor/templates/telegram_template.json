@@ -1,9 +1,0 @@
-{
-  "method": "telegram",
-  "api_secret": "${CP_TELEGRAM_API_TOKEN}",
-  "var1": "${CP_TELEGRAM_CHANNEL_ID}",
-  "success_data": "'{{.Service.Name}}' service is currently online!",
-  "failure_data": "'{{.Service.Name}}' service is currently offline!",
-  "enabled": true,
-  "limits": 5
-}
