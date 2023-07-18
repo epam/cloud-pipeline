@@ -1,5 +1,5 @@
 {
-    "short_description": "CentOS with Xfce desktop environment (via noVNC) and CUDA toolkit",
+    "short_description": "Ubuntu with Xfce desktop environment (via noVNC) and CUDA toolkit",
     "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "disk_size": "100",
     "default_command": "/dockerstartup/start.sh",

@@ -17,7 +17,9 @@
 set -e
 
 # should also source $STARTUPDIR/generate_container_user
-source $HOME/.bashrc
+if [ -f $HOME/.bashrc ]; then
+    source $HOME/.bashrc
+fi
 
 # add `--skip` to startup args, to skip the VNC startup procedure
 if [[ $1 =~ --skip ]]; then

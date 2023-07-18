@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,67 +12,79 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This Dockerfile is used to build an headles vnc image based on Ubuntu
-# Base image can be overriden by specifying:
-### --build-arg BASE_IMAGE=... (default: ubuntu:16.04)
-
-
-ARG BASE_IMAGE=ubuntu:16.04
+ARG BASE_IMAGE=library/ubuntu:18.04
 FROM $BASE_IMAGE
 
-## Connection ports for controlling the UI:
-# VNC port:5901
-# noVNC webport, connect via http://IP:8080/?password=vncpassword
-ENV DISPLAY=:1 \
-    VNC_PORT=5901 \
-    NO_VNC_PORT=8080
-EXPOSE $VNC_PORT $NO_VNC_PORT
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y wget \
+                                                         curl \
+                                                         python \
+                                                         git \
+                                                         locales \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
-### Envrionment config
-ENV HOME=/user_home \
-    TERM=xterm \
-    STARTUPDIR=/dockerstartup \
-    INST_SCRIPTS=$HOME/install \
-    NO_VNC_HOME=$HOME/noVNC \
-    DEBIAN_FRONTEND=noninteractive \
-    VNC_COL_DEPTH=24 \
-    VNC_RESOLUTION=1280x1024 \
-    VNC_PW=vncpassword \
-    VNC_VIEW_ONLY=false
-WORKDIR $HOME
+RUN locale-gen en_US.UTF-8
 
-### Add all install scripts for further steps
-ADD common/install/ $INST_SCRIPTS/
-ADD ubuntu/scripts/ $INST_SCRIPTS/
-RUN find $INST_SCRIPTS -name '*.sh' -exec chmod a+x {} +
-
-### Install some common tools
-RUN $INST_SCRIPTS/tools.sh
 ENV LANG='en_US.UTF-8' \
     LANGUAGE='en_US:en' \
     LC_ALL='en_US.UTF-8'
 
-### Install xvnc-server & noVNC - HTML5 based VNC viewer
-RUN $INST_SCRIPTS/tigervnc.sh
-RUN $INST_SCRIPTS/no_vnc.sh
+### Environment config
+ENV HOME=/user_home \
+    TERM=xterm \
+    STARTUPDIR=/dockerstartup \
+    INST_SCRIPTS=$HOME/install \
+    NO_VNC_HOME=$HOME/noVNC
+WORKDIR $HOME
 
-### Install chrome browser
-RUN $INST_SCRIPTS/chrome.sh
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y vim \
+                                                         wget \
+                                                         net-tools \
+                                                         bzip2 \
+                                                         sudo \
+                                                         python-numpy \
+    && DEBIAN_FRONTEND=noninteractive apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+
+### Install VNC (server)
+RUN wget -qO- "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/noVNC/tigervnc-1.8.0.x86_64.tar.gz" | tar xz --strip 1 -C /
+
+### Install noVNC (web client)
+ADD scripts/install/no_vnc.sh $INST_SCRIPTS/no_vnc.sh
+RUN bash $INST_SCRIPTS/no_vnc.sh
 
 ### Install xfce UI
-RUN $INST_SCRIPTS/xfce_ui.sh
-ADD common/xfce/ $HOME/
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-upgrade xfce4 \
+                                                                      xfce4-xkb-plugin \
+    && DEBIAN_FRONTEND=noninteractive apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+ENV XKB_PLUGIN_ID=9
+RUN wget -q -O /tmp/nomachine-common.tar.gz "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/nomachine/nomachine-common.tar.gz" \
+    && tar -C $HOME -xzf /tmp/nomachine-common.tar.gz --strip-components=2 ./xfce/.config \
+    && rm -f /tmp/nomachine-common.tar.gz \
+    && rm -f $HOME/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc \
+    && mv $HOME/.config/xfce4/panel/xkb-plugin.rc $HOME/.config/xfce4/panel/xkb-plugin-${XKB_PLUGIN_ID}.rc \
+    && sed -i 's@_XKB_PLUGIN_NAME_@xkb@g' $HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml \
+    && sed -i 's@_XKB_PLUGIN_ID_@'"$XKB_PLUGIN_ID"'@g' $HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
 
-### configure startup
-RUN $INST_SCRIPTS/libnss_wrapper.sh
-ADD common/scripts $STARTUPDIR
-RUN $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
+### Install Chrome
+RUN wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/chrome/google-chrome-104.0.5112.79-1.deb" -O /opt/google-chrome.deb \
+    && DEBIAN_FRONTEND=noninteractive apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y fonts-liberation \
+                                                         xdg-utils \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --no-upgrade -y /opt/google-chrome.deb \
+    && DEBIAN_FRONTEND=noninteractive apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /etc/apt/sources.list.d/* \
+    && rm -f /opt/google-chrome.deb
 
-### Install LibreOffice
-ARG WITH_OFFICE=
-RUN if [ "$WITH_OFFICE" ]; then $INST_SCRIPTS/libreoffice.sh; fi
+### Configure startup
+ADD scripts/startup $STARTUPDIR
+ADD scripts/install/set_user_permission.sh $INST_SCRIPTS/set_user_permission.sh
+RUN bash $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
 
-ADD ubuntu/Desktop $HOME/Desktop
-ADD ubuntu/scripts/chrome_init.sh $STARTUPDIR/chrome_init.sh
-
-USER 0
+ADD launchers/create_chrome_launcher.sh /caps/create_chrome_launcher.sh
+RUN echo "bash /caps/create_chrome_launcher.sh" >> /caps.sh

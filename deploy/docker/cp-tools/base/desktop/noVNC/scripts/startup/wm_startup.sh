@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +13,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 ### every exit != 0 fails the script
 set -e
 
-echo "Install nss-wrapper to be able to execute image as non-root user"
-apt-get update 
-apt-get install -y libnss-wrapper gettext
-apt-get clean -y
+echo -e "\n------------------ startup of Xfce4 window manager ------------------"
 
-echo "add 'souce generate_container_user' to .bashrc"
+### disable screensaver and power management
+xset -dpms &
+xset s noblank &
+xset s off &
 
-# have to be added to hold all env vars correctly
-echo 'source $STARTUPDIR/generate_container_user' >> $HOME/.bashrc
+/usr/bin/startxfce4 --replace > $HOME/wm.log &
+sleep 1
+cat $HOME/wm.log
