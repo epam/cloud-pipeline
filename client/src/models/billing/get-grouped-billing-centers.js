@@ -23,7 +23,13 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
     super({filters: rest, loadDetails: true, pagination});
     this.resourceType = resourceType;
     this.fetchLastDay = fetchLastDay;
-    if (this.filters && this.filters.group && this.filters.group.length === 1) {
+    if (
+      this.filters &&
+      (
+        this.filters.billingGroup?.length === 1 ||
+        this.filters.adGroup?.length === 1
+      )
+    ) {
       this.grouping = 'USER';
     } else {
       this.grouping = 'BILLING_CENTER';
@@ -49,7 +55,10 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
   prepareBillingCentersData (raw) {
     const res = {};
     (raw && raw.length ? raw : []).forEach(i => {
-      if (this.filters && this.filters.group) {
+      if (
+        this.filters &&
+        (this.filters.billingGroup || this.filters.adGroup)
+      ) {
         const name = i.groupingInfo[this.grouping];
         if (name && name !== 'unknown') {
           res[name] = {
