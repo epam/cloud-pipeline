@@ -441,7 +441,7 @@ function GroupReport ({
   filters
 }) {
   const {range, period, region: cloudRegionId} = filters || {};
-  const billingCenterName = (billingGroup || []).join(' ');
+  const billingCenterName = (billingGroup || adGroup || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
   const tableColumns = [{
     key: 'user',
@@ -474,7 +474,7 @@ function GroupReport ({
     className: styles.tableCell
   }, {
     key: 'billingCenter',
-    title: 'Billing center',
+    title: adGroup ? 'Group' : 'Billing center',
     render: () => billingCenterName,
     className: styles.tableCell
   }];
