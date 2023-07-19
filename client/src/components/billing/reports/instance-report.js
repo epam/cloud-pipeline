@@ -63,6 +63,7 @@ function injection (stores, props) {
   const {
     user: userQ,
     group: groupQ,
+    'billing-group': billingGroupQ,
     period = Period.month,
     range,
     region: regionQ,
@@ -70,11 +71,15 @@ function injection (stores, props) {
   } = location.query;
   const metrics = parseInstanceMetrics(metricsQ);
   const periodInfo = getPeriod(period, range);
-  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const adGroup = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const billingGroup = billingGroupQ
+    ? billingGroupQ.split(RUNNER_SEPARATOR)
+    : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const filtersWithoutOrder = {
-    group,
+    billingGroup,
+    adGroup,
     user,
     type,
     cloudRegionId,
@@ -126,7 +131,8 @@ function injection (stores, props) {
   (preFetchBillingRequest)(costDetails);
   return {
     user,
-    group,
+    billingGroup,
+    adGroup,
     type,
     summary,
     instances,
@@ -400,7 +406,8 @@ class InstanceReport extends React.Component {
       toolsTable,
       pipelinesTable,
       user,
-      group,
+      billingGroup,
+      adGroup,
       filters = {},
       type: computeType,
       metrics,
@@ -424,7 +431,8 @@ class InstanceReport extends React.Component {
                   'TOOL'
                 ],
                 user,
-                group,
+                billingGroup,
+                adGroup,
                 period,
                 range,
                 filters: {
