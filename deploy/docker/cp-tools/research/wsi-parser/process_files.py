@@ -32,7 +32,7 @@ from pipeline.api import PipelineAPI, TaskStatus
 from pipeline.log import Logger
 from pipeline.common import get_path_with_trailing_delimiter
 
-ANIMAL_ID_PATTERN = '[0-9]+\.?[0-9]+$'
+ANIMAL_ID_PATTERN = '[0-9]+(\.[0-9]+)?$'
 
 WSI_PROCESSING_TASK_NAME = 'WSI processing'
 TAGS_MAPPING_RULE_DELIMITER = ','
