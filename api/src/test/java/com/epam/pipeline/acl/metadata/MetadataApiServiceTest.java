@@ -862,6 +862,6 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     }
 
     private void mockEntityUser(final PipelineUser user) {
-        doReturn(user).when(mockUserManager).loadUserById(user.getId());
+        doReturn(user).when(mockUserManager).load(user.getId());
     }
 }

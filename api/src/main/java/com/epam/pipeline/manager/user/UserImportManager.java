@@ -88,7 +88,7 @@ public class UserImportManager {
             return null;
         }
         if (Objects.isNull(loadedUser)) {
-            final PipelineUser user = userManager.createUser(userName, Collections.emptyList(), Collections.emptyList(),
+            final PipelineUser user = userManager.create(userName, Collections.emptyList(), Collections.emptyList(),
                     pipelineUser.getAttributes(), null);
             events.info(messageHelper.getMessage(MessageConstants.EVENT_USER_CREATED, userName));
             return user;

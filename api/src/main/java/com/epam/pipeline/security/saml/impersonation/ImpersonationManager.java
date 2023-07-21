@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.user;
+package com.epam.pipeline.security.saml.impersonation;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -41,6 +43,7 @@ public class ImpersonationManager implements UserDetailsChecker, UserDetailsServ
     private final MessageHelper messageHelper;
 
     @Override
+    @PreAuthorize("@userPermissionsManager.impersonatePermission(#userToImpersonate)")
     public void check(final UserDetails userToImpersonate) {
         Assert.notNull(userToImpersonate, messageHelper.getMessage(MessageConstants.ERROR_IMPERSONATION_EMPTY_USER));
         final String impersonatedName = userToImpersonate.getUsername();

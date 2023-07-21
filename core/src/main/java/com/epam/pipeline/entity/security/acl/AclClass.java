@@ -30,7 +30,7 @@ public enum AclClass {
     METADATA_ENTITY,
     ATTACHMENT,
     CLOUD_REGION,
-    PIPELINE_USER(false),
+    PIPELINE_USER,
     ROLE(false),
     CATEGORICAL_ATTRIBUTE;
 

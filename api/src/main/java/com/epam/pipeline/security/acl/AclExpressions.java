@@ -25,6 +25,10 @@ public final class AclExpressions {
 
     public static final String OR_USER_READER = OR + "hasRole('USER_READER')";
 
+    public static final String USER_READ_FILTER =
+            ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(filterObject, 'READ')";
+    public static final String USER_READ_PERMISSION =
+            "hasPermission(#id, 'com.epam.pipeline.entity.user.Pipeline', 'READ')";
     public static final String PIPELINE_CREATE = "hasRole('ADMIN') OR " +
             "@pipelinePermissionManager.hasCreatePermission(#pipeline.pipelineType, #pipeline.parentFolderId)";
 

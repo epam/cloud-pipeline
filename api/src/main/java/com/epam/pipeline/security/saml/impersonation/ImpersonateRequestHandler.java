@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.user;
+package com.epam.pipeline.security.saml.impersonation;
 
 import javax.servlet.http.HttpServletRequest;
 

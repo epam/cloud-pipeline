@@ -81,7 +81,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCreateUserForAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).createUser(pipelineUserVO);
+        doReturn(pipelineUser).when(mockUserManager).create(pipelineUserVO);
 
         assertThat(userApiService.createUser(pipelineUserVO)).isEqualTo(pipelineUser);
     }
@@ -89,7 +89,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyCreateUserForNotAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).createUser(pipelineUserVO);
+        doReturn(pipelineUser).when(mockUserManager).create(pipelineUserVO);
 
         assertThrows(AccessDeniedException.class, () -> userApiService.createUser(pipelineUserVO));
     }
@@ -185,7 +185,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUserForAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).loadUserById(ID, false);
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false);
 
         assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
     }
@@ -193,7 +193,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUserForUserReader() {
-        doReturn(pipelineUser).when(mockUserManager).loadUserById(ID, false);
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false);
 
         assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
     }
@@ -201,7 +201,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyLoadUserForNotUserReader() {
-        doReturn(pipelineUser).when(mockUserManager).loadUserById(ID);
+        doReturn(pipelineUser).when(mockUserManager).load(ID);
 
         assertThrows(AccessDeniedException.class, () -> userApiService.loadUser(ID, false));
     }
@@ -209,7 +209,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUserByNameForAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).loadUserByName(TEST_STRING);
+        doReturn(pipelineUser).when(mockUserManager).loadByNameOrId(TEST_STRING);
 
         assertThat(userApiService.loadUserByName(TEST_STRING)).isEqualTo(pipelineUser);
     }
@@ -217,7 +217,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUserByNameForUserReader() {
-        doReturn(pipelineUser).when(mockUserManager).loadUserByName(TEST_STRING);
+        doReturn(pipelineUser).when(mockUserManager).loadByNameOrId(TEST_STRING);
 
         assertThat(userApiService.loadUserByName(TEST_STRING)).isEqualTo(pipelineUser);
     }
@@ -225,7 +225,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyLoadUserByNameForNotUserReader() {
-        doReturn(pipelineUser).when(mockUserManager).loadUserByName(TEST_STRING);
+        doReturn(pipelineUser).when(mockUserManager).loadByNameOrId(TEST_STRING);
 
         assertThrows(AccessDeniedException.class, () -> userApiService.loadUserByName(TEST_STRING));
     }
@@ -233,17 +233,17 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteUserForAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).deleteUser(ID);
+        doReturn(pipelineUser).when(mockUserManager).delete(ID);
 
         userApiService.deleteUser(ID);
 
-        verify(mockUserManager).deleteUser(ID);
+        verify(mockUserManager).delete(ID);
     }
 
     @Test
     @WithMockUser
     public void shouldDenyDeleteUserForNotAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).deleteUser(ID);
+        doReturn(pipelineUser).when(mockUserManager).delete(ID);
 
         assertThrows(AccessDeniedException.class, () -> userApiService.deleteUser(ID));
     }

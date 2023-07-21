@@ -91,7 +91,7 @@ public class PipelineRunAsManager {
         final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
         return StringUtils.isEmpty(currentUserConfiguration.getRunAs())
                 ? runVO.getRunAs()
-                : userManager.loadUserByNameOrId(currentUserConfiguration.getRunAs()).getUserName();
+                : userManager.loadByNameOrId(currentUserConfiguration.getRunAs()).getUserName();
     }
 
     private PipelineRun run(final PipelineStart runVO, final Callable<PipelineRun> runCallable) {
