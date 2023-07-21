@@ -14,36 +14,34 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.user;
+package com.epam.pipeline.security.saml.impersonation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
-public class ImpersonateSuccessHandler implements AuthenticationSuccessHandler, ImpersonateRequestHandler {
+public class ImpersonateFailureHandler implements AuthenticationFailureHandler, ImpersonateRequestHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ImpersonateSuccessHandler.class);
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ImpersonateFailureHandler.class);
     private final String impersonationStartUrl;
     private final String impersonationStopUrl;
 
-    public ImpersonateSuccessHandler(final String impersonationStartUrl, final String impersonationStopUrl) {
+
+    public ImpersonateFailureHandler(final String impersonationStartUrl, final String impersonationStopUrl) {
         this.impersonationStartUrl = impersonationStartUrl;
         this.impersonationStopUrl = impersonationStopUrl;
     }
 
     @Override
-    public void onAuthenticationSuccess(final HttpServletRequest request, final HttpServletResponse response,
-                                        final Authentication authentication) throws IOException {
-        LOGGER.info("Successful impersonation action: " +
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+                                        AuthenticationException exception) {
+        LOGGER.info("Failed impersonation action: " +
                 getImpersonationAction(impersonationStartUrl, impersonationStopUrl, request) +
-                ", user: " + authentication.getName());
-        response.sendRedirect("/");
+                ", message: " + exception.getMessage());
     }
 
 }

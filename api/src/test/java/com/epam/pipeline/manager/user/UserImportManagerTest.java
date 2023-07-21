@@ -79,7 +79,7 @@ public class UserImportManagerTest {
         final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, buildMetadata());
         final CategoricalAttribute categoricalAttribute = getCategoricalAttribute(KEY, VALUE, null);
 
-        when(userManager.createUser(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong()))
+        when(userManager.create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong()))
                 .thenReturn(getPipelineUser(USER_NAME));
         when(roleManager.findRoleByName(ROLE_NAME)).thenReturn(Optional.empty());
         when(roleManager.createRole(anyString(), anyBoolean(), anyBoolean(), anyLong())).thenReturn(role);
@@ -88,7 +88,7 @@ public class UserImportManagerTest {
                 .processUser(userWithMetadata, true, true,
                         Collections.singletonList(categoricalAttribute));
 
-        verify(userManager).createUser(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
+        verify(userManager).create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
         verify(roleManager).createRole(anyString(), anyBoolean(), anyBoolean(), anyLong());
         verify(roleManager).assignRole(anyLong(), anyLongList());
         verify(metadataManager).updateEntityMetadata(any(), any(), any());
@@ -103,7 +103,7 @@ public class UserImportManagerTest {
         final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, buildMetadata());
         final CategoricalAttribute categoricalAttribute = getCategoricalAttribute(KEY, VALUE, null);
 
-        when(userManager.loadUserByName(USER_NAME)).thenReturn(pipelineUser);
+        when(userManager.loadByNameOrId(USER_NAME)).thenReturn(pipelineUser);
         when(roleManager.findRoleByName(ROLE_NAME)).thenReturn(Optional.of(role));
         when(metadataManager.loadMetadataItem(pipelineUser.getId(), AclClass.PIPELINE_USER))
                 .thenReturn(userMetadata(pipelineUser.getId(), buildMetadata()));
@@ -112,7 +112,7 @@ public class UserImportManagerTest {
                 .processUser(userWithMetadata, true, true,
                         Collections.singletonList(categoricalAttribute));
 
-        notInvoked(userManager).createUser(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
+        notInvoked(userManager).create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
         notInvoked(roleManager).createRole(anyString(), anyBoolean(), anyBoolean(), anyLong());
         notInvoked(roleManager).assignRole(anyLong(), anyLongList());
         verify(metadataManager).updateEntityMetadata(any(), any(), any());
@@ -126,7 +126,7 @@ public class UserImportManagerTest {
         pipelineUser.setRoles(Collections.singletonList(role));
         final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, new HashMap<>());
 
-        when(userManager.loadUserByName(USER_NAME)).thenReturn(getPipelineUser(USER_NAME));
+        when(userManager.loadByNameOrId(USER_NAME)).thenReturn(getPipelineUser(USER_NAME));
         when(roleManager.findRoleByName(ROLE_NAME)).thenReturn(Optional.empty());
 
         final List<PipelineUserEvent> resultEvents = userImportManager
@@ -142,12 +142,12 @@ public class UserImportManagerTest {
         final PipelineUser pipelineUser = getPipelineUser(USER_NAME);
         final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, buildMetadata());
 
-        when(userManager.loadUserByName(USER_NAME)).thenReturn(null);
+        when(userManager.loadByNameOrId(USER_NAME)).thenReturn(null);
 
         final List<PipelineUserEvent> resultEvents = userImportManager
                 .processUser(userWithMetadata, false, true, Collections.emptyList());
 
-        notInvoked(userManager).createUser(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
+        notInvoked(userManager).create(anyString(), anyLongList(), anyStringList(), anyStringMap(), anyLong());
         assertThat(resultEvents).hasSize(1);
     }
 
@@ -162,7 +162,7 @@ public class UserImportManagerTest {
                 Collections.singletonList(getCategoricalAttributeValue(LINKED_KEY_2, LINKED_VALUE_2)));
         final CategoricalAttribute attribute3 = getCategoricalAttribute(LINKED_KEY_2, LINKED_VALUE_2, null);
 
-        when(userManager.loadUserByName(USER_NAME)).thenReturn(pipelineUser);
+        when(userManager.loadByNameOrId(USER_NAME)).thenReturn(pipelineUser);
 
         final List<PipelineUserEvent> resultEvents = userImportManager
                 .processUser(userWithMetadata, true, true,

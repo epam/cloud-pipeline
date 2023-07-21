@@ -79,7 +79,7 @@ public class AclCacheTest extends AbstractManagerTest {
     public void setUp() {
         folder = folderManager.create(TestUtils.createFolder(TEST_FOLDER1, TEST_OWNER));
         role = roleManager.createRole(TEST_ROLE, false, false, null);
-        user = userManager.createUser("TEST_USER", Collections.emptyList(),
+        user = userManager.create("TEST_USER", Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyMap(), null);
 
         AclTestDao.AclSid userSid = new AclTestDao.AclSid(true, TEST_OWNER);
@@ -116,7 +116,7 @@ public class AclCacheTest extends AbstractManagerTest {
                 permissionsAfter.getPermissions().stream().allMatch(acl ->
                         acl.getSid().getName().equals(user.getUserName())));
 
-        userManager.deleteUser(user.getId());
+        userManager.delete(user.getId());
         permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
         assertTrue(permissionsAfter.getPermissions().isEmpty());
     }

@@ -589,7 +589,7 @@ public class DataStorageManager implements SecuredEntityManager {
                 for (AbstractDataStorage dataStorage : dataStorages) {
                     String value = StringUtils.isNotBlank(pipelineRunParameter.getResolvedValue()) ?
                             pipelineRunParameter.getResolvedValue() : pipelineRunParameter.getValue();
-                    List<DataStorageLink> dataStorageLinks = getLinks(dataStorage, value);
+                    List<DataStorageLink> dataStorageLinks = PathAnalyzer.getLinks(dataStorage, value);
                     if (!dataStorageLinks.isEmpty()) {
                         links.addAll(dataStorageLinks);
                     }
@@ -601,24 +601,7 @@ public class DataStorageManager implements SecuredEntityManager {
         });
     }
 
-    public void analyzePaths(List<PipeConfValue> values) {
-        if (CollectionUtils.isEmpty(values)) {
-            return;
-        }
-        List<AbstractDataStorage> dataStorages = getDataStorages();
-        values.forEach(value -> {
-            List<DataStorageLink> links = new ArrayList<>();
-            for (AbstractDataStorage dataStorage : dataStorages) {
-                List<DataStorageLink> dataStorageLinks = getLinks(dataStorage, value.getValue());
-                if (!dataStorageLinks.isEmpty()) {
-                    links.addAll(dataStorageLinks);
-                }
-            }
-            if (!links.isEmpty()) {
-                value.setDataStorageLinks(links);
-            }
-        });
-    }
+
 
     public DataStorageFile createDataStorageFile(final Long dataStorageId,
             String path,

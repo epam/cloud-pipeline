@@ -47,6 +47,7 @@ import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matchers;
@@ -179,13 +180,13 @@ public class NotificationManagerTest extends AbstractManagerTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        admin = new PipelineUser("admin");
+        admin = UserCreatorUtils.getPipelineUser("admin");
         userDao.createUser(admin, Collections.singletonList(DefaultRoles.ROLE_ADMIN.getId()));
-        testOwner = new PipelineUser("testOwner");
+        testOwner = UserCreatorUtils.getPipelineUser("testOwner");
         userDao.createUser(testOwner, Collections.emptyList());
-        testUser1 = new PipelineUser("TestUser1");
+        testUser1 = UserCreatorUtils.getPipelineUser("TestUser1");
         userDao.createUser(testUser1, Collections.emptyList());
-        testUser2 = new PipelineUser("TestUser2");
+        testUser2 = UserCreatorUtils.getPipelineUser("TestUser2");
         userDao.createUser(testUser2, Collections.emptyList());
 
         longRunningTemplate = createTemplate(1L, "testTemplate");

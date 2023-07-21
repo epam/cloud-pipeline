@@ -32,7 +32,7 @@ import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.PathAnalyzer;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.manager.metadata.parser.MetadataEntityConverter;
 import com.epam.pipeline.manager.metadata.parser.MetadataParsingResult;
@@ -80,7 +80,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
     private FolderManager folderManager;
 
     @Autowired
-    private DataStorageManager storageManager;
+    private PathAnalyzer pathAnalyzer;
 
     public Map<String, Integer> loadRootMetadataEntities() {
         Map<String, Integer> countEntities = new HashMap<>();
@@ -299,7 +299,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
                 .flatMap(Collection::stream)
                 .filter(param -> param.getType() != null && param.getType().equals(EntityTypeField.PATH_TYPE))
                 .collect(Collectors.toList());
-        storageManager.analyzePaths(paths);
+        pathAnalyzer.analyzePaths(paths);
         return new PagedResult<>(result, metadataEntityDao.countEntities(filter));
 
     }

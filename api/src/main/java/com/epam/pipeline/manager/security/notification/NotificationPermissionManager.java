@@ -51,7 +51,7 @@ public class NotificationPermissionManager {
     }
 
     public boolean hasPermissionByUserId(final Long userId) {
-        final PipelineUser user = userManager.loadUserById(userId);
+        final PipelineUser user = userManager.load(userId);
         if (user == null) {
             return false;
         }

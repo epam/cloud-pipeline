@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.JwtRawToken;
@@ -47,6 +48,8 @@ import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.security.SecuredEntityManager;
+import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.utils.UserUtils;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.UserContext;
@@ -81,7 +84,8 @@ import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
-public class UserManager {
+@AclSync
+public class UserManager implements SecuredEntityManager {
 
     @Autowired
     private UserDao userDao;
@@ -130,10 +134,10 @@ public class UserManager {
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser createUser(String name, List<Long> roles,
-                                   List<String> groups, Map<String, String> attributes,
-                                   Long defaultStorageId) {
-        final PipelineUser newUser = createUser(name, roles, groups, attributes);
+    public PipelineUser create(String name, List<Long> roles,
+                               List<String> groups, Map<String, String> attributes,
+                               Long defaultStorageId) {
+        final PipelineUser newUser = create(name, roles, groups, attributes);
         if (defaultStorageId != null) {
             storageValidator.validate(defaultStorageId);
             assignDefaultStorageToUser(newUser, defaultStorageId);
@@ -156,8 +160,8 @@ public class UserManager {
      * @return created user
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser createUser(PipelineUserVO userVO) {
-        return createUser(userVO.getUserName(), userVO.getRoleIds(), null, null,
+    public PipelineUser create(PipelineUserVO userVO) {
+        return create(userVO.getUserName(), userVO.getRoleIds(), null, null,
                 userVO.getDefaultStorageId());
     }
 
@@ -195,11 +199,12 @@ public class UserManager {
         return userDao.loadUsersByNames(names);
     }
 
-    public PipelineUser loadUserById(final Long id) {
-        return loadUserById(id, false);
+    @Override
+    public PipelineUser load(final Long id) {
+        return load(id, false);
     }
 
-    public PipelineUser loadUserById(final Long id, final boolean quotas) {
+    public PipelineUser load(final Long id, final boolean quotas) {
         final PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
         if (quotas && !user.isAdmin()) {
@@ -265,8 +270,8 @@ public class UserManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser deleteUser(Long id) {
-        PipelineUser userContext = loadUserById(id);
+    public PipelineUser delete(Long id) {
+        PipelineUser userContext = load(id);
         permissionHandler.deleteGrantedAuthority(userContext.getUserName(), true);
         userDao.deleteUserRoles(id);
         userNotificationManager.deleteByUserId(id);
@@ -277,30 +282,30 @@ public class UserManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUser(Long id, List<Long> roles) {
-        loadUserById(id);
+        load(id);
         updateUserRoles(id, roles);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_ROLES,
                 id, roles.stream().map(Object::toString).collect(Collectors.joining(", "))));
-        return loadUserById(id);
+        return load(id);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUserFirstLoginDate(Long id, LocalDateTime firstLoginDate) {
-        PipelineUser user = loadUserById(id);
+        PipelineUser user = load(id);
         user.setFirstLoginDate(firstLoginDate);
         return userDao.updateUser(user);
     }
 
     @Transactional
     public void updateExternalBlockDate(final Long id, final LocalDateTime date) {
-        final PipelineUser user = loadUserById(id);
+        final PipelineUser user = load(id);
         user.setExternalBlockDate(date);
         userDao.updateUser(user);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUser(Long id, PipelineUserVO userVO) {
-        PipelineUser user = loadUserById(id);
+        PipelineUser user = load(id);
         user.setDefaultStorageId(userVO.getDefaultStorageId());
         storageValidator.validate(user);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_DATASTORAGE,
@@ -310,7 +315,7 @@ public class UserManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
-        final PipelineUser user = loadUserById(id);
+        final PipelineUser user = load(id);
         user.setBlocked(blockStatus);
         user.setBlockDate(blockStatus ? DateUtils.nowUTC() : null);
         user.setExternalBlockDate(null);
@@ -352,7 +357,7 @@ public class UserManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUserSAMLInfo(Long id, String name, List<Long> roles, List<String> groups,
                                            Map<String, String> attributes) {
-        PipelineUser user = loadUserById(id);
+        PipelineUser user = load(id);
         if (needToUpdateUser(groups, attributes, user)) {
             user.setUserName(name);
             user.setGroups(groups);
@@ -361,13 +366,14 @@ public class UserManager {
         }
         updateUserRoles(id, roles);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_SAML_INFO, user.getUserName(), id));
-        return loadUserById(id);
+        return load(id);
     }
 
-    public PipelineUser loadUserByNameOrId(String identifier) {
+    @Override
+    public PipelineUser loadByNameOrId(String identifier) {
         PipelineUser user;
         if (NumberUtils.isDigits(identifier)) {
-            user = loadUserById(Long.parseLong(identifier));
+            user = load(Long.parseLong(identifier));
         } else {
             user = loadUserByName(identifier);
         }
@@ -465,7 +471,7 @@ public class UserManager {
     public PipelineUser getCurrentUser() {
         PipelineUser currentUser = authManager.getCurrentUser();
         if (currentUser != null && !StringUtils.isEmpty(currentUser.getUserName())) {
-            PipelineUser extended = loadUserByName(currentUser.getUserName());
+            PipelineUser extended = loadByNameOrId(currentUser.getUserName());
             if (extended != null) {
                 extended.setAdmin(currentUser.isAdmin());
                 return extended;
@@ -507,13 +513,55 @@ public class UserManager {
         if (Objects.isNull(user) || Objects.isNull(user.getId())) {
             return;
         }
-        final PipelineUser loadedUser = loadUserById(user.getId());
+        final PipelineUser loadedUser = load(user.getId());
         loadedUser.setLastLoginDate(DateUtils.nowUTC());
         userDao.updateUser(loadedUser);
     }
 
     public Collection<PipelineUser> getOnlineUsers() {
         return userDao.loadOnlineUsers();
+    }
+
+    @Override
+    public AbstractSecuredEntity loadWithParents(final Long id) {
+        return load(id);
+    }
+
+    @Override
+    @Transactional
+    public AbstractSecuredEntity changeOwner(final Long id, final String owner) {
+        final PipelineUser user = load(id);
+        user.setOwner(owner);
+        userDao.updateUser(user);
+        return user;
+    }
+
+    @Override
+    public AclClass getSupportedClass() {
+        return AclClass.PIPELINE_USER;
+    }
+
+    //TODO
+    @Override
+    public Integer loadTotalCount() {
+        return null;
+    }
+
+    //TODO
+    @Override
+    public Collection<? extends AbstractSecuredEntity> loadAllWithParents(
+            final Integer page,
+            final Integer pageSize) {
+        return null;
+    }
+
+    private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
+        dataStorageManager.tryInitUserDefaultStorage(newUser)
+                .ifPresent(storageId -> {
+                    assignDefaultStorageToUser(newUser, storageId);
+                    grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
+                });
+        return newUser;
     }
 
     private Collection<PipelineUserWithStoragePath> filterUsers(final Collection<PipelineUserWithStoragePath> users,
@@ -537,14 +585,15 @@ public class UserManager {
         return userDao.updateUser(newUser);
     }
 
-    private PipelineUser createUser(final String name, final List<Long> roles, final List<String> groups,
-                                    final Map<String, String> attributes) {
+    private PipelineUser create(final String name, final List<Long> roles, final List<String> groups,
+                                final Map<String, String> attributes) {
         Assert.isTrue(StringUtils.isNotBlank(name),
                       messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
         String userName = name.trim().toUpperCase();
         PipelineUser loadedUser = userDao.loadUserByName(userName);
         Assert.isNull(loadedUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_EXISTS, name));
         PipelineUser user = new PipelineUser(userName);
+        user.setOwner(authManager.getAuthorizedUser());
         List<Long> userRoles = getNewUserRoles(roles);
         user.setRoles(roleDao.loadRolesList(userRoles));
         user.setGroups(groups);
@@ -565,7 +614,7 @@ public class UserManager {
     }
 
     private void setAuthAsUser(final String userName) {
-        final PipelineUser pipelineUser = loadUserByName(userName);
+        final PipelineUser pipelineUser = loadByNameOrId(userName);
         final UserContext userContext = new UserContext(pipelineUser);
         final JwtAuthenticationToken userAuth = new JwtAuthenticationToken(userContext, userContext.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(userAuth);

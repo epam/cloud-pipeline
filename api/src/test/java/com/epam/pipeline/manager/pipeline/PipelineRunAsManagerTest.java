@@ -108,7 +108,7 @@ public class PipelineRunAsManagerTest {
     public void shouldGetRunAsUserFromConfiguration() {
         final PipelineStart pipelineStart = runVO();
         doReturn(configuration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
-        doReturn(getPipelineUser(CONFIG_SERVICE_ACCOUNT)).when(userManager).loadUserByNameOrId(CONFIG_SERVICE_ACCOUNT);
+        doReturn(getPipelineUser(CONFIG_SERVICE_ACCOUNT)).when(userManager).loadByNameOrId(CONFIG_SERVICE_ACCOUNT);
 
         assertThat(manager.getRunAsUserName(pipelineStart)).isEqualTo(CONFIG_SERVICE_ACCOUNT);
     }

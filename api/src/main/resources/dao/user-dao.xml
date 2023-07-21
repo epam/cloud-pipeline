@@ -30,7 +30,8 @@
                         attributes,
                         default_storage_id,
                         registration_date,
-                        first_login_date)
+                        first_login_date,
+                        owner)
                     VALUES (
                         :USER_ID,
                         :USER_NAME,
@@ -38,7 +39,8 @@
                         to_jsonb(:ATTRIBUTES::jsonb),
                         :USER_DEFAULT_STORAGE_ID,
                         :REGISTRATION_DATE,
-                        :FIRST_LOGIN_DATE)
+                        :FIRST_LOGIN_DATE,
+                        :USER_OWNER)
                 ]]>
             </value>
         </property>
@@ -54,7 +56,8 @@
                         block_date = :USER_BLOCK_DATE,
                         first_login_date = :FIRST_LOGIN_DATE,
                         last_login_date = :LAST_LOGIN_DATE,
-                        external_block_date = :EXTERNAL_BLOCK_DATE
+                        external_block_date = :EXTERNAL_BLOCK_DATE,
+                        owner = :USER_OWNER
                     WHERE
                         id = :USER_ID
                 ]]>
@@ -76,6 +79,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -104,6 +108,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -139,6 +144,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -176,6 +182,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -206,6 +213,7 @@
                         u.first_login_date,
                         u.last_login_date,
                         u.external_block_date,
+                        u.owner as user_owner,
                         r.id as role_id,
                         r.name as role_name,
                         r.predefined as role_predefined,
@@ -241,6 +249,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -270,6 +279,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -299,6 +309,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -328,6 +339,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -360,6 +372,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -389,6 +402,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -418,6 +432,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -477,6 +492,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,

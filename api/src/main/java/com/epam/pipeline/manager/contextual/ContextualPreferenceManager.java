@@ -165,9 +165,9 @@ public class ContextualPreferenceManager {
     private Optional<PipelineUser> retrieveCurrentUser() {
         final Optional<PipelineUser> authorizedUser = Optional.ofNullable(authManager.getCurrentUser());
         final Optional<PipelineUser> pipelineUserById = authorizedUser.map(PipelineUser::getId)
-                .map(userManager::loadUserById);
+                .map(userManager::load);
         final Optional<PipelineUser> pipelineUserByUserName = authorizedUser.map(PipelineUser::getUserName)
-                .map(userManager::loadUserByName);
+                .map(userManager::loadByNameOrId);
         return pipelineUserById.isPresent()
                 ? pipelineUserById
                 : pipelineUserByUserName;
