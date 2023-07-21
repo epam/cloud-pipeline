@@ -1358,9 +1358,9 @@ export default class DataStorage extends React.Component {
     try {
       await this.storage.refreshStorageInfo(false);
       const {
-        path
+        name
       } = this.storage.info || {};
-      const url = getStaticResourceUrl(path, item.path);
+      const url = getStaticResourceUrl(name, item.path);
       window.open(url, '_blank');
     } catch (_) {}
   };
