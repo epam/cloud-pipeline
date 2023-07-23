@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
+import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
@@ -36,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -199,10 +201,10 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadUserForNotUserReader() {
         doReturn(pipelineUser).when(mockUserManager).load(ID);
-
+        initAclEntity(pipelineUser);
         assertThrows(AccessDeniedException.class, () -> userApiService.loadUser(ID, false));
     }
 
@@ -226,8 +228,16 @@ public class UserApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldDenyLoadUserByNameForNotUserReader() {
         doReturn(pipelineUser).when(mockUserManager).loadByNameOrId(TEST_STRING);
-
+        initAclEntity(pipelineUser);
         assertThrows(AccessDeniedException.class, () -> userApiService.loadUserByName(TEST_STRING));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldAllowLoadUserByNameWithReadPermission() {
+        doReturn(pipelineUser).when(mockUserManager).loadByNameOrId(TEST_STRING);
+        initAclEntity(pipelineUser, AclPermission.READ);
+        assertThat(userApiService.loadUserByName(TEST_STRING)).isEqualTo(pipelineUser);
     }
 
     @Test
@@ -284,8 +294,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     @WithMockUser
     public void shouldDenyLoadUsersForNotUserReader() {
         doReturn(pipelineUserList).when(mockUserManager).loadAllUsers();
-
-        assertThrows(AccessDeniedException.class, () -> userApiService.loadUsers(false));
+        assertThat(userApiService.loadUsers(false)).isEmpty();
     }
 
     @Test
@@ -328,16 +337,16 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUsersByGroup() {
         doReturn(pipelineUserList).when(mockUserManager).loadUsersByGroup(TEST_STRING);
-
         assertThat(userApiService.loadUsersByGroup(TEST_STRING)).isEqualTo(pipelineUserList);
     }
 
     @Test
+    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCheckUsersByGroup() {
         doReturn(true).when(mockUserManager).checkUserByGroup(TEST_STRING, TEST_STRING);
-
         assertThat(userApiService.checkUserByGroup(TEST_STRING, TEST_STRING)).isEqualTo(true);
     }
 
@@ -356,10 +365,13 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldFindUsers() {
-        doReturn(pipelineUserList).when(mockUserManager).findUsers(TEST_STRING);
-
-        assertThat(userApiService.findUsers(TEST_STRING)).isEqualTo(pipelineUserList);
+        final List<PipelineUser> list = new ArrayList<>();
+        list.add(pipelineUser);
+        doReturn(list).when(mockUserManager).findUsers(TEST_STRING);
+        initAclEntity(pipelineUser);
+        assertThat(userApiService.findUsers(TEST_STRING)).isEqualTo(list);
     }
 
     @Test

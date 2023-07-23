@@ -103,7 +103,7 @@ public class UserImportManagerTest {
         final PipelineUserWithStoragePath userWithMetadata = getUserWithMetadata(pipelineUser, buildMetadata());
         final CategoricalAttribute categoricalAttribute = getCategoricalAttribute(KEY, VALUE, null);
 
-        when(userManager.loadByNameOrId(USER_NAME)).thenReturn(pipelineUser);
+        when(userManager.loadUserByName(USER_NAME)).thenReturn(pipelineUser);
         when(roleManager.findRoleByName(ROLE_NAME)).thenReturn(Optional.of(role));
         when(metadataManager.loadMetadataItem(pipelineUser.getId(), AclClass.PIPELINE_USER))
                 .thenReturn(userMetadata(pipelineUser.getId(), buildMetadata()));
@@ -162,7 +162,7 @@ public class UserImportManagerTest {
                 Collections.singletonList(getCategoricalAttributeValue(LINKED_KEY_2, LINKED_VALUE_2)));
         final CategoricalAttribute attribute3 = getCategoricalAttribute(LINKED_KEY_2, LINKED_VALUE_2, null);
 
-        when(userManager.loadByNameOrId(USER_NAME)).thenReturn(pipelineUser);
+        when(userManager.loadUserByName(USER_NAME)).thenReturn(pipelineUser);
 
         final List<PipelineUserEvent> resultEvents = userImportManager
                 .processUser(userWithMetadata, true, true,
