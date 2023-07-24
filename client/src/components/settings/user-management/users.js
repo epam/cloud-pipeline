@@ -689,7 +689,6 @@ export default class UsersManagement extends React.Component {
           onUserDelete={this.deleteUser}
           onClose={this.closeEditUserRolesDialog}
           user={this.state.editableUser}
-          readOnly={!this.isAdmin}
         />
         <ExportUserForm
           visible={exportUserDialogVisible}
