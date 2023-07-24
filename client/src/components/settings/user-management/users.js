@@ -103,6 +103,15 @@ export default class UsersManagement extends React.Component {
     return roleModel.hasRole('ROLE_USER_READER')(this);
   };
 
+  @computed
+  get userHasReadPermissions () {
+    const {
+      users
+    } = this.props;
+    const list = users.loaded ? users.value : [];
+    return list.some((user) => roleModel.readAllowed(user));
+  }
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -667,10 +676,19 @@ export default class UsersManagement extends React.Component {
   };
 
   render () {
-    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+    if (
+      !this.props.authenticatedUserInfo.loaded &&
+      this.props.authenticatedUserInfo.pending
+    ) {
       return null;
     }
-    if (!this.isReader && !this.isAdmin) {
+    if (
+      !this.props.users.loaded &&
+      this.props.users.pending
+    ) {
+      return null;
+    }
+    if (!this.isReader && !this.isAdmin && !this.userHasReadPermissions) {
       return (
         <Alert type="error" message="Access is denied" />
       );
@@ -689,7 +707,6 @@ export default class UsersManagement extends React.Component {
           onUserDelete={this.deleteUser}
           onClose={this.closeEditUserRolesDialog}
           user={this.state.editableUser}
-          readOnly={!this.isAdmin}
         />
         <ExportUserForm
           visible={exportUserDialogVisible}

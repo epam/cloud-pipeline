@@ -140,12 +140,14 @@ export default class PermissionsForm extends React.Component {
       name: PropTypes.node,
       description: PropTypes.node
     })),
-    subObjectsPermissionsErrorTitle: PropTypes.node
+    subObjectsPermissionsErrorTitle: PropTypes.node,
+    showOwner: PropTypes.bool
   };
 
   static defaultProps = {
     enabledMask: ALL_ALLOWED_MASK,
-    subObjectsPermissionsMaskToCheck: 0
+    subObjectsPermissionsMaskToCheck: 0,
+    showOwner: true
   }
 
   lastFetchId = 0;
@@ -618,7 +620,14 @@ export default class PermissionsForm extends React.Component {
                 ((item.allowMask & enabledMask) === 0)
               }
               checked={item.allowed}
-              onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.allowMask, !item.isRead)} />
+              onChange={
+                this.onAllowDenyValueChanged(
+                  item.allowMask | item.denyMask,
+                  item.allowMask,
+                  !item.isRead
+                )
+              }
+            />
           )
         },
         {
@@ -633,7 +642,10 @@ export default class PermissionsForm extends React.Component {
                 ((item.denyMask & enabledMask) === 0)
               }
               checked={item.denied}
-              onChange={this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.denyMask)} />
+              onChange={
+                this.onAllowDenyValueChanged(item.allowMask | item.denyMask, item.denyMask)
+              }
+            />
           )
         }
       ];
@@ -729,11 +741,13 @@ export default class PermissionsForm extends React.Component {
       }
     ];
     const getRowClassName = (item) => {
-      if (!this.state.selectedPermission || this.state.selectedPermission.sid.name !== item.sid.name) {
+      if (
+        !this.state.selectedPermission ||
+        this.state.selectedPermission.sid.name !== item.sid.name
+      ) {
         return styles.row;
-      } else {
-        return classNames(styles.selectedRow, 'cp-edit-permissions-selected-row');
       }
+      return classNames(styles.selectedRow, 'cp-edit-permissions-selected-row');
     };
     const selectPermission = (item) => {
       this.setState({selectedPermission: item});
@@ -781,8 +795,11 @@ export default class PermissionsForm extends React.Component {
     if (this.props.authenticatedUserInfo.loaded &&
       this.props.grant.loaded &&
       this.props.grant.value.entity &&
-      this.props.grant.value.entity.owner) {
-      const isAdminOrOwner = this.isAdmin() || this.props.grant.value.entity.owner === this.props.authenticatedUserInfo.value.userName;
+      this.props.grant.value.entity.owner &&
+      this.props.showOwner
+    ) {
+      const isAdminOrOwner = this.isAdmin() ||
+        this.props.grant.value.entity.owner === this.props.authenticatedUserInfo.value.userName;
       if (isAdminOrOwner) {
         const onBlur = () => {
           if (this.state.owner === null) {
@@ -792,14 +809,23 @@ export default class PermissionsForm extends React.Component {
           }
         };
         return (
-          <Row className={styles.ownerContainer} type="flex" style={{margin: '0px 5px 10px', height: 22}} align="middle">
+          <Row
+            className={styles.ownerContainer}
+            type="flex"
+            style={{margin: '0px 5px 10px', height: 22}}
+            align="middle"
+          >
             <span style={{marginRight: 5}}>Owner: </span>
             <AutoComplete
               size="small"
               style={{flex: 1}}
               placeholder="Change owner"
               optionLabelProp="text"
-              value={this.state.ownerInput !== null ? this.state.ownerInput : this.props.grant.value.entity.owner}
+              value={
+                this.state.ownerInput !== null
+                  ? this.state.ownerInput
+                  : this.props.grant.value.entity.owner
+              }
               onBlur={onBlur}
               onSelect={this.onUserSelect}
               onSearch={this.findUser}>
@@ -839,14 +865,18 @@ export default class PermissionsForm extends React.Component {
             }
           </Row>
         );
-      } else {
-        return (
-          <Row className={styles.ownerContainer} type="flex" style={{margin: '0px 5px 10px', height: 22}} align="middle">
-            <span style={{marginRight: 5}}>Owner: </span>
-            <b id="object-owner" style={{paddingLeft: 4}}>{this.props.grant.value.entity.owner}</b>
-          </Row>
-        );
       }
+      return (
+        <Row
+          className={styles.ownerContainer}
+          type="flex"
+          style={{margin: '0px 5px 10px', height: 22}}
+          align="middle"
+        >
+          <span style={{marginRight: 5}}>Owner: </span>
+          <b id="object-owner" style={{paddingLeft: 4}}>{this.props.grant.value.entity.owner}</b>
+        </Row>
+      );
     }
     return null;
   };
@@ -979,11 +1009,15 @@ export default class PermissionsForm extends React.Component {
     this.fetchSubObjectsPermissions();
   }
 
+  objectChanged = () => {
+    this.setState({
+      selectedPermission: null
+    }, this.selectFirstPermission);
+  };
+
   componentDidUpdate (prevProps) {
     if (this.props.objectIdentifier !== prevProps.objectIdentifier) {
-      this.setState({
-        selectedPermission: null
-      }, this.selectFirstPermission);
+      this.objectChanged();
     }
     if (!compareSubObjects(this.props.subObjectsToCheck, prevProps.subObjectsToCheck)) {
       this.fetchSubObjectsPermissions();
