@@ -26,7 +26,7 @@ const sshThemesList = {
 function SshThemeSelect ({
   metadata,
   onChange,
-  disabled,
+  readOnly,
   style,
   size = 'small'
 }) {
@@ -55,7 +55,7 @@ function SshThemeSelect ({
         onChange={handleChange}
         value={correctedValue}
         size={size}
-        disabled={disabled}
+        disabled={readOnly}
         style={{flex: 1, marginLeft: 5}}
       >
         {Object.entries(sshThemesList).map(([theme, text]) => (
@@ -76,7 +76,7 @@ SshThemeSelect.metadataKey = 'ui.ssh.theme';
 SshThemeSelect.propTypes = {
   metadata: PropTypes.object,
   onChange: PropTypes.func,
-  disabled: PropTypes.bool,
+  readOnly: PropTypes.bool,
   style: PropTypes.object,
   size: PropTypes.oneOf(['small', 'large', 'default'])
 };
