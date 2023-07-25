@@ -78,14 +78,11 @@ RUN yum install -y \
 ARG GENERATE_OFFSETS_VERSION=0.1.7
 RUN python3.8 -m pip install generate-tiff-offsets==$GENERATE_OFFSETS_VERSION
 
-ARG BIOFORMATS_TO_RAW_VERSION=0.6.1
+ARG BIOFORMATS_TO_RAW_VERSION=0.7.0
 ARG BIOFORMATS_TO_RAW_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION.zip"
 
 ARG RAW_TO_OMETIFF_VERSION=0.4.1
 ARG RAW_TO_OMETIFF_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION.zip"
-
-ARG BFTOOLS_VERSION=6.13.0
-ARG BFTOOLS_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bftools/bftools-cli-$BFTOOLS_VERSION.zip"
 
 ENV HCS_TOOLS_HOME="$CELLPROFILER_API_HOME/hcs-tools"
 
@@ -97,12 +94,9 @@ RUN mkdir -p "$HCS_TOOLS_HOME" && \
     wget -q "$RAW_TO_OMETIFF_DISTR_URL" -O "$HCS_TOOLS_HOME/raw2ometiff.zip" && \
     unzip "$HCS_TOOLS_HOME/raw2ometiff.zip" -d "$HCS_TOOLS_HOME/raw2ometiff" && \
     rm -f "$HCS_TOOLS_HOME/raw2ometiff.zip" && \
-    chmod +x "$HCS_TOOLS_HOME/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION/bin/raw2ometiff" && \
-    wget "$BFTOOLS_DISTR_URL" -O "$HCS_TOOLS_HOME/bftools-cli.zip" && \
-    unzip "$HCS_TOOLS_HOME/bftools-cli.zip" -d "$HCS_TOOLS_HOME" && \
-    rm -f "$HCS_TOOLS_HOME/bftools-cli.zip"
+    chmod +x "$HCS_TOOLS_HOME/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION/bin/raw2ometiff"
 
-ENV PATH="$HCS_TOOLS_HOME/bftools:$HCS_TOOLS_HOME/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION/bin:$HCS_TOOLS_HOME/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION/bin:$PATH"
+ENV PATH="$HCS_TOOLS_HOME/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION/bin:$HCS_TOOLS_HOME/raw2ometiff/raw2ometiff-$RAW_TO_OMETIFF_VERSION/bin:$PATH"
 
 COPY convert_to_ome_tiff.sh "$HCS_TOOLS_HOME/convert_to_ome_tiff.sh"
 RUN chmod +x $HCS_TOOLS_HOME/convert_to_ome_tiff.sh
