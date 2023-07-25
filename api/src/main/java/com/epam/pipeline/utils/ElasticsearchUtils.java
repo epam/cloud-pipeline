@@ -19,8 +19,13 @@ package com.epam.pipeline.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.ShardSearchFailure;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,5 +63,25 @@ public final class ElasticsearchUtils {
         }
 
         return searchResponse;
+    }
+
+    public static void addRangeFilter(final BoolQueryBuilder boolQuery,
+                                final LocalDateTime from,
+                                final LocalDateTime to,
+                                final String field) {
+        if (from == null && to == null) {
+            return;
+        }
+
+        final RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(field);
+
+        if (from != null) {
+            rangeQueryBuilder.from(from.toInstant(ZoneOffset.UTC));
+        }
+        if (to != null) {
+            rangeQueryBuilder.to(to.toInstant(ZoneOffset.UTC));
+        }
+
+        boolQuery.filter(rangeQueryBuilder);
     }
 }

@@ -1077,6 +1077,8 @@ public class SystemPreferences {
             "search.elastic.socket.timeout", 30000, SEARCH_GROUP, pass);
     public static final StringPreference SEARCH_ELASTIC_CP_INDEX_PREFIX = new StringPreference(
             "search.elastic.index.common.prefix", null, SEARCH_GROUP, pass);
+    public static final StringPreference SEARCH_ELASTIC_REQUESTS_INDEX_PREFIX = new StringPreference(
+            "search.elastic.index.requests.prefix", "cp-storage-requests-*", SEARCH_GROUP, pass);
     public static final StringPreference SEARCH_ELASTIC_TYPE_FIELD = new StringPreference(
             "search.elastic.type.field", "doc_type", SEARCH_GROUP, pass);
 
@@ -1103,6 +1105,8 @@ public class SystemPreferences {
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
             20, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_LOGS_AGGS_MAX_COUNT = new IntPreference("search.logs.aggs.max.count",
+            10000, SEARCH_GROUP, pass);
     public static final BooleanPreference SEARCH_HIDE_DELETED = new BooleanPreference(
             "search.elastic.hide.deleted", true, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_EXPORT_PAGE_SIZE = new IntPreference(
