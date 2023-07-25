@@ -26,6 +26,8 @@ import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.log.PageMarker;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.search.SearchRequestBuilder;
 import com.epam.pipeline.manager.search.SearchResultConverter;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -49,7 +51,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -69,9 +70,10 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -114,6 +116,7 @@ public class LogManager {
     private final MessageHelper messageHelper;
     private final SearchRequestBuilder searchRequestBuilder;
     private final SearchResultConverter searchResultConverter;
+    private final PreferenceManager preferenceManager;
 
     @Value("${log.security.elastic.index.prefix:security_log}")
     private String indexPrefix;
@@ -174,24 +177,27 @@ public class LogManager {
     }
 
     public Map<String, Long> group(final LogRequest logRequest) {
-        final LogFilter logFilter = Optional.ofNullable(logRequest.getFilter()).orElse(new LogFilter());
         final String groupBy = logRequest.getGroupBy();
         Assert.isTrue(StringUtils.isNotBlank(groupBy), "Group by field not provided.");
 
         final SearchSourceBuilder source = new SearchSourceBuilder()
                 .query(constructQueryFilter(logRequest.getFilter()));
-        searchRequestBuilder.addTermAggregationToSource(source, groupBy);
+        searchRequestBuilder.addTermAggregationToSource(source, groupBy,
+                preferenceManager.getPreference(SystemPreferences.SEARCH_LOGS_AGGS_MAX_COUNT));
 
         final SearchRequest request = new SearchRequest()
                 .source(source)
-                .indices(getReadIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
+                .indices(getAllIndices())
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
         final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
 
+        final Map<String, Long> result = new LinkedHashMap<>();
+        if (Objects.isNull(response.getAggregations())) {
+            return result;
+        }
         final Terms terms = response.getAggregations().get(groupBy);
-        final Map<String, Long> result = new HashMap<>();
         for (Terms.Bucket termBucket : terms.getBuckets()) {
             result.put(termBucket.getKeyAsString(), termBucket.getDocCount());
         }
@@ -344,27 +350,9 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
 
-        addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
-                logFilter.getMessageTimestampTo());
+        ElasticsearchUtils.addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
+                logFilter.getMessageTimestampTo(), MESSAGE_TIMESTAMP);
         return boolQuery;
-    }
-
-    private void addRangeFilter(final BoolQueryBuilder boolQuery,
-                                final LocalDateTime from, final LocalDateTime to) {
-        if (from == null && to == null) {
-            return;
-        }
-
-        final RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(MESSAGE_TIMESTAMP);
-
-        if (from != null) {
-            rangeQueryBuilder.from(from.toInstant(ZoneOffset.UTC));
-        }
-        if (to != null) {
-            rangeQueryBuilder.to(to.toInstant(ZoneOffset.UTC));
-        }
-
-        boolQuery.filter(rangeQueryBuilder);
     }
 
     private LogEntry mapHitToLogEntry(SearchHit searchHit) {

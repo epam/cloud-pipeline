@@ -276,7 +276,7 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path):
 
 def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date, storages, user):
     from_date_time = "{} 00:00:00.000".format(from_date)
-    to_date_time = "{} 00:00:00.000".format(to_date)
+    to_date_time = "{} 23:59:59.999".format(to_date)
     runs = _get_runs(api, from_date, to_date, user)
     storage_write = _get_storage_usage(api, from_date_time, to_date_time, user, 'WRITE')
     logger.info('Storage write requests count: {}.'.format(storage_write))
@@ -420,7 +420,7 @@ def _get_used_buckets(api, from_date_time, to_date_time, user, storages):
               'messageTimestampTo': to_date_time,
               'types': ['audit'],
               'users': [user]}
-    logs_by_storage = api.log_group(filter, "storageId")
+    logs_by_storage = api.log_group(filter, "storage_id")
     top3_storages = list()
     if logs_by_storage is not None:
         user_log_group_sorted = sorted(logs_by_storage.items(), key=lambda x: x[1], reverse=True)[:3]

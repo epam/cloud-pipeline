@@ -255,6 +255,7 @@ class PipelineAPI:
     RUN_TAG = '/run/{id}/tag'
     REPORT_USERS = "report/users"
     LOG_GROUP = "log/group"
+    STORAGE_REQUESTS = "log/storage/requests"
     BILLING_EXPORT = "billing/export"
 
     # Pipeline API default header
@@ -1346,6 +1347,12 @@ class PipelineAPI:
             return self._request(endpoint=self.LOG_GROUP, http_method="post", data=data)
         except Exception as e:
             raise RuntimeError("Failed to load logs \n {}".format(e))
+
+    def load_storage_requests(self, body):
+        try:
+            return self._request(endpoint=self.STORAGE_REQUESTS, http_method="post", data=body)
+        except Exception as e:
+            raise RuntimeError("Failed to fetch storage requests data \n {}".format(e))
 
     def filter_runs(self, start, end, user, filter, page, page_size):
         try:

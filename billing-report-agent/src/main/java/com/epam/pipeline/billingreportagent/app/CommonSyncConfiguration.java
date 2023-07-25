@@ -38,6 +38,8 @@ import com.epam.pipeline.billingreportagent.service.impl.loader.PipelineRunLoade
 import com.epam.pipeline.billingreportagent.service.impl.loader.StorageLoader;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.StorageBillingMapper;
+import com.epam.pipeline.billingreportagent.service.storage.requests.StorageRequestMapper;
+import com.epam.pipeline.billingreportagent.service.storage.requests.StorageRequestSynchronizer;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -258,5 +260,24 @@ public class CommonSyncConfiguration {
                         apiClient,
                         enableStorageHistoricalBillingGeneration),
                 DataStorageType.AZ);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.storage.requests.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageRequestSynchronizer storageRequestsSynchronizer(
+            final CloudPipelineAPIClient apiClient,
+            final ElasticIndexService indexService,
+            final BulkRequestSender requestSender,
+            final StorageRequestMapper mapper,
+            final @Value("${sync.storage.requests.index.name}") String indexName,
+            final @Value("${sync.storage.requests.index.mapping}") String indexMappingFile) {
+        return new StorageRequestSynchronizer(
+                apiClient,
+                indexService,
+                requestSender,
+                mapper,
+                indexName,
+                indexMappingFile
+        );
     }
 }

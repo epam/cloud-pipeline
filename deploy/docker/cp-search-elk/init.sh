@@ -65,7 +65,7 @@ if [ $not_initialized ]; then
 fi
 
 export CP_SECURITY_LOGS_ELASTIC_PREFIX="${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}"
-export CP_SECURITY_LOGS_ROLLOVER_DAYS="${CP_SECURITY_LOGS_ROLLOVER_DAYS:-20}"
+export CP_SECURITY_LOGS_ROLLOVER_DAYS="${CP_SECURITY_LOGS_ROLLOVER_DAYS:-31}"
 
 for _policy_path in /etc/search-elk/policies/*.json; do
   _policy_name="$(basename "$_policy_path" .json)"

@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.notification.NotificationMessage;
@@ -74,6 +75,7 @@ import retrofit2.http.Query;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface CloudPipelineAPI {
 
@@ -285,5 +287,7 @@ public interface CloudPipelineAPI {
     Call<Result<LustreFS>> getLustre(@Query("mountName") String mountName,
                                      @Query("regionId") Long regionId);
 
+    @POST("log/group")
+    Call<Result<Map<String, Long>>> getSystemLogsGrouped(@Body LogRequest logRequest);
 }
 

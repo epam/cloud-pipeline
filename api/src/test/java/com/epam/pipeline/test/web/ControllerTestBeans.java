@@ -45,7 +45,7 @@ import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.manager.issue.IssueApiService;
 import com.epam.pipeline.manager.ldap.LdapApiService;
-import com.epam.pipeline.manager.log.LogApiService;
+import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.manager.metadata.MetadataApiService;
 import com.epam.pipeline.manager.metadata.MetadataEntityApiService;
