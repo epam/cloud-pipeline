@@ -21,6 +21,7 @@ import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService
 import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
+import com.epam.pipeline.acl.log.storage.StorageRequestApiService;
 import com.epam.pipeline.acl.notification.UserNotificationApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.quota.QuotaApiService;
@@ -250,5 +251,8 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UserNotificationApiService userNotificationApiService;
+
+    @MockBean
+    protected StorageRequestApiService storageRequestApiService;
 
 }
