@@ -515,7 +515,7 @@ class OmeTiffImageGenerator(ImageGenerator):
 
         coordinates = self.parse_coordinates()
         index_file_path = self.adjust_index_xml(local_workdir, pages, self.image_properties, coordinates)
-        self.generate_ome_tiff_file(index_file_path, image_path_tmp, local_workdir, OME_TIFF_NAME, results_path)
+        self.generate_ome_tiff_file(index_file_path, local_workdir, OME_TIFF_NAME, results_path)
 
     def adjust_index_xml(self, service_images_dir: str, pages: list, image_properties: ImageProperties,
                          coordinates: dict):
@@ -606,11 +606,11 @@ class OmeTiffImageGenerator(ImageGenerator):
                 plate.remove(well)
 
     @staticmethod
-    def generate_ome_tiff_file(index_file_path, images_dir, local_workdir, tiff_file_name, results_dir):
+    def generate_ome_tiff_file(index_file_path, local_workdir, tiff_file_name, results_dir):
         path_to_script = os.path.join(HCS_TOOLS_HOME, CONVERT_TO_OME_TIFF_SCRIPT)
         print("[DEBUG] Generating OME-TIFF image", flush=True)
-        command = 'bash "{}" "{}" "{}" "{}" "{}" "{}"'.format(path_to_script, index_file_path, local_workdir,
-                                                              images_dir, tiff_file_name, results_dir)
+        command = 'bash "{}" "{}" "{}" "{}" "{}"'.format(path_to_script, index_file_path, local_workdir,
+                                                         tiff_file_name, results_dir)
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         exit_code = process.wait()
         if exit_code != 0:
