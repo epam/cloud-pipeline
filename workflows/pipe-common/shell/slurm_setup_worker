@@ -40,7 +40,11 @@ add_worker() {
         done
     fi
 
-    slurmd
+    if [ "${cluster_role_type}" == "additional" ]; then
+        slurmd -Z
+    else
+        slurmd
+    fi
 }
 
 get_linux_dist() {

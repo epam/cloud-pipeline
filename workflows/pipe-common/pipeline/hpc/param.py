@@ -249,6 +249,12 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
         self.event_ttl = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_EVENT_TTL', type=PARAM_INT, default=3 * 60 * 60,
             help='Specifies event ttl in seconds after which an event is removed.')
+        self.sge_selected = GridEngineParameter(
+            name='CP_CAP_SGE', type=PARAM_BOOL, default=True,
+            help='Define if SGE selected as grid engine.')
+        self.slurm_selected = GridEngineParameter(
+            name='CP_CAP_SLURM', type=PARAM_BOOL, default=False,
+            help='Define if Slurm selected as grid engine.')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):

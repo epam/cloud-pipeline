@@ -17,7 +17,7 @@ import logging
 import pytest
 from mock import MagicMock, Mock
 
-from pipeline.hpc.gridengine import GridEngineDemandSelector, GridEngineJob, AllocationRule
+from pipeline.hpc.gridengine import SunGridEngineDemandSelector, GridEngineJob, AllocationRule
 from pipeline.hpc.resource import IntegralDemand, FractionalDemand, ResourceSupply
 
 PE_LOCAL = 'local'
@@ -159,6 +159,6 @@ def test_select(jobs, resource_supplies, required_resource_demands):
     grid_engine.get_pe_allocation_rule = MagicMock(
         side_effect=lambda pe: AllocationRule.pe_slots() if pe == PE_LOCAL else AllocationRule.fill_up())
     grid_engine.get_host_supplies = MagicMock(return_value=iter(resource_supplies))
-    demand_selector = GridEngineDemandSelector(grid_engine=grid_engine)
+    demand_selector = SunGridEngineDemandSelector(grid_engine=grid_engine)
     actual_resource_demands = list(demand_selector.select(jobs))
     assert required_resource_demands == actual_resource_demands

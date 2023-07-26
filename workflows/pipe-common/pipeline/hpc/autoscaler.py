@@ -293,7 +293,7 @@ class GridEngineScaleUpHandler:
             if run['initialized']:
                 Logger.info('Additional worker #%s has been marked as initialized.' % run_id)
                 Logger.info('Checking additional worker #%s grid engine initialization status...' % run_id)
-                run_sge_tasks = self.api.load_task(run_id, 'SGEWorkerSetup')
+                run_sge_tasks = self.api.load_task(run_id, self.grid_engine.get_worker_initializing_task())
                 if any(run_sge_task.get('status') == 'SUCCESS' for run_sge_task in run_sge_tasks):
                     Logger.info('Additional worker #%s has been initialized.' % run_id)
                     return

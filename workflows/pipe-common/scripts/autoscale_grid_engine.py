@@ -29,7 +29,7 @@ from pipeline.hpc.autoscaler import \
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.event import GridEngineEventManager
-from pipeline.hpc.gridengine import GridEngine, GridEngineDemandSelector, GridEngineJobValidator
+from pipeline.hpc.gridengine import GridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance.avail import InstanceAvailabilityManager
 from pipeline.hpc.instance.provider import DefaultInstanceProvider, \
@@ -46,6 +46,9 @@ from pipeline.hpc.resource import ResourceSupply
 from pipeline.hpc.utils import Clock, ScaleCommonUtils
 from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
 from pipeline.utils.path import mkdir
+
+SUN_GRID_ENGINE = "SGE"
+SLURM_GRID_ENGINE = "SLURM"
 
 
 def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
@@ -65,6 +68,7 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
         launch_params[param_name] = param_value
     launch_params.update({
         'CP_CAP_SGE': 'false',
+        'CP_CAP_SLURM': 'false',
         'CP_CAP_AUTOSCALE': 'false',
         'CP_CAP_AUTOSCALE_WORKERS': '0',
         'CP_DISABLE_RUN_ENDPOINTS': 'true',
@@ -113,6 +117,8 @@ def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeo
 
 def get_daemon():
     params = GridEngineParameters()
+
+    grid_engine_type = SLURM_GRID_ENGINE if params.autoscaling_advanced.slurm_selected else SUN_GRID_ENGINE
 
     api_url = os.environ['API']
 
@@ -378,12 +384,19 @@ def get_daemon():
     if queue_static:
         cluster_supply += master_instance_supply + static_instance_supply * static_instance_number
 
-    grid_engine = GridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
-                             queue_default=queue_default)
-    job_validator = GridEngineJobValidator(grid_engine=grid_engine,
-                                           instance_max_supply=biggest_instance_supply,
-                                           cluster_max_supply=cluster_supply)
-    demand_selector = GridEngineDemandSelector(grid_engine=grid_engine)
+    if grid_engine_type == SLURM_GRID_ENGINE:
+        grid_engine = SlurmGridEngine(cmd_executor=cmd_executor, queue=queue_name, queue_default=queue_default)
+        job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
+                                        cluster_max_supply=cluster_supply)
+        demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
+    else:
+        grid_engine = GridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
+                                 queue_default=queue_default)
+        job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
+                                               instance_max_supply=biggest_instance_supply,
+                                               cluster_max_supply=cluster_supply)
+        demand_selector = SunGridEngineDemandSelector(grid_engine=grid_engine)
+
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_file, clock=clock)
     host_storage = ThreadSafeHostStorage(host_storage)
     static_host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_static_file,
