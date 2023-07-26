@@ -434,6 +434,9 @@ export default class EditUserRolesDialog extends React.Component {
 
   @computed
   get restrictedMetadataKeys () {
+    if (this.isAdmin) {
+      return [];
+    }
     const {preferences} = this.props;
     return [
       ...RESTRICTED_METADATA_KEYS,
