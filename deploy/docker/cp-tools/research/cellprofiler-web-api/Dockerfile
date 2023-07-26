@@ -66,10 +66,15 @@ ARG NUMPY_VERSION=1.23.1
 ARG CYTHON_VERSION=0.29.30
 
 COPY requirements.txt $CELLPROFILER_API_HOME/
-RUN python3.8 -m pip install wheel numpy==$NUMPY_VERSION \
-                                   Cython==$CYTHON_VERSION && \
-    python3.8 -m pip install cellprofiler==$CELL_PROFILER_VERSION && \
-    python3.8 -m pip install -r $CELLPROFILER_API_HOME/requirements.txt
+RUN python3.8 -m pip install wheel && \
+    wget "https://files.pythonhosted.org/packages/61/c7/e1a31b6a092a5b91952fe96801b2d3167fcb3bad8386c023dd83de4c4ab8/centrosome-1.2.0.tar.gz" -O /tmp/centrosome.tar.gz && \
+    cd /tmp && \
+    tar -zxf centrosome.tar.gz && \
+    cd centrosome* && \
+    sed -i "s/setup_requires=\[\"cython\", \"numpy\", \"pytest\",\],/setup_requires=\[\"cython==$CYTHON_VERSION\", \"numpy==$NUMPY_VERSION\", \"pytest\",\],/g" setup.py && \
+    python3.8 -m pip install . && \
+    rm -rf /tmp/centrosome*
+RUN python3.8 -m pip install -r $CELLPROFILER_API_HOME/requirements.txt
 
 RUN yum install -y \
         blosc \
