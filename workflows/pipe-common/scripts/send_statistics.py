@@ -262,7 +262,7 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path):
     platform_usage_costs = _get_platform_usage_cost(api, from_date, to_date)
     logger.info('Platform Usage costs: {}.'.format(platform_usage_costs))
 
-    # template, table_templ, table_center_templ = _get_templates(template_path)
+    template, table_templ, table_center_templ = _get_templates(template_path)
 
     for user in users:
         _user_name = user.get('userName')
