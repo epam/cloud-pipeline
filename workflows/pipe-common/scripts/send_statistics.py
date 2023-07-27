@@ -75,6 +75,12 @@ class Stat(object):
         self.top3_used_buckets = top3_used_buckets
         self.top3_run_capabilities = top3_run_capabilities
 
+    def not_empty(self):
+        return self.compute_hours or self.runs_count or self.storage_read or self.storage_write or self.usage_weight \
+               or self.login_time or self.cpu_hours or self.gpu_hours or self.clusters_compute_secs \
+               or self.worker_nodes_count or self.top3_instance_types or self.top3_pipelines \
+               or self.top3_tools or self.top3_used_buckets or self.top3_run_capabilities
+
     @staticmethod
     def format_count(count):
         return "<b>{}</b>".format(count)
@@ -177,10 +183,11 @@ class Notifier(object):
         text = self.build_text(template, table_templ, table_center_templ)
         self.logger.debug("Email Text:")
         self.logger.debug(text)
+        self.logger.info('Sending notification to user: %s' % self.notify_users[0])
         self.api.create_notification(EMAIL_SUBJECT % self.deploy_name,
-                                     text,
-                                     self.notify_users[0],
-                                     copy_users=self.notify_users[1:] if len(self.notify_users) > 0 else None)
+                                    text,
+                                    self.notify_users[0],
+                                    copy_users=self.notify_users[1:] if len(self.notify_users) > 0 else None)
 
     def build_text(self, template, table_templ, table_center_templ):
         stat_str = self.stat.get_object_str(self.start, self.end, self.deploy_name,
@@ -229,9 +236,6 @@ def send_statistics():
     except ValueError:
         raise RuntimeError("Invalid to_date format. Date format should be {}.".format(DATE_FORMAT))
 
-    if not args.users and not args.roles:
-        parser.error('Either --users or --roles should be specified.')
-
     users = [] if args.users is None else args.users
     roles = [] if args.roles is None else args.roles
     users = expand_commas(users)
@@ -259,7 +263,8 @@ def send_statistics():
         if len(users) > 0:
             logger.info('{} User(s) collected.'.format(len(users)))
             logger.info('Collecting and sending statistics...')
-            _send_users_stat(api, logger, from_date, to_date, users, template_path)
+            _send_users_stat(api, logger, from_date, to_date, users, template_path,
+                             send_to=os.getenv('SEND_TO_USER', None))
         else:
             logger.info('No users found to collect and send statistics.')
     except KeyboardInterrupt:
@@ -272,7 +277,7 @@ def send_statistics():
         raise
 
 
-def _send_users_stat(api, logger, from_date, to_date, users, template_path):
+def _send_users_stat(api, logger, from_date, to_date, users, template_path, send_to=None):
     capabilities = _get_capabilities(api)
 
     platform_usage_costs = _get_platform_usage_cost(api, from_date, to_date)
@@ -285,7 +290,11 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path):
         logger.info('User: {}'.format(_user_name))
         stat = _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date,
                                _user_name, user.get('id'))
-        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), [_user_name], logger)
+        if not stat.not_empty():
+            logger.info('No data found for user %s, skipping notification' % _user_name)
+            continue
+        receiver = [send_to] if send_to else [_user_name]
+        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), receiver, logger)
         notifier.send_notifications(template, table_templ, table_center_templ)
 
 
@@ -307,9 +316,9 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     to_date_time = "{} 23:59:59.999".format(to_date)
     runs = _get_runs(api, from_date, to_date, user)
     storage_requests = _get_storage_requests(api, from_date_time, to_date_time, user_id)
-    storage_write = storage_requests.get('writeRequests')
+    storage_write = storage_requests.get('writeRequests', 0)
     logger.info('Storage write requests count: {}.'.format(storage_write))
-    storage_read = storage_requests.get('readRequests')
+    storage_read = storage_requests.get('readRequests', 0)
     logger.info('Storage read requests count: {}.'.format(storage_read))
     compute_hours = _get_compute_hours(runs)
     logger.info('Compute hours: {}.'.format(compute_hours))
