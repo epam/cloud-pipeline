@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.user;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -48,7 +47,7 @@ import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.*;
 
 @Transactional
-public class UserDaoTest extends AbstractSpringTest {
+public class UserDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_USER2 = "test_user2";

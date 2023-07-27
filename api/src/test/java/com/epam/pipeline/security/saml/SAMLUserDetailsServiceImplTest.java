@@ -233,7 +233,7 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
 
     private void mockUserDoesNotExistSituation() {
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(null);
-        Mockito.when(userManager.createUser(Matchers.anyString(),
+        Mockito.when(userManager.create(Matchers.anyString(),
                                             Matchers.anyListOf(Long.class), Matchers.anyListOf(String.class),
                                             Matchers.anyMapOf(String.class, String.class), Matchers.any()))
                .thenReturn(user);

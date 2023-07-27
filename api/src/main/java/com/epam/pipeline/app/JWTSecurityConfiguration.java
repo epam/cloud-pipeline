@@ -157,10 +157,6 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
         return anonymousResources;
     }
 
-    public String getImpersonationStartUrl() {
-        return impersonationOperationsRootUrl + "/start";
-    }
-
     //List of urls under REST that should be redirected back after authorization
     private String[] redirectedUrls() {
         return new String[] { ROUTE_URL, PROLONG_URL };

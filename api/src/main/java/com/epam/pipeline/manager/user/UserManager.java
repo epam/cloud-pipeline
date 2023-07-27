@@ -491,15 +491,6 @@ public class UserManager implements SecuredEntityManager {
                 || !CollectionUtils.isEqualCollection(loadedUserAttributes.entrySet(), attributes.entrySet());
     }
 
-    PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
-        dataStorageManager.tryInitUserDefaultStorage(newUser)
-                .ifPresent(storageId -> {
-                    assignDefaultStorageToUser(newUser, storageId);
-                    grantOwnerPermissionsToUser(newUser.getUserName(), storageId);
-                });
-        return newUser;
-    }
-
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
         final Collection<PipelineUserWithStoragePath> filteredUsers = filterUsers(users, attr);

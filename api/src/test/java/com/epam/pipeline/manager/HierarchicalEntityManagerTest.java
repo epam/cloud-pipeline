@@ -117,10 +117,10 @@ public class HierarchicalEntityManagerTest extends AbstractManagerTest {
         PipelineUserVO userVO = new PipelineUserVO();
         userVO.setRoleIds(Collections.singletonList(DefaultRoles.ROLE_USER.getId()));
         userVO.setUserName(USER);
-        userManager.createUser(userVO);
+        userManager.create(userVO);
 
         userVO.setUserName(USER2);
-        userManager.createUser(userVO);
+        userManager.create(userVO);
         Mockito.when(kubernetesManager.createDockerRegistrySecret(Mockito.any())).thenReturn("");
         Mockito.when(dockerClientFactory.getDockerClient(Mockito.any(), Mockito.any())).thenReturn(client);
     }

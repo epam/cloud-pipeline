@@ -115,7 +115,7 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
 
         PipelineUserVO userVO = new PipelineUserVO();
         userVO.setUserName(USER_OWNER);
-        userManager.createUser(userVO);
+        userManager.create(userVO);
 
         testRunScheduleVO = getRunScheduleVO(RunScheduledAction.PAUSE, CRON_EXPRESSION1);
         testRunScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION2);

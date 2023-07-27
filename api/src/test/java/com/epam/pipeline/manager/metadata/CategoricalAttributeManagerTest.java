@@ -84,7 +84,7 @@ public class CategoricalAttributeManagerTest extends AbstractSpringTest {
         Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
 
         final PipelineUser testUser = userManager
-            .createUser(TEST_USER, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(), null);
+            .create(TEST_USER, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(), null);
         final EntityVO entityVO = new EntityVO(testUser.getId(), AclClass.PIPELINE_USER);
         final Map<String, PipeConfValue> data = new HashMap<>();
         data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));

@@ -95,8 +95,8 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
         roleMetadataVO = new MetadataVO();
         roleMetadataVO.setEntity(roleEntity);
 
-        doReturn(pipelineUser1).when(userManager).loadUserById(TEST_USER1_ID);
-        doReturn(pipelineUser1).when(userManager).loadUserByNameOrId(TEST_USER1);
+        doReturn(pipelineUser1).when(userManager).load(TEST_USER1_ID);
+        doReturn(pipelineUser1).when(userManager).loadByNameOrId(TEST_USER1);
         doReturn(Collections.singletonList(pipelineUserMetadata)).when(metadataManager)
                 .listMetadataItems(Collections.singletonList(pipelineUserEntity));
         doReturn(Collections.singletonList(roleMetadata)).when(metadataManager)

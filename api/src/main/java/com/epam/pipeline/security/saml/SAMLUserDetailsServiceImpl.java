@@ -163,7 +163,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     private UserContext createUser(final String userName, final List<String> groups,
                                    final Map<String, String> attributes) {
         final List<Long> roles = roleManager.getDefaultRolesIds();
-        final PipelineUser createdUser = userManager.createUser(userName,
+        final PipelineUser createdUser = userManager.create(userName,
                 roles, groups, attributes, null);
         userManager.updateUserFirstLoginDate(createdUser.getId(), DateUtils.nowUTC());
         LOGGER.debug("Created user {} with groups {}", userName, groups);

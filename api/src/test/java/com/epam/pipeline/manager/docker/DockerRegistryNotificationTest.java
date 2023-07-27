@@ -100,11 +100,11 @@ public class DockerRegistryNotificationTest extends AbstractManagerTest {
 
         AclTestDao.AclSid adminSid = new AclTestDao.AclSid(true, ADMIN);
         aclTestDao.createAclSid(adminSid);
-        userManager.createUser(ADMIN, Collections.singletonList(2L), Collections.emptyList(), null, null);
+        userManager.create(ADMIN, Collections.singletonList(2L), Collections.emptyList(), null, null);
 
         AclTestDao.AclSid testUserSid = new AclTestDao.AclSid(true, TEST_USER);
         aclTestDao.createAclSid(testUserSid);
-        userManager.createUser(TEST_USER, Collections.singletonList(2L),  Collections.emptyList(), null, null);
+        userManager.create(TEST_USER, Collections.singletonList(2L),  Collections.emptyList(), null, null);
 
         DockerRegistry registry = new DockerRegistry();
         registry.setPath(TEST_REPO);
