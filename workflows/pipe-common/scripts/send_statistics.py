@@ -239,17 +239,21 @@ def send_statistics():
     try:
         all_users = list()
         logger.debug('Collecting users...')
-        for user in users:
-            user_details = api.load_user_by_name(user)
-            if user_details is not None:
-                all_users.append(user_details)
-
-        logger.debug('Collecting roles...')
-        for role in roles:
-            details = api.load_role_by_name(role)
-            if 'users' in details:
-                users = details['users']
-                all_users.extend(users)
+        if users:
+            for user in users:
+                user_details = api.load_user_by_name(user)
+                if user_details is not None:
+                    all_users.append(user_details)
+        if roles:
+            logger.debug('Collecting roles...')
+            for role in roles:
+                details = api.load_role_by_name(role)
+                if 'users' in details:
+                    users = details['users']
+                    all_users.extend(users)
+        if not users and not roles:
+            logger.debug('Loading all platfrom users')
+            all_users = api.load_users()
 
         users = [u for u in all_users if not u.get('blocked')]
         if len(users) > 0:
