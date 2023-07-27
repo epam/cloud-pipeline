@@ -168,26 +168,27 @@ class Stat(object):
 
 
 class Notifier(object):
-    def __init__(self, api, start, end, stat, deploy_name, notify_users, logger):
+    def __init__(self, api, start, end, stat, deploy_name, to_user, logger, cc_users=None):
         self.api = api
         self.start = start
         self.end = end
         self.stat = stat
         self.deploy_name = deploy_name
-        self.notify_users = notify_users
+        self.to_user = to_user
         self.logger = logger
+        self.cc_users = cc_users
 
     def send_notifications(self, template, table_templ, table_center_templ):
-        if not self.notify_users:
+        if not self.to_user:
             return
         text = self.build_text(template, table_templ, table_center_templ)
         self.logger.debug("Email Text:")
         self.logger.debug(text)
-        self.logger.info('Sending notification to user: %s' % self.notify_users[0])
+        self.logger.info('Sending notification to user: %s' % self.to_user)
         self.api.create_notification(EMAIL_SUBJECT % self.deploy_name,
-                                    text,
-                                    self.notify_users[0],
-                                    copy_users=self.notify_users[1:] if len(self.notify_users) > 0 else None)
+                                     text,
+                                     self.to_user,
+                                     copy_users=self.cc_users)
 
     def build_text(self, template, table_templ, table_center_templ):
         stat_str = self.stat.get_object_str(self.start, self.end, self.deploy_name,
@@ -260,11 +261,13 @@ def send_statistics():
             all_users = api.load_users()
 
         users = [u for u in all_users if not u.get('blocked')]
+        send_to = os.getenv('SEND_TO_USER', None)
+        cc_users = os.getenv('CC_USERS', '').split(',') if os.getenv('CC_USERS', '') else None
         if len(users) > 0:
             logger.info('{} User(s) collected.'.format(len(users)))
             logger.info('Collecting and sending statistics...')
             _send_users_stat(api, logger, from_date, to_date, users, template_path,
-                             send_to=os.getenv('SEND_TO_USER', None))
+                             send_to=send_to, cc_users=cc_users)
         else:
             logger.info('No users found to collect and send statistics.')
     except KeyboardInterrupt:
@@ -277,7 +280,7 @@ def send_statistics():
         raise
 
 
-def _send_users_stat(api, logger, from_date, to_date, users, template_path, send_to=None):
+def _send_users_stat(api, logger, from_date, to_date, users, template_path, send_to=None, cc_users=None):
     capabilities = _get_capabilities(api)
 
     platform_usage_costs = _get_platform_usage_cost(api, from_date, to_date)
@@ -293,8 +296,9 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path, send
         if not stat.not_empty():
             logger.info('No data found for user %s, skipping notification' % _user_name)
             continue
-        receiver = [send_to] if send_to else [_user_name]
-        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), receiver, logger)
+        receiver = send_to if send_to else _user_name
+        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'),
+                            receiver, logger, cc_users=cc_users)
         notifier.send_notifications(template, table_templ, table_center_templ)
 
 
