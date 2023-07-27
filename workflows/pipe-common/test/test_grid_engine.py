@@ -27,7 +27,7 @@ HOSTLIST = '@allhosts'
 QUEUE_DEFAULT = True
 
 executor = Mock()
-grid_engine = GridEngine(cmd_executor=executor,
+grid_engine = SunGridEngine(cmd_executor=executor,
                          queue=QUEUE, hostlist=HOSTLIST, queue_default=QUEUE_DEFAULT)
 
 

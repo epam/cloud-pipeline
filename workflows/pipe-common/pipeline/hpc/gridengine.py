@@ -15,6 +15,7 @@
 import functools
 import operator
 import os
+import re
 import traceback
 from datetime import datetime
 from xml.etree import ElementTree
@@ -82,6 +83,7 @@ class GridEngineJobState:
     SUSPENDED = 'suspended'
     ERROR = 'errored'
     DELETED = 'deleted'
+    COMPLETED = 'completed'
     UNKNOWN = 'unknown'
 
     _letter_codes_to_states = {
@@ -89,7 +91,8 @@ class GridEngineJobState:
         PENDING: ['qw', 'qw', 'hqw', 'hqw', 'hRwq', 'hRwq', 'hRwq', 'qw', 'qw', 'PENDING'],
         SUSPENDED: ['s', 'ts', 'S', 'tS', 'T', 'tT', 'Rs', 'Rts', 'RS', 'RtS', 'RT', 'RtT', 'SUSPENDED'],
         ERROR: ['Eqw', 'Ehqw', 'EhRqw'],
-        DELETED: ['dr', 'dt', 'dRr', 'dRt', 'ds', 'dS', 'dT', 'dRs', 'dRS', 'dRT', 'DELETED', 'CANCELLED']
+        DELETED: ['dr', 'dt', 'dRr', 'dRt', 'ds', 'dS', 'dT', 'dRs', 'dRS', 'dRT', 'DELETED', 'CANCELLED'],
+        COMPLETED: ['COMPLETED', 'COMPLETING']
     }
 
     @staticmethod
@@ -97,7 +100,7 @@ class GridEngineJobState:
         for key in GridEngineJobState._letter_codes_to_states:
             if code in GridEngineJobState._letter_codes_to_states[key]:
                 return key
-        raise GridEngineJobState.UNKNOWN
+        return GridEngineJobState.UNKNOWN
 
 
 class GridEngineJob:
@@ -119,24 +122,49 @@ class GridEngineJob:
         return str(self.__dict__)
 
 
-class ClusterProvider:
-
-    def __init__(self):
-        pass
+class GridEngine:
 
     def get_jobs(self):
         pass
 
     def disable_host(self, host):
+        """
+        Disables host to prevent receiving new jobs from the queue.
+        This command does not abort currently running jobs.
+
+        :param host: Host to be enabled.
+        """
         pass
 
     def enable_host(self, host):
+        """
+        Enables host to make it available to receive new jobs from the queue.
+
+        :param host: Host to be enabled.
+        """
         pass
 
     def get_pe_allocation_rule(self, pe):
+        """
+        Returns allocation rule of the pe
+
+        :param pe: Parallel environment to return allocation rule.
+        """
         pass
 
     def delete_host(self, host, skip_on_failure=False):
+        """
+        Completely deletes host from GE:
+        1. Shutdown host execution daemon.
+        2. Removes host from queue settings.
+        3. Removes host from host group.
+        4. Removes host from administrative hosts.
+        5. Removes host from GE.
+
+        :param host: Host to be removed.
+        :param skip_on_failure: Specifies if the host killing should be continued even if some of
+        the commands has failed.
+        """
         pass
 
     def get_host_supplies(self):
@@ -148,27 +176,38 @@ class ClusterProvider:
     def get_worker_initializing_task(self):
         pass
 
+    def is_valid(self, host):
+        """
+        Validates host in GE checking corresponding execution host availability and its states.
+
+        :param host: Host to be checked.
+        :return: True if execution host is valid.
+        """
+        return True
+
+    def kill_jobs(self, jobs, force=False):
+        """
+        Kills jobs in GE.
+
+        :param jobs: Grid engine jobs.
+        :param force: Specifies if this command should be performed with -f flag.
+        """
+        pass
+
 
 class GridEngineDemandSelector:
-
-    def __init__(self, cluster_provider):
-        self.cluster_provider = cluster_provider
 
     def select(self, jobs):
         pass
 
-class GridEngineJobValidator:
 
-    def __init__(self, cluster_provider, instance_max_supply, cluster_max_supply):
-        self.cluster_provider = cluster_provider
-        self.instance_max_supply = instance_max_supply
-        self.cluster_max_supply = cluster_max_supply
+class GridEngineJobValidator:
 
     def validate(self, jobs):
         pass
 
 
-class GridEngine(ClusterProvider):
+class SunGridEngine(GridEngine):
     _DELETE_HOST = 'qconf -de %s'
     _SHOW_PE_ALLOCATION_RULE = 'qconf -sp %s | grep "^allocation_rule" | awk \'{print $2}\''
     _REMOVE_HOST_FROM_HOST_GROUP = 'qconf -dattr hostgroup hostlist %s %s'
@@ -186,7 +225,6 @@ class GridEngine(ClusterProvider):
     _BAD_HOST_STATES = ['u', 'E', 'd']
 
     def __init__(self, cmd_executor, queue, hostlist, queue_default):
-        super().__init__()
         self.cmd_executor = cmd_executor
         self.queue = queue
         self.hostlist = hostlist
@@ -198,7 +236,7 @@ class GridEngine(ClusterProvider):
 
     def get_jobs(self):
         try:
-            output = self.cmd_executor.execute(GridEngine._QSTAT)
+            output = self.cmd_executor.execute(SunGridEngine._QSTAT)
         except ExecutionError:
             Logger.warn('Grid engine jobs listing has failed.')
             return []
@@ -284,7 +322,7 @@ class GridEngine(ClusterProvider):
         return jobs.values()
 
     def _parse_date(self, date):
-        return datetime.strptime(date, GridEngine._QSTAT_DATETIME_FORMAT)
+        return datetime.strptime(date, SunGridEngine._QSTAT_DATETIME_FORMAT)
 
     def _parse_queue_and_host(self, queue_and_host):
         return queue_and_host.split('@')[:2] if queue_and_host else (None, None)
@@ -323,44 +361,16 @@ class GridEngine(ClusterProvider):
         return size_in_gibibytes
 
     def disable_host(self, host):
-        """
-        Disables host to prevent receiving new jobs from the queue.
-        This command does not abort currently running jobs.
-
-        :param host: Host to be enabled.
-        """
-        self.cmd_executor.execute(GridEngine._QMOD_DISABLE % (self.queue, host))
+        self.cmd_executor.execute(SunGridEngine._QMOD_DISABLE % (self.queue, host))
 
     def enable_host(self, host):
-        """
-        Enables host to make it available to receive new jobs from the queue.
-
-        :param host: Host to be enabled.
-        """
-        self.cmd_executor.execute(GridEngine._QMOD_ENABLE % (self.queue, host))
+        self.cmd_executor.execute(SunGridEngine._QMOD_ENABLE % (self.queue, host))
 
     def get_pe_allocation_rule(self, pe):
-        """
-        Returns allocation rule of the pe
-
-        :param pe: Parallel environment to return allocation rule.
-        """
-        exec_result = self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe)
+        exec_result = self.cmd_executor.execute(SunGridEngine._SHOW_PE_ALLOCATION_RULE % pe)
         return AllocationRule(exec_result.strip()) if exec_result else AllocationRule.pe_slots()
 
     def delete_host(self, host, skip_on_failure=False):
-        """
-        Completely deletes host from GE:
-        1. Shutdown host execution daemon.
-        2. Removes host from queue settings.
-        3. Removes host from host group.
-        4. Removes host from administrative hosts.
-        5. Removes host from GE.
-
-        :param host: Host to be removed.
-        :param skip_on_failure: Specifies if the host killing should be continued even if some of
-        the commands has failed.
-        """
         self._shutdown_execution_host(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_queue_settings(host, self.queue, skip_on_failure=skip_on_failure)
         self._remove_host_from_host_group(host, self.hostlist, skip_on_failure=skip_on_failure)
@@ -368,7 +378,7 @@ class GridEngine(ClusterProvider):
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
     def get_host_supplies(self):
-        output = self.cmd_executor.execute(GridEngine._QHOST)
+        output = self.cmd_executor.execute(SunGridEngine._QHOST)
         root = ElementTree.fromstring(output)
         for host in root.findall('host'):
             for queue in host.findall('queue[@name=\'%s\']' % self.queue):
@@ -381,7 +391,7 @@ class GridEngine(ClusterProvider):
                 yield ResourceSupply(cpu=host_slots) - ResourceSupply(cpu=host_used + host_resv)
 
     def get_host_supply(self, host):
-        for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host):
+        for line in self.cmd_executor.execute_to_lines(SunGridEngine._SHOW_EXECUTION_HOST % host):
             if "processors" in line:
                 return ResourceSupply(cpu=int(line.strip().split()[1]))
         return ResourceSupply()
@@ -391,7 +401,7 @@ class GridEngine(ClusterProvider):
 
     def _shutdown_execution_host(self, host, skip_on_failure):
         _perform_command(
-            action=lambda: self.cmd_executor.execute(GridEngine._SHUTDOWN_HOST_EXECUTION_DAEMON % host),
+            action=lambda: self.cmd_executor.execute(SunGridEngine._SHUTDOWN_HOST_EXECUTION_DAEMON % host),
             msg='Shutdown GE host execution daemon.',
             error_msg='Shutdown GE host execution daemon has failed.',
             skip_on_failure=skip_on_failure
@@ -399,7 +409,7 @@ class GridEngine(ClusterProvider):
 
     def _remove_host_from_queue_settings(self, host, queue, skip_on_failure):
         _perform_command(
-            action=lambda: self.cmd_executor.execute(GridEngine._REMOVE_HOST_FROM_QUEUE_SETTINGS % (queue, host)),
+            action=lambda: self.cmd_executor.execute(SunGridEngine._REMOVE_HOST_FROM_QUEUE_SETTINGS % (queue, host)),
             msg='Remove host from queue settings.',
             error_msg='Removing host from queue settings has failed.',
             skip_on_failure=skip_on_failure
@@ -407,7 +417,7 @@ class GridEngine(ClusterProvider):
 
     def _remove_host_from_host_group(self, host, hostgroup, skip_on_failure):
         _perform_command(
-            action=lambda: self.cmd_executor.execute(GridEngine._REMOVE_HOST_FROM_HOST_GROUP % (host, hostgroup)),
+            action=lambda: self.cmd_executor.execute(SunGridEngine._REMOVE_HOST_FROM_HOST_GROUP % (host, hostgroup)),
             msg='Remove host from host group.',
             error_msg='Removing host from host group has failed.',
             skip_on_failure=skip_on_failure
@@ -415,7 +425,7 @@ class GridEngine(ClusterProvider):
 
     def _remove_host_from_grid_engine(self, host, skip_on_failure):
         _perform_command(
-            action=lambda: self.cmd_executor.execute(GridEngine._DELETE_HOST % host),
+            action=lambda: self.cmd_executor.execute(SunGridEngine._DELETE_HOST % host),
             msg='Remove host from GE.',
             error_msg='Removing host from GE has failed.',
             skip_on_failure=skip_on_failure
@@ -423,22 +433,16 @@ class GridEngine(ClusterProvider):
 
     def _remove_host_from_administrative_hosts(self, host, skip_on_failure):
         _perform_command(
-            action=lambda: self.cmd_executor.execute(GridEngine._REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS % host),
+            action=lambda: self.cmd_executor.execute(SunGridEngine._REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS % host),
             msg='Remove host from list of administrative hosts.',
             error_msg='Removing host from list of administrative hosts has failed.',
             skip_on_failure=skip_on_failure
         )
 
     def is_valid(self, host):
-        """
-        Validates host in GE checking corresponding execution host availability and its states.
-
-        :param host: Host to be checked.
-        :return: True if execution host is valid.
-        """
         try:
-            self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host)
-            output = self.cmd_executor.execute(GridEngine._QHOST)
+            self.cmd_executor.execute_to_lines(SunGridEngine._SHOW_EXECUTION_HOST % host)
+            output = self.cmd_executor.execute(SunGridEngine._QHOST)
             root = ElementTree.fromstring(output)
             for host_object in root.findall('host[@name=\'%s\']' % host):
                 for queue in host_object.findall('queue[@name=\'%s\']' % self.queue):
@@ -457,20 +461,13 @@ class GridEngine(ClusterProvider):
             return False
 
     def kill_jobs(self, jobs, force=False):
-        """
-        Kills jobs in GE.
-
-        :param jobs: Grid engine jobs.
-        :param force: Specifies if this command should be performed with -f flag.
-        """
         job_ids = [str(job.id) for job in jobs]
-        self.cmd_executor.execute((GridEngine._FORCE_KILL_JOBS if force else GridEngine._KILL_JOBS) % ' '.join(job_ids))
+        self.cmd_executor.execute((SunGridEngine._FORCE_KILL_JOBS if force else SunGridEngine._KILL_JOBS) % ' '.join(job_ids))
 
 
 class SunGridEngineDemandSelector(GridEngineDemandSelector):
 
-    def __init__(self, grid_engine, cluster_provider):
-        super().__init__(cluster_provider)
+    def __init__(self, grid_engine):
         self.grid_engine = grid_engine
 
     def select(self, jobs):
@@ -497,8 +494,7 @@ class SunGridEngineDemandSelector(GridEngineDemandSelector):
 
 class SunGridEngineJobValidator(GridEngineJobValidator):
 
-    def __init__(self, grid_engine, instance_max_supply, cluster_max_supply, cluster_provider):
-        super().__init__(cluster_provider, instance_max_supply, cluster_max_supply)
+    def __init__(self, grid_engine, instance_max_supply, cluster_max_supply):
         self.grid_engine = grid_engine
         self.instance_max_supply = instance_max_supply
         self.cluster_max_supply = cluster_max_supply
@@ -542,18 +538,21 @@ class SunGridEngineJobValidator(GridEngineJobValidator):
         return valid_jobs, invalid_jobs
 
 
-class SlurmGridEngine(ClusterProvider):
+class SlurmGridEngine(GridEngine):
 
+    _KILL_JOBS = "scancel %s"
+    _FORCE_KILL_JOBS = "scancel -f %s"
     _SHOW_EXECUTION_HOST = "scontrol -o show node %s"
     _SCONTROL_UPDATE_NODE_STATE = "scontrol update State=%s Reason='CP_CAP_GE: Autoscale lifecycle event.' NodeName=%s"
     _SCONTROL_DELETE_NODE = "scontrol delete nodename=%s"
     _SCONTROL_PARSE_HOSTLIST = "scontrol show hostnames %s"
 
+    _NODE_BAD_STATES = ["DOWN", "DRAINING", "DRAIN", "DRAINED", "FAIL", "FAILING",  "INVAL"]
+
     _SCONTROL_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _GET_JOBS = "scontrol -o show job"
 
     def __init__(self, cmd_executor, queue, queue_default):
-        super().__init__()
         self.cmd_executor = cmd_executor
         self.queue = queue
         self.queue_default = queue_default
@@ -565,24 +564,13 @@ class SlurmGridEngine(ClusterProvider):
         except ExecutionError:
             Logger.warn('Grid engine jobs listing has failed.')
             return []
-        return {job.id : job for job in self._parse_jobs(output)}
+        return self._parse_jobs(output)
 
     def disable_host(self, host):
-        """
-        Disables host to prevent receiving new jobs from the queue.
-        This command does not abort currently running jobs.
-
-        :param host: Host to be enabled.
-        """
         self.cmd_executor.execute(SlurmGridEngine._SCONTROL_UPDATE_NODE_STATE % ("DRAIN", host))
 
     def enable_host(self, host):
-        """
-        Enables host to make it available to receive new jobs from the queue.
-
-        :param host: Host to be enabled.
-        """
-        self.cmd_executor.execute(SlurmGridEngine._SCONTROL_UPDATE_NODE_STATE % ("IDLE", host))
+        self.cmd_executor.execute(SlurmGridEngine._SCONTROL_UPDATE_NODE_STATE % ("DYNAMIC_NORM", host))
 
     def get_pe_allocation_rule(self, pe):
         raise AllocationRuleParsingError("Slurm doesn't have PE preference.")
@@ -605,37 +593,59 @@ class SlurmGridEngine(ClusterProvider):
         for line in self.cmd_executor.execute_to_lines(SlurmGridEngine._SHOW_EXECUTION_HOST % ''):
             if "NodeName" in line:
                 node_desc = self._parse_dict(line)
-                yield ResourceSupply(cpu=node_desc["CPUTot"]) - ResourceSupply(cpu=node_desc["CPUAlloc"])
+                yield ResourceSupply(cpu=int(node_desc.get("CPUTot", "0"))) \
+                    - ResourceSupply(cpu=int(node_desc.get("CPUAlloc", "0")))
 
     def get_host_supply(self, host):
         for line in self.cmd_executor.execute_to_lines(SlurmGridEngine._SHOW_EXECUTION_HOST % host):
             if "NodeName" in line:
                 node_desc = self._parse_dict(line)
-                return ResourceSupply(cpu=node_desc["CPUTot"]) - ResourceSupply(cpu=node_desc["CPUAlloc"])
+                return ResourceSupply(cpu=int(node_desc.get("CPUTot", "0"))) \
+                    - ResourceSupply(cpu=int(node_desc.get("CPUAlloc", "0")))
         return ResourceSupply()
 
     def get_worker_initializing_task(self):
         return "SLURMWorkerSetup"
 
+    def is_valid(self, host):
+        try:
+            for line in self.cmd_executor.execute_to_lines(SlurmGridEngine._SHOW_EXECUTION_HOST % host):
+                if "NodeName" in line:
+                    node_desc = self._parse_dict(line)
+                    node_state = node_desc.get("State", "UNKNOWN")
+                    for bad_state in SlurmGridEngine._NODE_BAD_STATES:
+                        if bad_state in node_state:
+                            return False
+            return True
+        except ExecutionError as e:
+            Logger.warn("Problems with getting host '%s' info: %s" % (host, e))
+
+    def kill_jobs(self, jobs, force=False):
+        job_ids = [str(job.id) for job in jobs]
+        self.cmd_executor.execute((SlurmGridEngine._FORCE_KILL_JOBS if force else SlurmGridEngine._KILL_JOBS) % ' '.join(job_ids))
+
+    # TODO fix that job resources of the job that should be scaled to several node counted as resources of one node
+    #      split such job to several?
     def _parse_jobs(self, scontrol_jobs_output):
         jobs = []
-        for job_desc in scontrol_jobs_output.splitlines():
+        jobs_des_lines = [line for line in scontrol_jobs_output.splitlines() if "JobId=" in line]
+        for job_desc in jobs_des_lines:
             job_dict = self._parse_dict(job_desc)
-            resources = self._parse_dict(job_dict["TRES"], line_sep=",")
-            general_resources = self._parse_dict(job_dict["GRES"], line_sep=",")
+            resources = self._parse_dict(job_dict.get("TRES"), line_sep=",")
+            general_resources = self._parse_dict(job_dict.get("GRES"), line_sep=",")
             jobs.append(
                 GridEngineJob(
-                    id=job_dict["JobId"],
-                    root_id=job_dict["JobId"],
-                    name=job_dict["JobName"],
-                    user=job_dict["UserId"],
-                    state=GridEngineJobState.from_letter_code(job_dict["JobState"]),
+                    id=job_dict.get("JobId"),
+                    root_id=job_dict.get("JobId"),
+                    name=job_dict.get("JobName"),
+                    user=self._parse_user(job_dict.get("UserId")),
+                    state=GridEngineJobState.from_letter_code(job_dict.get("JobState")),
                     datetime=self._parse_date(
-                        job_dict["StartTime"] if job_dict["StartTime"] != "Unknown" else job_dict["SubmitTime"]),
-                    hosts=self._parse_nodelist(job_dict["NodeList"]),
-                    cpu=int(job_dict["NumCPUs"]),
-                    gpu=0 if "gpu" not in general_resources else int(general_resources["gpu"]),
-                    mem=self._parse_mem(resources["mem"])
+                        job_dict.get("StartTime") if job_dict.get("StartTime") != "Unknown" else job_dict.get("SubmitTime")),
+                    hosts=self._parse_nodelist(job_dict.get("NodeList")),
+                    cpu=int(job_dict.get("NumCPUs", "1")),
+                    gpu=0 if "gpu" not in general_resources else int(general_resources.get("gpu")),
+                    mem=self._parse_mem(resources.get("mem", "0"))
                 )
             )
         return jobs
@@ -643,9 +653,11 @@ class SlurmGridEngine(ClusterProvider):
     def _parse_date(self, date):
         return datetime.strptime(date, SlurmGridEngine._SCONTROL_DATETIME_FORMAT)
 
-    def _parse_dict(self, text, line_sep="\n", value_sep="="):
+    def _parse_dict(self, text, line_sep=" ", value_sep="="):
+        if not text:
+            return {}
         return {
-            key_value[0]: key_value[1] for key_value in
+            key_value[0]: key_value[1] if len(key_value) == 2 else "" for key_value in
             [
                 entry.split(value_sep, 1) for entry in text.split(line_sep)
             ]
@@ -669,14 +681,22 @@ class SlurmGridEngine(ClusterProvider):
         return size_in_gibibytes
 
     def _parse_nodelist(self, nodelist):
+        if nodelist == "(null)":
+            return []
         return self.cmd_executor.execute_to_lines(SlurmGridEngine._SCONTROL_PARSE_HOSTLIST % nodelist)
+
+    def _parse_user(self, user_id):
+        matched = re.match("(\\w+)\\(\\d+\\)", user_id)
+        if matched:
+            return matched.group(1)
+        else:
+            return user_id
 
 
 class SlurmDemandSelector(GridEngineDemandSelector):
 
-    def __init__(self, cluster_provider):
-        super().__init__(cluster_provider)
-        self.cluster_provider = cluster_provider
+    def __init__(self, grid_engine):
+        self.grid_engine = grid_engine
 
     def select(self, jobs):
         for job in sorted(jobs, key=lambda job: job.root_id):
@@ -685,9 +705,8 @@ class SlurmDemandSelector(GridEngineDemandSelector):
 
 class SlurmJobValidator(GridEngineJobValidator):
 
-    def __init__(self, cluster_provider, instance_max_supply, cluster_max_supply):
-        super().__init__(cluster_provider, instance_max_supply, cluster_max_supply)
-        self.cluster_provider = cluster_provider
+    def __init__(self, grid_engine, instance_max_supply, cluster_max_supply):
+        self.grid_engine = grid_engine
         self.instance_max_supply = instance_max_supply
         self.cluster_max_supply = cluster_max_supply
 

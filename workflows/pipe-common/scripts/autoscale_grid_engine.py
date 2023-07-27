@@ -29,7 +29,7 @@ from pipeline.hpc.autoscaler import \
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.event import GridEngineEventManager
-from pipeline.hpc.gridengine import GridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator
+from pipeline.hpc.gridengine import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator, SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance.avail import InstanceAvailabilityManager
 from pipeline.hpc.instance.provider import DefaultInstanceProvider, \
@@ -51,7 +51,7 @@ SUN_GRID_ENGINE = "SGE"
 SLURM_GRID_ENGINE = "SLURM"
 
 
-def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
+def fetch_instance_launch_params(api, master_run_id, grid_engine_type, queue, hostlist):
     parent_run = api.load_run(master_run_id)
     master_system_params = {param.get('name'): param.get('resolvedValue')
                             for param in parent_run.get('pipelineRunParameters', [])}
@@ -66,14 +66,20 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
         if not param_value:
             continue
         launch_params[param_name] = param_value
+    if grid_engine_type == SLURM_GRID_ENGINE:
+        launch_params.update({
+            'CP_CAP_SLURM': 'false'
+        })
+    else:
+        launch_params.update({
+            'CP_CAP_SGE': 'false',
+            'CP_CAP_SGE_QUEUE_NAME': queue,
+            'CP_CAP_SGE_HOSTLIST_NAME': hostlist
+        })
     launch_params.update({
-        'CP_CAP_SGE': 'false',
-        'CP_CAP_SLURM': 'false',
         'CP_CAP_AUTOSCALE': 'false',
         'CP_CAP_AUTOSCALE_WORKERS': '0',
         'CP_DISABLE_RUN_ENDPOINTS': 'true',
-        'CP_CAP_SGE_QUEUE_NAME': queue,
-        'CP_CAP_SGE_HOSTLIST_NAME': hostlist,
         'cluster_role': 'worker',
         'cluster_role_type': 'additional'
     })
@@ -245,7 +251,8 @@ def get_daemon():
     if dry_run:
         Logger.info('Using dry run mode...')
 
-    instance_launch_params = fetch_instance_launch_params(api, cluster_master_run_id, queue_name, queue_hostlist_name)
+    instance_launch_params = fetch_instance_launch_params(api, cluster_master_run_id,
+                                                          grid_engine_type, queue_name, queue_hostlist_name)
 
     clock = Clock()
     # TODO: Git rid of CmdExecutor usage in favor of CloudPipelineExecutor implementation
@@ -390,7 +397,7 @@ def get_daemon():
                                         cluster_max_supply=cluster_supply)
         demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
     else:
-        grid_engine = GridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
+        grid_engine = SunGridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
                                  queue_default=queue_default)
         job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
                                                instance_max_supply=biggest_instance_supply,

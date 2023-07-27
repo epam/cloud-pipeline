@@ -41,7 +41,7 @@ add_worker() {
     fi
 
     if [ "${cluster_role_type}" == "additional" ]; then
-        slurmd -Z
+        slurmd -Z --conf "State=FUTURE"
     else
         slurmd
     fi
