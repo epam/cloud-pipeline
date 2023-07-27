@@ -30,6 +30,7 @@ public class StorageRequest {
     private String storageName;
     private Long readRequests;
     private Long writeRequests;
+    private Long totalRequests;
     private LocalDateTime createdDate;
     private LocalDateTime period;
 

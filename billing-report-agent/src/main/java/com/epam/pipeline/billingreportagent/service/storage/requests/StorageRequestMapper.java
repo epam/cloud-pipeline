@@ -36,8 +36,7 @@ public class StorageRequestMapper {
                     .field("storage_name", requests.getStorageName())
                     .field("read_requests", requests.getReadRequests())
                     .field("write_requests", requests.getWriteRequests())
-                    .field("total_requests", requests.getReadRequests() +
-                            requests.getWriteRequests())
+                    .field("total_requests", requests.getTotalRequests())
                     .field("period", requests.getPeriod())
                     .endObject();
         } catch (
