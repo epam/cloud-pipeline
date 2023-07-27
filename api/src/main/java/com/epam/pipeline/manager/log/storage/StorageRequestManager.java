@@ -115,6 +115,10 @@ public class StorageRequestManager {
         }
         final Terms aggregation = aggregations.get(request.getGroupBy());
         final Terms.Bucket bucket = aggregation.getBucketByKey(request.getUserId().toString());
+        if (Objects.isNull(bucket)) {
+            log.debug("Failed to load storage requests for user {}", request.getUserId());
+            return builder.build();
+        }
         return builder.readRequests(parseAggregation(READ_REQUESTS, bucket.getAggregations()))
                 .writeRequests(parseAggregation(WRITE_REQUESTS, bucket.getAggregations()))
                 .totalRequests(parseAggregation(TOTAL_REQUESTS, bucket.getAggregations()))

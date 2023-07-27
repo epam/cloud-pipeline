@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 
@@ -108,13 +109,16 @@ public class StorageRequestSynchronizer implements ElasticsearchSynchronizer {
                                       final Map<String, Long> writeRequests,
                                       final LocalDateTime syncDate) {
 
+        final Long reads = readRequests.getOrDefault(storageId.toString(), 0L);
+        final Long writes = writeRequests.getOrDefault(storageId.toString(), 0L);
         final StorageRequest requests = StorageRequest.builder()
                 .user(user)
                 .storageId(storageId)
                 .storageName(Optional.ofNullable(storages.get(storageId))
                         .map(AbstractDataStorage::getName).orElse(null))
-                .readRequests(readRequests.getOrDefault(storageId.toString(), 0L))
-                .writeRequests(writeRequests.getOrDefault(storageId.toString(), 0L))
+                .readRequests(reads)
+                .writeRequests(writes)
+                .totalRequests(reads + writes)
                 .createdDate(syncDate)
                 .period(getLastTimeOfMonth(syncDate))
                 .build();
@@ -128,6 +132,7 @@ public class StorageRequestSynchronizer implements ElasticsearchSynchronizer {
         usedStorages.addAll(requests
                 .keySet()
                 .stream()
+                .filter(NumberUtils::isDigits)
                 .map(Long::parseLong)
                 .collect(Collectors.toSet()));
     }

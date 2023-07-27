@@ -192,7 +192,7 @@ def send_statistics():
     logging.basicConfig(level=logging_level_local, format=logging_format,
                         filename=os.path.join(logging_directory, 'send_statistics.log'))
 
-    api = PipelineAPI(api_url=api_url, log_dir=logging_directory)
+    api = PipelineAPI(api_url=api_url, log_dir=logging_directory, connection_timeout=120)
     logger = RunLogger(api=api, run_id=run_id)
     logger = TaskLogger(task='SendStat', inner=logger)
     logger = LevelLogger(level=logging_level, inner=logger)
@@ -239,10 +239,9 @@ def send_statistics():
                 users = details['users']
                 all_users.extend(users)
 
-        users = [u.get('userName') for u in all_users if not u.get('blocked')]
-        users = list(set(users))
+        users = [u for u in all_users if not u.get('blocked')]
         if len(users) > 0:
-            logger.info('{} User(s) collected({}).'.format(len(users), ','.join(users)))
+            logger.info('{} User(s) collected.'.format(len(users)))
             logger.info('Collecting and sending statistics...')
             _send_users_stat(api, logger, from_date, to_date, users, template_path)
         else:
@@ -259,28 +258,29 @@ def send_statistics():
 
 def _send_users_stat(api, logger, from_date, to_date, users, template_path):
     capabilities = _get_capabilities(api)
-    storages = api.data_storage_load_all()
 
     platform_usage_costs = _get_platform_usage_cost(api, from_date, to_date)
     logger.info('Platform Usage costs: {}.'.format(platform_usage_costs))
 
-    template, table_templ, table_center_templ = _get_templates(template_path)
+    # template, table_templ, table_center_templ = _get_templates(template_path)
 
     for user in users:
-        logger.info('User: {}'.format(user))
+        _user_name = user.get('userName')
+        logger.info('User: {}'.format(_user_name))
         stat = _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date,
-                               storages, user)
-        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), [user])
+                               _user_name, user.get('id'))
+        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), [_user_name])
         notifier.send_notifications(template, table_templ, table_center_templ)
 
 
-def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date, storages, user):
+def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date, user, user_id):
     from_date_time = "{} 00:00:00.000".format(from_date)
     to_date_time = "{} 23:59:59.999".format(to_date)
     runs = _get_runs(api, from_date, to_date, user)
-    storage_write = _get_storage_usage(api, from_date_time, to_date_time, user, 'WRITE')
+    storage_requests = _get_storage_requests(api, from_date_time, to_date_time, user_id)
+    storage_write = storage_requests.get('writeRequests')
     logger.info('Storage write requests count: {}.'.format(storage_write))
-    storage_read = _get_storage_usage(api, from_date_time, to_date_time, user, 'READ')
+    storage_read = storage_requests.get('readRequests')
     logger.info('Storage read requests count: {}.'.format(storage_read))
     compute_hours = _get_compute_hours(runs)
     logger.info('Compute hours: {}.'.format(compute_hours))
@@ -306,7 +306,7 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Top 3 Pipelines: {}.'.format(top3_pipelines))
     top3_tools = _get_top3(runs, "Tool")
     logger.info('Top 3 Tools: {}.'.format(top3_tools))
-    top3_used_buckets = _get_used_buckets(api, from_date_time, to_date_time, user, storages)
+    top3_used_buckets = _get_used_buckets(api, from_date_time, to_date_time, user_id)
     logger.info('Top 3 Used buckets: {}.'.format(top3_used_buckets))
     top3_run_capabilities = _get_top3_run_capabilities(api, from_date_time, to_date_time, user, capabilities)
     logger.info('Top 3 Capabilities: {}.'.format(top3_run_capabilities))
@@ -330,6 +330,20 @@ def _get_runs(api, from_date, to_date, user):
     filters = {} if user is None else {"owner": [user]}
     run_data = api.billing_export(from_date, to_date, filters, ["RUN"])
     return _read_content(run_data, False)
+
+
+def _get_storage_requests(api, from_date_time, to_date_time, user_id):
+    body = {
+        "fromDate": from_date_time,
+        "toDate": to_date_time,
+        "groupBy": "user_id",
+        "userId": int(user_id)
+    }
+    result = api.load_storage_requests(body)
+    if not result:
+        return {}
+    else:
+        return result
 
 
 def _get_storage_usage(api, from_date_time, to_date_time, user, usage):
@@ -415,19 +429,25 @@ def _get_top3(runs, entity):
     return sorted(runs_grouped.items(), key=lambda item: item[1], reverse=True)[:3]
 
 
-def _get_used_buckets(api, from_date_time, to_date_time, user, storages):
-    filter = {'messageTimestampFrom': from_date_time,
-              'messageTimestampTo': to_date_time,
-              'types': ['audit'],
-              'users': [user]}
-    logs_by_storage = api.log_group(filter, "storage_id")
+def _get_used_buckets(api, from_date_time, to_date_time, user_id):
+    body = {
+        "fromDate": from_date_time,
+        "toDate": to_date_time,
+        "maxEntries": 3,
+        "sorting": {
+            "field": "total_requests",
+            "order": "DESC"
+        },
+        "userId": int(user_id)
+    }
+
+    requests_by_storage = api.load_storage_requests(body)
     top3_storages = list()
-    if logs_by_storage is not None:
-        user_log_group_sorted = sorted(logs_by_storage.items(), key=lambda x: x[1], reverse=True)[:3]
-        for key, value in user_log_group_sorted:
-            storage_name = [pc.get('name') for pc in storages if pc.get('id') == int(key)]
-            if len(storage_name) > 0:
-                top3_storages.append((storage_name, value))
+    if 'statistics' not in requests_by_storage:
+        return top3_storages
+    for storage in requests_by_storage.get('statistics'):
+        storage_name = storage.get('storageName') if 'storageName' in storage else 'Deleted (%d)' % storage.get('storageId')
+        top3_storages.append((storage_name, storage.get('totalRequests')))
     return top3_storages
 
 
