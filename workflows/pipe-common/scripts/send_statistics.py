@@ -43,7 +43,7 @@ ROUND = 4
 EMAIL_TEMPLATE = '{text}'
 
 
-EMAIL_SUBJECT = '[%s]: Platform usage statistics'
+EMAIL_SUBJECT = '[%s] Platform usage statistics'
 
 
 class Top3(Enum):
@@ -104,6 +104,13 @@ class Stat(object):
         return items
 
     @staticmethod
+    def format_items_seconds(top):
+        items = ''
+        for key, value in top:
+            items += '<tr><td class="group3-left">{}</td><td class="group3-right">{}</td></tr>'.format(key, Stat.format_seconds(value))
+        return items
+
+    @staticmethod
     def format_tables(tables, table_center_templ, table_templ):
         table_html = ''
         row_templ = '<tr>{}</tr>'
@@ -135,7 +142,7 @@ class Stat(object):
         if len(self.top3_used_buckets) > 0:
             tables[Top3.BUCKETS.value] = Stat.format_items(self.top3_used_buckets)
         if len(self.top3_run_capabilities) > 0:
-            tables[Top3.CAPABILITIES.value] = Stat.format_items(self.top3_run_capabilities)
+            tables[Top3.CAPABILITIES.value] = Stat.format_items_seconds(self.top3_run_capabilities)
         return tables
 
     def get_object_str(self, start, end, deploy_name, template, table_templ, table_center_templ):
@@ -155,19 +162,23 @@ class Stat(object):
 
 
 class Notifier(object):
-    def __init__(self, api, start, end, stat, deploy_name, notify_users):
+    def __init__(self, api, start, end, stat, deploy_name, notify_users, logger):
         self.api = api
         self.start = start
         self.end = end
         self.stat = stat
         self.deploy_name = deploy_name
         self.notify_users = notify_users
+        self.logger = logger
 
     def send_notifications(self, template, table_templ, table_center_templ):
         if not self.notify_users:
             return
+        text = self.build_text(template, table_templ, table_center_templ)
+        self.logger.debug("Email Text:")
+        self.logger.debug(text)
         self.api.create_notification(EMAIL_SUBJECT % self.deploy_name,
-                                     self.build_text(template, table_templ, table_center_templ),
+                                     text,
                                      self.notify_users[0],
                                      copy_users=self.notify_users[1:] if len(self.notify_users) > 0 else None)
 
@@ -269,7 +280,7 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path):
         logger.info('User: {}'.format(_user_name))
         stat = _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date,
                                _user_name, user.get('id'))
-        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), [_user_name])
+        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), [_user_name], logger)
         notifier.send_notifications(template, table_templ, table_center_templ)
 
 
