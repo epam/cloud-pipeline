@@ -234,7 +234,8 @@ def send_statistics():
 
     users = [] if args.users is None else args.users
     roles = [] if args.roles is None else args.roles
-
+    users = expand_commas(users)
+    roles = expand_commas(roles)
     try:
         all_users = list()
         logger.debug('Collecting users...')
@@ -282,6 +283,19 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path):
                                _user_name, user.get('id'))
         notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), [_user_name], logger)
         notifier.send_notifications(template, table_templ, table_center_templ)
+
+
+def expand_commas(data):
+    if not data:
+        return data
+    result = []
+    for item in data:
+        if ',' in item:
+            for val in item.split(','):
+                result.append(val.strip())
+        else:
+            result.append(item.strip())
+    return result
 
 
 def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date, user, user_id):
