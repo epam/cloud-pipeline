@@ -210,8 +210,7 @@ class StorageSize extends React.PureComponent {
         const disclaimer = preferences.storageSizeRequestDisclaimer || REFRESH_REQUESTED_MESSAGE;
         message.info(disclaimer, 7);
       } catch (e) {
-        console.warn(e.message);
-        message.error('Error re-indexing storage', 5);
+        message.error(e.message, 5);
       }
     }
   };
