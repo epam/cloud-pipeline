@@ -21,8 +21,7 @@ import {
   message,
   Tooltip,
   Icon,
-  Modal,
-  Spin
+  Modal
 } from 'antd';
 import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
@@ -83,7 +82,7 @@ function InfoTooltip ({sizes, isNFS}) {
       />
     </Tooltip>
   );
-};
+}
 
 @inject('preferences')
 @observer
@@ -183,9 +182,9 @@ class StorageSize extends React.PureComponent {
       const request = new DataStoragePathUsage(id);
       await request.fetch();
       if (request.error) {
-        message.error(request.error, 5);
-      }
-      if (request.value) {
+        console.warn(request.error);
+        this.info = null;
+      } else if (request.value) {
         this.info = request.value;
       } else {
         this.info = null;
@@ -211,7 +210,8 @@ class StorageSize extends React.PureComponent {
         const disclaimer = preferences.storageSizeRequestDisclaimer || REFRESH_REQUESTED_MESSAGE;
         message.info(disclaimer, 7);
       } catch (e) {
-        message.error(e.message, 5);
+        console.warn(e.message);
+        message.error('Error re-indexing storage', 5);
       }
     }
   };
