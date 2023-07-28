@@ -347,6 +347,7 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     top3_pipelines = _get_top3(runs, "Pipeline")
     logger.info('Top 3 Pipelines: {}.'.format(top3_pipelines))
     top3_tools = _get_top3(runs, "Tool")
+    top3_tools = _prepare_tools(top3_tools)
     logger.info('Top 3 Tools: {}.'.format(top3_tools))
     top3_used_buckets = _get_used_buckets(api, from_date_time, to_date_time, user_id)
     logger.info('Top 3 Used buckets: {}.'.format(top3_used_buckets))
@@ -355,6 +356,13 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     return Stat(compute_hours, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
                 gpu_hours, clusters_compute_secs, worker_nodes_count,
                 top3_instance_types, top3_pipelines, top3_tools, top3_used_buckets, top3_run_capabilities)
+
+
+def _prepare_tools(top3_tools):
+    result = []
+    for key, value in top3_tools:
+        result.append((key.split('/', 1)[1], value))
+    return result
 
 
 def _get_login_time(api, from_date_time, to_date_time, user):
