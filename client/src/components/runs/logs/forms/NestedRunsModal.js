@@ -38,36 +38,45 @@ function buildDatasets (runsData = []) {
     runningItems: []
   };
   const findOrInsertNode = (timePoint, from = undefined) => {
-    if (!from) {
-      if (head.timePoint > timePoint) {
-        const newHead = {
-          timePoint: timePoint,
-          next: head,
-          items: [],
-          runningItems: []
-        };
-        head = newHead;
-        return newHead;
-      }
-      return findOrInsertNode(timePoint, head);
-    }
-    if (!from.timePoint) {
-      from.timePoint = timePoint;
-    }
-    if (from.timePoint === timePoint) {
-      return from;
-    }
-    if (!from.next || from.next.timePoint > timePoint) {
-      const newNext = {
+    let _from = from;
+    if (!_from && head.timePoint > timePoint) {
+      const newHead = {
         timePoint: timePoint,
-        next: from.next,
-        items: from.runningItems.slice(),
-        runningItems: from.runningItems.slice()
+        next: head,
+        items: [],
+        runningItems: []
       };
-      from.next = newNext;
-      return newNext;
+      head = newHead;
+      return newHead;
     }
-    return findOrInsertNode(timePoint, from.next);
+    if (!_from) {
+      _from = head;
+    }
+    let iteration = 0;
+    // while (iteration < runsData.length * 2)
+    // This is a safety check (number of total iterations should not be
+    // more than total time points; each run has 2 time points - start and end)
+    while (iteration < runsData.length * 2) {
+      if (!_from.timePoint) {
+        _from.timePoint = timePoint;
+      }
+      if (_from.timePoint === timePoint) {
+        return _from;
+      }
+      if (!_from.next || _from.next.timePoint > timePoint) {
+        const newNext = {
+          timePoint: timePoint,
+          next: _from.next,
+          items: _from.runningItems.slice(),
+          runningItems: _from.runningItems.slice()
+        };
+        _from.next = newNext;
+        return newNext;
+      }
+      _from = _from.next;
+      iteration += 1;
+    }
+    return undefined;
   };
   const now = moment().unix();
   for (let i = 0; i < runsData.length; i += 1) {
@@ -262,6 +271,7 @@ class NestedRunsChart extends React.Component {
           state.datasets = buildDatasets(runsData);
           state.error = undefined;
         } catch (error) {
+          console.warn(error.message);
           state.error = error.message;
         } finally {
           commit();
