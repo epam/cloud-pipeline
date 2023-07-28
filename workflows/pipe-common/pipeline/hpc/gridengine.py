@@ -87,12 +87,13 @@ class GridEngineJobState:
     UNKNOWN = 'unknown'
 
     _letter_codes_to_states = {
-        RUNNING: ['r', 't', 'Rr', 'Rt', 'RUNNING'],
-        PENDING: ['qw', 'qw', 'hqw', 'hqw', 'hRwq', 'hRwq', 'hRwq', 'qw', 'qw', 'PENDING'],
-        SUSPENDED: ['s', 'ts', 'S', 'tS', 'T', 'tT', 'Rs', 'Rts', 'RS', 'RtS', 'RT', 'RtT', 'SUSPENDED'],
-        ERROR: ['Eqw', 'Ehqw', 'EhRqw'],
-        DELETED: ['dr', 'dt', 'dRr', 'dRt', 'ds', 'dS', 'dT', 'dRs', 'dRS', 'dRT', 'DELETED', 'CANCELLED'],
-        COMPLETED: ['COMPLETED', 'COMPLETING']
+        # Job statuses: [SGE] + [SLURM]
+        RUNNING: ['r', 't', 'Rr', 'Rt'] + ['RUNNING'],
+        PENDING: ['qw', 'qw', 'hqw', 'hqw', 'hRwq', 'hRwq', 'hRwq', 'qw', 'qw'] + ['PENDING'],
+        SUSPENDED: ['s', 'ts', 'S', 'tS', 'T', 'tT', 'Rs', 'Rts', 'RS', 'RtS', 'RT', 'RtT'] + ['SUSPENDED', 'STOPPED'],
+        ERROR: ['Eqw', 'Ehqw', 'EhRqw'] + ['DEADLINE', ' FAILED'],
+        DELETED: ['dr', 'dt', 'dRr', 'dRt', 'ds', 'dS', 'dT', 'dRs', 'dRS', 'dRT'] + ['DELETED', 'CANCELLED'],
+        COMPLETED: [] + ['COMPLETED', 'COMPLETING']
     }
 
     @staticmethod
@@ -562,7 +563,7 @@ class SlurmGridEngine(GridEngine):
         try:
             output = self.cmd_executor.execute(SlurmGridEngine._GET_JOBS)
         except ExecutionError:
-            Logger.warn('Grid engine jobs listing has failed.')
+            Logger.warn('Slurm jobs listing has failed.')
             return []
         return self._parse_jobs(output)
 
@@ -570,7 +571,12 @@ class SlurmGridEngine(GridEngine):
         self.cmd_executor.execute(SlurmGridEngine._SCONTROL_UPDATE_NODE_STATE % ("DRAIN", host))
 
     def enable_host(self, host):
-        self.cmd_executor.execute(SlurmGridEngine._SCONTROL_UPDATE_NODE_STATE % ("DYNAMIC_NORM", host))
+        host_state = self._get_host_state(host)
+        if "DRAIN" in host_state:
+            self.cmd_executor.execute(SlurmGridEngine._SCONTROL_UPDATE_NODE_STATE % ("UNDRAIN", host))
+        else:
+            # NO-OP for all node states except DRAIN
+            pass
 
     def get_pe_allocation_rule(self, pe):
         raise AllocationRuleParsingError("Slurm doesn't have PE preference.")
@@ -608,24 +614,25 @@ class SlurmGridEngine(GridEngine):
         return "SLURMWorkerSetup"
 
     def is_valid(self, host):
+        node_state = self._get_host_state(host)
+        for bad_state in SlurmGridEngine._NODE_BAD_STATES:
+            if bad_state in node_state:
+                return False
+        return True
+
+    def kill_jobs(self, jobs, force=False):
+        job_ids = [str(job.root_id) for job in jobs]
+        self.cmd_executor.execute((SlurmGridEngine._FORCE_KILL_JOBS if force else SlurmGridEngine._KILL_JOBS) % ' '.join(job_ids))
+
+    def _get_host_state(self, host):
         try:
             for line in self.cmd_executor.execute_to_lines(SlurmGridEngine._SHOW_EXECUTION_HOST % host):
                 if "NodeName" in line:
-                    node_desc = self._parse_dict(line)
-                    node_state = node_desc.get("State", "UNKNOWN")
-                    for bad_state in SlurmGridEngine._NODE_BAD_STATES:
-                        if bad_state in node_state:
-                            return False
-            return True
+                    return self._parse_dict(line).get("State", "UNKNOWN")
         except ExecutionError as e:
             Logger.warn("Problems with getting host '%s' info: %s" % (host, e))
+            return "UNKNOWN"
 
-    def kill_jobs(self, jobs, force=False):
-        job_ids = [str(job.id) for job in jobs]
-        self.cmd_executor.execute((SlurmGridEngine._FORCE_KILL_JOBS if force else SlurmGridEngine._KILL_JOBS) % ' '.join(job_ids))
-
-    # TODO fix that job resources of the job that should be scaled to several node counted as resources of one node
-    #      split such job to several?
     def _parse_jobs(self, scontrol_jobs_output):
         jobs = []
         jobs_des_lines = [line for line in scontrol_jobs_output.splitlines() if "JobId=" in line]
@@ -633,21 +640,26 @@ class SlurmGridEngine(GridEngine):
             job_dict = self._parse_dict(job_desc)
             resources = self._parse_dict(job_dict.get("TRES"), line_sep=",")
             general_resources = self._parse_dict(job_dict.get("GRES"), line_sep=",")
-            jobs.append(
-                GridEngineJob(
-                    id=job_dict.get("JobId"),
-                    root_id=job_dict.get("JobId"),
-                    name=job_dict.get("JobName"),
-                    user=self._parse_user(job_dict.get("UserId")),
-                    state=GridEngineJobState.from_letter_code(job_dict.get("JobState")),
-                    datetime=self._parse_date(
-                        job_dict.get("StartTime") if job_dict.get("StartTime") != "Unknown" else job_dict.get("SubmitTime")),
-                    hosts=self._parse_nodelist(job_dict.get("NodeList")),
-                    cpu=int(job_dict.get("NumCPUs", "1")),
-                    gpu=0 if "gpu" not in general_resources else int(general_resources.get("gpu")),
-                    mem=self._parse_mem(resources.get("mem", "0"))
+            num_node = int(re.match("(\\d+)-?.*", job_dict.get("NumNodes", "1")).group(1))
+            # Splitting one job on 'num_node' ephemeral jobs. The idea is to instruct autoscaler that we need to spread
+            # this job to `num_node` nodes and provide portion of resources
+            # TODO maybe there is another way to achieve that?
+            for node_idx in range(num_node):
+                jobs.append(
+                    GridEngineJob(
+                        id=job_dict.get("JobId") + "_" + str(node_idx),
+                        root_id=job_dict.get("JobId"),
+                        name=job_dict.get("JobName"),
+                        user=self._parse_user(job_dict.get("UserId")),
+                        state=GridEngineJobState.from_letter_code(job_dict.get("JobState")),
+                        datetime=self._parse_date(
+                            job_dict.get("StartTime") if job_dict.get("StartTime") != "Unknown" else job_dict.get("SubmitTime")),
+                        hosts=self._parse_nodelist(job_dict.get("NodeList")),
+                        cpu=int(job_dict.get("NumCPUs", "1")) // num_node,
+                        gpu=0 if "gpu" not in general_resources else int(general_resources.get("gpu")) // num_node,
+                        mem=self._parse_mem(resources.get("mem", "0")) // num_node
+                    )
                 )
-            )
         return jobs
 
     def _parse_date(self, date):

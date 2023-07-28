@@ -105,7 +105,7 @@ EOL
         echo "" >> /common/slurm.conf
         echo "#" >> /common/slurm.conf
         echo "#DYNAMIC CLUSTER" >> /common/slurm.conf
-        echo "MaxNodeCount=${CP_CAP_AUTOSCALE_WORKERS:-3}" >> /common/slurm.conf
+        echo "MaxNodeCount=$(( ${CP_CAP_AUTOSCALE_WORKERS:-0} + ${node_count:-0} + 1 ))" >> /common/slurm.conf
         echo "TreeWidth=65533" >> /common/slurm.conf
     fi
 }
@@ -248,3 +248,6 @@ else
     rm -rf /common/slurm.conf /common/cgroup.conf /common/munge.key
 fi
 
+if [ ! -z "${CP_CAP_AUTOSCALE}" ]; then
+  nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" > "$LOG_DIR/.nohup.autoscaler.slurm.log" 2>&1 &
+fi

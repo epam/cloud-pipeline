@@ -37,8 +37,8 @@ cluster_max_supply = ResourceSupply(cpu=20, gpu=30, mem=40)
 
 grid_engine = Mock()
 job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
-                                       instance_max_supply=instance_max_supply,
-                                       cluster_max_supply=cluster_max_supply)
+                                          instance_max_supply=instance_max_supply,
+                                          cluster_max_supply=cluster_max_supply)
 
 
 def setup_function():

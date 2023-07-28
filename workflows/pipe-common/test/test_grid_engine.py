@@ -17,7 +17,7 @@ import logging
 from datetime import datetime
 from mock import MagicMock, Mock
 
-from pipeline.hpc.gridengine import GridEngine, GridEngineJobState, GridEngineJob
+from pipeline.hpc.gridengine import SunGridEngine, GridEngineJobState, GridEngineJob
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
@@ -27,8 +27,7 @@ HOSTLIST = '@allhosts'
 QUEUE_DEFAULT = True
 
 executor = Mock()
-grid_engine = SunGridEngine(cmd_executor=executor,
-                         queue=QUEUE, hostlist=HOSTLIST, queue_default=QUEUE_DEFAULT)
+grid_engine = SunGridEngine(cmd_executor=executor, queue=QUEUE, hostlist=HOSTLIST, queue_default=QUEUE_DEFAULT)
 
 
 def setup_function():
