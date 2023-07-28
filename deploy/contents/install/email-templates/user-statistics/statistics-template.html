@@ -5,31 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>User statistics</title>
     <style>
-      body {
+      body {{
         margin: 0;
         padding: 0;
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
-      }
-      .no-padding {
+      }}
+      .no-padding {{
         padding-top: 0;
         padding-right: 0;
         padding-bottom: 0;
         padding-left: 0;
-      }
-      .no-margin {
+      }}
+      .no-margin {{
         margin-top: 0;
         margin-right: 0;
         margin-bottom: 0;
         margin-left: 0;
-      }
-      .content-table {
+      }}
+      .content-table {{
         background-color: white;
         color: #013557;
         font-family: Georgia, 'Times New Roman', Times, serif;
         border-collapse: collapse;
-      }
-      .header {
+      }}
+      .header {{
         padding-top: 40px;
         padding-right: 0;
         padding-bottom: 30px;
@@ -37,110 +37,110 @@
         font-size: x-large;
         background-color: #2796dd;
         color: white;
-      }
-      .group1 {
+      }}
+      .group1 {{
         width: 50%;
-      }
-      .group1.number {
+      }}
+      .group1.number {{      
         color: #2796dd;
-      }
-      .group1.name {
+      }}
+      .group1.name {{
         font-size: small;
         vertical-align: top;
-      }
-      .group1.number b {
+      }}
+      .group1.number b {{
         font-size: x-large;
-      }
-      .group1.number.left {
+      }}
+      .group1.number.left {{
         padding: 20px 10px 0 50px;
-      }
-      .group1.name.left {
+      }}
+      .group1.name.left {{
         padding: 0 10px 20px 50px;
-      }
-      .group1.number.right {
+      }}
+      .group1.number.right {{
         padding: 20px 50px 0 10px;
-      }
-      .group1.name.right {
+      }}
+      .group1.name.right {{
         padding: 0 50px 20px 10px;
-      }
-      .group2 {
+      }}
+      .group2 {{
         vertical-align: top;
         padding: 20px;
         width: 50%;
-      }
-      .group2 .group2-left {
+      }}
+      .group2 .group2-left {{
         padding: 5px 10px;
         text-align: left;
-      }
-      .group2 .group2-right {
+      }}
+      .group2 .group2-right {{
         padding: 0 10px;
         text-align: right;
-      }
-      .group2-name {
+      }}
+      .group2-name {{
         text-align: left;
         font-weight: bold;
         padding: 15px 15px 15px 0;
-      }
-      .group3 {
+      }}
+      .group3 {{
         vertical-align: top;
         padding: 20px;
         width: 50%;
-      }
-      .group3-name {
+      }}
+      .group3-name {{
         text-align: left;
         font-weight: bold;
         padding: 15px 15px 15px 0;
-      }
-      .group3 .group3-left {
+      }}
+      .group3 .group3-left {{
         padding: 5px 10px;
         text-align: left;
-      }
-      .group3 .group3-right {
+      }}
+      .group3 .group3-right {{
         padding: 0 10px;
         text-align: right;
-      }
-      .divider {
+      }}
+      .divider {{
         border-bottom: 1px solid #2796dd;
-      }
-      .picture {
+      }}
+      .picture {{
         height: 10px;
         background-size: contain;
         background-repeat: no-repeat;
         background-position-x: right;
         background-position-y: center;
-      }
-      #compute-type {
+      }}
+      #compute-type {{
         background-image: url(https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/usb.svg);
         width: 90px;
-      }
-      #cluster {
+      }}
+      #cluster {{
         background-image: url(https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/bars.svg);
         width: 120px;
-      }
-      #storage {
+      }}
+      #storage {{
         background-image: url(https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/inbox.svg);
         width: 110px;
-      }
-      #instance {
+      }}
+      #instance {{
         background-image: url(https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/share.svg);
         width: 80px;
-      }
-      #pipeline {
+      }}
+      #pipeline {{
         background-image: url(https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/fork.svg);
         width: 80px;
-      }
-      #tool {
+      }}
+      #tool {{
         background-image: url(https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/tool.svg);
         width: 100px;
-      }
-      #bucket {
+      }}
+      #bucket {{
         background-image: url(https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/hdd.svg);
         width: 70px;
-      }
-      #capability {
+      }}
+      #capability {{
         background-image: url(https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/play.svg);
         width: 80px;
-      }
+      }}
     </style>
   </head>
   <body bgcolor="#fafafa">
