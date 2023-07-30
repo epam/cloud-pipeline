@@ -35,13 +35,13 @@
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">5</div>
+<div class="counter">9</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">19m53.83s</div>
+<div class="counter">21m48.90s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">88%</div>
+<div class="percent">84%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,13 +73,13 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="selectMetadataPopup - EPMCMBIBPC-1596"></a>
-<h3 class="failures">selectMetadataPopup - EPMCMBIBPC-1596</h3>
+<a name="preparePipeline - EPMCMBIBPC-1591"></a>
+<h3 class="failures">preparePipeline - EPMCMBIBPC-1591</h3>
 <span class="code">
-<pre>Element not found {by text: Sample [14]}
+<pre>Element not found {by text: singlesamplevariantcalling.sh}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1690057281428.41.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1690057281428.41.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1690653851492.37.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1690653851492.37.html
 Timeout: 210 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -91,9 +91,9 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.MetadataSelection.cd(MetadataSelection.java:51)
-	at com.epam.pipeline.autotests.SamplesMetadataTest.selectMetadataPopup(SamplesMetadataTest.java:562)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:191)
+	at com.epam.pipeline.autotests.SamplesMetadataTest.preparePipeline(SamplesMetadataTest.java:408)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -108,18 +108,18 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
 Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[normalize-space(translate(string(.), '	
- ', '    ')) = &quot;Sample [14]&quot;]/parent::*&quot;}
+ ', '    ')) = &quot;singlesamplevariantcalling.sh&quot;]/parent::*&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'b770d3d5cfcf', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '9466e23c2e54', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 733b67c30d2678e0a09e8de7e894aac6
+Session ID: 1f21102b0d68291797c94c216f0fd75a
 *** Element info: {Using=xpath, value=.//*/text()[normalize-space(translate(string(.), '	
- ', '    ')) = &quot;Sample [14]&quot;]/parent::*}
+ ', '    ')) = &quot;singlesamplevariantcalling.sh&quot;]/parent::*}
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -144,23 +144,34 @@ Session ID: 733b67c30d2678e0a09e8de7e894aac6
 </span>
 </div>
 <div class="test">
-<a name="setParametersFromMetadataFilesSampleSet - EPMCMBIBPC-1624"></a>
-<h3 class="failures">setParametersFromMetadataFilesSampleSet - EPMCMBIBPC-1624</h3>
+<a name="setParametersFromMetadataFiles - EPMCMBIBPC-1595"></a>
+<h3 class="failures">setParametersFromMetadataFiles - EPMCMBIBPC-1595</h3>
 <span class="code">
-<pre>Element not found {By.id: navigation-button-library}
+<pre>Element not found {By.xpath: .//*[contains(concat(' ', @class, ' '), ' ant-form-item-control ') and .//input[@placeholder = 'Name' and @value = 'FASTQ_R1']]}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1690057492564.42.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1690057492564.42.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1690654277232.39.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1690654277232.39.html
 Timeout: 210 s.
-Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item selected&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle2&quot;&gt;...&lt;/div&gt;
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*[contains(concat(' ', @class, ' '), ' ant-form-item-control ') and .//input[@placeholder = 'Name' and @value = 'FASTQ_R1']]&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:76)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
-	at com.epam.pipeline.autotests.mixins.Navigation.library(Navigation.java:51)
-	at com.epam.pipeline.autotests.SamplesMetadataTest.setParametersFromMetadataFilesSampleSet(SamplesMetadataTest.java:604)
+	at com.sun.proxy.$Proxy15.val(Unknown Source)
+	at com.epam.pipeline.autotests.ao.ParameterFieldAO.index(ParameterFieldAO.java:133)
+	at com.epam.pipeline.autotests.ao.Configuration.addToParameter(Configuration.java:286)
+	at com.epam.pipeline.autotests.SamplesMetadataTest.lambda$setParametersFromMetadataFiles$9(SamplesMetadataTest.java:510)
+	at com.epam.pipeline.autotests.ao.PipelinesLibraryAO.configurationWithin(PipelinesLibraryAO.java:428)
+	at com.epam.pipeline.autotests.SamplesMetadataTest.setParametersFromMetadataFiles(SamplesMetadataTest.java:508)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -174,16 +185,18 @@ Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item selected&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle2&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*[contains(concat(' ', @class, ' '), ' ant-form-item-control ') and .//input[@placeholder = 'Name' and @value = 'FASTQ_R1']]&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'b770d3d5cfcf', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '9466e23c2e54', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 733b67c30d2678e0a09e8de7e894aac6
-	at sun.reflect.GeneratedConstructorAccessor23.newInstance(Unknown Source)
+Session ID: 1f21102b0d68291797c94c216f0fd75a
+*** Element info: {Using=xpath, value=.//*[contains(concat(' ', @class, ' '), ' ant-form-item-control ') and .//input[@placeholder = 'Name' and @value = 'FASTQ_R1']]}
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -194,14 +207,14 @@ Session ID: 733b67c30d2678e0a09e8de7e894aac6
 	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
 	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
 	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
-	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
-	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
-	at com.codeborne.selenide.commands.Click.click(Click.java:29)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	... 18 more
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 29 more
 </pre>
 </span>
 </div>
@@ -218,38 +231,38 @@ Session ID: 733b67c30d2678e0a09e8de7e894aac6
 </thead>
 <tr>
 <td class="success">addDetachedConfigurationToProjectFolder - EPMCMBIBPC-1588</td>
-<td>7.812s</td>
+<td>7.821s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">columnsListCustomization - EPMCMBIBPC-1508</td>
-<td>15.351s</td>
+<td>15.341s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">createProjectFolder - EPMCMBIBPC-1411</td>
-<td>19.374s</td>
+<td>19.108s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">metadataEditAndPrepare - EPMCMBIBPC-1570</td>
-<td>2m25.62s</td>
+<td>2m26.06s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">metadataUploading - EPMCMBIBPC-1412</td>
-<td>26.093s</td>
+<td>26.104s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">navigateToStorageFromMetadataEntity - EPMCMBIBPC-1414</td>
-<td>12.384s</td>
+<td>12.074s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">preparePipeline - EPMCMBIBPC-1591</td>
-<td>1m38.45s</td>
-<td class="success">passed</td>
+<td class="failures">preparePipeline - EPMCMBIBPC-1591</td>
+<td>4m17.54s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="skipped">runPerSampleValidation</td>
@@ -263,43 +276,43 @@ Session ID: 733b67c30d2678e0a09e8de7e894aac6
 </tr>
 <tr>
 <td class="success">searchByMetadataAttributeValues - EPMCMBIBPC-1416</td>
-<td>21.710s</td>
+<td>21.577s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">selectMetadataPopup - EPMCMBIBPC-1596</td>
-<td>3m38.88s</td>
+<td class="skipped">selectMetadataPopup</td>
+<td>-</td>
+<td class="skipped">ignored</td>
+</tr>
+<tr>
+<td class="failures">setParametersFromMetadataFiles - EPMCMBIBPC-1595</td>
+<td>7m5.61s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">setParametersFromMetadataFiles - EPMCMBIBPC-1595</td>
-<td>12.975s</td>
-<td class="success">passed</td>
-</tr>
-<tr>
-<td class="failures">setParametersFromMetadataFilesSampleSet - EPMCMBIBPC-1624</td>
-<td>3m31.12s</td>
-<td class="failures">failed</td>
+<td class="skipped">setParametersFromMetadataFilesSampleSet</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">setProjectParameters - EPMCMBIBPC-1520</td>
-<td>17.951s</td>
+<td>18.201s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">sortMetadataTable - EPMCMBIBPC-1415</td>
-<td>17.637s</td>
+<td>17.313s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">testDataPreparation - EPMCMBIBPC-1519</td>
-<td>5m23.87s</td>
+<td>5m20.43s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateEntitySelection - EPMCMBIBPC-1623</td>
-<td>7.637s</td>
-<td class="success">passed</td>
+<td class="skipped">validateEntitySelection</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="skipped">validatePipelineParametersForSample</td>
@@ -317,13 +330,13 @@ Session ID: 733b67c30d2678e0a09e8de7e894aac6
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateSetParametersFromProjectMetadata - EPMCMBIBPC-1593</td>
-<td>14.837s</td>
-<td class="success">passed</td>
+<td class="skipped">validateSetParametersFromProjectMetadata</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
 <td class="success">viewMetadata - EPMCMBIBPC-1413</td>
-<td>22.145s</td>
+<td>21.716s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -331,9 +344,9 @@ Session ID: 733b67c30d2678e0a09e8de7e894aac6
 <div id="tab2" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Jul 22, 2023 8:11:51 PM org.openqa.selenium.interactions.Actions moveToElement
+<pre>Jul 29, 2023 5:56:17 PM org.openqa.selenium.interactions.Actions moveToElement
 INFO: When using the W3C Action commands, offsets are from the center of element
-Jul 22, 2023 8:14:50 PM org.openqa.selenium.interactions.Actions moveToElement
+Jul 29, 2023 5:59:16 PM org.openqa.selenium.interactions.Actions moveToElement
 INFO: When using the W3C Action commands, offsets are from the center of element
 </pre>
 </span>
@@ -346,7 +359,7 @@ INFO: When using the W3C Action commands, offsets are from the center of element
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 23, 2023 1:30:39 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jul 30, 2023 10:26:06 AM</p>
 </div>
 </div>
 </body>
