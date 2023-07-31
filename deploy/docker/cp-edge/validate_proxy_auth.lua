@@ -178,6 +178,9 @@ local function get_basic_token()
     local user = user_pass[1]
     local pass = user_pass[2]
 
+    -- Remove any whitespace/newline from the token (some clients tend to add trailing newline)
+    pass = string.gsub(pass, '%s+', '')
+
     if (is_empty(user) or is_empty(pass)) then
         ngx.log(ngx.WARN, "Basic HTTP Authorization header is set and decoded, but user or pass is missing: " .. authorization)
         return nil
@@ -188,10 +191,10 @@ end
 local token = get_basic_token()
 
 if is_empty(token) then
-    ngx.status = ngx.HTTP_UNAUTHORIZED
     ngx.log(ngx.WARN, "[SECURITY] Request " .. ngx.var.request ..
             " is rejected; Status: Authentication failed; Message: Token is not provided")
-    ngx.exit(ngx.HTTP_UNAUTHORIZED)
+    ngx.header["Proxy-Authenticate"] = "Basic realm=\"Cloud Pipeline EDGE\""
+    ngx.exit(407)
 end
 
 local cert_path = os.getenv("JWT_PUB_KEY")
