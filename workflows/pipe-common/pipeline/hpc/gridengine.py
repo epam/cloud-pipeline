@@ -37,6 +37,15 @@ def _perform_command(action, msg, error_msg, skip_on_failure):
             raise RuntimeError(error_msg, e)
 
 
+class GridEngineType:
+
+    SGE = "SGE"
+    SLURM = "SLURM"
+
+    def __init__(self):
+        pass
+
+
 class AllocationRuleParsingError(RuntimeError):
     pass
 
@@ -553,11 +562,8 @@ class SlurmGridEngine(GridEngine):
     _SCONTROL_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _GET_JOBS = "scontrol -o show job"
 
-    def __init__(self, cmd_executor, queue, queue_default):
+    def __init__(self, cmd_executor):
         self.cmd_executor = cmd_executor
-        self.queue = queue
-        self.queue_default = queue_default
-        self.tmp_queue_name_attribute = 'tmp_queue_name'
 
     def get_jobs(self):
         try:
@@ -657,7 +663,8 @@ class SlurmGridEngine(GridEngine):
                         hosts=self._parse_nodelist(job_dict.get("NodeList")),
                         cpu=int(job_dict.get("NumCPUs", "1")) // num_node,
                         gpu=0 if "gpu" not in general_resources else int(general_resources.get("gpu")) // num_node,
-                        mem=self._parse_mem(resources.get("mem", "0")) // num_node
+                        mem=self._parse_mem(job_dict.get("MinMemoryNode", "0")) if "mem" not in resources
+                            else self._parse_mem(resources.get("mem", "0")) // num_node
                     )
                 )
         return jobs

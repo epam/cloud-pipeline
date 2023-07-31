@@ -251,10 +251,10 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
             help='Specifies event ttl in seconds after which an event is removed.')
         self.sge_selected = GridEngineParameter(
             name='CP_CAP_SGE', type=PARAM_BOOL, default=True,
-            help='Define if SGE selected as grid engine.')
+            help='Defines if SGE selected as grid engine.')
         self.slurm_selected = GridEngineParameter(
             name='CP_CAP_SLURM', type=PARAM_BOOL, default=False,
-            help='Define if Slurm selected as grid engine.')
+            help='Defines if Slurm selected as grid engine.')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):

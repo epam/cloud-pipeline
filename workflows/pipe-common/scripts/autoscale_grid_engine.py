@@ -29,7 +29,7 @@ from pipeline.hpc.autoscaler import \
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.event import GridEngineEventManager
-from pipeline.hpc.gridengine import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator, SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator
+from pipeline.hpc.gridengine import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator, SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator, GridEngineType
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance.avail import InstanceAvailabilityManager
 from pipeline.hpc.instance.provider import DefaultInstanceProvider, \
@@ -47,9 +47,6 @@ from pipeline.hpc.utils import Clock, ScaleCommonUtils
 from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
 from pipeline.utils.path import mkdir
 
-SUN_GRID_ENGINE = "SGE"
-SLURM_GRID_ENGINE = "SLURM"
-
 
 def fetch_instance_launch_params(api, master_run_id, grid_engine_type, queue, hostlist):
     parent_run = api.load_run(master_run_id)
@@ -66,7 +63,7 @@ def fetch_instance_launch_params(api, master_run_id, grid_engine_type, queue, ho
         if not param_value:
             continue
         launch_params[param_name] = param_value
-    if grid_engine_type == SLURM_GRID_ENGINE:
+    if grid_engine_type == GridEngineType.SLURM:
         launch_params.update({
             'CP_CAP_SLURM': 'false'
         })
@@ -124,7 +121,7 @@ def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeo
 def get_daemon():
     params = GridEngineParameters()
 
-    grid_engine_type = SLURM_GRID_ENGINE if params.autoscaling_advanced.slurm_selected else SUN_GRID_ENGINE
+    grid_engine_type = GridEngineType.SLURM if params.autoscaling_advanced.slurm_selected else GridEngineType.SGE
 
     api_url = os.environ['API']
 
@@ -391,8 +388,8 @@ def get_daemon():
     if queue_static:
         cluster_supply += master_instance_supply + static_instance_supply * static_instance_number
 
-    if grid_engine_type == SLURM_GRID_ENGINE:
-        grid_engine = SlurmGridEngine(cmd_executor=cmd_executor, queue=queue_name, queue_default=queue_default)
+    if grid_engine_type == GridEngineType.SLURM:
+        grid_engine = SlurmGridEngine(cmd_executor=cmd_executor)
         job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
                                         cluster_max_supply=cluster_supply)
         demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
