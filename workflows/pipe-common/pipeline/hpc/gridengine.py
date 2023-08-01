@@ -183,7 +183,7 @@ class GridEngine:
     def get_host_supply(self, host):
         pass
 
-    def get_worker_initializing_task(self):
+    def get_engine_type(self):
         pass
 
     def is_valid(self, host):
@@ -406,8 +406,8 @@ class SunGridEngine(GridEngine):
                 return ResourceSupply(cpu=int(line.strip().split()[1]))
         return ResourceSupply()
 
-    def get_worker_initializing_task(self):
-        return "SGEWorkerSetup"
+    def get_engine_type(self):
+        return GridEngineType.SGE
 
     def _shutdown_execution_host(self, host, skip_on_failure):
         _perform_command(
@@ -616,8 +616,8 @@ class SlurmGridEngine(GridEngine):
                     - ResourceSupply(cpu=int(node_desc.get("CPUAlloc", "0")))
         return ResourceSupply()
 
-    def get_worker_initializing_task(self):
-        return "SLURMWorkerSetup"
+    def get_engine_type(self):
+        return GridEngineType.SLURM
 
     def is_valid(self, host):
         node_state = self._get_host_state(host)
