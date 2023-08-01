@@ -33,6 +33,10 @@ STATISTICS_TEMPLATE = "statistics-template.html"
 TABLE_TEMPLATE = "group-3-table.html"
 TABLE_CENTER_TEMPLATE = "group-3-table-center.html"
 
+ICON_URL_TEMPLATE = os.getenv("CP_ICON_URL", "https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/")
+USER_FIRST_NAME_ATTR = os.getenv("CP_USER_FIRST_NAME", "FirstName")
+USER_LAST_NAME_ATTR = os.getenv("CP_USER_LAST_NAME", "LastName")
+
 TYPE = 'Type'
 TYPE_GPU = 'GPU'
 TYPE_CPU = 'CPU'
@@ -47,11 +51,11 @@ EMAIL_SUBJECT = '[%s] Platform usage statistics'
 
 
 class Top3(Enum):
-    INSTANCES = ("Top-3 instances", "instance")
-    PIPELINES = ("Top-3 pipelines", "pipeline")
-    TOOLS = ("Top-3 tools", "tool")
-    BUCKETS = ("Top-3 used buckets", "bucket")
-    CAPABILITIES = ("Top-3 run capabilities", "capability")
+    INSTANCES = ("Top-3 instances", "share", "instance")
+    PIPELINES = ("Top-3 pipelines", "fork", "pipeline")
+    TOOLS = ("Top-3 tools", "tool", "tool")
+    BUCKETS = ("Top-3 used buckets", "hdd", "bucket")
+    CAPABILITIES = ("Top-3 run capabilities", "play", "capability")
 
 
 class Stat(object):
@@ -134,8 +138,20 @@ class Stat(object):
     def format_column(table_center_templ, tables):
         column = tables.popitem()
         return table_center_templ.format(**{"TABLE_TITLE": column[0][0],
-                                            "TABLE_ICON": column[0][1],
-                                            "ITEMS": column[1]})
+                                            "ITEMS": column[1],
+                                            "TABLE_ICON": column[0][2],
+                                            "TABLE_ICON_URL": Stat.get_icon_url(column[0][1])})
+    @staticmethod
+    def get_icon_url(icon):
+        return ICON_URL_TEMPLATE + icon + ".svg"
+
+    @staticmethod
+    def format_user(user):
+        attributes = user.get('attributes', {})
+        if USER_LAST_NAME_ATTR and USER_FIRST_NAME_ATTR in attributes:
+            return attributes[USER_FIRST_NAME_ATTR] + ' ' + attributes[USER_LAST_NAME_ATTR]
+        else:
+            return user.get('userName')
 
     def get_tables(self):
         tables = dict()
@@ -151,9 +167,10 @@ class Stat(object):
             tables[Top3.CAPABILITIES.value] = Stat.format_items_seconds(self.top3_run_capabilities)
         return tables
 
-    def get_object_str(self, start, end, deploy_name, template, table_templ, table_center_templ):
+    def get_object_str(self, start, end, deploy_name, template, table_templ, table_center_templ, user):
         return template.format(**{'PLATFORM_NAME': deploy_name,
                                   'PERIOD': "{} - {}".format(start, end),
+                                  'USER_NAME': Stat.format_user(user),
                                   'COMPUTE_HOURS': Stat.format_hours(self.compute_hours),
                                   'RUNS_COUNT': Stat.format_count(self.runs_count),
                                   'LOGIN_TIME': Stat.format_hours(self.login_time),
@@ -163,7 +180,7 @@ class Stat(object):
                                   'CPU': Stat.format_hours(self.cpu_hours),
                                   'GPU': Stat.format_hours(self.gpu_hours),
                                   'COMPUTE': Stat.format_seconds(self.clusters_compute_secs),
-                                  'WORKER_NODES': self.worker_nodes_count,
+                                  'WORKER_NODES':  Stat.format_seconds(self.worker_nodes_count),
                                   'TABLE': Stat.format_tables(self.get_tables(), table_center_templ, table_templ)})
 
 
@@ -178,10 +195,10 @@ class Notifier(object):
         self.logger = logger
         self.cc_users = cc_users
 
-    def send_notifications(self, template, table_templ, table_center_templ):
+    def send_notifications(self, template, table_templ, table_center_templ, user):
         if not self.to_user:
             return
-        text = self.build_text(template, table_templ, table_center_templ)
+        text = self.build_text(template, table_templ, table_center_templ, user)
         self.logger.debug("Email Text:")
         self.logger.debug(text)
         self.logger.info('Sending notification to user: %s' % self.to_user)
@@ -190,9 +207,9 @@ class Notifier(object):
                                      self.to_user,
                                      copy_users=self.cc_users)
 
-    def build_text(self, template, table_templ, table_center_templ):
+    def build_text(self, template, table_templ, table_center_templ, user):
         stat_str = self.stat.get_object_str(self.start, self.end, self.deploy_name,
-                                            template, table_templ, table_center_templ)
+                                            template, table_templ, table_center_templ, user)
         return EMAIL_TEMPLATE.format(**{'text': stat_str,
                                         'from': self.start,
                                         'to': self.end,
@@ -299,7 +316,7 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path, send
         receiver = send_to if send_to else _user_name
         notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'),
                             receiver, logger, cc_users=cc_users)
-        notifier.send_notifications(template, table_templ, table_center_templ)
+        notifier.send_notifications(template, table_templ, table_center_templ, user)
 
 
 def expand_commas(data):
