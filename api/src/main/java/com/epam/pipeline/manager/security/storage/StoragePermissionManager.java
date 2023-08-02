@@ -125,8 +125,8 @@ public class StoragePermissionManager {
     public boolean storagePermissionByPath(final String path,
                                            final String permissionName) {
         try {
-            final AbstractSecuredEntity storage = storagePathLoader.loadDataStorageByPathOrId(path);
-            return grantPermissionManager.storagePermission(storage, permissionName);
+            final Optional<AbstractDataStorage> storage = storagePathLoader.findDataStorage(path);
+            return storage.map(s -> grantPermissionManager.storagePermission(s, permissionName)).orElse(false);
         } catch (IllegalArgumentException e) {
             return false;
         }

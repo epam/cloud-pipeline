@@ -85,6 +85,7 @@ import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
+import com.epam.pipeline.manager.log.storage.StorageRequestManager;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeManager;
 import com.epam.pipeline.manager.metadata.MetadataDownloadManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
@@ -585,6 +586,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UserNotificationRepository userNotificationRepository;
+
+    @MockBean
+    protected StorageRequestManager storageRequestManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

@@ -22,6 +22,7 @@ import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.log.LogApiService;
+import com.epam.pipeline.acl.log.storage.StorageRequestApiService;
 import com.epam.pipeline.acl.notification.UserNotificationApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
@@ -278,4 +279,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected GitlabIssueApiService gitlabIssueApiService;
+
+    @MockBean
+    protected StorageRequestApiService storageRequestApiService;
 }
