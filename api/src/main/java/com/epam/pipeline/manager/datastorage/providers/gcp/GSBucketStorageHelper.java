@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
@@ -34,6 +35,7 @@ import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.datastorage.access.DataAccessType;
 import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
@@ -153,6 +155,35 @@ public class GSBucketStorageHelper {
                 ? listItemsWithVersions(blobs)
                 : listItemsWithoutVersions(blobs);
         return new DataStorageListing(blobs.getNextPageToken(), items);
+    }
+
+    public DataStorageItemType getItemType(final GSBucketStorage storage,
+                                           final String path,
+                                           final Boolean showVersion) {
+        final String requestPath = ProviderUtils.withoutTrailingDelimiter(
+                ProviderUtils.withoutLeadingDelimiter(Optional.ofNullable(path).orElse(EMPTY_PREFIX)));
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+
+        final Page<Blob> blobs = client.list(bucketName,
+                Storage.BlobListOption.versions(showVersion),
+                Storage.BlobListOption.currentDirectory(),
+                Storage.BlobListOption.prefix(requestPath));
+        final Set<Blob> appropriateBlobs = StreamSupport.stream(blobs.getValues().spliterator(), false)
+                .filter(blob -> !blob.getName().endsWith(ProviderUtils.FOLDER_TOKEN_FILE))
+                .filter(blob -> requestPath.equals(blob.getName())
+                        || ProviderUtils.withTrailingDelimiter(requestPath).equals(blob.getName()))
+                .collect(Collectors.toSet());
+
+        final boolean appropriateFolderFound = appropriateBlobs.stream().anyMatch(BlobInfo::isDirectory);
+        if (CollectionUtils.isEmpty(appropriateBlobs) ||
+                Optional.ofNullable(path).orElse(EMPTY_PREFIX).endsWith(ProviderUtils.DELIMITER)
+                        && !appropriateFolderFound) {
+            throw new ObjectNotFoundException(messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucketName));
+        }
+
+        return appropriateFolderFound ? DataStorageItemType.Folder : DataStorageItemType.File;
     }
 
     public Optional<DataStorageFile> findFile(final GSBucketStorage storage, final String path, final String version) {

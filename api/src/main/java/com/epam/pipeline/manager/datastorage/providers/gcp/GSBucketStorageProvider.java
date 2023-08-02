@@ -43,6 +43,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -272,7 +273,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public DataStorageItemType getItemType(final GSBucketStorage dataStorage,
                                            final String path,
                                            final String version) {
-        throw new UnsupportedOperationException();
+        return getHelper(dataStorage).getItemType(dataStorage, path, StringUtils.isNotBlank(version));
     }
 
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {
