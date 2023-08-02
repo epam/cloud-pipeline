@@ -663,8 +663,7 @@ class SlurmGridEngine(GridEngine):
                         hosts=self._parse_nodelist(job_dict.get("NodeList")),
                         cpu=int(job_dict.get("NumCPUs", "1")) // num_node,
                         gpu=0 if "gpu" not in general_resources else int(general_resources.get("gpu")) // num_node,
-                        mem=self._parse_mem(job_dict.get("MinMemoryNode", "0")) if "mem" not in resources
-                            else self._parse_mem(resources.get("mem", "0")) // num_node
+                        mem=self._parse_mem(self._find_memory_value(job_dict, resources))
                     )
                 )
         return jobs
@@ -681,6 +680,14 @@ class SlurmGridEngine(GridEngine):
                 entry.split(value_sep, 1) for entry in text.split(line_sep)
             ]
         }
+
+    def _find_memory_value(self, job_dict, resource_dict):
+        if "MinMemoryNode" in job_dict:
+            return job_dict.get("MinMemoryNode")
+        elif "mem" in resource_dict:
+            resource_dict.get("mem")
+        else:
+            return "0M"
 
     def _parse_mem(self, mem_request):
         if not mem_request:
@@ -718,8 +725,22 @@ class SlurmDemandSelector(GridEngineDemandSelector):
         self.grid_engine = grid_engine
 
     def select(self, jobs):
-        for job in sorted(jobs, key=lambda job: job.root_id):
-            yield IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
+        _provisioned_root_jobs = set()
+        # Check if root_job was already provisioned with resources on a prev yield and if so - return empty demand.
+        #
+        # We are doing so because all jobs with the same rood_id is a "secondary" jobs, that were created by splitting
+        # resources of main real job on number of jobs = root_job["NumNodes"] (see SlurmGridEngine._parse_jobs),
+        # so requesting for all "secondary" jobs the same amount of resources will lead to requesting a big node
+        # but will not allow to utilize it fully, because actually we need several small nodes.
+        #
+        # For more details see Slurm sbatch docs (-N option particular),
+        # GridEngineAutoscaler.scale() method and how resources demand are calculated
+        for job in jobs:
+            if job.root_id not in _provisioned_root_jobs:
+                _provisioned_root_jobs.add(job.root_id)
+                yield IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
+            else:
+                yield IntegralDemand()
 
 
 class SlurmJobValidator(GridEngineJobValidator):
