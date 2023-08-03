@@ -53,7 +53,8 @@ TaskPlugin=task/none
 
 # SCHEDULING
 SchedulerType=sched/backfill
-SelectType=select/linear
+SelectType=select/cons_tres
+SelectTypeParameters=CR_CPU
 
 # LOGGING AND ACCOUNTING
 ClusterName=cloudpipeline
@@ -80,7 +81,12 @@ EOL
         done
     fi
 
-    IFS=$'\n' read -d '' -r -a _NODE_NAMES < $DEFAULT_HOSTFILE
+    if [ ! -f "$DEFAULT_HOSTFILE" ]; then
+        _NODE_NAMES="$(hostname)"
+    else
+        IFS=$'\n' read -d '' -r -a _NODE_NAMES < "$DEFAULT_HOSTFILE"
+    fi
+
     for _NODE in ${_NODE_NAMES[*]} ; do
         if (( _NODE_GPUS_COUNT > 0 ))
         then
@@ -89,10 +95,18 @@ EOL
             echo "NodeName=$_NODE NodeHostname=$_NODE NodeAddr=$(getent hosts $_NODE | awk '{ print $1 }') CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT State=UNKNOWN" >> /common/slurm.conf
         fi
     done
-    echo "PartitionName=main.q Nodes=`echo ${_NODE_NAMES[*]} | xargs |  awk -v OFS="," '{$1=$1;print}'` Default=YES MaxTime=INFINITE State=UP" >> /common/slurm.conf
+    echo "PartitionName=main.q Nodes=ALL Default=YES MaxTime=INFINITE State=UP" >> /common/slurm.conf
 
     if [ ! -z $CP_SLURM_LICENSES ]; then
         echo "Licenses=$CP_SLURM_LICENSES" >> /common/slurm.conf
+    fi
+
+    if [ ! -z "${CP_CAP_AUTOSCALE}" ]; then
+        echo "" >> /common/slurm.conf
+        echo "#" >> /common/slurm.conf
+        echo "#DYNAMIC CLUSTER" >> /common/slurm.conf
+        echo "MaxNodeCount=$(( ${CP_CAP_AUTOSCALE_WORKERS:-0} + ${node_count:-0} + 1 ))" >> /common/slurm.conf
+        echo "TreeWidth=65533" >> /common/slurm.conf
     fi
 }
 
@@ -149,8 +163,8 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
 
     if [ -z $CP_SLURM_PACKAGE_URL ]; then
-        CP_SLURM_PACKAGE_URL="${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-19.05.5-1.el7.x86_64.tar"
-        CP_SLURM_SOURCE_URL="https://download.schedmd.com/slurm/slurm-19.05.5.tar.bz2"
+        CP_SLURM_PACKAGE_URL="${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-22.05.5-1.el7.x86_64.tar"
+        CP_SLURM_SOURCE_URL="https://download.schedmd.com/slurm/slurm-22.05.5.tar.bz2"
     fi
 
     export SLURMUSER=992
@@ -188,8 +202,8 @@ chown munge: /etc/munge/munge.key
 chmod 400 /etc/munge/munge.key
 su -c /usr/sbin/munged -s /bin/bash munge
 
-cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
-cp /common/cgroup.conf "$_SLURM_CONFIG_LOCATION"
+ln -s /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
+ln -s  /common/cgroup.conf "$_SLURM_CONFIG_LOCATION"
 
 slurmctld && slurmd
 
@@ -234,3 +248,6 @@ else
     rm -rf /common/slurm.conf /common/cgroup.conf /common/munge.key
 fi
 
+if [ ! -z "${CP_CAP_AUTOSCALE}" ]; then
+  nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" > "$LOG_DIR/.nohup.autoscaler.slurm.log" 2>&1 &
+fi

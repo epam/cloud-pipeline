@@ -24,8 +24,8 @@ add_worker() {
     chmod 0700 /etc/munge/munge.key
     su -c /usr/sbin/munged -s /bin/bash munge
 
-    cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
-    cp /common/cgroup.conf "$_SLURM_CONFIG_LOCATION"
+    ln -s  /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
+    ln -s  /common/cgroup.conf "$_SLURM_CONFIG_LOCATION"
     mkdir /var/spool/slurmd
     chown slurm: /var/spool/slurmd
     chmod 755 /var/spool/slurmd
@@ -40,7 +40,11 @@ add_worker() {
         done
     fi
 
-    slurmd
+    if [ "${cluster_role_type}" == "additional" ]; then
+        slurmd -Z --conf "State=FUTURE"
+    else
+        slurmd
+    fi
 }
 
 get_linux_dist() {
