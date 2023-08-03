@@ -573,7 +573,12 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                 if endpoints_data:
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
-                                endpoint = json.loads(endpoints_data[i])
+                                endpoint = None
+                                try:
+                                        endpoint = json.loads(endpoints_data[i])
+                                except Exception as endpoint_parse_exception:
+                                        do_log('Parsing endpoint #{} failed:\n{}'.format(str(i), str(endpoint_parse_exception)))
+                                        continue
                                 if endpoint["nginx"]:
                                         port = endpoint["nginx"]["port"]
                                         path = endpoint["nginx"].get("path", "")
