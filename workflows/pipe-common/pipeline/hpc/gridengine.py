@@ -589,15 +589,9 @@ class SlurmGridEngine(GridEngine):
 
     def delete_host(self, host, skip_on_failure=False):
         _perform_command(
-            action=lambda: self.disable_host(host),
-            msg='Disabling GE host execution daemon.',
-            error_msg='Disabling GE host execution daemon has failed.',
-            skip_on_failure=skip_on_failure
-        )
-        _perform_command(
             action=lambda: self.cmd_executor.execute(SlurmGridEngine._SCONTROL_DELETE_NODE % host),
-            msg='Disabling GE host execution daemon.',
-            error_msg='Disabling GE host execution daemon has failed.',
+            msg='Remove host from GE.',
+            error_msg='Removing host from GE has failed.',
             skip_on_failure=skip_on_failure
         )
 
@@ -623,11 +617,12 @@ class SlurmGridEngine(GridEngine):
         node_state = self._get_host_state(host)
         for bad_state in SlurmGridEngine._NODE_BAD_STATES:
             if bad_state in node_state:
+                Logger.warn('Execution host %s GE state is %s which makes host invalid.' % (host, bad_state))
                 return False
         return True
 
     def kill_jobs(self, jobs, force=False):
-        job_ids = [str(job.root_id) for job in jobs]
+        job_ids = set(str(job.root_id) for job in jobs)
         self.cmd_executor.execute((SlurmGridEngine._FORCE_KILL_JOBS if force else SlurmGridEngine._KILL_JOBS) % ' '.join(job_ids))
 
     def _get_host_state(self, host):
@@ -685,7 +680,7 @@ class SlurmGridEngine(GridEngine):
         if "MinMemoryNode" in job_dict:
             return job_dict.get("MinMemoryNode")
         elif "mem" in resource_dict:
-            resource_dict.get("mem")
+            return resource_dict.get("mem")
         else:
             return "0M"
 
