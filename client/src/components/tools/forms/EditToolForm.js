@@ -99,6 +99,7 @@ import {
 import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from '../../pipelines/launch/form/utilities/reschedule-run-control';
+import {getValidationError} from '../elements/EndpointInput';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -1643,9 +1644,20 @@ export default class EditToolForm extends React.Component {
     }
   };
 
+  endpointsAreValid () {
+    try {
+      const endpoints = this.props.form.getFieldValue('endpoints') || [];
+      return !endpoints.some((endpoint) => getValidationError(endpoint));
+    } catch (error) {
+      console.warn(error);
+      return false;
+    }
+  }
+
   render () {
     const {getFieldDecorator} = this.props.form;
     const isTool = this.props.mode === 'tool';
+    const endpointsAreValid = this.endpointsAreValid();
     return (
       <Form>
         {
@@ -1656,16 +1668,16 @@ export default class EditToolForm extends React.Component {
           <Row type="flex">
             <Col xs={24} sm={6} />
             <Col xs={24} sm={12}>
-            <Form.Item>
-              {getFieldDecorator('endpoints',
-                {
-                  initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
-                })(
-                <ToolEndpointsFormItem
-                  disabled={this.state.pending || this.props.readOnly}
-                  ref={this.initializeEndpointsControl} />
-              )}
-            </Form.Item>
+              <Form.Item>
+                {getFieldDecorator('endpoints',
+                  {
+                    initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
+                  })(
+                  <ToolEndpointsFormItem
+                    disabled={this.state.pending || this.props.readOnly}
+                    ref={this.initializeEndpointsControl} />
+                )}
+              </Form.Item>
             </Col>
           </Row>
         }
@@ -1728,7 +1740,8 @@ export default class EditToolForm extends React.Component {
                   !this.modified() ||
                   (this.toolFormSystemParameters && !this.toolFormSystemParameters.isValid) ||
                   (this.toolFormParameters && !this.toolFormParameters.isValid) ||
-                  this.state.kubeLabelsHasErrors
+                  this.state.kubeLabelsHasErrors ||
+                  !endpointsAreValid
                 }>
                 SAVE
               </Button>
