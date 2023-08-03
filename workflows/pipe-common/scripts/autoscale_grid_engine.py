@@ -29,7 +29,9 @@ from pipeline.hpc.autoscaler import \
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.event import GridEngineEventManager
-from pipeline.hpc.gridengine import GridEngine, GridEngineDemandSelector, GridEngineJobValidator
+from pipeline.hpc.engine.gridengine import GridEngineType
+from pipeline.hpc.engine.sge import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator
+from pipeline.hpc.engine.slurm import SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance.avail import InstanceAvailabilityManager
 from pipeline.hpc.instance.provider import DefaultInstanceProvider, \
@@ -48,7 +50,7 @@ from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger,
 from pipeline.utils.path import mkdir
 
 
-def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
+def fetch_instance_launch_params(api, master_run_id, grid_engine_type, queue, hostlist):
     parent_run = api.load_run(master_run_id)
     master_system_params = {param.get('name'): param.get('resolvedValue')
                             for param in parent_run.get('pipelineRunParameters', [])}
@@ -63,13 +65,20 @@ def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
         if not param_value:
             continue
         launch_params[param_name] = param_value
+    if grid_engine_type == GridEngineType.SLURM:
+        launch_params.update({
+            'CP_CAP_SLURM': 'false'
+        })
+    else:
+        launch_params.update({
+            'CP_CAP_SGE': 'false',
+            'CP_CAP_SGE_QUEUE_NAME': queue,
+            'CP_CAP_SGE_HOSTLIST_NAME': hostlist
+        })
     launch_params.update({
-        'CP_CAP_SGE': 'false',
         'CP_CAP_AUTOSCALE': 'false',
         'CP_CAP_AUTOSCALE_WORKERS': '0',
         'CP_DISABLE_RUN_ENDPOINTS': 'true',
-        'CP_CAP_SGE_QUEUE_NAME': queue,
-        'CP_CAP_SGE_HOSTLIST_NAME': hostlist,
         'cluster_role': 'worker',
         'cluster_role_type': 'additional'
     })
@@ -113,6 +122,8 @@ def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeo
 
 def get_daemon():
     params = GridEngineParameters()
+
+    grid_engine_type = GridEngineType.SLURM if params.queue.slurm_selected else GridEngineType.SGE
 
     api_url = os.environ['API']
 
@@ -239,7 +250,8 @@ def get_daemon():
     if dry_run:
         Logger.info('Using dry run mode...')
 
-    instance_launch_params = fetch_instance_launch_params(api, cluster_master_run_id, queue_name, queue_hostlist_name)
+    instance_launch_params = fetch_instance_launch_params(api, cluster_master_run_id,
+                                                          grid_engine_type, queue_name, queue_hostlist_name)
 
     clock = Clock()
     # TODO: Git rid of CmdExecutor usage in favor of CloudPipelineExecutor implementation
@@ -378,12 +390,19 @@ def get_daemon():
     if queue_static:
         cluster_supply += master_instance_supply + static_instance_supply * static_instance_number
 
-    grid_engine = GridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
-                             queue_default=queue_default)
-    job_validator = GridEngineJobValidator(grid_engine=grid_engine,
-                                           instance_max_supply=biggest_instance_supply,
-                                           cluster_max_supply=cluster_supply)
-    demand_selector = GridEngineDemandSelector(grid_engine=grid_engine)
+    if grid_engine_type == GridEngineType.SLURM:
+        grid_engine = SlurmGridEngine(cmd_executor=cmd_executor)
+        job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
+                                        cluster_max_supply=cluster_supply)
+        demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
+    else:
+        grid_engine = SunGridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
+                                 queue_default=queue_default)
+        job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
+                                               instance_max_supply=biggest_instance_supply,
+                                               cluster_max_supply=cluster_supply)
+        demand_selector = SunGridEngineDemandSelector(grid_engine=grid_engine)
+
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_file, clock=clock)
     host_storage = ThreadSafeHostStorage(host_storage)
     static_host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_static_file,

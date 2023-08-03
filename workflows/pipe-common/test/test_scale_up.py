@@ -19,7 +19,7 @@ from mock import MagicMock, Mock
 
 from pipeline.hpc.autoscaler import GridEngineAutoscaler
 from pipeline.hpc.host import MemoryHostStorage
-from pipeline.hpc.gridengine import GridEngineJob, GridEngineJobState
+from pipeline.hpc.engine.gridengine import GridEngineJob, GridEngineJobState
 from pipeline.hpc.utils import Clock
 from pipeline.hpc.resource import IntegralDemand
 

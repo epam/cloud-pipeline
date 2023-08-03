@@ -487,7 +487,7 @@ def _get_manager():
     run_dir = os.getenv('RUN_DIR', default=os.path.join(runs_root, pipeline_name + '-' + run_id))
     common_repo_dir = os.getenv('COMMON_REPO_DIR', default=os.path.join(run_dir, 'CommonRepo'))
     cap_scripts_dir = os.getenv('CP_CAP_SCRIPTS_DIR', default='/common/cap_scripts')
-    autoscaling_script_path = os.path.join(common_repo_dir, 'scripts', 'autoscale_sge.py')
+    autoscaling_script_path = os.path.join(common_repo_dir, 'scripts', 'autoscale_grid_engine.py')
     queue_profile_regexp = re.compile(PROFILE_QUEUE_PATTERN)
 
     logging_logger_root = logging.getLogger()

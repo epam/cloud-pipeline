@@ -16,7 +16,7 @@ import logging
 
 from mock import Mock, MagicMock
 
-from pipeline.hpc.gridengine import GridEngineJob
+from pipeline.hpc.engine.gridengine import GridEngineJob
 from pipeline.hpc.host import MemoryHostStorage
 from pipeline.hpc.pipe import CloudPipelineWorkerValidator
 from utils import assert_first_argument_contained, assert_first_argument_not_contained

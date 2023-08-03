@@ -18,7 +18,7 @@ from datetime import datetime
 from mock import MagicMock, Mock
 
 from pipeline.hpc.autoscaler import GridEngineScaleDownHandler
-from pipeline.hpc.gridengine import GridEngineJob, GridEngineJobState
+from pipeline.hpc.engine.gridengine import GridEngineJob, GridEngineJobState
 from pipeline.hpc.resource import ComputeResource
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
