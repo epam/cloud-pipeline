@@ -16,7 +16,8 @@ import logging
 
 from mock import MagicMock, Mock
 
-from pipeline.hpc.gridengine import GridEngineJob, SunGridEngineJobValidator, AllocationRule
+from pipeline.hpc.engine.gridengine import GridEngineJob, AllocationRule
+from pipeline.hpc.engine.sge import SunGridEngineJobValidator
 from pipeline.hpc.resource import ResourceSupply
 
 

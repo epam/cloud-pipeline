@@ -17,7 +17,8 @@ import logging
 import pytest
 from mock import MagicMock, Mock
 
-from pipeline.hpc.gridengine import SunGridEngineDemandSelector, GridEngineJob, AllocationRule
+from pipeline.hpc.engine.gridengine import GridEngineJob, AllocationRule
+from pipeline.hpc.engine.sge import SunGridEngineDemandSelector
 from pipeline.hpc.resource import IntegralDemand, FractionalDemand, ResourceSupply
 
 PE_LOCAL = 'local'

@@ -17,7 +17,8 @@ import logging
 from datetime import datetime
 from mock import MagicMock, Mock
 
-from pipeline.hpc.gridengine import SlurmGridEngine, GridEngineJobState, GridEngineJob
+from pipeline.hpc.engine.gridengine import GridEngineJobState, GridEngineJob
+from pipeline.hpc.engine.slurm import SlurmGridEngine
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')

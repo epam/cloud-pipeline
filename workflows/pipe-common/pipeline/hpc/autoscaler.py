@@ -22,7 +22,7 @@ from datetime import timedelta
 import itertools
 import time
 
-from pipeline.hpc.gridengine import GridEngineJobState, GridEngineType
+from pipeline.hpc.engine.gridengine import GridEngineJobState, GridEngineType
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand
 from pipeline.hpc.utils import Clock

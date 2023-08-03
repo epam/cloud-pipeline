@@ -29,7 +29,7 @@ from pipeline.hpc.autoscaler import \
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.event import GridEngineEventManager
-from pipeline.hpc.gridengine import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator, SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator, GridEngineType
+from pipeline.hpc.engine.gridengine import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator, SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator, GridEngineType
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance.avail import InstanceAvailabilityManager
 from pipeline.hpc.instance.provider import DefaultInstanceProvider, \
