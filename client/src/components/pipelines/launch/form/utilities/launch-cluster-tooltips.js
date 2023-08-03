@@ -164,7 +164,9 @@ export const LaunchClusterTooltip = {
     defaultNodesCount: 'default nodes count',
     hybridAutoScaledCluster: 'hybrid',
     autoScalePriceType: 'auto scale price type',
-    gpuScaling: 'gpu scaling'
+    gpuScaling: 'gpu scaling',
+    enableGridEngine: 'enable grid engine',
+    enableSlurm: 'enable slurm'
   }
 };
 
