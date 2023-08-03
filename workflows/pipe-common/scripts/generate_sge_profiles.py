@@ -89,6 +89,7 @@ def _enhance_common_profile(common_profile):
     common_profile['CP_CAP_SGE_QUEUE_STATIC'] = 'true'
     common_profile['CP_CAP_SGE_QUEUE_DEFAULT'] = 'true'
     common_profile['CP_CAP_AUTOSCALE_TASK'] = 'GridEngineAutoscaling'
+    common_profile['CP_CAP_SLURM'] = 'false'
     return common_profile
 
 
@@ -110,6 +111,7 @@ def _enhance_secondary_profiles(common_profile, profiles):
     for profile_index, profile in profiles.items():
         profile['CP_CAP_SGE_QUEUE_NAME'] = unique_profile_queues[profile_indexes.index(profile_index)]
         profile['CP_CAP_SGE_HOSTLIST_NAME'] = '@{}'.format(profile['CP_CAP_SGE_QUEUE_NAME'])
+        profile['CP_CAP_SLURM'] = 'false'
     for profile_index in profiles.keys():
         profile = dict(common_profile)
         profile.update(profiles[profile_index])

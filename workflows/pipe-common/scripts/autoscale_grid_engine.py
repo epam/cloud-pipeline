@@ -29,7 +29,9 @@ from pipeline.hpc.autoscaler import \
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.event import GridEngineEventManager
-from pipeline.hpc.engine.gridengine import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator, SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator, GridEngineType
+from pipeline.hpc.engine.gridengine import GridEngineType
+from pipeline.hpc.engine.sge import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator
+from pipeline.hpc.engine.slurm import SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance.avail import InstanceAvailabilityManager
 from pipeline.hpc.instance.provider import DefaultInstanceProvider, \
@@ -121,7 +123,7 @@ def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeo
 def get_daemon():
     params = GridEngineParameters()
 
-    grid_engine_type = GridEngineType.SLURM if params.autoscaling_advanced.slurm_selected else GridEngineType.SGE
+    grid_engine_type = GridEngineType.SLURM if params.queue.slurm_selected else GridEngineType.SGE
 
     api_url = os.environ['API']
 
