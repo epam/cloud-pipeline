@@ -54,7 +54,18 @@ GROUP_CAT_ATTR_NAME = os.getenv('WSI_PARSING_GROUP_CAT_ATTR_NAME', 'Group')
 SEX_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SEX_CAT_ATTR_NAME', 'Sex')
 ANIMAL_ID_CAT_ATTR_NAME = os.getenv('WSI_PARSING_ANIMAL_ID_CAT_ATTR_NAME', 'Animal ID')
 PURPOSE_CAT_ATTR_NAME = os.getenv('WSI_PARSING_PURPOSE_CAT_ATTR_NAME', 'Purpose')
+SPECIES_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SPECIES_CAT_ATTR_NAME', 'Species')
+TISSUE_CAT_ATTR_NAME = os.getenv('WSI_PARSING_TISSUE_CAT_ATTR_NAME', 'Tissue')
+MULTIPLE_TYPE_TISSUE_DELIMITER = os.getenv('WSI_PARSING_MULTI_TISSUE_DELIMITER', ':')
+TAG_DELIMITER = os.getenv('WSI_PARSING_TAG_DELIMITER', ';')
 
+STAIN_METHOD_MAPPINGS = {
+    'GENERAL': 'General',
+    'SPECIAL': 'Special',
+    'SS': 'Special',
+    'IHC': 'IHC',
+    'ISH': 'ISH'
+}
 UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
 
@@ -637,6 +648,7 @@ class WsiFileTagProcessor:
             self._add_user_defined_tags_if_required(existing_attributes_dictionary, tags_dictionary)
         self._set_tags_default_values(tags_dictionary)
         self._try_build_slide_name(tags_dictionary)
+        self._normalize_tags(tags_dictionary, existing_attributes_dictionary)
         return tags_dictionary
 
     def _add_user_defined_tags_if_required(self, existing_attributes_dictionary, tags_dictionary):
@@ -746,6 +758,87 @@ class WsiFileTagProcessor:
                 return self.build_magnification_from_numeric_string(value)
         return None
 
+    def _normalize_tags(self, tags, system_dictionary):
+        predefined_species_values = self._prepare_predefined_values(system_dictionary['Species'])
+        predefined_tissues_values = self._prepare_predefined_values(system_dictionary['Tissue'])
+        if SPECIES_CAT_ATTR_NAME in tags:
+            tags[SPECIES_CAT_ATTR_NAME] = self._prepare_species_tag(tags[SPECIES_CAT_ATTR_NAME],
+                                                                    predefined_species_values)
+        if TISSUE_CAT_ATTR_NAME in tags:
+            tags[TISSUE_CAT_ATTR_NAME] = self._prepare_tissues_tag(tags[TISSUE_CAT_ATTR_NAME],
+                                                                   predefined_tissues_values)
+        if STAIN_METHOD_CAT_ATTR_NAME in tags:
+            stain_method = self._determine_stain_method(list(tags[STAIN_METHOD_CAT_ATTR_NAME])[0] or 'General')
+            tags[STAIN_METHOD_CAT_ATTR_NAME] = {stain_method}
+            if stain_method == 'Unk':
+                return
+            if stain_method == 'General':
+                tags[STAIN_CAT_ATTR_NAME] = self._prepare_general_stain_tag(tags.get(STAIN_CAT_ATTR_NAME, None))
+            if stain_method == 'Special' or stain_method == 'IHC':
+                if tags[STAIN_CAT_ATTR_NAME]:
+                    tags[STAIN_CAT_ATTR_NAME] = set([str(stain).strip().upper() for stain in tags[STAIN_CAT_ATTR_NAME]])
+
+    @staticmethod
+    def _determine_stain_method(stain_method):
+        stain_method = str(stain_method).strip().upper()
+        if stain_method in STAIN_METHOD_MAPPINGS:
+            return STAIN_METHOD_MAPPINGS[stain_method]
+        for stain_mapping in STAIN_METHOD_MAPPINGS:
+            if stain_mapping in stain_method:
+                return STAIN_METHOD_MAPPINGS[stain_mapping]
+        return 'Unk'
+
+    @staticmethod
+    def _prepare_predefined_values(system_dictionary_items):
+        predefined_values = dict()
+        for item in system_dictionary_items:
+            value = item['value']
+            predefined_values.update({str(value).upper(): value})
+        return predefined_values
+
+    @staticmethod
+    def _prepare_species_tag(metadata_values, predefined_values):
+        metadata_value = list(metadata_values)[0]
+        if not metadata_value:
+            return {'Unk'}
+        metadata_value = str(metadata_value).strip().upper()
+        if metadata_value in predefined_values:
+            return {predefined_values.get(metadata_value)}
+        return {'Unk'}
+
+    @staticmethod
+    def _replace_with_predefined_value(metadata_value, predefined_value):
+        return predefined_value + metadata_value[len(predefined_value):]
+
+    @classmethod
+    def _find_value_by_prefix(cls, metadata_value, predefined_values):
+        for predefined_value in predefined_values.keys():
+            if metadata_value.startswith(predefined_value):
+                return cls._replace_with_predefined_value(metadata_value, predefined_values[predefined_value])
+
+    @classmethod
+    def _prepare_tissues_tag(cls, metadata_values, predefined_values):
+        metadata_value = str(list(metadata_values)[0]).strip()
+        if not metadata_value:
+            return {'Unk'}
+
+        tissues = list()
+        if MULTIPLE_TYPE_TISSUE_DELIMITER in metadata_value:
+            tissues = metadata_value.split(MULTIPLE_TYPE_TISSUE_DELIMITER)
+            tissues = [tissue.strip().upper() for tissue in tissues if tissue]
+        else:
+            tissues.append(metadata_value.upper())
+        return set(cls._find_value_by_prefix(tissue, predefined_values) or 'Unk' for tissue in tissues)
+
+    @staticmethod
+    def _prepare_general_stain_tag(metadata_values):
+        if not metadata_values:
+            return {'H&E'}
+        metadata_value = str(list(metadata_values)[0]).strip().upper()
+        if metadata_value == 'H&E' or metadata_value == 'HE':
+            return {'H&E'}
+        return {'Unk'}
+
     def prepare_tags(self, existing_attributes_dictionary, tags_to_push):
         attribute_updates = list()
         pipe_tags = list()
@@ -758,16 +851,21 @@ class WsiFileTagProcessor:
             if len(values_to_push) > 1:
                 self.log_processing_info('Multiple tags matches occurred for "{}": [{}]'
                                          .format(attribute_name, values_to_push))
-                continue
-            value = list(values_to_push)[0]
+                tag_value = TAG_DELIMITER.join(values_to_push)
+            else:
+                tag_value = list(values_to_push)[0]
             existing_values = existing_attributes_dictionary[attribute_name]
             existing_attribute_id = existing_values[0]['attributeId']
             existing_values_names = [existing_value['value'] for existing_value in existing_values]
-            if value not in existing_values_names:
-                existing_values.append({'key': attribute_name, 'value': value})
+            need_to_update_attributes = False
+            for value in tags_to_push:
+                if value not in existing_values_names:
+                    existing_values.append({'key': attribute_name, 'value': value})
+                    need_to_update_attributes = True
+            if need_to_update_attributes:
                 attribute_updates.append({'id': int(existing_attribute_id),
                                           'key': attribute_name, 'values': existing_values})
-            pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, value))
+            pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, tag_value))
         if attribute_updates:
             self.log_processing_info('Updating following categorical attributes before tagging: {}'
                                      .format(attribute_updates))
