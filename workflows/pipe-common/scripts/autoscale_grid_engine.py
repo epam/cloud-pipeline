@@ -123,7 +123,7 @@ def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeo
 def get_daemon():
     params = GridEngineParameters()
 
-    grid_engine_type = GridEngineType.SLURM if params.queue.slurm_selected else GridEngineType.SGE
+    grid_engine_type = GridEngineType.SLURM if params.queue.slurm_selected.get() else GridEngineType.SGE
 
     api_url = os.environ['API']
 
