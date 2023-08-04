@@ -38,7 +38,7 @@ EOL
     cat > /common/slurm.conf <<EOL
 ControlMachine=$HOSTNAME
 #
-#MailProg=/bin/mail
+MailProg=$COMMON_REPO_DIR/shell/pipe_mail
 MpiDefault=none
 ProctrackType=proctrack/cgroup
 ReturnToService=1
