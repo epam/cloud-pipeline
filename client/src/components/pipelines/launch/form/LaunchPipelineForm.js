@@ -1161,10 +1161,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       }
       if (this.state.launchCluster && this.state.autoScaledCluster) {
-        payload[PARAMETERS][CP_CAP_SGE] = {
-          type: 'boolean',
-          value: true
-        };
         payload[PARAMETERS][CP_CAP_AUTOSCALE] = {
           type: 'boolean',
           value: true
@@ -1379,10 +1375,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     if (this.state.launchCluster && this.state.autoScaledCluster) {
-      payload.params[CP_CAP_SGE] = {
-        type: 'boolean',
-        value: true
-      };
       payload.params[CP_CAP_AUTOSCALE] = {
         type: 'boolean',
         value: true

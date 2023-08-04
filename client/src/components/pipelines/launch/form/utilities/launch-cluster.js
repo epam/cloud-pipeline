@@ -64,11 +64,6 @@ const PARAMETER_TITLE_STYLE = {
   marginRight: PARAMETER_TITLE_RIGHT_MARGIN
 };
 
-export function autoScaledClusterEnabled (parameters) {
-  return booleanParameterIsSetToValue(parameters, CP_CAP_SGE) &&
-    booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE);
-}
-
 export function hybridAutoScaledClusterEnabled (parameters) {
   return autoScaledClusterEnabled(parameters) &&
     booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE_HYBRID);
@@ -84,6 +79,13 @@ export function sparkEnabled (parameters) {
 
 export function slurmEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SLURM);
+}
+
+export function autoScaledClusterEnabled (parameters) {
+  return booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE) && (
+    gridEngineEnabled(parameters) ||
+    slurmEnabled(parameters)
+  );
 }
 
 export function kubeEnabled (parameters) {
