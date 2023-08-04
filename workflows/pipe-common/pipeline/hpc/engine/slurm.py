@@ -107,13 +107,18 @@ class SlurmGridEngine(GridEngine):
             # this job to `num_node` nodes and provide portion of resources
             # TODO maybe there is another way to achieve that?
             for node_idx in range(num_node):
+                job_state = GridEngineJobState.from_letter_code(job_dict.get("JobState"))
+                if job_state == GridEngineJobState.PENDING:
+                    # In certain cases pending job's start date can be estimated start date.
+                    # It confuses autoscaler and therefore should be ignored.
+                    job_dict["StartTime"] = "Unknown"
                 jobs.append(
                     GridEngineJob(
                         id=job_dict.get("JobId") + "_" + str(node_idx),
                         root_id=job_dict.get("JobId"),
                         name=job_dict.get("JobName"),
                         user=self._parse_user(job_dict.get("UserId")),
-                        state=GridEngineJobState.from_letter_code(job_dict.get("JobState")),
+                        state=job_state,
                         datetime=self._parse_date(
                             job_dict.get("StartTime") if job_dict.get("StartTime") != "Unknown" else job_dict.get("SubmitTime")),
                         hosts=self._parse_nodelist(job_dict.get("NodeList")),
