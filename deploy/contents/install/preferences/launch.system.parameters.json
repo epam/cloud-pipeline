@@ -589,6 +589,6 @@
         "type": "boolean",
         "defaultValue": "false",
         "description": "Enables notifications for Slurm and SGE engines.",
-        "passToWorkers": false
+        "passToWorkers": true
     }
 ]

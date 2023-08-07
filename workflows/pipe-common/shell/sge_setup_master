@@ -62,10 +62,16 @@ configure_global() {
 
     # Override default mail program for SGE
     if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
-        # linking pipe_mail script to be accessible from any node
-        ln -s $COMMON_REPO_DIR/shell/pipe_mail $SHARED_FOLDER/pipe_mail
-        chmod +x $SHARED_FOLDER/pipe_mail
-        sed -i "/mailer/c\mailer $SHARED_FOLDER/pipe_mail" ./global
+        # configure local configuration
+        qconf -sconf $HOSTNAME > ./$HOSTNAME
+        if [ "$?" -eq "0" ]; then
+            sed -i "/mailer/c\mailer $COMMON_REPO_DIR/shell/pipe_mail" ./$HOSTNAME
+            qconf -Mconf ./$HOSTNAME
+        else
+            echo "mailer $COMMON_REPO_DIR/shell/pipe_mail" > ./$HOSTNAME
+            qconf -Aconf ./$HOSTNAME
+        fi
+        rm -f ./$HOSTNAME
     fi
 
     if check_cp_cap CP_CAP_SGE_GPU_RSMAP_DEVICES; then

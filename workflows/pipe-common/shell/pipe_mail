@@ -44,12 +44,21 @@ do
     export _to_user="$1"
     echo "Sending to $_to_user ..." >> /var/log/pipe_mail.log
 
-    if [[ "$_to_user" == *"$HOSTNAME"* ]]; then
-        _to_user_and_hostname="$_to_user"
-        IFS='@' read -r -a user_info <<< "$_to_user"
-        export _to_user="${user_info[0]}"
-        echo "Got username $_to_user from username@host record $_to_user_and_hostname" >> /var/log/pipe_mail.log
+    if [ ! -f "$DEFAULT_HOSTFILE" ]; then
+            _NODE_NAMES="$(hostname)"
+    else
+        IFS=$'\n' read -d '' -r -a _NODE_NAMES < "$DEFAULT_HOSTFILE"
     fi
+
+    for _NODE in ${_NODE_NAMES[*]} ; do
+        if [[ "$_to_user" == *"$_NODE"* ]]; then
+            _to_user_and_hostname="$_to_user"
+            IFS='@' read -r -a user_info <<< "$_to_user"
+            export _to_user="${user_info[0]}"
+            echo "Got username $_to_user from username@host record $_to_user_and_hostname" >> /var/log/pipe_mail.log
+            break
+        fi
+    done
 
     if [[ "$_to_user" == "root" ]]; then
         echo "Job owner is $_to_user, changing receiver to $REMOTE_OWNER" >> /var/log/pipe_mail.log

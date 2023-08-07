@@ -71,6 +71,19 @@ add_worker() {
         qconf -as $HOSTNAME
         qconf -ah $HOSTNAME
     fi
+
+    if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
+        # configure local configuration
+        qconf -sconf $HOSTNAME > ./$HOSTNAME
+        if [ "$?" -eq "0" ]; then
+            sed -i "/mailer/c\mailer $COMMON_REPO_DIR/shell/pipe_mail" ./$HOSTNAME
+            qconf -Mconf ./$HOSTNAME
+        else
+            echo "mailer $COMMON_REPO_DIR/shell/pipe_mail" > ./$HOSTNAME
+            qconf -Aconf ./$HOSTNAME
+        fi
+        rm -f ./$HOSTNAME
+    fi
 }
 
 remove_worker() {
