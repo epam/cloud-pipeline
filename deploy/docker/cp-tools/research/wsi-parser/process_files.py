@@ -759,8 +759,8 @@ class WsiFileTagProcessor:
         return None
 
     def _normalize_tags(self, tags, system_dictionary):
-        predefined_species_values = self._prepare_predefined_values(system_dictionary['Species'])
-        predefined_tissues_values = self._prepare_predefined_values(system_dictionary['Tissue'])
+        predefined_species_values = self._prepare_predefined_values(system_dictionary[SPECIES_CAT_ATTR_NAME])
+        predefined_tissues_values = self._prepare_predefined_values(system_dictionary[TISSUE_CAT_ATTR_NAME])
         if SPECIES_CAT_ATTR_NAME in tags:
             tags[SPECIES_CAT_ATTR_NAME] = self._prepare_species_tag(tags[SPECIES_CAT_ATTR_NAME],
                                                                     predefined_species_values)
@@ -768,15 +768,31 @@ class WsiFileTagProcessor:
             tags[TISSUE_CAT_ATTR_NAME] = self._prepare_tissues_tag(tags[TISSUE_CAT_ATTR_NAME],
                                                                    predefined_tissues_values)
         if STAIN_METHOD_CAT_ATTR_NAME in tags:
-            stain_method = self._determine_stain_method(list(tags[STAIN_METHOD_CAT_ATTR_NAME])[0] or 'General')
-            tags[STAIN_METHOD_CAT_ATTR_NAME] = {stain_method}
-            if stain_method == 'Unk':
-                return
-            if stain_method == 'General':
-                tags[STAIN_CAT_ATTR_NAME] = self._prepare_general_stain_tag(tags.get(STAIN_CAT_ATTR_NAME, None))
-            if stain_method == 'Special' or stain_method == 'IHC':
-                if tags[STAIN_CAT_ATTR_NAME]:
-                    tags[STAIN_CAT_ATTR_NAME] = set([str(stain).strip().upper() for stain in tags[STAIN_CAT_ATTR_NAME]])
+            self._normalize_stain_tags(tags)
+
+    def _normalize_tags(self, tags, system_dictionary):
+        predefined_species_values = self._prepare_predefined_values(system_dictionary[SPECIES_CAT_ATTR_NAME])
+        predefined_tissues_values = self._prepare_predefined_values(system_dictionary[TISSUE_CAT_ATTR_NAME])
+        if SPECIES_CAT_ATTR_NAME in tags:
+            tags[SPECIES_CAT_ATTR_NAME] = self._prepare_species_tag(tags[SPECIES_CAT_ATTR_NAME],
+                                                                    predefined_species_values)
+        if TISSUE_CAT_ATTR_NAME in tags:
+            tags[TISSUE_CAT_ATTR_NAME] = self._prepare_tissues_tag(tags[TISSUE_CAT_ATTR_NAME],
+                                                                   predefined_tissues_values)
+        if STAIN_METHOD_CAT_ATTR_NAME in tags:
+            self._normalize_stain_tags(tags)
+
+    def _normalize_stain_tags(self, tags):
+        stain_method = self._determine_stain_method(list(tags[STAIN_METHOD_CAT_ATTR_NAME])[0] or 'General')
+        tags[STAIN_METHOD_CAT_ATTR_NAME] = {stain_method}
+        if stain_method == 'Unk':
+            return
+        if stain_method == 'General':
+            tags[STAIN_CAT_ATTR_NAME] = self._prepare_general_stain_tag(tags.get(STAIN_CAT_ATTR_NAME, None))
+            return
+        if stain_method == 'Special' or stain_method == 'IHC':
+            if tags[STAIN_CAT_ATTR_NAME]:
+                tags[STAIN_CAT_ATTR_NAME] = set([str(stain).strip().upper() for stain in tags[STAIN_CAT_ATTR_NAME]])
 
     @staticmethod
     def _determine_stain_method(stain_method):
@@ -798,13 +814,18 @@ class WsiFileTagProcessor:
 
     @staticmethod
     def _prepare_species_tag(metadata_values, predefined_values):
-        metadata_value = list(metadata_values)[0]
-        if not metadata_value:
+        if not metadata_values:
             return {'Unk'}
-        metadata_value = str(metadata_value).strip().upper()
-        if metadata_value in predefined_values:
-            return {predefined_values.get(metadata_value)}
-        return {'Unk'}
+        species = set()
+        for metadata_value in metadata_values:
+            if not metadata_value:
+                species.add('Unk')
+            metadata_value = str(metadata_value).strip().upper()
+            if metadata_value in predefined_values:
+                species.add(predefined_values.get(metadata_value))
+            else:
+                species.add('Unk')
+        return species
 
     @staticmethod
     def _replace_with_predefined_value(metadata_value, predefined_value):
@@ -818,16 +839,20 @@ class WsiFileTagProcessor:
 
     @classmethod
     def _prepare_tissues_tag(cls, metadata_values, predefined_values):
-        metadata_value = str(list(metadata_values)[0]).strip()
-        if not metadata_value:
+        if not metadata_values:
             return {'Unk'}
-
         tissues = list()
-        if MULTIPLE_TYPE_TISSUE_DELIMITER in metadata_value:
-            tissues = metadata_value.split(MULTIPLE_TYPE_TISSUE_DELIMITER)
-            tissues = [tissue.strip().upper() for tissue in tissues if tissue]
-        else:
-            tissues.append(metadata_value.upper())
+        for metadata_value in metadata_values:
+            if not metadata_value:
+                tissues.append('Unk')
+            metadata_value = str(metadata_value).strip()
+
+            if MULTIPLE_TYPE_TISSUE_DELIMITER in metadata_value:
+                tissue_values = metadata_value.split(MULTIPLE_TYPE_TISSUE_DELIMITER)
+                tissue_values = [tissue.strip().upper() for tissue in tissue_values if tissue]
+                tissues.extend(tissue_values)
+            else:
+                tissues.append(metadata_value.upper())
         return set(cls._find_value_by_prefix(tissue, predefined_values) or 'Unk' for tissue in tissues)
 
     @staticmethod
@@ -881,20 +906,23 @@ class WsiFileTagProcessor:
         for key in tags_mapping.keys():
             if key in metadata_dict:
                 value = metadata_dict[key]
+                values = []
                 if value.startswith('[') and value.endswith(']'):
                     self.log_processing_info('Processing array value')
                     value = value[1:-1]
-                    values = list(set(value.split(',')))
-                    if len(values) != 1:
-                        self.log_processing_info('Empty or multiple metadata values, skipping [{}]'
-                                                 .format(key))
+                    values = list(set([v.strip() for v in value.split(',')]))
+                    if not values:
+                        self.log_processing_info('Empty metadata values, skipping [{}]'.format(key))
                         continue
-                    value = values[0]
-                target_tag = tags_mapping[key]
-                if target_tag in tags_to_push:
-                    tags_to_push[target_tag].add(value)
                 else:
-                    tags_to_push[target_tag] = {value}
+                    values.append(value.strip())
+
+                target_tag = tags_mapping[key]
+                for value in values:
+                    if target_tag in tags_to_push:
+                        tags_to_push[target_tag].add(value)
+                    else:
+                        tags_to_push[target_tag] = {value}
         return tags_to_push
 
     def map_tags(self, tags_mapping_env_var_name, existing_attributes_dictionary):
