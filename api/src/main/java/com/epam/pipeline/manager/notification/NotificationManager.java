@@ -745,17 +745,20 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final List<Long> copyUserIds = ListUtils.emptyIfNull(messageVO.getCopyUsers())
                 .stream()
                 .filter(StringUtils::isNotBlank)
-                .map(this::getUserByName)
+                .map(this::getUserByNameOrEmail)
                 .map(PipelineUser::getId)
                 .collect(Collectors.toList());
         message.setCopyUserIds(copyUserIds);
-        message.setToUserId(getUserByName(messageVO.getToUser()).getId());
+        message.setToUserId(getUserByNameOrEmail(messageVO.getToUser()).getId());
         return message;
     }
 
-    private PipelineUser getUserByName(final String username) {
-        final PipelineUser user = userManager.loadUserByName(username);
-        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
+    private PipelineUser getUserByNameOrEmail(final String usernameOrEmail) {
+        PipelineUser user = userManager.loadUserByName(usernameOrEmail);
+        if (user == null) {
+            user = userManager.loadUserByEmail(usernameOrEmail);
+        }
+        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, usernameOrEmail));
         return user;
     }
 

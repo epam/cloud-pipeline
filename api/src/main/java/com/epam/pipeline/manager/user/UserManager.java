@@ -87,6 +87,8 @@ import java.util.stream.StreamSupport;
 @AclSync
 public class UserManager implements SecuredEntityManager {
 
+    public static final String EMAIL_ATTRIBUTE = "email";
+
     @Autowired
     private UserDao userDao;
 
@@ -188,6 +190,15 @@ public class UserManager implements SecuredEntityManager {
 
     public PipelineUser loadUserByName(String name) {
         return userDao.loadUserByName(name);
+    }
+
+    public PipelineUser loadUserByEmail(String email) {
+        final List<PipelineUser> usersByEmail = userDao.findUsersByAttribute(EMAIL_ATTRIBUTE, email);
+        if (!usersByEmail.isEmpty()) {
+            return usersByEmail.get(0);
+        } else {
+            return null;
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

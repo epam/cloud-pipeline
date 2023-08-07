@@ -26,7 +26,7 @@ case $key in
     shift # past argument
     ;;
     -s) # Subject of the email to be sent
-    export _NOTIFICATION_SUBJECT="$2"
+    export _NOTIFICATION_SUBJECT="Run #$RUN_ID. Job info: $2"
     shift # past argument
     shift # past value
     ;;
@@ -41,7 +41,21 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 echo "Sending emails to: $@" >> /var/log/pipe_mail.log
 while [[ $# -gt 0 ]]
 do
-    _to_user="$1"
+    export _to_user="$1"
+    echo "Sending to $_to_user ..." >> /var/log/pipe_mail.log
+
+    if [[ "$_to_user" == *"$HOSTNAME"* ]]; then
+        _to_user_and_hostname="$_to_user"
+        IFS='@' read -r -a user_info <<< "$_to_user"
+        export _to_user="${user_info[0]}"
+        echo "Got username $_to_user from username@host record $_to_user_and_hostname" >> /var/log/pipe_mail.log
+    fi
+
+    if [[ "$_to_user" == "root" ]]; then
+        echo "Job owner is $_to_user, changing receiver to $REMOTE_OWNER" >> /var/log/pipe_mail.log
+        export _to_user="$REMOTE_OWNER"
+    fi
+
     pipe_notify "$_NOTIFICATION_SUBJECT" "$_NOTIFICATION_SUBJECT" "$_to_user" &>> /var/log/pipe_mail.log
     shift # skip email that was already processed
 done

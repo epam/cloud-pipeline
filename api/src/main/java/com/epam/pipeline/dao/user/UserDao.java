@@ -41,6 +41,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     private String loadUserByIdQuery;
     private String deleteUserQuery;
     private String findUsersByPrefixQuery;
+    private String findUsersByAttributeQuery;
     private String loadUserListQuery;
     private String deleteUserRolesQuery;
     private String userSequence;
@@ -124,6 +126,17 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         } else {
             return items.stream().filter(user -> user.getUserName()
                     .equalsIgnoreCase(name)).findAny().orElse(null);
+        }
+    }
+
+    public List<PipelineUser> findUsersByAttribute(final String key, final String value) {
+        final Collection<PipelineUser> items =
+                getJdbcTemplate().query(findUsersByAttributeQuery,
+                        UserParameters.getUserExtractor(), key.toLowerCase(), value.toLowerCase());
+        if (CollectionUtils.isEmpty(items)) {
+            return Collections.emptyList();
+        } else {
+            return new ArrayList<>(items);
         }
     }
 
@@ -468,6 +481,11 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setFindUsersByPrefixQuery(String findUsersByPrefixQuery) {
         this.findUsersByPrefixQuery = findUsersByPrefixQuery;
+    }
+
+    @Required
+    public void setFindUsersByAttributeQuery(String findUsersByAttributeQuery) {
+        this.findUsersByAttributeQuery = findUsersByAttributeQuery;
     }
 
     @Required
