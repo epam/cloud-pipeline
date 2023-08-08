@@ -14,18 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+SLURM_COMMON_CONFIG_DIR="$SHARED_FOLDER/.slurm"
 SLURM_WORKER_SETUP_TASK="SLURMWorkerSetup"
 CURRENT_PID=$$
 
 add_worker() {
 
-    cp /common/munge.key /etc/munge/
+    cp ${SLURM_COMMON_CONFIG_DIR}/munge.key /etc/munge/
     chown munge: /etc/munge/munge.key
     chmod 0700 /etc/munge/munge.key
     su -c /usr/sbin/munged -s /bin/bash munge
 
-    ln -s  /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
-    ln -s  /common/cgroup.conf "$_SLURM_CONFIG_LOCATION"
+    ln -s  ${SLURM_COMMON_CONFIG_DIR}/slurm.conf "$_SLURM_CONFIG_LOCATION"
+    ln -s  ${SLURM_COMMON_CONFIG_DIR}/cgroup.conf "$_SLURM_CONFIG_LOCATION"
     mkdir /var/spool/slurmd
     chown slurm: /var/spool/slurmd
     chmod 755 /var/spool/slurmd
