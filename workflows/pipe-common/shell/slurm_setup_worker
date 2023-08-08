@@ -33,6 +33,8 @@ add_worker() {
     touch /var/log/slurmd.log
     chown slurm: /var/log/slurmd.log
 
+    _WORKER_CORES=$(nproc)
+    _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / 1024)}')
     _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
     if (( _NODE_GPUS_COUNT > 0 ))
     then
@@ -42,7 +44,11 @@ add_worker() {
     fi
 
     if [ "${cluster_role_type}" == "additional" ]; then
-        slurmd -Z --conf "State=FUTURE"
+        if (( _NODE_GPUS_COUNT > 0 )); then
+            slurmd -Z --conf "CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=FUTURE"
+        else
+            slurmd -Z --conf "CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT State=FUTURE"
+        fi
     else
         slurmd
     fi
