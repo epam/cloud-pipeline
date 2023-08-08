@@ -434,6 +434,7 @@ def get_daemon():
                                   for instance in available_instances)))
 
     worker_tags_handler = CloudPipelineWorkerTagsHandler(api=api, active_timeout=active_timeout,
+                                                         active_tag=grid_engine_type + '_IN_USE',
                                                          host_storage=host_storage,
                                                          static_host_storage=static_host_storage, clock=clock,
                                                          common_utils=common_utils, dry_run=dry_run)
