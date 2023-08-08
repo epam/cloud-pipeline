@@ -101,8 +101,7 @@ EOL
     fi
 
     if check_cp_cap CP_CAP_AUTOSCALE; then
-        echo "" >> /common/slurm.conf
-        echo "#" >> /common/slurm.conf
+        echo -e "\n# Dynamic cluster configuration" >> /common/slurm.conf
         echo "#DYNAMIC CLUSTER" >> /common/slurm.conf
         echo "MaxNodeCount=$(( ${CP_CAP_AUTOSCALE_WORKERS:-0} + ${node_count:-0} + 1 ))" >> /common/slurm.conf
         echo "TreeWidth=65533" >> /common/slurm.conf
@@ -110,6 +109,7 @@ EOL
 
     # Override default mail program for Slurm
     if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
+        echo -e "\n# Mail notification configuration" >> /common/slurm.conf
         echo "MailProg=$COMMON_REPO_DIR/shell/pipe_mail" >> /common/slurm.conf
     fi
 }
