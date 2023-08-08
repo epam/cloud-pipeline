@@ -188,11 +188,11 @@ public class UserManager implements SecuredEntityManager {
         return authManager.issueToken(userContext, expiration);
     }
 
-    public PipelineUser loadUserByName(String name) {
+    public PipelineUser loadUserByName(final String name) {
         return userDao.loadUserByName(name);
     }
 
-    public PipelineUser loadUserByEmail(String email) {
+    public PipelineUser loadUserByEmail(final String email) {
         final List<PipelineUser> usersByEmail = userDao.findUsersByAttribute(EMAIL_ATTRIBUTE, email);
         if (!usersByEmail.isEmpty()) {
             return usersByEmail.get(0);
@@ -202,7 +202,7 @@ public class UserManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<PipelineUser> loadUsersByNames(Collection<String> names) {
+    public List<PipelineUser> loadUsersByNames(final Collection<String> names) {
         if (names.isEmpty()) {
             return Collections.emptyList();
         }

@@ -754,10 +754,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     }
 
     private PipelineUser getUserByNameOrEmail(final String usernameOrEmail) {
-        PipelineUser user = userManager.loadUserByName(usernameOrEmail);
-        if (user == null) {
-            user = userManager.loadUserByEmail(usernameOrEmail);
-        }
+        final PipelineUser user = Optional.ofNullable(userManager.loadUserByName(usernameOrEmail))
+                .orElse(userManager.loadUserByEmail(usernameOrEmail));
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, usernameOrEmail));
         return user;
     }
