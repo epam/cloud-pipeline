@@ -9,8 +9,41 @@
 
 _PIPE_MAIL_LOG_FILE="/var/log/pipe_mail.log"
 
-echo "Start sending emails to pipeline users" >> ${_PIPE_MAIL_LOG_FILE}
+function construct_email_subject {
+    local _grid_engine_msg=$1
+    echo "Run #$RUN_ID. Job info: $_grid_engine_msg"
+}
 
+function get_cp_user_id {
+    local _provider_user_id=$1
+    local _effective_user_id="$_provider_user_id"
+    echo "Sending to $_provider_user_id ..." >> ${_PIPE_MAIL_LOG_FILE}
+
+    if [ ! -f "$DEFAULT_HOSTFILE" ]; then
+            _NODE_NAMES="$(hostname)"
+    else
+        IFS=$'\n' read -d '' -r -a _NODE_NAMES < "$DEFAULT_HOSTFILE"
+    fi
+
+    for _NODE in ${_NODE_NAMES[*]} ; do
+        if [[ "$_provider_user_id" == *"$_NODE"* ]]; then
+            _to_user_and_hostname="$_provider_user_id"
+            IFS='@' read -r -a user_info <<< "$_provider_user_id"
+            export _effective_user_id="${user_info[0]}"
+            echo "Got username $_effective_user_id from username@host record $_to_user_and_hostname" >> ${_PIPE_MAIL_LOG_FILE}
+            break
+        fi
+    done
+
+    if [[ "$_effective_user_id" == "root" ]]; then
+        echo "Job owner is $_effective_user_id, changing receiver to $REMOTE_OWNER" >> ${_PIPE_MAIL_LOG_FILE}
+        _effective_user_id="$REMOTE_OWNER"
+    fi
+
+    echo "$_effective_user_id"
+}
+
+echo "Start sending emails to pipeline users" >> ${_PIPE_MAIL_LOG_FILE}
 echo "Getting envs from /etc/cp_env.sh" >> ${_PIPE_MAIL_LOG_FILE}
 source /etc/cp_env.sh
 
@@ -28,7 +61,7 @@ case $key in
     shift # past argument
     ;;
     -s) # Subject of the email to be sent
-    export _NOTIFICATION_SUBJECT="Run #$RUN_ID. Job info: $2"
+    export _NOTIFICATION_SUBJECT=$(construct_email_subject "$2")
     shift # past argument
     shift # past value
     ;;
@@ -43,30 +76,7 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 echo "Sending emails to: $@" >> ${_PIPE_MAIL_LOG_FILE}
 while [[ $# -gt 0 ]]
 do
-    export _to_user="$1"
-    echo "Sending to $_to_user ..." >> ${_PIPE_MAIL_LOG_FILE}
-
-    if [ ! -f "$DEFAULT_HOSTFILE" ]; then
-            _NODE_NAMES="$(hostname)"
-    else
-        IFS=$'\n' read -d '' -r -a _NODE_NAMES < "$DEFAULT_HOSTFILE"
-    fi
-
-    for _NODE in ${_NODE_NAMES[*]} ; do
-        if [[ "$_to_user" == *"$_NODE"* ]]; then
-            _to_user_and_hostname="$_to_user"
-            IFS='@' read -r -a user_info <<< "$_to_user"
-            export _to_user="${user_info[0]}"
-            echo "Got username $_to_user from username@host record $_to_user_and_hostname" >> ${_PIPE_MAIL_LOG_FILE}
-            break
-        fi
-    done
-
-    if [[ "$_to_user" == "root" ]]; then
-        echo "Job owner is $_to_user, changing receiver to $REMOTE_OWNER" >> ${_PIPE_MAIL_LOG_FILE}
-        export _to_user="$REMOTE_OWNER"
-    fi
-
+    _to_user=$(get_cp_user_id "$1")
     pipe_notify "$_NOTIFICATION_SUBJECT" "$_NOTIFICATION_SUBJECT" "$_to_user" &>> ${_PIPE_MAIL_LOG_FILE}
     shift # skip email that was already processed
 done
