@@ -368,8 +368,8 @@ class GridEngineScaleDownHandler:
         Logger.info('Disabling additional worker %s...' % child_host)
         self.grid_engine.disable_host(child_host)
         jobs = self.grid_engine.get_jobs()
-        # todo: Ignore canceled/completed job here and etc.
-        disabled_host_jobs = [job for job in jobs if child_host in job.hosts]
+        running_jobs = [job for job in jobs if job.state == GridEngineJobState.RUNNING]
+        disabled_host_jobs = [job for job in running_jobs if child_host in job.hosts]
         if disabled_host_jobs:
             Logger.warn('Disabled additional worker %s has %s associated jobs. Scaling down is interrupted.'
                         % (child_host, len(disabled_host_jobs)))
