@@ -258,6 +258,9 @@ else
     pipe_log_success "All SLURM hosts are connected" "$SLURM_MASTER_SETUP_TASK_WORKERS"
 fi
 
-if [ ! -z "${CP_CAP_AUTOSCALE}" ]; then
-  nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" > "$LOG_DIR/.nohup.autoscaler.slurm.log" 2>&1 &
-fi
+(
+    export CP_CAP_AUTOSCALE_TASK="SLURMAutoscaling"
+    export CP_CAP_SGE_QUEUE_DEFAULT="true"
+    export CP_CAP_SGE_QUEUE_STATIC="true"
+    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.slurm.main.q.log" 2>&1 &
+)
