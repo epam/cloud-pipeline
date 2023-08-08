@@ -252,5 +252,7 @@ fi
 
 (
     export CP_CAP_AUTOSCALE_TASK="SLURMAutoscaling"
+    export CP_CAP_SGE_QUEUE_DEFAULT="true"
+    export CP_CAP_SGE_QUEUE_STATIC="true"
     nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.slurm.main.q.log" 2>&1 &
 )
